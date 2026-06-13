@@ -37,6 +37,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.lang.Long.parseLong;
+
 /**
  * Orchestration des cas d'usage OpenAPI « projet » et listes liées : pagination, tri, périmètre institutions.
  */
@@ -101,14 +103,24 @@ public class ProjectApiService {
         }
     }
 
+    public InstitutionDTO requireOrganization(Long id, ProjectApiCaller caller) {
+        assertOrganizationInCallerScope(id, caller.accessibleInstitutionIds());
+        return caller.institutions().stream()
+                .filter(inst -> id.equals(inst.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
     public Page<AccessibleProjectForApi> pageAccessibleProjects(
             ProjectApiCaller caller,
             Long organizationId,
             String search,
             int offset,
             int limit,
-            String sortParam) {
+            List<String> sortParams) {
         assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+        // TODO: implement multi-sort; for now only the first element is used
+        String sortParam = (sortParams != null && !sortParams.isEmpty()) ? sortParams.get(0) : null;
         Sort sort = parseProjectSort(sortParam);
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit, sort);
@@ -131,9 +143,9 @@ public class ProjectApiService {
         if (request.getOrganizationId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
-        assertOrganizationInCallerScope(request.getOrganizationId(), caller.accessibleInstitutionIds());
+        assertOrganizationInCallerScope(parseLong(request.getOrganizationId()), caller.accessibleInstitutionIds());
 
-        InstitutionDTO institution = institutionService.findById(request.getOrganizationId());
+        InstitutionDTO institution = institutionService.findById(parseLong(request.getOrganizationId()));
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organisation introuvable");
         }
@@ -151,13 +163,15 @@ public class ProjectApiService {
         if (identifier.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "identifier est obligatoire");
         }
-        if (request.getTypeConceptId() == null) {
+        if (request.getTypeId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "typeConceptId est obligatoire");
         }
 
-        Concept typeConcept = conceptService.findById(request.getTypeConceptId())
+        Concept typeConcept = conceptService.findById(parseLong(request.getTypeId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de projet introuvable"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
+
+        // todo map request dto to domain dto and use service
 
         ActionUnitDTO shell = new ActionUnitDTO();
         shell.setCreatedByInstitution(institution);
@@ -169,14 +183,14 @@ public class ProjectApiService {
         shell.setType(typeDto);
         shell.setSpatialContext(new LinkedHashSet<>());
 
-        if (request.getSpatialContextSpatialUnitIds() != null) {
+        if (request.getSpatialContextIds() != null) {
             ProjectPatchRequest spatialPatch = new ProjectPatchRequest();
-            spatialPatch.setSpatialContextSpatialUnitIds(request.getSpatialContextSpatialUnitIds());
+            spatialPatch.setSpatialContextIds(request.getSpatialContextIds());
             applySpatialContextPatch(shell, institution, spatialPatch);
         }
 
-        recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
-                shell, request.getFieldAnswers(), caller.person(), lang);
+/*        recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
+                shell, request.getAdditionalValues(), caller.person(), lang);*/
 
         try {
             ActionUnitDTO saved = actionUnitService.save(userInfo, shell, typeDto);
@@ -211,8 +225,8 @@ public class ProjectApiService {
         applyProjectPatch(dto, patch);
         applySpatialContextPatch(dto, inst, patch);
         ConceptDTO type = dto.getType();
-        if (patch.getTypeConceptId() != null) {
-            Concept concept = conceptService.findById(patch.getTypeConceptId())
+        if (patch.getTypeId() != null) {
+            Concept concept = conceptService.findById(parseLong(patch.getTypeId()))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de projet inconnu"));
             type = conceptMapper.convert(concept);
             dto.setType(type);
@@ -271,7 +285,7 @@ public class ProjectApiService {
     }
 
     private void applySpatialContextPatch(ActionUnitDTO dto, InstitutionDTO projectInstitution, ProjectPatchRequest patch) {
-        if (patch.getSpatialContextSpatialUnitIds() == null) {
+        if (patch.getSpatialContextIds() == null) {
             return;
         }
         if (projectInstitution.getId() == null) {
@@ -279,13 +293,13 @@ public class ProjectApiService {
         }
         long orgId = projectInstitution.getId();
         LinkedHashSet<SpatialUnitSummaryDTO> resolved = new LinkedHashSet<>();
-        for (Long spatialUnitId : patch.getSpatialContextSpatialUnitIds()) {
+        for (String spatialUnitId : patch.getSpatialContextIds()) {
             if (spatialUnitId == null) {
                 continue;
             }
             SpatialUnitDTO place;
             try {
-                place = spatialUnitService.findById(spatialUnitId);
+                place = spatialUnitService.findById(parseLong(spatialUnitId));
             } catch (SpatialUnitNotFoundException e) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lieu introuvable : " + spatialUnitId, e);
             }
@@ -304,7 +318,9 @@ public class ProjectApiService {
      * Tri et pagination appliqués sur la liste déjà portée par {@link ProjectApiCaller#institutions()}
      * (chargée une seule fois lors de l'appel à {@link #requireCaller()}).
      */
-    public Page<InstitutionDTO> pageAccessibleOrganizations(ProjectApiCaller caller, int offset, int limit, String sortParam) {
+    public Page<InstitutionDTO> pageAccessibleOrganizations(ProjectApiCaller caller, int offset, int limit, List<String> sortParams) {
+        // TODO: implement multi-sort; for now only the first element is used
+        String sortParam = (sortParams != null && !sortParams.isEmpty()) ? sortParams.get(0) : null;
         Sort sort = parseOrganizationSort(sortParam);
         List<InstitutionDTO> sorted = sortInstitutions(caller.institutions(), sort);
         long total = sorted.size();

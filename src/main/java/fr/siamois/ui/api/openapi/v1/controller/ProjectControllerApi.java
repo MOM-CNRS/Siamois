@@ -67,7 +67,8 @@ public class ProjectControllerApi {
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "name:asc") String sort,
+            @Parameter(description = "Champ de tri : id, name, identifier, creationTime ; direction asc ou desc (ex. name:asc, id:desc).")
+            @RequestParam(name = "name:asc", required = false) List<String> sort,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         projectApiService.validatePagedListRequest(offset, limit);
@@ -91,8 +92,6 @@ public class ProjectControllerApi {
     @Operation(
             summary = "Créer un projet",
             description = "Crée une unité d'action (projet) dans une organisation. "
-                    + "Champs obligatoires : organizationId, name, identifier, typeConceptId. "
-                    + "fieldAnswers : clés = custom_field_id (formulaire système, voir GET /api/v1/projects/form). "
                     + "Droit requis : gestionnaire d'institution ou gestionnaire d'action."
     )
     @ApiResponses(value = {
@@ -127,6 +126,8 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
+
+
     public ResponseEntity<ProjectFormResponse> getProjectUiForm(
             @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
             @RequestParam("organizationId") long organizationId,
@@ -142,10 +143,7 @@ public class ProjectControllerApi {
 
     @GetMapping("/{id}")
     @Operation(summary = "Un projet via son identifiant",
-            description = "Clé d'URL : id numérique (clé primaire), identifiant métier complet (fullIdentifier), "
-                    + "ou identifiant court du projet dans une de vos organisations. "
-                    + "Les caractères réservés (ex. « / ») doivent être encodés pour l'URL. "
-                    + "Réponse enrichie : `codeOperationArcheologique` (Code OA), et pour les champs basés sur un concept "
+            description = "Réponse enrichie : `codeOperationArcheologique` (Code OA), et pour les champs basés sur un concept "
                     + "(`typeConcept`, `actionCodeTypeConcept`, `mainLocationCategoryConcept`) le vocabulaire, "
                     + "les identifiants de concept et le libellé courant selon Accept-Language.")
     @ApiResponses(value = {
@@ -165,10 +163,10 @@ public class ProjectControllerApi {
 
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Mise à jour partielle d'un projet",
-            description = "Même clé de projet que GET /api/v1/projects/{id}. Champs modifiables : nom, catégorie (type d'opération, "
+            description = "Champs modifiables : nom, catégorie (type d'opération, "
                     + "`typeConceptId`), date de début, date de fin, localisation précise (`spatialContextSpatialUnitIds`, "
                     + "liste d'identifiants d'unités spatiales de l'organisation ; tableau vide = tout retirer). "
-                    + "Champs absents ou null = inchangés. Droit d'écriture sur le projet requis.")
+                    + "Champs absents = inchangés, champ null = valeur effacé . Droit d'écriture sur le projet requis.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "400", description = "Requête ou données invalides"),
