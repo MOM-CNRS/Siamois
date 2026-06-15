@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.response;
+package fr.siamois.ui.api.openapi.v1.response.find;
 
 import fr.siamois.ui.api.openapi.v1.generic.response.Response;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;

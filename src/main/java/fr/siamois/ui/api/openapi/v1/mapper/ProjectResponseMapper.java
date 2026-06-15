@@ -6,22 +6,20 @@ import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
-import fr.siamois.dto.entity.VocabularyDTO;
 import fr.siamois.mapper.ConceptMapper;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipCountOnly;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToMany;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.project.ConceptFieldValue;
-import fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceLightResource;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectLocalisation;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceCounts;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceLinks;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.TreeSet;
 
 @Slf4j
@@ -50,49 +48,35 @@ public class ProjectResponseMapper {
         }
         r.setName(dto.getName());
         r.setIdentifier(dto.getIdentifier());
-        r.setRecordingUnitIdentifierFormat(dto.getRecordingUnitIdentifierFormat());
-        r.setFullIdentifier(dto.getFullIdentifier());
+/*        r.setRecordingUnitIdentifierFormat(dto.getRecordingUnitIdentifierFormat());
         r.setMaxRecordingUnitCode(dto.getMaxRecordingUnitCode());
         r.setMinRecordingUnitCode(dto.getMinRecordingUnitCode());
-        r.setRecordingUnitIdentifierLang(dto.getRecordingUnitIdentifierLang());
+        r.setRecordingUnitIdentifierLang(dto.getRecordingUnitIdentifierLang());*/
+        r.setFullIdentifier(dto.getFullIdentifier());
+
         r.setBeginDate(dto.getBeginDate());
         r.setEndDate(dto.getEndDate());
 
         if (dto.getType() != null) {
-            r.setType(new RelationshipToOne<>(conceptResourceIdentifierMapper.convert(dto.getType())));
-            r.setCategorie(resolveCategoryLabel(dto.getType(), lang));
-            r.setTypeConcept(toConceptFieldValue(dto.getType(), lang));
+            r.setType(toConceptFieldValue(dto.getType(), lang));
         }
-        if (dto.getPrimaryActionCode() != null) {
-            r.setCodeOperationArcheologique(dto.getPrimaryActionCode().getCode());
-            if (dto.getPrimaryActionCode().getType() != null) {
-                r.setActionCodeTypeConcept(toConceptFieldValue(dto.getPrimaryActionCode().getType(), lang));
-            }
-        }
+
         if (dto.getMainLocation() != null) {
-            r.setMainLocation(new RelationshipToOne<>(toPlaceIdentifier(dto.getMainLocation())));
-            if (dto.getMainLocation().getCategory() != null) {
-                r.setMainLocationCategoryConcept(toConceptFieldValue(dto.getMainLocation().getCategory(), lang));
-            }
+            r.setMainLocation(toPlaceLight(dto.getMainLocation()));
         }
-        if (dto.getSpatialContext() != null && !dto.getSpatialContext().isEmpty()) {
-            List<PlaceResourceIdentifier> places = new ArrayList<>();
-            for (SpatialUnitSummaryDTO su : dto.getSpatialContext()) {
-                places.add(toPlaceIdentifier(su));
-            }
-            r.setSpatialContext(new RelationshipToMany<>(places));
-        }
+
         if (dto.getCreatedByInstitution() != null) {
             OrganizationResourceIdentifier org = new OrganizationResourceIdentifier();
             org.setResourceType("organizations");
             org.setId(String.valueOf(dto.getCreatedByInstitution().getId()));
-            r.setOrganization(new RelationshipToOne<>(org));
+            r.setOrganization(org);
         }
 
-        r.setChildren(new RelationshipCountOnly(row.childActionUnitCount()));
-        r.setRecordingUnitList(new RelationshipCountOnly(row.recordingUnitCount()));
+        r.setCount(new ProjectResourceCounts(row.childActionUnitCount(), row.recordingUnitCount()));
+        if (r.getId() != null) {
+            r.setLinks(ProjectResourceLinks.of(r.getId()));
+        }
 
-        r.setLocalisation(buildLocalisation(dto));
 
         return r;
     }
@@ -165,23 +149,25 @@ public class ProjectResponseMapper {
         return p;
     }
 
-    private ConceptFieldValue toConceptFieldValue(ConceptDTO concept, String lang) {
+    private static PlaceLightResource toPlaceLight(SpatialUnitSummaryDTO su) {
+        PlaceLightResource p = new PlaceLightResource();
+        p.setResourceType("places");
+        if (su.getId() != null) {
+            p.setId(String.valueOf(su.getId()));
+            p.setName(su.getName());
+        }
+        return p;
+    }
+
+    public ResolvedConceptResource toConceptFieldValue(ConceptDTO concept, String lang) {
         if (concept == null) {
             return null;
         }
-        ConceptFieldValue v = new ConceptFieldValue();
-        VocabularyDTO voc = concept.getVocabulary();
-        if (voc != null) {
-            v.setVocabularyId(voc.getId());
-            v.setVocabularyExternalId(voc.getExternalVocabularyId());
-            v.setVocabularyBaseUri(voc.getBaseUri());
-            if (voc.getType() != null) {
-                v.setVocabularyTypeLabel(voc.getType().getLabel());
-            }
-        }
-        v.setConceptId(concept.getId());
-        v.setConceptExternalId(concept.getExternalId());
-        v.setDisplayLabel(resolveCategoryLabel(concept, lang));
+        ResolvedConceptResource v = new ResolvedConceptResource();
+        v.setResolvedLabel(""); // todo : fetch proper label. probably pass conceptlabeldto instead of
+        // conceptdto to this
+        // method
+        v.setId(String.valueOf(concept.getId()));
         return v;
     }
 }

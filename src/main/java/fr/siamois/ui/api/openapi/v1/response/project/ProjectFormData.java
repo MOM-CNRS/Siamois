@@ -1,6 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.response.project;
 
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.FormResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -14,7 +14,7 @@ import java.util.Map;
 @Schema(description = "Formulaire projet (layout et champs)")
 public record ProjectFormData(
         @Schema(description = "Bundle formulaire (layout JSON). formId est nul pour le formulaire système embarqué.")
-        RecordingUnitFormBundle form,
+        FormResource form,
         @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")
         Map<String, RecordingUnitFormFieldApi> fields
 ) {

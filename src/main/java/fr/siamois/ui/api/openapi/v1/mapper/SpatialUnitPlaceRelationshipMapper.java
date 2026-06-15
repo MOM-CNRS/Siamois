@@ -1,8 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
-import fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResourceIdentifier;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
@@ -13,7 +12,7 @@ import org.mapstruct.Named;
 public interface SpatialUnitPlaceRelationshipMapper {
 
     @Named("spatialUnitToPlaceRelationship")
-    default RelationshipToOne<PlaceResourceIdentifier> spatialUnitToPlace(SpatialUnitSummaryDTO su) {
+    default PlaceResourceIdentifier spatialUnitToPlace(SpatialUnitSummaryDTO su) {
         if (su == null) {
             return null;
         }
@@ -22,6 +21,6 @@ public interface SpatialUnitPlaceRelationshipMapper {
         if (su.getId() != null) {
             p.setId(String.valueOf(su.getId()));
         }
-        return new RelationshipToOne<>(p);
+        return p;
     }
 }

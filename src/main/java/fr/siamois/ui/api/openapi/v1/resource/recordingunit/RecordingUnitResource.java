@@ -1,13 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipCountOnly;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToMany;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
+
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
-import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceIdentifier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -15,6 +13,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 
 @Data
@@ -35,18 +34,17 @@ public class RecordingUnitResource
     private String description;
     private GeometryDTO geom;
 
-    private RelationshipToOne<ConceptResourceIdentifier> type;
-    private RelationshipToOne<PersonResourceIdentifier> author;
-    private RelationshipToMany<PersonResourceIdentifier> contributors;
-    private RelationshipCountOnly specimen;
-    private RelationshipCountOnly stratigraphicRelationships;
-    private RelationshipToOne<PlaceResourceIdentifier> place;
+    private ResolvedConceptResource type;
+    private List<PersonResourceIdentifier> author;
+    private List<PersonResourceIdentifier> contributors;
+
+    private PlaceResourceIdentifier place;
 
     @Schema(description = "Couleur de la matrice (libellé ou code selon saisie)")
     private String matrixColor;
 
-    private RelationshipToOne<OrganizationResourceIdentifier> organization;
+    private OrganizationResourceIdentifier organization;
 
-    private RelationshipToOne<ProjectResourceIdentifier> project;
+    private ProjectResourceIdentifier project;
 
 }

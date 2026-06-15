@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.controller;
+package fr.siamois.ui.api.openapi.v1.controller.place;
 
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.dto.entity.ConceptDTO;

@@ -114,7 +114,7 @@ public class RecordingUnitOpenApiService {
 
         String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
 
-        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
+        FormResource formBundle = new FormResource(customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -170,7 +170,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(systemForm.getLayout());
-        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
+        FormResource formBundle = new FormResource(
                 systemForm.getId(),
                 systemForm.getName(),
                 systemForm.getDescription() != null ? systemForm.getDescription() : "",
@@ -207,7 +207,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
+        FormResource formBundle = new FormResource(
                 customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
 
         RecordingUnitDTO shell = new RecordingUnitDTO();
@@ -244,7 +244,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
+        FormResource formBundle = new FormResource(
                 customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
@@ -282,7 +282,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        RecordingUnitFormBundle formBundle = new RecordingUnitFormBundle(
+        FormResource formBundle = new FormResource(
                 customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);

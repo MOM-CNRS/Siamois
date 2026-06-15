@@ -6,6 +6,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.controller.place.SpatialUnitSearchControllerApi;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import org.junit.jupiter.api.BeforeEach;

@@ -22,7 +22,7 @@ public class ProjectDocumentResource extends DocumentResourceIdentifier {
     @Schema(description = "Empreinte MD5 du fichier")
     private String md5Sum;
 
-    private RelationshipToOne<ConceptResourceIdentifier> nature;
-    private RelationshipToOne<ConceptResourceIdentifier> scale;
-    private RelationshipToOne<ConceptResourceIdentifier> format;
+    private ConceptResourceIdentifier nature;
+    private ConceptResourceIdentifier scale;
+    private ConceptResourceIdentifier format;
 }

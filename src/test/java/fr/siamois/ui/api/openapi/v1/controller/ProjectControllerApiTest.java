@@ -23,13 +23,14 @@ import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.controller.project.ProjectControllerApi;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.FormResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -336,7 +337,7 @@ class ProjectControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
         ProjectFormData formData = new ProjectFormData(
-                new RecordingUnitFormBundle(null, "Details", "", "{}"),
+                new FormResource(null, "Details", "", "{}"),
                 Map.of());
         when(recordingUnitOpenApiService.buildProjectUiForm(100L, personDto, "fr"))
                 .thenReturn(formData);

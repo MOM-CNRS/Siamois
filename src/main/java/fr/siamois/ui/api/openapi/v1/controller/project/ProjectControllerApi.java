@@ -1,24 +1,16 @@
-package fr.siamois.ui.api.openapi.v1.controller;
+package fr.siamois.ui.api.openapi.v1.controller.project;
 
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
-import fr.siamois.ui.api.openapi.v1.response.ProjectListResponse;
-import fr.siamois.ui.api.openapi.v1.response.ProjectResponse;
-import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
-import fr.siamois.ui.api.openapi.v1.response.document.DocumentResourceResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectDocumentsData;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectDocumentsResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -37,7 +29,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -66,6 +57,7 @@ public class ProjectControllerApi {
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) Long organizationId,
+            @Parameter(description = "Recherche par identifiant, peu-être utilisé pour l'autocompletion.")
             @RequestParam(required = false) String search,
             @Parameter(description = "Champ de tri : id, name, identifier, creationTime ; direction asc ou desc (ex. name:asc, id:desc).")
             @RequestParam(name = "name:asc", required = false) List<String> sort,
@@ -86,6 +78,24 @@ public class ProjectControllerApi {
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(rows.getTotalElements()))
                 .body(new ProjectListResponse(resources, meta));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Un projet via son identifiant",
+            description = "")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectResponse> getById(
+            @PathVariable("id") String id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        AccessibleProjectForApi row = projectApiService.requireAccessibleProject(caller, id);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang)));
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -126,8 +136,6 @@ public class ProjectControllerApi {
             @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-
-
     public ResponseEntity<ProjectFormResponse> getProjectUiForm(
             @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
             @RequestParam("organizationId") long organizationId,
@@ -141,30 +149,12 @@ public class ProjectControllerApi {
                 recordingUnitOpenApiService.buildProjectUiForm(organizationId, caller.person(), lang)));
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Un projet via son identifiant",
-            description = "Réponse enrichie : `codeOperationArcheologique` (Code OA), et pour les champs basés sur un concept "
-                    + "(`typeConcept`, `actionCodeTypeConcept`, `mainLocationCategoryConcept`) le vocabulaire, "
-                    + "les identifiants de concept et le libellé courant selon Accept-Language.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    public ResponseEntity<ProjectResponse> getById(
-            @PathVariable("id") String id,
-            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        AccessibleProjectForApi row = projectApiService.requireAccessibleProject(caller, id);
-        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang)));
-    }
+
 
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Mise à jour partielle d'un projet",
             description = "Champs modifiables : nom, catégorie (type d'opération, "
-                    + "`typeConceptId`), date de début, date de fin, localisation précise (`spatialContextSpatialUnitIds`, "
+                    + "`typeConceptId`), date de début, date de fin, localisation précise, "
                     + "liste d'identifiants d'unités spatiales de l'organisation ; tableau vide = tout retirer). "
                     + "Champs absents = inchangés, champ null = valeur effacé . Droit d'écriture sur le projet requis.")
     @ApiResponses(value = {
@@ -189,7 +179,7 @@ public class ProjectControllerApi {
     @DeleteMapping("/{id}")
     @Operation(summary = "Supprimer un projet",
             description = "Uniquement si le projet n'a ni unité d'enregistrement ni sous-projet. "
-                    + "Même clé de projet que GET /api/v1/projects/{id}. Droit d'écriture requis.")
+                    + "Même clé de projet que GET /api/v1/projects/{id}. Droit de suppression requis.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Supprimé"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
@@ -207,100 +197,6 @@ public class ProjectControllerApi {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(
-            summary = "Créer un document rattaché à un projet",
-            description = "Crée un document et le lie au projet (action_unit_document). "
-                    + "Champs multipart : title (obligatoire), file (obligatoire), description, "
-                    + "natureConceptId, scaleConceptId, formatConceptId."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Créé"),
-            @ApiResponse(responseCode = "400", description = "Requête invalide"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "404", description = "Projet ou concept introuvable"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    public ResponseEntity<DocumentResourceResponse> createProjectDocument(
-            @PathVariable("id") String id,
-            @RequestParam("title") String title,
-            @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "natureConceptId", required = false) Long natureConceptId,
-            @RequestParam(value = "scaleConceptId", required = false) Long scaleConceptId,
-            @RequestParam(value = "formatConceptId", required = false) Long formatConceptId,
-            @RequestPart("file") MultipartFile file,
-            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        var resource = documentWriteOpenApiService.createForProject(
-                caller, id, title, description, natureConceptId, scaleConceptId, formatConceptId, file, lang);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new DocumentResourceResponse(resource));
-    }
-
-    @GetMapping("/{id}/documents")
-    @Operation(
-            summary = "Documents rattachés à un projet",
-            description = "Liste des documents liés à l'unité d'action (projet) via action_unit_document. "
-                    + "Même clé de projet que GET /api/v1/projects/{id} (id numérique, fullIdentifier, identifiant court)."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    public ResponseEntity<ProjectDocumentsResponse> getDocuments(@PathVariable("id") String id) {
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        List<ProjectDocumentResource> documents = projectApiService.listDocumentsForAccessibleProject(caller, id);
-        return ResponseEntity.ok(new ProjectDocumentsResponse(new ProjectDocumentsData(documents)));
-    }
-
-    @GetMapping("/{id}/recording-units")
-    @Operation(summary = "Récupérer la liste paginée des unités d'enregistrement d'un projet",
-            description = "Clé de projet : identique à GET /api/v1/projects/{id} (id numérique, fullIdentifier, identifiant court). "
-                    + "Tri : paramètre sort au format « propriété:asc » ou « propriété:desc » "
-                    + "(propriétés autorisées : creationTime, id, identifier, fullIdentifier, openingDate, closingDate). "
-                    + "Valeur par défaut : creationTime:desc. "
-                    + "Chaque élément inclut notamment : identifiant, type, nombre de relations stratigraphiques, "
-                    + "nombre de mobiliers, dates, lieu (référence place), couleur de matrice, auteur et contributeurs.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "400", description = "Paramètres de pagination invalides"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    public ResponseEntity<RecordingUnitListResponse> getList(
-            @PathVariable("id") String id,
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit,
-            @Parameter(description = "Tri, ex. fullIdentifier:asc ou creationTime:desc")
-            @RequestParam(defaultValue = "creationTime:desc") String sort) {
-
-        projectApiService.validatePagedListRequest(offset, limit);
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForProject(caller, id, offset, limit, sort);
-
-        List<RecordingUnitResource> resources = page.getContent().stream()
-                .map(recordingUnitResourceMapper::convert)
-                .toList();
-
-        ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
-        return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
-                .body(new RecordingUnitListResponse(resources, meta));
-    }
-
-    @Hidden
-    @GetMapping("/{id}/mobiliers")
-    public ResponseEntity<FindListResponse> getFinds(
-            @PathVariable String id,
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
-    }
 
     @Hidden
     @GetMapping(value = "/{id}/geopackage", produces = "application/geopackage+sqlite3")

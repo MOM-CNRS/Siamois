@@ -1,7 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
 import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;
 import org.junit.jupiter.api.Test;
 
@@ -46,10 +45,10 @@ class PersonResourceIdentifierMapperTest {
     PersonDTO dto = new PersonDTO();
     dto.setId(7L);
 
-    RelationshipToOne<PersonResourceIdentifier> relationship = mapper.toAuthorRelationship(dto);
+    PersonResourceIdentifier relationship = mapper.toAuthorRelationship(dto);
 
     assertThat(relationship).isNotNull();
-    assertThat(relationship.getData().getResourceType()).isEqualTo("persons");
-    assertThat(relationship.getData().getId()).isEqualTo("7");
+    assertThat(relationship.getResourceType()).isEqualTo("persons");
+    assertThat(relationship.getId()).isEqualTo("7");
   }
 }

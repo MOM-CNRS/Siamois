@@ -49,7 +49,7 @@ import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.FormResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
@@ -270,7 +270,7 @@ class RecordingUnitOpenApiServiceTest {
 
         RecordingUnitMobileDetailData data = service.buildMobileDetail("1026", personDto, SCOPE, null, "de");
 
-        RecordingUnitFormBundle form = data.form();
+        FormResource form = data.form();
         assertThat(form).isNotNull();
         assertThat(form.formId()).isEqualTo(7L);
         assertThat(form.name()).isEqualTo("F");

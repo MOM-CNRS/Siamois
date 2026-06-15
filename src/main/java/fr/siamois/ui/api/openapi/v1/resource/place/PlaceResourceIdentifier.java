@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.resource.project;
+package fr.siamois.ui.api.openapi.v1.resource.place;
 
 
 import fr.siamois.ui.api.openapi.v1.generic.response.ResourceIdentifier;

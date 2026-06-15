@@ -16,7 +16,7 @@ public record RecordingUnitMobileDetailData(
         RecordingUnitResource recordingUnit,
 
         @Schema(description = "Formulaire effectif pour le type d'UE ; absent si aucune configuration")
-        RecordingUnitFormBundle form,
+        FormResource form,
 
         @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")
         Map<String, RecordingUnitFormFieldApi> fields,

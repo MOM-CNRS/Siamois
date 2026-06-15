@@ -6,14 +6,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Mise à jour partielle d'un projet (champs absents ou {@code null} = inchangé).
  */
 @Data
 @Schema(description = "Champs modifiables sur la fiche projet : nom, catégorie, dates, localisation précise (contexte spatial). "
-        + "Champs absents = inchangés ; spatialContextSpatialUnitIds = [] retire tous les lieux de contexte.")
+        + "Champs absents = inchangés ;")
 public class ProjectPatchRequest {
 
     @Schema(description = "Nom du projet")
@@ -33,9 +32,6 @@ public class ProjectPatchRequest {
 
     @Schema(description = "Date de fin")
     private OffsetDateTime endDate;
-
-    @Schema(description = "Contexte spatiale du projet (list d'identifiants unité spatiale, ex: liste des parcelles")
-    private List<String> spatialContextIds;
 
     @Schema(description = "Localisation principale du projet (Identifiant d'unité spatiale)")
     private String mainLocationId;

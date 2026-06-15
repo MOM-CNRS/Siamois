@@ -10,7 +10,8 @@ import fr.siamois.ui.api.openapi.v1.mapper.OrganizationOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.*;
+import fr.siamois.ui.api.openapi.v1.response.OrganizationListResponse;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -82,7 +83,6 @@ public class OrganizationControllerApi {
             @ApiResponse(responseCode = "404", description = "Institution non trouvée"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    @Tag(name = OpenApiTags.RECORDING_UNIT)
     public ResponseEntity<RecordingUnitListResponse> getRecordingUnits(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int offset,

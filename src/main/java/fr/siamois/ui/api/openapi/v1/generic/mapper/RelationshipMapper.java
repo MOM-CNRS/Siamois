@@ -3,7 +3,6 @@ package fr.siamois.ui.api.openapi.v1.generic.mapper;
 import fr.siamois.ui.api.openapi.v1.generic.response.Relationship;
 import fr.siamois.ui.api.openapi.v1.generic.response.ResourceIdentifier;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.springframework.core.convert.converter.Converter;
 
@@ -12,7 +11,6 @@ public interface RelationshipMapper extends Converter<ResourceIdentifier,
         Relationship<ResourceIdentifier>> {
 
     @Override
-    @Mapping(target = "data", source = ".")
     Relationship<ResourceIdentifier> convert(ResourceIdentifier value) ;
 
 }

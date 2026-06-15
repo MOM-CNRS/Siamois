@@ -20,6 +20,7 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitsControllerApi;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -31,7 +32,7 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormBundle;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.FormResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
@@ -938,7 +939,7 @@ class RecordingUnitsControllerApiTest {
 
         ConceptDTO type = new ConceptDTO();
         type.setId(8L);
-        RecordingUnitFormBundle bundle = new RecordingUnitFormBundle(50L, "Mon formulaire", "D", "{\"layout\":[]}");
+        FormResource bundle = new FormResource(50L, "Mon formulaire", "D", "{\"layout\":[]}");
         RecordingUnitFormFieldApi field = new RecordingUnitFormFieldApi(
                 12L, "TEXT", "Libellé", null, null, false, null, null);
         Map<String, RecordingUnitFormFieldApi> fields = Map.of("12", field);

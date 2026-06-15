@@ -17,7 +17,7 @@ public record RecordingUnitCreateFormData(
         ConceptDTO recordingUnitType,
 
         @Schema(description = "Formulaire effectif ; absent si aucune configuration pour ce type / institution")
-        RecordingUnitFormBundle form,
+        FormResource form,
 
         @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")
         Map<String, RecordingUnitFormFieldApi> fields,

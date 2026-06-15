@@ -1,10 +1,10 @@
-package fr.siamois.ui.api.openapi.v1.controller;
+package fr.siamois.ui.api.openapi.v1.controller.place;
 
 
-import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
-import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
-import fr.siamois.ui.api.openapi.v1.response.PlaceResponse;
-import fr.siamois.ui.api.openapi.v1.response.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.response.find.FindListResponse;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
