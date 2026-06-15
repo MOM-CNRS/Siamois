@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.response.recordingunit;
+package fr.siamois.ui.api.openapi.v1.resource.project;
 
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecordingUnitDocumentsData {
+public class ProjectDocumentsData {
 
     private List<ProjectDocumentResource> documents;
 }

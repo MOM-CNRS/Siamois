@@ -1,7 +1,9 @@
-package fr.siamois.ui.api.openapi.v1.response.recordingunit;
+package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitFormFieldApi;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;

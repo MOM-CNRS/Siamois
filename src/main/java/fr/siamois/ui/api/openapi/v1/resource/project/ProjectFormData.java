@@ -1,7 +1,7 @@
-package fr.siamois.ui.api.openapi.v1.response.project;
+package fr.siamois.ui.api.openapi.v1.resource.project;
 
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.FormResource;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitFormFieldApi;
+import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitFormFieldApi;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Map;

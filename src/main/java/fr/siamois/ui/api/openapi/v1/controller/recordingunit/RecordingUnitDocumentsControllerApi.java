@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentResourceResponse;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitDocumentsData;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitDocumentsData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitDocumentsResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;

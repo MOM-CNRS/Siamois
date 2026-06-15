@@ -6,7 +6,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;

@@ -35,11 +35,14 @@ import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.*;
+import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.*;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindMobilierFormData;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitFormFieldApi;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.FieldAnswer;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -84,45 +87,68 @@ public class RecordingUnitOpenApiService {
     private final PersonMapper personMapper;
 
     @Transactional(readOnly = true)
-    public RecordingUnitMobileDetailData buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
-                                                           List<String> counts, String lang) {
+    public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
+                                                   List<String> counts, String lang) {
         return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, counts, lang);
     }
 
-    private RecordingUnitMobileDetailData resolveMobileDetail(String recordingUnitKey, PersonDTO personDto,
-                                                               Set<Long> accessibleInstitutionIds,
-                                                               List<String> counts, String lang) {
+    private RecordingUnitResource resolveMobileDetail(String recordingUnitKey, PersonDTO personDto,
+                                                      Set<Long> accessibleInstitutionIds,
+                                                      List<String> counts, String lang) {
         RecordingUnitService.AccessibleRecordingUnit bundle =
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, counts);
         RecordingUnitDTO dto = bundle.dto();
         RecordingUnit entity = bundle.entity();
 
-        RecordingUnitResource recordingUnit = recordingUnitResponseMapper.convert(dto);
+        RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
 
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null) {
-            return new RecordingUnitMobileDetailData(recordingUnit, null, Map.of(), Map.of());
+            resource.setAnswers(Map.of());
+            return resource;
         }
 
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(dto.getType(), institution);
         if (customForm == null) {
-            return new RecordingUnitMobileDetailData(recordingUnit, null, Map.of(), Map.of());
+            resource.setAnswers(Map.of());
+            return resource;
         }
 
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
 
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-
-        FormResource formBundle = new FormResource(customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
-
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
                 userInfo, () -> buildFieldsWithFallback(entity, dto, customForm, fieldSource, locale));
-        Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
 
-        return new RecordingUnitMobileDetailData(recordingUnit, formBundle, fields, vocabs);
+        resource.setAnswers(toAnswersMap(fields));
+        return resource;
+    }
+
+    private Map<String, FieldAnswer> toAnswersMap(Map<String, RecordingUnitFormFieldApi> fields) {
+        Map<String, FieldAnswer> out = new LinkedHashMap<>();
+        for (Map.Entry<String, RecordingUnitFormFieldApi> e : fields.entrySet()) {
+            RecordingUnitFormFieldApi f = e.getValue();
+            Object raw = f.currentValue();
+            List<Object> values = null;
+            Object value = raw;
+            if (raw instanceof List<?> list) {
+                values = new java.util.ArrayList<>(list);
+                value = null;
+            }
+            out.put(e.getKey(), new FieldAnswer(
+                    String.valueOf(f.fieldId()),
+                    f.label(),
+                    f.answerType(),
+                    f.hint(),
+                    f.isSystemField(),
+                    f.valueBinding(),
+                    value,
+                    values
+            ));
+        }
+        return out;
     }
 
     /**
@@ -188,9 +214,9 @@ public class RecordingUnitOpenApiService {
      */
     @Transactional(readOnly = true)
     public RecordingUnitCreateFormData buildRecordingUnitCreateForm(long organizationId,
-                                                                  long recordingUnitTypeConceptId,
-                                                                  PersonDTO personDto,
-                                                                  String lang) {
+                                                                    long recordingUnitTypeConceptId,
+                                                                    PersonDTO personDto,
+                                                                    String lang) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
@@ -572,12 +598,12 @@ public class RecordingUnitOpenApiService {
      * (clés = id de champ). Champs non reconnus ou non supportés en v1 sont ignorés (log).
      */
     @Transactional
-    public RecordingUnitMobileDetailData createRecordingUnit(RecordingUnitCreateRequest request,
-                                                             PersonDTO personDto,
-                                                             Set<Long> accessibleInstitutionIds,
-                                                             String lang) {
-        String projectKey = OpenApiParamIds.requireNonBlank(request.getActionUnitId(), "actionUnitId");
-        if (request.getRecordingUnitTypeConceptId() == null) {
+    public RecordingUnitResource createRecordingUnit(RecordingUnitCreateRequest request,
+                                                     PersonDTO personDto,
+                                                     Set<Long> accessibleInstitutionIds,
+                                                     String lang) {
+        String projectKey = OpenApiParamIds.requireNonBlank(request.getProjectId(), "actionUnitId");
+        if (request.getTypeId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "recordingUnitTypeConceptId est obligatoire");
         }
         AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(
@@ -591,7 +617,7 @@ public class RecordingUnitOpenApiService {
         if (!permissionService.hasWritePermission(userInfo, au)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création d'unité non autorisée sur ce projet");
         }
-        Concept typeConcept = conceptRepository.findById(request.getRecordingUnitTypeConceptId())
+        Concept typeConcept = conceptRepository.findById(Long.parseLong(request.getTypeId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
 
@@ -665,11 +691,11 @@ public class RecordingUnitOpenApiService {
      * Mise à jour partielle des réponses formulaire (même résolution de formulaire que le détail GET).
      */
     @Transactional
-    public RecordingUnitMobileDetailData patchRecordingUnit(String recordingUnitKey,
-                                                            RecordingUnitPatchRequest request,
-                                                            PersonDTO personDto,
-                                                            Set<Long> accessibleInstitutionIds,
-                                                            String lang) {
+    public RecordingUnitResource patchRecordingUnit(String recordingUnitKey,
+                                                    RecordingUnitPatchRequest request,
+                                                    PersonDTO personDto,
+                                                    Set<Long> accessibleInstitutionIds,
+                                                    String lang) {
         RecordingUnitService.AccessibleRecordingUnit bundle =
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null);
         RecordingUnitDTO dto = bundle.dto();
@@ -734,7 +760,7 @@ public class RecordingUnitOpenApiService {
         if (expectedRevision == current) {
             return;
         }
-        RecordingUnitMobileDetailData serverState = resolveMobileDetail(
+        RecordingUnitResource serverState = resolveMobileDetail(
                 recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
         throw new SyncRevisionConflictException(new SyncConflictData(
                 "recording_unit",

@@ -1,11 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.response.sync;
 
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/**
- * Corps renvoyé en HTTP 409 lors d'un conflit de révision.
- */
 @Schema(description = "Conflit de synchronisation (version serveur plus récente)")
 public record SyncConflictData(
 
@@ -21,7 +17,7 @@ public record SyncConflictData(
         @Schema(description = "Révision actuelle sur le serveur")
         Long currentRevision,
 
-        @Schema(description = "État serveur actuel (détail UE si entityType=recording-units)")
-        RecordingUnitMobileDetailData serverState
+        @Schema(description = "État serveur actuel de la ressource")
+        Object serverState
 ) {
 }

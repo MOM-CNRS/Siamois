@@ -45,13 +45,13 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.FormResource;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindMobilierFormData;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitChildrenData;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
+import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitMobileDetailData;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
@@ -1166,7 +1166,7 @@ class RecordingUnitOpenApiServiceTest {
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
 
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
-        request.setActionUnitId("5");
+        request.setProjectId("5");
         request.setRecordingUnitTypeConceptId(42L);
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
@@ -1199,7 +1199,7 @@ class RecordingUnitOpenApiServiceTest {
     @Test
     void createRecordingUnit_missingTypeConceptId_throws400() {
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
-        request.setActionUnitId("proj");
+        request.setProjectId("proj");
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -1218,7 +1218,7 @@ class RecordingUnitOpenApiServiceTest {
         when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(false);
 
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
-        request.setActionUnitId("5");
+        request.setProjectId("5");
         request.setRecordingUnitTypeConceptId(42L);
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
@@ -1243,7 +1243,7 @@ class RecordingUnitOpenApiServiceTest {
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(any(), eq(inst))).thenReturn(null);
 
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
-        request.setActionUnitId("5");
+        request.setProjectId("5");
         request.setRecordingUnitTypeConceptId(42L);
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
@@ -1312,7 +1312,7 @@ class RecordingUnitOpenApiServiceTest {
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
-        request.setActionUnitId("5");
+        request.setProjectId("5");
         request.setRecordingUnitTypeConceptId(42L);
         request.setFieldAnswers(Map.of("8", 12));
 
@@ -1349,7 +1349,7 @@ class RecordingUnitOpenApiServiceTest {
                 .thenThrow(new FailedRecordingUnitSaveException("fail"));
 
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
-        request.setActionUnitId("5");
+        request.setProjectId("5");
         request.setRecordingUnitTypeConceptId(42L);
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))

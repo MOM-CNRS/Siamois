@@ -10,8 +10,6 @@ import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceLightResource;
-import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectLocalisation;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceCounts;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceLinks;
@@ -19,17 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.TreeSet;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class ProjectResponseMapper {
-
-    private final ConceptResourceIdentifierMapper conceptResourceIdentifierMapper;
-    private final ConceptMapper conceptMapper;
-    private final LabelService labelService;
 
     public ProjectResource toResource(AccessibleProjectForApi row) {
         return toResource(row, "fr");
@@ -48,10 +40,7 @@ public class ProjectResponseMapper {
         }
         r.setName(dto.getName());
         r.setIdentifier(dto.getIdentifier());
-/*        r.setRecordingUnitIdentifierFormat(dto.getRecordingUnitIdentifierFormat());
-        r.setMaxRecordingUnitCode(dto.getMaxRecordingUnitCode());
-        r.setMinRecordingUnitCode(dto.getMinRecordingUnitCode());
-        r.setRecordingUnitIdentifierLang(dto.getRecordingUnitIdentifierLang());*/
+
         r.setFullIdentifier(dto.getFullIdentifier());
 
         r.setBeginDate(dto.getBeginDate());
@@ -81,73 +70,7 @@ public class ProjectResponseMapper {
         return r;
     }
 
-    /**
-     * Utilise l'entité {@link Concept} (via {@link ConceptMapper}) : le chemin DTO→Concept du {@code ConversionService}
-     * utilisé par {@link LabelService#findLabelOf(fr.siamois.dto.entity.ConceptDTO, String)} n'est pas toujours enregistré,
-     * ce qui provoquait des 500 sur l'API REST.
-     */
-    private String resolveCategoryLabel(ConceptDTO type, String lang) {
-        try {
-            Concept concept = conceptMapper.invertConvert(type);
-            return labelService.findLabelOf(concept, lang).getLabel();
-        } catch (RuntimeException e) {
-            log.warn("Impossible de résoudre le libellé de catégorie pour le concept id={}", type.getId(), e);
-            String ext = type.getExternalId();
-            return ext != null ? "[" + ext + "]" : null;
-        }
-    }
 
-    private static ProjectLocalisation buildLocalisation(ActionUnitDTO dto) {
-        ProjectLocalisation loc = new ProjectLocalisation();
-        String principal = dto.getMainLocation() != null
-                ? formatSpatialUnitLabel(dto.getMainLocation())
-                : null;
-        loc.setCommuneOuLocalisation(principal);
-
-        TreeSet<String> ordered = new TreeSet<>();
-        if (dto.getSpatialContext() != null) {
-            for (SpatialUnitSummaryDTO su : dto.getSpatialContext()) {
-                String label = formatSpatialUnitLabel(su);
-                if (label != null && !label.isBlank()) {
-                    ordered.add(label);
-                }
-            }
-        }
-        if (principal != null && !principal.isBlank()) {
-            ordered.remove(principal);
-        }
-        loc.setLocalisationsPrecises(new ArrayList<>(ordered));
-        return loc;
-    }
-
-    /**
-     * Libellé lisible pour un lieu (nom + code métier si distinct).
-     */
-    private static String formatSpatialUnitLabel(SpatialUnitSummaryDTO su) {
-        if (su == null) {
-            return null;
-        }
-        String name = su.getName();
-        String code = su.getCode();
-        boolean hasName = name != null && !name.isBlank();
-        boolean hasCode = code != null && !code.isBlank();
-        if (!hasName) {
-            return hasCode ? code.trim() : null;
-        }
-        if (hasCode && !code.trim().equalsIgnoreCase(name.trim())) {
-            return name.trim() + " (" + code.trim() + ")";
-        }
-        return name.trim();
-    }
-
-    private static PlaceResourceIdentifier toPlaceIdentifier(SpatialUnitSummaryDTO su) {
-        PlaceResourceIdentifier p = new PlaceResourceIdentifier();
-        p.setResourceType("places");
-        if (su.getId() != null) {
-            p.setId(String.valueOf(su.getId()));
-        }
-        return p;
-    }
 
     private static PlaceLightResource toPlaceLight(SpatialUnitSummaryDTO su) {
         PlaceLightResource p = new PlaceLightResource();

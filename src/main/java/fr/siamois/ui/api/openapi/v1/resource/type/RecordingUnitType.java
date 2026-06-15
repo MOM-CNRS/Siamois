@@ -1,7 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.type;
 
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

@@ -1,7 +1,7 @@
 package fr.siamois.ui.api.openapi.v1;
 
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;

@@ -1,7 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsData;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
