@@ -146,8 +146,7 @@ class RecordingUnitsControllerApiTest {
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,
-                recordingUnitOpenApiService,
-                documentWriteOpenApiService);
+                recordingUnitOpenApiService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())

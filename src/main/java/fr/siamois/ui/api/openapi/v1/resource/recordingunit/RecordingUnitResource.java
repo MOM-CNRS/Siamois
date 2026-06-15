@@ -22,11 +22,12 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
     private String projectId;
     private String typeId;
 
-    @Schema(description = "Géométrie GeoJSON de l'UE — à la racine, hors du formulaire")
+    @Schema(description = "Géométrie GeoJSON de l'UE.")
     @Nullable
     private GeometryDTO geom;
 
     @Schema(description = "Valeurs de tous les champs formulaire (système et custom), indexées par fieldId. "
-            + "Chaque entrée embarque sa définition (label, answerType, hint).")
+            + "Chaque entrée embarque sa définition (label, answerType, hint, etc.).")
     private Map<String, FieldAnswer> answers;
+
 }

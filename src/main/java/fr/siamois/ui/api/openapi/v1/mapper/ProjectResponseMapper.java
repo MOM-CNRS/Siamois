@@ -87,7 +87,8 @@ public class ProjectResponseMapper {
             return null;
         }
         ResolvedConceptResource v = new ResolvedConceptResource();
-        v.setResolvedLabel(""); // todo : fetch proper label. probably pass conceptlabeldto instead of
+        v.setResolvedLabel("");
+        // todo : fetch proper label. probably pass conceptlabeldto instead of
         // conceptdto to this
         // method
         v.setId(String.valueOf(concept.getId()));

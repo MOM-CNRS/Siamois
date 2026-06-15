@@ -31,9 +31,7 @@ public class RecordingUnitChildrenControllerApi {
 
     private final ProjectApiService projectApiService;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
-    private final DocumentWriteOpenApiService documentWriteOpenApiService;
-
-
+    
 
     @GetMapping("/{id}/children")
     @Operation(

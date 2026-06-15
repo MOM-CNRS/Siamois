@@ -118,7 +118,7 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "409", description = "Suppression impossible (mobiliers, études ou UE filles)"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<Void> deleteByNumericId(
+    public ResponseEntity<Void> delete(
             @Parameter(description = "Identifiant numérique recording_unit_id.", example = "42")
             @PathVariable("id") long id,
             @Parameter(description = "Langue pour le contrôle d'autorisation (UserInfo).")
@@ -134,7 +134,7 @@ public class RecordingUnitsControllerApi {
             summary = "Créer une unité d'enregistrement",
             description = "Crée une UE sur un projet avec un type (concept). "
                     + "Les valeurs sont passées dans `answers` (clés = fieldId). "
-                    + "Le formulaire effectif dépend du type d'UE et de l'institution du projet."
+                    + "Le formulaire effectif dépend du type d'UE et du projet."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Créée"),
@@ -173,8 +173,8 @@ public class RecordingUnitsControllerApi {
     })
     public ResponseEntity<RecordingUnitResponse> patchRecordingUnit(
             @Parameter(
-                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
-                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id)",
+                    schema = @Schema(type = "string", example = "2")
             )
             @PathVariable("id") String id,
             @RequestBody RecordingUnitPatchRequest body,

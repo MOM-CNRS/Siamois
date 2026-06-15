@@ -40,7 +40,6 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.*;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitFormFieldApi;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.FieldAnswer;
 import fr.siamois.ui.form.dto.FormUiDto;
