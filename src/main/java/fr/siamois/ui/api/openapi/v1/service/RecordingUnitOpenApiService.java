@@ -136,16 +136,16 @@ public class RecordingUnitOpenApiService {
                 values = new java.util.ArrayList<>(list);
                 value = null;
             }
-            out.put(e.getKey(), new FieldAnswer(
+            FieldResource fieldResource = new FieldResource(
                     String.valueOf(f.fieldId()),
+                    "fields",
                     f.label(),
                     f.answerType(),
                     f.hint(),
                     f.isSystemField(),
-                    f.valueBinding(),
-                    value,
-                    values
-            ));
+                    f.valueBinding()
+            );
+            out.put(e.getKey(), new FieldAnswer(fieldResource, value, values));
         }
         return out;
     }
