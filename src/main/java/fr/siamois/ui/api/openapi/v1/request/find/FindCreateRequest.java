@@ -15,7 +15,7 @@ import java.util.Map;
 public class FindCreateRequest {
 
     @Schema(
-            description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+            description = "Clé d'UE : identifiant numérique (recording_unit_id).",
             example = "INST-PROJ-UE42",
             requiredMode = Schema.RequiredMode.REQUIRED
     )

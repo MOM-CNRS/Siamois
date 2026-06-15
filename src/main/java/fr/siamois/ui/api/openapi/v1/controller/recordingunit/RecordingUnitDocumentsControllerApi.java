@@ -51,7 +51,7 @@ public class RecordingUnitDocumentsControllerApi {
     })
     public ResponseEntity<DocumentResourceResponse> createRecordingUnitDocument(
             @Parameter(
-                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) .",
                     schema = @Schema(type = "string", example = "INST-PROJ-UE42")
             )
             @PathVariable("id") String id,

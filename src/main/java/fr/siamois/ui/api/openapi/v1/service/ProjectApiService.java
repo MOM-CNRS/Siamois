@@ -183,11 +183,6 @@ public class ProjectApiService {
         shell.setType(typeDto);
         shell.setSpatialContext(new LinkedHashSet<>());
 
-        if (request.getSpatialContextIds() != null) {
-            ProjectPatchRequest spatialPatch = new ProjectPatchRequest();
-            spatialPatch.setSpatialContextIds(request.getSpatialContextIds());
-            applySpatialContextPatch(shell, institution, spatialPatch);
-        }
 
 /*        recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
                 shell, request.getAdditionalValues(), caller.person(), lang);*/
@@ -285,31 +280,12 @@ public class ProjectApiService {
     }
 
     private void applySpatialContextPatch(ActionUnitDTO dto, InstitutionDTO projectInstitution, ProjectPatchRequest patch) {
-        if (patch.getSpatialContextIds() == null) {
-            return;
-        }
+
         if (projectInstitution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         long orgId = projectInstitution.getId();
         LinkedHashSet<SpatialUnitSummaryDTO> resolved = new LinkedHashSet<>();
-        for (String spatialUnitId : patch.getSpatialContextIds()) {
-            if (spatialUnitId == null) {
-                continue;
-            }
-            SpatialUnitDTO place;
-            try {
-                place = spatialUnitService.findById(parseLong(spatialUnitId));
-            } catch (SpatialUnitNotFoundException e) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lieu introuvable : " + spatialUnitId, e);
-            }
-            InstitutionDTO placeOrg = place.getCreatedByInstitution();
-            if (placeOrg == null || placeOrg.getId() == null || !Objects.equals(placeOrg.getId(), orgId)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Le lieu " + spatialUnitId + " n'appartient pas à l'organisation du projet");
-            }
-            resolved.add(new SpatialUnitSummaryDTO(place));
-        }
         dto.setSpatialContext(resolved);
     }
 

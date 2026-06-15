@@ -1,6 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.resource.document;
 
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

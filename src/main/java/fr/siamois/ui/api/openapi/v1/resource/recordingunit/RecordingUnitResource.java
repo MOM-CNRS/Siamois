@@ -35,7 +35,7 @@ public class RecordingUnitResource
     private GeometryDTO geom;
 
     private ResolvedConceptResource type;
-    private List<PersonResourceIdentifier> author;
+    private PersonResourceIdentifier author;
     private List<PersonResourceIdentifier> contributors;
 
     private PlaceResourceIdentifier place;

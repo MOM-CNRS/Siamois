@@ -1,7 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.api.openapi.v1.generic.mapper.RelationshipCountOnlyMapper;
+
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InjectionStrategy;
@@ -14,7 +14,6 @@ import org.springframework.core.convert.converter.Converter;
         ConversionServiceAdapter.class,
         ConceptResourceIdentifierMapper.class,
         PersonResourceIdentifierMapper.class,
-        RelationshipCountOnlyMapper.class,
         SpatialUnitPlaceRelationshipMapper.class
 },
         componentModel = MappingConstants.ComponentModel.SPRING,
@@ -23,8 +22,6 @@ public interface RecordingUnitResponseMapper extends Converter<RecordingUnitDTO,
         RecordingUnitResource> {
 
     @Mapping(target = "resourceType", constant = "recording-units")
-    @Mapping(target = "specimen", source = "specimenCount", qualifiedByName = "countOnly")
-    @Mapping(target = "stratigraphicRelationships", source = "relationshipCount", qualifiedByName = "countOnly")
     @Mapping(target = "author", source = "author", qualifiedByName = "toAuthorRelationship")
     @Mapping(target = "place", source = "spatialUnit", qualifiedByName = "spatialUnitToPlaceRelationship")
     RecordingUnitResource convert(RecordingUnitDTO recordingUnitDTO);
