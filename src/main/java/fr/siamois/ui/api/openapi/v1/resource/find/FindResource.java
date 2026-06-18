@@ -40,7 +40,5 @@ public class FindResource extends FindResourceIdentifier {
             + "Chaque entrée embarque sa définition (label, answerType, hint, etc.).")
     private Map<String, FieldAnswer> answers;
 
-    @Schema(description = "Suggested form, if requested by API consumer")
-    private FormResource suggestedForm;
 
 }

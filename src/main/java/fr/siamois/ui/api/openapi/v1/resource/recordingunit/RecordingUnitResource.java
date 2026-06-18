@@ -33,9 +33,6 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
             + "Chaque entrée embarque sa définition (label, answerType, hint, etc.).")
     private Map<String, FieldAnswer> answers;
 
-    @Schema(description = "Suggested form, if requested by API consumer")
-    private FormResource suggestedForm;
-
     @JsonProperty("_counts")
     private RecordingUnitResourceCounts count;
 
