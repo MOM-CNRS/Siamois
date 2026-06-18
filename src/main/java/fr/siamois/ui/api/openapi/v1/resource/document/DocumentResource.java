@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-public class ProjectDocumentResource extends DocumentResourceIdentifier {
+public class DocumentResource extends DocumentResourceIdentifier {
 
     private String title;
     private String description;

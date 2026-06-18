@@ -2,9 +2,9 @@ package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitHierarchyLinkRequest;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitChildrenData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitChildrenResponse;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitRelationsData;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -22,6 +22,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/recording-units")
@@ -45,17 +47,17 @@ public class RecordingUnitChildrenControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<RecordingUnitChildrenResponse> getChildren(
+    public ResponseEntity<RecordingUnitListResponse> getChildren(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique",
-                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+                    schema = @Schema(type = "string", example = "2")
             )
             @PathVariable("id") String id) {
-
+        // todo : add pagination and meta counts
         ProjectApiCaller caller = projectApiService.requireCaller();
-        RecordingUnitChildrenData data = recordingUnitOpenApiService.buildRecordingUnitChildren(
+        List<RecordingUnitResource> data = recordingUnitOpenApiService.buildRecordingUnitChildren(
                 id, caller.accessibleInstitutionIds());
-        return ResponseEntity.ok(new RecordingUnitChildrenResponse(data));
+        return ResponseEntity.ok(new RecordingUnitListResponse(data, null));
     }
 
     @PostMapping(value = "/{id}/children", consumes = MediaType.APPLICATION_JSON_VALUE)

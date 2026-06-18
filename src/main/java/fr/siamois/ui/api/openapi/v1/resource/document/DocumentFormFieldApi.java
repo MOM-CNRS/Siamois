@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.response.document;
+package fr.siamois.ui.api.openapi.v1.resource.document;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

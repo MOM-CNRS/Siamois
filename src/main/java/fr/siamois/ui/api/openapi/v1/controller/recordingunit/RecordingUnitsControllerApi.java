@@ -82,14 +82,18 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     public ResponseEntity<RecordingUnitResponse> getById(
-            @Parameter(
+            @PathVariable @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
                     schema = @Schema(type = "string", example = "12")
-            )
-            @PathVariable("id") String id,
+            ) String id,
             @Parameter(
                     description = "Compteurs optionnels à inclure (ex. specimen).",
                     schema = @Schema(type = "array", allowableValues = {"specimen"}),
+                    in = ParameterIn.QUERY
+            )
+            @RequestParam(required = false) Boolean includeSuggestedForm,
+            @Parameter(
+                    description = "Inclut le formulaire suggerer et son layout si true.",
                     in = ParameterIn.QUERY
             )
             @RequestParam(required = false) List<String> counts,
@@ -98,6 +102,7 @@ public class RecordingUnitsControllerApi {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        // todo : include form only if requested
         RecordingUnitResource resource = recordingUnitOpenApiService.buildMobileDetail(
                 id, caller.person(), caller.accessibleInstitutionIds(), counts, lang);
         return ResponseEntity.ok(new RecordingUnitResponse(resource));

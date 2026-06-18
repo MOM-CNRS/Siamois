@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 
+import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -21,7 +22,7 @@ public class RecordingUnitCreateRequest {
     @Schema(description = "Identifiant du concept de type d'UE (concept_id)", example = "42", requiredMode = Schema.RequiredMode.REQUIRED)
     private String typeId;
 
-    @Schema(description = "Valeurs par fieldId. Scalaires via 'value', multi-valeurs via 'values'.")
+    @Schema(description = "Valeurs par fieldId")
     private Map<String, AnswerInput> answers = new HashMap<>();
 
     public Map<String, Object> getFieldAnswers() {

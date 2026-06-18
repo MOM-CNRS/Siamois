@@ -306,7 +306,7 @@ public class RecordingUnitOpenApiService {
 
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
         if (customForm == null) {
-            return new RecordingUnitCreateFormData(typeDto, null, Map.of(), Map.of());
+            return new RecordingUnitCreateFormData(typeDto, null, Map.of());
         }
 
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
@@ -326,7 +326,7 @@ public class RecordingUnitOpenApiService {
                         shell, fieldSource, "création UE", typeDto.getId(), locale));
         Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
 
-        return new RecordingUnitCreateFormData(typeDto, formBundle, fields, vocabs);
+        return new RecordingUnitCreateFormData(typeDto, formBundle, fields);
     }
 
     /**
@@ -580,11 +580,12 @@ public class RecordingUnitOpenApiService {
     }
 
     @Transactional(readOnly = true)
-    public RecordingUnitChildrenData buildRecordingUnitChildren(String recordingUnitKey,
+    public List<RecordingUnitResource> buildRecordingUnitChildren(String recordingUnitKey,
                                                                 Set<Long> accessibleInstitutionIds) {
         List<RecordingUnitSummaryDTO> children =
                 recordingUnitService.findChildrenForAccessibleRecordingUnit(recordingUnitKey, accessibleInstitutionIds);
-        return new RecordingUnitChildrenData(children);
+        // todo : cast dto to recording unit resource list
+        return new ArrayList<>();
     }
 
     @Transactional

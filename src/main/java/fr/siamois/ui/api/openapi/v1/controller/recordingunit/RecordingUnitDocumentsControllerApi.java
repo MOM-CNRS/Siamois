@@ -1,10 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
-import fr.siamois.ui.api.openapi.v1.response.document.DocumentResourceResponse;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitDocumentsData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitDocumentsResponse;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
+import fr.siamois.ui.api.openapi.v1.response.document.DocumentListResponse;
+import fr.siamois.ui.api.openapi.v1.response.document.DocumentResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -49,7 +48,7 @@ public class RecordingUnitDocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE ou concept introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<DocumentResourceResponse> createRecordingUnitDocument(
+    public ResponseEntity<DocumentResponse> createRecordingUnitDocument(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) .",
                     schema = @Schema(type = "string", example = "INST-PROJ-UE42")
@@ -68,7 +67,7 @@ public class RecordingUnitDocumentsControllerApi {
         var resource = documentWriteOpenApiService.createForRecordingUnit(
                 caller, id, title, description, natureConceptId, scaleConceptId, formatConceptId, file, lang);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new DocumentResourceResponse(resource));
+                .body(new DocumentResponse(resource));
     }
 
 
@@ -86,16 +85,17 @@ public class RecordingUnitDocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<RecordingUnitDocumentsResponse> getDocuments(
+    public ResponseEntity<DocumentListResponse> getDocuments(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
                     schema = @Schema(type = "string", example = "INST-PROJ-UE42")
             )
             @PathVariable("id") String id) {
-
+        // todo : add pagination
         ProjectApiCaller caller = projectApiService.requireCaller();
-        List<ProjectDocumentResource> documents = projectApiService.listDocumentsForAccessibleRecordingUnit(caller, id);
-        return ResponseEntity.ok(new RecordingUnitDocumentsResponse(new RecordingUnitDocumentsData(documents)));
+        List<DocumentResource> documents = projectApiService.listDocumentsForAccessibleRecordingUnit(caller, id);
+        // todo : add meta counts
+        return ResponseEntity.ok(new DocumentListResponse(documents, null));
     }
 
 

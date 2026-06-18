@@ -7,7 +7,7 @@ import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.mapper.ConceptMapper;
-import fr.siamois.ui.api.openapi.v1.response.document.DocumentFormData;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentFormData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

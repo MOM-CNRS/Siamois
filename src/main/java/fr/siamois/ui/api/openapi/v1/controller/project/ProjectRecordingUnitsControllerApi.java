@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,6 +48,11 @@ public class ProjectRecordingUnitsControllerApi {
     })
     public ResponseEntity<RecordingUnitListResponse> getList(
             @PathVariable("id") String id,
+            @RequestParam(required = false) Boolean includeSuggestedForm,
+            @Parameter(
+                    description = "Inclut le formulaire suggeré et son layout si true.",
+                    in = ParameterIn.QUERY
+            )
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "10") int limit,
             @Parameter(description = "Tri, ex. fullIdentifier:asc ou creationTime:desc")
@@ -55,7 +61,7 @@ public class ProjectRecordingUnitsControllerApi {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForProject(caller, id, offset, limit, sort);
-
+        // todo : include suggested forms in response only if requested
         List<RecordingUnitResource> resources = page.getContent().stream()
                 .map(recordingUnitResourceMapper::convert)
                 .toList();

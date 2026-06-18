@@ -28,7 +28,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
@@ -559,7 +559,7 @@ class ProjectControllerApiTest {
         Document doc = mock(Document.class);
         when(documentService.findForActionUnit(au)).thenReturn(List.of(doc));
 
-        ProjectDocumentResource dr = new ProjectDocumentResource();
+        DocumentResource dr = new DocumentResource();
         dr.setResourceType("documents");
         dr.setId("100");
         dr.setTitle("Plan de fouille");

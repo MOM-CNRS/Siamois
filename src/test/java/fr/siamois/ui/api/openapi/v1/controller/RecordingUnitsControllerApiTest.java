@@ -27,7 +27,7 @@ import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitChildrenData;
@@ -733,7 +733,7 @@ class RecordingUnitsControllerApiTest {
         Document doc = mock(Document.class);
         when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of(doc));
 
-        ProjectDocumentResource dr = new ProjectDocumentResource();
+        DocumentResource dr = new DocumentResource();
         dr.setResourceType("documents");
         dr.setId("100");
         dr.setTitle("Photo de coupe");
@@ -819,11 +819,11 @@ class RecordingUnitsControllerApiTest {
         when(doc7.getId()).thenReturn(7L);
         when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of(doc30, doc7));
 
-        ProjectDocumentResource r30 = new ProjectDocumentResource();
+        DocumentResource r30 = new DocumentResource();
         r30.setResourceType("documents");
         r30.setId("30");
         r30.setTitle("second");
-        ProjectDocumentResource r7 = new ProjectDocumentResource();
+        DocumentResource r7 = new DocumentResource();
         r7.setResourceType("documents");
         r7.setId("7");
         r7.setTitle("first");

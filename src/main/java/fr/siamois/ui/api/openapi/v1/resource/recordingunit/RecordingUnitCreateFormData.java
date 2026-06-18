@@ -22,9 +22,8 @@ public record RecordingUnitCreateFormData(
         FormResource form,
 
         @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")
-        Map<String, RecordingUnitFormFieldApi> fields,
+        Map<String, RecordingUnitFormFieldApi> fields
 
-        @Schema(description = "Listes de concepts possibles par field_code (champs SELECT_ONE_FROM_FIELD_CODE)")
-        Map<String, List<ConceptAutocompleteDTO>> vocabulariesByFieldCode
+        // ne pas retourner les concepts ici, utiliser les endpoints dediés
 ) {
 }

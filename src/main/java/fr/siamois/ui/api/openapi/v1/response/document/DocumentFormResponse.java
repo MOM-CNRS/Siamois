@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.response.document;
 
 import fr.siamois.ui.api.openapi.v1.generic.response.Response;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentFormData;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 

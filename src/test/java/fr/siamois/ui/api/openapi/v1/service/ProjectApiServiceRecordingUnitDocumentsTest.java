@@ -16,7 +16,7 @@ import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,16 +105,16 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
         when(docLowId.getId()).thenReturn(7L);
         when(documentService.findForRecordingUnit(same(ru))).thenReturn(List.of(docHighId, docLowId));
 
-        ProjectDocumentResource rLow = new ProjectDocumentResource();
+        DocumentResource rLow = new DocumentResource();
         rLow.setId("7");
-        ProjectDocumentResource rHigh = new ProjectDocumentResource();
+        DocumentResource rHigh = new DocumentResource();
         rHigh.setId("30");
         when(projectDocumentOpenApiMapper.toResource(same(docLowId))).thenReturn(rLow);
         when(projectDocumentOpenApiMapper.toResource(same(docHighId))).thenReturn(rHigh);
 
-        List<ProjectDocumentResource> out = projectApiService.listDocumentsForAccessibleRecordingUnit(caller(), "UE-KEY");
+        List<DocumentResource> out = projectApiService.listDocumentsForAccessibleRecordingUnit(caller(), "UE-KEY");
 
-        assertThat(out).extracting(ProjectDocumentResource::getId).containsExactly("7", "30");
+        assertThat(out).extracting(DocumentResource::getId).containsExactly("7", "30");
         verify(recordingUnitService).findAccessibleRecordingUnitByKey("UE-KEY", SCOPE, null);
         verify(documentService).findForRecordingUnit(ru);
     }
@@ -126,7 +126,7 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("1"), eq(SCOPE), isNull())).thenReturn(ru);
         when(documentService.findForRecordingUnit(same(ru))).thenReturn(List.of());
 
-        List<ProjectDocumentResource> out = projectApiService.listDocumentsForAccessibleRecordingUnit(caller(), "1");
+        List<DocumentResource> out = projectApiService.listDocumentsForAccessibleRecordingUnit(caller(), "1");
 
         assertThat(out).isEmpty();
     }

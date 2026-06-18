@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 
+import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

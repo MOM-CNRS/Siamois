@@ -2,7 +2,7 @@ package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.mapper.ConceptMapper;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,8 +14,8 @@ public class ProjectDocumentOpenApiMapper {
     private final ConceptMapper conceptMapper;
     private final ConceptResourceIdentifierMapper conceptResourceIdentifierMapper;
 
-    public ProjectDocumentResource toResource(Document doc) {
-        ProjectDocumentResource r = new ProjectDocumentResource();
+    public DocumentResource toResource(Document doc) {
+        DocumentResource r = new DocumentResource();
         r.setResourceType("documents");
         r.setId(doc.getId() == null ? null : String.valueOf(doc.getId()));
         r.setTitle(doc.getTitle());

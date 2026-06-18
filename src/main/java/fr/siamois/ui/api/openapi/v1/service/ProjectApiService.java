@@ -6,7 +6,6 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
-import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -24,7 +23,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.RequiredArgsConstructor;
@@ -322,7 +321,7 @@ public class ProjectApiService {
      * Documents rattachés au projet (unité d'action) via la table {@code action_unit_document}.
      */
     @Transactional(readOnly = true)
-    public List<ProjectDocumentResource> listDocumentsForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
+    public List<DocumentResource> listDocumentsForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
         return toSortedDocumentResources(documentService.findForActionUnit(row.actionUnit()));
     }
@@ -354,13 +353,13 @@ public class ProjectApiService {
      * Documents rattachés à une UE via la table {@code recording_unit_document}.
      */
     @Transactional(readOnly = true)
-    public List<ProjectDocumentResource> listDocumentsForAccessibleRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
+    public List<DocumentResource> listDocumentsForAccessibleRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         return toSortedDocumentResources(documentService.findForRecordingUnit(ru));
     }
 
-    private List<ProjectDocumentResource> toSortedDocumentResources(List<Document> docs) {
+    private List<DocumentResource> toSortedDocumentResources(List<Document> docs) {
         return docs.stream()
                 .sorted(Comparator.comparing(Document::getId, Comparator.nullsLast(Long::compareTo)))
                 .map(projectDocumentOpenApiMapper::toResource)

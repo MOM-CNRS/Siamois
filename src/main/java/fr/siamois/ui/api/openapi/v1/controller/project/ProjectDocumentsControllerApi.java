@@ -1,10 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
-import fr.siamois.ui.api.openapi.v1.response.document.DocumentResourceResponse;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectDocumentsData;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectDocumentsResponse;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
+import fr.siamois.ui.api.openapi.v1.response.document.DocumentListResponse;
+import fr.siamois.ui.api.openapi.v1.response.document.DocumentResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -47,7 +46,7 @@ public class ProjectDocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet ou concept introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<DocumentResourceResponse> createProjectDocument(
+    public ResponseEntity<DocumentResponse> createProjectDocument(
             @PathVariable("id") String id,
             @RequestParam("title") String title,
             @RequestParam(value = "description", required = false) String description,
@@ -62,7 +61,7 @@ public class ProjectDocumentsControllerApi {
         var resource = documentWriteOpenApiService.createForProject(
                 caller, id, title, description, natureConceptId, scaleConceptId, formatConceptId, file, lang);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new DocumentResourceResponse(resource));
+                .body(new DocumentResponse(resource));
     }
 
     @GetMapping()
@@ -77,10 +76,11 @@ public class ProjectDocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<ProjectDocumentsResponse> getDocuments(@PathVariable("id") String id) {
+    public ResponseEntity<DocumentListResponse> getDocuments(@PathVariable("id") String id) {
         ProjectApiCaller caller = projectApiService.requireCaller();
-        List<ProjectDocumentResource> documents = projectApiService.listDocumentsForAccessibleProject(caller, id);
-        return ResponseEntity.ok(new ProjectDocumentsResponse(new ProjectDocumentsData(documents)));
+        // todo : add pagination
+        List<DocumentResource> documents = projectApiService.listDocumentsForAccessibleProject(caller, id);
+        return ResponseEntity.ok(new DocumentListResponse(documents, null));
     }
 
 
