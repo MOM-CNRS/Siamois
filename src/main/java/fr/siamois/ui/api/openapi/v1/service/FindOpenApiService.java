@@ -23,6 +23,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -72,7 +73,7 @@ public class FindOpenApiService {
         String recordingUnitKey = OpenApiParamIds.requireNonBlank(
                 request.getRecordingUnitId(), "recordingUnitId");
         long typeConceptId = OpenApiParamIds.parseRequiredConceptId(
-                request.getSpecimenTypeConceptId(), "specimenTypeConceptId");
+                request.getTypeId(), "specimenTypeConceptId");
 
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, accessibleInstitutionIds, null);
@@ -99,7 +100,7 @@ public class FindOpenApiService {
         shell.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
         shell.setValidated(ValidationStatus.INCOMPLETE);
 
-        Map<String, Object> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        Map<String, AnswerInput> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
 
         if (customForm == null) {
@@ -146,7 +147,7 @@ public class FindOpenApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
 
-        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        Map<String, AnswerInput> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
         if (answers.isEmpty()) {
             return findOpenApiMapper.toResource(dto);
         }
@@ -208,11 +209,11 @@ public class FindOpenApiService {
 
     private void mergeFieldAnswers(CustomFormResponseViewModel response,
                                    FieldSource fieldSource,
-                                   Map<String, Object> fieldAnswers) {
+                                   Map<String, AnswerInput> fieldAnswers) {
         if (fieldAnswers == null || fieldAnswers.isEmpty() || response.getAnswers() == null) {
             return;
         }
-        for (Map.Entry<String, Object> e : fieldAnswers.entrySet()) {
+        for (Map.Entry<String, AnswerInput> e : fieldAnswers.entrySet()) {
             mergeOneFieldAnswer(response, fieldSource, e.getKey(), e.getValue());
         }
     }

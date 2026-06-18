@@ -37,7 +37,6 @@ import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitChildr
 import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitDocumentsControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitFindsControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitParentsControllerApi;
-import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitRelationsControllerApi;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -156,14 +155,11 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitFindsControllerApi findsController = new RecordingUnitFindsControllerApi(projectApiService);
         RecordingUnitDocumentsControllerApi documentsController = new RecordingUnitDocumentsControllerApi(
                 projectApiService, documentWriteOpenApiService);
-        RecordingUnitRelationsControllerApi relationsController = new RecordingUnitRelationsControllerApi(
-                projectApiService, recordingUnitOpenApiService);
         RecordingUnitParentsControllerApi parentsController = new RecordingUnitParentsControllerApi(
                 projectApiService, recordingUnitOpenApiService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(
-                controller, childrenController, findsController, documentsController,
-                relationsController, parentsController)
+                controller, childrenController, findsController, documentsController, parentsController)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
                 .build();

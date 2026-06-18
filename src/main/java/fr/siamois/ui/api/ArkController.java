@@ -2,6 +2,7 @@ package fr.siamois.ui.api;
 
 import fr.siamois.domain.services.ark.ArkRedirectionService;
 import fr.siamois.ui.bean.RedirectBean;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +16,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/ark:/{naan}/{qualifier}")
+@Hidden
 public class ArkController {
 
     private final ArkRedirectionService arkRedirectionService;

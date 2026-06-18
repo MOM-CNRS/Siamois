@@ -163,7 +163,7 @@ class FindOpenApiServiceTest {
     void createFind_blankRecordingUnitId_throws400() {
         FindCreateRequest request = new FindCreateRequest();
         request.setRecordingUnitId("  ");
-        request.setSpecimenTypeConceptId("3");
+        request.setTypeId("3");
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -937,7 +937,7 @@ class FindOpenApiServiceTest {
     private static FindCreateRequest createRequest(String ruKey, String typeConceptId) {
         FindCreateRequest request = new FindCreateRequest();
         request.setRecordingUnitId(ruKey);
-        request.setSpecimenTypeConceptId(typeConceptId);
+        request.setTypeId(typeConceptId);
         return request;
     }
 

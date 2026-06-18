@@ -356,11 +356,12 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
         }
         ConceptDTO specimenType = specimen.getType();
+        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(specimenType, institution);
         if (specimenType == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans type");
+            return new FindFormData(null, Map.of());
         }
 
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(specimenType, institution);
+
         if (customForm == null) {
             return new FindFormData(null, Map.of());
         }

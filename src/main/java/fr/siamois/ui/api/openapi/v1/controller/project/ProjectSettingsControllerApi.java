@@ -48,7 +48,6 @@ public class ProjectSettingsControllerApi {
             @RequestParam(defaultValue = "name:asc") String sort,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         // todo : get form + identifier config for each type, including type _default
-        // form : get form for each type
         // identifier config: get action unit config, same for each type in this version (from actionUnitDTO)
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
     }
@@ -73,7 +72,7 @@ public class ProjectSettingsControllerApi {
             @RequestParam(defaultValue = "name:asc") String sort,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         // todo : get form + identifier config for each type, including type _default
-        // form : get form for each type
+        // form : get form for each type ONLY RETURN _default type for now. same for every projects.
         // identifier config: get action unit config, same for each type in this version (from actionUnitDTO)
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
     }
