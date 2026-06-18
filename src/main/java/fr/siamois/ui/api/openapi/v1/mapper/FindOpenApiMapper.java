@@ -44,18 +44,7 @@ public class FindOpenApiMapper {
             org.setId(String.valueOf(specimen.getCreatedByInstitution().getId()));
             r.setOrganization(org);
         }
-        if (specimen.getCollectors() != null && !specimen.getCollectors().isEmpty()) {
-            List<PersonResourceIdentifier> list = specimen.getCollectors().stream()
-                    .map(personResourceIdentifierMapper::convert)
-                    .toList();
-            r.setCollectors(list);
-        }
-        if (specimen.getAuthors() != null && !specimen.getAuthors().isEmpty()) {
-            List<PersonResourceIdentifier> list = specimen.getAuthors().stream()
-                    .map(personResourceIdentifierMapper::convert)
-                    .toList();
-            r.setAuthors(list);
-        }
+
         return r;
     }
 }

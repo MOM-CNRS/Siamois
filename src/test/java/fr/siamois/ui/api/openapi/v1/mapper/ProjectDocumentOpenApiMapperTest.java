@@ -99,9 +99,9 @@ class ProjectDocumentOpenApiMapperTest {
 
     DocumentResource resource = mapper.toResource(document);
 
-    assertThat(resource.getNature().getData().getId()).isEqualTo("1");
-    assertThat(resource.getScale().getData().getId()).isEqualTo("2");
-    assertThat(resource.getFormat().getData().getId()).isEqualTo("3");
+    assertThat(resource.getNature().getId()).isEqualTo("1");
+    assertThat(resource.getScale().getId()).isEqualTo("2");
+    assertThat(resource.getFormat().getId()).isEqualTo("3");
     verify(conceptMapper, times(3)).convert(any(Concept.class));
     verify(conceptResourceIdentifierMapper, times(3)).convert(any(ConceptDTO.class));
   }

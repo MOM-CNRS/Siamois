@@ -6,7 +6,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.resource.find.FindMobilierFormData;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -103,7 +103,7 @@ class FindControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
-        FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
+        FindFormData payload = new FindFormData(null, Map.of());
         when(recordingUnitOpenApiService.buildFindMobilierForm("5", personDto, Set.of(10L), "fr"))
                 .thenReturn(payload);
 
@@ -178,7 +178,7 @@ class FindControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
-        FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
+        FindFormData payload = new FindFormData(null, Map.of());
         when(recordingUnitOpenApiService.buildFindUiForm(10L, personDto, "fr"))
                 .thenReturn(payload);
 

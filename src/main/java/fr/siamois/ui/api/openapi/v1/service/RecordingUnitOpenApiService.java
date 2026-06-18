@@ -35,11 +35,11 @@ import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.*;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.*;
-import fr.siamois.ui.api.openapi.v1.resource.find.FindMobilierFormData;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -118,29 +118,11 @@ public class RecordingUnitOpenApiService {
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
+        Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(
                 userInfo, () -> buildFieldsWithFallback(entity, dto, customForm, fieldSource, locale));
 
-        resource.setAnswers(toAnswersMap(fields));
+        resource.setAnswers(fields);
         return resource;
-    }
-
-    private Map<String, FieldAnswer> toAnswersMap(Map<String, RecordingUnitFormFieldApi> fields) {
-        Map<String, FieldAnswer> out = new LinkedHashMap<>();
-        for (Map.Entry<String, RecordingUnitFormFieldApi> e : fields.entrySet()) {
-            RecordingUnitFormFieldApi f = e.getValue();
-            FieldResource fieldResource = new FieldResource(
-                    String.valueOf(f.fieldId()),
-                    "fields",
-                    f.label(),
-                    f.answerType(),
-                    f.hint(),
-                    f.isSystemField(),
-                    f.valueBinding()
-            );
-            out.put(e.getKey(), toTypedAnswer(f.answerType(), fieldResource, f.currentValue()));
-        }
-        return out;
     }
 
     private FieldAnswer toTypedAnswer(String answerType, FieldResource field, Object raw) {
@@ -283,7 +265,7 @@ public class RecordingUnitOpenApiService {
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
                 userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
         return new ProjectFormData(formBundle, fields);
     }
@@ -303,10 +285,11 @@ public class RecordingUnitOpenApiService {
         Concept typeConcept = conceptRepository.findById(recordingUnitTypeConceptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recording unit type not found"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
+        ResolvedConceptResource typeResource = toConceptResource(typeDto);
 
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
         if (customForm == null) {
-            return new RecordingUnitCreateFormData(typeDto, null, Map.of());
+            return new RecordingUnitCreateFormData(typeResource, null, Map.of());
         }
 
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
@@ -321,12 +304,10 @@ public class RecordingUnitOpenApiService {
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildCustomFormFieldsForBindTarget(
-                        shell, fieldSource, "création UE", typeDto.getId(), locale));
-        Map<String, List<ConceptAutocompleteDTO>> vocabs = loadVocabularies(fieldSource, userInfo);
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
 
-        return new RecordingUnitCreateFormData(typeDto, formBundle, fields);
+        return new RecordingUnitCreateFormData(typeResource, formBundle, fields);
     }
 
     /**
@@ -335,7 +316,7 @@ public class RecordingUnitOpenApiService {
      * Vocabulaires : {@code GET /api/v1/vocabularies}. Valeurs d'un mobilier existant : {@link #buildFindMobilierForm}.
      */
     @Transactional(readOnly = true)
-    public FindMobilierFormData buildFindUiForm(long organizationId, PersonDTO personDto, String lang) {
+    public FindFormData buildFindUiForm(long organizationId, PersonDTO personDto, String lang) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
@@ -343,7 +324,7 @@ public class RecordingUnitOpenApiService {
 
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, institution);
         if (customForm == null) {
-            return new FindMobilierFormData(null, Map.of());
+            return new FindFormData(null, Map.of());
         }
 
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
@@ -354,20 +335,20 @@ public class RecordingUnitOpenApiService {
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
                 userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
 
-        return new FindMobilierFormData(formBundle, fields);
+        return new FindFormData(formBundle, fields);
     }
 
     /**
      * Mobilier existant : layout, champs et valeurs persistées (sans vocabulaires).
      */
     @Transactional(readOnly = true)
-    public FindMobilierFormData buildFindMobilierForm(String idOrKey,
-                                                      PersonDTO personDto,
-                                                      Set<Long> accessibleInstitutionIds,
-                                                      String lang) {
+    public FindFormData buildFindMobilierForm(String idOrKey,
+                                              PersonDTO personDto,
+                                              Set<Long> accessibleInstitutionIds,
+                                              String lang) {
         SpecimenDTO specimen = specimenService.findAccessibleByKey(idOrKey, accessibleInstitutionIds)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
         InstitutionDTO institution = specimen.getCreatedByInstitution();
@@ -381,7 +362,7 @@ public class RecordingUnitOpenApiService {
 
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(specimenType, institution);
         if (customForm == null) {
-            return new FindMobilierFormData(null, Map.of());
+            return new FindFormData(null, Map.of());
         }
 
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
@@ -392,56 +373,20 @@ public class RecordingUnitOpenApiService {
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, RecordingUnitFormFieldApi> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildCustomFormFieldsForBindTarget(
-                        specimen, fieldSource, "mobilier key=" + idOrKey, specimenType.getId(), locale));
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
 
-        return new FindMobilierFormData(formBundle, fields);
-    }
-
-    private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForBindTarget(
-            RecordingUnitDTO shell,
-            FieldSource fieldSource,
-            String logContext,
-            Long typeConceptIdForLog,
-            Locale locale) {
-        return buildCustomFormFieldsForEntity(shell, fieldSource, logContext, typeConceptIdForLog, locale);
-    }
-
-    private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForBindTarget(
-            SpecimenDTO shell,
-            FieldSource fieldSource,
-            String logContext,
-            Long typeConceptIdForLog,
-            Locale locale) {
-        return buildCustomFormFieldsForEntity(shell, fieldSource, logContext, typeConceptIdForLog, locale);
-    }
-
-    private Map<String, RecordingUnitFormFieldApi> buildCustomFormFieldsForEntity(
-            Object entity,
-            FieldSource fieldSource,
-            String logContext,
-            Long typeConceptIdForLog,
-            Locale locale) {
-        try {
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, entity, fieldSource, true);
-            return toFieldsMap(response, fieldSource, locale);
-        } catch (RuntimeException ex) {
-            log.warn("Impossible d'initialiser les réponses formulaire pour {} (type concept id={}): {}",
-                    logContext, typeConceptIdForLog, ex.toString(), ex);
-            return buildFieldsMetadataOnly(fieldSource, locale);
-        }
+        return new FindFormData(formBundle, fields);
     }
 
     /**
-     * Construit les champs avec valeurs ; si le moteur de réponses échoue (type de champ non géré, données incohérentes),
-     * retourne au moins les métadonnées des champs du layout pour le mobile (sans currentValue).
+     * Construit les réponses typées avec valeurs ; si le moteur de réponses échoue, retourne des réponses sans valeur.
      */
-    private Map<String, RecordingUnitFormFieldApi> buildFieldsWithFallback(RecordingUnit entity,
-                                                                           RecordingUnitDTO dto,
-                                                                           CustomForm customForm,
-                                                                           FieldSource fieldSource,
-                                                                           Locale locale) {
+    private Map<String, FieldAnswer> buildFieldsWithFallback(RecordingUnit entity,
+                                                             RecordingUnitDTO dto,
+                                                             CustomForm customForm,
+                                                             FieldSource fieldSource,
+                                                             Locale locale) {
         try {
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
             applyPersistedCustomAnswers(entity, customForm, response, locale.getLanguage());
@@ -449,35 +394,54 @@ public class RecordingUnitOpenApiService {
         } catch (RuntimeException ex) {
             log.warn("Impossible de construire les réponses formulaire pour l'UE id={} (fallback métadonnées seules): {}",
                     dto.getId(), ex.toString(), ex);
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildNullAnswersMap(fieldSource, locale);
         }
     }
 
-    private Map<String, RecordingUnitFormFieldApi> toFieldsMap(CustomFormResponseViewModel response, FieldSource fallback, Locale locale) {
-        if (response.getAnswers() == null) return buildFieldsMetadataOnly(fallback, locale);
-        Map<String, RecordingUnitFormFieldApi> fields = new LinkedHashMap<>();
+    private Map<String, FieldAnswer> toFieldsMap(CustomFormResponseViewModel response, FieldSource fallback, Locale locale) {
+        if (response.getAnswers() == null) return buildNullAnswersMap(fallback, locale);
+        Map<String, FieldAnswer> out = new LinkedHashMap<>();
         for (Map.Entry<CustomField, CustomFieldAnswerViewModel> e : response.getAnswers().entrySet()) {
             CustomField field = e.getKey();
-            fields.put(String.valueOf(field.getId()), toFieldApi(field, e.getValue(), locale));
+            FieldResource fieldResource = toFieldResource(field, locale);
+            out.put(String.valueOf(field.getId()),
+                    toTypedAnswer(answerTypeDiscriminator(field), fieldResource, formService.readAnswerValueForApi(e.getValue())));
         }
-        return fields;
+        return out;
     }
 
-    private Map<String, RecordingUnitFormFieldApi> buildFieldsMetadataOnly(FieldSource fieldSource, Locale locale) {
-        Map<String, RecordingUnitFormFieldApi> fields = new LinkedHashMap<>();
+    private Map<String, FieldAnswer> buildNullAnswersMap(FieldSource fieldSource, Locale locale) {
+        Map<String, FieldAnswer> out = new LinkedHashMap<>();
         for (CustomField field : fieldSource.getAllFields()) {
             if (field == null || field.getId() == null) continue;
-            fields.put(String.valueOf(field.getId()), toFieldApi(field, null, locale));
+            FieldResource fieldResource = toFieldResource(field, locale);
+            out.put(String.valueOf(field.getId()), toTypedAnswer(answerTypeDiscriminator(field), fieldResource, null));
+        }
+        return out;
+    }
+
+    private Map<String, FieldResource> buildFieldsMetadataOnly(FieldSource fieldSource, Locale locale) {
+        Map<String, FieldResource> fields = new LinkedHashMap<>();
+        for (CustomField field : fieldSource.getAllFields()) {
+            if (field == null || field.getId() == null) continue;
+            fields.put(String.valueOf(field.getId()), toFieldResource(field, locale));
         }
         return fields;
     }
 
-    private RecordingUnitFormFieldApi toFieldApi(CustomField field, CustomFieldAnswerViewModel answer, Locale locale) {
-        String fieldCode = field instanceof CustomFieldSelectOneFromFieldCode f ? f.getFieldCode() : null;
+    private FieldResource toFieldResource(CustomField field, Locale locale) {
         String label = langService.resolveMessage(field.getLabel(), locale);
         String hint = langService.resolveMessage(field.getHint(), locale);
-        return new RecordingUnitFormFieldApi(field.getId(), answerTypeDiscriminator(field), label, hint, field.getValueBinding(),
-                field.getIsSystemField(), fieldCode, formService.readAnswerValueForApi(answer));
+        return new FieldResource(String.valueOf(field.getId()), "fields", label, answerTypeDiscriminator(field), hint,
+                field.getIsSystemField(), field.getValueBinding());
+    }
+
+    private static ResolvedConceptResource toConceptResource(ConceptDTO concept) {
+        ResolvedConceptResource r = new ResolvedConceptResource();
+        r.setResourceType("concepts");
+        r.setId(String.valueOf(concept.getId()));
+        r.setResolvedLabel(concept.getExternalId() != null ? concept.getExternalId() : "");
+        return r;
     }
 
     private static String answerTypeDiscriminator(CustomField field) {

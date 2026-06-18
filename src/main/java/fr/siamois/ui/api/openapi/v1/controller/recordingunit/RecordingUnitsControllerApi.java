@@ -88,15 +88,21 @@ public class RecordingUnitsControllerApi {
             ) String id,
             @Parameter(
                     description = "Compteurs optionnels à inclure (ex. specimen).",
-                    schema = @Schema(type = "array", allowableValues = {"specimen"}),
+                    schema = @Schema(type = "array", allowableValues = {"specimen, children, parents, documents"}),
                     in = ParameterIn.QUERY
             )
-            @RequestParam(required = false) Boolean includeSuggestedForm,
+            @RequestParam(required = false) List<String> counts,
             @Parameter(
                     description = "Inclut le formulaire suggerer et son layout si true.",
                     in = ParameterIn.QUERY
             )
-            @RequestParam(required = false) List<String> counts,
+            @RequestParam(required = false) Boolean includeSuggestedForm,
+            @Parameter(
+                    description = "Liste d'identifiant de champs dont les réponses sont à inclure dans la réponse. " +
+                            "Toutes les réponses sont envoyés si absent.",
+                    in = ParameterIn.QUERY
+            )
+            @RequestParam(required = false) List<String> includeOnlyFields,
             @Parameter(description = "Langue préférée pour les libellés (première entrée utilisée).")
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 

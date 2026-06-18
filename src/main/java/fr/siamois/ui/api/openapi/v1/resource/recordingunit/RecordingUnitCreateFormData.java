@@ -1,12 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitFormFieldApi;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,13 +14,13 @@ import java.util.Map;
 public record RecordingUnitCreateFormData(
 
         @Schema(description = "Type d'UE (concept) demandé")
-        ConceptDTO recordingUnitType,
+        ResolvedConceptResource recordingUnitType,
 
         @Schema(description = "Formulaire effectif ; absent si aucune configuration pour ce type / institution")
         FormResource form,
 
         @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")
-        Map<String, RecordingUnitFormFieldApi> fields
+        Map<String, FieldResource> fields
 
         // ne pas retourner les concepts ici, utiliser les endpoints dediés
 ) {

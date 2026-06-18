@@ -11,11 +11,11 @@ import java.util.Map;
 
 @Data
 @NoArgsConstructor
-public class RecordingUnitType {
+public class FindType {
     private ResolvedConceptResource concept;
     private String resourceId; // id of the concept for now, or _default. Might evolve if we add a type table
     private FormResource formBundle;
-    private RecordingUnitIdentifierConfig identifierConfig;
+    private FindIdentifierConfig identifierConfig;
     @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")
     Map<String, FieldResource> fields;
 }

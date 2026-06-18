@@ -86,7 +86,7 @@ class ProjectResponseMapperTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 0L, 0L);
         ProjectResource r = projectResponseMapper.toResource(row, "fr");
 
-        assertThat(r.getCategorie()).isEqualTo("Fouille programmée");
+        assertThat(r.getType().getResolvedLabel()).isEqualTo("Fouille programmée");
         verify(conceptMapper, times(2)).invertConvert(typeDto);
         verify(labelService, times(2)).findLabelOf(conceptEntity, "fr");
     }
@@ -98,7 +98,7 @@ class ProjectResponseMapperTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 0L, 0L);
         ProjectResource r = projectResponseMapper.toResource(row, "fr");
 
-        assertThat(r.getCategorie()).isEqualTo("[TYPE-EXT]");
+        assertThat(r.getType().getResolvedLabel()).isEqualTo("[TYPE-EXT]");
     }
 
     @Test
@@ -111,7 +111,7 @@ class ProjectResponseMapperTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 0L, 0L);
         ProjectResource r = projectResponseMapper.toResource(row, "en");
 
-        assertThat(r.getCategorie()).isEqualTo("Survey");
+        assertThat(r.getType().getResolvedLabel()).isEqualTo("Survey");
         verify(labelService, times(2)).findLabelOf(conceptEntity, "en");
     }
 
@@ -140,8 +140,7 @@ class ProjectResponseMapperTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 1L, 2L);
         ProjectResource r = projectResponseMapper.toResource(row, "fr");
 
-        assertThat(r.getLocalisation().getCommuneOuLocalisation()).isEqualTo("Commune A (75001)");
-        assertThat(r.getLocalisation().getLocalisationsPrecises()).containsExactly("Zone nord");
+        assertThat(r.getMainLocation().getName()).isEqualTo("Commune A (75001)");
     }
 
     @Test
@@ -157,20 +156,6 @@ class ProjectResponseMapperTest {
         verify(labelService, times(2)).findLabelOf(conceptEntity, "fr");
     }
 
-    @Test
-    void toResource_setsCodeOperationArcheologique() {
-        ActionCodeDTO ac = new ActionCodeDTO();
-        ac.setCode("OA-999");
-        dto.setPrimaryActionCode(ac);
-        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
-        ConceptLabel label = mock(ConceptLabel.class);
-        when(label.getLabel()).thenReturn("L");
-        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(label);
-
-        ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
-
-        assertThat(r.getCodeOperationArcheologique()).isEqualTo("OA-999");
-    }
 
     @Test
     void toResource_typeConcept_containsVocabularyAndLabel() {
@@ -190,41 +175,11 @@ class ProjectResponseMapperTest {
 
         ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
 
-        assertThat(r.getTypeConcept()).isNotNull();
-        assertThat(r.getTypeConcept().getVocabularyId()).isEqualTo(50L);
-        assertThat(r.getTypeConcept().getVocabularyExternalId()).isEqualTo("EXT-VOC");
-        assertThat(r.getTypeConcept().getVocabularyBaseUri()).isEqualTo("http://example/theso");
-        assertThat(r.getTypeConcept().getVocabularyTypeLabel()).isEqualTo("Thesaurus");
-        assertThat(r.getTypeConcept().getConceptId()).isEqualTo(99L);
-        assertThat(r.getTypeConcept().getDisplayLabel()).isEqualTo("Excavation");
+        assertThat(r.getType().getResolvedLabel()).isNotNull();
+        assertThat(r.getType().getId()).isEqualTo("99");
+        assertThat(r.getType().getResolvedLabel()).isEqualTo("Excavation");
     }
 
-    @Test
-    void toResource_actionCodeTypeConcept_whenPrimaryActionCodeHasType() {
-        ConceptDTO codeType = new ConceptDTO();
-        codeType.setId(3L);
-        codeType.setExternalId("CT-1");
-        ActionCodeDTO ac = new ActionCodeDTO();
-        ac.setCode("X");
-        ac.setType(codeType);
-        dto.setPrimaryActionCode(ac);
-
-        Concept codeTypeEntity = new Concept();
-        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
-        when(conceptMapper.invertConvert(codeType)).thenReturn(codeTypeEntity);
-        ConceptLabel l1 = mock(ConceptLabel.class);
-        when(l1.getLabel()).thenReturn("T1");
-        ConceptLabel l2 = mock(ConceptLabel.class);
-        when(l2.getLabel()).thenReturn("T2");
-        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(l1);
-        when(labelService.findLabelOf(codeTypeEntity, "fr")).thenReturn(l2);
-
-        ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
-
-        assertThat(r.getActionCodeTypeConcept()).isNotNull();
-        assertThat(r.getActionCodeTypeConcept().getConceptId()).isEqualTo(3L);
-        assertThat(r.getActionCodeTypeConcept().getDisplayLabel()).isEqualTo("T2");
-    }
 
     @Test
     void toResource_mainLocationCategoryConcept() {
@@ -249,8 +204,8 @@ class ProjectResponseMapperTest {
 
         ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
 
-        assertThat(r.getMainLocationCategoryConcept()).isNotNull();
-        assertThat(r.getMainLocationCategoryConcept().getConceptId()).isEqualTo(8L);
-        assertThat(r.getMainLocationCategoryConcept().getDisplayLabel()).isEqualTo("Carre");
+        assertThat(r.getMainLocation()).isNotNull();
+        assertThat(r.getMainLocation().getId()).isEqualTo(8L);
+        assertThat(r.getMainLocation().getName()).isEqualTo("Carre");
     }
 }

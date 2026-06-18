@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.response.project;
+package fr.siamois.ui.api.openapi.v1.response.project.type;
 
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListResponse;

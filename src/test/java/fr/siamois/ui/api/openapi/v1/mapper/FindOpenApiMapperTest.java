@@ -1,13 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
-import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
+import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +24,8 @@ class FindOpenApiMapperTest {
     private ConceptResourceIdentifierMapper conceptResourceIdentifierMapper;
     @Mock
     private PersonResourceIdentifierMapper personResourceIdentifierMapper;
+    @Mock
+    private ProjectResponseMapper projectResponseMapper;
 
     @InjectMocks
     private FindOpenApiMapper mapper;
@@ -34,15 +34,10 @@ class FindOpenApiMapperTest {
     void toResource_mapsCoreFieldsAndRelationships() {
         ConceptDTO type = new ConceptDTO();
         type.setId(3L);
-        ConceptResourceIdentifier typeRef = new ConceptResourceIdentifier();
-        typeRef.setId("3");
-        typeRef.setResourceType("concepts");
-        when(conceptResourceIdentifierMapper.convert(type)).thenReturn(typeRef);
-
-        PersonDTO author = new PersonDTO();
-        author.setId(7L);
-        PersonResourceIdentifier authorRef = new PersonResourceIdentifier("persons", "7");
-        when(personResourceIdentifierMapper.convert(author)).thenReturn(authorRef);
+        ResolvedConceptResource typeResource = new ResolvedConceptResource();
+        typeResource.setId("3");
+        typeResource.setResourceType("concepts");
+        when(projectResponseMapper.toConceptFieldValue(type, "")).thenReturn(typeResource);
 
         RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
         ru.setId(42L);
@@ -56,7 +51,6 @@ class FindOpenApiMapperTest {
         specimen.setType(type);
         specimen.setRecordingUnit(ru);
         specimen.setCreatedByInstitution(org);
-        specimen.setAuthors(List.of(author));
         specimen.setCollectors(List.of());
 
         FindResource r = mapper.toResource(specimen);
@@ -65,12 +59,10 @@ class FindOpenApiMapperTest {
         assertThat(r.getId()).isEqualTo("99");
         assertThat(r.getFullIdentifier()).isEqualTo("INST-UE-99");
         assertThat(r.getType()).isNotNull();
-        assertThat(r.getType().getData()).isSameAs(typeRef);
-        assertThat(r.getRecordingUnit().getData().getId()).isEqualTo("42");
-        assertThat(r.getRecordingUnit().getData().getResourceType()).isEqualTo("recording-units");
-        assertThat(r.getOrganization().getData().getId()).isEqualTo("100");
-        assertThat(r.getAuthors().getData()).hasSize(1);
-        assertThat(r.getAuthors().getData().get(0)).isSameAs(authorRef);
+        assertThat(r.getType()).isSameAs(typeResource);
+        assertThat(r.getRecordingUnit().getId()).isEqualTo("42");
+        assertThat(r.getRecordingUnit().getResourceType()).isEqualTo("recording-units");
+        assertThat(r.getOrganization().getId()).isEqualTo("100");
         assertThat(r.getGeom()).isNull();
     }
 

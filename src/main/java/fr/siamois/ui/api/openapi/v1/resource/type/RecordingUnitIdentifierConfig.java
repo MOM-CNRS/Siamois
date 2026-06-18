@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.resource.type;
 import lombok.Data;
 
 @Data
-public class IdentifierConfig {
+public class RecordingUnitIdentifierConfig {
 
     private String recordingUnitIdentifierFormat;
     private String recordingUnitIdentifierLang;

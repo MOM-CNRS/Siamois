@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
+import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -31,6 +32,9 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
     @Schema(description = "Valeurs de tous les champs formulaire (système et custom), indexées par fieldId. "
             + "Chaque entrée embarque sa définition (label, answerType, hint, etc.).")
     private Map<String, FieldAnswer> answers;
+
+    @Schema(description = "Suggested form, if requested by API consumer")
+    private FormResource suggestedForm;
 
     @JsonProperty("_counts")
     private RecordingUnitResourceCounts count;
