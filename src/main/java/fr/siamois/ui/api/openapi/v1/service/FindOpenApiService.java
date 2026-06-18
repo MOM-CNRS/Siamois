@@ -238,16 +238,17 @@ public class FindOpenApiService {
         if (vm == null) {
             return;
         }
+        Object rawValue = value instanceof AnswerInput ai ? ai.value() : value;
         Object typed;
         try {
-            typed = coerceAnswerValue(field, value);
+            typed = coerceAnswerValue(field, rawValue);
         } catch (ResponseStatusException rex) {
             throw rex;
         } catch (RuntimeException ex) {
             log.warn("Valeur ignorée pour champ id={} ({}): {}", fieldId, field.getClass().getSimpleName(), ex.toString());
             return;
         }
-        if (typed == null && value != null) {
+        if (typed == null && rawValue != null) {
             log.debug("Valeur non convertible pour champ id={} type {}", fieldId, field.getClass().getSimpleName());
             return;
         }

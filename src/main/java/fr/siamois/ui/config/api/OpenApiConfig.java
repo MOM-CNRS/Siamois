@@ -47,7 +47,6 @@ import org.springframework.context.annotation.Configuration;
                 @Tag(name = OpenApiTags.RECORDING_UNIT, description = "Unités d'enregistrement : création, détail, relations, mobiliers, documents."),
                 @Tag(name = OpenApiTags.FIND, description = "Mobilier : formulaire, création et mise à jour."),
                 @Tag(name = OpenApiTags.DOCUMENT, description = "Fichiers et formulaires documentaires."),
-                @Tag(name = OpenApiTags.VOCABULARY, description = "Thésaurus configurés par field_code pour une organisation."),
                 @Tag(name = OpenApiTags.SPATIAL_UNIT, description = "Recherche de lieux pour l'autocomplétion (contexte spatial des projets)."),
                 @Tag(name = OpenApiTags.USER, description = "Utilisateurs rattachés à une organisation (équipes, gestionnaires).")
         },
