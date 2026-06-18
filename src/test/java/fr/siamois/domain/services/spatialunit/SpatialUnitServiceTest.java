@@ -80,6 +80,12 @@ class SpatialUnitServiceTest {
     private fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository actionUnitRepository;
 
     @Mock
+    private fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository recordingUnitRepository;
+
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.DocumentRepository documentRepository;
+
+    @Mock
     private fr.siamois.domain.services.ark.ArkService arkService;
 
     @InjectMocks
@@ -1171,6 +1177,116 @@ class SpatialUnitServiceTest {
 
         verify(spatialUnitRepository, never()).findAll(any(Specification.class));
         verify(spatialUnitRepository, never()).findAncestorClosure(any());
+    }
+
+    @Test
+    void updatePlace_success() throws SpatialUnitAlreadyExistsException {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(10L);
+        institution.setName("Org");
+        UserInfo userInfo = new UserInfo(institution, new PersonDTO(), "fr");
+
+        ConceptDTO category = new ConceptDTO();
+        category.setId(42L);
+
+        SpatialUnit existing = new SpatialUnit();
+        existing.setId(5L);
+        existing.setName("Ancien");
+
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setId(5L);
+        dto.setName("Ancien");
+        dto.setCategory(category);
+
+        when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(existing));
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(dto);
+        when(spatialUnitRepository.findByNameAndInstitution("Nouveau", 10L)).thenReturn(Optional.empty());
+        when(spatialUnitMapper.invertConvert(any(SpatialUnitDTO.class))).thenAnswer(invocation -> {
+            SpatialUnitDTO input = invocation.getArgument(0);
+            SpatialUnit unit = new SpatialUnit();
+            unit.setId(input.getId());
+            unit.setName(input.getName());
+            unit.setAddress(input.getAddress());
+            return unit;
+        });
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SpatialUnitDTO result = spatialUnitService.updatePlace(userInfo, 5L, "Nouveau", null, null);
+
+        assertThat(result.getId()).isEqualTo(5L);
+        verify(spatialUnitRepository).save(any(SpatialUnit.class));
+    }
+
+    @Test
+    void updatePlace_duplicateName_throws() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(10L);
+        institution.setName("Org");
+        UserInfo userInfo = new UserInfo(institution, new PersonDTO(), "fr");
+
+        SpatialUnit existing = new SpatialUnit();
+        existing.setId(5L);
+        SpatialUnit other = new SpatialUnit();
+        other.setId(6L);
+
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setId(5L);
+
+        when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(existing));
+        when(spatialUnitMapper.convert(existing)).thenReturn(dto);
+        when(spatialUnitRepository.findByNameAndInstitution("Doublon", 10L)).thenReturn(Optional.of(other));
+
+        assertThrows(SpatialUnitAlreadyExistsException.class,
+                () -> spatialUnitService.updatePlace(userInfo, 5L, "Doublon", null, null));
+    }
+
+    @Test
+    void deleteWhenUnused_success() {
+        SpatialUnit unit = new SpatialUnit();
+        unit.setId(5L);
+        when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(unit));
+        when(spatialUnitRepository.countChildrenByParentId(5L)).thenReturn(0L);
+        when(recordingUnitRepository.countBySpatialContext(5L)).thenReturn(0);
+        when(actionUnitRepository.countBySpatialContext(5L)).thenReturn(0);
+        when(spatialUnitRepository.countAsMainLocation(5L)).thenReturn(0L);
+        when(spatialUnitRepository.countContainersBySpatialUnit(5L)).thenReturn(0L);
+
+        spatialUnitService.deleteWhenUnused(5L);
+
+        verify(spatialUnitRepository).deleteHierarchyLinksForSpatialUnit(5L);
+        verify(actionUnitRepository).deleteSpatialContextLinksForSpatialUnit(5L);
+        verify(documentRepository).deleteAllSpatialUnitDocumentLinksBySpatialUnitId(5L);
+        verify(spatialUnitRepository).deleteById(5L);
+    }
+
+    @Test
+    void deleteWhenUnused_withChildren_throws() {
+        SpatialUnit unit = new SpatialUnit();
+        unit.setId(5L);
+        when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(unit));
+        when(spatialUnitRepository.countChildrenByParentId(5L)).thenReturn(2L);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> spatialUnitService.deleteWhenUnused(5L));
+
+        assertTrue(ex.getMessage().contains("enfants"));
+        verify(spatialUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteWhenUnused_withRecordingUnits_throws() {
+        SpatialUnit unit = new SpatialUnit();
+        unit.setId(5L);
+        when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(unit));
+        when(spatialUnitRepository.countChildrenByParentId(5L)).thenReturn(0L);
+        when(recordingUnitRepository.countBySpatialContext(5L)).thenReturn(3);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> spatialUnitService.deleteWhenUnused(5L));
+
+        assertTrue(ex.getMessage().contains("unités d'enregistrement"));
+        verify(spatialUnitRepository, never()).deleteById(anyLong());
     }
 
 }

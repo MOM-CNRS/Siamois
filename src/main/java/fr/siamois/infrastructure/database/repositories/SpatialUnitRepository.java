@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
@@ -43,6 +45,8 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
         """
     )
     List<SpatialUnit> findAllOfInstitution(Long institutionId);
+
+    Page<SpatialUnit> findByCreatedByInstitutionId(Long institutionId, Pageable pageable);
 
     @Transactional
     @Modifying
@@ -176,5 +180,16 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
             SELECT id FROM ascend
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
+
+    @Transactional
+    @Modifying
+    @Query(nativeQuery = true, value = "DELETE FROM spatial_hierarchy WHERE fk_parent_id = :spatialUnitId OR fk_child_id = :spatialUnitId")
+    void deleteHierarchyLinksForSpatialUnit(@Param("spatialUnitId") Long spatialUnitId);
+
+    @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM action_unit WHERE fk_main_location = :spatialUnitId")
+    long countAsMainLocation(@Param("spatialUnitId") Long spatialUnitId);
+
+    @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM container WHERE fk_spatial_unit_id = :spatialUnitId")
+    long countContainersBySpatialUnit(@Param("spatialUnitId") Long spatialUnitId);
 }
 

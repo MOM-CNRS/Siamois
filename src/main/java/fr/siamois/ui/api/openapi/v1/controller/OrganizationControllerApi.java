@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.*;
+import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -39,6 +40,7 @@ public class OrganizationControllerApi {
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final ProjectApiService projectApiService;
     private final OrganizationOpenApiMapper organizationOpenApiMapper;
+    private final PlaceOpenApiService placeOpenApiService;
 
     @GetMapping
     @Operation(
@@ -89,13 +91,33 @@ public class OrganizationControllerApi {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
     }
 
-    @Hidden
     @GetMapping("/{id}/places")
+    @Operation(
+            summary = "Liste des lieux d'une organisation",
+            description = "Liste paginée de toutes les unités spatiales (lieux) de l'organisation."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de pagination invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
+            @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @Tag(name = OpenApiTags.SPATIAL_UNIT)
     public ResponseEntity<PlaceListResponse> getPlaces(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+            @RequestParam(defaultValue = "50") int limit,
+            @Parameter(description = "Tri : name, id, code, creationTime ; direction asc ou desc.")
+            @RequestParam(defaultValue = "name:asc") String sort) {
+
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        PlaceListResponse body = placeOpenApiService.listByOrganization(caller, id, offset, limit, sort);
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(body.getMeta().total()))
+                .body(body);
     }
 
     @Hidden

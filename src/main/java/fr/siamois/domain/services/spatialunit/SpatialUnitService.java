@@ -23,8 +23,10 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.*;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +67,8 @@ public class SpatialUnitService implements ArkEntityService {
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     private final InstitutionMapper institutionMapper;
     private final ActionUnitRepository actionUnitRepository;
+    private final RecordingUnitRepository recordingUnitRepository;
+    private final DocumentRepository documentRepository;
     private final ConceptMapper conceptMapper;
 
     /**
@@ -110,6 +115,14 @@ public class SpatialUnitService implements ArkEntityService {
         return spatialUnits.stream()
                 .map(spatialUnitMapper::convert)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SpatialUnitDTO> findByInstitutionId(Long institutionId, int limit, int offset, Sort sort) {
+        int pageNumber = limit > 0 ? offset / limit : 0;
+        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+        return spatialUnitRepository.findByCreatedByInstitutionId(institutionId, pageable)
+                .map(spatialUnitMapper::convert);
     }
 
     /**
@@ -618,5 +631,74 @@ public class SpatialUnitService implements ArkEntityService {
                 .map(spatialUnitMapper::convert)
                 .stream()
                 .toList();
+    }
+
+    /**
+     * Met à jour un lieu existant (champs null = inchangés).
+     */
+    @Transactional
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlace(UserInfo info,
+                                      long placeId,
+                                      String newName,
+                                      ConceptDTO newCategory,
+                                      FullAddress newAddress) throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO dto = findById(placeId);
+        Long institutionId = info.getInstitution().getId();
+
+        if (newName != null) {
+            String trimmed = newName.trim();
+            Optional<SpatialUnit> existing = spatialUnitRepository.findByNameAndInstitution(trimmed, institutionId);
+            if (existing.isPresent() && !existing.get().getId().equals(placeId)) {
+                throw new SpatialUnitAlreadyExistsException(
+                        "identifier",
+                        String.format("Spatial Unit with name %s already exist in institution %s",
+                                trimmed, info.getInstitution().getName()));
+            }
+            dto.setName(trimmed);
+        }
+        if (newCategory != null) {
+            dto.setCategory(newCategory);
+        }
+        if (newAddress != null) {
+            dto.setAddress(newAddress);
+        }
+        return (SpatialUnitDTO) save(dto);
+    }
+
+    /**
+     * Supprime un lieu s'il n'est référencé par aucune autre entité métier.
+     */
+    @Transactional
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public void deleteWhenUnused(long spatialUnitId) {
+        spatialUnitRepository.findById(spatialUnitId)
+                .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + spatialUnitId));
+
+        if (spatialUnitRepository.countChildrenByParentId(spatialUnitId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le lieu possède des lieux enfants");
+        }
+
+        Integer recordingUnitCount = recordingUnitRepository.countBySpatialContext(spatialUnitId);
+        if (recordingUnitCount != null && recordingUnitCount > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le lieu est utilisé par des unités d'enregistrement");
+        }
+
+        Integer projectContextCount = actionUnitRepository.countBySpatialContext(spatialUnitId);
+        if (projectContextCount != null && projectContextCount > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le lieu est dans le contexte spatial d'un projet");
+        }
+
+        if (spatialUnitRepository.countAsMainLocation(spatialUnitId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le lieu est le lieu principal d'un projet");
+        }
+        if (spatialUnitRepository.countContainersBySpatialUnit(spatialUnitId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le lieu est utilisé par un contenant");
+        }
+
+        spatialUnitRepository.deleteHierarchyLinksForSpatialUnit(spatialUnitId);
+        actionUnitRepository.deleteSpatialContextLinksForSpatialUnit(spatialUnitId);
+        documentRepository.deleteAllSpatialUnitDocumentLinksBySpatialUnitId(spatialUnitId);
+        spatialUnitRepository.deleteById(spatialUnitId);
     }
 }
