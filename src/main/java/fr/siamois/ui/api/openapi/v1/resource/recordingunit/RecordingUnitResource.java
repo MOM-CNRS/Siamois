@@ -1,6 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -22,12 +24,18 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
     private String projectId;
     private String typeId;
 
-    @Schema(description = "Géométrie GeoJSON de l'UE.")
+    @Schema(description = "Géométrie de l'UE.")
     @Nullable
     private GeometryDTO geom;
 
     @Schema(description = "Valeurs de tous les champs formulaire (système et custom), indexées par fieldId. "
             + "Chaque entrée embarque sa définition (label, answerType, hint, etc.).")
     private Map<String, FieldAnswer> answers;
+
+    @JsonProperty("_counts")
+    private RecordingUnitResourceCounts count;
+
+    @JsonProperty("_links")
+    private RecordingUnitResourceLinks links;
 
 }

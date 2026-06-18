@@ -35,13 +35,13 @@ import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
-import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.*;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.*;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.mobile.RecordingUnitFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.FieldAnswer;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -129,13 +129,6 @@ public class RecordingUnitOpenApiService {
         Map<String, FieldAnswer> out = new LinkedHashMap<>();
         for (Map.Entry<String, RecordingUnitFormFieldApi> e : fields.entrySet()) {
             RecordingUnitFormFieldApi f = e.getValue();
-            Object raw = f.currentValue();
-            List<Object> values = null;
-            Object value = raw;
-            if (raw instanceof List<?> list) {
-                values = new java.util.ArrayList<>(list);
-                value = null;
-            }
             FieldResource fieldResource = new FieldResource(
                     String.valueOf(f.fieldId()),
                     "fields",
@@ -145,9 +138,96 @@ public class RecordingUnitOpenApiService {
                     f.isSystemField(),
                     f.valueBinding()
             );
-            out.put(e.getKey(), new FieldAnswer(fieldResource, value, values));
+            out.put(e.getKey(), toTypedAnswer(f.answerType(), fieldResource, f.currentValue()));
         }
         return out;
+    }
+
+    private FieldAnswer toTypedAnswer(String answerType, FieldResource field, Object raw) {
+        return switch (answerType) {
+            case "TEXT" -> new TextFieldAnswer(answerType, field, raw instanceof String s ? s : null);
+            case "INTEGER" -> new IntegerFieldAnswer(answerType, field, raw instanceof Integer i ? i : null);
+            case "DATETIME" -> new DateFieldAnswer(answerType, field, raw instanceof OffsetDateTime dt ? dt : null);
+            case "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
+                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_ACTION_CODE", "SELECT_ONE_RECORDING_UNIT",
+                 "SELECT_ADDRESS", "SELECT_ONE" ->
+                    new SelectOneFieldAnswer(answerType, field, toResourceRef(answerType, raw));
+            case "SELECT_MULTIPLE_PERSON", "SELECT_MULTIPLE_FROM_FIELD_CODE",
+                 "SELECT_MULTIPLE_RECORDING_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT_TREE",
+                 "SELECT_MULTIPLE_SPECIMEN", "SELECT_MULTIPLE_CONTAINER",
+                 "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE" ->
+                    new SelectManyFieldAnswer(answerType, field, toResourceRefList(answerType, raw));
+            case "MEASUREMENT" -> new MeasurementFieldAnswer(answerType, field, toMeasurementRef(raw));
+            default -> new TextFieldAnswer(answerType, field, raw != null ? raw.toString() : null);
+        };
+    }
+
+    private ResourceRef toResourceRef(String answerType, Object raw) {
+        if (raw == null) return null;
+        return switch (answerType) {
+            case "SELECT_ONE_FROM_FIELD_CODE" -> {
+                if (raw instanceof ConceptDTO c)
+                    yield new ResourceRef(String.valueOf(c.getId()), "concept", c.getExternalId());
+                yield null;
+            }
+            case "SELECT_ONE_PERSON" -> {
+                if (raw instanceof PersonDTO p)
+                    yield new ResourceRef(String.valueOf(p.getId()), "person", p.displayName());
+                yield null;
+            }
+            case "SELECT_ONE_ACTION_UNIT" -> {
+                if (raw instanceof ActionUnitDTO a)
+                    yield new ResourceRef(String.valueOf(a.getId()), "action-unit", a.getName());
+                yield null;
+            }
+            case "SELECT_ONE_SPATIAL_UNIT" -> {
+                if (raw instanceof SpatialUnitSummaryDTO s)
+                    yield new ResourceRef(String.valueOf(s.getId()), "spatial-unit", s.getName());
+                yield null;
+            }
+            case "SELECT_ONE_ACTION_CODE" -> {
+                if (raw instanceof ActionCodeDTO ac)
+                    yield new ResourceRef(String.valueOf(ac.getId()), "action-code", ac.getCode());
+                yield null;
+            }
+            case "SELECT_ONE_RECORDING_UNIT" -> {
+                if (raw instanceof RecordingUnitSummaryDTO r)
+                    yield new ResourceRef(String.valueOf(r.getId()), "recording-unit", r.getFullIdentifier());
+                yield null;
+            }
+            default -> null;
+        };
+    }
+
+    private List<ResourceRef> toResourceRefList(String answerType, Object raw) {
+        if (raw == null) return null;
+        Collection<?> col = raw instanceof Collection<?> c ? c : List.of(raw);
+        return col.stream()
+                .map(item -> toResourceRefFromItem(answerType, item))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private ResourceRef toResourceRefFromItem(String answerType, Object item) {
+        if (item instanceof PersonDTO p)
+            return new ResourceRef(String.valueOf(p.getId()), "person", p.displayName());
+        if (item instanceof ConceptDTO c)
+            return new ResourceRef(String.valueOf(c.getId()), "concept", c.getExternalId());
+        if (item instanceof SpatialUnitSummaryDTO s)
+            return new ResourceRef(String.valueOf(s.getId()), "spatial-unit", s.getName());
+        if (item instanceof RecordingUnitSummaryDTO r)
+            return new ResourceRef(String.valueOf(r.getId()), "recording-unit", r.getFullIdentifier());
+        if (item instanceof AbstractEntityDTO e)
+            return new ResourceRef(String.valueOf(e.getId()), answerType.toLowerCase(), null);
+        return null;
+    }
+
+    private MeasurementRef toMeasurementRef(Object raw) {
+        if (raw instanceof MeasurementAnswerDTO m) {
+            String symbol = m.getUnit() != null ? m.getUnit().getSymbol() : null;
+            return new MeasurementRef(m.getNumericValue(), symbol, m.getNormalizedValue());
+        }
+        return null;
     }
 
     /**

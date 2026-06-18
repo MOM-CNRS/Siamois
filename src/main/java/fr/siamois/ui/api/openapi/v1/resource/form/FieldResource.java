@@ -1,4 +1,4 @@
-package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
+package fr.siamois.ui.api.openapi.v1.resource.form;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.lang.Nullable;

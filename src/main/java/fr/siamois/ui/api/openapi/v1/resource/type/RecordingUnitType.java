@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class RecordingUnitType {
     private ResolvedConceptResource concept;
-    private String resourceId; // id of the concept for now, or _default might evolve if we add a type table
+    private String resourceId; // id of the concept for now, or _default. Might evolve if we add a type table
     private FormResource formBundle;
     private IdentifierConfig identifierConfig;
 }
