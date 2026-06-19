@@ -180,7 +180,7 @@ public class DocumentWriteOpenApiService {
         document.setSize(file.getSize());
 
         InstitutionSettings settings = institutionService.createOrGetSettingsOf(institution);
-        if (Boolean.TRUE.equals(settings.getArkIsEnabled())) {
+        if (settings.hasEnabledArkConfig()) {
             Ark ark = arkService.generateAndSave(settings);
             document.setArk(ark);
         }

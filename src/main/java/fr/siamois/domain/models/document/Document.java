@@ -6,7 +6,6 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.envers.Audited;
 import org.springframework.util.MimeType;
@@ -46,7 +45,6 @@ public class Document extends TraceableEntity implements ArkEntity {
         return fileName.substring(i + 1);
     }
 
-    @NotNull
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;
