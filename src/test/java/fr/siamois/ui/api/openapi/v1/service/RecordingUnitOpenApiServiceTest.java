@@ -49,9 +49,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.resource.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
-import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
@@ -529,25 +527,6 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildRecordingUnitRelations_mapsBundleFromRecordingUnitService() {
-        StratigraphicRelationshipDTO strat = new StratigraphicRelationshipDTO();
-        RecordingUnitSummaryDTO parent = new RecordingUnitSummaryDTO();
-        parent.setId(201L);
-        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
-        child.setId(202L);
-        RecordingUnitService.RecordingUnitRelationsBundle bundle =
-                new RecordingUnitService.RecordingUnitRelationsBundle(List.of(strat), List.of(parent), List.of(child));
-        when(recordingUnitService.findRelationsForAccessibleRecordingUnit("42", SCOPE)).thenReturn(bundle);
-
-        RecordingUnitRelationsData data = service.buildRecordingUnitRelations("42", SCOPE);
-
-        assertThat(data.stratigraphicRelationships()).containsExactly(strat);
-        assertThat(data.parents()).containsExactly(parent);
-        assertThat(data.children()).containsExactly(child);
-        verify(recordingUnitService).findRelationsForAccessibleRecordingUnit("42", SCOPE);
-    }
-
-    @Test
     void buildRecordingUnitChildren_wrapsListFromRecordingUnitService() {
         RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
         child.setId(301L);
@@ -583,9 +562,8 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findRelationsForAccessibleRecordingUnit("5", SCOPE)).thenReturn(
                 new RecordingUnitService.RecordingUnitRelationsBundle(List.of(), List.of(), List.of()));
 
-        RecordingUnitRelationsData data = service.addExistingChild("5", 99L, personDto, SCOPE);
+        service.addExistingChild("5", 99L, personDto, SCOPE);
 
-        assertThat(data).isNotNull();
         verify(recordingUnitService).addHierarchyChild(5L, 99L);
         verify(recordingUnitService).findRelationsForAccessibleRecordingUnit("5", SCOPE);
     }

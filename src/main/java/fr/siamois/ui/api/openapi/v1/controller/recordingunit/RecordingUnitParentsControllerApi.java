@@ -2,8 +2,6 @@ package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitHierarchyLinkRequest;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitRelationsData;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -34,11 +32,10 @@ public class RecordingUnitParentsControllerApi {
     @Operation(
             summary = "Lier une unité d'enregistrement existante comme parent",
             description = "Ajoute une relation hiérarchique directe (recording_unit_hierarchy) entre une UE existante (parent) "
-                    + "et l'UE cible (enfant). Les deux UE doivent appartenir au même projet. "
-                    + "Retourne l'état complet des relations (stratigraphie, parents, enfants)."
+                    + "et l'UE cible (enfant). Les deux UE doivent appartenir au même projet."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Relation créée"),
+            @ApiResponse(responseCode = "204", description = "Relation créée"),
             @ApiResponse(responseCode = "400", description = "Requête invalide"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "403", description = "Interdit"),
@@ -46,7 +43,7 @@ public class RecordingUnitParentsControllerApi {
             @ApiResponse(responseCode = "409", description = "Relation déjà existante ou cycle hiérarchique"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<RecordingUnitRelationsResponse> addExistingParent(
+    public ResponseEntity<Void> addExistingParent(
             @Parameter(
                     description = "Clé d'UE enfant : identifiant numérique (recording_unit_id) ou full_identifier.",
                     schema = @Schema(type = "string", example = "INST-PROJ-UE42")
@@ -58,26 +55,26 @@ public class RecordingUnitParentsControllerApi {
         if (body == null || body.getRelatedRecordingUnitId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "relatedRecordingUnitId est obligatoire");
         }
-        RecordingUnitRelationsData data = recordingUnitOpenApiService.addExistingParent(
+        recordingUnitOpenApiService.addExistingParent(
                 id, body.getRelatedRecordingUnitId(), caller.person(), caller.accessibleInstitutionIds());
-        return ResponseEntity.ok(new RecordingUnitRelationsResponse(data));
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}/parents/{relatedId}")
     @Operation(
             summary = "Supprimer un parent existant",
             description = "Supprime la relation hiérarchique directe entre l'UE parent identifiée par relatedId "
-                    + "(recording_unit_id) et l'UE cible (enfant). Retourne l'état complet des relations."
+                    + "(recording_unit_id) et l'UE cible (enfant)."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Relation supprimée"),
+            @ApiResponse(responseCode = "204", description = "Relation supprimée"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "403", description = "Interdit"),
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "409", description = "Relation inexistante"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<RecordingUnitRelationsResponse> removeExistingParent(
+    public ResponseEntity<Void> removeExistingParent(
             @Parameter(
                     description = "Clé d'UE enfant : identifiant numérique (recording_unit_id) ou full_identifier.",
                     schema = @Schema(type = "string", example = "INST-PROJ-UE42")
@@ -87,9 +84,9 @@ public class RecordingUnitParentsControllerApi {
             @PathVariable("relatedId") long relatedId) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
-        RecordingUnitRelationsData data = recordingUnitOpenApiService.removeExistingParent(
+        recordingUnitOpenApiService.removeExistingParent(
                 id, relatedId, caller.person(), caller.accessibleInstitutionIds());
-        return ResponseEntity.ok(new RecordingUnitRelationsResponse(data));
+        return ResponseEntity.noContent().build();
     }
 
 }

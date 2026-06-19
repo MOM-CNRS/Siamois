@@ -529,22 +529,6 @@ public class RecordingUnitOpenApiService {
     }
 
     @Transactional(readOnly = true)
-    public RecordingUnitRelationsData buildRecordingUnitRelations(String recordingUnitKey,
-                                                                  Set<Long> accessibleInstitutionIds) {
-        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
-    }
-
-    private RecordingUnitRelationsData resolveRecordingUnitRelations(String recordingUnitKey,
-                                                                      Set<Long> accessibleInstitutionIds) {
-        RecordingUnitService.RecordingUnitRelationsBundle bundle =
-                recordingUnitService.findRelationsForAccessibleRecordingUnit(recordingUnitKey, accessibleInstitutionIds);
-        return new RecordingUnitRelationsData(
-                bundle.stratigraphicRelationships(),
-                bundle.parents(),
-                bundle.children());
-    }
-
-    @Transactional(readOnly = true)
     public List<RecordingUnitResource> buildRecordingUnitChildren(String recordingUnitKey,
                                                                 Set<Long> accessibleInstitutionIds) {
         List<RecordingUnitSummaryDTO> children =
@@ -554,7 +538,7 @@ public class RecordingUnitOpenApiService {
     }
 
     @Transactional
-    public RecordingUnitRelationsData addExistingChild(String recordingUnitKey,
+    public void addExistingChild(String recordingUnitKey,
                                                        long relatedRecordingUnitId,
                                                        PersonDTO personDto,
                                                        Set<Long> accessibleInstitutionIds) {
@@ -566,11 +550,10 @@ public class RecordingUnitOpenApiService {
                 relatedRecordingUnitId, accessibleInstitutionIds);
         mutateHierarchy(() -> recordingUnitService.addHierarchyChild(
                 parent.entity().getId(), relatedRecordingUnitId));
-        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
     }
 
     @Transactional
-    public RecordingUnitRelationsData addExistingParent(String recordingUnitKey,
+    public void addExistingParent(String recordingUnitKey,
                                                           long relatedRecordingUnitId,
                                                           PersonDTO personDto,
                                                           Set<Long> accessibleInstitutionIds) {
@@ -582,11 +565,10 @@ public class RecordingUnitOpenApiService {
                 relatedRecordingUnitId, accessibleInstitutionIds);
         mutateHierarchy(() -> recordingUnitService.addHierarchyChild(
                 relatedRecordingUnitId, child.entity().getId()));
-        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
     }
 
     @Transactional
-    public RecordingUnitRelationsData removeExistingChild(String recordingUnitKey,
+    public void removeExistingChild(String recordingUnitKey,
                                                             long relatedRecordingUnitId,
                                                             PersonDTO personDto,
                                                             Set<Long> accessibleInstitutionIds) {
@@ -598,11 +580,10 @@ public class RecordingUnitOpenApiService {
                 relatedRecordingUnitId, accessibleInstitutionIds);
         mutateHierarchy(() -> recordingUnitService.removeHierarchyChild(
                 parent.entity().getId(), relatedRecordingUnitId));
-        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
     }
 
     @Transactional
-    public RecordingUnitRelationsData removeExistingParent(String recordingUnitKey,
+    public void removeExistingParent(String recordingUnitKey,
                                                            long relatedRecordingUnitId,
                                                            PersonDTO personDto,
                                                            Set<Long> accessibleInstitutionIds) {
@@ -614,7 +595,6 @@ public class RecordingUnitOpenApiService {
                 relatedRecordingUnitId, accessibleInstitutionIds);
         mutateHierarchy(() -> recordingUnitService.removeHierarchyChild(
                 relatedRecordingUnitId, child.entity().getId()));
-        return resolveRecordingUnitRelations(recordingUnitKey, accessibleInstitutionIds);
     }
 
     private void assertWritePermission(RecordingUnitDTO dto, PersonDTO personDto) {

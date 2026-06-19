@@ -13,15 +13,12 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitsControllerApi;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitRelationsData;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
@@ -256,7 +253,6 @@ class RecordingUnitsControllerApiTest {
     @ValueSource(strings = {
             "/api/v1/recording-units/5",
             "/api/v1/recording-units/5/mobiliers",
-            "/api/v1/recording-units/5/relations",
             "/api/v1/recording-units/5/documents"
     })
     void get_withoutAuth_returns401(String url) throws Exception {
@@ -498,78 +494,6 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
-    void getRelations_returns200_withData() throws Exception {
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        StratigraphicRelationshipDTO rel = new StratigraphicRelationshipDTO();
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations("5", Set.of(10L)))
-                .thenReturn(new RecordingUnitRelationsData(List.of(rel), List.of(), List.of()));
-
-        mockMvc.perform(get("/api/v1/recording-units/5/relations"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.stratigraphicRelationships").isArray())
-                .andExpect(jsonPath("$.data.stratigraphicRelationships.length()").value(1))
-                .andExpect(jsonPath("$.data.parents").isArray())
-                .andExpect(jsonPath("$.data.parents.length()").value(0))
-                .andExpect(jsonPath("$.data.children").isArray())
-                .andExpect(jsonPath("$.data.children.length()").value(0));
-
-        verify(recordingUnitOpenApiService).buildRecordingUnitRelations("5", Set.of(10L));
-    }
-
-    @Test
-    void getRelations_withSeveralInstitutions_passesFullScopeToService() throws Exception {
-        InstitutionDTO inst20 = new InstitutionDTO();
-        inst20.setId(20L);
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto))
-                .thenReturn(Set.of(institutionDto, inst20));
-
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations("ru-key", Set.of(10L, 20L)))
-                .thenReturn(new RecordingUnitRelationsData(List.of(), List.of(), List.of()));
-
-        mockMvc.perform(get("/api/v1/recording-units/ru-key/relations"))
-                .andExpect(status().isOk());
-
-        verify(recordingUnitOpenApiService).buildRecordingUnitRelations("ru-key", Set.of(10L, 20L));
-    }
-
-    @Test
-    void getRelations_returns200_withParentsAndChildrenInPayload() throws Exception {
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        RecordingUnitSummaryDTO parent = new RecordingUnitSummaryDTO();
-        parent.setId(99L);
-        parent.setFullIdentifier("INST-A-UE-P");
-        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
-        child.setId(100L);
-        child.setFullIdentifier("INST-A-UE-C");
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations("5", Set.of(10L)))
-                .thenReturn(new RecordingUnitRelationsData(List.of(), List.of(parent), List.of(child)));
-
-        mockMvc.perform(get("/api/v1/recording-units/5/relations"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.parents[0].id").value(99))
-                .andExpect(jsonPath("$.data.parents[0].fullIdentifier").value("INST-A-UE-P"))
-                .andExpect(jsonPath("$.data.children[0].id").value(100))
-                .andExpect(jsonPath("$.data.children[0].fullIdentifier").value("INST-A-UE-C"));
-    }
-
-    @Test
-    void getRelations_whenRecordingUnitNotFound_returns404() throws Exception {
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations(any(), any()))
-                .thenThrow(new RecordingUnitNotFoundException("missing"));
-
-        mockMvc.perform(get("/api/v1/recording-units/404-key/relations"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("missing"));
-    }
-
-    @Test
     void getChildren_returns200_withEmptyList() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
@@ -669,22 +593,14 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
-    void addExistingChild_returns200_withRelations() throws Exception {
+    void addExistingChild_returns204() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
-        child.setId(99L);
-        RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(), List.of(child));
-        when(recordingUnitOpenApiService.addExistingChild("5", 99L, personDto, Set.of(10L)))
-                .thenReturn(relations);
 
         mockMvc.perform(post("/api/v1/recording-units/5/children")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"relatedRecordingUnitId\":99}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.children", hasSize(1)))
-                .andExpect(jsonPath("$.data.children[0].id").value(99));
+                .andExpect(status().isNoContent());
 
         verify(recordingUnitOpenApiService).addExistingChild("5", 99L, personDto, Set.of(10L));
     }
@@ -703,20 +619,12 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
-    void removeExistingParent_returns200_withRelations() throws Exception {
+    void removeExistingParent_returns204() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        RecordingUnitSummaryDTO parent = new RecordingUnitSummaryDTO();
-        parent.setId(88L);
-        RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(parent), List.of());
-        when(recordingUnitOpenApiService.removeExistingParent("5", 88L, personDto, Set.of(10L)))
-                .thenReturn(relations);
-
         mockMvc.perform(delete("/api/v1/recording-units/5/parents/88"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.parents", hasSize(1)))
-                .andExpect(jsonPath("$.data.parents[0].id").value(88));
+                .andExpect(status().isNoContent());
 
         verify(recordingUnitOpenApiService).removeExistingParent("5", 88L, personDto, Set.of(10L));
     }
