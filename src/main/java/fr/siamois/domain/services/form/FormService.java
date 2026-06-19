@@ -9,7 +9,9 @@ import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
+import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
@@ -50,6 +52,7 @@ public class FormService {
 
     private final LabelBean labelBean;
     private final FormRepository formRepository;
+    private final FormScopeRepository formScopeRepository;
     private final UnitDefinitionMapper unitDefinitionMapper;
 
 
@@ -77,6 +80,11 @@ public class FormService {
         // If none found, try to find a form without specifying the type
         // Should we throw an error if none found?
         return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Concept> findConfiguredRecordingUnitTypesByInstitution(InstitutionDTO institution) {
+        return formScopeRepository.findConfiguredTypesByInstitution(institution.getId());
     }
 
     // --------- Answer creators
