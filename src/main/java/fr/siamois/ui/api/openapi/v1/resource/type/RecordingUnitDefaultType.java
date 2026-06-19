@@ -11,9 +11,7 @@ import java.util.Map;
 
 @Data
 @NoArgsConstructor
-public class RecordingUnitType {
-    private ResolvedConceptResource concept;
-    private String resourceId; // id of the concept for now
+public class RecordingUnitDefaultType {
     private FormResource formBundle;
     private RecordingUnitIdentifierConfig identifierConfig;
     @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")

@@ -149,32 +149,32 @@ public class RecordingUnitOpenApiService {
         return switch (answerType) {
             case "SELECT_ONE_FROM_FIELD_CODE" -> {
                 if (raw instanceof ConceptDTO c)
-                    yield new ResourceRef(String.valueOf(c.getId()), "concept", c.getExternalId());
+                    yield new ResourceRef(String.valueOf(c.getId()), "concepts", c.getExternalId());
                 yield null;
             }
             case "SELECT_ONE_PERSON" -> {
                 if (raw instanceof PersonDTO p)
-                    yield new ResourceRef(String.valueOf(p.getId()), "person", p.displayName());
+                    yield new ResourceRef(String.valueOf(p.getId()), "persons", p.displayName());
                 yield null;
             }
             case "SELECT_ONE_ACTION_UNIT" -> {
                 if (raw instanceof ActionUnitDTO a)
-                    yield new ResourceRef(String.valueOf(a.getId()), "action-unit", a.getName());
+                    yield new ResourceRef(String.valueOf(a.getId()), "action-units", a.getName());
                 yield null;
             }
             case "SELECT_ONE_SPATIAL_UNIT" -> {
                 if (raw instanceof SpatialUnitSummaryDTO s)
-                    yield new ResourceRef(String.valueOf(s.getId()), "spatial-unit", s.getName());
+                    yield new ResourceRef(String.valueOf(s.getId()), "spatial-units", s.getName());
                 yield null;
             }
             case "SELECT_ONE_ACTION_CODE" -> {
                 if (raw instanceof ActionCodeDTO ac)
-                    yield new ResourceRef(String.valueOf(ac.getId()), "action-code", ac.getCode());
+                    yield new ResourceRef(String.valueOf(ac.getId()), "action-codes", ac.getCode());
                 yield null;
             }
             case "SELECT_ONE_RECORDING_UNIT" -> {
                 if (raw instanceof RecordingUnitSummaryDTO r)
-                    yield new ResourceRef(String.valueOf(r.getId()), "recording-unit", r.getFullIdentifier());
+                    yield new ResourceRef(String.valueOf(r.getId()), "recording-units", r.getFullIdentifier());
                 yield null;
             }
             default -> null;
@@ -192,13 +192,13 @@ public class RecordingUnitOpenApiService {
 
     private ResourceRef toResourceRefFromItem(String answerType, Object item) {
         if (item instanceof PersonDTO p)
-            return new ResourceRef(String.valueOf(p.getId()), "person", p.displayName());
+            return new ResourceRef(String.valueOf(p.getId()), "persons", p.displayName());
         if (item instanceof ConceptDTO c)
-            return new ResourceRef(String.valueOf(c.getId()), "concept", c.getExternalId());
+            return new ResourceRef(String.valueOf(c.getId()), "concepts", c.getExternalId());
         if (item instanceof SpatialUnitSummaryDTO s)
-            return new ResourceRef(String.valueOf(s.getId()), "spatial-unit", s.getName());
+            return new ResourceRef(String.valueOf(s.getId()), "spatial-units", s.getName());
         if (item instanceof RecordingUnitSummaryDTO r)
-            return new ResourceRef(String.valueOf(r.getId()), "recording-unit", r.getFullIdentifier());
+            return new ResourceRef(String.valueOf(r.getId()), "recording-units", r.getFullIdentifier());
         if (item instanceof AbstractEntityDTO e)
             return new ResourceRef(String.valueOf(e.getId()), answerType.toLowerCase(), null);
         return null;
