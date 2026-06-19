@@ -39,7 +39,7 @@ public class ProjectConceptsControllerApi {
             summary = "Concepts d'un projet pour un fieldCode",
             description = "Sans `q` : retourne tous les concepts paginés. "
                     + "Avec `q` : mode suggestion (autocomplete, non paginé, résultats limités). "
-                    + "FieldCodes disponibles : GET /api/v1/projects/{id}/concepts/fields."
+
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),

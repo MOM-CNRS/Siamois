@@ -66,8 +66,6 @@ public class ProjectSettingsControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    // TODO : implement this only when the types configurations are designed and implemented.
-    //  use default endpoint below for now.
     public ResponseEntity<ProjectFindTypeListResponse> getProjectFindSettings(
             @PathVariable("id") String id,
             @RequestParam(defaultValue = "0") int offset,
@@ -75,10 +73,11 @@ public class ProjectSettingsControllerApi {
             @Parameter(description = "Tri, ex. name:asc")
             @RequestParam(defaultValue = "name:asc") String sort,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-        // todo : get form + identifier config for each type, including type _default
-        // form : get form for each type ONLY RETURN _default type for now. same for every projects.
-        // identifier config: get action unit config, same for each type in this version (from actionUnitDTO)
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        ProjectFindTypeListResponse response = recordingUnitOpenApiService
+                .buildProjectFindTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.ok(response);
     }
 
 }

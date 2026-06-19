@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
@@ -41,9 +42,12 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
+import fr.siamois.ui.api.openapi.v1.resource.type.FindIdentifierConfig;
+import fr.siamois.ui.api.openapi.v1.resource.type.FindType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitIdentifierConfig;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
@@ -238,6 +242,39 @@ public class RecordingUnitOpenApiService {
                 .toList();
 
         return new ProjectRecordingUnitTypeListResponse(types, defaultType);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectFindTypeListResponse buildProjectFindTypeSettings(
+            String projectKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectKey, accessibleInstitutionIds);
+        ActionUnitDTO au = project.actionUnit();
+        InstitutionDTO institution = au.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
+        }
+
+        CustomForm systemForm = Specimen.DETAILS_FORM;
+        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
+        FieldSource fieldSource = new PanelFieldSource(formUiDto);
+        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(systemForm.getLayout());
+        FormResource formBundle = new FormResource(
+                systemForm.getId(),
+                systemForm.getName(),
+                systemForm.getDescription() != null ? systemForm.getDescription() : "",
+                layoutJson);
+
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
+
+        FindType defaultType = new FindType();
+        defaultType.setFormBundle(formBundle);
+        defaultType.setIdentifierConfig(new FindIdentifierConfig());
+        defaultType.setFields(fields);
+
+        return new ProjectFindTypeListResponse(List.of(), defaultType);
     }
 
     private RecordingUnitIdentifierConfig buildIdentifierConfig(ActionUnitDTO au) {
