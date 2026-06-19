@@ -271,7 +271,6 @@ public class RecordingUnitOpenApiService {
 
         FindType defaultType = new FindType();
         defaultType.setFormBundle(formBundle);
-        defaultType.setIdentifierConfig(new FindIdentifierConfig());
         defaultType.setFields(fields);
 
         return new ProjectFindTypeListResponse(List.of(), defaultType);
