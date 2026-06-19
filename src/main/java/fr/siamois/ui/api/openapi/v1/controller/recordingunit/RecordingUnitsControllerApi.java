@@ -93,11 +93,6 @@ public class RecordingUnitsControllerApi {
             )
             @RequestParam(required = false) List<String> counts,
             @Parameter(
-                    description = "Inclut le formulaire suggerer et son layout si true.",
-                    in = ParameterIn.QUERY
-            )
-            @RequestParam(required = false) Boolean includeSuggestedForm,
-            @Parameter(
                     description = "Liste d'identifiant de champs dont les réponses sont à inclure dans la réponse. " +
                             "Toutes les réponses sont envoyés si absent.",
                     in = ParameterIn.QUERY

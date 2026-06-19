@@ -84,7 +84,7 @@ public class FormService {
 
     @Transactional(readOnly = true)
     public List<Concept> findConfiguredRecordingUnitTypesByInstitution(InstitutionDTO institution) {
-        return formScopeRepository.findConfiguredTypesByInstitution(institution.getId());
+        return formScopeRepository.findConfiguredTypesByInstitution();
     }
 
     // --------- Answer creators

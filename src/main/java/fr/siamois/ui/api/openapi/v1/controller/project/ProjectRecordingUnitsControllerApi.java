@@ -48,11 +48,6 @@ public class ProjectRecordingUnitsControllerApi {
     })
     public ResponseEntity<RecordingUnitListResponse> getList(
             @PathVariable("id") String id,
-            @RequestParam(required = false) Boolean includeSuggestedForm,
-            @Parameter(
-                    description = "Inclut le formulaire suggeré et son layout si true.",
-                    in = ParameterIn.QUERY
-            )
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "10") int limit,
             @Parameter(description = "Tri, ex. fullIdentifier:asc ou creationTime:desc")
