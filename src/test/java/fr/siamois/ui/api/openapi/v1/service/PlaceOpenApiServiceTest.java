@@ -2,12 +2,14 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
@@ -252,7 +254,7 @@ class PlaceOpenApiServiceTest {
     @Test
     void updatePlace_notFound_throws404() {
         when(spatialUnitService.findById(99L))
-                .thenThrow(new fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException("missing"));
+                .thenThrow(new SpatialUnitNotFoundException("missing"));
 
         PlacePatchRequest patch = new PlacePatchRequest();
         patch.setName("X");
@@ -272,7 +274,8 @@ class PlaceOpenApiServiceTest {
         when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
         when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(false);
 
-        assertThatThrownBy(() -> service.updatePlace(caller, 5L, new PlacePatchRequest(), "fr"))
+        PlacePatchRequest patch = new PlacePatchRequest();
+        assertThatThrownBy(() -> service.updatePlace(caller, 5L, patch, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.FORBIDDEN.value()));
@@ -342,5 +345,283 @@ class PlaceOpenApiServiceTest {
                         .isEqualTo(HttpStatus.FORBIDDEN.value()));
 
         verify(spatialUnitService, never()).deleteWhenUnused(anyLong());
+    }
+
+    @Test
+    void createPlace_nullRequest_throws400() {
+        assertThatThrownBy(() -> service.createPlace(caller, null, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void createPlace_nullOrganizationId_throws400() {
+        PlaceCreateRequest request = new PlaceCreateRequest();
+
+        assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void createPlace_organizationNotFound_throws404() {
+        PlaceCreateRequest request = new PlaceCreateRequest();
+        request.setOrganizationId(10L);
+        when(institutionService.findById(10L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.NOT_FOUND.value()));
+    }
+
+    @Test
+    void createPlace_asActionManager_success() throws SpatialUnitAlreadyExistsException {
+        PlaceCreateRequest request = new PlaceCreateRequest();
+        request.setOrganizationId(10L);
+        request.setName("Lieu");
+        request.setTypeConceptId(42L);
+
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
+        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(true);
+        Concept concept = new Concept();
+        when(conceptService.findById(42L)).thenReturn(Optional.of(concept));
+        when(conceptMapper.convert(concept)).thenReturn(new ConceptDTO());
+
+        SpatialUnitDTO saved = new SpatialUnitDTO();
+        saved.setId(1L);
+        saved.setName("Lieu");
+        when(spatialUnitService.save(any(UserInfo.class), any(SpatialUnitDTO.class))).thenReturn(saved);
+
+        PlaceCreatedResponse.PlaceCreatedItem item = service.createPlace(caller, request, "fr");
+
+        assertThat(item.getId()).isEqualTo(1L);
+    }
+
+    @Test
+    void createPlace_nullName_throws400() {
+        PlaceCreateRequest request = new PlaceCreateRequest();
+        request.setOrganizationId(10L);
+        request.setTypeConceptId(42L);
+
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void createPlace_missingTypeConceptId_throws400() {
+        PlaceCreateRequest request = new PlaceCreateRequest();
+        request.setOrganizationId(10L);
+        request.setName("Lieu");
+
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void createPlace_typeNotFound_throws404() {
+        PlaceCreateRequest request = new PlaceCreateRequest();
+        request.setOrganizationId(10L);
+        request.setName("Lieu");
+        request.setTypeConceptId(99L);
+
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(conceptService.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.NOT_FOUND.value()));
+    }
+
+    @Test
+    void createPlace_withAddress_passesAddressToSave() throws SpatialUnitAlreadyExistsException {
+        PlaceCreateRequest request = new PlaceCreateRequest();
+        request.setOrganizationId(10L);
+        request.setName("Lieu");
+        request.setTypeConceptId(42L);
+        FullAddress address = new FullAddress();
+        address.setCity("Paris");
+        request.setAddress(address);
+
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        Concept concept = new Concept();
+        when(conceptService.findById(42L)).thenReturn(Optional.of(concept));
+        when(conceptMapper.convert(concept)).thenReturn(new ConceptDTO());
+        when(spatialUnitService.save(any(UserInfo.class), any(SpatialUnitDTO.class)))
+                .thenReturn(new SpatialUnitDTO());
+
+        service.createPlace(caller, request, "fr");
+
+        ArgumentCaptor<SpatialUnitDTO> captor = ArgumentCaptor.forClass(SpatialUnitDTO.class);
+        verify(spatialUnitService).save(any(UserInfo.class), captor.capture());
+        assertThat(captor.getValue().getAddress()).isSameAs(address);
+    }
+
+    @Test
+    void updatePlace_nullPatch_success() throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setName("Inchangé");
+        existing.setCreatedByInstitution(institution);
+
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), eq(null), eq(null), eq(null)))
+                .thenReturn(existing);
+
+        PlaceCreatedResponse.PlaceCreatedItem item = service.updatePlace(caller, 5L, null, "fr");
+
+        assertThat(item.getName()).isEqualTo("Inchangé");
+    }
+
+    @Test
+    void updatePlace_typeNotFound_throws404() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(conceptService.findById(99L)).thenReturn(Optional.empty());
+
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setTypeConceptId(99L);
+
+        assertThatThrownBy(() -> service.updatePlace(caller, 5L, patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.NOT_FOUND.value()));
+    }
+
+    @Test
+    void updatePlace_emptyName_throws400() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setName("   ");
+
+        assertThatThrownBy(() -> service.updatePlace(caller, 5L, patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void updatePlace_withAddress_passesAddressToUpdate() throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+
+        FullAddress address = new FullAddress();
+        address.setCity("Lyon");
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setAddress(address);
+
+        SpatialUnitDTO saved = new SpatialUnitDTO();
+        saved.setId(5L);
+        saved.setName("Lieu");
+        when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), eq(null), eq(null), eq(address)))
+                .thenReturn(saved);
+
+        service.updatePlace(caller, 5L, patch, "fr");
+
+        verify(spatialUnitService).updatePlace(any(UserInfo.class), eq(5L), eq(null), eq(null), eq(address));
+    }
+
+    @Test
+    void updatePlace_asActionManager_success() throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
+        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(true);
+        when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), eq(null), eq(null), eq(null)))
+                .thenReturn(existing);
+
+        PlacePatchRequest patch = new PlacePatchRequest();
+        service.updatePlace(caller, 5L, patch, "fr");
+
+        verify(spatialUnitService).updatePlace(any(UserInfo.class), eq(5L), eq(null), eq(null), eq(null));
+    }
+
+    @Test
+    void updatePlace_withoutOrganization_throws400() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+
+        PlacePatchRequest patch = new PlacePatchRequest();
+
+        assertThatThrownBy(() -> service.updatePlace(caller, 5L, patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void updatePlace_organizationWithoutId_throws400() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(new InstitutionDTO());
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+
+        PlacePatchRequest patch = new PlacePatchRequest();
+
+        assertThatThrownBy(() -> service.updatePlace(caller, 5L, patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void deletePlace_notFoundOnDelete_throws404() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        doThrow(new SpatialUnitNotFoundException("missing"))
+                .when(spatialUnitService).deleteWhenUnused(5L);
+
+        assertThatThrownBy(() -> service.deletePlace(caller, 5L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.NOT_FOUND.value()));
+    }
+
+    @Test
+    void deletePlace_asActionManager_success() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
+        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(true);
+
+        service.deletePlace(caller, 5L, "fr");
+
+        verify(spatialUnitService).deleteWhenUnused(5L);
     }
 }

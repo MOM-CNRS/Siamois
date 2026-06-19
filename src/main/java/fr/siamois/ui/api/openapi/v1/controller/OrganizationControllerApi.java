@@ -36,6 +36,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrganizationControllerApi {
 
+    private static final String HEADER_TOTAL_COUNT = "X-Total-Count";
+
     private final RecordingUnitService recordingUnitService;
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final ProjectApiService projectApiService;
@@ -72,7 +74,7 @@ public class OrganizationControllerApi {
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
 
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
+                .header(HEADER_TOTAL_COUNT, String.valueOf(page.getTotalElements()))
                 .body(new OrganizationListResponse(resources, meta));
     }
 
@@ -116,7 +118,7 @@ public class OrganizationControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         PlaceListResponse body = placeOpenApiService.listByOrganization(caller, id, offset, limit, sort);
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(body.getMeta().total()))
+                .header(HEADER_TOTAL_COUNT, String.valueOf(body.getMeta().total()))
                 .body(body);
     }
 
@@ -184,7 +186,7 @@ public class OrganizationControllerApi {
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
 
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
+                .header(HEADER_TOTAL_COUNT, String.valueOf(page.getTotalElements()))
                 .body(new RecordingUnitListResponse(resources, meta));
     }
 }

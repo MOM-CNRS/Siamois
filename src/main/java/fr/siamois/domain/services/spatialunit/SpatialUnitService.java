@@ -82,14 +82,18 @@ public class SpatialUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public SpatialUnitDTO findById(long id) {
         try {
-            SpatialUnit spatialUnit = spatialUnitRepository.findById(id)
-                    .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + id));
-            Hibernate.initialize(spatialUnit);
-            return spatialUnitMapper.convert(spatialUnit);
+            return loadDtoById(id);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
         }
+    }
+
+    private SpatialUnitDTO loadDtoById(long id) {
+        SpatialUnit spatialUnit = spatialUnitRepository.findById(id)
+                .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + id));
+        Hibernate.initialize(spatialUnit);
+        return spatialUnitMapper.convert(spatialUnit);
     }
 
 
@@ -238,10 +242,14 @@ public class SpatialUnitService implements ArkEntityService {
     @Override
     @Transactional
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
+        return persistSpatialUnitDto((SpatialUnitDTO) toSave);
+    }
+
+    private SpatialUnitDTO persistSpatialUnitDto(SpatialUnitDTO toSave) {
         try {
             SpatialUnit managedSpatialUnit;
-            SpatialUnit spatialUnit = spatialUnitMapper.invertConvert((SpatialUnitDTO) toSave);
-            ConceptDTO conceptDTO = ((SpatialUnitDTO) toSave).getCategory();
+            SpatialUnit spatialUnit = spatialUnitMapper.invertConvert(toSave);
+            ConceptDTO conceptDTO = toSave.getCategory();
 
             if (spatialUnit.getId() != null) {
                 Optional<SpatialUnit> optUnit = spatialUnitRepository.findById(spatialUnit.getId());
@@ -257,9 +265,7 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             managedSpatialUnit.setAddress(spatialUnit.getAddress());
-            // Add concept
-            Concept type = conceptService.saveOrGetConcept(
-                    conceptDTO);
+            Concept type = conceptService.saveOrGetConcept(conceptDTO);
             managedSpatialUnit.setCategory(type);
 
             return spatialUnitMapper.convert(spatialUnitRepository.save(managedSpatialUnit));
@@ -643,7 +649,7 @@ public class SpatialUnitService implements ArkEntityService {
                                       String newName,
                                       ConceptDTO newCategory,
                                       FullAddress newAddress) throws SpatialUnitAlreadyExistsException {
-        SpatialUnitDTO dto = findById(placeId);
+        SpatialUnitDTO dto = loadDtoById(placeId);
         Long institutionId = info.getInstitution().getId();
 
         if (newName != null) {
@@ -663,7 +669,7 @@ public class SpatialUnitService implements ArkEntityService {
         if (newAddress != null) {
             dto.setAddress(newAddress);
         }
-        return (SpatialUnitDTO) save(dto);
+        return persistSpatialUnitDto(dto);
     }
 
     /**
