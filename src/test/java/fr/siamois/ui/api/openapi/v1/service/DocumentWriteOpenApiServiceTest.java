@@ -100,7 +100,7 @@ class DocumentWriteOpenApiServiceTest {
         when(projectApiService.requireAccessibleProject(caller, "5")).thenReturn(row);
 
         InstitutionSettings settings = mock(InstitutionSettings.class);
-        when(settings.getArkIsEnabled()).thenReturn(false);
+        when(settings.hasEnabledArkConfig()).thenReturn(false);
         when(institutionService.createOrGetSettingsOf(institution)).thenReturn(settings);
 
         Document saved = new Document();
@@ -203,7 +203,7 @@ class DocumentWriteOpenApiServiceTest {
         when(permissionService.hasWritePermission(any(UserInfo.class), same(ru))).thenReturn(true);
 
         InstitutionSettings settings = mock(InstitutionSettings.class);
-        when(settings.getArkIsEnabled()).thenReturn(true);
+        when(settings.hasEnabledArkConfig()).thenReturn(true);
         when(institutionService.createOrGetSettingsOf(institution)).thenReturn(settings);
         when(arkService.generateAndSave(settings)).thenReturn(mock(Ark.class));
 
