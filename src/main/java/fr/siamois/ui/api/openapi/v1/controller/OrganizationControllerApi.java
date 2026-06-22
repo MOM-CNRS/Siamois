@@ -12,6 +12,8 @@ import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.OrganizationListResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.response.*;
+
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,10 +36,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrganizationControllerApi {
 
+    private static final String HEADER_TOTAL_COUNT = "X-Total-Count";
+
     private final RecordingUnitService recordingUnitService;
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final ProjectApiService projectApiService;
     private final OrganizationOpenApiMapper organizationOpenApiMapper;
+    private final PlaceOpenApiService placeOpenApiService;
 
     @GetMapping
     @Operation(
@@ -70,10 +75,90 @@ public class OrganizationControllerApi {
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
 
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
+                .header(HEADER_TOTAL_COUNT, String.valueOf(page.getTotalElements()))
                 .body(new OrganizationListResponse(resources, meta));
     }
 
+    @Hidden
+    @GetMapping("/{id}")
+    public ResponseEntity<OrganizationResponse> getById(@PathVariable Long id) {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+    }
+
+    @Hidden
+    @GetMapping("/{id}/projects")
+    public ResponseEntity<ProjectListResponse> getProjects(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit) {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+    }
+
+    @GetMapping("/{id}/places")
+    @Operation(
+            summary = "Liste des lieux d'une organisation",
+            description = "Liste paginée de toutes les unités spatiales (lieux) de l'organisation."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de pagination invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
+            @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @Tag(name = OpenApiTags.SPATIAL_UNIT)
+    public ResponseEntity<PlaceListResponse> getPlaces(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "50") int limit,
+            @Parameter(description = "Tri : name, id, code, creationTime ; direction asc ou desc.")
+            @RequestParam(defaultValue = "name:asc") String sort) {
+
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        PlaceListResponse body = placeOpenApiService.listByOrganization(caller, id, offset, limit, sort);
+        return ResponseEntity.ok()
+                .header(HEADER_TOTAL_COUNT, String.valueOf(body.getMeta().total()))
+                .body(body);
+    }
+
+    @Hidden
+    @GetMapping("/{id}/mobiliers")
+    public ResponseEntity<FindListResponse> getFinds(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit) {
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+    }
+
+    @GetMapping("/{id}/recording-units/{recordingUnitFullIdentifier}")
+    @Operation(summary = "Récupérer une unité d'enregistrement d'une organisation par son identifiant métier")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "RecordingUnit trouvée"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
+            @ApiResponse(responseCode = "404", description = "RecordingUnit non trouvée"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    @Tag(name = OpenApiTags.RECORDING_UNIT)
+    public ResponseEntity<RecordingUnitResponse> getRecordingUnitByFullIdentifier(
+            @PathVariable Long id,
+            @Parameter(
+                    description = "Compteurs optionnels à inclure (seul 'specimen' est supporté).",
+                    schema = @Schema(type = "array", allowableValues = {"specimen"}),
+                    in = ParameterIn.QUERY
+            )
+            @RequestParam(required = false) List<String> counts,
+            @PathVariable String recordingUnitFullIdentifier) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        projectApiService.assertOrganizationInCallerScope(id, caller.accessibleInstitutionIds());
+
+        RecordingUnitDTO recordingUnit = recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(
+                recordingUnitFullIdentifier, id, counts);
+
+        return ResponseEntity.ok(new RecordingUnitResponse(recordingUnitResourceMapper.convert(recordingUnit)));
+    }
 
     @GetMapping("/{id}/recording-units")
     @Operation(summary = "Liste paginée des unités d'enregistrement d'une institution")
@@ -104,7 +189,7 @@ public class OrganizationControllerApi {
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
 
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
+                .header(HEADER_TOTAL_COUNT, String.valueOf(page.getTotalElements()))
                 .body(new RecordingUnitListResponse(resources, meta));
     }
 }
