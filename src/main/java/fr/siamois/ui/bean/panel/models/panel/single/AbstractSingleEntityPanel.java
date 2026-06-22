@@ -235,6 +235,11 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     }
 
     public List<MenuModel> getAllParentBreadcrumbModels() {
+        if (getUnit() == null) {
+            MenuModel breadcrumbModel = new DefaultMenuModel();
+            breadcrumbModel.getElements().add(createHomeItem());
+            return List.of(breadcrumbModel);
+        }
 
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());

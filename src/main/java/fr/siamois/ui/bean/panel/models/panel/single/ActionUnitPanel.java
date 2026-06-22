@@ -191,6 +191,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
             if (this.unit == null) {
                 log.error("The Action Unit page should not be accessed without ID or by direct page path");
                 errorMessage = "The Action Unit page should not be accessed without ID or by direct page path";
+                return;
             }
 
             initRecordingTab();

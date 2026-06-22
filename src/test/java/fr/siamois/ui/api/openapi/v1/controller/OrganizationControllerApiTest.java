@@ -15,11 +15,15 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.OrganizationOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
+import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import fr.siamois.mapper.ConceptMapper;
@@ -45,6 +49,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
@@ -85,6 +90,8 @@ class OrganizationControllerApiTest {
     private RecordingUnitResponseMapper recordingUnitResponseMapper;
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
+    @Mock
+    private PlaceOpenApiService placeOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -115,7 +122,8 @@ class OrganizationControllerApiTest {
                 recordingUnitService,
                 recordingUnitResponseMapper,
                 projectApiService,
-                new OrganizationOpenApiMapper());
+                new OrganizationOpenApiMapper(),
+                placeOpenApiService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
@@ -422,10 +430,36 @@ class OrganizationControllerApiTest {
     }
 
     @Test
-    void getPlaces_returns501() throws Exception {
+    void getPlaces_success() throws Exception {
         login();
-        mockMvc.perform(get("/api/v1/organizations/1/places"))
-                .andExpect(status().isNotImplemented());
+        when(personMapper.convert(person)).thenReturn(personDto);
+
+        InstitutionDTO org = new InstitutionDTO();
+        org.setId(10L);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(org));
+
+        PlaceResource place = new PlaceResource();
+        place.setId("5");
+        place.setName("Cave A");
+        when(placeOpenApiService.listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc")))
+                .thenReturn(new PlaceListResponse(List.of(place), new ListMeta(1L, 50, 0L)));
+
+        mockMvc.perform(get("/api/v1/organizations/10/places"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "1"))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].name").value("Cave A"))
+                .andExpect(jsonPath("$.meta.total").value(1));
+
+        verify(placeOpenApiService).listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc"));
+    }
+
+    @Test
+    void getPlaces_invalidPagination_returns400() throws Exception {
+        login();
+
+        mockMvc.perform(get("/api/v1/organizations/10/places").param("offset", "-1").param("limit", "10"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

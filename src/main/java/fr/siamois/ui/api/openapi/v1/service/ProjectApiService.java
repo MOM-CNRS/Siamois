@@ -56,9 +56,9 @@ public class ProjectApiService {
             CREATION_TIME, "id", IDENTIFIER, "fullIdentifier", "openingDate", "closingDate"
     );
 
-    private static final Set<String> ALLOWED_ORGANIZATION_SORT_FIELDS = Set.of(
-            "id", "name", IDENTIFIER, "creationDate"
-    );
+    private static final Set<String> ALLOWED_ORGANIZATION_SORT_FIELDS = Set.of("id", "name", IDENTIFIER, "creationDate");
+
+    private static final Set<String> ALLOWED_PLACE_SORT_FIELDS = Set.of("id", "name", "code", CREATION_TIME);
 
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
@@ -464,6 +464,10 @@ public class ProjectApiService {
 
     private static Sort parseRecordingUnitSort(String sortParam) {
         return parseSortWithStableId(sortParam, ALLOWED_RECORDING_UNIT_SORT_FIELDS);
+    }
+
+    public static Sort parsePlaceSort(String sortParam) {
+        return parseSortWithStableId(sortParam, ALLOWED_PLACE_SORT_FIELDS);
     }
 
     private static List<InstitutionDTO> sortInstitutions(List<InstitutionDTO> institutions, Sort sort) {
