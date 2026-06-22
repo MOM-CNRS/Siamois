@@ -310,7 +310,7 @@ class PlaceOpenApiServiceTest {
 
         service.deletePlace(caller, 5L, "fr");
 
-        verify(spatialUnitService).deleteWhenUnused(5L);
+        verify(spatialUnitService).deleteIfUnused(5L);
         verify(projectApiService).assertOrganizationInCallerScope(10L, SCOPE);
     }
 
@@ -322,7 +322,7 @@ class PlaceOpenApiServiceTest {
         when(spatialUnitService.findById(5L)).thenReturn(existing);
         when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
         doThrow(new IllegalStateException("Impossible de supprimer : le lieu possède des lieux enfants"))
-                .when(spatialUnitService).deleteWhenUnused(5L);
+                .when(spatialUnitService).deleteIfUnused(5L);
 
         assertThatThrownBy(() -> service.deletePlace(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -344,7 +344,7 @@ class PlaceOpenApiServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.FORBIDDEN.value()));
 
-        verify(spatialUnitService, never()).deleteWhenUnused(anyLong());
+        verify(spatialUnitService, never()).deleteIfUnused(anyLong());
     }
 
     @Test
@@ -603,7 +603,7 @@ class PlaceOpenApiServiceTest {
         when(spatialUnitService.findById(5L)).thenReturn(existing);
         when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
         doThrow(new SpatialUnitNotFoundException("missing"))
-                .when(spatialUnitService).deleteWhenUnused(5L);
+                .when(spatialUnitService).deleteIfUnused(5L);
 
         assertThatThrownBy(() -> service.deletePlace(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -622,6 +622,6 @@ class PlaceOpenApiServiceTest {
 
         service.deletePlace(caller, 5L, "fr");
 
-        verify(spatialUnitService).deleteWhenUnused(5L);
+        verify(spatialUnitService).deleteIfUnused(5L);
     }
 }

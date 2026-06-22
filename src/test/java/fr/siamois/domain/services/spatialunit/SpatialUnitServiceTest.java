@@ -1252,7 +1252,7 @@ class SpatialUnitServiceTest {
         when(spatialUnitRepository.countAsMainLocation(5L)).thenReturn(0L);
         when(spatialUnitRepository.countContainersBySpatialUnit(5L)).thenReturn(0L);
 
-        spatialUnitService.deleteWhenUnused(5L);
+        spatialUnitService.deleteIfUnused(5L);
 
         verify(spatialUnitRepository).deleteHierarchyLinksForSpatialUnit(5L);
         verify(actionUnitRepository).deleteSpatialContextLinksForSpatialUnit(5L);
@@ -1268,7 +1268,7 @@ class SpatialUnitServiceTest {
         when(spatialUnitRepository.countChildrenByParentId(5L)).thenReturn(2L);
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> spatialUnitService.deleteWhenUnused(5L));
+                () -> spatialUnitService.deleteIfUnused(5L));
 
         assertTrue(ex.getMessage().contains("enfants"));
         verify(spatialUnitRepository, never()).deleteById(anyLong());
@@ -1283,7 +1283,7 @@ class SpatialUnitServiceTest {
         when(recordingUnitRepository.countBySpatialContext(5L)).thenReturn(3);
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> spatialUnitService.deleteWhenUnused(5L));
+                () -> spatialUnitService.deleteIfUnused(5L));
 
         assertTrue(ex.getMessage().contains("unités d'enregistrement"));
         verify(spatialUnitRepository, never()).deleteById(anyLong());

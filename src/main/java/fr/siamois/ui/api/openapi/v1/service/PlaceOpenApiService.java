@@ -148,7 +148,7 @@ public class PlaceOpenApiService {
         SpatialUnitDTO dto = requireAccessiblePlace(caller, placeId);
         requirePlaceWritePermission(caller, dto, lang, "Suppression de lieu non autorisée");
         try {
-            spatialUnitService.deleteWhenUnused(placeId);
+            spatialUnitService.deleteIfUnused(placeId);
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         } catch (SpatialUnitNotFoundException e) {

@@ -677,7 +677,7 @@ public class SpatialUnitService implements ArkEntityService {
      */
     @Transactional
     @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
-    public void deleteWhenUnused(long spatialUnitId) {
+    public void deleteIfUnused (long spatialUnitId) {
         spatialUnitRepository.findById(spatialUnitId)
                 .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + spatialUnitId));
 
