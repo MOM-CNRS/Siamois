@@ -16,7 +16,7 @@ import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
-import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

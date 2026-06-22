@@ -3,7 +3,6 @@ package fr.siamois.ui.api.openapi.v1.mapper;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
@@ -32,7 +31,7 @@ public class PlaceOpenApiMapper {
         ConceptDTO category = dto.getCategory();
         if (category != null) {
             ConceptResourceIdentifier typeRef = conceptResourceIdentifierMapper.convert(category);
-            resource.setType(new RelationshipToOne<>(typeRef));
+            resource.setType(typeRef);
         }
 
         InstitutionDTO institution = dto.getCreatedByInstitution();
@@ -40,7 +39,7 @@ public class PlaceOpenApiMapper {
             OrganizationResourceIdentifier orgRef = new OrganizationResourceIdentifier();
             orgRef.setResourceType("organizations");
             orgRef.setId(String.valueOf(institution.getId()));
-            resource.setOrganization(new RelationshipToOne<>(orgRef));
+            resource.setOrganization(orgRef);
         }
 
         return resource;

@@ -11,13 +11,20 @@ import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.OrganizationListResponse;
+import fr.siamois.ui.api.openapi.v1.response.OrganizationResponse;
+import fr.siamois.ui.api.openapi.v1.response.find.FindListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
-import fr.siamois.ui.api.openapi.v1.response.*;
-
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
+import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,8 +32,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
