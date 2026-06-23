@@ -14,6 +14,6 @@ public class PersonResourceIdentifier implements ResourceIdentifier {
             example = "persons",
             allowableValues = {"persons"})
     private final String resourceType;
-    @JsonProperty("resourceId")
+
     private String id;
 }

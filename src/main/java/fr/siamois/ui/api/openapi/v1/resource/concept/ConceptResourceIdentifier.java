@@ -16,7 +16,7 @@ public class ConceptResourceIdentifier implements ResourceIdentifier {
             example = "concepts",
             allowableValues = {"concepts"})
     private String resourceType;
-    @JsonProperty("resourceId")
+
     private String id;
 
 }

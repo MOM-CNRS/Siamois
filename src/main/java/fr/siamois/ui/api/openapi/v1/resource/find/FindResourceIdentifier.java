@@ -14,7 +14,6 @@ public class FindResourceIdentifier {
             allowableValues = {"finds"})
     private String resourceType;
 
-    @JsonProperty("resourceId")
     private String id;
 
 }

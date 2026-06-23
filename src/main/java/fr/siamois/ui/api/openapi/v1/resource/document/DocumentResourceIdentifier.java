@@ -15,6 +15,5 @@ public class DocumentResourceIdentifier implements ResourceIdentifier {
             allowableValues = {"documents"})
     private String resourceType;
 
-    @JsonProperty("resourceId")
     private String id;
 }

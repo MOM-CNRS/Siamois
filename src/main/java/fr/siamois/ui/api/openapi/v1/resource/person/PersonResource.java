@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Utilisateur")
 public record PersonResource(
         @Schema(description = "Identifiant personne (person_id)", example = "42")
-        @JsonProperty("resourceId")
-        String resourceId,
+
+        String id,
         @Schema(description = "Identifiant de connexion")
         String username,
         @Schema(description = "Prénom")
