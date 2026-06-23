@@ -14,6 +14,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceLinks;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.lang.Nullable;
@@ -24,6 +25,7 @@ import java.util.Map;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class FindResource extends FindResourceIdentifier {
 
     private String fullIdentifier;

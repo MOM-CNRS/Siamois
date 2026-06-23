@@ -6,7 +6,6 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.resource.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -29,7 +28,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -99,20 +97,21 @@ class FindControllerApiTest {
     }
 
     @Test
-    void getById_success_returnsFormAndFieldsOnly() throws Exception {
+    void getById_success_returnsResourceData() throws Exception {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
-        FindFormData payload = new FindFormData(null, Map.of());
+        FindResource payload = new FindResource();
+        payload.setResourceType("finds");
+        payload.setId("5");
         when(recordingUnitOpenApiService.buildFindMobilierForm("5", personDto, Set.of(10L), "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/finds/5")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fields").isEmpty())
-                .andExpect(jsonPath("$.data.specimenType").doesNotExist())
-                .andExpect(jsonPath("$.data.vocabulariesByFieldCode").doesNotExist());
+                .andExpect(jsonPath("$.data.resourceId").value("5"))
+                .andExpect(jsonPath("$.data.specimenType").doesNotExist());
 
         verify(recordingUnitOpenApiService).buildFindMobilierForm("5", personDto, Set.of(10L), "fr");
     }
@@ -171,25 +170,6 @@ class FindControllerApiTest {
                 .andExpect(status().isNoContent());
 
         verify(findOpenApiService).deleteFind(7L, personDto, Set.of(10L), "fr");
-    }
-
-    @Test
-    void getForm_returnsUiShell() throws Exception {
-        when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-
-        FindFormData payload = new FindFormData(null, Map.of());
-        when(recordingUnitOpenApiService.buildFindUiForm(10L, personDto, "fr"))
-                .thenReturn(payload);
-
-        mockMvc.perform(get("/api/v1/finds/form")
-                        .param("organizationId", "10")
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fields").isEmpty());
-
-        verify(projectApiService).assertOrganizationInCallerScope(10L, Set.of(10L));
-        verify(recordingUnitOpenApiService).buildFindUiForm(10L, personDto, "fr");
     }
 
     @Test

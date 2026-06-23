@@ -19,7 +19,7 @@ import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
-import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

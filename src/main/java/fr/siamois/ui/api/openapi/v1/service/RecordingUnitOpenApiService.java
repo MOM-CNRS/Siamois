@@ -33,14 +33,15 @@ import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
+import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.*;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.*;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.api.openapi.v1.resource.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.type.*;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
@@ -89,6 +90,7 @@ public class RecordingUnitOpenApiService {
     private final PersonService personService;
     private final SpatialUnitService spatialUnitService;
     private final PersonMapper personMapper;
+    private final FindOpenApiMapper findOpenApiMapper;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -434,73 +436,53 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Gabarit UI mobilier pour une organisation : layout et métadonnées des champs (sans valeurs saisies).
-     * Utilise le formulaire personnalisé « générique » de l'institution (sans type de spécimen).
-     * Vocabulaires : {@code GET /api/v1/vocabularies}. Valeurs d'un mobilier existant : {@link #buildFindMobilierForm}.
+     * Mobilier existant : champs avec leurs valeurs persistées (champs système uniquement).
      */
     @Transactional(readOnly = true)
-    public FindFormData buildFindUiForm(long organizationId, PersonDTO personDto, String lang) {
-        InstitutionDTO institution = institutionService.findById(organizationId);
-        if (institution == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
-        }
-
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, institution);
-        if (customForm == null) {
-            return new FindFormData(null, Map.of());
-        }
-
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        FormResource formBundle = new FormResource(
-                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
-
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
-
-        return new FindFormData(formBundle, fields);
-    }
-
-    /**
-     * Mobilier existant : layout, champs et valeurs persistées (sans vocabulaires).
-     */
-    @Transactional(readOnly = true)
-    public FindFormData buildFindMobilierForm(String idOrKey,
+    public FindResource buildFindMobilierForm(String idOrKey,
                                               PersonDTO personDto,
                                               Set<Long> accessibleInstitutionIds,
                                               String lang) {
         SpecimenDTO specimen = specimenService.findAccessibleByKey(idOrKey, accessibleInstitutionIds)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+
+        FindResource resource = findOpenApiMapper.toResource(specimen);
+
         InstitutionDTO institution = specimen.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
+            resource.setAnswers(Map.of());
+            return resource;
         }
         ConceptDTO specimenType = specimen.getType();
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(specimenType, institution);
-        if (specimenType == null) {
-            return new FindFormData(null, Map.of());
-        }
-
-
         if (customForm == null) {
-            return new FindFormData(null, Map.of());
+            resource.setAnswers(Map.of());
+            return resource;
         }
 
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        FormResource formBundle = new FormResource(
-                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
-
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
 
-        return new FindFormData(formBundle, fields);
+        Map<String, FieldAnswer> answers = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildSpecimenFieldsWithFallback(specimen, fieldSource, locale));
+
+        resource.setAnswers(answers);
+        return resource;
+    }
+
+    private Map<String, FieldAnswer> buildSpecimenFieldsWithFallback(SpecimenDTO specimen,
+                                                                      FieldSource fieldSource,
+                                                                      Locale locale) {
+        try {
+            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, specimen, fieldSource, true);
+            return toFieldsMap(response, fieldSource, locale);
+        } catch (RuntimeException ex) {
+            log.warn("Impossible de construire les réponses formulaire pour le mobilier id={} (fallback null): {}",
+                    specimen.getId(), ex.toString(), ex);
+            return buildNullAnswersMap(fieldSource, locale);
+        }
     }
 
     /**

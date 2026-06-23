@@ -41,12 +41,13 @@ import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.DateFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectOneFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.form.TextFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.resource.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
@@ -138,6 +139,8 @@ class RecordingUnitOpenApiServiceTest {
     private SpatialUnitService spatialUnitService;
     @Mock
     private PersonMapper personMapper;
+    @Mock
+    private FindOpenApiMapper findOpenApiMapper;
 
     private RecordingUnitOpenApiService service;
 
@@ -164,7 +167,8 @@ class RecordingUnitOpenApiServiceTest {
                 permissionService,
                 personService,
                 spatialUnitService,
-                personMapper);
+                personMapper,
+                findOpenApiMapper);
 
         lenient().when(langService.localeForApiLang(any())).thenAnswer(inv -> {
             Object arg = inv.getArgument(0);
@@ -771,28 +775,6 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildFindMobilierUiForm_unknownOrganization_throws404() {
-        when(institutionService.findById(10L)).thenReturn(null);
-
-        assertThatThrownBy(() -> service.buildFindUiForm(10L, personDto, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
-    }
-
-    @Test
-    void buildFindMobilierUiForm_whenNoCustomForm_returnsEmptyFields() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        when(institutionService.findById(10L)).thenReturn(inst);
-        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, inst)).thenReturn(null);
-
-        FindFormData data = service.buildFindUiForm(10L, personDto, "fr");
-
-        assertThat(data.form()).isNull();
-        assertThat(data.fields()).isEmpty();
-    }
-
-    @Test
     void buildFindMobilierForm_whenNotAccessible_throws404() {
         when(specimenService.findAccessibleByKey("404", SCOPE)).thenReturn(Optional.empty());
 
@@ -802,7 +784,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildFindMobilierForm_whenNoCustomForm_returnsEmptyForm() {
+    void buildFindMobilierForm_whenNoCustomForm_returnsResourceWithEmptyAnswers() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ConceptDTO type = new ConceptDTO();
@@ -811,13 +793,15 @@ class RecordingUnitOpenApiServiceTest {
         spec.setId(7L);
         spec.setCreatedByInstitution(inst);
         spec.setType(type);
+        FindResource expected = new FindResource();
         when(specimenService.findAccessibleByKey("7", SCOPE)).thenReturn(Optional.of(spec));
+        when(findOpenApiMapper.toResource(spec)).thenReturn(expected);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(null);
 
-        FindFormData data = service.buildFindMobilierForm("7", personDto, SCOPE, "fr");
+        FindResource data = service.buildFindMobilierForm("7", personDto, SCOPE, "fr");
 
-        assertThat(data.form()).isNull();
-        assertThat(data.fields()).isEmpty();
+        assertThat(data).isSameAs(expected);
+        assertThat(data.getAnswers()).isEmpty();
     }
 
     @Test
@@ -927,58 +911,36 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildFindMobilierForm_withoutOrganization_throws400() {
+    void buildFindMobilierForm_withoutOrganization_returnsResourceWithEmptyAnswers() {
         SpecimenDTO spec = new SpecimenDTO();
         spec.setId(1L);
         spec.setType(new ConceptDTO());
+        FindResource expected = new FindResource();
         when(specimenService.findAccessibleByKey("1", SCOPE)).thenReturn(Optional.of(spec));
+        when(findOpenApiMapper.toResource(spec)).thenReturn(expected);
 
-        assertThatThrownBy(() -> service.buildFindMobilierForm("1", personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        FindResource data = service.buildFindMobilierForm("1", personDto, SCOPE, "fr");
+
+        assertThat(data).isSameAs(expected);
+        assertThat(data.getAnswers()).isEmpty();
     }
 
     @Test
-    void buildFindMobilierForm_withoutType_throws400() {
+    void buildFindMobilierForm_withoutType_returnsResourceWithEmptyAnswers() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         SpecimenDTO spec = new SpecimenDTO();
         spec.setId(1L);
         spec.setCreatedByInstitution(inst);
+        FindResource expected = new FindResource();
         when(specimenService.findAccessibleByKey("1", SCOPE)).thenReturn(Optional.of(spec));
+        when(findOpenApiMapper.toResource(spec)).thenReturn(expected);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, inst)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.buildFindMobilierForm("1", personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-    }
+        FindResource data = service.buildFindMobilierForm("1", personDto, SCOPE, "fr");
 
-    @Test
-    void buildFindMobilierUiForm_whenFormPresent_returnsBundleAndFields() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        when(institutionService.findById(10L)).thenReturn(inst);
-
-        CustomForm customForm = mock(CustomForm.class);
-        when(customForm.getId()).thenReturn(3L);
-        when(customForm.getName()).thenReturn("Mobilier");
-        when(customForm.getDescription()).thenReturn("desc");
-        when(customForm.getLayout()).thenReturn(List.of());
-        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, inst)).thenReturn(customForm);
-
-        CustomFieldText textField = mock(CustomFieldText.class);
-        when(textField.getId()).thenReturn(20L);
-        when(textField.getLabel()).thenReturn("Libellé");
-        when(textField.getHint()).thenReturn(null);
-        when(textField.getValueBinding()).thenReturn(null);
-        when(textField.getIsSystemField()).thenReturn(false);
-        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(textField));
-        when(customFormLayoutConverter.convertToDatabaseColumn(any())).thenReturn("[]");
-
-        FindFormData data = service.buildFindUiForm(10L, personDto, "fr");
-
-        assertThat(data.form()).isNotNull();
-        assertThat(data.form().resourceId()).isEqualTo(3L);
-        assertThat(data.fields()).containsKey("20");
+        assertThat(data).isSameAs(expected);
+        assertThat(data.getAnswers()).isEmpty();
     }
 
     @Test

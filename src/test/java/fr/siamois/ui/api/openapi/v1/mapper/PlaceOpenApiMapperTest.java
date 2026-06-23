@@ -70,7 +70,7 @@ class PlaceOpenApiMapperTest {
         PlaceResource resource = mapper.toResource(dto);
 
         assertThat(resource.getType()).isNotNull();
-        assertThat(resource.getType().getData()).isSameAs(typeRef);
+        assertThat(resource.getType()).isSameAs(typeRef);
         verify(conceptResourceIdentifierMapper).convert(category);
     }
 
@@ -86,8 +86,8 @@ class PlaceOpenApiMapperTest {
         PlaceResource resource = mapper.toResource(dto);
 
         assertThat(resource.getOrganization()).isNotNull();
-        assertThat(resource.getOrganization().getData().getResourceType()).isEqualTo("organizations");
-        assertThat(resource.getOrganization().getData().getId()).isEqualTo("10");
+        assertThat(resource.getOrganization().getResourceType()).isEqualTo("organizations");
+        assertThat(resource.getOrganization().getId()).isEqualTo("10");
     }
 
     @Test
