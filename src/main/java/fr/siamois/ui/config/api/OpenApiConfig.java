@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "SIAMOIS — API v0 (peut être modifier d'ici la v1)",
+                title = "SIAMOIS — API v0 EXPERIMENTALE: peut être modifier d'ici la v1",
                 version = "1.0",
                 description = """
                         API REST SIAMOIS
@@ -27,16 +27,7 @@ import org.springframework.context.annotation.Configuration;
 
                         **Langue** — en-tête `Accept-Language` (ex. `fr`, `en`) pour les libellés de champs et de vocabulaires.
 
-                        **Clés de ressources**
-                        - *Projet* (`action_unit`) : id numérique, `fullIdentifier`, ou identifiant court dans une organisation accessible.
-                        - *Unité d'enregistrement* : `recording_unit_id` numérique ou `full_identifier`.
-                        - *Mobilier* (GET) : `specimen_id` (chaîne numérique) ou `full_identifier` ; PATCH : `specimen_id` numérique uniquement.
-
-                        **Formulaires dynamiques** — `fieldAnswers` sur POST/PATCH : clés = identifiants `custom_field_id` (chaînes). \
-                        Pour les listes contrôlées, envoyer `concept.id` (pas `externalId`). \
-                        Vocabulaires par organisation : `GET /api/v1/vocabularies?organizationId=…`. \
-                        Types d'UE : concepts du field_code `SIARU.TYPE` dans ce vocabulaire ; \
-                        formulaire de création UE : `GET /api/v1/recording-units/creation-form?organizationId=…&recordingUnitTypeConceptId=…`.
+                        **Formulaires dynamiques** — `fieldAnswers` sur POST/PATCH : clés = identifiants `custom_field_id` (chaînes). 
                         """,
                 contact = @Contact(name = "SIAMOIS")
         ),
