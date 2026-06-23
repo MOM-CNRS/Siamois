@@ -13,7 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 public class FindType {
     private ResolvedConceptResource concept;
-    private String resourceId; // id of the concept for now, or _default. Might evolve if we add a type table
+    private String id; // id of the concept for now. Might evolve if we add a type table
     private FormResource formBundle;
     private FindIdentifierConfig identifierConfig;
     @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")

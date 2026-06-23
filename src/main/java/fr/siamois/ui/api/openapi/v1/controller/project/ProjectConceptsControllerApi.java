@@ -24,10 +24,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+import static fr.siamois.ui.api.openapi.v1.OpenApiTags.MOBILE_APP;
+import static fr.siamois.ui.api.openapi.v1.OpenApiTags.PROJECT_CONFIG;
+
 @RestController
 @RequestMapping("/api/v1/projects/{id}")
 @Tag(name = OpenApiTags.PROJECT)
 @Tag(name = OpenApiTags.MOBILE_APP)
+@Tag(name = PROJECT_CONFIG)
 @RequiredArgsConstructor
 public class ProjectConceptsControllerApi {
 
@@ -48,6 +52,7 @@ public class ProjectConceptsControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable ou fieldCode sans vocabulaire configuré"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
+    @Tag(name = MOBILE_APP)
     public ResponseEntity<ProjectConceptsResponse> getConcepts(
             @PathVariable long id,
             @Parameter(description = "Code du champ (ex: SIARU.TYPE, SIAS.CATEGORY).", required = true)
@@ -92,6 +97,7 @@ public class ProjectConceptsControllerApi {
             @ApiResponse(responseCode = "404", description = "Projet introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
+    @Tag(name = MOBILE_APP)
     public ResponseEntity<ProjectFieldCodesResponse> getFieldCodes(
             @PathVariable long id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {

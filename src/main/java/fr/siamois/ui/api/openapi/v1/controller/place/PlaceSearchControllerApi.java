@@ -3,10 +3,11 @@ package fr.siamois.ui.api.openapi.v1.controller.place;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
-import fr.siamois.ui.api.openapi.v1.response.spatialunit.SpatialUnitAutocompleteItemApi;
-import fr.siamois.ui.api.openapi.v1.response.spatialunit.SpatialUnitAutocompleteListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceAutocompleteItemApi;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceAutocompleteListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +33,7 @@ import java.util.List;
 @RequestMapping("/api/v1/places")
 @Tag(name = OpenApiTags.SPATIAL_UNIT)
 @RequiredArgsConstructor
-public class SpatialUnitSearchControllerApi {
+public class PlaceSearchControllerApi {
 
     private static final int DEFAULT_LIMIT = 20;
     private static final int MAX_LIMIT = 50;
@@ -53,7 +54,7 @@ public class SpatialUnitSearchControllerApi {
             @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<SpatialUnitAutocompleteListResponse> autocomplete(
+    public ResponseEntity<PlaceAutocompleteListResponse> autocomplete(
             @Parameter(description = "Institution propriétaire des lieux (doit être dans le périmètre JWT).", example = "10", required = true)
             @RequestParam("organizationId") long organizationId,
             @Parameter(description = "Sous-chaîne recherchée dans le nom du lieu (insensible à la casse côté requête SQL).", example = "rue")
@@ -90,25 +91,29 @@ public class SpatialUnitSearchControllerApi {
                 lang,
                 PageRequest.of(0, safeLimit));
 
-        List<SpatialUnitAutocompleteItemApi> items = page.getContent().stream()
-                .map(SpatialUnitSearchControllerApi::toItem)
+        List<PlaceAutocompleteItemApi> items = page.getContent().stream()
+                .map(PlaceSearchControllerApi::toItem)
                 .toList();
 
         ListMeta meta = new ListMeta(page.getTotalElements(), safeLimit, 0L);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(page.getTotalElements()))
-                .body(new SpatialUnitAutocompleteListResponse(items, meta));
+                .body(new PlaceAutocompleteListResponse(items, meta));
     }
 
-    private static SpatialUnitAutocompleteItemApi toItem(SpatialUnitDTO dto) {
+    private static PlaceAutocompleteItemApi toItem(SpatialUnitDTO dto) {
         ConceptDTO cat = dto.getCategory();
-        Long catId = cat != null ? cat.getId() : null;
-        String catExt = cat != null ? cat.getExternalId() : null;
-        return new SpatialUnitAutocompleteItemApi(
+        ResolvedConceptResource concept = null;
+        if (cat != null) {
+            concept = new ResolvedConceptResource();
+            concept.setResourceType("concepts");
+            concept.setId(String.valueOf(cat.getId()));
+            concept.setExternalUrl(cat.getExternalId());
+        }
+        return new PlaceAutocompleteItemApi(
                 dto.getId(),
                 dto.getName(),
                 dto.getCode(),
-                catId,
-                catExt);
+                concept);
     }
 }

@@ -6,7 +6,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
-import fr.siamois.ui.api.openapi.v1.controller.place.SpatialUnitSearchControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.place.PlaceSearchControllerApi;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
-class SpatialUnitSearchControllerApiTest {
+class PlaceSearchControllerApiTest {
 
     @Mock
     private ProjectApiService projectApiService;
@@ -49,7 +49,7 @@ class SpatialUnitSearchControllerApiTest {
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
-        SpatialUnitSearchControllerApi controller = new SpatialUnitSearchControllerApi(projectApiService, spatialUnitService);
+        PlaceSearchControllerApi controller = new PlaceSearchControllerApi(projectApiService, spatialUnitService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)

@@ -42,11 +42,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
-import fr.siamois.ui.api.openapi.v1.resource.type.FindIdentifierConfig;
-import fr.siamois.ui.api.openapi.v1.resource.type.FindType;
-import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitDefaultType;
-import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitIdentifierConfig;
-import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
+import fr.siamois.ui.api.openapi.v1.resource.type.*;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
@@ -269,7 +265,7 @@ public class RecordingUnitOpenApiService {
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
                 userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
 
-        FindType defaultType = new FindType();
+        FindDefaultType defaultType = new FindDefaultType();
         defaultType.setFormBundle(formBundle);
         defaultType.setFields(fields);
 
@@ -317,7 +313,7 @@ public class RecordingUnitOpenApiService {
         ConceptDTO typeDto = conceptMapper.convert(concept);
         RecordingUnitType type = new RecordingUnitType();
         type.setConcept(toConceptResource(typeDto));
-        type.setResourceId(String.valueOf(concept.getId()));
+        type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);

@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,7 +24,8 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
     private String identifier;
     private String fullIdentifier;
     private String projectId;
-    private String typeId;
+
+    private ResolvedConceptResource type;
 
     @Schema(description = "Géométrie de l'UE.")
     @Nullable

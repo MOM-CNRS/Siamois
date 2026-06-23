@@ -9,9 +9,9 @@ import java.util.List;
 
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class SpatialUnitAutocompleteListResponse extends ListResponse<SpatialUnitAutocompleteItemApi> {
+public class PlaceAutocompleteListResponse extends ListResponse<PlaceAutocompleteItemApi> {
 
-    public SpatialUnitAutocompleteListResponse(List<SpatialUnitAutocompleteItemApi> data, ListMeta meta) {
+    public PlaceAutocompleteListResponse(List<PlaceAutocompleteItemApi> data, ListMeta meta) {
         super(data, meta);
     }
 }

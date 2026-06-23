@@ -45,15 +45,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrganizationProjectsControllerApi {
 
-    private static final String HEADER_TOTAL_COUNT = "X-Total-Count";
-
-    private final RecordingUnitService recordingUnitService;
-    private final RecordingUnitResponseMapper recordingUnitResourceMapper;
-    private final ProjectApiService projectApiService;
-    private final OrganizationOpenApiMapper organizationOpenApiMapper;
-    private final PlaceOpenApiService placeOpenApiService;
-
-
     @Hidden
     @GetMapping("/{id}/projects")
     public ResponseEntity<ProjectListResponse> getProjects(
