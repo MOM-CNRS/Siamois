@@ -41,6 +41,7 @@ import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
@@ -141,6 +142,8 @@ class RecordingUnitOpenApiServiceTest {
     private PersonMapper personMapper;
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
+    @Mock
+    private LabelService labelService;
 
     private RecordingUnitOpenApiService service;
 
@@ -168,7 +171,8 @@ class RecordingUnitOpenApiServiceTest {
                 personService,
                 spatialUnitService,
                 personMapper,
-                findOpenApiMapper);
+                findOpenApiMapper,
+                labelService);
 
         lenient().when(langService.localeForApiLang(any())).thenAnswer(inv -> {
             Object arg = inv.getArgument(0);

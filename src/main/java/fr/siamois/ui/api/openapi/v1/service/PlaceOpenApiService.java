@@ -43,7 +43,8 @@ public class PlaceOpenApiService {
                                               long organizationId,
                                               int offset,
                                               int limit,
-                                              String sortParam) {
+                                              String sortParam,
+                                              String lang) {
         projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
 
         InstitutionDTO institution = institutionService.findById(organizationId);
@@ -55,7 +56,7 @@ public class PlaceOpenApiService {
         Page<SpatialUnitDTO> page = spatialUnitService.findByInstitutionId(organizationId, limit, offset, sort);
 
         var resources = page.getContent().stream()
-                .map(placeOpenApiMapper::toResource)
+                .map(dto -> placeOpenApiMapper.toResource(dto, lang))
                 .toList();
 
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);

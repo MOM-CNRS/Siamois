@@ -24,6 +24,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
@@ -91,6 +92,7 @@ public class RecordingUnitOpenApiService {
     private final SpatialUnitService spatialUnitService;
     private final PersonMapper personMapper;
     private final FindOpenApiMapper findOpenApiMapper;
+    private final LabelService labelService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -107,6 +109,9 @@ public class RecordingUnitOpenApiService {
         RecordingUnit entity = bundle.entity();
 
         RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
+        if (resource.getType() != null && dto.getType() != null) {
+            resource.getType().setResolvedLabel(labelService.findLabelOf(dto.getType(), lang).getLabel());
+        }
 
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null) {
@@ -314,7 +319,7 @@ public class RecordingUnitOpenApiService {
                                                      RecordingUnitIdentifierConfig identifierConfig) {
         ConceptDTO typeDto = conceptMapper.convert(concept);
         RecordingUnitType type = new RecordingUnitType();
-        type.setConcept(toConceptResource(typeDto));
+        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
         type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
@@ -410,7 +415,7 @@ public class RecordingUnitOpenApiService {
         Concept typeConcept = conceptRepository.findById(recordingUnitTypeConceptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recording unit type not found"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
-        ResolvedConceptResource typeResource = toConceptResource(typeDto);
+        ResolvedConceptResource typeResource = toConceptResource(typeDto, lang);
 
         CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
         if (customForm == null) {
@@ -542,11 +547,12 @@ public class RecordingUnitOpenApiService {
                 field.getIsSystemField(), field.getValueBinding());
     }
 
-    private static ResolvedConceptResource toConceptResource(ConceptDTO concept) {
+    private ResolvedConceptResource toConceptResource(ConceptDTO concept, String lang) {
         ResolvedConceptResource r = new ResolvedConceptResource();
         r.setResourceType("concepts");
         r.setId(String.valueOf(concept.getId()));
-        r.setResolvedLabel(concept.getExternalId() != null ? concept.getExternalId() : "");
+        r.setExternalUrl(concept.getExternalId());
+        r.setResolvedLabel(labelService.findLabelOf(concept, lang).getLabel());
         return r;
     }
 

@@ -443,7 +443,7 @@ class OrganizationControllerApiTest {
         PlaceResource place = new PlaceResource();
         place.setId("5");
         place.setName("Cave A");
-        when(placeOpenApiService.listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc")))
+        when(placeOpenApiService.listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc"), any()))
                 .thenReturn(new PlaceListResponse(List.of(place), new ListMeta(1L, 50, 0L)));
 
         mockMvc.perform(get("/api/v1/organizations/10/places"))
@@ -453,7 +453,7 @@ class OrganizationControllerApiTest {
                 .andExpect(jsonPath("$.data[0].name").value("Cave A"))
                 .andExpect(jsonPath("$.meta.total").value(1));
 
-        verify(placeOpenApiService).listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc"));
+        verify(placeOpenApiService).listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc"), any());
     }
 
     @Test

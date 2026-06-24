@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.place;
 
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
@@ -40,6 +41,7 @@ public class PlaceSearchControllerApi {
 
     private final ProjectApiService projectApiService;
     private final SpatialUnitService spatialUnitService;
+    private final LabelService labelService;
 
     @GetMapping("/autocomplete")
     @Operation(
@@ -92,7 +94,7 @@ public class PlaceSearchControllerApi {
                 PageRequest.of(0, safeLimit));
 
         List<PlaceAutocompleteItemApi> items = page.getContent().stream()
-                .map(PlaceSearchControllerApi::toItem)
+                .map(dto -> toItem(dto, lang))
                 .toList();
 
         ListMeta meta = new ListMeta(page.getTotalElements(), safeLimit, 0L);
@@ -101,7 +103,7 @@ public class PlaceSearchControllerApi {
                 .body(new PlaceAutocompleteListResponse(items, meta));
     }
 
-    private static PlaceAutocompleteItemApi toItem(SpatialUnitDTO dto) {
+    private PlaceAutocompleteItemApi toItem(SpatialUnitDTO dto, String lang) {
         ConceptDTO cat = dto.getCategory();
         ResolvedConceptResource concept = null;
         if (cat != null) {
@@ -109,6 +111,7 @@ public class PlaceSearchControllerApi {
             concept.setResourceType("concepts");
             concept.setId(String.valueOf(cat.getId()));
             concept.setExternalUrl(cat.getExternalId());
+            concept.setResolvedLabel(labelService.findLabelOf(cat, lang).getLabel());
         }
         return new PlaceAutocompleteItemApi(
                 dto.getId(),

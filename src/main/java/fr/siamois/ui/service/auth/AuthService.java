@@ -73,6 +73,6 @@ public class AuthService {
                 .map(i -> new OrganizationSummaryResponse(i.getId(), i.getName()))
                 .toList();
 
-        return new AuthUserResponse(person.getId(), person.getEmail(), person.getUsername(), person.getName(), person.getLastname(), orgs);
+        return new AuthUserResponse(person.getId(), person.getEmail(), person.getUsername(), person.getName(), orgs);
     }
 }

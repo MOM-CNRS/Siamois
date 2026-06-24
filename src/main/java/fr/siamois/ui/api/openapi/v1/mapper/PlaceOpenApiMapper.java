@@ -1,17 +1,22 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
+import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class PlaceOpenApiMapper {
 
-    public PlaceResource toResource(SpatialUnitDTO dto) {
+    private final LabelService labelService;
+
+    public PlaceResource toResource(SpatialUnitDTO dto, String lang) {
         if (dto == null) {
             return null;
         }
@@ -28,6 +33,8 @@ public class PlaceOpenApiMapper {
             typeRef.setResourceType("concepts");
             typeRef.setId(String.valueOf(category.getId()));
             typeRef.setExternalUrl(category.getExternalId());
+            String effectiveLang = (lang == null || lang.isBlank()) ? "fr" : lang;
+            typeRef.setResolvedLabel(labelService.findLabelOf(category, effectiveLang).getLabel());
             resource.setType(typeRef);
         }
 

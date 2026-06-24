@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -52,11 +53,13 @@ public class OrganizationPlacesControllerApi {
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Tri : name, id, code, creationTime ; direction asc ou desc.")
-            @RequestParam(defaultValue = "name:asc") String sort) {
+            @RequestParam(defaultValue = "name:asc") String sort,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
-        PlaceListResponse body = placeOpenApiService.listByOrganization(caller, id, offset, limit, sort);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        PlaceListResponse body = placeOpenApiService.listByOrganization(caller, id, offset, limit, sort, lang);
         return ResponseEntity.ok()
                 .header(HEADER_TOTAL_COUNT, String.valueOf(body.getMeta().total()))
                 .body(body);

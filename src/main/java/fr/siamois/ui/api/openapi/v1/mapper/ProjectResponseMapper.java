@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ProjectResponseMapper {
 
+    private final LabelService labelService;
+
     public ProjectResource toResource(AccessibleProjectForApi row) {
         return toResource(row, "fr");
     }
@@ -87,11 +89,11 @@ public class ProjectResponseMapper {
             return null;
         }
         ResolvedConceptResource v = new ResolvedConceptResource();
-        v.setResolvedLabel("");
-        // todo : fetch proper label. probably pass conceptlabeldto instead of
-        // conceptdto to this
-        // method
+        v.setResourceType("concepts");
         v.setId(String.valueOf(concept.getId()));
+        v.setExternalUrl(concept.getExternalId());
+        String effectiveLang = (lang == null || lang.isBlank()) ? "fr" : lang;
+        v.setResolvedLabel(labelService.findLabelOf(concept, effectiveLang).getLabel());
         return v;
     }
 }

@@ -108,9 +108,9 @@ class PlaceOpenApiServiceTest {
         resource.setResourceType("places");
         resource.setId("5");
         resource.setName("Cave A");
-        when(placeOpenApiMapper.toResource(dto)).thenReturn(resource);
+        when(placeOpenApiMapper.toResource(eq(dto), any())).thenReturn(resource);
 
-        PlaceListResponse response = service.listByOrganization(caller, 10L, 0, 50, "name:asc");
+        PlaceListResponse response = service.listByOrganization(caller, 10L, 0, 50, "name:asc", "fr");
 
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getName()).isEqualTo("Cave A");
@@ -122,7 +122,7 @@ class PlaceOpenApiServiceTest {
     void listByOrganization_unknownOrg_throws404() {
         when(institutionService.findById(10L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.listByOrganization(caller, 10L, 0, 50, "name:asc"))
+        assertThatThrownBy(() -> service.listByOrganization(caller, 10L, 0, 50, "name:asc", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.NOT_FOUND.value()));

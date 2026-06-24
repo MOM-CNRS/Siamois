@@ -17,7 +17,7 @@ public class FindCreateRequest {
 
     @Schema(
             description = "Clé d'UE : identifiant numérique (recording_unit_id).",
-            example = "INST-PROJ-UE42",
+            example = "187",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String recordingUnitId;

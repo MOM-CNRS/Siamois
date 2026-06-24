@@ -17,16 +17,13 @@ public class ProjectResourceLinks {
     @Schema(description = "URL des sous-projets")
     private String children;
 
-    @Schema(description = "URL du formulaire de création d'une unité d'enregistrement pour ce projet")
-    private String creationForm;
 
     public static ProjectResourceLinks of(String projectId) {
         String base = "/projects/" + projectId;
         return new ProjectResourceLinks(
                 base,
                 base + "/recording-units",
-                base + "/children",
-                base + "/recording-units/creation-form"
+                base + "/children"
         );
     }
 }
