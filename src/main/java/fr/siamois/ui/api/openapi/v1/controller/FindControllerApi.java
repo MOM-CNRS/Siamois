@@ -47,7 +47,7 @@ public class FindControllerApi {
 
     @GetMapping("/{id}")
     @Operation(
-            summary = "Formulaire d'un mobilier avec ses valeurs",
+            summary = "Un mobilier avec ces valeurs",
             description = "Layout, champs et valeurs persistées pour le spécimen (specimen_id ou full_identifier). "
                     + "Pour le gabarit UI seul : GET /api/v1/mobiliers/form. Vocabulaires : GET /api/v1/vocabularies."
     )

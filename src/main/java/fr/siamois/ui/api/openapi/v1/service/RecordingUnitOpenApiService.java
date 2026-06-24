@@ -644,8 +644,9 @@ public class RecordingUnitOpenApiService {
                                                                 Set<Long> accessibleInstitutionIds) {
         List<RecordingUnitSummaryDTO> children =
                 recordingUnitService.findChildrenForAccessibleRecordingUnit(recordingUnitKey, accessibleInstitutionIds);
-        // todo : cast dto to recording unit resource list
-        return new ArrayList<>();
+        return children.stream()
+                .map(recordingUnitResponseMapper::toResource)
+                .toList();
     }
 
     @Transactional
