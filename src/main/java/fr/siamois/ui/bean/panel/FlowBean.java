@@ -106,6 +106,7 @@ public class FlowBean implements Serializable {
         institutions = new ArrayList<>();
         institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
         selectedInstitution = institution;
+        cachedMyActionUnits = null;
     }
 
     @EventListener(InstitutionChangeEvent.class)
