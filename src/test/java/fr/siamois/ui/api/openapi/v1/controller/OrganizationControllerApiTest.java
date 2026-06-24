@@ -17,6 +17,9 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationPlacesControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationProjectsControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationRecordingUnitsControllerApi;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.OrganizationOpenApiMapper;
@@ -127,7 +130,18 @@ class OrganizationControllerApiTest {
                 projectApiService,
                 new OrganizationOpenApiMapper());
 
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        OrganizationPlacesControllerApi placesController = new OrganizationPlacesControllerApi(
+                projectApiService,
+                placeOpenApiService);
+
+        OrganizationProjectsControllerApi projectsController = new OrganizationProjectsControllerApi();
+
+        OrganizationRecordingUnitsControllerApi recordingUnitsController = new OrganizationRecordingUnitsControllerApi(
+                recordingUnitService,
+                recordingUnitResponseMapper,
+                projectApiService);
+
+        mockMvc = MockMvcBuilders.standaloneSetup(controller, placesController, projectsController, recordingUnitsController)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
                 .build();
