@@ -183,8 +183,8 @@ public class ProjectApiService {
         shell.setSpatialContext(new LinkedHashSet<>());
 
 
-/*        recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
-                shell, request.getAdditionalValues(), caller.person(), lang);*/
+        recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
+                shell, null, caller.person(), lang);
 
         try {
             ActionUnitDTO saved = actionUnitService.save(userInfo, shell, typeDto);
@@ -279,11 +279,9 @@ public class ProjectApiService {
     }
 
     private void applySpatialContextPatch(ActionUnitDTO dto, InstitutionDTO projectInstitution, ProjectPatchRequest patch) {
-
         if (projectInstitution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
-        long orgId = projectInstitution.getId();
         LinkedHashSet<SpatialUnitSummaryDTO> resolved = new LinkedHashSet<>();
         dto.setSpatialContext(resolved);
     }

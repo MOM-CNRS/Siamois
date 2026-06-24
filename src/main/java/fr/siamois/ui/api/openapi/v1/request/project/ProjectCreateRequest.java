@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.project;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -22,6 +23,7 @@ public class ProjectCreateRequest {
     private String identifier;
 
     @Schema(description = "Identifiant du concept du type de projet", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("typeConceptId")
     private String typeId;
 
     @Schema(description = "Date de début")

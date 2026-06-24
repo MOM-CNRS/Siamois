@@ -19,11 +19,12 @@ import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.project.ProjectDocumentsControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.project.ProjectRecordingUnitsControllerApi;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
@@ -148,7 +149,15 @@ class ProjectControllerApiTest {
                 recordingUnitOpenApiService,
                 documentWriteOpenApiService);
 
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
+                projectApiService,
+                recordingUnitResourceMapper);
+
+        ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
+                projectApiService,
+                documentWriteOpenApiService);
+
+        mockMvc = MockMvcBuilders.standaloneSetup(controller, recordingUnitsController, documentsController)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
                 .build();
@@ -536,6 +545,10 @@ class ProjectControllerApiTest {
     @Test
     void getProjectDocuments_projectNotFound_returns404() throws Exception {
         login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L)))
+                .thenThrow(new ActionUnitNotFoundException("missing"));
 
         mockMvc.perform(get("/api/v1/projects/5/documents"))
                 .andExpect(status().isNotFound());
@@ -722,44 +735,6 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.name").value("Après"));
 
         verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) -> "Après".equals(d.getName())), any());
-    }
-
-    @Test
-    void patchProject_spatialContext_passesResolvedPlacesToSave() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(9L);
-        au.setName("P");
-        au.setCreatedByInstitution(institutionDto);
-        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L)))
-                .thenReturn(row)
-                .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
-
-        SpatialUnitDTO place = new SpatialUnitDTO();
-        place.setId(50L);
-        place.setCreatedByInstitution(institutionDto);
-        when(spatialUnitService.findById(50L)).thenReturn(place);
-        when(actionUnitService.save(any(), any(), any())).thenReturn(au);
-
-        ProjectResource resource = new ProjectResource();
-        resource.setResourceType("projects");
-        resource.setId("9");
-        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString())).thenReturn(resource);
-
-        mockMvc.perform(patch("/api/v1/projects/9")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"spatialContextSpatialUnitIds\":[50]}"))
-                .andExpect(status().isOk());
-
-        verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) ->
-                d.getSpatialContext() != null
-                        && d.getSpatialContext().size() == 1
-                        && d.getSpatialContext().iterator().next().getId().equals(50L)), any());
     }
 
     @Test

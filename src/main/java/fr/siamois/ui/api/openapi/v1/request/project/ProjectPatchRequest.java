@@ -35,6 +35,4 @@ public class ProjectPatchRequest {
 
     @Schema(description = "Localisation principale du projet (Identifiant d'unité spatiale)")
     private String mainLocationId;
-
-    // No additional value for patch for now
 }
