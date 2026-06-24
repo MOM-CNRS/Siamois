@@ -142,7 +142,7 @@ class FindControllerApiTest {
 
         mockMvc.perform(post("/api/v1/finds")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recordingUnitId\":\"1\",\"specimenTypeConceptId\":\"2\"}"))
+                        .content("{\"recordingUnitId\":\"1\",\"typeId\":\"2\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value("55"));
     }
