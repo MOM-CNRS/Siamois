@@ -19,7 +19,7 @@ Procédure de démarrage de l'application
 # Auteurs
 * [Miled ROUSSET](https://github.com/miledrousset)
 * [Grégory BLIAULT](https://github.com/gregblt)
-* [Julien LINGET](https://github.com/neswatch)
+* [Julien LINGET](https://github.com/DvLogys)
 
 ## Contact
 
