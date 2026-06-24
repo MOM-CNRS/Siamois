@@ -284,7 +284,7 @@ class OrganizationControllerApiTest {
                 .andExpect(header().string("X-Total-Count", "2"))
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.data[0].name").value("Alpha"))
-                .andExpect(jsonPath("$.data[0].resourceId").value("1"))
+                .andExpect(jsonPath("$.data[0].id").value("1"))
                 .andExpect(jsonPath("$.data[1].name").value("Beta"))
                 .andExpect(jsonPath("$.meta.total").value(2))
                 .andExpect(jsonPath("$.meta.offset").value(0));
@@ -367,8 +367,8 @@ class OrganizationControllerApiTest {
 
         mockMvc.perform(get("/api/v1/organizations").param("offset", "0").param("limit", "20").param("sort", "id:asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].resourceId").value("2"))
-                .andExpect(jsonPath("$.data[1].resourceId").value("10"));
+                .andExpect(jsonPath("$.data[0].id").value("2"))
+                .andExpect(jsonPath("$.data[1].id").value("10"));
     }
 
     @Test
@@ -464,12 +464,6 @@ class OrganizationControllerApiTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void getFinds_returns501() throws Exception {
-        login();
-        mockMvc.perform(get("/api/v1/organizations/1/mobiliers"))
-                .andExpect(status().isNotImplemented());
-    }
 
     @Test
     void getRecordingUnitByFullIdentifier_success() throws Exception {

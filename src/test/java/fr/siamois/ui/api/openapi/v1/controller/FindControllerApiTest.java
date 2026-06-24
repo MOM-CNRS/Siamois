@@ -110,7 +110,7 @@ class FindControllerApiTest {
         mockMvc.perform(get("/api/v1/finds/5")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.resourceId").value("5"))
+                .andExpect(jsonPath("$.data.id").value("5"))
                 .andExpect(jsonPath("$.data.specimenType").doesNotExist());
 
         verify(recordingUnitOpenApiService).buildFindMobilierForm("5", personDto, Set.of(10L), "fr");
@@ -141,7 +141,7 @@ class FindControllerApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"recordingUnitId\":\"1\",\"specimenTypeConceptId\":\"2\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.resourceId").value("55"));
+                .andExpect(jsonPath("$.data.id").value("55"));
     }
 
     @Test
@@ -158,7 +158,7 @@ class FindControllerApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.resourceId").value("3"));
+                .andExpect(jsonPath("$.data.id").value("3"));
     }
 
     @Test

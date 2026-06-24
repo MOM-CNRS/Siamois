@@ -325,7 +325,7 @@ class ProjectControllerApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Projet test"))
                 .andExpect(jsonPath("$.data.resourceType").value("projects"))
-                .andExpect(jsonPath("$.data.resourceId").value("5"));
+                .andExpect(jsonPath("$.data.id").value("5"));
 
         verify(actionUnitService).findAccessibleProjectByKey("5", Set.of(100L));
     }
@@ -568,7 +568,7 @@ class ProjectControllerApiTest {
         mockMvc.perform(get("/api/v1/projects/7/documents"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.documents", hasSize(1)))
-                .andExpect(jsonPath("$.data.documents[0].resourceId").value("100"))
+                .andExpect(jsonPath("$.data.documents[0].id").value("100"))
                 .andExpect(jsonPath("$.data.documents[0].resourceType").value("documents"))
                 .andExpect(jsonPath("$.data.documents[0].title").value("Plan de fouille"));
 

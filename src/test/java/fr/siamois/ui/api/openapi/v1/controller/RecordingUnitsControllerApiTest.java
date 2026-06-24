@@ -192,7 +192,7 @@ class RecordingUnitsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/recording-units/5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.resourceId").value("5"))
+                .andExpect(jsonPath("$.data.id").value("5"))
                 .andExpect(jsonPath("$.data.resourceType").value("recording-units"));
     }
 
@@ -211,7 +211,7 @@ class RecordingUnitsControllerApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"projectId\":\"5\",\"typeId\":\"42\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.resourceId").value("99"));
+                .andExpect(jsonPath("$.data.id").value("99"));
     }
 
     @Test
@@ -229,7 +229,7 @@ class RecordingUnitsControllerApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.resourceId").value("5"));
+                .andExpect(jsonPath("$.data.id").value("5"));
     }
 
     @Test
@@ -246,7 +246,7 @@ class RecordingUnitsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/recording-units/5").param("counts", "specimen"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.resourceId").value("5"));
+                .andExpect(jsonPath("$.data.id").value("5"));
     }
 
     @ParameterizedTest
@@ -277,7 +277,7 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/7")
                         .header("Accept-Language", "en-US,en;q=0.9"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.resourceId").value("7"));
+                .andExpect(jsonPath("$.data.id").value("7"));
 
         verify(recordingUnitOpenApiService).buildMobileDetail(
                 "7", personDto, Set.of(10L), null, "en");
@@ -396,7 +396,7 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Total-Count", "1"))
                 .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].resourceId").value("99"))
+                .andExpect(jsonPath("$.data[0].id").value("99"))
                 .andExpect(jsonPath("$.data[0].resourceType").value("finds"))
                 .andExpect(jsonPath("$.data[0].fullIdentifier").value("INST-UE-99"));
 
@@ -523,7 +523,7 @@ class RecordingUnitsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/recording-units/5/children"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].resourceId").value("100"))
+                .andExpect(jsonPath("$.data[0].id").value("100"))
                 .andExpect(jsonPath("$.data[0].fullIdentifier").value("INST-A-UE-C"));
 
         verify(recordingUnitOpenApiService).buildRecordingUnitChildren("5", Set.of(10L));
@@ -546,8 +546,8 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/1/children"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].resourceId").value("10"))
-                .andExpect(jsonPath("$.data[1].resourceId").value("20"));
+                .andExpect(jsonPath("$.data[0].id").value("10"))
+                .andExpect(jsonPath("$.data[1].id").value("20"));
 
         verify(recordingUnitOpenApiService).buildRecordingUnitChildren("1", Set.of(10L));
     }
@@ -662,7 +662,7 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/7/documents"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].resourceId").value("100"))
+                .andExpect(jsonPath("$.data[0].id").value("100"))
                 .andExpect(jsonPath("$.data[0].resourceType").value("documents"))
                 .andExpect(jsonPath("$.data[0].title").value("Photo de coupe"));
 
@@ -753,9 +753,9 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/1/documents"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].resourceId").value("7"))
+                .andExpect(jsonPath("$.data[0].id").value("7"))
                 .andExpect(jsonPath("$.data[0].title").value("first"))
-                .andExpect(jsonPath("$.data[1].resourceId").value("30"))
+                .andExpect(jsonPath("$.data[1].id").value("30"))
                 .andExpect(jsonPath("$.data[1].title").value("second"));
     }
 
@@ -796,7 +796,7 @@ class RecordingUnitsControllerApiTest {
                         .param("recordingUnitTypeConceptId", "3")
                         .header("Accept-Language", "fr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.recordingUnitType.resourceId").value("3"));
+                .andExpect(jsonPath("$.data.recordingUnitType.id").value("3"));
 
         verify(recordingUnitOpenApiService).buildRecordingUnitCreateForm(10L, 3L, personDto, "fr");
     }
@@ -869,7 +869,7 @@ class RecordingUnitsControllerApiTest {
                         .param("projectId", "10")
                         .param("recordingUnitTypeConceptId", "8"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.form.resourceId").value(50))
+                .andExpect(jsonPath("$.data.form.id").value(50))
                 .andExpect(jsonPath("$.data.form.name").value("Mon formulaire"))
                 .andExpect(jsonPath("$.data.fields['12'].id").value("12"))
                 .andExpect(jsonPath("$.data.fields['12'].answerType").value("TEXT"));

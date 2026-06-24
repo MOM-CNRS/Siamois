@@ -55,7 +55,7 @@ class AuthControllerApiTest {
     @Test
     void login_success_returnsTokenAndUser() throws Exception {
         AuthUserResponse user = new AuthUserResponse(
-                1L, "a@b.fr", "user", "Jean", "Dupont", List.of(new OrganizationSummaryResponse(10L, "Org")));
+                1L,  "user", "Jean", "Dupont", List.of(new OrganizationSummaryResponse(10L, "Org")));
         LoginResponse body = new LoginResponse("access-jwt", 900L, "Bearer", user);
         when(authService.login("a@b.fr", "secret")).thenReturn(body);
 
@@ -66,7 +66,6 @@ class AuthControllerApiTest {
                 .andExpect(jsonPath("$.accessToken").value("access-jwt"))
                 .andExpect(jsonPath("$.expiresIn").value(900))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.user.email").value("a@b.fr"))
                 .andExpect(jsonPath("$.user.organizations[0].name").value("Org"));
 
         verify(authService).login("a@b.fr", "secret");
@@ -100,12 +99,11 @@ class AuthControllerApiTest {
     @Test
     void me_returnsUser() throws Exception {
         AuthUserResponse user = new AuthUserResponse(
-                2L, "me@test.fr", "me", "A", "B", List.of());
+                2L,  "me", "A", "B", List.of());
         when(authService.currentUser()).thenReturn(user);
 
         mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("me@test.fr"))
                 .andExpect(jsonPath("$.id").value(2));
 
         verify(authService).currentUser();
