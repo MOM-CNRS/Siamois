@@ -39,11 +39,6 @@ public class FindControllerApi {
     private final FindOpenApiService findOpenApiService;
 
 
-    @Hidden
-    @GetMapping
-    public ResponseEntity<FindListResponse> getAll() {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
-    }
 
     @GetMapping("/{id}")
     @Operation(
