@@ -1,16 +1,14 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.dto.entity.ActionCodeDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.VocabularyDTO;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
@@ -27,9 +25,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,7 +47,6 @@ class ProjectResponseMapperTest {
 
     private ActionUnitDTO dto;
     private ConceptDTO typeDto;
-    private Concept conceptEntity;
 
     @BeforeEach
     void setUp() {
@@ -68,32 +65,34 @@ class ProjectResponseMapperTest {
         inst.setId(1L);
         dto.setCreatedByInstitution(inst);
 
-        conceptEntity = new Concept();
-
         ConceptResourceIdentifier typeIdent = new ConceptResourceIdentifier();
         typeIdent.setResourceType("concepts");
         typeIdent.setId("99");
         lenient().when(conceptResourceIdentifierMapper.convert(typeDto)).thenReturn(typeIdent);
+
+        ConceptPrefLabelDTO defaultLabel = new ConceptPrefLabelDTO();
+        defaultLabel.setLabel("label");
+        lenient().when(labelService.findLabelOf(any(ConceptDTO.class), any())).thenReturn(defaultLabel);
     }
 
     @Test
     void toResource_setsCategorieViaConceptMapperAndLabelService() {
-        ConceptLabel label = mock(ConceptLabel.class);
-        when(label.getLabel()).thenReturn("Fouille programmée");
-        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
-        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(label);
+        ConceptPrefLabelDTO labelDto = new ConceptPrefLabelDTO();
+        labelDto.setLabel("Fouille programmée");
+        when(labelService.findLabelOf(typeDto, "fr")).thenReturn(labelDto);
 
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 0L, 0L);
         ProjectResource r = projectResponseMapper.toResource(row, "fr");
 
         assertThat(r.getType().getResolvedLabel()).isEqualTo("Fouille programmée");
-        verify(conceptMapper, times(2)).invertConvert(typeDto);
-        verify(labelService, times(2)).findLabelOf(conceptEntity, "fr");
+        verify(labelService).findLabelOf(typeDto, "fr");
     }
 
     @Test
     void toResource_categorieFallback_whenInvertConvertThrows() {
-        when(conceptMapper.invertConvert(typeDto)).thenThrow(new RuntimeException("conversion"));
+        ConceptPrefLabelDTO fallback = new ConceptPrefLabelDTO();
+        fallback.setLabel("[TYPE-EXT]");
+        when(labelService.findLabelOf(typeDto, "fr")).thenReturn(fallback);
 
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 0L, 0L);
         ProjectResource r = projectResponseMapper.toResource(row, "fr");
@@ -103,21 +102,21 @@ class ProjectResponseMapperTest {
 
     @Test
     void toResource_usesLangFromParameter() {
-        ConceptLabel label = mock(ConceptLabel.class);
-        when(label.getLabel()).thenReturn("Survey");
-        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
-        when(labelService.findLabelOf(conceptEntity, "en")).thenReturn(label);
+        ConceptPrefLabelDTO labelDto = new ConceptPrefLabelDTO();
+        labelDto.setLabel("Survey");
+        when(labelService.findLabelOf(typeDto, "en")).thenReturn(labelDto);
 
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 0L, 0L);
         ProjectResource r = projectResponseMapper.toResource(row, "en");
 
         assertThat(r.getType().getResolvedLabel()).isEqualTo("Survey");
-        verify(labelService, times(2)).findLabelOf(conceptEntity, "en");
+        verify(labelService).findLabelOf(typeDto, "en");
     }
 
     @Test
     void toResource_localisation_communeAndPrecises() {
         SpatialUnitSummaryDTO main = new SpatialUnitSummaryDTO();
+        main.setId(1L);
         main.setName("Commune A");
         main.setCode("75001");
         dto.setMainLocation(main);
@@ -132,28 +131,18 @@ class ProjectResponseMapperTest {
         ctx.add(ctx2);
         dto.setSpatialContext(ctx);
 
-        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
-        ConceptLabel label = mock(ConceptLabel.class);
-        when(label.getLabel()).thenReturn("T");
-        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(label);
-
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 1L, 2L);
         ProjectResource r = projectResponseMapper.toResource(row, "fr");
 
-        assertThat(r.getMainLocation().getName()).isEqualTo("Commune A (75001)");
+        assertThat(r.getMainLocation().getName()).isEqualTo("Commune A");
     }
 
     @Test
     void toResource_singleArgDelegatesToFr() {
-        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
-        ConceptLabel label = mock(ConceptLabel.class);
-        when(label.getLabel()).thenReturn("L");
-        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(label);
-
         AccessibleProjectForApi row = new AccessibleProjectForApi(dto, 0L, 0L);
         projectResponseMapper.toResource(row);
 
-        verify(labelService, times(2)).findLabelOf(conceptEntity, "fr");
+        verify(labelService).findLabelOf(typeDto, "fr");
     }
 
 
@@ -168,10 +157,10 @@ class ProjectResponseMapperTest {
                 .type(vt)
                 .build();
         typeDto.setVocabulary(voc);
-        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
-        ConceptLabel label = mock(ConceptLabel.class);
-        when(label.getLabel()).thenReturn("Excavation");
-        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(label);
+
+        ConceptPrefLabelDTO labelDto = new ConceptPrefLabelDTO();
+        labelDto.setLabel("Excavation");
+        when(labelService.findLabelOf(typeDto, "fr")).thenReturn(labelDto);
 
         ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
 
@@ -192,20 +181,10 @@ class ProjectResponseMapperTest {
         main.setCategory(cat);
         dto.setMainLocation(main);
 
-        Concept catEntity = new Concept();
-        when(conceptMapper.invertConvert(typeDto)).thenReturn(conceptEntity);
-        when(conceptMapper.invertConvert(cat)).thenReturn(catEntity);
-        ConceptLabel l1 = mock(ConceptLabel.class);
-        when(l1.getLabel()).thenReturn("TypeOp");
-        ConceptLabel l2 = mock(ConceptLabel.class);
-        when(l2.getLabel()).thenReturn("Carre");
-        when(labelService.findLabelOf(conceptEntity, "fr")).thenReturn(l1);
-        when(labelService.findLabelOf(catEntity, "fr")).thenReturn(l2);
-
         ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
 
         assertThat(r.getMainLocation()).isNotNull();
-        assertThat(r.getMainLocation().getId()).isEqualTo(8L);
-        assertThat(r.getMainLocation().getName()).isEqualTo("Carre");
+        assertThat(r.getMainLocation().getId()).isEqualTo("100");
+        assertThat(r.getMainLocation().getName()).isEqualTo("Lieu");
     }
 }

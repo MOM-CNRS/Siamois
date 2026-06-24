@@ -869,7 +869,7 @@ class RecordingUnitsControllerApiTest {
                         .param("projectId", "10")
                         .param("recordingUnitTypeConceptId", "8"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.form.id").value(50))
+                .andExpect(jsonPath("$.data.form.resourceId").value(50))
                 .andExpect(jsonPath("$.data.form.name").value("Mon formulaire"))
                 .andExpect(jsonPath("$.data.fields['12'].id").value("12"))
                 .andExpect(jsonPath("$.data.fields['12'].answerType").value("TEXT"));

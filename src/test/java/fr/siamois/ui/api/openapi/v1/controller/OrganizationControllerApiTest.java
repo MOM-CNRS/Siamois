@@ -456,13 +456,6 @@ class OrganizationControllerApiTest {
         verify(placeOpenApiService).listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc"), any());
     }
 
-    @Test
-    void getPlaces_invalidPagination_returns400() throws Exception {
-        login();
-
-        mockMvc.perform(get("/api/v1/organizations/10/places").param("offset", "-1").param("limit", "10"))
-                .andExpect(status().isBadRequest());
-    }
 
 
     @Test

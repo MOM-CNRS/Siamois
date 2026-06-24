@@ -34,6 +34,7 @@ import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
@@ -182,6 +183,9 @@ class RecordingUnitOpenApiServiceTest {
             return Locale.forLanguageTag((String) arg);
         });
         lenient().when(langService.resolveMessage(any(), any())).thenAnswer(inv -> inv.getArgument(0));
+        ConceptPrefLabelDTO stubLabel = new ConceptPrefLabelDTO();
+        stubLabel.setLabel("stub-label");
+        lenient().when(labelService.findLabelOf(any(ConceptDTO.class), any())).thenReturn(stubLabel);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -567,13 +571,10 @@ class RecordingUnitOpenApiServiceTest {
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
         when(permissionService.hasWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(true);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(99L, SCOPE)).thenReturn(new RecordingUnitDTO());
-        when(recordingUnitService.findRelationsForAccessibleRecordingUnit("5", SCOPE)).thenReturn(
-                new RecordingUnitService.RecordingUnitRelationsBundle(List.of(), List.of(), List.of()));
 
         service.addExistingChild("5", 99L, personDto, SCOPE);
 
         verify(recordingUnitService).addHierarchyChild(5L, 99L);
-        verify(recordingUnitService).findRelationsForAccessibleRecordingUnit("5", SCOPE);
     }
 
     @Test

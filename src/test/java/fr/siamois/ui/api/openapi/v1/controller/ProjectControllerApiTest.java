@@ -536,10 +536,6 @@ class ProjectControllerApiTest {
     @Test
     void getProjectDocuments_projectNotFound_returns404() throws Exception {
         login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L)))
-                .thenThrow(new ActionUnitNotFoundException("missing"));
 
         mockMvc.perform(get("/api/v1/projects/5/documents"))
                 .andExpect(status().isNotFound());
