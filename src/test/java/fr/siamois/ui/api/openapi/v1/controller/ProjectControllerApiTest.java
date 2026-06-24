@@ -576,10 +576,10 @@ class ProjectControllerApiTest {
 
         mockMvc.perform(get("/api/v1/projects/7/documents"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.documents", hasSize(1)))
-                .andExpect(jsonPath("$.data.documents[0].id").value("100"))
-                .andExpect(jsonPath("$.data.documents[0].resourceType").value("documents"))
-                .andExpect(jsonPath("$.data.documents[0].title").value("Plan de fouille"));
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value("100"))
+                .andExpect(jsonPath("$.data[0].resourceType").value("documents"))
+                .andExpect(jsonPath("$.data[0].title").value("Plan de fouille"));
 
         verify(documentService).findForActionUnit(au);
         verify(projectDocumentOpenApiMapper).toResource(same(doc));
@@ -599,7 +599,7 @@ class ProjectControllerApiTest {
 
         mockMvc.perform(get("/api/v1/projects/2/documents"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.documents", hasSize(0)));
+                .andExpect(jsonPath("$.data", hasSize(0)));
     }
 
     @Test
