@@ -94,9 +94,6 @@ public class FlowBean implements Serializable {
 
     private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
 
-    // Cached
-    private List<ActionUnitDTO> cachedMyActionUnits;
-
     public void init() {
         fullscreenPanelIndex = -1;
         panels = new ArrayList<>();
@@ -106,7 +103,6 @@ public class FlowBean implements Serializable {
         institutions = new ArrayList<>();
         institutions.addAll(institutionService.findInstitutionsOfPerson(info.getUser()));
         selectedInstitution = institution;
-        cachedMyActionUnits = null;
     }
 
     @EventListener(InstitutionChangeEvent.class)
@@ -778,10 +774,10 @@ public class FlowBean implements Serializable {
      * Return the active actions units for which i'm a member
      */
     public List<ActionUnitDTO> getMyActionUnits() {
-        if (cachedMyActionUnits == null) {
-            cachedMyActionUnits = actionUnitService.findByTeamMember(sessionSettings.getUserInfo().getUser(), sessionSettings.getSelectedInstitution(), 10);
-        }
-        return cachedMyActionUnits;
+        return actionUnitService.findByTeamMember(
+                sessionSettings.getUserInfo().getUser(),
+                sessionSettings.getSelectedInstitution(),
+                10);
     }
 
 
