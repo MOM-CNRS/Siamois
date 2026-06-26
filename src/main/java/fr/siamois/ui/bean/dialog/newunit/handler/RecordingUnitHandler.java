@@ -150,6 +150,10 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
         unit.setParents(new HashSet<>());
         unit.setChildren(new HashSet<>());
 
+        if (!unit.hierarchyIsInitialized()) {
+            recordingUnitService.initializeHierarchy(unit);
+        }
+
         switch (key) {
             case PARENTS -> unit.getChildren().add(new RecordingUnitSummaryDTO(clicked));
             case CHILDREN -> unit.getParents().add(new RecordingUnitSummaryDTO(clicked));

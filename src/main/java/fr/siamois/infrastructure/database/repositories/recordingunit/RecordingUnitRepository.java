@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.recordingunit;
 
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.infrastructure.database.projection.RecordingUnitCountsProjection;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -358,4 +359,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
             SELECT id FROM ascend
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
+
+    @Query(value = "SELECT * FROM recording_unit_counts(:ruId)", nativeQuery = true)
+    RecordingUnitCountsProjection countRecordingUnit(@Param("ruId") long ruId);
 }

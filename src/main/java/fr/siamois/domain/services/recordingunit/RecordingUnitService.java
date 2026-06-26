@@ -1082,7 +1082,6 @@ public class RecordingUnitService implements ArkEntityService {
      */
     @Transactional(readOnly = true)
     public List<RecordingUnitDTO> findDirectParentsOf(Long id) {
-
         return recordingUnitRepository.findParentsOf(id).stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitDTO.class))
                 .toList();
@@ -1330,6 +1329,7 @@ public class RecordingUnitService implements ArkEntityService {
         return new HashSet<>(resolveAncestorClosure(institution, filters));
     }
 
+    @Transactional(readOnly = true)
     public void initializeHierarchy(RecordingUnitDTO unit) {
         Set<RecordingUnitSummaryDTO> parents = recordingUnitRepository
                 .findParentsOf(unit.getId())

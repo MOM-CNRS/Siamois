@@ -306,7 +306,6 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
 
 
     public void init() {
-
         DefaultMenuItem item = DefaultMenuItem.builder()
                 .value(langBean.msg(getBreadcrumbKey()))
                 .icon(getBreadcrumbIcon())
@@ -340,7 +339,6 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         }
         // otherwise default
         applyViewState(initialView.getState());
-
     }
 
     protected abstract String getBreadcrumbKey();
