@@ -4,6 +4,7 @@ import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.infrastructure.dataimport.ImportResult;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import lombok.Getter;
 import lombok.Setter;
@@ -69,20 +70,24 @@ public class PervoliaDatasetInitializer  {
 
         // Init vocabs
 
-        ImportSpecs specs;
+        ImportResult result;
 
         try {
             InputStream is = getClass().getResourceAsStream("/datasets/Import_Pervolia.xlsx");
             if (is == null) {
                 throw new IllegalStateException("Impossible de trouver Import Pervolia.xlsx");
             }
-            specs = ooxmlImportService.importFromExcel(is, OOXMLImportService.ImportScope.ALL, null);
+            result = ooxmlImportService.importFromExcel(is, OOXMLImportService.ImportScope.ALL, null);
         } catch (IOException e) {
             throw new DatabaseDataInitException(e.getMessage(), e);
         }
 
+        if (result.hasErrors()) {
+            result.errors().forEach(e -> log.warn("[Pervolia] Erreur import ligne {} feuille '{}': {}", e.row(), e.sheet(), e.message()));
+        }
 
         try {
+            ImportSpecs specs = result.specs();
             personSeeder.seed(specs.persons());
             institutionSeeder.seed(specs.institutions());
             Institution ch = institutionRepository.findInstitutionByIdentifier("pervolia").orElseThrow(() -> new RuntimeException("PERVOLIA NOT FOUND"));
