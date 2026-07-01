@@ -360,6 +360,4 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 
-    @Query(value = "SELECT * FROM recording_unit_counts(:ruId)", nativeQuery = true)
-    RecordingUnitCountsProjection countRecordingUnit(@Param("ruId") long ruId);
 }
