@@ -1,7 +1,5 @@
 # Siamois
 
-[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=MOM-CNRS_Siamois)](https://sonarcloud.io/summary/new_code?id=MOM-CNRS_Siamois)
-
 > SIAMOIS est une base de données dédiée à la gestion de la documentation associée aux données archéologiques tout au long de la chaîne opératoire allant de son enregistrement sur le terrain à sa publication et à son archivage. SIAMOIS contrôle en temps réel la cohérence logique des relations stratigraphiques lors de l’opération de terrain et les représente sous forme de graphes. SIAMOIS gère également le cycle de vie complet des mobiliers archéologiques et vestiges anthropobiologiques pour en assurer le suivi depuis leur découverte (études, analyses, restaurations, etc.).
 
 # Environnement utilisé
@@ -33,10 +31,14 @@ Une fois les variables renseignées, et que le jar et le fichier application.yam
 java -jar siamois.jar
 ```
 
+# Qualité de code
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=MOM-CNRS_Siamois)](https://sonarcloud.io/summary/new_code?id=MOM-CNRS_Siamois)
+
 # Auteurs
 * [Miled ROUSSET](https://github.com/miledrousset)
 * [Grégory BLIAULT](https://github.com/gregblt)
 * [Julien LINGET](https://github.com/DvLogys)
+
 
 # License
 Le projet SIAMOIS est distribué sous license [CeCILL_C](https://cecill.info/licences/Licence_CeCILL-C_V1-en.html), license libre de droit français compatible avec la license GNU GPL.
