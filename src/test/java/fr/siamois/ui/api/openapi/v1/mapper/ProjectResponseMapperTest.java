@@ -1,16 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.dto.entity.ActionCodeDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
-import fr.siamois.dto.entity.VocabularyDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
@@ -27,11 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
