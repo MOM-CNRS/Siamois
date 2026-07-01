@@ -23,9 +23,9 @@ import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalId
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
-import fr.siamois.infrastructure.database.projection.RecordingUnitCountsProjection;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
@@ -34,10 +34,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
-import fr.siamois.mapper.ActionUnitSummaryMapper;
-import fr.siamois.mapper.RecordingUnitMapper;
-import fr.siamois.mapper.RecordingUnitSummaryMapper;
-import fr.siamois.mapper.StatigraphicRelationshipMapper;
+import fr.siamois.mapper.*;
 import fr.siamois.utils.CodeUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -90,6 +87,8 @@ public class RecordingUnitService implements ArkEntityService {
     private final DocumentRepository documentRepository;
     private final CustomFormResponseRepository customFormResponseRepository;
     private final ArkRepository arkRepository;
+    private final PhaseRepository phaseRepository;
+    private final PhaseMapper phaseMapper;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -1171,21 +1170,28 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, pageable)
                 .map(recordingUnitMapper::toLightDto);
 
-        List<Long> ids = page.getContent().stream()
-                .map(RecordingUnitDTO::getId)
-                .filter(Objects::nonNull)
-                .toList();
-
-        if (!ids.isEmpty()) {
-            page.getContent().forEach(dto -> {
-                RecordingUnitCountsProjection counts = recordingUnitRepository.countRecordingUnit(dto.getId());
-                dto.setSpecimenCount(counts.getRelatedSpecimenCount());
-                dto.setParentsCount(Math.toIntExact(counts.getRuParentsCount() == null ? 0 : counts.getRuParentsCount()));
-                dto.setChildrenCount(Math.toIntExact(counts.getRuChildrensCount() == null ? 0 : counts.getRuChildrensCount()));
-                dto.setRelationshipCount(counts.getRuRelationshipsCount());
-            });
-
-        }
+        page.getContent().forEach(dto -> {
+            dto.setParents(
+                    recordingUnitRepository
+                            .findParentsOf(dto.getId())
+                            .stream()
+                            .map(recordingUnitSummaryMapper::convert)
+                            .collect(Collectors.toSet())
+            );
+            dto.setChildren(
+                    recordingUnitRepository
+                            .findChildrensOf(dto.getId())
+                            .stream()
+                            .map(recordingUnitSummaryMapper::convert)
+                            .collect(Collectors.toSet())
+            );
+            dto.setPhases(
+                    phaseRepository.findByRecordingUnitId(dto.getId())
+                            .stream()
+                            .map(phaseMapper::convert)
+                            .collect(Collectors.toSet())
+            );
+        });
 
         return page;
     }
@@ -1295,8 +1301,8 @@ public class RecordingUnitService implements ArkEntityService {
             }
         }
 
-        if (filters.containsColumn(RecordingUnitSpec.PARENT_FILTER)) {
-            specification = specification.and(RecordingUnitSpec.isChildOf(filters.valueAsIdListOf(RecordingUnitSpec.PARENT_FILTER)));
+        if (filters.containsColumn(RecordingUnitSpec.PARENTS_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isChildOf(filters.valueAsIdListOf(RecordingUnitSpec.PARENTS_FILTER)));
         }
 
         return specification;

@@ -152,7 +152,8 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
         super.init();
 
         // initialiser la sélection via l'API du tableModel (pas accès direct au lazy)
-        if (tableModel.getLazyDataModel() instanceof RecordingUnitLazyDataModel recordingUnitLazyDataModel) {
+        if (tableModel instanceof RecordingUnitTableViewModel recordingUnitTableViewModel &&
+                recordingUnitTableViewModel.getLazyDataModel() instanceof RecordingUnitLazyDataModel recordingUnitLazyDataModel) {
             recordingUnitLazyDataModel.setSelectedUnits(new ArrayList<>());
         }
     }

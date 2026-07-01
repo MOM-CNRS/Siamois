@@ -505,9 +505,6 @@ public class ActionUnitService implements ArkEntityService {
     public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-        if (filters.containsColumn("name")) {
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
-        }
         return res.map(this::convertWithCount);
     }
 

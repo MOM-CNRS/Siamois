@@ -250,6 +250,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                 isFilterSame &&
                 this.queryResult != null) {
             setRowCount(this.cachedRowCount);
+            log.debug("Temps d'exécution de {}#load (Cached) : {} ms", this.getClass().getSimpleName(), Instant.now().toEpochMilli() - before.toEpochMilli());
             return this.queryResult;
         }
 
