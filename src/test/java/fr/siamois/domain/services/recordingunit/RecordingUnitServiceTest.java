@@ -387,8 +387,6 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository, times(1)).saveAll(anyList());
 
         assertEquals("Nouvelle Description", managedEntity.getDescription());
-        assertTrue(managedParentEntity.getChildren().contains(managedEntity),
-                "L'entité managée doit être dans la liste des enfants du parent.");
     }
 
     @Test

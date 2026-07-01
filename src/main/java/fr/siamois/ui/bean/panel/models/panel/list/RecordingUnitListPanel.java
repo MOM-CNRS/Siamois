@@ -23,6 +23,7 @@ import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.primefaces.event.RowEditEvent;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -38,6 +39,7 @@ import java.util.List;
 @Getter
 @Setter
 @Component
+@Slf4j
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> implements Serializable {
 
@@ -146,15 +148,14 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
 
     @Override
     public void init() {
-
         // super.init() va appeler createLazyDataModel() → tableModel est initialisé ici
         super.init();
 
         // initialiser la sélection via l'API du tableModel (pas accès direct au lazy)
-        if (tableModel.getLazyDataModel() instanceof RecordingUnitLazyDataModel recordingUnitLazyDataModel) {
+        if (tableModel instanceof RecordingUnitTableViewModel recordingUnitTableViewModel &&
+                recordingUnitTableViewModel.getLazyDataModel() instanceof RecordingUnitLazyDataModel recordingUnitLazyDataModel) {
             recordingUnitLazyDataModel.setSelectedUnits(new ArrayList<>());
         }
-
     }
 
 
