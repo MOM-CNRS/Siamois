@@ -3,7 +3,6 @@ package fr.siamois.infrastructure.database.repositories.recordingunit;
 
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.infrastructure.database.projection.RecordingUnitCountsProjection;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

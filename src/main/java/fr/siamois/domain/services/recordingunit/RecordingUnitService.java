@@ -143,7 +143,6 @@ public class RecordingUnitService implements ArkEntityService {
     protected RecordingUnit save(RecordingUnit recordingUnit) {
         try {
             RecordingUnit managedRecordingUnit;
-            boolean shouldGenerateIdentifier = false;
 
             assert recordingUnit != null;
             managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
@@ -154,22 +153,17 @@ public class RecordingUnitService implements ArkEntityService {
             managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
             managedRecordingUnit.setFullIdentifier(recordingUnit.getFullIdentifier());
             if (managedRecordingUnit.getFullIdentifier() == null) {
-                shouldGenerateIdentifier = true;
                 // Temporary code for the save
                 managedRecordingUnit.setFullIdentifier(CodeUtils.generateCode(20));
             }
             setupOtherFields(recordingUnit, managedRecordingUnit);
             synchronizeCollection(managedRecordingUnit.getPhases(), recordingUnit.getPhases());
 
-            RecordingUnit toReturn = recordingUnitRepository.save(managedRecordingUnit);
+            RecordingUnit savedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
 
             setupParents(recordingUnit, managedRecordingUnit);
             setupChilds(recordingUnit, managedRecordingUnit);
-            if (shouldGenerateIdentifier) {
-                toReturn.setFullIdentifier(generateFullIdentifier(toReturn.getActionUnit(), toReturn));
-            }
-
-            return recordingUnitRepository.save(toReturn);
+            return savedRecordingUnit;
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);

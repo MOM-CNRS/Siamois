@@ -266,6 +266,8 @@ class RecordingUnitLazyDataModelTest {
 
         RecordingUnitDTO copied = new RecordingUnitDTO();
         copied.setId(999L);
+        copied.setActionUnit(new ActionUnitSummaryDTO());
+        copied.getActionUnit().setId(1L);
 
         BaseRecordingUnitLazyDataModel spyModel = spy(lazyModel);
         doReturn(original).when(spyModel).getRowData();
@@ -293,6 +295,8 @@ class RecordingUnitLazyDataModelTest {
 
         RecordingUnitDTO copied = spy(new RecordingUnitDTO()); // Spy pour vérifier resetFullIdentifier()
         copied.setId(999L);
+        copied.setActionUnit(new ActionUnitSummaryDTO());
+        copied.getActionUnit().setId(1L);
 
         BaseRecordingUnitLazyDataModel spyModel = spy(lazyModel);
         doReturn(original).when(spyModel).getRowData();
