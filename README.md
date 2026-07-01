@@ -1,6 +1,8 @@
 # Siamois
 SIAMOIS est une base de données dédiée à la gestion de la documentation associée aux données archéologiques tout au long de la chaîne opératoire allant de son enregistrement sur le terrain à sa publication et à son archivage. SIAMOIS contrôle en temps réel la cohérence logique des relations stratigraphiques lors de l’opération de terrain et les représente sous forme de graphes. SIAMOIS gère également le cycle de vie complet des mobiliers archéologiques et vestiges anthropobiologiques pour en assurer le suivi depuis leur découverte (études, analyses, restaurations, etc.).
 
+> Vous pouvez retrouver plus d'informations sur le site [siamois.eu](https://siamois.eu)
+
 # Environnement utilisé
 * Java 17
 * PostgreSQL 16/17
