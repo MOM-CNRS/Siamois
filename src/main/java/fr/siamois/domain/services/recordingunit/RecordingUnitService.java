@@ -1081,42 +1081,45 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
-     * Find the next Recordingunit created by a specific action after the given one.
-     * If there is no next, returns the oldest one (wraps around).
+     * Id de l'UE suivante créée dans une action après l'UE courante (avec wrap-around vers la plus
+     * ancienne s'il n'y en a pas de suivante). On ne renvoie que l'id : la navigation ne fait que
+     * rediriger, ce qui évite de charger tout le graphe de l'entité (et le N+1 associé) via le mappeur.
      *
      * @param action  The action to find ActionUnits for
      * @param current The current ActionUnit to find the next one from
-     * @return The next ActionUnitDTO, or the oldest one if there is no next
+     * @return The next recording unit id, or the oldest one if there is no next
      */
-    public RecordingUnitDTO findNextByActionUnit(ActionUnitSummaryDTO action, RecordingUnitDTO current) {
+    @Transactional(readOnly = true)
+    public Long findNextIdByActionUnit(ActionUnitSummaryDTO action, RecordingUnitDTO current) {
         return recordingUnitRepository
                 .findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
                         action.getId(), current.getCreationTime())
-                .map(recordingUnitMapper::convert)
+                .map(RecordingUnit::getId)
                 .orElseGet(() -> recordingUnitRepository
                         .findFirstByActionUnitIdOrderByCreationTimeAsc(action.getId())
-                        .map(recordingUnitMapper::convert)
+                        .map(RecordingUnit::getId)
                         .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + action.getId()))
                 );
     }
 
     /**
-     * Find the previous Recordingunit created by a specific action before the given one.
-     * If there is no previous, returns the most recent one (wraps around).
+     * Id de l'UE précédente créée dans une action avant l'UE courante (avec wrap-around vers la plus
+     * récente s'il n'y en a pas de précédente). Voir {@link #findNextIdByActionUnit}.
      *
      * @param action  The institution to find ActionUnits for
      * @param current The current ActionUnit to find the previous one from
-     * @return The previous ActionUnitDTO, or the most recent one if there is no previous
+     * @return The previous recording unit id, or the most recent one if there is no previous
      */
-    public RecordingUnitDTO findPreviousByActionUnit(ActionUnitSummaryDTO action,
+    @Transactional(readOnly = true)
+    public Long findPreviousIdByActionUnit(ActionUnitSummaryDTO action,
                                                      RecordingUnitDTO current) {
         return recordingUnitRepository
                 .findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(
                         action.getId(), current.getCreationTime())
-                .map(recordingUnitMapper::convert)
+                .map(RecordingUnit::getId)
                 .orElseGet(() -> recordingUnitRepository
                         .findFirstByActionUnitIdOrderByCreationTimeDesc(action.getId())
-                        .map(recordingUnitMapper::convert)
+                        .map(RecordingUnit::getId)
                         .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + action.getId()))
                 );
     }

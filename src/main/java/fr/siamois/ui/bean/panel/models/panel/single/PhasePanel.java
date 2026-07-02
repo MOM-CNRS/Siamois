@@ -131,13 +131,13 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     }
 
     @Override
-    protected PhaseDTO findNext() {
-        return unit;
+    protected Long findNextId() {
+        return unit.getId();
     }
 
     @Override
-    protected PhaseDTO findPrevious() {
-        return unit;
+    protected Long findPreviousId() {
+        return unit.getId();
     }
 
     @Override

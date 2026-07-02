@@ -375,18 +375,18 @@ class ActionUnitServiceTest {
         current.setCreationTime(NOW);
 
         ActionUnit nextEntity = new ActionUnit();
-        ActionUnitDTO nextDTO = new ActionUnitDTO();
+        nextEntity.setId(200L);
 
         when(actionUnitRepository.findNext(eq(1L), any(), eq(100L)))
                 .thenReturn(Optional.of(nextEntity));
-        when(actionUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
 
         // Act
-        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+        Long result = actionUnitService.findNextIdByInstitution(institution, current);
 
         // Assert
-        assertEquals(nextDTO, result);
+        assertEquals(200L, result);
         verify(actionUnitRepository, never()).findFirst(anyLong());
+        verify(actionUnitMapper, never()).convert(any(ActionUnit.class));
     }
 
     @Test
@@ -400,7 +400,7 @@ class ActionUnitServiceTest {
         current.setCreationTime(NOW);
 
         ActionUnit firstEntity = new ActionUnit();
-        ActionUnitDTO firstDTO = new ActionUnitDTO();
+        firstEntity.setId(1L);
 
         // 2. Mocking avec des matchers flexibles
         // On utilise eq(1L) pour l'institution, n'importe quelle date, et n'importe quel ID (ou null)
@@ -410,13 +410,11 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findFirst(1L))
                 .thenReturn(Optional.of(firstEntity));
 
-        when(actionUnitMapper.convert(firstEntity)).thenReturn(firstDTO);
-
         // 3. Appel
-        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+        Long result = actionUnitService.findNextIdByInstitution(institution, current);
 
         // 4. Assertions
-        assertEquals(firstDTO, result);
+        assertEquals(1L, result);
     }
     // --- Tests for findPreviousByInstitution ---
 
@@ -430,17 +428,16 @@ class ActionUnitServiceTest {
         current.setCreationTime(NOW);
 
         ActionUnit prevEntity = new ActionUnit();
-        ActionUnitDTO prevDTO = new ActionUnitDTO();
+        prevEntity.setId(99L);
 
         when(actionUnitRepository.findPrevious(eq(1L), any(), eq(100L)))
                 .thenReturn(Optional.of(prevEntity));
-        when(actionUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
 
         // Act
-        ActionUnitDTO result = actionUnitService.findPreviousByInstitution(institution, current);
+        Long result = actionUnitService.findPreviousIdByInstitution(institution, current);
 
         // Assert
-        assertEquals(prevDTO, result);
+        assertEquals(99L, result);
     }
 
     @Test
@@ -454,7 +451,7 @@ class ActionUnitServiceTest {
         current.setCreationTime(NOW);
 
         ActionUnit lastEntity = new ActionUnit();
-        ActionUnitDTO lastDTO = new ActionUnitDTO();
+        lastEntity.setId(500L);
 
         // 2. Mocking - Utilisation de matchers flexibles
         // eq(1L) pour l'institution, any() pour la date, any() pour l'ID de l'action unit
@@ -465,14 +462,12 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findLast(1L))
                 .thenReturn(Optional.of(lastEntity));
 
-        when(actionUnitMapper.convert(lastEntity)).thenReturn(lastDTO);
-
         // 3. Act
-        ActionUnitDTO result = actionUnitService.findPreviousByInstitution(institution, current);
+        Long result = actionUnitService.findPreviousIdByInstitution(institution, current);
 
         // 4. Assert
         assertNotNull(result);
-        assertEquals(lastDTO, result);
+        assertEquals(500L, result);
     }
 
     @Test
@@ -495,11 +490,11 @@ class ActionUnitServiceTest {
                 .thenReturn(Optional.empty());
 
         // 2. Act
-        ActionUnitDTO result = actionUnitService.findNextByInstitution(institution, current);
+        Long result = actionUnitService.findNextIdByInstitution(institution, current);
 
         // 3. Assert
-        // Selon votre code, si findNext et findFirst échouent, on retourne 'current'
-        assertEquals(current, result);
+        // Selon votre code, si findNext et findFirst échouent, on retourne l'id de 'current'
+        assertEquals(current.getId(), result);
 
         // Vérification optionnelle pour s'assurer que le mapper n'a jamais été appelé
         verifyNoInteractions(actionUnitMapper);

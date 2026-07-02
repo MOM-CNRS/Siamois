@@ -138,9 +138,16 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected abstract void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex);
 
-    protected abstract  T findNext();
+    /**
+     * Identifiant de l'unité suivante. On ne charge QUE l'id (pas le graphe complet via le mappeur)
+     * car la navigation ne fait que rediriger vers cet id, qui sera rechargé par le panel cible.
+     */
+    protected abstract Long findNextId();
 
-    protected abstract  T findPrevious();
+    /**
+     * Identifiant de l'unité précédente. Voir {@link #findNextId()}.
+     */
+    protected abstract Long findPreviousId();
 
     // --- Common logic ---
 
@@ -154,13 +161,11 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     }
 
     public void goToNext() throws IOException {
-        AbstractEntityDTO next = findNext();
-        redirectToFocusOrOverview(next.getId(), activeTabIndex);
+        redirectToFocusOrOverview(findNextId(), activeTabIndex);
     }
 
     public void goToPrevious() throws IOException {
-        AbstractEntityDTO previous = findPrevious();
-        redirectToFocusOrOverview(previous.getId(), activeTabIndex);
+        redirectToFocusOrOverview(findPreviousId(), activeTabIndex);
     }
 
     public static final Vocabulary SYSTEM_THESO;

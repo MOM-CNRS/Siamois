@@ -1222,19 +1222,18 @@ class RecordingUnitServiceTest {
         current.setCreationTime(NOW);
 
         RecordingUnit nextEntity = new RecordingUnit();
-        RecordingUnitDTO nextDTO = new RecordingUnitDTO();
+        nextEntity.setId(42L);
 
         when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(10L), any()))
                 .thenReturn(Optional.of(nextEntity));
-        when(recordingUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
 
         // Act
-        RecordingUnitDTO result = recordingUnitService.findNextByActionUnit(action, current);
+        Long result = recordingUnitService.findNextIdByActionUnit(action, current);
 
         // Assert
-        assertNotNull(result);
-        assertEquals(nextDTO, result);
+        assertEquals(42L, result);
         verify(recordingUnitRepository, never()).findFirstByActionUnitIdOrderByCreationTimeAsc(anyLong());
+        verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
     }
 
     @Test
@@ -1245,22 +1244,21 @@ class RecordingUnitServiceTest {
         RecordingUnitDTO current = new RecordingUnitDTO();
 
         RecordingUnit oldestEntity = new RecordingUnit();
-        RecordingUnitDTO oldestDTO = new RecordingUnitDTO();
+        oldestEntity.setId(7L);
 
         when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(anyLong(), any()))
                 .thenReturn(Optional.empty());
         when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L))
                 .thenReturn(Optional.of(oldestEntity));
-        when(recordingUnitMapper.convert(oldestEntity)).thenReturn(oldestDTO);
 
         // Act
-        RecordingUnitDTO result = recordingUnitService.findNextByActionUnit(action, current);
+        Long result = recordingUnitService.findNextIdByActionUnit(action, current);
 
         // Assert
-        assertEquals(oldestDTO, result);
+        assertEquals(7L, result);
     }
 
-    // --- Tests for findPreviousByActionUnit ---
+    // --- Tests for findPreviousIdByActionUnit ---
 
     @Test
     void testFindPreviousByActionUnit_ShouldReturnPreviousUnit() {
@@ -1271,17 +1269,16 @@ class RecordingUnitServiceTest {
         current.setCreationTime(NOW);
 
         RecordingUnit prevEntity = new RecordingUnit();
-        RecordingUnitDTO prevDTO = new RecordingUnitDTO();
+        prevEntity.setId(41L);
 
         when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(10L), any()))
                 .thenReturn(Optional.of(prevEntity));
-        when(recordingUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
 
         // Act
-        RecordingUnitDTO result = recordingUnitService.findPreviousByActionUnit(action, current);
+        Long result = recordingUnitService.findPreviousIdByActionUnit(action, current);
 
         // Assert
-        assertEquals(prevDTO, result);
+        assertEquals(41L, result);
     }
 
     @Test
@@ -1292,19 +1289,18 @@ class RecordingUnitServiceTest {
         RecordingUnitDTO current = new RecordingUnitDTO();
 
         RecordingUnit mostRecentEntity = new RecordingUnit();
-        RecordingUnitDTO mostRecentDTO = new RecordingUnitDTO();
+        mostRecentEntity.setId(99L);
 
         when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
                 .thenReturn(Optional.empty());
         when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L))
                 .thenReturn(Optional.of(mostRecentEntity));
-        when(recordingUnitMapper.convert(mostRecentEntity)).thenReturn(mostRecentDTO);
 
         // Act
-        RecordingUnitDTO result = recordingUnitService.findPreviousByActionUnit(action, current);
+        Long result = recordingUnitService.findPreviousIdByActionUnit(action, current);
 
         // Assert
-        assertEquals(mostRecentDTO, result);
+        assertEquals(99L, result);
     }
 
     // --- Tests for toggleValidated ---

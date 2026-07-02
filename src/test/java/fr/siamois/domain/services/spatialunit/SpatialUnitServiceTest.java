@@ -609,19 +609,19 @@ class SpatialUnitServiceTest {
         currentDTO.setCreationTime(NOW);
 
         SpatialUnit nextEntity = new SpatialUnit();
-        SpatialUnitDTO nextDTO = new SpatialUnitDTO();
+        nextEntity.setId(200L);
 
         when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(1L), any()))
                 .thenReturn(Optional.of(nextEntity));
-        when(spatialUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
 
         // Act
-        SpatialUnitDTO result = spatialUnitService.findNextByInstitution(institutionDTO, currentDTO);
+        Long result = spatialUnitService.findNextIdByInstitution(institutionDTO, currentDTO);
 
         // Assert
         assertNotNull(result);
-        assertEquals(nextDTO, result);
+        assertEquals(200L, result);
         verify(spatialUnitRepository, never()).findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(anyLong());
+        verify(spatialUnitMapper, never()).convert(any(SpatialUnit.class));
     }
 
     @Test
@@ -632,7 +632,7 @@ class SpatialUnitServiceTest {
         SpatialUnitDTO currentDTO = new SpatialUnitDTO();
 
         SpatialUnit oldestEntity = new SpatialUnit();
-        SpatialUnitDTO oldestDTO = new SpatialUnitDTO();
+        oldestEntity.setId(7L);
 
         // No "next" found
         when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(anyLong(), any()))
@@ -640,13 +640,12 @@ class SpatialUnitServiceTest {
         // Should trigger the wrap around call
         when(spatialUnitRepository.findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(1L))
                 .thenReturn(Optional.of(oldestEntity));
-        when(spatialUnitMapper.convert(oldestEntity)).thenReturn(oldestDTO);
 
         // Act
-        SpatialUnitDTO result = spatialUnitService.findNextByInstitution(institutionDTO, currentDTO);
+        Long result = spatialUnitService.findNextIdByInstitution(institutionDTO, currentDTO);
 
         // Assert
-        assertEquals(oldestDTO, result);
+        assertEquals(7L, result);
     }
 
     @Test
@@ -658,18 +657,17 @@ class SpatialUnitServiceTest {
         currentDTO.setCreationTime(NOW);
 
         SpatialUnit prevEntity = new SpatialUnit();
-        SpatialUnitDTO prevDTO = new SpatialUnitDTO();
+        prevEntity.setId(99L);
 
         when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(1L), any()))
                 .thenReturn(Optional.of(prevEntity));
-        when(spatialUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
 
         // Act
-        SpatialUnitDTO result = spatialUnitService.findPreviousByInstitution(institutionDTO, currentDTO);
+        Long result = spatialUnitService.findPreviousIdByInstitution(institutionDTO, currentDTO);
 
         // Assert
         assertNotNull(result);
-        assertEquals(prevDTO, result);
+        assertEquals(99L, result);
     }
 
     @Test
@@ -680,7 +678,7 @@ class SpatialUnitServiceTest {
         SpatialUnitDTO currentDTO = new SpatialUnitDTO();
 
         SpatialUnit mostRecentEntity = new SpatialUnit();
-        SpatialUnitDTO mostRecentDTO = new SpatialUnitDTO();
+        mostRecentEntity.setId(500L);
 
         // No "previous" found
         when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
@@ -688,13 +686,12 @@ class SpatialUnitServiceTest {
         // Should trigger the wrap around call
         when(spatialUnitRepository.findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(1L))
                 .thenReturn(Optional.of(mostRecentEntity));
-        when(spatialUnitMapper.convert(mostRecentEntity)).thenReturn(mostRecentDTO);
 
         // Act
-        SpatialUnitDTO result = spatialUnitService.findPreviousByInstitution(institutionDTO, currentDTO);
+        Long result = spatialUnitService.findPreviousIdByInstitution(institutionDTO, currentDTO);
 
         // Assert
-        assertEquals(mostRecentDTO, result);
+        assertEquals(500L, result);
     }
 
     @Test

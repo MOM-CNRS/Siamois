@@ -170,13 +170,13 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    protected SpatialUnitDTO findNext() {
-        return spatialUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
+    protected Long findNextId() {
+        return spatialUnitService.findPreviousIdByInstitution(unit.getCreatedByInstitution(), unit);
     }
 
     @Override
-    protected SpatialUnitDTO findPrevious() {
-        return spatialUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
+    protected Long findPreviousId() {
+        return spatialUnitService.findNextIdByInstitution(unit.getCreatedByInstitution(), unit);
     }
 
     @Override

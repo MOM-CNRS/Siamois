@@ -363,13 +363,13 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    protected RecordingUnitDTO findNext() {
-        return recordingUnitService.findNextByActionUnit(unit.getActionUnit(), unit);
+    protected Long findNextId() {
+        return recordingUnitService.findNextIdByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
-    protected RecordingUnitDTO findPrevious() {
-        return recordingUnitService.findPreviousByActionUnit(unit.getActionUnit(), unit);
+    protected Long findPreviousId() {
+        return recordingUnitService.findPreviousIdByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override

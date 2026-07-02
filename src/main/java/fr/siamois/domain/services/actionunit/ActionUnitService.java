@@ -304,15 +304,16 @@ public class ActionUnitService implements ArkEntityService {
      * @param current     The current ActionUnit to find the next one from
      * @return The next ActionUnitDTO, or the oldest one if there is no next
      */
-    public ActionUnitDTO findNextByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+    @Transactional(readOnly = true)
+    public Long findNextIdByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
         return actionUnitRepository
                 .findNext(
                         institution.getId(), current.getCreationTime(), current.getId())
-                .map(actionUnitMapper::convert)
+                .map(ActionUnit::getId)
                 .orElseGet(() -> actionUnitRepository
                         .findFirst(institution.getId())
-                        .map(actionUnitMapper::convert)
-                        .orElse(current)
+                        .map(ActionUnit::getId)
+                        .orElse(current.getId())
                 );
     }
 
@@ -324,15 +325,16 @@ public class ActionUnitService implements ArkEntityService {
      * @param current     The current ActionUnit to find the previous one from
      * @return The previous ActionUnitDTO, or the most recent one if there is no previous
      */
-    public ActionUnitDTO findPreviousByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
+    @Transactional(readOnly = true)
+    public Long findPreviousIdByInstitution(InstitutionDTO institution, ActionUnitDTO current) {
         return actionUnitRepository
                 .findPrevious(
                         institution.getId(), current.getCreationTime(), current.getId())
-                .map(actionUnitMapper::convert)
+                .map(ActionUnit::getId)
                 .orElseGet(() -> actionUnitRepository
                         .findLast(institution.getId())
-                        .map(actionUnitMapper::convert)
-                        .orElse(current)
+                        .map(ActionUnit::getId)
+                        .orElse(current.getId())
                 );
     }
 

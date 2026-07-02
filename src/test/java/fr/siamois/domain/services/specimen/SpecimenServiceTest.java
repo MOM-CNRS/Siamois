@@ -393,19 +393,19 @@ class SpecimenServiceTest {
         currentDTO.setCreationTime(NOW);
 
         Specimen nextSpecimen = new Specimen();
-        SpecimenDTO nextDTO = new SpecimenDTO();
+        nextSpecimen.setId(200L);
 
         when(specimenRepository.findFirstByRecordingUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(1L), any()))
                 .thenReturn(Optional.of(nextSpecimen));
-        when(specimenMapper.convert(nextSpecimen)).thenReturn(nextDTO);
 
         // Act
-        SpecimenDTO result = specimenService.findNextByActionUnit(ruDTO, currentDTO);
+        Long result = specimenService.findNextIdByActionUnit(ruDTO, currentDTO);
 
         // Assert
         assertNotNull(result);
-        assertEquals(nextDTO, result);
+        assertEquals(200L, result);
         verify(specimenRepository, never()).findFirstByRecordingUnitIdOrderByCreationTimeAsc(anyLong());
+        verify(specimenMapper, never()).convert(any(Specimen.class));
     }
 
     @Test
@@ -417,7 +417,7 @@ class SpecimenServiceTest {
         currentDTO.setCreationTime(NOW);
 
         Specimen oldestSpecimen = new Specimen();
-        SpecimenDTO oldestDTO = new SpecimenDTO();
+        oldestSpecimen.setId(7L);
 
         // No next specimen found
         when(specimenRepository.findFirstByRecordingUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(1L), any()))
@@ -425,13 +425,12 @@ class SpecimenServiceTest {
         // Return the oldest instead
         when(specimenRepository.findFirstByRecordingUnitIdOrderByCreationTimeAsc(1L))
                 .thenReturn(Optional.of(oldestSpecimen));
-        when(specimenMapper.convert(oldestSpecimen)).thenReturn(oldestDTO);
 
         // Act
-        SpecimenDTO result = specimenService.findNextByActionUnit(ruDTO, currentDTO);
+        Long result = specimenService.findNextIdByActionUnit(ruDTO, currentDTO);
 
         // Assert
-        assertEquals(oldestDTO, result);
+        assertEquals(7L, result);
     }
 
     @Test
@@ -443,18 +442,17 @@ class SpecimenServiceTest {
         currentDTO.setCreationTime(NOW);
 
         Specimen prevSpecimen = new Specimen();
-        SpecimenDTO prevDTO = new SpecimenDTO();
+        prevSpecimen.setId(99L);
 
         when(specimenRepository.findFirstByRecordingUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(1L), any()))
                 .thenReturn(Optional.of(prevSpecimen));
-        when(specimenMapper.convert(prevSpecimen)).thenReturn(prevDTO);
 
         // Act
-        SpecimenDTO result = specimenService.findPreviousByActionUnit(ruDTO, currentDTO);
+        Long result = specimenService.findPreviousIdByActionUnit(ruDTO, currentDTO);
 
         // Assert
         assertNotNull(result);
-        assertEquals(prevDTO, result);
+        assertEquals(99L, result);
     }
 
     @Test
@@ -465,19 +463,18 @@ class SpecimenServiceTest {
         SpecimenDTO currentDTO = new SpecimenDTO();
 
         Specimen mostRecentSpecimen = new Specimen();
-        SpecimenDTO mostRecentDTO = new SpecimenDTO();
+        mostRecentSpecimen.setId(500L);
 
         when(specimenRepository.findFirstByRecordingUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
                 .thenReturn(Optional.empty());
         when(specimenRepository.findFirstByRecordingUnitIdOrderByCreationTimeDesc(1L))
                 .thenReturn(Optional.of(mostRecentSpecimen));
-        when(specimenMapper.convert(mostRecentSpecimen)).thenReturn(mostRecentDTO);
 
         // Act
-        SpecimenDTO result = specimenService.findPreviousByActionUnit(ruDTO, currentDTO);
+        Long result = specimenService.findPreviousIdByActionUnit(ruDTO, currentDTO);
 
         // Assert
-        assertEquals(mostRecentDTO, result);
+        assertEquals(500L, result);
     }
 
     @Test
@@ -920,7 +917,7 @@ class SpecimenServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(ActionUnitNotFoundException.class,
-                () -> specimenService.findNextByActionUnit(ru, current));
+                () -> specimenService.findNextIdByActionUnit(ru, current));
     }
 
     @Test
@@ -934,7 +931,7 @@ class SpecimenServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(ActionUnitNotFoundException.class,
-                () -> specimenService.findPreviousByActionUnit(ru, current));
+                () -> specimenService.findPreviousIdByActionUnit(ru, current));
     }
 
     @Test

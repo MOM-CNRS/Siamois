@@ -438,14 +438,15 @@ public class SpecimenService implements ArkEntityService {
      * @param current The current SpecimenDTO to find the next one from
      * @return The next ActionUnitDTO, or the oldest one if there is no next
      */
-    public SpecimenDTO findNextByActionUnit(RecordingUnitSummaryDTO recordingUnit, SpecimenDTO current) {
+    @Transactional(readOnly = true)
+    public Long findNextIdByActionUnit(RecordingUnitSummaryDTO recordingUnit, SpecimenDTO current) {
         return specimenRepository
                 .findFirstByRecordingUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
                         recordingUnit.getId(), current.getCreationTime())
-                .map(specimenMapper::convert)
+                .map(Specimen::getId)
                 .orElseGet(() -> specimenRepository
                         .findFirstByRecordingUnitIdOrderByCreationTimeAsc(recordingUnit.getId())
-                        .map(specimenMapper::convert)
+                        .map(Specimen::getId)
                         .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + recordingUnit.getId()))
                 );
     }
@@ -458,15 +459,16 @@ public class SpecimenService implements ArkEntityService {
      * @param current The current ActionUnit to find the previous one from
      * @return The previous ActionUnitDTO, or the most recent one if there is no previous
      */
-    public SpecimenDTO findPreviousByActionUnit(RecordingUnitSummaryDTO recordingUnit,
+    @Transactional(readOnly = true)
+    public Long findPreviousIdByActionUnit(RecordingUnitSummaryDTO recordingUnit,
                                                 SpecimenDTO current) {
         return specimenRepository
                 .findFirstByRecordingUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(
                         recordingUnit.getId(), current.getCreationTime())
-                .map(specimenMapper::convert)
+                .map(Specimen::getId)
                 .orElseGet(() -> specimenRepository
                         .findFirstByRecordingUnitIdOrderByCreationTimeDesc(recordingUnit.getId())
-                        .map(specimenMapper::convert)
+                        .map(Specimen::getId)
                         .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + recordingUnit.getId()))
                 );
     }

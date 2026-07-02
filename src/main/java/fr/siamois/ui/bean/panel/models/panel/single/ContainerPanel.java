@@ -131,13 +131,13 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
     }
 
     @Override
-    protected ContainerDTO findNext() {
-        return unit;
+    protected Long findNextId() {
+        return unit.getId();
     }
 
     @Override
-    protected ContainerDTO findPrevious() {
-        return unit;
+    protected Long findPreviousId() {
+        return unit.getId();
     }
 
     @Override

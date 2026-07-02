@@ -177,13 +177,13 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
-    protected SpecimenDTO findNext() {
-        return specimenService.findNextByActionUnit(unit.getRecordingUnit(), unit);
+    protected Long findNextId() {
+        return specimenService.findNextIdByActionUnit(unit.getRecordingUnit(), unit);
     }
 
     @Override
-    protected SpecimenDTO findPrevious() {
-        return specimenService.findPreviousByActionUnit(unit.getRecordingUnit(), unit);
+    protected Long findPreviousId() {
+        return specimenService.findPreviousIdByActionUnit(unit.getRecordingUnit(), unit);
     }
 
     @Override

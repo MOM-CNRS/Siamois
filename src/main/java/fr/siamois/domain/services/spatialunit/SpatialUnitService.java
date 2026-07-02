@@ -449,14 +449,15 @@ public class SpatialUnitService implements ArkEntityService {
      * @param current The current place to find the next one from
      * @return The next SpatialUnitDTO, or the oldest one if there is no next
      */
-    public SpatialUnitDTO findNextByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
+    @Transactional(readOnly = true)
+    public Long findNextIdByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
         return spatialUnitRepository
                 .findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(
                         institution.getId(), current.getCreationTime())
-                .map(spatialUnitMapper::convert)
+                .map(SpatialUnit::getId)
                 .orElseGet(() -> spatialUnitRepository
                         .findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(institution.getId())
-                        .map(spatialUnitMapper::convert)
+                        .map(SpatialUnit::getId)
                         .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
                 );
     }
@@ -469,14 +470,15 @@ public class SpatialUnitService implements ArkEntityService {
      * @param current The current spatial unit to find the previous one from
      * @return The previous SpatialUnitDTO, or the most recent one if there is no previous
      */
-    public SpatialUnitDTO findPreviousByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
+    @Transactional(readOnly = true)
+    public Long findPreviousIdByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
         return spatialUnitRepository
                 .findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(
                         institution.getId(), current.getCreationTime())
-                .map(spatialUnitMapper::convert)
+                .map(SpatialUnit::getId)
                 .orElseGet(() -> spatialUnitRepository
                         .findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(institution.getId())
-                        .map(spatialUnitMapper::convert)
+                        .map(SpatialUnit::getId)
                         .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + institution.getId()))
                 );
     }
