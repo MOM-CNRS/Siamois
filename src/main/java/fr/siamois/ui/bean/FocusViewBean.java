@@ -132,6 +132,58 @@ public class FocusViewBean implements Serializable {
     }
 
 
+    /**
+     * Navigation ajax "fiche suivante" du panneau principal (mode focus, racine) : on reconstruit
+     * le panneau pour l'UE suivante et on l'échange, sans redirection ni rechargement complet de la
+     * page. Le bouton correspondant met à jour le conteneur à id stable {@code :flow-panels}.
+     */
+    public void goToNextMain() {
+        navigateMainRelative(true);
+    }
+
+    /**
+     * Navigation ajax "fiche précédente" du panneau principal. Voir {@link #goToNextMain()}.
+     */
+    public void goToPreviousMain() {
+        navigateMainRelative(false);
+    }
+
+    private void navigateMainRelative(boolean next) {
+        if (!(mainPanel instanceof AbstractSingleEntityPanel<?> currentPanel) || !currentPanel.hasPreviousNext()) {
+            return;
+        }
+        String path = next ? currentPanel.nextFocusPath() : currentPanel.previousFocusPath();
+        AbstractPanel panel = resolvePanel(path);
+        panel.setRoot(true);
+        panel.setGoBackUrl(currentPanel.getGoBackUrl());
+        // Conserve l'aperçu latéral (liste) éventuellement ouvert à côté de la fiche.
+        AbstractPanel overview = currentPanel.getParentOrOverview();
+        if (overview != null) {
+            panel.setParentOrOverview(overview);
+            overview.setParentOrOverview(panel);
+        }
+        if (panel instanceof AbstractSingleEntityPanel<?> newPanel) {
+            newPanel.setActiveTabIndex(currentPanel.getActiveTabIndex());
+        }
+        // Le panneau est déjà entièrement initialisé (findById + onglets) par la factory : on le
+        // marque "chargé" pour un rendu direct dans la même réponse ajax, sans re-déclencher le
+        // chargement différé (skeleton + second aller-retour).
+        panel.setLoaded(true);
+        mainPanel = panel;
+        recordMainHistory(panel);
+    }
+
+    private void recordMainHistory(AbstractPanel panel) {
+        HistoryBean.HistoryItem entry = new HistoryBean.HistoryItem();
+        HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
+        main.setIcon(panel.getIcon());
+        main.setTitle(panel.resolveTitleOrTitleCode());
+        main.setUri(panel.ressourceUri());
+        main.setStyleClass(panel.getPanelClass());
+        entry.setMain(main);
+        historyBean.addItem(entry);
+    }
+
     private String decodeToken(String token) {
         return new String(Base64.getUrlDecoder().decode(token));
     }

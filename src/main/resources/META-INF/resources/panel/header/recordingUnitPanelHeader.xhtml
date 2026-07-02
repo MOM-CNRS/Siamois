@@ -16,30 +16,42 @@
         </c:if>
         <div style="display: flex;">
 
+            <!-- Fiche racine (focus) : navigation ajax en place, sans rechargement complet de page -->
             <p:commandLink id="previous"
                            process="@this"
-                           rendered="#{panelModel.hasPreviousNext()}"
+                           rendered="#{panelModel.hasPreviousNext() and panelModel.isRoot()}"
+                           action="#{focusViewBean.goToPreviousMain()}"
+                           update=":flow-panels"
+                           styleClass="sideview-topbar-button">
+                <h:outputText styleClass='ui-icon bi bi-caret-up' style="color: var(--main-color)"/>
+            </p:commandLink>
+            <p:commandLink id="next"
+                           process="@this"
+                           rendered="#{panelModel.hasPreviousNext() and panelModel.isRoot()}"
+                           action="#{focusViewBean.goToNextMain()}"
+                           update=":flow-panels"
+                           styleClass="sideview-topbar-button">
+                <h:outputText styleClass='ui-icon bi bi-caret-down' style="color: var(--main-color)"/>
+            </p:commandLink>
+
+            <!-- Fiche en aperçu latéral (sideview) : navigation ajax existante via addToOverview -->
+            <p:commandLink id="previousOverview"
+                           process="@this"
+                           rendered="#{panelModel.hasPreviousNext() and not panelModel.isRoot()}"
                            action="#{panelModel.goToPrevious()}"
                            styleClass="sideview-topbar-button">
                 <h:outputText styleClass='ui-icon bi bi-caret-up' style="color: var(--main-color)"/>
             </p:commandLink>
-            <p:tooltip
-                    autoHide="false" value="Fiche précédente"
-                    position="bottom"
-                    for="previous"
-            />
-            <p:commandLink id="next"
+            <p:commandLink id="nextOverview"
                            process="@this"
-                           rendered="#{panelModel.hasPreviousNext()}"
+                           rendered="#{panelModel.hasPreviousNext() and not panelModel.isRoot()}"
                            action="#{panelModel.goToNext()}"
                            styleClass="sideview-topbar-button">
                 <h:outputText styleClass='ui-icon bi bi-caret-down' style="color: var(--main-color)"/>
             </p:commandLink>
-            <p:tooltip
-                    autoHide="false" value="Fiche suivante"
-                    position="bottom"
-                    for="next"
-            />
+
+            <p:tooltip autoHide="false" value="Fiche précédente" position="bottom" for="previous"/>
+            <p:tooltip autoHide="false" value="Fiche suivante" position="bottom" for="next"/>
 
         </div>
 

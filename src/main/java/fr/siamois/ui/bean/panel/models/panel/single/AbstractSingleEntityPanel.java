@@ -168,6 +168,22 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
         redirectToFocusOrOverview(findPreviousId(), activeTabIndex);
     }
 
+    /**
+     * Chemin de ressource ("/recording-unit/&lt;id&gt;") de la fiche suivante. Utilisé par la
+     * navigation ajax en place des fiches racines (voir {@code FocusViewBean.goToNextMain()}) :
+     * on reconstruit le panneau cible sans recharger toute la page (pas de redirection).
+     */
+    public String nextFocusPath() {
+        return getFocusPath(findNextId());
+    }
+
+    /**
+     * Chemin de ressource de la fiche précédente. Voir {@link #nextFocusPath()}.
+     */
+    public String previousFocusPath() {
+        return getFocusPath(findPreviousId());
+    }
+
     public static final Vocabulary SYSTEM_THESO;
 
     static {
