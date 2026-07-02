@@ -73,10 +73,17 @@ public class FormService {
      */
     @Transactional(readOnly = true)
     public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(ConceptDTO recordingUnitType, InstitutionDTO institution) {
-        Optional<CustomForm> optForm = formRepository.findEffectiveFormByTypeAndInstitution(recordingUnitType == null ? null : recordingUnitType.getId(), institution.getId());
+        // La résolution (CTE de priorité coûteuse) est mise en cache par id ; l'entité est
+        // rechargée fraîche à chaque fiche car ses CustomField sont référencés par les FormUiDto
+        // et mutés par fiche (min/max) — cacher l'entité partagerait des instances mutables.
+        Long conceptId = recordingUnitType == null ? null : recordingUnitType.getId();
+        Optional<Long> formId = formRepository.findEffectiveFormIdByTypeAndInstitution(conceptId, institution.getId());
         // If none found, try to find a form without specifying the type
         // Should we throw an error if none found?
-        return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
+        if (formId.isEmpty() && conceptId != null) {
+            formId = formRepository.findEffectiveFormIdByTypeAndInstitution(null, institution.getId());
+        }
+        return formId.flatMap(formRepository::findById).orElse(null);
     }
 
     // --------- Answer creators

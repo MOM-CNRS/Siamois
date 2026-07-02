@@ -906,7 +906,9 @@ class FormServiceTest {
         institutionDTO.setId(55L);
 
         CustomForm institutionForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
+        given(formRepository.findEffectiveFormIdByTypeAndInstitution(null, 55L))
+                .willReturn(Optional.of(7L));
+        given(formRepository.findById(7L))
                 .willReturn(Optional.of(institutionForm));
 
         // Act
@@ -927,7 +929,9 @@ class FormServiceTest {
         institutionDTO.setId(55L);
 
         CustomForm typeSpecificForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
+        given(formRepository.findEffectiveFormIdByTypeAndInstitution(101L, 55L))
+                .willReturn(Optional.of(8L));
+        given(formRepository.findById(8L))
                 .willReturn(Optional.of(typeSpecificForm));
 
         // Act
@@ -948,9 +952,11 @@ class FormServiceTest {
         institutionDTO.setId(55L);
 
         CustomForm institutionForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
+        given(formRepository.findEffectiveFormIdByTypeAndInstitution(101L, 55L))
                 .willReturn(Optional.empty());
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
+        given(formRepository.findEffectiveFormIdByTypeAndInstitution(null, 55L))
+                .willReturn(Optional.of(7L));
+        given(formRepository.findById(7L))
                 .willReturn(Optional.of(institutionForm));
 
         // Act
@@ -970,9 +976,9 @@ class FormServiceTest {
         InstitutionDTO institutionDTO = new InstitutionDTO();
         institutionDTO.setId(55L);
 
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
+        given(formRepository.findEffectiveFormIdByTypeAndInstitution(101L, 55L))
                 .willReturn(Optional.empty());
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
+        given(formRepository.findEffectiveFormIdByTypeAndInstitution(null, 55L))
                 .willReturn(Optional.empty());
 
         // Act

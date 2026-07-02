@@ -381,15 +381,36 @@ public class RecordingUnitService implements ArkEntityService {
     @Cacheable(value = RECORDING_UNIT_BY_ID_CACHE, key = "#id")
     public RecordingUnitDTO findById(long id) {
         try {
+            // TODO PERF (temporaire) : décomposition du temps de chargement — chargement des
+            // collections (SQL) vs conversion pure (CPU) — pour cibler le coût résiduel des
+            // fiches avec relations stratigraphiques. À retirer une fois le diagnostic terminé.
+            long t0 = System.nanoTime();
             RecordingUnit recordingUnit = recordingUnitRepository.findWithDetailsById(id)
                     .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + id));
+            long t1 = System.nanoTime();
             // Pré-charge les relations strati + unités liées en une requête jointe (même transaction),
             // pour que le mapping ne déclenche plus un lazy-load par relation sur les fiches connectées.
             // Le résultat n'est pas utilisé : il ne sert qu'à peupler le contexte de persistance réutilisé
             // par le convert ci-dessous.
             stratigraphicRelationshipRepository.prefetchInvolvingRecordingUnitId(id);
+            long t2 = System.nanoTime();
+            int nbContributors = recordingUnit.getContributors().size();
+            long t3 = System.nanoTime();
+            int nbPhases = recordingUnit.getPhases().size();
+            long t4 = System.nanoTime();
+            int nbRels = recordingUnit.getRelationshipsAsUnit1().size() + recordingUnit.getRelationshipsAsUnit2().size();
+            long t5 = System.nanoTime();
             // Conversion allégée pour le panneau : sans parents/children (servis par un lazy model).
-            return recordingUnitMapper.toPanelDto(recordingUnit);
+            RecordingUnitDTO dto = recordingUnitMapper.toPanelDto(recordingUnit);
+            long t6 = System.nanoTime();
+            log.debug("⏱ findById[ru={}] query={}ms prefetchStrati={}ms contributors({})={}ms phases({})={}ms rels({})={}ms mapping={}ms",
+                    id,
+                    (t1 - t0) / 1_000_000, (t2 - t1) / 1_000_000,
+                    nbContributors, (t3 - t2) / 1_000_000,
+                    nbPhases, (t4 - t3) / 1_000_000,
+                    nbRels, (t5 - t4) / 1_000_000,
+                    (t6 - t5) / 1_000_000);
+            return dto;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;

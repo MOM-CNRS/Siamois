@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.form;
 
 import fr.siamois.domain.models.form.customform.CustomForm;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -67,6 +68,59 @@ public interface FormRepository extends CrudRepository<CustomForm, Long> {
             @Param("institutionId") Long institutionId
     );
 
+    /**
+     * Résolution (mise en cache) de l'ID du formulaire effectif pour un couple (type, institution).
+     * Même logique de priorité que {@link #findEffectiveFormByTypeAndInstitution} mais ne renvoie
+     * que l'id : le résultat est cachable sans risque, contrairement à l'entité {@code CustomForm}
+     * dont les {@code CustomField} sont référencés (non copiés) par les FormUiDto et mutés par
+     * fiche (min/max). L'entité est rechargée fraîche par id à chaque fiche.
+     * Les scopes de formulaires ne sont écrits que par le seeder au démarrage ; l'expiration du
+     * cache Caffeine (1 h) suffit.
+     */
+    @Cacheable("EffectiveFormIdByTypeAndInstitution")
+    @Query(
+            value = """
+        WITH candidates AS (
+          SELECT fs.fk_custom_form_id AS form_id, 1 AS priority
+          FROM form_scopes fs
+          WHERE fs.scope_level = 'ORG_WIDE'
+            AND fs.fk_institution_id = :institutionId
+            AND :conceptId IS NOT NULL
+            AND fs.fk_type_id = :conceptId
 
+          UNION ALL
+
+          SELECT fs.fk_custom_form_id AS form_id, 2 AS priority
+          FROM form_scopes fs
+          WHERE fs.scope_level = 'ORG_WIDE'
+            AND fs.fk_institution_id = :institutionId
+            AND fs.fk_type_id IS NULL
+
+          UNION ALL
+
+          SELECT fs.fk_custom_form_id AS form_id, 3 AS priority
+          FROM form_scopes fs
+          WHERE fs.scope_level = 'GLOBAL_DEFAULT'
+            AND :conceptId IS NOT NULL
+            AND fs.fk_type_id = :conceptId
+
+          UNION ALL
+
+          SELECT fs.fk_custom_form_id AS form_id, 4 AS priority
+          FROM form_scopes fs
+          WHERE fs.scope_level = 'GLOBAL_DEFAULT'
+            AND fs.fk_type_id IS NULL
+        )
+        SELECT form_id
+        FROM candidates
+        ORDER BY priority ASC, form_id DESC
+        LIMIT 1
+        """,
+            nativeQuery = true
+    )
+    Optional<Long> findEffectiveFormIdByTypeAndInstitution(
+            @Param("conceptId") Long conceptId,
+            @Param("institutionId") Long institutionId
+    );
 
 }
