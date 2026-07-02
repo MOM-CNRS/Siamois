@@ -631,16 +631,26 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     /**
-     * Row CSS class: {@code search-match} for search hits, {@code overview-open} for
-     * the entity currently open in the side overview.
+     * Row CSS class: {@code entity-row-<id>} (ancre stable pour déplacer le surlignage côté
+     * client sans re-rendre la table, voir {@code moveOverviewHighlight} dans template.js),
+     * {@code search-match} for search hits, {@code overview-open} for the entity currently
+     * open in the side overview.
      */
     public String getRowStyleClass(T item) {
         if (item == null) return "";
-        String classes = isSearchMatch(item) ? "search-match" : "";
-        if (overviewEntityId != null && overviewEntityId.equals(item.getId())) {
-            classes = classes.isEmpty() ? "overview-open" : classes + " overview-open";
+        StringBuilder classes = new StringBuilder();
+        if (item.getId() != null) {
+            classes.append("entity-row-").append(item.getId());
         }
-        return classes;
+        if (isSearchMatch(item)) {
+            if (classes.length() > 0) classes.append(' ');
+            classes.append("search-match");
+        }
+        if (overviewEntityId != null && overviewEntityId.equals(item.getId())) {
+            if (classes.length() > 0) classes.append(' ');
+            classes.append("overview-open");
+        }
+        return classes.toString();
     }
 
     /**

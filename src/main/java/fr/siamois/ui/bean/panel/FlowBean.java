@@ -264,17 +264,24 @@ public class FlowBean implements Serializable {
 
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
         String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
-        String tableTarget = (targetPanel instanceof AbstractListPanel<?> lp)
-                ? lp.getActiveTableClientId()
-                : "panel-" + targetPanel.getPrefixPanelIndex() + "-container";
+        // On ne met à jour QUE la fiche (sideview) et l'historique. Surtout pas la table du panneau
+        // principal : la re-rendre (25+ lignes × moteur de formulaire) uniquement pour déplacer le
+        // surlignage de la ligne sélectionnée coûtait ~700 ms à chaque ouverture / suivant / précédent.
+        // Le surlignage est déplacé côté client par moveOverviewHighlight (le overviewEntityId posé
+        // ci-dessus garde le rendu serveur cohérent lors des vrais re-rendus : tri, pagination...).
         PrimeFaces.current().ajax().update(
                 "sideview-" + targetPanel.getPanelIndex(),
-                "historyForm",
-                tableTarget
+                "historyForm"
         );
+        String highlightScope = (targetPanel instanceof AbstractListPanel<?> lp)
+                ? lp.getActiveTableClientId()
+                : "panel-" + targetPanel.getPrefixPanelIndex() + "-container";
+        Long overviewEntityId = (overviewPanel instanceof AbstractSingleEntityPanel<?> sp) ? sp.getUnitId() : null;
         PrimeFaces.current().executeScript(
                 String.format(
-                        "showSideview('%s', '%s', '%s');",
+                        "moveOverviewHighlight('%s', '%s');showSideview('%s', '%s', '%s');",
+                        highlightScope,
+                        overviewEntityId == null ? "" : overviewEntityId,
                         targetPanel.getPanelIndex(),
                         base64RootUri,
                         base64OverviewUri

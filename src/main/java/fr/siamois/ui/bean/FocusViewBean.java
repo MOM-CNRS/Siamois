@@ -164,6 +164,10 @@ public class FocusViewBean implements Serializable {
         }
         if (panel instanceof AbstractSingleEntityPanel<?> newPanel) {
             newPanel.setActiveTabIndex(currentPanel.getActiveTabIndex());
+            // Garde le surlignage de ligne cohérent si l'aperçu latéral est une liste.
+            if (overview instanceof AbstractListPanel<?> listPanel && listPanel.getTableModel() != null) {
+                listPanel.getTableModel().setOverviewEntityId(newPanel.getUnitId());
+            }
         }
         // Le panneau est déjà entièrement initialisé (findById + onglets) par la factory : on le
         // marque "chargé" pour un rendu direct dans la même réponse ajax, sans re-déclencher le

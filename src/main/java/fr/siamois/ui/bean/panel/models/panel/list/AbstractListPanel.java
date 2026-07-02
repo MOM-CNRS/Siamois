@@ -220,7 +220,10 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
             tableModel.setOverviewEntityId(null);
         }
         super.closeOverview();
-        PrimeFaces.current().ajax().update(getActiveTableClientId());
+        // Retire seulement le surlignage de ligne côté client : re-rendre toute la table
+        // uniquement pour ça coûtait plusieurs centaines de ms (voir moveOverviewHighlight).
+        PrimeFaces.current().executeScript(
+                "moveOverviewHighlight('" + getActiveTableClientId() + "', '');");
     }
 
     @SuppressWarnings("unchecked")
