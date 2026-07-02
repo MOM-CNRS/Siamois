@@ -246,7 +246,7 @@ public class OOXMLImportService {
                             name, description, identifier, adminEmails, thesaurusInstance, vocabularyId));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return result;
@@ -274,7 +274,7 @@ public class OOXMLImportService {
                     ));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return result;
@@ -294,7 +294,7 @@ public class OOXMLImportService {
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
                 forEachDataRow(sheet, errors, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childrenStringByName));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         resolveChildrenKeys(specsByName, childrenStringByName);
@@ -369,7 +369,7 @@ public class OOXMLImportService {
                     specs.add(new RecordingUnitRelSeeder.RecordingUnitRelDTO(parent, child));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return specs;
@@ -406,7 +406,7 @@ public class OOXMLImportService {
                             "True".equals(incertain)));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return specs;
@@ -438,7 +438,7 @@ public class OOXMLImportService {
                     ));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return specs;
@@ -458,7 +458,7 @@ public class OOXMLImportService {
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
                 forEachDataRow(sheet, errors, row -> parseRowToActionUnit(row, cols).ifPresent(result::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return result;
@@ -538,7 +538,7 @@ public class OOXMLImportService {
                 forEachDataRow(sheet, errors, row ->
                         parseRowToRecordingUnit(row, cols, scope == ImportScope.PROJECT ? actionUnit : null).ifPresent(result::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return result;
@@ -648,7 +648,7 @@ public class OOXMLImportService {
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
                 forEachDataRow(sheet, errors, row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return result;
@@ -715,7 +715,7 @@ public class OOXMLImportService {
                             identifier, title, type, description, orderNumber, lowerBound, upperBound, authorEmail, actionKey));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
             }
         }
         return result;

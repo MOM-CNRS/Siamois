@@ -27,8 +27,10 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
@@ -43,6 +45,7 @@ public class ProjectUploadSettingsBean {
         String sheetName;
         String tableId;
         List<ColumnAliasView> columnAliases;
+        boolean unmapped;
         public boolean hasAliases() { return !columnAliases.isEmpty(); }
     }
 
@@ -52,6 +55,17 @@ public class ProjectUploadSettingsBean {
         String canonical;
     }
 
+    /** One tab in the validation section, representing one entity type. */
+    @Value
+    public static class ValidationTabView {
+        String tableId;
+        String label;
+        List<ImportError> errors;
+        int totalCount;
+        public int getErrorCount() { return errors.size(); }
+        public boolean hasErrors() { return !errors.isEmpty(); }
+    }
+
     private final OOXMLImportService importService;
     private final ProjectDataSeeder seeder;
 
@@ -59,7 +73,10 @@ public class ProjectUploadSettingsBean {
     UploadedFile originalFile;
     StreamedContent templateFile;
     ImportResult importResult;
+    List<ImportError> persistenceErrors = new ArrayList<>();
     boolean readyToUpload = false;
+    String uploadedFileName = "";
+    long uploadedFileSize = 0;
 
     public void init(ActionUnitDTO project) {
         reset();
@@ -86,7 +103,41 @@ public class ProjectUploadSettingsBean {
         readyToUpload = false;
         importResult = null;
         originalFile = null;
+        persistenceErrors = new ArrayList<>();
+        uploadedFileName = "";
+        uploadedFileSize = 0;
     }
+
+    public void resetForNewFile() {
+        importResult = null;
+        persistenceErrors = new ArrayList<>();
+        readyToUpload = false;
+        uploadedFileName = "";
+        uploadedFileSize = 0;
+    }
+
+    public String getUploadedFileSizeLabel() {
+        if (uploadedFileSize <= 0) return "";
+        if (uploadedFileSize < 1024) return uploadedFileSize + " o";
+        if (uploadedFileSize < 1024 * 1024) return (uploadedFileSize / 1024) + " Ko";
+        return String.format("%.1f Mo", uploadedFileSize / (1024.0 * 1024));
+    }
+
+    public String getUploadedFileDetail() {
+        if (importResult == null) return "";
+        int sheets = importResult.meta().tableToSheets().size();
+        return sheets + " feuille" + (sheets > 1 ? "s" : "") + " · mapping détecté";
+    }
+
+    public String getMappingHeadBg() {
+        return isMappingOk() ? "#f2f7f2" : "#fffbe9";
+    }
+
+    public String getValidationHeadBg() {
+        return isImportBlocked() ? "#fdf1f0" : "#f2f7f2";
+    }
+
+    // ─── Sheet mapping ──────────────────────────────────────────────────────
 
     public List<SheetMappingView> getSheetMappings() {
         if (importResult == null) return List.of();
@@ -98,8 +149,8 @@ public class ProjectUploadSettingsBean {
                 Map<String, String> aliases = meta.columnAliases().getOrDefault(sheetName, Map.of());
                 List<ColumnAliasView> aliasList = aliases.entrySet().stream()
                         .map(e -> new ColumnAliasView(e.getKey(), e.getValue()))
-                        .collect(java.util.stream.Collectors.toList());
-                result.add(new SheetMappingView(sheetName, tableId, aliasList));
+                        .collect(Collectors.toList());
+                result.add(new SheetMappingView(sheetName, tableId, aliasList, false));
             }
         }
         return result;
@@ -112,22 +163,145 @@ public class ProjectUploadSettingsBean {
         return sheets + " feuille" + (sheets > 1 ? "s" : "") + " → " + tables + " table" + (tables > 1 ? "s" : "");
     }
 
+    public boolean isMappingOk() {
+        return importResult != null && getSheetMappings().stream().noneMatch(SheetMappingView::isUnmapped);
+    }
+
+    // ─── Errors ─────────────────────────────────────────────────────────────
+
+    /** Combined parsing errors + persistence errors. */
     public List<ImportError> getImportErrors() {
-        if (importResult == null) return List.of();
-        return importResult.errors();
+        List<ImportError> all = new ArrayList<>(importResult == null ? List.of() : importResult.errors());
+        all.addAll(persistenceErrors);
+        return all;
     }
 
     public int getErrorCount() {
-        return importResult == null ? 0 : importResult.errors().size();
+        return getImportErrors().size();
     }
 
-    public void uploadSpec() {
-        if (importResult == null) {
-            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Rien à importer", null));
-            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
-            return;
+    public boolean isImportBlocked() {
+        return getErrorCount() > 0;
+    }
+
+    // ─── Validation tabs ─────────────────────────────────────────────────────
+
+    private Map<String, String> buildSheetToKeyMap() {
+        if (importResult == null) return Map.of();
+        Map<String, String> map = new LinkedHashMap<>();
+        for (Map.Entry<String, List<String>> entry : importResult.meta().tableToSheets().entrySet()) {
+            String tableId = entry.getKey();
+            String key = resolveTableKey(tableId);
+            for (String sheet : entry.getValue()) {
+                map.put(sheet, key);
+            }
         }
+        return map;
+    }
+
+    private String resolveTableKey(String tableId) {
+        // handles both snake_case IDs from _meta sheet and French display names from DEFAULT_SHEET_NAMES
+        return switch (tableId) {
+            case "lieu", "spatial_unit"                          -> "lieu";
+            case "ue", "recording_unit"                          -> "ue";
+            case "relation stratigraphique", "stratirel",
+                 "recording_unit_strati_rel"                     -> "strati";
+            case "groupement d'ue", "recordingrel",
+                 "recording_unit_rel"                            -> "ue";
+            case "specimen", "mobilier"                          -> "mob";
+            case "phase"                                         -> "phase";
+            default                                              -> tableId;
+        };
+    }
+
+    private int getSpecCountForKey(String key) {
+        if (importResult == null) return 0;
+        var specs = importResult.specs();
+        return switch (key) {
+            case "lieu"   -> specs.spatialUnits().size();
+            case "ue"     -> specs.recordingUnits().size();
+            case "strati" -> specs.recordingUnitStratiRelSpecs().size();
+            case "mob"    -> specs.specimenSpecs().size();
+            case "phase"  -> specs.phaseSpecs().size();
+            default       -> 0;
+        };
+    }
+
+    public int getTotalImportRows() {
+        if (importResult == null) return 0;
+        var s = importResult.specs();
+        return s.spatialUnits().size()
+             + s.recordingUnits().size()
+             + s.recordingUnitStratiRelSpecs().size()
+             + s.specimenSpecs().size()
+             + s.phaseSpecs().size();
+    }
+
+    public String getSummaryText() {
+        if (importResult == null) return "";
+        int errors = getErrorCount();
+        int rows = getTotalImportRows();
+        if (errors > 0) return errors + " erreur" + (errors > 1 ? "s" : "") + " à corriger avant import";
+        return rows + " ligne" + (rows > 1 ? "s" : "") + " prête" + (rows > 1 ? "s" : "") + " à importer";
+    }
+
+    public String getImportButtonLabel() {
+        int rows = getTotalImportRows();
+        return "Importer " + rows + " ligne" + (rows > 1 ? "s" : "");
+    }
+
+    public String getValidationStatusLabel() {
+        if (isImportBlocked()) {
+            int n = getErrorCount();
+            return "⚠ " + n + " erreur" + (n > 1 ? "s" : "");
+        }
+        return "✓ Aucune erreur";
+    }
+
+    public String getValidationStatusStyle() {
+        return isImportBlocked()
+            ? "margin-left:auto;font-size:12px;border-radius:6px;padding:2px 9px;color:#b5403a;background:#fbeeee;border:1px solid #eccfcf;"
+            : "margin-left:auto;font-size:12px;border-radius:6px;padding:2px 9px;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;";
+    }
+
+    public String getMappingStatusLabel() {
+        return isMappingOk() ? "✓ Mapping validé" : "⚠ Colonnes non mappées";
+    }
+
+    public String getMappingStatusStyle() {
+        return isMappingOk()
+            ? "margin-left:auto;font-size:12px;border-radius:6px;padding:2px 9px;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;"
+            : "margin-left:auto;font-size:12px;border-radius:6px;padding:2px 9px;color:#8a6d1e;background:#fdf6e3;border:1px solid #ecdca0;";
+    }
+
+    public String getBlockedMessage() {
+        int n = getErrorCount();
+        return "Corrigez les " + n + " erreur" + (n > 1 ? "s" : "") + " pour importer";
+    }
+
+    // ─── Per-tab accessors (used from hardcoded tabs in XHTML) ───────────────
+
+    public ValidationTabView getLieuTab()   { return buildTabForKey("lieu",   "Lieu"); }
+    public ValidationTabView getUeTab()     { return buildTabForKey("ue",     "UE"); }
+    public ValidationTabView getStratiTab() { return buildTabForKey("strati", "Stratigraphie"); }
+    public ValidationTabView getMobTab()    { return buildTabForKey("mob",    "Mobilier"); }
+    public ValidationTabView getPhaseTab()  { return buildTabForKey("phase",  "Phase"); }
+
+    private ValidationTabView buildTabForKey(String key, String label) {
+        Map<String, String> sheetToKey = buildSheetToKeyMap();
+        Map<String, List<ImportError>> errorsByKey = new LinkedHashMap<>();
+        for (ImportError e : getImportErrors()) {
+            String k = sheetToKey.getOrDefault(e.sheet(), "other");
+            errorsByKey.computeIfAbsent(k, x -> new ArrayList<>()).add(e);
+        }
+        List<ImportError> errs = errorsByKey.getOrDefault(key, List.of());
+        return new ValidationTabView(key, label, errs, getSpecCountForKey(key));
+    }
+
+    // ─── Upload / persistence ────────────────────────────────────────────────
+
+    public void uploadSpec() {
+        if (importResult == null || isImportBlocked()) return;
         try {
             seeder.seedAll(importResult.specs(), project);
             FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
@@ -135,22 +309,25 @@ public class ProjectUploadSettingsBean {
             PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
             reset();
         } catch (Exception e) {
-            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Une erreur est survenue", e.getMessage()));
-            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
+            persistenceErrors.add(new ImportError("Import", 0, "—", e.getMessage()));
+            readyToUpload = false;
+            // panels re-render via the button's update attribute
         }
     }
 
     public void handleFileUpload(FileUploadEvent event) {
         this.originalFile = null;
+        persistenceErrors = new ArrayList<>();
         UploadedFile file = event.getFile();
 
         if (file != null && file.getFileName() != null) {
+            uploadedFileName = file.getFileName();
+            uploadedFileSize = file.getSize();
             try (InputStream is = file.getInputStream()) {
                 this.importResult = importService.importFromExcel(is,
                         OOXMLImportService.ImportScope.PROJECT,
                         project);
-                readyToUpload = true;
+                readyToUpload = !importResult.hasErrors();
 
                 if (importResult.hasErrors()) {
                     String msg = importResult.errors().size() + " ligne(s) ignorée(s) lors du chargement";
