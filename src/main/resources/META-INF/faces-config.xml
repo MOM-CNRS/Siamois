@@ -9,4 +9,9 @@
         <component-class>fr.siamois.ui.custom.LazyTreeTable</component-class>
     </component>
 
+    <!-- TEMPORAIRE (diagnostic perf) : mesure la durée de chaque phase du cycle Faces. À retirer. -->
+    <lifecycle>
+        <phase-listener>fr.siamois.utils.TimingPhaseListener</phase-listener>
+    </lifecycle>
+
 </faces-config>

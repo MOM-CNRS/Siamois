@@ -182,9 +182,15 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         errorMessage = null;
         unit = null;
 
+        // TODO PERF (temporaire) : chronométrage des blocs de refreshUnit. À retirer.
+        long tStart = System.nanoTime();
+        long tFindById = tStart;
+        long tForms = tStart;
+        long tTabs = tStart;
         try {
 
             unit = recordingUnitService.findById(unitId);
+            tFindById = System.nanoTime();
 
 
             SpecimenLazyDataModel specimenListLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
@@ -194,6 +200,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
             initForms(true);
             this.titleCodeOrTitle = unit.getFullIdentifier();
+            tForms = System.nanoTime();
 
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
@@ -211,6 +218,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             // iniy stratigraphy module
             stratigraphyViewModel = new CustomFieldAnswerStratigraphyViewModel();
             formService.handleStratigraphyRelationships(stratigraphyViewModel, unit);
+            tTabs = System.nanoTime();
             // --Define callbacks
             stratigraphyViewModel.setOnDelete(() -> {
                 formService.setStratigraphyFieldValue(stratigraphyViewModel, unit);
@@ -234,7 +242,16 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         }
 
         //history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, unitId);
+        long tBeforeDocs = System.nanoTime();
         documents = unit != null ? documentService.findForRecordingUnit(unit) : List.of();
+        long tEnd = System.nanoTime();
+        log.debug("⏱ refreshUnit[ru={}] findById={}ms forms={}ms tabsModels={}ms documents={}ms (total {}ms)",
+                unitId,
+                (tFindById - tStart) / 1_000_000,
+                (tForms - tFindById) / 1_000_000,
+                (tTabs - tForms) / 1_000_000,
+                (tEnd - tBeforeDocs) / 1_000_000,
+                (tEnd - tStart) / 1_000_000);
     }
 
     @Override
