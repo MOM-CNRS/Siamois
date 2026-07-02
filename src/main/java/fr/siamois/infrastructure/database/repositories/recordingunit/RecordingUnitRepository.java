@@ -6,6 +6,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -22,6 +23,19 @@ import java.util.Set;
 
 @Repository
 public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, Long>, RevisionRepository<RecordingUnit, Long, Long>, JpaSpecificationExecutor<RecordingUnit> {
+
+    /**
+     * Charge une UE avec toutes ses associations *-to-one en une seule requête (fetch join via
+     * entity graph), au lieu de laisser le mappeur déclencher un lazy-load par association (N+1).
+     * Les collections (parents/enfants/phases/relations) restent LAZY et sont regroupées par le
+     * {@code default_batch_fetch_size} configuré. Utilisé pour l'affichage des fiches.
+     */
+    @EntityGraph(attributePaths = {
+            "type", "actionUnit", "spatialUnit", "author", "createdBy", "createdByInstitution",
+            "zInf", "zSup", "geomorphologicalCycle", "geomorphologicalAgent",
+            "normalizedInterpretation", "erosionShape", "erosionOrientation", "erosionProfile"
+    })
+    Optional<RecordingUnit> findWithDetailsById(Long id);
 
     @Query("SELECT COUNT(s) FROM Specimen s WHERE s.recordingUnit.id = :recordingUnitId")
     Long countSpecimensByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);

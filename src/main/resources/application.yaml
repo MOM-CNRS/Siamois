@@ -51,6 +51,10 @@ spring:
     properties:
       hibernate:
         show_sql: false
+        # Regroupe le chargement des associations LAZY (collections et proxies du même type)
+        # en quelques requêtes "IN (...)" au lieu d'un N+1. Améliore fortement l'affichage des
+        # fiches qui naviguent parents/enfants/phases/relations via le mappeur.
+        default_batch_fetch_size: 32
         envers:
           audit_table_suffix: _AUD
           store_data_at_delete: true

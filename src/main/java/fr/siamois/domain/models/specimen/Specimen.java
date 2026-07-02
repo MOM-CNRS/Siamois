@@ -37,7 +37,10 @@ import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 @Entity
 @Table(name = "specimen", indexes = {
         @Index(columnList = "full_identifier", name = "idx_specimen_full_identifier"),
-        @Index(columnList = "fk_institution_id", name = "idx_specimen_institution")
+        @Index(columnList = "fk_institution_id", name = "idx_specimen_institution"),
+        // Supporte la navigation fiche suivante/précédente dans une UE
+        // (WHERE fk_recording_unit_id = ? ORDER BY creation_time).
+        @Index(columnList = "fk_recording_unit_id, creation_time", name = "idx_specimen_ru_creation")
 })
 @Audited
 @NoArgsConstructor

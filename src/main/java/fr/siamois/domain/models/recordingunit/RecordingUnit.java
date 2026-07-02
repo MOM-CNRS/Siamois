@@ -40,7 +40,10 @@ import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 @Table(name = "recording_unit", indexes = {
         @Index(columnList = "full_identifier", name = "idx_ru_full_identifier"),
         @Index(columnList = "fk_institution_id", name = "idx_ru_institution"),
-        @Index(columnList = "fk_action_unit_id", name = "idx_ru_fk_action_unit_id")
+        @Index(columnList = "fk_action_unit_id", name = "idx_ru_fk_action_unit_id"),
+        // Supporte la navigation fiche suivante/précédente et les listes triées par date de création
+        // dans une action (WHERE fk_action_unit_id = ? ORDER BY creation_time).
+        @Index(columnList = "fk_action_unit_id, creation_time", name = "idx_ru_action_creation")
 })
 @NoArgsConstructor
 @Audited

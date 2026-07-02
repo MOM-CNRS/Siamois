@@ -33,7 +33,10 @@ import java.util.stream.Collectors;
         indexes = {
                 @Index(columnList = "name", name = "idx_action_unit_name"),
                 @Index(columnList = "full_identifier", name = "idx_action_unit_full_identifier"),
-                @Index(columnList = "fk_institution_id", name = "idx_action_unit_institution")
+                @Index(columnList = "fk_institution_id", name = "idx_action_unit_institution"),
+                // Supporte la navigation fiche suivante/précédente dans une institution
+                // (WHERE fk_institution_id = ? ORDER BY creation_time, action_unit_id).
+                @Index(columnList = "fk_institution_id, creation_time", name = "idx_action_unit_inst_creation")
         }
 )
 @Audited

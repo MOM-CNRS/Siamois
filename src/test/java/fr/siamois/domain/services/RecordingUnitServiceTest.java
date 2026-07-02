@@ -207,23 +207,23 @@ class RecordingUnitServiceTest {
         RecordingUnitDTO expectedDTO = new RecordingUnitDTO();
         expectedDTO.setId(id);
 
-        when(recordingUnitRepository.findById(id)).thenReturn(Optional.of(recordingUnit));
-        when(recordingUnitMapper.convert(recordingUnit)).thenReturn(expectedDTO);
+        when(recordingUnitRepository.findWithDetailsById(id)).thenReturn(Optional.of(recordingUnit));
+        when(recordingUnitMapper.toPanelDto(recordingUnit)).thenReturn(expectedDTO);
 
         // Act
         RecordingUnitDTO actualResult = recordingUnitService.findById(id);
 
         // Assert
         assertEquals(expectedDTO, actualResult);
-        verify(recordingUnitRepository).findById(id);
-        verify(recordingUnitMapper).convert(recordingUnit);
+        verify(recordingUnitRepository).findWithDetailsById(id);
+        verify(recordingUnitMapper).toPanelDto(recordingUnit);
     }
 
 
     @Test
     void findById_Exception() {
 
-        when(recordingUnitRepository.findById(recordingUnit1.getId())).thenReturn(Optional.empty());
+        when(recordingUnitRepository.findWithDetailsById(recordingUnit1.getId())).thenReturn(Optional.empty());
 
 
         // Act & Assert

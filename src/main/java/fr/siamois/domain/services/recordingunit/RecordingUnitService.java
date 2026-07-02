@@ -70,6 +70,8 @@ import static fr.siamois.domain.models.ValidationStatus.*;
 public class RecordingUnitService implements ArkEntityService {
 
     public static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
+    /** Cache des UE affichées par id (voir {@link #findById(long)}). Vidé à chaque écriture d'UE. */
+    public static final String RECORDING_UNIT_BY_ID_CACHE = "recordingUnitById";
     private final RecordingUnitRepository recordingUnitRepository;
     private final PersonRepository personRepository;
     private final InstitutionService institutionService;
@@ -98,6 +100,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The number of recording units updated.
      */
     @Transactional
+    @CacheEvict(value = RECORDING_UNIT_BY_ID_CACHE, allEntries = true)
     public int bulkUpdateType(List<Long> ids, ConceptDTO type) {
         return recordingUnitRepository.updateTypeByIds(type.getId(), ids);
     }
@@ -116,10 +119,11 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The saved RecordingUnit instance.
      */
     @Transactional
-    @CacheEvict({
+    @CacheEvict(value = {
             "InstitutionHasRootChildrenRU",
-            "ActionHasRootChildrenRU"
-    })
+            "ActionHasRootChildrenRU",
+            RECORDING_UNIT_BY_ID_CACHE
+    }, allEntries = true)
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO) {
         try {
             RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
@@ -131,6 +135,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     @Transactional
+    @CacheEvict(value = RECORDING_UNIT_BY_ID_CACHE, allEntries = true)
     public void updateStratigraphicRel(RecordingUnitDTO recordingUnitDTO) {
         RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
         assert recordingUnit != null;
@@ -373,11 +378,18 @@ public class RecordingUnitService implements ArkEntityService {
      * @throws RuntimeException               If the repository method returns a RuntimeException
      */
     @Transactional(readOnly = true)
+    @Cacheable(value = RECORDING_UNIT_BY_ID_CACHE, key = "#id")
     public RecordingUnitDTO findById(long id) {
         try {
-            RecordingUnit recordingUnit = recordingUnitRepository.findById(id)
+            RecordingUnit recordingUnit = recordingUnitRepository.findWithDetailsById(id)
                     .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + id));
-            return recordingUnitMapper.convert(recordingUnit);
+            // Pré-charge les relations strati + unités liées en une requête jointe (même transaction),
+            // pour que le mapping ne déclenche plus un lazy-load par relation sur les fiches connectées.
+            // Le résultat n'est pas utilisé : il ne sert qu'à peupler le contexte de persistance réutilisé
+            // par le convert ci-dessous.
+            stratigraphicRelationshipRepository.prefetchInvolvingRecordingUnitId(id);
+            // Conversion allégée pour le panneau : sans parents/children (servis par un lazy model).
+            return recordingUnitMapper.toPanelDto(recordingUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
@@ -466,10 +478,11 @@ public class RecordingUnitService implements ArkEntityService {
      * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
      */
     @Transactional
-    @CacheEvict({
+    @CacheEvict(value = {
             "InstitutionHasRootChildrenRU",
-            "ActionHasRootChildrenRU"
-    })
+            "ActionHasRootChildrenRU",
+            RECORDING_UNIT_BY_ID_CACHE
+    }, allEntries = true)
     public void deleteRecordingUnitById(long recordingUnitId) {
         RecordingUnit ru = recordingUnitRepository.findById(recordingUnitId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
@@ -581,10 +594,11 @@ public class RecordingUnitService implements ArkEntityService {
      * Lie une UE existante comme enfant direct d'une autre (table {@code recording_unit_hierarchy}).
      */
     @Transactional
-    @CacheEvict({
+    @CacheEvict(value = {
             "InstitutionHasRootChildrenRU",
-            "ActionHasRootChildrenRU"
-    })
+            "ActionHasRootChildrenRU",
+            RECORDING_UNIT_BY_ID_CACHE
+    }, allEntries = true)
     public void addHierarchyChild(long parentId, long childId) {
         if (parentId == childId) {
             throw new IllegalArgumentException("Une unité d'enregistrement ne peut pas être son propre enfant");
@@ -616,10 +630,11 @@ public class RecordingUnitService implements ArkEntityService {
      * Supprime le lien hiérarchique direct parent → enfant.
      */
     @Transactional
-    @CacheEvict({
+    @CacheEvict(value = {
             "InstitutionHasRootChildrenRU",
-            "ActionHasRootChildrenRU"
-    })
+            "ActionHasRootChildrenRU",
+            RECORDING_UNIT_BY_ID_CACHE
+    }, allEntries = true)
     public void removeHierarchyChild(long parentId, long childId) {
         RecordingUnit parent = recordingUnitRepository.findById(parentId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
@@ -706,6 +721,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     @Override
+    @CacheEvict(value = RECORDING_UNIT_BY_ID_CACHE, allEntries = true)
     public RecordingUnitDTO save(AbstractEntityDTO toSave) {
         RecordingUnit toReturn = recordingUnitRepository.save(Objects.requireNonNull(recordingUnitMapper.invertConvert((RecordingUnitDTO) toSave)));
         return recordingUnitMapper.convert(toReturn);
@@ -1130,6 +1146,7 @@ public class RecordingUnitService implements ArkEntityService {
      * @param id The id of the Recording unit to toggle
      * @return The updated RecordingUnitDTO
      */
+    @CacheEvict(value = RECORDING_UNIT_BY_ID_CACHE, allEntries = true)
     public RecordingUnitDTO toggleValidated(Long id) {
         RecordingUnit unit = recordingUnitRepository.findById(id)
                 .orElseThrow(() -> new RecordingUnitNotFoundException("Recording not found with id: " + id));

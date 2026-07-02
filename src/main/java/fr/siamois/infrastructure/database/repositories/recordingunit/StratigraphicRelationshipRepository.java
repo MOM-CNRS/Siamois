@@ -28,4 +28,16 @@ public interface StratigraphicRelationshipRepository extends
 
     @Query("SELECT r FROM StratigraphicRelationship r WHERE r.unit1.id = :recordingUnitId OR r.unit2.id = :recordingUnitId")
     List<StratigraphicRelationship> findAllInvolvingRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
+
+    /**
+     * Charge en UNE requête (fetch joins) toutes les relations strati d'une UE avec leurs deux unités
+     * et leurs to-one affichés (type, auteur, institution). Sert à pré-remplir le contexte de
+     * persistance avant le mapping du panneau : le convert n'a alors plus à lazy-loader chaque
+     * {@code unit1}/{@code unit2} un par un (N+1 sur les fiches connectées).
+     */
+    @Query("SELECT r FROM StratigraphicRelationship r " +
+            "LEFT JOIN FETCH r.unit1 u1 LEFT JOIN FETCH u1.type LEFT JOIN FETCH u1.createdBy LEFT JOIN FETCH u1.createdByInstitution " +
+            "LEFT JOIN FETCH r.unit2 u2 LEFT JOIN FETCH u2.type LEFT JOIN FETCH u2.createdBy LEFT JOIN FETCH u2.createdByInstitution " +
+            "WHERE r.unit1.id = :recordingUnitId OR r.unit2.id = :recordingUnitId")
+    List<StratigraphicRelationship> prefetchInvolvingRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
 }
