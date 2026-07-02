@@ -32,6 +32,7 @@
         <sharedInput:panelField
                 icon="#{col.field.icon}"
                 uncertain="#{answer.uncertain}"
+                editable="#{bean.fieldRenderMode() eq 'input' and flowBean.isWriteMode}"
                 conceptUri="#{col.field.conceptUri}"
                 id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
                 required="#{col.required}"

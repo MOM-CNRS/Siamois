@@ -265,14 +265,15 @@ public class FlowBean implements Serializable {
 
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
         String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
-        // On ne met à jour QUE la fiche (sideview) et l'historique. Surtout pas la table du panneau
-        // principal : la re-rendre (25+ lignes × moteur de formulaire) uniquement pour déplacer le
-        // surlignage de la ligne sélectionnée coûtait ~700 ms à chaque ouverture / suivant / précédent.
+        // On ne met à jour QUE la fiche (sideview). Surtout pas la table du panneau principal :
+        // la re-rendre (25+ lignes × moteur de formulaire) uniquement pour déplacer le surlignage
+        // de la ligne sélectionnée coûtait ~700 ms à chaque ouverture / suivant / précédent.
         // Le surlignage est déplacé côté client par moveOverviewHighlight (le overviewEntityId posé
         // ci-dessus garde le rendu serveur cohérent lors des vrais re-rendus : tri, pagination...).
+        // NB : l'ancien target "historyForm" ne correspondait à aucun composant (le formulaire de
+        // la barre latérale s'appelle subSidebarForm) — c'était un no-op, retiré.
         PrimeFaces.current().ajax().update(
-                "sideview-" + targetPanel.getPanelIndex(),
-                "historyForm"
+                "sideview-" + targetPanel.getPanelIndex()
         );
         String highlightScope = (targetPanel instanceof AbstractListPanel<?> lp)
                 ? lp.getActiveTableClientId()

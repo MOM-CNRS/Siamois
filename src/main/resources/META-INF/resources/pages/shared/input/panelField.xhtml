@@ -1,6 +1,7 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
 >
 
@@ -14,6 +15,10 @@
         <cc:attribute name="fluid" type="java.lang.Boolean" required="false" default="true"/>
         <cc:attribute name="canBeRemoved" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="uncertain" type="java.lang.Boolean" required="false" default="false"/>
+        <!-- Quand false (fiche en lecture), le chrome du champ est rendu en markup statique :
+             pas de bouton/menu/toggle/tooltip PrimeFaces. ~4 widgets et leurs scripts d'init
+             économisés PAR champ, soit ~120 par fiche : principal coût de rendu des fiches. -->
+        <cc:attribute name="editable" type="java.lang.Boolean" required="false" default="true"/>
         <cc:attribute name="onRemove"
                       method-signature="void onRemove(java.lang.Object, java.lang.Object)"
                       required="false"/>
@@ -26,9 +31,28 @@
                 class="field-value-group #{cc.attrs.fluid ? 'field-value-group ui-fluid' : 'field-value-group'}"
                 style="flex: 1 1 auto;max-width: 100%"
                 id="fieldValueGroup">
-            <div style="    display: flex;
-            gap:0.5em;
-                    align-items: center;" class="header-toggle-container">
+
+            <!-- Mode lecture : chrome statique, aucun widget PrimeFaces par champ. -->
+            <h:panelGroup layout="block" rendered="#{not cc.attrs.editable}"
+                          styleClass="header-toggle-container"
+                          style="display: flex; gap:0.5em; align-items: center;">
+                <a href="#{empty cc.attrs.conceptUri ? '#' : cc.attrs.conceptUri}"
+                   target="#{empty cc.attrs.conceptUri ? '_self' : '_blank'}"
+                   onclick="#{empty cc.attrs.conceptUri ? 'return false;' : ''}"
+                   class="ui-button ui-button-flat ellipsis-btn #{cc.attrs.required ? 'required-btn' : ''}"
+                   style="color: var(--text-light); display:flex; align-items:center; max-width: 180px; width: fit-content; text-decoration: none;"
+                   title="#{cc.attrs.title}">
+                    <span class="#{cc.attrs.icon}" style="margin-right: 0.35em;"></span>
+                    <span class="ui-button-text">#{cc.attrs.title}</span>
+                </a>
+                <h:outputText value="Incertain" rendered="#{cc.attrs.uncertain}"
+                              style="font-style: italic; color: var(--text-light);"/>
+            </h:panelGroup>
+
+            <!-- Mode édition : chrome interactif (menu, toggle incertain, tooltip). -->
+            <h:panelGroup layout="block" rendered="#{cc.attrs.editable}"
+                          styleClass="header-toggle-container"
+                          style="display: flex; gap:0.5em; align-items: center;">
                 <p:commandButton
                         styleClass="ui-button-flat ellipsis-btn #{cc.attrs.required ? 'required-btn' : ''}"
                         icon="#{cc.attrs.icon}"
@@ -68,7 +92,7 @@
                         position="left" />
 
 
-            </div>
+            </h:panelGroup>
 
             <div>
                 <cc:insertChildren/>
