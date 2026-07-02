@@ -381,18 +381,14 @@ public class RecordingUnitService implements ArkEntityService {
     @Cacheable(value = RECORDING_UNIT_BY_ID_CACHE, key = "#id")
     public RecordingUnitDTO findById(long id) {
         try {
-            // TODO PERF (temporaire) : chronométrage de confirmation, à retirer après validation.
-            long t0 = System.nanoTime();
             RecordingUnit recordingUnit = recordingUnitRepository.findWithDetailsById(id)
                     .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + id));
-            long t1 = System.nanoTime();
             // Les relations stratigraphiques sont chargées par UNE requête jointe (unités + to-one
             // inclus) et les DTOs construits à partir de ce résultat. Surtout ne PAS initialiser
             // recordingUnit.getRelationshipsAsUnit1()/2 : l'initialisation de ces collections
             // déclenche le batch fetching des mêmes collections pour toutes les unités voisines
             // présentes en session, soit ~120 ms constants dès qu'une relation existe.
             List<StratigraphicRelationship> rels = stratigraphicRelationshipRepository.prefetchInvolvingRecordingUnitId(id);
-            long t2 = System.nanoTime();
             // Conversion allégée pour le panneau : sans parents/children (lazy model dédié) ni
             // relations (renseignées ci-dessous depuis le prefetch).
             RecordingUnitDTO dto = recordingUnitMapper.toPanelDto(recordingUnit);
@@ -409,9 +405,6 @@ public class RecordingUnitService implements ArkEntityService {
             }
             dto.setRelationshipsAsUnit1(asUnit1);
             dto.setRelationshipsAsUnit2(asUnit2);
-            long t3 = System.nanoTime();
-            log.debug("⏱ findById[ru={}] query={}ms prefetchStrati({})={}ms mappingEtRelations={}ms",
-                    id, (t1 - t0) / 1_000_000, rels.size(), (t2 - t1) / 1_000_000, (t3 - t2) / 1_000_000);
             return dto;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
