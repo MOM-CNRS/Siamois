@@ -30,15 +30,21 @@ public interface RecordingUnitMapper extends Converter<RecordingUnit, RecordingU
     RecordingUnitDTO toLightDto(RecordingUnit source);
 
     /**
-     * Conversion pour l'affichage d'une fiche (panneau). Identique à {@link #convert} mais SANS
-     * {@code parents}/{@code children} : la hiérarchie est servie par un lazy model dédié dans le
-     * panneau, donc les mapper ici ne ferait que déclencher un chargement en cascade inutile
-     * (chaque parent/enfant recharge son type/concept/personne/institution). Laisser ces
-     * collections à {@code null} est cohérent avec {@code RecordingUnitDTO.hierarchyIsInitialized()}
-     * et {@code RecordingUnitService.initializeHierarchy(...)}.
+     * Conversion pour l'affichage d'une fiche (panneau). Identique à {@link #convert} mais :
+     * <ul>
+     *   <li>SANS {@code parents}/{@code children} : la hiérarchie est servie par un lazy model
+     *       dédié dans le panneau ; cohérent avec {@code RecordingUnitDTO.hierarchyIsInitialized()}
+     *       et {@code RecordingUnitService.initializeHierarchy(...)} ;</li>
+     *   <li>SANS {@code relationshipsAsUnit1/2} : initialiser ces collections déclenche le batch
+     *       fetching des mêmes collections pour toutes les unités voisines en session (~120 ms
+     *       constants dès qu'une relation existe). Le service les renseigne lui-même à partir du
+     *       résultat du prefetch ({@code prefetchInvolvingRecordingUnitId}, une requête).</li>
+     * </ul>
      */
     @Mapping(target = "parents", ignore = true)
     @Mapping(target = "children", ignore = true)
+    @Mapping(target = "relationshipsAsUnit1", ignore = true)
+    @Mapping(target = "relationshipsAsUnit2", ignore = true)
     RecordingUnitDTO toPanelDto(RecordingUnit source);
 
 }

@@ -381,35 +381,37 @@ public class RecordingUnitService implements ArkEntityService {
     @Cacheable(value = RECORDING_UNIT_BY_ID_CACHE, key = "#id")
     public RecordingUnitDTO findById(long id) {
         try {
-            // TODO PERF (temporaire) : décomposition du temps de chargement — chargement des
-            // collections (SQL) vs conversion pure (CPU) — pour cibler le coût résiduel des
-            // fiches avec relations stratigraphiques. À retirer une fois le diagnostic terminé.
+            // TODO PERF (temporaire) : chronométrage de confirmation, à retirer après validation.
             long t0 = System.nanoTime();
             RecordingUnit recordingUnit = recordingUnitRepository.findWithDetailsById(id)
                     .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + id));
             long t1 = System.nanoTime();
-            // Pré-charge les relations strati + unités liées en une requête jointe (même transaction),
-            // pour que le mapping ne déclenche plus un lazy-load par relation sur les fiches connectées.
-            // Le résultat n'est pas utilisé : il ne sert qu'à peupler le contexte de persistance réutilisé
-            // par le convert ci-dessous.
-            stratigraphicRelationshipRepository.prefetchInvolvingRecordingUnitId(id);
+            // Les relations stratigraphiques sont chargées par UNE requête jointe (unités + to-one
+            // inclus) et les DTOs construits à partir de ce résultat. Surtout ne PAS initialiser
+            // recordingUnit.getRelationshipsAsUnit1()/2 : l'initialisation de ces collections
+            // déclenche le batch fetching des mêmes collections pour toutes les unités voisines
+            // présentes en session, soit ~120 ms constants dès qu'une relation existe.
+            List<StratigraphicRelationship> rels = stratigraphicRelationshipRepository.prefetchInvolvingRecordingUnitId(id);
             long t2 = System.nanoTime();
-            int nbContributors = recordingUnit.getContributors().size();
-            long t3 = System.nanoTime();
-            int nbPhases = recordingUnit.getPhases().size();
-            long t4 = System.nanoTime();
-            int nbRels = recordingUnit.getRelationshipsAsUnit1().size() + recordingUnit.getRelationshipsAsUnit2().size();
-            long t5 = System.nanoTime();
-            // Conversion allégée pour le panneau : sans parents/children (servis par un lazy model).
+            // Conversion allégée pour le panneau : sans parents/children (lazy model dédié) ni
+            // relations (renseignées ci-dessous depuis le prefetch).
             RecordingUnitDTO dto = recordingUnitMapper.toPanelDto(recordingUnit);
-            long t6 = System.nanoTime();
-            log.debug("⏱ findById[ru={}] query={}ms prefetchStrati={}ms contributors({})={}ms phases({})={}ms rels({})={}ms mapping={}ms",
-                    id,
-                    (t1 - t0) / 1_000_000, (t2 - t1) / 1_000_000,
-                    nbContributors, (t3 - t2) / 1_000_000,
-                    nbPhases, (t4 - t3) / 1_000_000,
-                    nbRels, (t5 - t4) / 1_000_000,
-                    (t6 - t5) / 1_000_000);
+            Set<StratigraphicRelationshipDTO> asUnit1 = new LinkedHashSet<>();
+            Set<StratigraphicRelationshipDTO> asUnit2 = new LinkedHashSet<>();
+            for (StratigraphicRelationship rel : rels) {
+                StratigraphicRelationshipDTO relDto = stratigraphicRelationshipMapper.convert(rel);
+                if (rel.getUnit1() != null && rel.getUnit1().getId() == id) {
+                    asUnit1.add(relDto);
+                }
+                if (rel.getUnit2() != null && rel.getUnit2().getId() == id) {
+                    asUnit2.add(relDto);
+                }
+            }
+            dto.setRelationshipsAsUnit1(asUnit1);
+            dto.setRelationshipsAsUnit2(asUnit2);
+            long t3 = System.nanoTime();
+            log.debug("⏱ findById[ru={}] query={}ms prefetchStrati({})={}ms mappingEtRelations={}ms",
+                    id, (t1 - t0) / 1_000_000, rels.size(), (t2 - t1) / 1_000_000, (t3 - t2) / 1_000_000);
             return dto;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
