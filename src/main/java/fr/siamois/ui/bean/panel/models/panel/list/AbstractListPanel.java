@@ -221,9 +221,9 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         }
         super.closeOverview();
         // Retire seulement le surlignage de ligne côté client : re-rendre toute la table
-        // uniquement pour ça coûtait plusieurs centaines de ms (voir moveOverviewHighlight).
+        // uniquement pour ça coûtait plusieurs centaines de ms (voir OverviewHighlightJs).
         PrimeFaces.current().executeScript(
-                "moveOverviewHighlight('" + getActiveTableClientId() + "', '');");
+                fr.siamois.utils.OverviewHighlightJs.moveHighlightScript(getActiveTableClientId(), null));
     }
 
     @SuppressWarnings("unchecked")

@@ -25,6 +25,7 @@ import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
 import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
+import fr.siamois.utils.OverviewHighlightJs;
 import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
@@ -277,15 +278,15 @@ public class FlowBean implements Serializable {
                 ? lp.getActiveTableClientId()
                 : "panel-" + targetPanel.getPrefixPanelIndex() + "-container";
         Long overviewEntityId = (overviewPanel instanceof AbstractSingleEntityPanel<?> sp) ? sp.getUnitId() : null;
+        // showSideview d'abord (affiche le volet), puis le script de surlignage autonome
+        // (IIFE + try/catch : ne peut pas interrompre le bloc <eval> ni dépendre du cache JS).
         PrimeFaces.current().executeScript(
                 String.format(
-                        "moveOverviewHighlight('%s', '%s');showSideview('%s', '%s', '%s');",
-                        highlightScope,
-                        overviewEntityId == null ? "" : overviewEntityId,
+                        "showSideview('%s', '%s', '%s');",
                         targetPanel.getPanelIndex(),
                         base64RootUri,
                         base64OverviewUri
-                )
+                ) + OverviewHighlightJs.moveHighlightScript(highlightScope, overviewEntityId)
         );
 
     }

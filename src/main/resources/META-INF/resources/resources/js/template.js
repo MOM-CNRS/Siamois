@@ -461,22 +461,3 @@ function ruInplaceOnBlur(clientId) {
 
 
 
-/**
- * Déplace le surlignage "fiche ouverte" (cadre vert, classe overview-open) vers la ligne de
- * l'entité donnée, côté client uniquement. Évite de re-rendre toute la table (25+ lignes ×
- * moteur de formulaire) à chaque ouverture / fiche suivante / fiche précédente — c'était la
- * cause principale de la lenteur de navigation des fiches.
- * Les lignes portent une classe stable entity-row-<id> (voir EntityTableViewModel.getRowStyleClass).
- *
- * @param containerId id client DOM dans lequel chercher (table ou conteneur de panneau) ;
- *                    si absent du DOM, on cherche dans tout le document.
- * @param entityId    id de l'entité à surligner ; null/'' pour seulement retirer le surlignage.
- */
-function moveOverviewHighlight(containerId, entityId) {
-    let container = containerId ? document.getElementById(containerId) : null;
-    let $scope = container ? $(container) : $(document);
-    $scope.find('tr.overview-open').removeClass('overview-open');
-    if (entityId !== null && entityId !== undefined && entityId !== '') {
-        $scope.find('tr.entity-row-' + entityId).addClass('overview-open');
-    }
-}
