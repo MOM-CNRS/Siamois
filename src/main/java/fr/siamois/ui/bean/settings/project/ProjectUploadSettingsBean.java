@@ -4,6 +4,7 @@ package fr.siamois.ui.bean.settings.project;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
+import fr.siamois.infrastructure.dataimport.ExcelCellHelper;
 import fr.siamois.infrastructure.dataimport.ImportError;
 import fr.siamois.infrastructure.dataimport.ImportResult;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
@@ -53,6 +54,7 @@ public class ProjectUploadSettingsBean {
     public static class ColumnAliasView {
         String alias;
         String canonical;
+        boolean columnUnmapped;
     }
 
     /** One tab in the validation section, representing one entity type. */
@@ -142,16 +144,46 @@ public class ProjectUploadSettingsBean {
     public List<SheetMappingView> getSheetMappings() {
         if (importResult == null) return List.of();
         SheetMetadata meta = importResult.meta();
-        List<SheetMappingView> result = new ArrayList<>();
+
+        // Build sheetName → tableId reverse map
+        Map<String, String> sheetToTable = new LinkedHashMap<>();
         for (Map.Entry<String, List<String>> entry : meta.tableToSheets().entrySet()) {
-            String tableId = entry.getKey();
             for (String sheetName : entry.getValue()) {
-                Map<String, String> aliases = meta.columnAliases().getOrDefault(sheetName, Map.of());
-                List<ColumnAliasView> aliasList = aliases.entrySet().stream()
-                        .map(e -> new ColumnAliasView(e.getKey(), e.getValue()))
-                        .collect(Collectors.toList());
-                result.add(new SheetMappingView(sheetName, tableId, aliasList, false));
+                sheetToTable.put(sheetName, entry.getKey());
             }
+        }
+
+        List<SheetMappingView> result = new ArrayList<>();
+        for (Map.Entry<String, List<String>> sheetEntry : importResult.allSheetColumns().entrySet()) {
+            String sheetName = sheetEntry.getKey();
+            String tableId = sheetToTable.get(sheetName);
+            boolean unmapped = (tableId == null);
+
+            List<ColumnAliasView> aliasList = new ArrayList<>();
+            if (unmapped) {
+                // Sheet not recognized — all its columns are unmapped
+                for (String col : sheetEntry.getValue()) {
+                    aliasList.add(new ColumnAliasView(col, "", true));
+                }
+            } else {
+                // aliases already combines explicit _meta aliases with auto-matched canonical
+                // names (columns whose normalized header equals one of EXPECTED_COLUMNS for
+                // this table) — see OOXMLImportService.readSheetMetadata(). Anything not in
+                // this map is genuinely unmapped: neither a known default column nor aliased.
+                Map<String, String> aliases = meta.columnAliases().getOrDefault(sheetName, Map.of());
+
+                for (String col : sheetEntry.getValue()) {
+                    String norm = ExcelCellHelper.normalize(col);
+                    if (aliases.containsKey(norm)) {
+                        aliasList.add(new ColumnAliasView(col, aliases.get(norm), false));
+                    } else {
+                        // Column name not among the expected defaults, and not aliased in _meta
+                        aliasList.add(new ColumnAliasView(col, "", true));
+                    }
+                }
+            }
+
+            result.add(new SheetMappingView(sheetName, unmapped ? "" : tableId, aliasList, unmapped));
         }
         return result;
     }

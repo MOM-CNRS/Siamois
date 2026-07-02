@@ -222,16 +222,29 @@ class OOXMLImportServiceTest {
     }
 
     @Test
-    void importFromExcel_noMetaSheet() throws Exception {
+    void importFromExcel_noMetaSheet_defaultSheetNamesAreRecognizedPerTable() throws Exception {
         Workbook wb = workbook();
 
         sheet(wb, "Institution", "Nom");
+        row(wb.getSheet("Institution"), 1, "INRAP");
+
         sheet(wb, "Personne", "Email");
-        sheet(wb, "Unité spatiale", "Nom");
+        row(wb.getSheet("Personne"), 1, "a@b.fr");
+
+        Sheet spatial = sheet(wb, "Unité spatiale", "Nom");
+        row(spatial, 1, "Parcelle A");
+
         sheet(wb, "Code", "Code", "Type uri");
-        sheet(wb, "Unite action", "Nom");
-        sheet(wb, "Prelev.", "Identifiant");
+        row(wb.getSheet("Code"), 1, "FOU", "uri?idt=th9&idc=99");
+
+        Sheet action = sheet(wb, "Unite action", "Nom", "Identifiant");
+        row(action, 1, "Fouille", "UA-001");
+
+        Sheet specimen = sheet(wb, "Prelev", "Identifiant");
+        row(specimen, 1, "SP-001");
+
         sheet(wb, "UE_rel", "Parent", "Enfant");
+        row(wb.getSheet("UE_rel"), 1, "100", "101");
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         wb.write(out);
@@ -240,8 +253,14 @@ class OOXMLImportServiceTest {
                 new ByteArrayInputStream(out.toByteArray()), OOXMLImportService.ImportScope.ALL, null
         );
 
-        assertThat(result).isNotNull();
-        assertThat(result.specs()).isNotNull();
+        assertThat(result.errors()).isEmpty();
+        assertThat(result.specs().institutions()).hasSize(1);
+        assertThat(result.specs().persons()).hasSize(1);
+        assertThat(result.specs().spatialUnits()).hasSize(1);
+        assertThat(result.specs().actionCodes()).hasSize(1);
+        assertThat(result.specs().actionUnits()).hasSize(1);
+        assertThat(result.specs().specimenSpecs()).hasSize(1);
+        assertThat(result.specs().recordingUnitRelSpecs()).hasSize(1);
     }
 
     @Test
@@ -373,7 +392,7 @@ class OOXMLImportServiceTest {
         assertThat(ru.matrixComposition()).isEqualTo("Argile");
         assertThat(ru.matrixTexture()).isEqualTo("Sableux");
 
-        assertThat(ru.createdBy()).isEqualTo(OOXMLImportService.SIAMOIS_SYSTEM);
+        assertThat(ru.createdBy()).isEqualTo(ImportSchema.SIAMOIS_SYSTEM);
         assertThat(ru.creationTime()).isNotNull();
     }
 

@@ -16,17 +16,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static fr.siamois.infrastructure.dataimport.ExcelCellHelper.*;
+import static fr.siamois.infrastructure.dataimport.ImportSchema.*;
 
 
 @Service
 public class OOXMLImportService {
-
-    public static final String IDENTIFIANT = "identifiant";
-    public static final String PERSON = "person";
-    public static final String INSTITUTION = "institution";
-    public static final String TYPE_URI = "type uri";
-    public static final String SIAMOIS_SYSTEM = "siamois system";
-    public static final String DESCRIPTION = "description";
 
     // -------------------------------------------------------------------------
     // Sheet metadata
@@ -74,41 +68,6 @@ public class OOXMLImportService {
 
         return new SheetMetadata(enriched, enrichedAliases);
     }
-
-    static final Map<String, String> DEFAULT_SHEET_NAMES = Map.ofEntries(
-            Map.entry(INSTITUTION,      "Institution"),
-            Map.entry(PERSON,           "Personne"),
-            Map.entry("Code",           "Code"),
-            Map.entry("Projet",    "Projet"),
-            Map.entry("Lieu",   "Lieu"),
-            Map.entry("UE", "UE"),
-            Map.entry("Phase",       "Phase"),
-            Map.entry("Groupement d'UE",   "Groupement d'UE"),
-            Map.entry("Relation stratigraphique",      "Relation stratigraphique")
-    );
-
-    static final Map<String, List<String>> EXPECTED_COLUMNS = Map.ofEntries(
-            Map.entry(INSTITUTION,      List.of("nom", DESCRIPTION, IDENTIFIANT, "email admins", "thesaurus")),
-            Map.entry(PERSON,           List.of("email", "nom", "prenom", IDENTIFIANT)),
-            Map.entry("code",           List.of("code", TYPE_URI)),
-            Map.entry("action_unit",    List.of("nom", IDENTIFIANT, "code", TYPE_URI, "createur", INSTITUTION,
-                                                "contexte spatiale", "date debut", "date fin", "localisation principale")),
-            Map.entry("spatial_unit",   List.of("nom", "uri type", INSTITUTION, "enfants")),
-            Map.entry("recording_unit", List.of(IDENTIFIANT, DESCRIPTION, TYPE_URI, "cycle uri", "agent uri",
-                                                "interpretation uri", "author email", INSTITUTION,
-                                                "contributeurs email", "date d'ouverture", "date de fermeture",
-                                                "unite spatiale", "unite d'action",
-                                                "couleur de la matrice", "texture de la matrice", "composition de la matrice",
-                                                "phases")),
-            Map.entry("specimen",       List.of(IDENTIFIANT, INSTITUTION, "auteur fiche email",
-                                                "matiere", "categorie", "designation",
-                                                "collecteurs emails", "unite d'enregistrement")),
-            Map.entry("phase",          List.of(IDENTIFIANT, "titre", TYPE_URI, DESCRIPTION,
-                                                "ordre", "borne inferieure", "borne superieure",
-                                                "auteur", "projet", INSTITUTION)),
-            Map.entry("recordingRel",   List.of("parent", "enfant")),
-            Map.entry("stratiRel",      List.of("us1", "us2", "relation", "direction vocabulaire", "asynchrone", "incertain"))
-    );
 
     private SheetMetadata fallbackSheetMapping(Workbook workbook) {
         Map<String, List<String>> tableToSheets = new LinkedHashMap<>();
@@ -199,7 +158,29 @@ public class OOXMLImportService {
 
             ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
                     recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels);
-            return new ImportResult(specs, errors, meta);
+
+            // Collect raw column headers for every sheet except _meta, for display in the mapping UI.
+            // Whether a column is "recognized" is decided from meta.columnAliases(), which already
+            // combines explicit _meta aliases with auto-matched canonical names filtered by EXPECTED_COLUMNS.
+            Map<String, List<String>> allSheetColumns = new java.util.LinkedHashMap<>();
+            for (int si = 0; si < workbook.getNumberOfSheets(); si++) {
+                org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(si);
+                if ("_meta".equalsIgnoreCase(sheet.getSheetName())) continue;
+                org.apache.poi.ss.usermodel.Row hdr = sheet.getRow(0);
+                List<String> cols = new ArrayList<>();
+                if (hdr != null) {
+                    for (int ci = 0; ci <= hdr.getLastCellNum(); ci++) {
+                        org.apache.poi.ss.usermodel.Cell cell = hdr.getCell(ci);
+                        if (cell != null) {
+                            String v = cell.toString().trim();
+                            if (!v.isEmpty()) cols.add(v);
+                        }
+                    }
+                }
+                allSheetColumns.put(sheet.getSheetName(), cols);
+            }
+
+            return new ImportResult(specs, errors, meta, allSheetColumns);
         }
     }
 
