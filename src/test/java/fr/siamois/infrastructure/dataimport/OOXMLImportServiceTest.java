@@ -196,7 +196,7 @@ class OOXMLImportServiceTest {
         sheet(wb, "Prelev.", "Identifiant");
         sheet(wb, "UE_rel", "Parent", "Enfant");
 
-        Sheet meta = sheet(wb, "sheet_metadata",
+        Sheet meta = sheet(wb, "_meta",
                 "sheet_id",
                 "sheet_name"
         );
@@ -270,7 +270,7 @@ class OOXMLImportServiceTest {
         Sheet personSheet = sheet(wb, "Personnes", "Courriel", "Nom", "Prenom", "Login");
         row(personSheet, 1, "alice@example.fr", "Martin", "Alice", "amartin");
 
-        Sheet meta = sheet(wb, "sheet_metadata",
+        Sheet meta = sheet(wb, "_meta",
                 "sheet_id", "sheet_name", "column_alias", "column_canonical");
         row(meta, 1, "person", "Personnes", null, null);
         row(meta, 2, "person", "Personnes", "Courriel", "email");
@@ -299,7 +299,7 @@ class OOXMLImportServiceTest {
         Sheet s2 = sheet(wb, "Personnes_B", "Email", "Nom");
         row(s2, 1, "bob@example.fr", "Bob");
 
-        Sheet meta = sheet(wb, "sheet_metadata", "sheet_id", "sheet_name");
+        Sheet meta = sheet(wb, "_meta", "sheet_id", "sheet_name");
         row(meta, 1, "person", "Personnes_A");
         row(meta, 2, "person", "Personnes_B");
 
