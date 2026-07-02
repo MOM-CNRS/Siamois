@@ -1,12 +1,31 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-
-
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
 >
 
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel"-->
     <!--@elvariable id="panelIndex" type="Integer"-->
     <!--@elvariable id="root" type="String"-->
+
+    <!-- Bascule lecture/édition : les champs de la fiche sont rendus en lecture seule par défaut
+         (rendu beaucoup plus léger, voir EntityForm.fieldRenderMode) ; les éditeurs inline ne
+         sont construits qu'à la demande. -->
+    <h:panelGroup layout="block" rendered="#{flowBean.isWriteMode}"
+                  style="display:flex; justify-content:flex-end; padding: 0.2em 0.5em;">
+        <p:commandLink id="toggleEditModeBtn"
+                       process="@this"
+                       action="#{panelModel.toggleEditMode()}"
+                       update="@form"
+                       styleClass="sideview-topbar-button">
+            <h:outputText styleClass="#{panelModel.editMode ? 'bi bi-eye' : 'bi bi-pencil'}"
+                          style="margin-right: 0.3em; color: var(--main-color);"/>
+            <h:outputText value="#{panelModel.editMode ? 'Terminer l’édition' : 'Modifier'}"
+                          style="color: var(--main-color);"/>
+        </p:commandLink>
+        <p:tooltip for="toggleEditModeBtn" position="bottom" autoHide="false"
+                   value="#{panelModel.editMode ? 'Repasser la fiche en lecture' : 'Activer l’édition des champs'}"/>
+    </h:panelGroup>
 
     <ui:include src="/pages/shared/form/customForm.xhtml">
         <ui:param name="panelModel" value="#{panelModel}"/>

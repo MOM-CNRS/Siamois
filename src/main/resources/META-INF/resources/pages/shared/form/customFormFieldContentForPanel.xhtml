@@ -69,7 +69,11 @@
                               value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
                     <ui:param name="updateTargetsOnBlur" value="#{bean.getPanelHeaderUpdateId()}"/>
                     <ui:param name="spatialUnitOptions" value="#{bean.formContext.getSpatialUnitOptions('')}"/>
-                    <ui:param name="mode" value="#{(col.readOnly) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
+                    <!-- Lecture seule si : colonne read-only, ou fiche pas en mode édition
+                         (bean.fieldRenderMode : "output" par défaut sur les fiches, "input" dans le
+                         dialogue de création). Sinon on respecte le mode global lecture/écriture. -->
+                    <ui:param name="mode"
+                              value="#{(col.readOnly or bean.fieldRenderMode() eq 'output') ? 'output' : flowBean.getInPlaceFieldMode()}"/>
                     <ui:param name="compact" value="false"/>
                 </ui:include>
             </div>

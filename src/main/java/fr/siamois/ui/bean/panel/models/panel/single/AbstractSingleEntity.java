@@ -112,6 +112,26 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
      */
     protected transient EntityFormContext<T> formContext;
 
+    /**
+     * Mode d'édition de la fiche. Par défaut {@code false} : les champs sont rendus en lecture
+     * seule (léger) et l'utilisateur bascule en édition à la demande. Rendre ~30 éditeurs inline
+     * (composites PrimeFaces) à chaque affichage/navigation de fiche est un des principaux coûts
+     * de rendu. Réinitialisé naturellement à chaque navigation (nouveau panneau).
+     */
+    protected boolean editMode = false;
+
+    /**
+     * Bascule lecture/édition de la fiche. Voir {@link #editMode}.
+     */
+    public void toggleEditMode() {
+        this.editMode = !this.editMode;
+    }
+
+    @Override
+    public String fieldRenderMode() {
+        return editMode ? "input" : "output";
+    }
+
     @Override
     public String buildBookmarkUrl() {
 
