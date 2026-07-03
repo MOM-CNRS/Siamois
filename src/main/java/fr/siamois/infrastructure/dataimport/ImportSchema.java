@@ -39,6 +39,23 @@ public final class ImportSchema {
             Map.entry("stratiRel",      "Strati_Rel")
     );
 
+    /**
+     * Maps technical table ID → French label to display in the sheet-mapping UI
+     * (e.g. "this sheet maps to table: Lieu"), as opposed to the technical ID itself.
+     */
+    public static final Map<String, String> TABLE_LABELS = Map.ofEntries(
+            Map.entry(INSTITUTION,      "Institution"),
+            Map.entry(PERSON,           "Personne"),
+            Map.entry("code",           "Code"),
+            Map.entry("action_unit",    "Unité d'action"),
+            Map.entry("spatial_unit",   "Lieu"),
+            Map.entry("recording_unit", "UE"),
+            Map.entry("specimen",       "Mobilier"),
+            Map.entry("phase",          "Phase"),
+            Map.entry("recordingRel",   "Relations UE"),
+            Map.entry("stratiRel",      "Stratigraphie")
+    );
+
     /** Maps technical table ID → canonical column names expected for that entity. */
     public static final Map<String, List<String>> EXPECTED_COLUMNS = Map.ofEntries(
             Map.entry(INSTITUTION,      List.of("nom", DESCRIPTION, IDENTIFIANT, "email admins", "thesaurus")),

@@ -7,6 +7,7 @@ import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
 import fr.siamois.infrastructure.dataimport.ExcelCellHelper;
 import fr.siamois.infrastructure.dataimport.ImportError;
 import fr.siamois.infrastructure.dataimport.ImportResult;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import fr.siamois.infrastructure.dataimport.SheetMetadata;
 import jakarta.faces.application.FacesMessage;
@@ -48,6 +49,8 @@ public class ProjectUploadSettingsBean {
         List<ColumnAliasView> columnAliases;
         boolean unmapped;
         public boolean hasAliases() { return !columnAliases.isEmpty(); }
+        /** French label for the table this sheet maps to (falls back to the technical ID if unknown). */
+        public String getTableLabel() { return ImportSchema.TABLE_LABELS.getOrDefault(tableId, tableId); }
     }
 
     @Value
@@ -196,7 +199,21 @@ public class ProjectUploadSettingsBean {
     }
 
     public boolean isMappingOk() {
-        return importResult != null && getSheetMappings().stream().noneMatch(SheetMappingView::isUnmapped);
+        return importResult != null && getUnmappedSheetCount() == 0 && getUnmappedColumnCount() == 0;
+    }
+
+    /** Sheets not recognized as belonging to any table. */
+    public int getUnmappedSheetCount() {
+        return (int) getSheetMappings().stream().filter(SheetMappingView::isUnmapped).count();
+    }
+
+    /** Unmapped columns within recognized sheets (columns of an already-unmapped sheet aren't counted twice). */
+    public int getUnmappedColumnCount() {
+        return (int) getSheetMappings().stream()
+                .filter(m -> !m.isUnmapped())
+                .flatMap(m -> m.getColumnAliases().stream())
+                .filter(ColumnAliasView::isColumnUnmapped)
+                .count();
     }
 
     // ─── Errors ─────────────────────────────────────────────────────────────
@@ -297,7 +314,14 @@ public class ProjectUploadSettingsBean {
     }
 
     public String getMappingStatusLabel() {
-        return isMappingOk() ? "✓ Mapping validé" : "⚠ Colonnes non mappées";
+        if (isMappingOk()) return "✓ Mapping complet";
+
+        int sheets = getUnmappedSheetCount();
+        int cols = getUnmappedColumnCount();
+        List<String> parts = new ArrayList<>();
+        if (sheets > 0) parts.add(sheets + " feuille" + (sheets > 1 ? "s" : "") + " non mappée" + (sheets > 1 ? "s" : ""));
+        if (cols > 0) parts.add(cols + " colonne" + (cols > 1 ? "s" : "") + " non mappée" + (cols > 1 ? "s" : ""));
+        return "⚠ Mapping incomplet (" + String.join(", ", parts) + ")";
     }
 
     public String getMappingStatusStyle() {
