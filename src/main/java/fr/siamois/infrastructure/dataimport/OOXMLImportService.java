@@ -391,10 +391,10 @@ public class OOXMLImportService {
      */
     private Map<String, Integer> indexRequiredColumns(Sheet sheet, SheetMetadata meta, String... requiredColumns) {
         Row header = sheet.getRow(0);
-        if (header == null) return null;
+        if (header == null) return new HashMap<>();
         Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
         for (String required : requiredColumns) {
-            if (cols.get(required) == null) return null;
+            if (cols.get(required) == null) return new HashMap<>();
         }
         return cols;
     }

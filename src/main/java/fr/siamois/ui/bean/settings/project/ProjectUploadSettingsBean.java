@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,6 +36,10 @@ import java.util.Map;
 public class ProjectUploadSettingsBean {
 
     public static final String TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL = "templateFormCC:templateForm:templateGrowl";
+    public static final String FEUILLE = " feuille";
+    public static final String ERREUR = " erreur";
+    public static final String PHASE = "phase";
+    public static final String STRATI = "strati";
 
     @Value
     public static class SheetMappingView {
@@ -94,7 +99,8 @@ public class ProjectUploadSettingsBean {
                                 "datasets/Import_Chartres_Projet.xlsx")
                                 .getInputStream();
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+
+                        throw new UncheckedIOException(e);
                     }
                 })
                 .build();
@@ -129,7 +135,7 @@ public class ProjectUploadSettingsBean {
     public String getUploadedFileDetail() {
         if (importResult == null) return "";
         int sheets = importResult.meta().tableToSheets().size();
-        return sheets + " feuille" + (sheets > 1 ? "s" : "") + " · mapping détecté";
+        return sheets + FEUILLE + (sheets > 1 ? "s" : "") + " · mapping détecté";
     }
 
     public String getMappingHeadBg() {
@@ -145,55 +151,59 @@ public class ProjectUploadSettingsBean {
     public List<SheetMappingView> getSheetMappings() {
         if (importResult == null) return List.of();
         SheetMetadata meta = importResult.meta();
+        Map<String, String> sheetToTable = buildSheetToTableMap(meta);
 
-        // Build sheetName → tableId reverse map
+        List<SheetMappingView> result = new ArrayList<>();
+        for (Map.Entry<String, List<String>> sheetEntry : importResult.allSheetColumns().entrySet()) {
+            result.add(buildSheetMappingView(sheetEntry.getKey(), sheetEntry.getValue(), sheetToTable, meta));
+        }
+        return result;
+    }
+
+    /** sheetName → tableId, derived from the (possibly multi-sheet-per-table) tableToSheets mapping. */
+    private Map<String, String> buildSheetToTableMap(SheetMetadata meta) {
         Map<String, String> sheetToTable = new LinkedHashMap<>();
         for (Map.Entry<String, List<String>> entry : meta.tableToSheets().entrySet()) {
             for (String sheetName : entry.getValue()) {
                 sheetToTable.put(sheetName, entry.getKey());
             }
         }
+        return sheetToTable;
+    }
 
-        List<SheetMappingView> result = new ArrayList<>();
-        for (Map.Entry<String, List<String>> sheetEntry : importResult.allSheetColumns().entrySet()) {
-            String sheetName = sheetEntry.getKey();
-            String tableId = sheetToTable.get(sheetName);
-            boolean unmapped = (tableId == null);
+    private SheetMappingView buildSheetMappingView(String sheetName, List<String> columns,
+                                                    Map<String, String> sheetToTable, SheetMetadata meta) {
+        String tableId = sheetToTable.get(sheetName);
+        boolean unmapped = (tableId == null);
 
-            List<ColumnAliasView> aliasList = new ArrayList<>();
-            if (unmapped) {
-                // Sheet not recognized — all its columns are unmapped
-                for (String col : sheetEntry.getValue()) {
-                    aliasList.add(new ColumnAliasView(col, "", true));
-                }
-            } else {
-                // aliases already combines explicit _meta aliases with auto-matched canonical
-                // names (columns whose normalized header equals one of EXPECTED_COLUMNS for
-                // this table) — see OOXMLImportService.readSheetMetadata(). Anything not in
-                // this map is genuinely unmapped: neither a known default column nor aliased.
-                Map<String, String> aliases = meta.columnAliases().getOrDefault(sheetName, Map.of());
+        // aliases already combines explicit _meta aliases with auto-matched canonical names
+        // (columns whose normalized header equals one of EXPECTED_COLUMNS for this table) —
+        // see OOXMLImportService.readSheetMetadata(). Anything not in this map is genuinely
+        // unmapped: neither a known default column nor aliased. An unmapped sheet has no
+        // aliases at all, so every one of its columns naturally falls into that case below.
+        Map<String, String> aliases = unmapped ? Map.of() : meta.columnAliases().getOrDefault(sheetName, Map.of());
 
-                for (String col : sheetEntry.getValue()) {
-                    String norm = ExcelCellHelper.normalize(col);
-                    if (aliases.containsKey(norm)) {
-                        aliasList.add(new ColumnAliasView(col, aliases.get(norm), false));
-                    } else {
-                        // Column name not among the expected defaults, and not aliased in _meta
-                        aliasList.add(new ColumnAliasView(col, "", true));
-                    }
-                }
-            }
-
-            result.add(new SheetMappingView(sheetName, unmapped ? "" : tableId, aliasList, unmapped));
+        List<ColumnAliasView> aliasList = new ArrayList<>();
+        for (String col : columns) {
+            aliasList.add(buildColumnAliasView(col, aliases));
         }
-        return result;
+
+        return new SheetMappingView(sheetName, unmapped ? "" : tableId, aliasList, unmapped);
+    }
+
+    private ColumnAliasView buildColumnAliasView(String col, Map<String, String> aliases) {
+        String norm = ExcelCellHelper.normalize(col);
+        if (aliases.containsKey(norm)) {
+            return new ColumnAliasView(col, aliases.get(norm), false);
+        }
+        return new ColumnAliasView(col, "", true);
     }
 
     public String getMappingSummary() {
         if (importResult == null) return "";
         int sheets = getSheetMappings().size();
         long tables = importResult.meta().tableToSheets().size();
-        return sheets + " feuille" + (sheets > 1 ? "s" : "") + " → " + tables + " table" + (tables > 1 ? "s" : "");
+        return sheets + FEUILLE + (sheets > 1 ? "s" : "") + " → " + tables + " table" + (tables > 1 ? "s" : "");
     }
 
     public boolean isMappingOk() {
@@ -251,11 +261,11 @@ public class ProjectUploadSettingsBean {
             case "lieu", "spatial_unit"                          -> "lieu";
             case "ue", "recording_unit"                          -> "ue";
             case "relation stratigraphique", "stratirel",
-                 "recording_unit_strati_rel"                     -> "strati";
+                 "recording_unit_strati_rel"                     -> STRATI;
             case "groupement d'ue", "recordingrel",
                  "recording_unit_rel"                            -> "ue";
             case "specimen", "mobilier"                          -> "mob";
-            case "phase"                                         -> "phase";
+            case PHASE -> PHASE;
             default                                              -> tableId;
         };
     }
@@ -266,9 +276,9 @@ public class ProjectUploadSettingsBean {
         return switch (key) {
             case "lieu"   -> specs.spatialUnits().size();
             case "ue"     -> specs.recordingUnits().size();
-            case "strati" -> specs.recordingUnitStratiRelSpecs().size();
+            case STRATI -> specs.recordingUnitStratiRelSpecs().size();
             case "mob"    -> specs.specimenSpecs().size();
-            case "phase"  -> specs.phaseSpecs().size();
+            case PHASE -> specs.phaseSpecs().size();
             default       -> 0;
         };
     }
@@ -287,7 +297,7 @@ public class ProjectUploadSettingsBean {
         if (importResult == null) return "";
         int errors = getErrorCount();
         int rows = getTotalImportRows();
-        if (errors > 0) return errors + " erreur" + (errors > 1 ? "s" : "") + " à corriger avant import";
+        if (errors > 0) return errors + ERREUR + (errors > 1 ? "s" : "") + " à corriger avant import";
         return rows + " ligne" + (rows > 1 ? "s" : "") + " prête" + (rows > 1 ? "s" : "") + " à importer";
     }
 
@@ -299,7 +309,7 @@ public class ProjectUploadSettingsBean {
     public String getValidationStatusLabel() {
         if (isImportBlocked()) {
             int n = getErrorCount();
-            return "⚠ " + n + " erreur" + (n > 1 ? "s" : "");
+            return "⚠ " + n + ERREUR + (n > 1 ? "s" : "");
         }
         return "✓ Aucune erreur";
     }
@@ -316,7 +326,7 @@ public class ProjectUploadSettingsBean {
         int sheets = getUnmappedSheetCount();
         int cols = getUnmappedColumnCount();
         List<String> parts = new ArrayList<>();
-        if (sheets > 0) parts.add(sheets + " feuille" + (sheets > 1 ? "s" : "") + " non mappée" + (sheets > 1 ? "s" : ""));
+        if (sheets > 0) parts.add(sheets + FEUILLE + (sheets > 1 ? "s" : "") + " non mappée" + (sheets > 1 ? "s" : ""));
         if (cols > 0) parts.add(cols + " colonne" + (cols > 1 ? "s" : "") + " non mappée" + (cols > 1 ? "s" : ""));
         return "⚠ Mapping incomplet (" + String.join(", ", parts) + ")";
     }
@@ -329,16 +339,16 @@ public class ProjectUploadSettingsBean {
 
     public String getBlockedMessage() {
         int n = getErrorCount();
-        return "Corrigez les " + n + " erreur" + (n > 1 ? "s" : "") + " pour importer";
+        return "Corrigez les " + n + ERREUR + (n > 1 ? "s" : "") + " pour importer";
     }
 
     // ─── Per-tab accessors (used from hardcoded tabs in XHTML) ───────────────
 
     public ValidationTabView getLieuTab()   { return buildTabForKey("lieu",   "Lieu"); }
     public ValidationTabView getUeTab()     { return buildTabForKey("ue",     "UE"); }
-    public ValidationTabView getStratiTab() { return buildTabForKey("strati", "Stratigraphie"); }
+    public ValidationTabView getStratiTab() { return buildTabForKey(STRATI, "Stratigraphie"); }
     public ValidationTabView getMobTab()    { return buildTabForKey("mob",    "Mobilier"); }
-    public ValidationTabView getPhaseTab()  { return buildTabForKey("phase",  "Phase"); }
+    public ValidationTabView getPhaseTab()  { return buildTabForKey(PHASE,  "Phase"); }
 
     private ValidationTabView buildTabForKey(String key, String label) {
         Map<String, String> sheetToKey = buildSheetToKeyMap();
