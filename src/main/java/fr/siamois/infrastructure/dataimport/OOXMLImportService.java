@@ -1,7 +1,12 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
+import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -24,9 +29,12 @@ import static fr.siamois.infrastructure.dataimport.ImportSchema.*;
 
 
 @Service
+@RequiredArgsConstructor
 public class OOXMLImportService {
 
     private static final String HEADER_READ_ERROR_PREFIX = "Erreur lecture en-tête: ";
+
+    private final ConceptService conceptService;
 
     // -------------------------------------------------------------------------
     // Sheet metadata
@@ -175,7 +183,7 @@ public class OOXMLImportService {
             List<SpecimenSeeder.SpecimenSpecs>                                specimenSpecs  = parseSpecimens(getSheetsForTable(workbook, meta, "specimen"), actionUnitDTO, meta, errors);
             List<PhaseSeeder.PhaseSpecs>                                      phaseSpecs     = parsePhases(getSheetsForTable(workbook, meta, "phase"), actionUnitDTO, meta, errors);
             List<RecordingUnitRelSeeder.RecordingUnitRelDTO>                  recordingRels  = parseRecordingRels(getSheetsForTable(workbook, meta, "recordingRel"), meta, errors);
-            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO>      stratiRels     = parseStratiRels(getSheetsForTable(workbook, meta, "stratiRel"), meta, errors);
+            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO>      stratiRels     = parseStratiRels(getSheetsForTable(workbook, meta, "stratiRel"), actionUnitDTO, meta, errors);
 
             ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
                     recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels);
@@ -318,14 +326,17 @@ public class OOXMLImportService {
         String name = getStringCellOrNull(row, cols, "nom");
         if (name == null || name.isBlank()) return;
 
-        String uriType     = getStringCellOrNull(row, cols, "uri type");
         String institution = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
+        Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
         String enfantsRaw  = getStringCellOrNull(row, cols, "enfants");
+
+        ConceptSeeder.ConceptKey typeKey = conceptKeyFromColumnOrLabel(row, cols, "uri type", "type label",
+                SpatialUnit.CATEGORY_FIELD_CODE, institutionDbId);
 
         SpatialUnitSeeder.SpatialUnitSpecs spec = new SpatialUnitSeeder.SpatialUnitSpecs(
                 name,
-                extractIdtFromUri(uriType).orElse(null),
-                extractIdcFromUri(uriType).orElse(null),
+                typeKey != null ? typeKey.vocabularyExtId() : null,
+                typeKey != null ? typeKey.conceptExtId() : null,
                 SIAMOIS_SYSTEM,
                 institution,
                 new HashSet<>()
@@ -398,18 +409,24 @@ public class OOXMLImportService {
     }
 
     public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(Sheet sheet) {
-        if (sheet == null) return List.of();
-        List<ImportError> errors = new ArrayList<>();
-        return parseStratiRels(List.of(sheet), SheetMetadata.empty(), errors);
+        return parseStratiRels(sheet, null);
     }
 
-    public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+    public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(Sheet sheet, @Nullable ActionUnitDTO actionUnit) {
+        if (sheet == null) return List.of();
+        List<ImportError> errors = new ArrayList<>();
+        return parseStratiRels(List.of(sheet), actionUnit, SheetMetadata.empty(), errors);
+    }
+
+    public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(List<Sheet> sheets, @Nullable ActionUnitDTO actionUnit,
+                                                                                          SheetMetadata meta, List<ImportError> errors) {
+        Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
         List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "us1", "us2");
                 if (cols == null) continue;
-                forEachDataRow(sheet, errors, row -> parseRowToStratiRel(row, cols).ifPresent(specs::add));
+                forEachDataRow(sheet, errors, row -> parseRowToStratiRel(row, cols, institutionDbId).ifPresent(specs::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -417,12 +434,13 @@ public class OOXMLImportService {
         return specs;
     }
 
-    private Optional<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseRowToStratiRel(Row row, Map<String, Integer> cols) {
+    private Optional<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseRowToStratiRel(Row row, Map<String, Integer> cols, @Nullable Long institutionDbId) {
         String us1 = getStringCellOrNull(row, cols, "us1");
         String us2 = getStringCellOrNull(row, cols, "us2");
         if (us1 == null || us1.isBlank()) return Optional.empty();
         if (us2 == null || us2.isBlank()) return Optional.empty();
-        ConceptSeeder.ConceptKey relKey = conceptKeyFromColumn(row, cols, "relation");
+        ConceptSeeder.ConceptKey relKey = conceptKeyFromColumnOrLabel(row, cols, "relation", "relation label",
+                RecordingUnit.STRATI_FIELD_CODE, institutionDbId);
         String direction  = getStringCellOrNull(row, cols, "direction vocabulaire");
         String asynchrone = getStringCellOrNull(row, cols, "asynchrone");
         String incertain  = getStringCellOrNull(row, cols, "incertain");
@@ -576,10 +594,15 @@ public class OOXMLImportService {
 
         Integer identifier = parseIntegerSafe(identStr);
 
-        ConceptSeeder.ConceptKey type           = conceptKeyFromColumn(row, cols, TYPE_URI);
-        ConceptSeeder.ConceptKey geomorphCycle  = conceptKeyFromColumn(row, cols, "cycle uri");
-        ConceptSeeder.ConceptKey geomorphAgent  = conceptKeyFromColumn(row, cols, "agent uri");
-        ConceptSeeder.ConceptKey interpretation = conceptKeyFromColumn(row, cols, "interpretation uri");
+        Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
+        ConceptSeeder.ConceptKey type           = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, "type label",
+                RecordingUnit.TYPE_FIELD_CODE, institutionDbId);
+        ConceptSeeder.ConceptKey geomorphCycle  = conceptKeyFromColumnOrLabel(row, cols, "cycle uri", "cycle label",
+                RecordingUnit.GEOMORPHO_CYCLE_FIELD_CODE, institutionDbId);
+        ConceptSeeder.ConceptKey geomorphAgent  = conceptKeyFromColumnOrLabel(row, cols, "agent uri", "agent label",
+                RecordingUnit.GEOMORPHO_AGENT_FIELD_CODE, institutionDbId);
+        ConceptSeeder.ConceptKey interpretation = conceptKeyFromColumnOrLabel(row, cols, "interpretation uri", "interpretation label",
+                RecordingUnit.INTERPRETATION_FIELD_CODE, institutionDbId);
 
         String authorEmail  = getStringCellOrNull(row, cols, "author email");
         String institutionId = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
@@ -797,6 +820,30 @@ public class OOXMLImportService {
             return conceptKeyFromUri(raw);
         } catch (Exception e) {
             throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Resolves a concept from either a URI column or, if the URI is blank, a label column matched
+     * against the institution's configured thesaurus for the given field code. The URI column
+     * always wins when present — the label is only consulted as a fallback.
+     */
+    private ConceptSeeder.ConceptKey conceptKeyFromColumnOrLabel(Row row, Map<String, Integer> cols, String uriKey, String labelKey,
+                                                                  String fieldCode, Long institutionId) {
+        String uri = getStringCellOrNull(row, cols, uriKey);
+        if (uri != null && !uri.isBlank()) {
+            return conceptKeyFromColumn(row, cols, uriKey);
+        }
+        String label = getStringCellOrNull(row, cols, labelKey);
+        if (label == null || label.isBlank()) return null;
+        if (institutionId == null) {
+            throw new IllegalStateException("[colonne '" + labelKey + "'] : résolution par label indisponible hors contexte projet");
+        }
+        try {
+            Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
+            return new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId());
+        } catch (Exception e) {
+            throw new IllegalStateException("[colonne '" + labelKey + "'] : " + e.getMessage(), e);
         }
     }
 

@@ -10,7 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,9 +31,12 @@ class OOXMLImportServiceTest {
 
     private OOXMLImportService service;
 
+    @Mock
+    private ConceptService conceptService;
+
     @BeforeEach
     void setUp() {
-        service = new OOXMLImportService();
+        service = new OOXMLImportService(conceptService);
     }
 
     // -------------------------------------------------------------------------
@@ -602,6 +609,105 @@ class OOXMLImportServiceTest {
         assertThat(dto.isUncertain()).isFalse();
     }
 
+    private ActionUnitDTO actionUnitWithInstitution(long institutionId) {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(institutionId);
+        inst.setIdentifier("INST");
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setFullIdentifier("AU-001");
+        au.setCreatedByInstitution(inst);
+        return au;
+    }
+
+    private fr.siamois.domain.models.vocabulary.Concept conceptWithKey(String vocabExtId, String conceptExtId) {
+        fr.siamois.domain.models.vocabulary.Vocabulary vocabulary = new fr.siamois.domain.models.vocabulary.Vocabulary();
+        vocabulary.setExternalVocabularyId(vocabExtId);
+        fr.siamois.domain.models.vocabulary.Concept concept = new fr.siamois.domain.models.vocabulary.Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId(conceptExtId);
+        return concept;
+    }
+
+    @Test
+    void parseStratiRels_labelFallback_resolvesConceptViaConceptService() {
+        var au = actionUnitWithInstitution(42L);
+        org.mockito.Mockito.when(conceptService.resolveConceptByLabel(42L, RecordingUnit.STRATI_FIELD_CODE, "Postérieur"))
+                .thenReturn(conceptWithKey("th240", "9999"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2", "relation", "relation label");
+        row(s, 1, "US-001", "US-002", "", "Postérieur");
+
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = service.parseStratiRels(s, au).get(0);
+
+        assertThat(dto.rel()).isEqualTo(new ConceptSeeder.ConceptKey("th240", "9999"));
+    }
+
+    @Test
+    void parseStratiRels_uriAndLabelBothPresent_uriWinsAndLabelIsIgnored() {
+        var au = actionUnitWithInstitution(42L);
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2", "relation", "relation label");
+        row(s, 1, "US-001", "US-002", "uri?idt=th240&idc=4287979", "Postérieur");
+
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = service.parseStratiRels(s, au).get(0);
+
+        assertThat(dto.rel()).isEqualTo(new ConceptSeeder.ConceptKey("th240", "4287979"));
+        org.mockito.Mockito.verifyNoInteractions(conceptService);
+    }
+
+    @Test
+    void parseStratiRels_labelNoMatch_errorAddedWithLabelColumnName() {
+        var au = actionUnitWithInstitution(42L);
+        org.mockito.Mockito.when(conceptService.resolveConceptByLabel(42L, RecordingUnit.STRATI_FIELD_CODE, "Inconnu"))
+                .thenThrow(new IllegalStateException("Concept 'Inconnu' introuvable dans le thésaurus configuré"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2", "relation", "relation label");
+        row(s, 1, "US-001", "US-002", "", "Inconnu");
+
+        List<ImportError> errors = new ArrayList<>();
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs =
+                service.parseStratiRels(List.of(s), au, SheetMetadata.empty(), errors);
+
+        assertThat(specs).isEmpty();
+        assertThat(errors).hasSize(1);
+        assertThat(errors.get(0).column()).isEqualTo("relation label");
+        assertThat(errors.get(0).message()).contains("introuvable");
+    }
+
+    @Test
+    void parseRecordingUnits_labelFallback_resolvesTypeConceptViaConceptService() {
+        var au = actionUnitWithInstitution(7L);
+        org.mockito.Mockito.when(conceptService.resolveConceptByLabel(7L, RecordingUnit.TYPE_FIELD_CODE, "Fosse"))
+                .thenReturn(conceptWithKey("th1", "5"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description", "type uri", "type label");
+        row(s, 1, "UE-001", "desc", "", "Fosse");
+
+        RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.PROJECT, au).get(0);
+
+        assertThat(spec.type()).isEqualTo(new ConceptSeeder.ConceptKey("th1", "5"));
+    }
+
+    @Test
+    void parseSpatialUnits_labelFallback_resolvesCategoryConceptViaConceptService() {
+        var au = actionUnitWithInstitution(9L);
+        org.mockito.Mockito.when(conceptService.resolveConceptByLabel(9L, SpatialUnit.CATEGORY_FIELD_CODE, "Site"))
+                .thenReturn(conceptWithKey("th2", "10"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Lieu", "nom", "uri type", "type label", "enfants");
+        row(s, 1, "Lieu A", "", "Site", "");
+
+        SpatialUnitSeeder.SpatialUnitSpecs spec = service.parseSpatialUnits(s, au).get(0);
+
+        assertThat(spec.typeVocabularyExtId()).isEqualTo("th2");
+        assertThat(spec.typeConceptExtId()).isEqualTo("10");
+    }
+
     @Test
     void parseStratiRels_booleanNotTrue_isFalse() {
         Workbook wb = workbook();
@@ -868,7 +974,7 @@ class OOXMLImportServiceTest {
 
         List<ImportError> errs = errors();
         List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> result =
-                service.parseStratiRels(List.of(s), SheetMetadata.empty(), errs);
+                service.parseStratiRels(List.of(s), null, SheetMetadata.empty(), errs);
 
         assertThat(result).hasSize(1);
         assertThat(errs).hasSize(1);
