@@ -4,6 +4,7 @@ package fr.siamois.ui.bean.settings.project;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
+import fr.siamois.infrastructure.database.initializer.seeder.SeedException;
 import fr.siamois.infrastructure.dataimport.*;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
@@ -237,6 +238,11 @@ public class ProjectUploadSettingsBean {
         return getImportErrors().size();
     }
 
+    /** Display label for an error's "sheet" — real sheet names pass through, table IDs (from persistence errors) get their French label. */
+    public String getErrorSheetLabel(ImportError e) {
+        return ImportSchema.TABLE_LABELS.getOrDefault(e.sheet(), e.sheet());
+    }
+
     public boolean isImportBlocked() {
         return getErrorCount() > 0;
     }
@@ -358,7 +364,9 @@ public class ProjectUploadSettingsBean {
         Map<String, String> sheetToKey = buildSheetToKeyMap();
         Map<String, List<ImportError>> errorsByKey = new LinkedHashMap<>();
         for (ImportError e : getImportErrors()) {
-            String k = sheetToKey.getOrDefault(e.sheet(), "other");
+            // persistence errors are tagged with a table ID (not a real sheet name) — resolveTableKey
+            // handles both, so fall back to it when the sheet isn't in the workbook's sheetToKey map.
+            String k = sheetToKey.containsKey(e.sheet()) ? sheetToKey.get(e.sheet()) : resolveTableKey(e.sheet());
             errorsByKey.computeIfAbsent(k, x -> new ArrayList<>()).add(e);
         }
         List<ImportError> errs = errorsByKey.getOrDefault(key, List.of());
@@ -375,10 +383,13 @@ public class ProjectUploadSettingsBean {
                     new FacesMessage(FacesMessage.SEVERITY_INFO, "Données importées avec succès", null));
             PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
             reset();
+        } catch (SeedException e) {
+            persistenceErrors.add(new ImportError(e.getTableId(), 0, "—", e.getMessage()));
+            readyToUpload = false;
+            // panels re-render via the button's update attribute
         } catch (Exception e) {
             persistenceErrors.add(new ImportError("Import", 0, "—", e.getMessage()));
             readyToUpload = false;
-            // panels re-render via the button's update attribute
         }
     }
 
