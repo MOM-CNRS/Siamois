@@ -367,9 +367,7 @@ public class OOXMLImportService {
             try {
                 Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "parent", "enfant");
                 if (cols == null) continue;
-                Integer parentNum = cols.get("parent");
-                Integer childNum  = cols.get("enfant");
-                forEachDataRow(sheet, errors, row -> parseRowToRecordingRel(row, parentNum, childNum).ifPresent(specs::add));
+                forEachDataRow(sheet, errors, row -> parseRowToRecordingRel(row, cols).ifPresent(specs::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -377,9 +375,9 @@ public class OOXMLImportService {
         return specs;
     }
 
-    private Optional<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRowToRecordingRel(Row row, int parentCol, int childCol) {
-        String parent = getStringCell(row, parentCol);
-        String child  = getStringCell(row, childCol);
+    private Optional<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRowToRecordingRel(Row row, Map<String, Integer> cols) {
+        String parent = getStringCellOrNull(row, cols, "parent");
+        String child  = getStringCellOrNull(row, cols, "enfant");
         if (parent == null || parent.isBlank()) return Optional.empty();
         if (child  == null || child.isBlank())  return Optional.empty();
         return Optional.of(new RecordingUnitRelSeeder.RecordingUnitRelDTO(parent, child));
@@ -391,10 +389,10 @@ public class OOXMLImportService {
      */
     private Map<String, Integer> indexRequiredColumns(Sheet sheet, SheetMetadata meta, String... requiredColumns) {
         Row header = sheet.getRow(0);
-        if (header == null) return new HashMap<>();
+        if (header == null) return null;
         Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
         for (String required : requiredColumns) {
-            if (cols.get(required) == null) return new HashMap<>();
+            if (cols.get(required) == null) return null;
         }
         return cols;
     }
@@ -424,7 +422,7 @@ public class OOXMLImportService {
         String us2 = getStringCellOrNull(row, cols, "us2");
         if (us1 == null || us1.isBlank()) return Optional.empty();
         if (us2 == null || us2.isBlank()) return Optional.empty();
-        ConceptSeeder.ConceptKey relKey = conceptKeyFromUri(getStringCellOrNull(row, cols, "relation"));
+        ConceptSeeder.ConceptKey relKey = conceptKeyFromColumn(row, cols, "relation");
         String direction  = getStringCellOrNull(row, cols, "direction vocabulaire");
         String asynchrone = getStringCellOrNull(row, cols, "asynchrone");
         String incertain  = getStringCellOrNull(row, cols, "incertain");
@@ -578,10 +576,10 @@ public class OOXMLImportService {
 
         Integer identifier = parseIntegerSafe(identStr);
 
-        ConceptSeeder.ConceptKey type           = conceptKeyFromUri(getStringCellOrNull(row, cols, TYPE_URI));
-        ConceptSeeder.ConceptKey geomorphCycle  = conceptKeyFromUri(getStringCellOrNull(row, cols, "cycle uri"));
-        ConceptSeeder.ConceptKey geomorphAgent  = conceptKeyFromUri(getStringCellOrNull(row, cols, "agent uri"));
-        ConceptSeeder.ConceptKey interpretation = conceptKeyFromUri(getOptionalCell(row, cols, "interpretation uri"));
+        ConceptSeeder.ConceptKey type           = conceptKeyFromColumn(row, cols, TYPE_URI);
+        ConceptSeeder.ConceptKey geomorphCycle  = conceptKeyFromColumn(row, cols, "cycle uri");
+        ConceptSeeder.ConceptKey geomorphAgent  = conceptKeyFromColumn(row, cols, "agent uri");
+        ConceptSeeder.ConceptKey interpretation = conceptKeyFromColumn(row, cols, "interpretation uri");
 
         String authorEmail  = getStringCellOrNull(row, cols, "author email");
         String institutionId = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
@@ -687,9 +685,9 @@ public class OOXMLImportService {
         return Optional.of(new SpecimenSeeder.SpecimenSpecs(
                 identStr,
                 parseIntegerSafe(identStr),
-                conceptKeyFromUri(getStringCellOrNull(row, cols, "matiere")),
-                conceptKeyFromUri(getStringCellOrNull(row, cols, "categorie")),
-                conceptKeyFromUri(getStringCellOrNull(row, cols, "designation")),
+                conceptKeyFromColumn(row, cols, "matiere"),
+                conceptKeyFromColumn(row, cols, "categorie"),
+                conceptKeyFromColumn(row, cols, "designation"),
                 SIAMOIS_SYSTEM,
                 institutionId,
                 authors,
@@ -718,7 +716,7 @@ public class OOXMLImportService {
                     if (identifier == null || identifier.isBlank()) return;
 
                     String title       = getStringCellOrNull(row, cols, "titre");
-                    ConceptSeeder.ConceptKey type = conceptKeyFromUri(getStringCellOrNull(row, cols, TYPE_URI));
+                    ConceptSeeder.ConceptKey type = conceptKeyFromColumn(row, cols, TYPE_URI);
                     String description  = getStringCellOrNull(row, cols, DESCRIPTION);
                     Integer orderNumber = getIntegerCellOrNull(row, cols, "ordre");
                     Integer lowerBound  = getIntegerCellOrNull(row, cols, "borne inferieure");
@@ -787,6 +785,19 @@ public class OOXMLImportService {
             return null;
         }
         return new ConceptSeeder.ConceptKey(vocabId, conceptId);
+    }
+
+    /**
+     * Reads a column's cell and parses it as a concept URI, tagging any failure — cell read
+     * or URI parsing — with the column name so it surfaces correctly in the validation UI.
+     */
+    private ConceptSeeder.ConceptKey conceptKeyFromColumn(Row row, Map<String, Integer> cols, String key) {
+        String raw = getStringCellOrNull(row, cols, key);
+        try {
+            return conceptKeyFromUri(raw);
+        } catch (Exception e) {
+            throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
+        }
     }
 
 }

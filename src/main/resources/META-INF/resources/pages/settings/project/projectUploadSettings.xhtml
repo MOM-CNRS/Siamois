@@ -156,16 +156,6 @@
                 align-items: center;
             }
 
-            .error-dot {
-                width: 6px;
-                height: 6px;
-                border-radius: 50%;
-                background: #c2554c;
-                flex: none;
-                display: inline-block;
-                margin-right: 8px;
-            }
-
             .success-row {
                 display: flex;
                 align-items: center;
@@ -376,9 +366,8 @@
                                                     <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
                                                 </div>
                                                 <ui:repeat value="#{projectUploadSettingsBean.lieuTab.errors}" var="e">
-                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
-                                                            class="error-dot"/><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b></span><span
-                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                    <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
+                                                            style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
@@ -409,9 +398,8 @@
                                                     <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
                                                 </div>
                                                 <ui:repeat value="#{projectUploadSettingsBean.ueTab.errors}" var="e">
-                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
-                                                            class="error-dot"/><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b></span><span
-                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                    <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
+                                                            style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
@@ -442,9 +430,8 @@
                                                     <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
                                                 </div>
                                                 <ui:repeat value="#{projectUploadSettingsBean.ueRelTab.errors}" var="e">
-                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
-                                                            class="error-dot"/><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b></span><span
-                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                    <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
+                                                            style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
@@ -476,9 +463,8 @@
                                                 </div>
                                                 <ui:repeat value="#{projectUploadSettingsBean.stratiTab.errors}"
                                                            var="e">
-                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
-                                                            class="error-dot"/><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b></span><span
-                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                    <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
+                                                            style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
@@ -510,9 +496,8 @@
                                                     <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
                                                 </div>
                                                 <ui:repeat value="#{projectUploadSettingsBean.mobTab.errors}" var="e">
-                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
-                                                            class="error-dot"/><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b></span><span
-                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                    <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
+                                                            style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
@@ -543,9 +528,8 @@
                                                     <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
                                                 </div>
                                                 <ui:repeat value="#{projectUploadSettingsBean.phaseTab.errors}" var="e">
-                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
-                                                            class="error-dot"/><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b></span><span
-                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                    <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
+                                                            style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>

@@ -127,7 +127,7 @@ public final class ExcelCellHelper {
                 try {
                     consumer.accept(row);
                 } catch (Exception e) {
-                    errors.add(new ImportError(sheet.getSheetName(), r + 1, "", e.getMessage()));
+                    errors.add(ImportError.forRow(sheet.getSheetName(), r + 1, e.getMessage()));
                 }
             }
         }
