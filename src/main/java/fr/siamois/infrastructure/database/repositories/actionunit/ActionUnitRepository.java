@@ -261,6 +261,11 @@ WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND actio
     @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM action_unit_spatial_context WHERE fk_action_unit_id = :actionUnitId")
     void deleteSpatialContextLinksForActionUnit(@Param("actionUnitId") Long actionUnitId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM action_unit_spatial_context WHERE fk_spatial_unit_id = :spatialUnitId")
+    void deleteSpatialContextLinksForSpatialUnit(@Param("spatialUnitId") Long spatialUnitId);
            
     @Query("SELECT au FROM ActionUnit au JOIN FETCH au.createdBy WHERE au.createdBy.id = :personId")
     Set<ActionUnit> findAllByCreatedById(@Param("personId") Long personId);

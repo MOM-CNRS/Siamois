@@ -8,12 +8,180 @@
                 xmlns:f="http://java.sun.com/jsf/core">
 
     <ui:define name="metadata">
-    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
-    <f:event type="preRenderView" listener="#{projectDetailsBean.checkProjectOrRedirect}"/>
+        <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+        <f:event type="preRenderView" listener="#{projectDetailsBean.checkProjectOrRedirect}"/>
     </ui:define>
 
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
+        <style>
+            /* ── generic card ───────────────────────────────────── */
+            .import-card {
+                border: 1px solid #e7e7e3;
+                border-radius: 11px;
+                overflow: hidden;
+            }
+
+            /* ── mapping section ────────────────────────────────── */
+            .mapping-head {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 13px 16px;
+                cursor: pointer;
+                font-size: 15px;
+                font-weight: 600;
+            }
+
+            .mapping-head:hover {
+                background: #fafaf8;
+            }
+
+            .mapping-step-num {
+                font-size: 11px;
+                font-weight: 700;
+                color: #b3b3ad;
+                letter-spacing: .05em;
+            }
+
+            .mapping-status-pill {
+                margin-left: auto;
+                font-size: 12px;
+                border-radius: 6px;
+                padding: 2px 9px;
+            }
+
+            .mapping-sheet-row {
+                border: 1px solid #ededea;
+                border-radius: 9px;
+                overflow: hidden;
+                margin-bottom: 8px;
+            }
+
+            .mapping-sheet-header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 11px 13px;
+                cursor: pointer;
+                font-size: 14px;
+            }
+
+            .mapping-sheet-header:hover {
+                background: #fafaf8;
+            }
+
+            .mapping-col-grid {
+                display: grid;
+                grid-template-columns: 1.2fr 24px 1.3fr;
+                gap: 10px;
+                align-items: center;
+                padding: 7px 14px;
+                border-bottom: 1px solid #f5f5f1;
+                font-size: 13px;
+            }
+
+            .mapping-col-grid-header {
+                font-size: 11.5px;
+                font-weight: 600;
+                color: #999;
+                padding: 8px 14px 6px;
+                border-bottom: 1px solid #ececec;
+            }
+
+            .table-badge {
+                font-size: 12.5px;
+                font-weight: 600;
+                color: #3a5a3c;
+                background: rgba(94, 140, 97, 0.12);
+                border: 1px solid rgba(94, 140, 97, 0.4);
+                border-radius: 7px;
+                padding: 3px 10px;
+            }
+
+            /* ── validation section ─────────────────────────────── */
+            .val-section {
+                border: 1px solid #e7e7e3;
+                border-radius: 11px;
+                overflow: hidden;
+                margin-bottom: 1rem;
+            }
+
+            .val-head {
+                display: flex;
+                align-items: center;
+                gap: 11px;
+                padding: 13px 16px;
+                border-bottom: 1px solid #ececec;
+                font-size: 15px;
+                font-weight: 600;
+            }
+
+            .val-status-pill {
+                margin-left: auto;
+                font-size: 12px;
+                border-radius: 6px;
+                padding: 2px 9px;
+            }
+
+            .val-tabs-bar {
+                display: flex;
+                align-items: center;
+                gap: 22px;
+                flex-wrap: wrap;
+                padding: 0 16px;
+                border-bottom: 1.5px solid #ececec;
+            }
+
+            /* error table */
+            .err-table-head {
+                display: grid;
+                grid-template-columns: 130px 90px 130px 1.6fr;
+                gap: 12px;
+                padding: 10px 16px;
+                background: #f7f7f6;
+                font-size: 12px;
+                font-weight: 600;
+                color: #666;
+                border-bottom: 1px solid #ececec;
+            }
+
+            .err-row {
+                display: grid;
+                grid-template-columns: 130px 90px 130px 1.6fr;
+                gap: 12px;
+                padding: 12px 16px;
+                border-bottom: 1px solid #f3f3ef;
+                font-size: 13.5px;
+                align-items: center;
+            }
+
+            .error-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: #c2554c;
+                flex: none;
+                display: inline-block;
+                margin-right: 8px;
+            }
+
+            .success-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 22px;
+                color: #5e8c61;
+                font-size: 14px;
+            }
+
+            /* format hint */
+            .format-hint {
+                font-size: 12px;
+                color: #bbb;
+                margin-top: -4px;
+            }
+        </style>
     </ui:define>
 
     <ui:define name="content">
@@ -21,210 +189,368 @@
             <form:csrfform formId="breadCrumbForm"
                            styleClass="breadCrumpForm"
                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-
-                <p:breadCrumb homeDisplay="false" style="flex-grow: 1; border: none; background: transparent; padding: 0;">
+                <p:breadCrumb homeDisplay="false"
+                              style="flex-grow: 1; border: none; background: transparent; padding: 0;">
                     <p:menuitem value="Projets" action="#{projectDetailsBean.goToProjectList()}"/>
-                    <p:menuitem value="#{projectDetailsBean.project.name}" action="#{projectDetailsBean.backToProjectSettings()}"/>
+                    <p:menuitem value="#{projectDetailsBean.project.name}"
+                                action="#{projectDetailsBean.backToProjectSettings()}"/>
                     <p:menuitem value="Importer et exporter les données"/>
                 </p:breadCrumb>
-
             </form:csrfform>
 
-            <form:csrfform formId="linkToActionForm" style="margin-top: 1em;"
-            >
-
-
+            <form:csrfform formId="linkToActionForm" style="margin-top: 1em;">
                 <p:commandButton action="#{navBean.redirectToActionUnit()}"
                                  icon="bi bi-database"
                                  value="Ouvrir le projet dans l'application"
                                  process="@this"
                                  styleClass="ui-button-flat">
-                    <f:param name="id" value="#{projectDetailsBean.project.id}" />
+                    <f:param name="id" value="#{projectDetailsBean.project.id}"/>
                 </p:commandButton>
-
             </form:csrfform>
 
             <form:csrfform formId="projectImportForm" styleClass="sia-settings-form">
-                <div class="field-value-group">
-                    <div class="field-value-content">
-                        <p:selectOneButton value="import" style="margin: auto; border-radius: 20px;">
+                <!-- Main white card -->
+                <div style="background:#fff;border:1px solid #e7e7e3;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">
+
+                    <!-- Import / Export toggle -->
+                    <div style="display:flex;justify-content:center;padding:18px 0 4px;">
+                        <p:selectOneButton value="import" style="border-radius: 20px;">
                             <f:selectItem itemLabel="Importer" itemValue="import"/>
                             <f:selectItem itemLabel="Exporter" itemValue="export" itemDisabled="true"/>
                         </p:selectOneButton>
+                    </div>
+
+                    <div style="padding:18px 24px 26px;display:flex;flex-direction:column;gap:16px;">
+
+                        <!-- Template download -->
                         <p:commandButton value="Télécharger un exemple" icon="pi pi-arrow-down"
-                                         styleClass="ui-button-outlined" style="background-color: white;">
+                                         styleClass="ui-button-outlined"
+                                         style="background-color: white; align-self: flex-start;">
                             <p:fileDownload value="#{projectUploadSettingsBean.templateFile}"/>
                         </p:commandButton>
 
-                        <div class="custom-upload-container">
-                            <p:fileUpload listener="#{projectUploadSettingsBean.handleFileUpload}"
-                                          mode="advanced"
-                                          dragDrop="true"
-                                          auto="true"
-                                          update="messages, projectImportForm:uploadOverview, projectImportForm:uploadButtons"
-                                          allowTypes="/(\.|\/)(xlsx|xls)$/"
-                                          invalidSizeMessage="Le fichier dépasse la limite de 10 Mo."
-                                          invalidFileMessage="Seuls les fichiers .xlsx et .xls sont autorisés."
-                                          styleClass="modern-dropzone"
-                                          label="Faire glisser le fichier ici ou cliquer pour chercher un fichier"/>
+                        <!-- ===== FILE UPLOAD (drag-and-drop) — affiché seulement sans fichier chargé ===== -->
+                        <h:panelGroup rendered="#{projectUploadSettingsBean.importResult == null}">
+                            <div class="custom-upload-container">
+                                <p:fileUpload listener="#{projectUploadSettingsBean.handleFileUpload}"
+                                              mode="advanced"
+                                              dragDrop="true"
+                                              auto="true"
+                                              update="messages, projectImportForm:uploadOverview, projectImportForm:stickyBar"
+                                              allowTypes="/(\.|\/)(xlsx|xls)$/"
+                                              invalidSizeMessage="Le fichier dépasse la limite de 10 Mo."
+                                              invalidFileMessage="Seuls les fichiers .xlsx et .xls sont autorisés."
+                                              styleClass="modern-dropzone"
+                                              label="Faire glisser le fichier ici ou cliquer pour chercher un fichier"/>
+                                <p:growl id="messages" showDetail="true" keepAlive="true"/>
+                            </div>
+                            <div class="format-hint">Format accepté : <b
+                                    style="color:#999;">.xlsx</b> uniquement, un fichier à la fois.
+                            </div>
+                        </h:panelGroup>
 
-                            <p:growl id="messages" showDetail="true" keepAlive="true"/>
-                        </div>
+                        <!-- ===== POST-UPLOAD SECTIONS ===== -->
+                        <p:outputPanel id="uploadOverview" style="display: flex; flex-direction: column; gap:1rem">
+                            <h:panelGroup rendered="#{projectUploadSettingsBean.importResult != null}">
 
-                        <p:outputPanel id="uploadOverview">
-                            <p:tabView rendered="#{projectUploadSettingsBean.specs != null}">
-
-                                <p:tab title="Lieu">
-                                    <f:facet name="title">
-                                        <div style="display: flex; gap: 0.5em; align-items: center;">
-                                            <span>Lieu</span>
-                                            <p:badge value="#{projectUploadSettingsBean.specs.spatialUnits().size()}"
-                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                <!-- ===== FICHIER CHARGÉ ===== -->
+                                <div style="display:flex;align-items:center;gap:14px;border:1px solid #e7e7e3;border-radius:11px;background:#fff;padding:13px 16px;">
+                                    <span style="width:42px;height:42px;flex:none;border-radius:9px;background:#eef3ee;color:#5e8c61;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">XLSX</span>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                                            <span style="font-weight:600;font-size:14.5px;">#{projectUploadSettingsBean.uploadedFileName}</span>
+                                            <span style="font-size:12px;color:#a3a3a0;">#{projectUploadSettingsBean.uploadedFileSizeLabel}</span>
+                                            <span style="font-size:11.5px;color:#5e8c61;border:1px solid rgba(94,140,97,0.4);border-radius:5px;padding:1px 7px;background:rgba(94,140,97,0.10);">chargé</span>
                                         </div>
-                                    </f:facet>
-                                    <div style="padding: 1em;">
-                                        <p:dataTable value="#{projectUploadSettingsBean.specs.spatialUnits()}" var="usp"
-                                                     paginator="true" rows="10" size="small" stripedRows="true"
-                                                     paginatorPosition="bottom" emptyMessage="Aucun lieu trouvé">
-                                            <p:column headerText="Nom" sortBy="#{usp.name()}">
-                                                <h:outputText value="#{usp.name()}" />
-                                            </p:column>
-                                        </p:dataTable>
+                                        <div style="font-size:12.5px;color:#999;margin-top:3px;">#{projectUploadSettingsBean.uploadedFileDetail}</div>
                                     </div>
-                                </p:tab>
+                                    <p:commandButton value="✕ Retirer"
+                                                     action="#{projectUploadSettingsBean.resetForNewFile()}"
+                                                     update="projectImportForm:uploadOverview, projectImportForm:stickyBar"
+                                                     styleClass="ui-button-flat"
+                                                     style="color:#b5403a;border:1px solid #eccfcf;border-radius:8px;background:#fff;"/>
+                                </div>
 
-
-                                <p:tab title="UE">
-                                    <f:facet name="title">
-                                        <div style="display: flex; gap: 0.5em; align-items: center;">
-                                            <span>UE</span>
-                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnits().size()}"
-                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
+                                <!-- ===== MAPPING ===== -->
+                                <div class="import-card">
+                                    <div class="mapping-head"
+                                         style="background:#{projectUploadSettingsBean.mappingHeadBg};border-left:4px solid #{projectUploadSettingsBean.mappingOk ? '#5e8c61' : '#e0b64a'};"
+                                         onclick="var b=document.getElementById('mappingBody'); b.style.display=b.style.display==='none'?'block':'none'; this.querySelector('.map-arrow').textContent=b.style.display==='none'?'▸':'▾';">
+                                        <span class="map-arrow" style="color:#bbb;font-size:13px;width:13px;">▸</span>
+                                        <span>Correspondances</span>
+                                        <span style="font-size:13px;color:#999;">#{projectUploadSettingsBean.mappingSummary}</span>
+                                        <span class="mapping-status-pill"
+                                              style="#{projectUploadSettingsBean.mappingStatusStyle}">
+                                            #{projectUploadSettingsBean.mappingStatusLabel}
+                                        </span>
+                                    </div>
+                                    <div id="mappingBody"
+                                         style="display:none;border-top:1px solid #ececec;padding:12px 16px;">
+                                        <div style="font-size:12.5px;color:#999;margin-bottom:10px;">
+                                            Le mapping est défini dans le fichier (feuille dédiée ou conventions de nommage) et n'est pas modifiable ici.
                                         </div>
-                                    </f:facet>
-                                    <div style="padding: 1em;">
-                                        <p:dataTable value="#{projectUploadSettingsBean.specs.recordingUnits()}" var="ue"
-                                                     paginator="true" rows="10" size="small" stripedRows="true"
-                                                     paginatorPosition="bottom" emptyMessage="Aucune unité d'enregistrement trouvée">
-                                            <p:column headerText="Identifiant" sortBy="#{ue.fullIdentifier()}">
-                                                <h:outputText value="#{ue.fullIdentifier()}" />
-                                            </p:column>
-                                        </p:dataTable>
+                                        <ui:repeat value="#{projectUploadSettingsBean.sheetMappings}" var="m">
+                                            <div class="mapping-sheet-row">
+                                                <!-- sheet header — yellow bg if unmapped, or mapped with unmapped columns -->
+                                                <div class="mapping-sheet-header"
+                                                     style="#{m.unmapped or m.hasUnmappedColumns ? 'background:#fffdf4;' : ''}"
+                                                     onclick="var b=this.nextElementSibling; b.style.display=b.style.display==='none'?'block':'none'; this.querySelector('.sheet-arrow').textContent=b.style.display==='none'?'▸':'▾';">
+                                                    <span class="sheet-arrow"
+                                                          style="color:#bbb;font-size:12px;width:12px;">▸</span>
+                                                    <span style="font-weight:600;">#{m.sheetName}</span>
+                                                    <!-- mapped → table badge (+ warning badge if some columns are unmapped) ; unmapped → warning badge -->
+                                                    <h:panelGroup rendered="#{!m.unmapped}">
+                                                        <span style="margin-left:auto;color:#a3a3a0;font-size:13px;">→</span>
+                                                        <span class="table-badge">#{m.tableLabel}</span>
+                                                        <h:panelGroup rendered="#{m.hasUnmappedColumns}">
+                                                            <span style="font-size:12.5px;font-weight:600;color:#8a6d1e;background:#fdf6e3;border:1px solid #ecdca0;border-radius:7px;padding:4px 11px;">⚠ #{m.unmappedColumnCount} colonne#{m.unmappedColumnCount > 1 ? 's' : ''} non mappée#{m.unmappedColumnCount > 1 ? 's' : ''}</span>
+                                                        </h:panelGroup>
+                                                    </h:panelGroup>
+                                                    <h:panelGroup rendered="#{m.unmapped}">
+                                                        <span style="margin-left:auto;font-size:12.5px;font-weight:600;color:#8a6d1e;background:#fdf6e3;border:1px solid #ecdca0;border-radius:7px;padding:4px 11px;">⚠ feuille non mappée</span>
+                                                    </h:panelGroup>
+                                                </div>
+                                                <div style="display:none;">
+                                                    <div class="mapping-col-grid mapping-col-grid-header"
+                                                         style="display:grid;">
+                                                        <span>Colonne Excel</span>
+                                                        <span/>
+                                                        <span>Champ</span>
+                                                    </div>
+                                                    <ui:repeat value="#{m.columnAliases}" var="c">
+                                                        <!-- unmapped column → yellow bg + warning ; alias ≠ canonical → light orange ; normal → plain -->
+                                                        <div class="mapping-col-grid"
+                                                             style="#{c.columnUnmapped ? 'background:#fffdf4;' : ''}">
+                                                            <span style="font-weight:#{c.columnUnmapped or (c.alias ne c.canonical) ? '600' : '400'};">#{c.alias}</span>
+                                                            <span style="color:#c4c4c0;text-align:center;">→</span>
+                                                            <h:panelGroup rendered="#{!c.columnUnmapped}">
+                                                                <span style="color:#{c.alias ne c.canonical ? '#3a5a3c' : 'inherit'};">#{c.canonical}</span>
+                                                            </h:panelGroup>
+                                                            <h:panelGroup rendered="#{c.columnUnmapped}">
+                                                                <span style="font-size:11.5px;font-weight:600;color:#8a6d1e;background:#fdf6e3;border:1px solid #ecdca0;border-radius:5px;padding:1px 7px;">⚠ non mappée</span>
+                                                            </h:panelGroup>
+                                                        </div>
+                                                    </ui:repeat>
+                                                </div>
+                                            </div>
+                                        </ui:repeat>
                                     </div>
-                                </p:tab>
+                                </div>
 
-                                <p:tab title="Regroupements d'UE">
-                                    <f:facet name="title">
-                                        <div style="display: flex; gap: 0.5em; align-items: center;">
-                                            <span>Regroupements d'UE</span>
-                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnitRelSpecs().size()}"
-                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
-                                        </div>
-                                    </f:facet>
-                                    <div style="padding: 1em;">
-                                        <p:dataTable value="#{projectUploadSettingsBean.specs.recordingUnitRelSpecs()}" var="rel"
-                                                     paginator="true" rows="10" size="small" stripedRows="true"
-                                                     paginatorPosition="bottom" emptyMessage="Aucune relation d'UE trouvée">
-                                            <p:column headerText="UE Parent" sortBy="#{rel.parent()}">
-                                                <h:outputText value="#{rel.parent()}" />
-                                            </p:column>
-                                            <p:column headerText="UE Enfant" sortBy="#{rel.child()}">
-                                                <h:outputText value="#{rel.child()}" />
-                                            </p:column>
-                                        </p:dataTable>
+                                <!-- ===== 2. VALIDATION ERRORS (tabbed by entity) ===== -->
+                                <div class="val-section">
+                                    <div class="val-head"
+                                         style="background:#{projectUploadSettingsBean.validationHeadBg};border-left:4px solid #{projectUploadSettingsBean.importBlocked ? '#c2554c' : '#5e8c61'};">
+                                        <span>Erreurs de validation</span>
+                                        <span class="val-status-pill"
+                                              style="#{projectUploadSettingsBean.validationStatusStyle}">
+                                            #{projectUploadSettingsBean.validationStatusLabel}
+                                        </span>
                                     </div>
-                                </p:tab>
 
-                                <p:tab title="Stratigraphie">
-                                    <f:facet name="title">
-                                        <div style="display: flex; gap: 0.5em; align-items: center;">
-                                            <span>Stratigraphie</span>
-                                            <p:badge value="#{projectUploadSettingsBean.specs.recordingUnitStratiRelSpecs().size()}"
-                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
-                                        </div>
-                                    </f:facet>
-                                    <div style="padding: 1em;">
-                                        <p:dataTable value="#{projectUploadSettingsBean.specs.recordingUnitStratiRelSpecs()}" var="strati"
-                                                     paginator="true" rows="10" size="small" stripedRows="true"
-                                                     paginatorPosition="bottom" emptyMessage="Aucune relation stratigraphique trouvée">
-                                            <p:column headerText="US 1" sortBy="#{strati.us1()}">
-                                                <h:outputText value="#{strati.us1()}" />
-                                            </p:column>
-                                            <p:column headerText="US 2" sortBy="#{strati.us2()}">
-                                                <h:outputText value="#{strati.us2()}" />
-                                            </p:column>
-                                        </p:dataTable>
-                                    </div>
-                                </p:tab>
+                                    <p:tabView style="border:none;">
 
-                                <p:tab title="Mobilier">
-                                    <f:facet name="title">
-                                        <div style="display: flex; gap: 0.5em; align-items: center;">
-                                            <span>Mobilier</span>
-                                            <p:badge value="#{projectUploadSettingsBean.specs.specimenSpecs().size()}"
-                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
-                                        </div>
-                                    </f:facet>
-                                    <div style="padding: 1em;">
-                                        <p:dataTable value="#{projectUploadSettingsBean.specs.specimenSpecs()}" var="specimen"
-                                                     paginator="true" rows="10" size="small" stripedRows="true"
-                                                     paginatorPosition="bottom" emptyMessage="Aucun mobilier trouvé">
-                                            <p:column headerText="Identifiant" sortBy="#{specimen.fullIdentifier()}">
-                                                <h:outputText value="#{specimen.fullIdentifier()}" />
-                                            </p:column>
-                                        </p:dataTable>
-                                    </div>
-                                </p:tab>
+                                        <!-- ── Lieu ── -->
+                                        <p:tab>
+                                            <f:facet name="title">
+                                                <span style="display:flex;align-items:center;gap:7px;padding:2px 0;">
+                                                    <span>Lieu</span>
+                                                    <span style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">#{projectUploadSettingsBean.lieuTab.totalCount}</span>
+                                                    <h:panelGroup
+                                                            rendered="#{projectUploadSettingsBean.lieuTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:700;color:#fff;background:#c2554c;">#{projectUploadSettingsBean.lieuTab.errorCount}</span></h:panelGroup>
+                                                    <h:panelGroup
+                                                            rendered="#{!projectUploadSettingsBean.lieuTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 7px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">✓</span></h:panelGroup>
+                                                </span>
+                                            </f:facet>
+                                            <h:panelGroup rendered="#{projectUploadSettingsBean.lieuTab.hasErrors()}">
+                                                <div class="err-table-head">
+                                                    <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
+                                                </div>
+                                                <ui:repeat value="#{projectUploadSettingsBean.lieuTab.errors}" var="e">
+                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
+                                                            class="error-dot"/><b>#{e.sheet()}</b></span><span
+                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                            style="color:#666;">#{e.column()}</span><span
+                                                            style="color:#555;">#{e.message()}</span></div>
+                                                </ui:repeat>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{!projectUploadSettingsBean.lieuTab.hasErrors()}">
+                                                <div class="success-row"><span
+                                                        style="font-size:18px;">✓</span> Aucune erreur sur cette feuille.
+                                                </div>
+                                            </h:panelGroup>
+                                        </p:tab>
 
-                                <p:tab title="Regroupement de mobilier">
-                                    <f:facet name="title">
-                                        <div style="display: flex; gap: 0.5em; align-items: center;">
-                                            <span>Regroupement de mobilier</span>
-                                            <p:badge value="#{0}" style="background-color: var(--siamois-green);" class="ml-1"/>
-                                        </div>
-                                    </f:facet>
-                                    <div style="padding: 3em; text-align: center; color: var(--text-secondary);">
-                                        Aucune donnée ou structure à importer pour cette feuille.
-                                    </div>
-                                </p:tab>
+                                        <!-- ── UE ── -->
+                                        <p:tab>
+                                            <f:facet name="title">
+                                                <span style="display:flex;align-items:center;gap:7px;padding:2px 0;">
+                                                    <span>UE</span>
+                                                    <span style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">#{projectUploadSettingsBean.ueTab.totalCount}</span>
+                                                    <h:panelGroup
+                                                            rendered="#{projectUploadSettingsBean.ueTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:700;color:#fff;background:#c2554c;">#{projectUploadSettingsBean.ueTab.errorCount}</span></h:panelGroup>
+                                                    <h:panelGroup
+                                                            rendered="#{!projectUploadSettingsBean.ueTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 7px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">✓</span></h:panelGroup>
+                                                </span>
+                                            </f:facet>
+                                            <h:panelGroup rendered="#{projectUploadSettingsBean.ueTab.hasErrors()}">
+                                                <div class="err-table-head">
+                                                    <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
+                                                </div>
+                                                <ui:repeat value="#{projectUploadSettingsBean.ueTab.errors}" var="e">
+                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
+                                                            class="error-dot"/><b>#{e.sheet()}</b></span><span
+                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                            style="color:#666;">#{e.column()}</span><span
+                                                            style="color:#555;">#{e.message()}</span></div>
+                                                </ui:repeat>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{!projectUploadSettingsBean.ueTab.hasErrors()}">
+                                                <div class="success-row"><span
+                                                        style="font-size:18px;">✓</span> Aucune erreur sur cette feuille.
+                                                </div>
+                                            </h:panelGroup>
+                                        </p:tab>
 
-                                <p:tab title="Phase">
-                                    <f:facet name="title">
-                                        <div style="display: flex; gap: 0.5em; align-items: center;">
-                                            <span>Phase</span>
-                                            <p:badge value="#{projectUploadSettingsBean.specs.phaseSpecs().size()}"
-                                                     style="background-color: var(--siamois-green);" class="ml-1"/>
-                                        </div>
-                                    </f:facet>
-                                    <div style="padding: 1em;">
-                                        <p:dataTable value="#{projectUploadSettingsBean.specs.phaseSpecs()}" var="phase"
-                                                     paginator="true" rows="10" size="small" stripedRows="true"
-                                                     paginatorPosition="bottom" emptyMessage="Aucune phase trouvée">
-                                            <p:column headerText="Identifiant" sortBy="#{phase.identifier()}">
-                                                <h:outputText value="#{phase.identifier()}" />
-                                            </p:column>
-                                            <p:column headerText="Titre" sortBy="#{phase.title()}">
-                                                <h:outputText value="#{phase.title()}" />
-                                            </p:column>
-                                        </p:dataTable>
-                                    </div>
-                                </p:tab>
-                            </p:tabView>
-                        </p:outputPanel>
+                                        <!-- ── Stratigraphie ── -->
+                                        <p:tab>
+                                            <f:facet name="title">
+                                                <span style="display:flex;align-items:center;gap:7px;padding:2px 0;">
+                                                    <span>Stratigraphie</span>
+                                                    <span style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">#{projectUploadSettingsBean.stratiTab.totalCount}</span>
+                                                    <h:panelGroup
+                                                            rendered="#{projectUploadSettingsBean.stratiTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:700;color:#fff;background:#c2554c;">#{projectUploadSettingsBean.stratiTab.errorCount}</span></h:panelGroup>
+                                                    <h:panelGroup
+                                                            rendered="#{!projectUploadSettingsBean.stratiTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 7px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">✓</span></h:panelGroup>
+                                                </span>
+                                            </f:facet>
+                                            <h:panelGroup rendered="#{projectUploadSettingsBean.stratiTab.hasErrors()}">
+                                                <div class="err-table-head">
+                                                    <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
+                                                </div>
+                                                <ui:repeat value="#{projectUploadSettingsBean.stratiTab.errors}"
+                                                           var="e">
+                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
+                                                            class="error-dot"/><b>#{e.sheet()}</b></span><span
+                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                            style="color:#666;">#{e.column()}</span><span
+                                                            style="color:#555;">#{e.message()}</span></div>
+                                                </ui:repeat>
+                                            </h:panelGroup>
+                                            <h:panelGroup
+                                                    rendered="#{!projectUploadSettingsBean.stratiTab.hasErrors()}">
+                                                <div class="success-row"><span
+                                                        style="font-size:18px;">✓</span> Aucune erreur sur cette feuille.
+                                                </div>
+                                            </h:panelGroup>
+                                        </p:tab>
 
-                        <p:outputPanel id="uploadButtons" layout="block" styleClass="field-value-save">
-                            <p:commandButton action="#{projectDetailsBean.backToProjectSettings()}"
-                                             style="background-color: white;"
-                                             value="Retour" styleClass="ui-button-flat"/>
-                            <p:commandButton rendered="#{projectUploadSettingsBean.readyToUpload == true}"
-                                             value="Importer les données"
-                                             update="projectImportForm:uploadButtons"
-                                             action="#{projectUploadSettingsBean.uploadSpec()}"
-                                             styleClass="ui-button-success"/>
+                                        <!-- ── Mobilier ── -->
+                                        <p:tab>
+                                            <f:facet name="title">
+                                                <span style="display:flex;align-items:center;gap:7px;padding:2px 0;">
+                                                    <span>Mobilier</span>
+                                                    <span style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">#{projectUploadSettingsBean.mobTab.totalCount}</span>
+                                                    <h:panelGroup
+                                                            rendered="#{projectUploadSettingsBean.mobTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:700;color:#fff;background:#c2554c;">#{projectUploadSettingsBean.mobTab.errorCount}</span></h:panelGroup>
+                                                    <h:panelGroup
+                                                            rendered="#{!projectUploadSettingsBean.mobTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 7px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">✓</span></h:panelGroup>
+                                                </span>
+                                            </f:facet>
+                                            <h:panelGroup rendered="#{projectUploadSettingsBean.mobTab.hasErrors()}">
+                                                <div class="err-table-head">
+                                                    <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
+                                                </div>
+                                                <ui:repeat value="#{projectUploadSettingsBean.mobTab.errors}" var="e">
+                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
+                                                            class="error-dot"/><b>#{e.sheet()}</b></span><span
+                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                            style="color:#666;">#{e.column()}</span><span
+                                                            style="color:#555;">#{e.message()}</span></div>
+                                                </ui:repeat>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{!projectUploadSettingsBean.mobTab.hasErrors()}">
+                                                <div class="success-row"><span
+                                                        style="font-size:18px;">✓</span> Aucune erreur sur cette feuille.
+                                                </div>
+                                            </h:panelGroup>
+                                        </p:tab>
+
+                                        <!-- ── Phase ── -->
+                                        <p:tab>
+                                            <f:facet name="title">
+                                                <span style="display:flex;align-items:center;gap:7px;padding:2px 0;">
+                                                    <span>Phase</span>
+                                                    <span style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">#{projectUploadSettingsBean.phaseTab.totalCount}</span>
+                                                    <h:panelGroup
+                                                            rendered="#{projectUploadSettingsBean.phaseTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:700;color:#fff;background:#c2554c;">#{projectUploadSettingsBean.phaseTab.errorCount}</span></h:panelGroup>
+                                                    <h:panelGroup
+                                                            rendered="#{!projectUploadSettingsBean.phaseTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 7px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">✓</span></h:panelGroup>
+                                                </span>
+                                            </f:facet>
+                                            <h:panelGroup rendered="#{projectUploadSettingsBean.phaseTab.hasErrors()}">
+                                                <div class="err-table-head">
+                                                    <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
+                                                </div>
+                                                <ui:repeat value="#{projectUploadSettingsBean.phaseTab.errors}" var="e">
+                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
+                                                            class="error-dot"/><b>#{e.sheet()}</b></span><span
+                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                            style="color:#666;">#{e.column()}</span><span
+                                                            style="color:#555;">#{e.message()}</span></div>
+                                                </ui:repeat>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{!projectUploadSettingsBean.phaseTab.hasErrors()}">
+                                                <div class="success-row"><span
+                                                        style="font-size:18px;">✓</span> Aucune erreur sur cette feuille.
+                                                </div>
+                                            </h:panelGroup>
+                                        </p:tab>
+
+                                    </p:tabView>
+                                </div>
+
+                            </h:panelGroup>
                         </p:outputPanel>
 
                     </div>
                 </div>
+
+                <!-- ===== ACTION BAR ===== -->
+                <p:outputPanel class="field-value-save" style="margin-top: 1rem;" id="stickyBar">
+                    <h:panelGroup rendered="#{projectUploadSettingsBean.importBlocked}">
+                            <span style="font-size:13px;color:#b5403a;">
+                                #{projectUploadSettingsBean.blockedMessage}
+                            </span>
+                    </h:panelGroup>
+                    <p:commandButton action="#{projectDetailsBean.backToProjectSettings()}"
+                                     value="Retour"
+                                     styleClass="ui-button-flat"
+                                     style="background-color:white;"/>
+                    <p:commandButton
+                            rendered="#{projectUploadSettingsBean.importResult != null and projectUploadSettingsBean.totalImportRows > 0}"
+                            value="#{projectUploadSettingsBean.importButtonLabel}"
+                            disabled="#{projectUploadSettingsBean.importBlocked}"
+                            action="#{projectUploadSettingsBean.uploadSpec()}"
+                            update="projectImportForm:uploadOverview, projectImportForm:stickyBar"/>
+                    <p:commandButton
+                            rendered="#{projectUploadSettingsBean.importResult != null and projectUploadSettingsBean.totalImportRows == 0}"
+                            value="Rien à importer"
+                            disabled="true"
+                            styleClass="ui-button-secondary"/>
+
+                </p:outputPanel>
+
             </form:csrfform>
         </main>
     </ui:define>

@@ -23,6 +23,7 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -198,7 +199,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
             // Get  the CHILDREN of the recording unit
             RecordingUnitLazyDataModel lazyDataModelChildren = new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
-            lazyDataModelChildren.withConstantFilter(RecordingUnitSpec.PARENT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
+            lazyDataModelChildren.withConstantFilter(RecordingUnitSpec.PARENTS_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             selectedCategoriesChildren = new ArrayList<>();
             totalChildrenCount = 0;
             // Get all the Parents of the recording unit
@@ -253,6 +254,14 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     protected DefaultMenuItem createRootTypeItem()
     {
+        if (unit == null || unit.getActionUnit() == null) {
+            return DefaultMenuItem.builder()
+                    .value("")
+                    .id("actionUnit")
+                    .disabled(true)
+                    .build();
+        }
+
         String command ;
         Long actionUnitId = unit.getActionUnit().getId();
         if(isRoot) {
@@ -275,6 +284,34 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
 
     @Override
+    public void loadData() {
+        super.loadData();
+        ensureTabsInitialized();
+    }
+
+    public boolean isTabViewReady() {
+        return unit != null && tabs != null && tabs.size() >= 5;
+    }
+
+    private void ensureTabsInitialized() {
+        if (unit == null || isTabViewReady()) {
+            return;
+        }
+
+        initSpecimenTab();
+
+        while (tabs.size() > 2) {
+            tabs.remove(2);
+        }
+
+        tabs.add(2, new MultiHierarchyTab("panel.tab.hierarchy", getIcon(), "hierarchyTab", getChildTableModel()));
+
+        tabs.add(new SpecimenTab("common.entity.specimen", "bi bi-bucket", "specimenTab", specimenTableModel, 0));
+
+        tabs.add(new StratigraphyTab("common.label.ruRelationships", "bi bi-diagram-2", "stratiTab"));
+    }
+
+    @Override
     public void init() {
         try {
 
@@ -295,26 +332,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 return;
             }
 
-            initSpecimenTab();
-
-            super.init();
-
-            SpecimenTab specimenTab = new SpecimenTab(
-                    "common.entity.specimen",
-                    "bi bi-bucket",
-                    "specimenTab",
-                    specimenTableModel,
-                    0);
-
-            tabs.add(specimenTab);
-
-            StratigraphyTab stratiTab = new StratigraphyTab(
-                    "common.label.ruRelationships",
-                    "bi bi-diagram-2",
-                    "stratiTab"
-            );
-
-            tabs.add(stratiTab);
+            ensureTabsInitialized();
 
 
         } catch (

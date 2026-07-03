@@ -358,4 +358,5 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
             SELECT id FROM ascend
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
+
 }

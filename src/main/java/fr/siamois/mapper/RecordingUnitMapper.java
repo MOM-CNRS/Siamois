@@ -24,6 +24,9 @@ public interface RecordingUnitMapper extends Converter<RecordingUnit, RecordingU
 
     @Mapping(target = "relationshipsAsUnit1", ignore = true)
     @Mapping(target = "relationshipsAsUnit2", ignore = true)
+    @Mapping(target = "parents", ignore = true)
+    @Mapping(target = "children", ignore = true)
+    @Mapping(target = "phases", ignore = true)
     RecordingUnitDTO toLightDto(RecordingUnit source);
 
 }

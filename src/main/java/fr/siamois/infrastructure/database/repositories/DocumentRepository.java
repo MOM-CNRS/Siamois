@@ -142,6 +142,11 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
 
     @Modifying
     @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM spatial_unit_document WHERE fk_spatial_unit_id = :spatialUnitId")
+    void deleteAllSpatialUnitDocumentLinksBySpatialUnitId(@Param("spatialUnitId") Long spatialUnitId);
+
+    @Modifying
+    @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM recording_unit_document WHERE fk_document_id = :documentId")
     void deleteRecordingUnitDocumentLinks(@Param("documentId") Long documentId);
 

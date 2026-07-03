@@ -354,11 +354,12 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
 
+    @SuppressWarnings("unused")
     public void onToggle(ColumnToggleEvent e) {
         Integer index = (Integer) e.getData();
         Visibility visibility = e.getVisibility();
         // 4 bc the first 4 columns are fixed
-        tableDefinition.getColumns().get(index - 2).setVisible(visibility == Visibility.VISIBLE);
+        tableDefinition.getColumns().get(index).setVisible(visibility == Visibility.VISIBLE);
     }
 
 

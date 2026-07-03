@@ -12,7 +12,10 @@ main {
 main form.sia-settings-form {
     width: 100%;
     display: flex;
-    justify-content: center
+    flex-direction: column;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    justify-content: center;
 }
 
 .field-value-group {
