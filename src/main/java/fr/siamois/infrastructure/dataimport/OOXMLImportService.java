@@ -2,7 +2,11 @@ package fr.siamois.infrastructure.dataimport;
 
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -10,193 +14,302 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.text.Normalizer;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static fr.siamois.infrastructure.dataimport.ExcelCellHelper.*;
+import static fr.siamois.infrastructure.dataimport.ImportSchema.*;
 
 
 @Service
 public class OOXMLImportService {
 
+    private static final String HEADER_READ_ERROR_PREFIX = "Erreur lecture en-tête: ";
 
-    public static final String IDENTIFIANT = "identifiant";
-    public static final String PERSON = "person";
-    public static final String INSTITUTION = "institution";
-    public static final String TYPE_URI = "type uri";
-    public static final String SIAMOIS_SYSTEM = "siamois system";
-    public static final String DESCRIPTION = "description";
+    // -------------------------------------------------------------------------
+    // Sheet metadata
+    // -------------------------------------------------------------------------
 
-    public Map<String, String> readSheetMetadata(Workbook workbook) {
-        Sheet metaSheet = workbook.getSheet("sheet_metadata");
-        if (metaSheet == null) {
-            return fallbackSheetMapping(workbook);
-        }
-        return readMetadataSheet(metaSheet);
+    public SheetMetadata readSheetMetadata(Workbook workbook) {
+        Sheet metaSheet = workbook.getSheet("_meta");
+        SheetMetadata base = metaSheet == null
+                ? fallbackSheetMapping(workbook)
+                : readMetadataSheet(metaSheet);
+
+        Map<String, List<String>> enriched = new LinkedHashMap<>(base.tableToSheets());
+        DEFAULT_SHEET_NAMES.forEach((tableId, defaultName) -> {
+            if (!enriched.containsKey(tableId) && workbook.getSheet(defaultName) != null) {
+                enriched.put(tableId, List.of(defaultName));
+            }
+        });
+
+        Map<String, String> sheetToTableId = new HashMap<>();
+        enriched.forEach((tableId, names) -> names.forEach(n -> sheetToTableId.put(n, tableId)));
+
+        Map<String, Map<String, String>> enrichedAliases = new LinkedHashMap<>();
+        enriched.values().stream().flatMap(List::stream).distinct()
+                .forEach(sheetName -> enrichAliasesForSheet(workbook, sheetName, sheetToTableId, base, enrichedAliases));
+
+        return new SheetMetadata(enriched, enrichedAliases);
     }
 
-    private Map<String, String> fallbackSheetMapping(Workbook workbook) {
-        Map<String, String> map = new HashMap<>();
-        for (Sheet s : workbook) {
-            String nameNorm = normalize(s.getSheetName());
-            if (nameNorm.contains(INSTITUTION)) {
-                map.put(INSTITUTION, s.getSheetName());
-            } else if (nameNorm.contains(PERSON)) {
-                map.put(PERSON, s.getSheetName());
-            } else if (nameNorm.contains("unite") && nameNorm.contains("spatiale")) {
-                map.put("spatial_unit", s.getSheetName());
-            } else if (nameNorm.contains("unite") && nameNorm.contains("action")) {
-                map.put("action_unit", s.getSheetName());
+    private void enrichAliasesForSheet(Workbook workbook, String sheetName, Map<String, String> sheetToTableId,
+                                        SheetMetadata base, Map<String, Map<String, String>> enrichedAliases) {
+        Sheet sheet = workbook.getSheet(sheetName);
+        if (sheet == null) return;
+
+        String tableId = sheetToTableId.get(sheetName);
+        Set<String> expected = new HashSet<>(EXPECTED_COLUMNS.getOrDefault(tableId, List.of()));
+        Map<String, String> explicit = base.columnAliases().getOrDefault(sheetName, Map.of());
+        Map<String, String> full = new LinkedHashMap<>(explicit);
+
+        for (String raw : headerCellValues(sheet.getRow(0))) {
+            String norm = normalize(raw);
+            String canonical = explicit.getOrDefault(norm, norm);
+            if (!explicit.containsKey(norm) && expected.contains(canonical)) {
+                full.put(norm, canonical);
             }
         }
-        return map;
+
+        if (!full.isEmpty()) enrichedAliases.put(sheetName, full);
     }
 
-    private Map<String, String> readMetadataSheet(Sheet metaSheet) {
-        Map<String, String> map = new HashMap<>();
+    /** Non-blank cell values of a header row, in column order (empty list if the row is missing). */
+    private List<String> headerCellValues(Row header) {
+        List<String> values = new ArrayList<>();
+        if (header == null) return values;
+        for (int c = 0; c < header.getLastCellNum(); c++) {
+            String raw = getStringCell(header.getCell(c));
+            if (raw != null && !raw.isBlank()) values.add(raw);
+        }
+        return values;
+    }
+
+    private SheetMetadata fallbackSheetMapping(Workbook workbook) {
+        Map<String, List<String>> tableToSheets = new LinkedHashMap<>();
+        DEFAULT_SHEET_NAMES.forEach((tableId, defaultName) -> {
+            if (workbook.getSheet(defaultName) != null) {
+                tableToSheets.put(tableId, List.of(defaultName));
+            }
+        });
+        return new SheetMetadata(tableToSheets, Map.of());
+    }
+
+    private SheetMetadata readMetadataSheet(Sheet metaSheet) {
+        Map<String, LinkedHashSet<String>> tableToSheetsTemp = new LinkedHashMap<>();
+        Map<String, Map<String, String>> columnAliases = new HashMap<>();
+
         Row header = metaSheet.getRow(0);
-        if (header == null) return map;
+        if (header == null) return new SheetMetadata(Map.of(), columnAliases);
 
         Map<String, Integer> colIndex = indexColumns(header);
-        Integer sheetIdCol = colIndex.get("sheet_id");
-        Integer sheetNameCol = colIndex.get("sheet_name");
-        if (sheetIdCol == null || sheetNameCol == null) return map;
+        Integer sheetIdCol      = colIndex.get("sheet_id");
+        Integer sheetNameCol    = colIndex.get("sheet_name");
+        Integer aliasCol        = colIndex.get("column_alias");
+        Integer canonicalCol    = colIndex.get("column_canonical");
+
+        // Mapping of the sheet names if no cols defined
+        if (sheetIdCol == null || sheetNameCol == null) return new SheetMetadata(Map.of(), columnAliases);
 
         for (int r = 1; r <= metaSheet.getLastRowNum(); r++) {
-            addRowToMap(metaSheet.getRow(r), sheetIdCol, sheetNameCol, map);
+            registerMetaRow(metaSheet.getRow(r), sheetIdCol, sheetNameCol, aliasCol, canonicalCol,
+                    tableToSheetsTemp, columnAliases);
         }
-        return map;
+
+        Map<String, List<String>> tableToSheets = new LinkedHashMap<>();
+        tableToSheetsTemp.forEach((k, v) -> tableToSheets.put(k, new ArrayList<>(v)));
+        return new SheetMetadata(tableToSheets, columnAliases);
     }
 
-    private void addRowToMap(Row row, int sheetIdCol, int sheetNameCol, Map<String, String> map) {
-        if (row == null) return;
-        String id = getStringCell(row, sheetIdCol);
-        String name = getStringCell(row, sheetNameCol);
-        if (id != null && name != null) {
-            map.put(id.trim(), name.trim());
-        }
+    private void registerMetaRow(Row row, int sheetIdCol, int sheetNameCol, Integer aliasCol, Integer canonicalCol,
+                                  Map<String, LinkedHashSet<String>> tableToSheetsTemp,
+                                  Map<String, Map<String, String>> columnAliases) {
+        String id   = row != null ? getStringCell(row, sheetIdCol) : null;
+        String name = row != null ? getStringCell(row, sheetNameCol) : null;
+        if (id == null || name == null) return;
+        id = id.trim();
+        name = name.trim();
+
+        tableToSheetsTemp.computeIfAbsent(id, k -> new LinkedHashSet<>()).add(name);
+
+        if (aliasCol == null || canonicalCol == null) return;
+        String alias     = getStringCellOrNull(row, aliasCol);
+        String canonical = getStringCellOrNull(row, canonicalCol);
+        if (alias == null || alias.isBlank() || canonical == null || canonical.isBlank()) return;
+
+        columnAliases.computeIfAbsent(name, k -> new HashMap<>())
+                .put(normalize(alias.trim()), normalize(canonical.trim()));
     }
+
+    // -------------------------------------------------------------------------
+    // Main entry point
+    // -------------------------------------------------------------------------
 
     public enum ImportScope {
         ALL,
         PROJECT
     }
 
-    public ImportSpecs importFromExcel(InputStream is, ImportScope scope, ActionUnitDTO actionUnitDTO) throws IOException {
+    public ImportResult importFromExcel(InputStream is, ImportScope scope, ActionUnitDTO actionUnitDTO) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(is)) {
 
-            Map<String, String> sheetIdToName = readSheetMetadata(workbook);
+            SheetMetadata meta = readSheetMetadata(workbook);
+            List<ImportError> errors = new ArrayList<>();
 
-            List<InstitutionSeeder.InstitutionSpec> institutions = new ArrayList<>();
-            List<PersonSeeder.PersonSpec> persons =  new ArrayList<>();
-            List<SpatialUnitSeeder.SpatialUnitSpecs> spatialUnits =  new ArrayList<>();
-            List<ActionCodeSeeder.ActionCodeSpec> actionCodes =  new ArrayList<>();
-            List<ActionUnitSeeder.ActionUnitSpecs> actionUnits =  new ArrayList<>();
-            List<RecordingUnitSeeder.RecordingUnitSpecs> recordingUnits =  new ArrayList<>();
-            List<SpecimenSeeder.SpecimenSpecs> specimenSpecs =  new ArrayList<>();
-            List<PhaseSeeder.PhaseSpecs> phaseSpecs = new ArrayList<>();
-            List<RecordingUnitRelSeeder.RecordingUnitRelDTO> recordingUnitDTOS =  new ArrayList<>();
-            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> stratiDTOS =  new ArrayList<>();
-            Sheet spatialSheet = workbook.getSheet(sheetIdToName.getOrDefault("spatial_unit", "Unité spatiale"));
+            List<InstitutionSeeder.InstitutionSpec>             institutions  = new ArrayList<>();
+            List<PersonSeeder.PersonSpec>                       persons       = new ArrayList<>();
+            List<ActionCodeSeeder.ActionCodeSpec>               actionCodes   = new ArrayList<>();
+            List<ActionUnitSeeder.ActionUnitSpecs>              actionUnits   = new ArrayList<>();
 
-            if(scope == ImportScope.ALL) {
-                Sheet institutionSheet = workbook.getSheet(sheetIdToName.getOrDefault(INSTITUTION, "Institution"));
-                Sheet personSheet      = workbook.getSheet(sheetIdToName.getOrDefault(PERSON, "Personne"));
-                Sheet codeSheet        = workbook.getSheet(sheetIdToName.getOrDefault("code", "Code"));
-                Sheet actionUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("action_unit", "Unite action"));
-                institutions = parseInstitutions(institutionSheet);
-                persons = parsePersons(personSheet);
-
-                actionCodes = parseActionCodes(codeSheet);
-                actionUnits = parseActionUnits(actionUnitSheet);
+            if (scope == ImportScope.ALL) {
+                institutions = parseInstitutions(getSheetsForTable(workbook, meta, INSTITUTION), meta, errors);
+                persons      = parsePersons(getSheetsForTable(workbook, meta, PERSON), meta, errors);
+                actionCodes  = parseActionCodes(getSheetsForTable(workbook, meta, "code"), meta, errors);
+                actionUnits  = parseActionUnits(getSheetsForTable(workbook, meta, "action_unit"), meta, errors);
             }
 
-            Sheet recordingUnitSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recording_unit", "UE"));
-            Sheet specimenSheet  = workbook.getSheet(sheetIdToName.getOrDefault("specimen", "Prelev"));
-            Sheet recordingRelSheet  = workbook.getSheet(sheetIdToName.getOrDefault("recordingRel", "UE_rel"));
-            Sheet stratiSheet  = workbook.getSheet(sheetIdToName.getOrDefault("stratiRel", "Strati_Rel"));
+            List<SpatialUnitSeeder.SpatialUnitSpecs>                          spatialUnits   = parseSpatialUnits(getSheetsForTable(workbook, meta, "spatial_unit"), actionUnitDTO, meta, errors);
+            List<RecordingUnitSeeder.RecordingUnitSpecs>                      recordingUnits = parseRecordingUnits(getSheetsForTable(workbook, meta, "recording_unit"), scope, actionUnitDTO, meta, errors);
+            List<SpecimenSeeder.SpecimenSpecs>                                specimenSpecs  = parseSpecimens(getSheetsForTable(workbook, meta, "specimen"), actionUnitDTO, meta, errors);
+            List<PhaseSeeder.PhaseSpecs>                                      phaseSpecs     = parsePhases(getSheetsForTable(workbook, meta, "phase"), actionUnitDTO, meta, errors);
+            List<RecordingUnitRelSeeder.RecordingUnitRelDTO>                  recordingRels  = parseRecordingRels(getSheetsForTable(workbook, meta, "recordingRel"), meta, errors);
+            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO>      stratiRels     = parseStratiRels(getSheetsForTable(workbook, meta, "stratiRel"), meta, errors);
 
-            Sheet phaseSheet = workbook.getSheet(sheetIdToName.getOrDefault("phase", "Phase"));
+            ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
+                    recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels);
 
-            spatialUnits = parseSpatialUnits(spatialSheet, actionUnitDTO);
-            recordingUnits = parseRecordingUnits(recordingUnitSheet, scope, actionUnitDTO);
-            specimenSpecs = parseSpecimens(specimenSheet, actionUnitDTO);
-            phaseSpecs = parsePhases(phaseSheet, actionUnitDTO);
-            recordingUnitDTOS = parseRecordingRels(recordingRelSheet);
-            stratiDTOS = parseStratiRels(stratiSheet);
+            Map<String, List<String>> allSheetColumns = collectAllSheetColumns(workbook);
 
-            return new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
-                    recordingUnits, specimenSpecs, phaseSpecs, recordingUnitDTOS, stratiDTOS);
+            return new ImportResult(specs, errors, meta, allSheetColumns);
         }
     }
+
+    /**
+     * Raw column headers for every sheet except _meta, for display in the mapping UI.
+     * Whether a column is "recognized" is decided from meta.columnAliases(), which already
+     * combines explicit _meta aliases with auto-matched canonical names filtered by EXPECTED_COLUMNS.
+     */
+    private Map<String, List<String>> collectAllSheetColumns(Workbook workbook) {
+        Map<String, List<String>> allSheetColumns = new LinkedHashMap<>();
+        for (int si = 0; si < workbook.getNumberOfSheets(); si++) {
+            Sheet sheet = workbook.getSheetAt(si);
+            if ("_meta".equalsIgnoreCase(sheet.getSheetName())) continue;
+            allSheetColumns.put(sheet.getSheetName(), rawHeaderLabels(sheet.getRow(0)));
+        }
+        return allSheetColumns;
+    }
+
+    private List<String> rawHeaderLabels(Row header) {
+        List<String> labels = new ArrayList<>();
+        if (header == null) return labels;
+        for (int ci = 0; ci <= header.getLastCellNum(); ci++) {
+            Cell cell = header.getCell(ci);
+            if (cell != null) {
+                String v = cell.toString().trim();
+                if (!v.isEmpty()) labels.add(v);
+            }
+        }
+        return labels;
+    }
+
+    private List<Sheet> getSheetsForTable(Workbook workbook, SheetMetadata meta, String tableId) {
+        List<String> names = meta.tableToSheets().get(tableId);
+        if (names != null && !names.isEmpty()) {
+            return names.stream()
+                    .map(workbook::getSheet)
+                    .filter(Objects::nonNull)
+                    .toList();
+        }
+        String defaultName = DEFAULT_SHEET_NAMES.get(tableId);
+        if (defaultName == null) return List.of();
+        Sheet s = workbook.getSheet(defaultName);
+        return s != null ? List.of(s) : List.of();
+    }
+
+    // -------------------------------------------------------------------------
+    // Parse methods
+    // -------------------------------------------------------------------------
 
     public List<InstitutionSeeder.InstitutionSpec> parseInstitutions(Sheet sheet) {
-        try {
-            Row header = sheet.getRow(0);
-            Map<String, Integer> cols = indexColumns(header);
-            List<InstitutionSeeder.InstitutionSpec> result = new ArrayList<>();
-
-            forEachDataRow(sheet, row -> {
-                String name = getStringCellOrNull(row, cols, "nom");
-                if (name == null || name.isBlank()) return;
-
-                String description = getStringCellOrNull(row, cols, DESCRIPTION);
-                String identifier  = getStringCellOrNull(row, cols, IDENTIFIANT);
-                String adminsRaw   = getStringCellOrNull(row, cols, "email admins");
-                String thesaurus   = getStringCellOrNull(row, cols, "thesaurus");
-                List<String> adminEmails = parsePersonList(adminsRaw);
-                String vocabularyId      = extractIdtFromUri(thesaurus).orElse(null);
-                String thesaurusInstance = extractThesaurusDomain(thesaurus);
-
-                result.add(new InstitutionSeeder.InstitutionSpec(
-                        name, description, identifier, adminEmails, thesaurusInstance, vocabularyId));
-            });
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
-        }
+        List<ImportError> errors = new ArrayList<>();
+        return parseInstitutions(List.of(sheet), SheetMetadata.empty(), errors);
     }
 
-    public String extractThesaurusDomain(String thesaurus) {
-        if (thesaurus == null) return null;
-        int idx = thesaurus.indexOf("?");
-        if (idx < 0) {
-            return thesaurus;
+    public List<InstitutionSeeder.InstitutionSpec> parseInstitutions(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+        List<InstitutionSeeder.InstitutionSpec> result = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                Row header = sheet.getRow(0);
+                Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+                forEachDataRow(sheet, errors, row -> {
+                    String name = getStringCellOrNull(row, cols, "nom");
+                    if (name == null || name.isBlank()) return;
+                    String description = getStringCellOrNull(row, cols, DESCRIPTION);
+                    String identifier  = getStringCellOrNull(row, cols, IDENTIFIANT);
+                    String adminsRaw   = getStringCellOrNull(row, cols, "email admins");
+                    String thesaurus   = getStringCellOrNull(row, cols, "thesaurus");
+                    List<String> adminEmails = parsePersonList(adminsRaw);
+                    String vocabularyId      = extractIdtFromUri(thesaurus).orElse(null);
+                    String thesaurusInstance = extractThesaurusDomain(thesaurus);
+                    result.add(new InstitutionSeeder.InstitutionSpec(
+                            name, description, identifier, adminEmails, thesaurusInstance, vocabularyId));
+                });
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
         }
-
-        if(idx==0) {
-            return null;
-        }
-
-        return thesaurus.substring(0, idx-1);
+        return result;
     }
 
     public List<PersonSeeder.PersonSpec> parsePersons(Sheet sheet) {
-        try {
-            Row header = sheet.getRow(0);
-            Map<String, Integer> cols = indexColumns(header);
-            List<PersonSeeder.PersonSpec> result = new ArrayList<>();
+        List<ImportError> errors = new ArrayList<>();
+        return parsePersons(List.of(sheet), SheetMetadata.empty(), errors);
+    }
 
-            forEachDataRow(sheet, row -> {
-                String email = getStringCellOrNull(row, cols, "email");
-                if (email == null || email.isBlank()) return;
-
-                result.add(new PersonSeeder.PersonSpec(
-                        email,
-                        getStringCellOrNull(row, cols, "nom"),
-                        getStringCellOrNull(row, cols, "prenom"),
-                        getStringCellOrNull(row, cols, IDENTIFIANT)
-                ));
-            });
-
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
+    public List<PersonSeeder.PersonSpec> parsePersons(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+        List<PersonSeeder.PersonSpec> result = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                Row header = sheet.getRow(0);
+                Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+                forEachDataRow(sheet, errors, row -> {
+                    String email = getStringCellOrNull(row, cols, "email");
+                    if (email == null || email.isBlank()) return;
+                    result.add(new PersonSeeder.PersonSpec(
+                            email,
+                            getStringCellOrNull(row, cols, "nom"),
+                            getStringCellOrNull(row, cols, "prenom"),
+                            getStringCellOrNull(row, cols, IDENTIFIANT)
+                    ));
+                });
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
         }
+        return result;
+    }
+
+    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet, ActionUnitDTO actionUnit) {
+        List<ImportError> errors = new ArrayList<>();
+        return parseSpatialUnits(List.of(sheet), actionUnit, SheetMetadata.empty(), errors);
+    }
+
+    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors) {
+        Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName = new LinkedHashMap<>();
+        Map<String, String> childrenStringByName = new HashMap<>();
+
+        for (Sheet sheet : sheets) {
+            try {
+                Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+                forEachDataRow(sheet, errors, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childrenStringByName));
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
+        }
+        resolveChildrenKeys(specsByName, childrenStringByName);
+        return new ArrayList<>(specsByName.values());
     }
 
     private void parseSpatialRow(Row row, Map<String, Integer> cols, ActionUnitDTO actionUnit,
@@ -242,115 +355,135 @@ public class OOXMLImportService {
         }
     }
 
-    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet,
-                                                                      ActionUnitDTO actionUnit) {
-        try {
-            Map<String, Integer> cols = indexColumns(sheet.getRow(0));
-            Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName = new LinkedHashMap<>();
-            Map<String, String> childrenStringByName = new HashMap<>();
-
-            forEachDataRow(sheet, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childrenStringByName));
-            resolveChildrenKeys(specsByName, childrenStringByName);
-
-            return new ArrayList<>(specsByName.values());
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
-        }
-    }
-
     public List<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRecordingRels(Sheet sheet) {
         if (sheet == null) return List.of();
-        try {
-            Row header = sheet.getRow(0);
-            if (header == null) return List.of();
+        List<ImportError> errors = new ArrayList<>();
+        return parseRecordingRels(List.of(sheet), SheetMetadata.empty(), errors);
+    }
 
-            Map<String, Integer> cols = indexColumns(header);
-            Integer parentNum = cols.get("parent");
-            Integer childNum  = cols.get("enfant");
-            if (parentNum == null || childNum == null) return List.of();
-
-            List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = new ArrayList<>();
-            forEachDataRow(sheet, row -> {
-                String parent = getStringCell(row, parentNum);
-                String child  = getStringCell(row, childNum);
-                if (parent == null || parent.isBlank()) return;
-                if (child  == null || child.isBlank())  return;
-                specs.add(new RecordingUnitRelSeeder.RecordingUnitRelDTO(parent, child));
-            });
-            return specs;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
+    public List<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRecordingRels(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "parent", "enfant");
+                if (cols == null) continue;
+                Integer parentNum = cols.get("parent");
+                Integer childNum  = cols.get("enfant");
+                forEachDataRow(sheet, errors, row -> parseRowToRecordingRel(row, parentNum, childNum).ifPresent(specs::add));
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
         }
+        return specs;
+    }
+
+    private Optional<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRowToRecordingRel(Row row, int parentCol, int childCol) {
+        String parent = getStringCell(row, parentCol);
+        String child  = getStringCell(row, childCol);
+        if (parent == null || parent.isBlank()) return Optional.empty();
+        if (child  == null || child.isBlank())  return Optional.empty();
+        return Optional.of(new RecordingUnitRelSeeder.RecordingUnitRelDTO(parent, child));
+    }
+
+    /**
+     * Indexes a sheet's header columns and returns null if the header is missing or any
+     * required column isn't present — a single guard for the "sheet not usable" case.
+     */
+    private Map<String, Integer> indexRequiredColumns(Sheet sheet, SheetMetadata meta, String... requiredColumns) {
+        Row header = sheet.getRow(0);
+        if (header == null) return new HashMap<>();
+        Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+        for (String required : requiredColumns) {
+            if (cols.get(required) == null) return new HashMap<>();
+        }
+        return cols;
     }
 
     public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(Sheet sheet) {
         if (sheet == null) return List.of();
-        try {
-            Row header = sheet.getRow(0);
-            if (header == null) return List.of();
-
-            Map<String, Integer> cols = indexColumns(header);
-            if (cols.get("us1") == null || cols.get("us2") == null) return List.of();
-
-            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = new ArrayList<>();
-            forEachDataRow(sheet, row -> {
-                String us1 = getStringCellOrNull(row, cols, "us1");
-                String us2 = getStringCellOrNull(row, cols, "us2");
-                if (us1 == null || us1.isBlank()) return;
-                if (us2 == null || us2.isBlank()) return;
-                ConceptSeeder.ConceptKey relKey = conceptKeyFromUri(getStringCellOrNull(row, cols, "relation"));
-                String direction  = getStringCellOrNull(row, cols, "direction vocabulaire");
-                String asynchrone = getStringCellOrNull(row, cols, "asynchrone");
-                String incertain  = getStringCellOrNull(row, cols, "incertain");
-                specs.add(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                        us1, us2, relKey,
-                        "True".equals(direction),
-                        "True".equals(asynchrone),
-                        "True".equals(incertain)));
-            });
-            return specs;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
-        }
+        List<ImportError> errors = new ArrayList<>();
+        return parseStratiRels(List.of(sheet), SheetMetadata.empty(), errors);
     }
 
+    public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "us1", "us2");
+                if (cols == null) continue;
+                forEachDataRow(sheet, errors, row -> parseRowToStratiRel(row, cols).ifPresent(specs::add));
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
+        }
+        return specs;
+    }
+
+    private Optional<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseRowToStratiRel(Row row, Map<String, Integer> cols) {
+        String us1 = getStringCellOrNull(row, cols, "us1");
+        String us2 = getStringCellOrNull(row, cols, "us2");
+        if (us1 == null || us1.isBlank()) return Optional.empty();
+        if (us2 == null || us2.isBlank()) return Optional.empty();
+        ConceptSeeder.ConceptKey relKey = conceptKeyFromUri(getStringCellOrNull(row, cols, "relation"));
+        String direction  = getStringCellOrNull(row, cols, "direction vocabulaire");
+        String asynchrone = getStringCellOrNull(row, cols, "asynchrone");
+        String incertain  = getStringCellOrNull(row, cols, "incertain");
+        return Optional.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
+                us1, us2, relKey,
+                "True".equals(direction),
+                "True".equals(asynchrone),
+                "True".equals(incertain)));
+    }
 
     public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(Sheet sheet) {
         if (sheet == null) return List.of();
-        try {
-            Row header = sheet.getRow(0);
-            if (header == null) return List.of();
+        List<ImportError> errors = new ArrayList<>();
+        return parseActionCodes(List.of(sheet), SheetMetadata.empty(), errors);
+    }
 
-            Map<String, Integer> cols = indexColumns(header);
-            if (cols.get("code") == null || cols.get(TYPE_URI) == null) return List.of();
-
-            List<ActionCodeSeeder.ActionCodeSpec> specs = new ArrayList<>();
-            forEachDataRow(sheet, row -> {
-                String code = getStringCellOrNull(row, cols, "code");
-                if (code == null || code.isBlank()) return;
-                String typeUri = getStringCellOrNull(row, cols, TYPE_URI);
-                specs.add(new ActionCodeSeeder.ActionCodeSpec(
-                        code,
-                        extractIdcFromUri(typeUri).orElse(null),
-                        extractIdtFromUri(typeUri).orElse(null)
-                ));
-            });
-            return specs;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
+    public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+        List<ActionCodeSeeder.ActionCodeSpec> specs = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "code", TYPE_URI);
+                if (cols == null) continue;
+                forEachDataRow(sheet, errors, row -> parseRowToActionCode(row, cols).ifPresent(specs::add));
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
         }
+        return specs;
+    }
+
+    private Optional<ActionCodeSeeder.ActionCodeSpec> parseRowToActionCode(Row row, Map<String, Integer> cols) {
+        String code = getStringCellOrNull(row, cols, "code");
+        if (code == null || code.isBlank()) return Optional.empty();
+        String typeUri = getStringCellOrNull(row, cols, TYPE_URI);
+        return Optional.of(new ActionCodeSeeder.ActionCodeSpec(
+                code,
+                extractIdcFromUri(typeUri).orElse(null),
+                extractIdtFromUri(typeUri).orElse(null)
+        ));
     }
 
     public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(Sheet sheet) {
         if (sheet == null || sheet.getRow(0) == null) return List.of();
-        try {
-            Map<String, Integer> cols = indexColumns(sheet.getRow(0));
-            List<ActionUnitSeeder.ActionUnitSpecs> result = new ArrayList<>();
-            forEachDataRow(sheet, row -> parseRowToActionUnit(row, cols).ifPresent(result::add));
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
+        List<ImportError> errors = new ArrayList<>();
+        return parseActionUnits(List.of(sheet), SheetMetadata.empty(), errors);
+    }
+
+    public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+        List<ActionUnitSeeder.ActionUnitSpecs> result = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                if (sheet.getRow(0) == null) continue;
+                Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+                forEachDataRow(sheet, errors, row -> parseRowToActionUnit(row, cols).ifPresent(result::add));
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
         }
+        return result;
     }
 
     private Optional<ActionUnitSeeder.ActionUnitSpecs> parseRowToActionUnit(Row row, Map<String, Integer> cols) {
@@ -412,18 +545,25 @@ public class OOXMLImportService {
         }
     }
 
-
-    public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet,
-        ImportScope scope, ActionUnitDTO actionUnit) {
+    public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet, ImportScope scope, ActionUnitDTO actionUnit) {
         if (sheet == null || sheet.getRow(0) == null) return List.of();
-        try {
-            Map<String, Integer> cols = indexColumns(sheet.getRow(0));
-            List<RecordingUnitSeeder.RecordingUnitSpecs> result = new ArrayList<>();
-            forEachDataRow(sheet, row -> parseRowToRecordingUnit(row, cols, scope == ImportScope.PROJECT ? actionUnit : null).ifPresent(result::add));
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
+        List<ImportError> errors = new ArrayList<>();
+        return parseRecordingUnits(List.of(sheet), scope, actionUnit, SheetMetadata.empty(), errors);
+    }
+
+    public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(List<Sheet> sheets, ImportScope scope, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors) {
+        List<RecordingUnitSeeder.RecordingUnitSpecs> result = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                if (sheet.getRow(0) == null) continue;
+                Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+                forEachDataRow(sheet, errors, row ->
+                        parseRowToRecordingUnit(row, cols, scope == ImportScope.PROJECT ? actionUnit : null).ifPresent(result::add));
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
         }
+        return result;
     }
 
     private Optional<RecordingUnitSeeder.RecordingUnitSpecs> parseRowToRecordingUnit(
@@ -490,17 +630,6 @@ public class OOXMLImportService {
         ));
     }
 
-// -------------------- Helpers --------------------
-
-    private Integer parseIntegerSafe(String str) {
-        if (str == null || str.isBlank()) return null;
-        try {
-            return Integer.valueOf(str.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
     private SpatialUnitSeeder.SpatialUnitKey parseOptionalSpatialUnit(Row row, Map<String, Integer> cols, String key) {
         try {
             String name = getStringCellOrNull(row, cols, key);
@@ -519,12 +648,32 @@ public class OOXMLImportService {
         }
     }
 
-
     private RecordingUnitSeeder.RecordingUnitKey parseRecordingUnitKey(Row row, Map<String, Integer> cols, ActionUnitDTO actionUnit) {
         String ruStr = getStringCellOrNull(row, cols, "unite d'enregistrement");
         if (ruStr == null || ruStr.isBlank()) return null;
         String actionFullId = actionUnit != null ? actionUnit.getFullIdentifier() : "";
         return new RecordingUnitSeeder.RecordingUnitKey(ruStr, actionFullId);
+    }
+
+    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet, ActionUnitDTO actionUnit) {
+        if (sheet == null) return List.of();
+        List<ImportError> errors = new ArrayList<>();
+        return parseSpecimens(List.of(sheet), actionUnit, SheetMetadata.empty(), errors);
+    }
+
+    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors) {
+        List<SpecimenSeeder.SpecimenSpecs> result = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                Row header = sheet.getRow(0);
+                if (header == null) continue;
+                Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+                forEachDataRow(sheet, errors, row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
+        }
+        return result;
     }
 
     private Optional<SpecimenSeeder.SpecimenSpecs> parseRowToSpecimen(Row row, Map<String, Integer> cols, ActionUnitDTO actionUnit) {
@@ -550,77 +699,79 @@ public class OOXMLImportService {
         ));
     }
 
-    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet, ActionUnitDTO actionUnit) {
-        if (sheet == null) return List.of();
-        try {
-            Row header = sheet.getRow(0);
-            if (header == null) return List.of();
-            Map<String, Integer> cols = indexColumns(header);
-            List<SpecimenSeeder.SpecimenSpecs> result = new ArrayList<>();
-            forEachDataRow(sheet, row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
-        }
-    }
-
-
-
     public List<PhaseSeeder.PhaseSpecs> parsePhases(Sheet sheet, ActionUnitDTO actionUnit) {
         if (sheet == null) return List.of();
-        try {
-            Row header = sheet.getRow(0);
-            if (header == null) return List.of();
+        List<ImportError> errors = new ArrayList<>();
+        return parsePhases(List.of(sheet), actionUnit, SheetMetadata.empty(), errors);
+    }
 
-            Map<String, Integer> cols = indexColumns(header);
-            List<PhaseSeeder.PhaseSpecs> result = new ArrayList<>();
+    public List<PhaseSeeder.PhaseSpecs> parsePhases(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors) {
+        List<PhaseSeeder.PhaseSpecs> result = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                Row header = sheet.getRow(0);
+                if (header == null) continue;
+                Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
 
-            forEachDataRow(sheet, row -> {
-                String identifier = getStringCellOrNull(row, cols, IDENTIFIANT);
-                if (identifier == null || identifier.isBlank()) return;
+                forEachDataRow(sheet, errors, row -> {
+                    String identifier = getStringCellOrNull(row, cols, IDENTIFIANT);
+                    if (identifier == null || identifier.isBlank()) return;
 
-                String title       = getStringCellOrNull(row, cols, "titre");
-                ConceptSeeder.ConceptKey type = conceptKeyFromUri(getStringCellOrNull(row, cols, TYPE_URI));
-                String description  = getStringCellOrNull(row, cols, DESCRIPTION);
-                Integer orderNumber = getIntegerCellOrNull(row, cols, "ordre");
-                Integer lowerBound  = getIntegerCellOrNull(row, cols, "borne inferieure");
-                Integer upperBound  = getIntegerCellOrNull(row, cols, "borne superieure");
+                    String title       = getStringCellOrNull(row, cols, "titre");
+                    ConceptSeeder.ConceptKey type = conceptKeyFromUri(getStringCellOrNull(row, cols, TYPE_URI));
+                    String description  = getStringCellOrNull(row, cols, DESCRIPTION);
+                    Integer orderNumber = getIntegerCellOrNull(row, cols, "ordre");
+                    Integer lowerBound  = getIntegerCellOrNull(row, cols, "borne inferieure");
+                    Integer upperBound  = getIntegerCellOrNull(row, cols, "borne superieure");
+                    String authorEmail  = getStringCellOrNull(row, cols, "auteur");
 
-                String authorEmail = getStringCellOrNull(row, cols, "auteur");
+                    ActionUnitSeeder.ActionUnitKey actionKey = actionUnit != null
+                            ? new ActionUnitSeeder.ActionUnitKey(
+                                    actionUnit.getFullIdentifier(),
+                                    actionUnit.getCreatedByInstitution().getIdentifier())
+                            : new ActionUnitSeeder.ActionUnitKey(
+                                    getStringCellOrNull(row, cols, "projet"),
+                                    getStringCellOrNull(row, cols, INSTITUTION));
 
-                ActionUnitSeeder.ActionUnitKey actionKey = actionUnit != null
-                        ? new ActionUnitSeeder.ActionUnitKey(
-                                actionUnit.getFullIdentifier(),
-                                actionUnit.getCreatedByInstitution().getIdentifier())
-                        : new ActionUnitSeeder.ActionUnitKey(
-                                getStringCellOrNull(row, cols, "projet"),
-                                getStringCellOrNull(row, cols, INSTITUTION));
-
-                result.add(new PhaseSeeder.PhaseSpecs(
-                        identifier, title, type, description, orderNumber, lowerBound, upperBound, authorEmail, actionKey));
-            });
-
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("[Feuille '" + sheet.getSheetName() + "'] : " + e.getMessage(), e);
+                    result.add(new PhaseSeeder.PhaseSpecs(
+                            identifier, title, type, description, orderNumber, lowerBound, upperBound, authorEmail, actionKey));
+                });
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
+            }
         }
+        return result;
+    }
+
+    // -------------------------------------------------------------------------
+    // URI helpers
+    // -------------------------------------------------------------------------
+
+    public String extractThesaurusDomain(String thesaurus) {
+        if (thesaurus == null) return null;
+        int idx = thesaurus.indexOf("?");
+        if (idx < 0) {
+            return thesaurus;
+        }
+        if (idx == 0) {
+            return null;
+        }
+        return thesaurus.substring(0, idx - 1);
     }
 
     public Optional<String> extractIdtFromUri(String uri) {
-        if (uri == null) return Optional.empty();
-        int idx = uri.indexOf("idt=");
-        if (idx < 0) throw new IllegalStateException("URL de concept "+uri+"invalide");
-        String sub = uri.substring(idx + 4);
-        int amp = sub.indexOf('&');
-        if (amp >= 0) sub = sub.substring(0, amp);
-        return Optional.of(URLDecoder.decode(sub, StandardCharsets.UTF_8));
+        return extractQueryParam(uri, "idt=");
     }
 
     public Optional<String> extractIdcFromUri(String uri) {
+        return extractQueryParam(uri, "idc=");
+    }
+
+    private Optional<String> extractQueryParam(String uri, String paramKey) {
         if (uri == null) return Optional.empty();
-        int idx = uri.indexOf("idc=");
-        if (idx < 0) throw new IllegalStateException("URL de concept "+uri+" invalide");
-        String sub = uri.substring(idx + 4);
+        int idx = uri.indexOf(paramKey);
+        if (idx < 0) throw new IllegalStateException("URL de concept " + uri + " invalide");
+        String sub = uri.substring(idx + paramKey.length());
         int amp = sub.indexOf('&');
         if (amp >= 0) sub = sub.substring(0, amp);
         return Optional.of(URLDecoder.decode(sub, StandardCharsets.UTF_8));
@@ -630,147 +781,12 @@ public class OOXMLImportService {
         if (uri == null || uri.isBlank()) {
             return null;
         }
-
         String conceptId = extractIdcFromUri(uri).orElse(null);
         String vocabId   = extractIdtFromUri(uri).orElse(null);
-
         if (conceptId == null && vocabId == null) {
-            return null; // pas une URI valide
-        }
-
-        return new ConceptSeeder.ConceptKey(vocabId, conceptId);
-    }
-
-
-    // -------------------------------------------------------------------------
-    // Helpers Excel
-    // -------------------------------------------------------------------------
-    public Map<String, Integer> indexColumns(Row header) {
-        Map<String, Integer> map = new HashMap<>();
-        if (header == null) return map;
-
-        for (int c = 0; c < header.getLastCellNum(); c++) {
-            Cell cell = header.getCell(c);
-            if (cell != null) {
-                String raw = getStringCell(cell);
-                if (raw != null) {
-                    String norm = normalize(raw);
-                    map.put(norm, c);
-                }
-            }
-        }
-
-        return map;
-    }
-
-    public String getStringCell(Row row, int colIndex) {
-        Cell cell = row.getCell(colIndex);
-        return getStringCell(cell);
-    }
-
-    public String getStringCellOrNull(Row row, Integer colIndex) {
-        return colIndex != null ? getStringCell(row, colIndex) : null;
-    }
-
-    public String getStringCellOrNull(Row row, Map<String, Integer> cols, String key) {
-        try {
-            Integer index = cols.get(key);
-            return index != null ? getStringCell(row, index) : null;
-        } catch (Exception e) {
-            throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
-        }
-    }
-
-    public Integer getIntegerCellOrNull(Row row, Map<String, Integer> cols, String key) {
-        Integer colIndex = cols.get(key);
-        if (colIndex == null) return null;
-        Cell cell = row.getCell(colIndex);
-        if (cell == null) return null;
-        if (cell.getCellType() == CellType.NUMERIC) return (int) cell.getNumericCellValue();
-        String s = getStringCell(cell);
-        return parseIntegerSafe(s);
-    }
-
-    public String getStringCell(Cell cell) {
-        if (cell == null) return null;
-        if (cell.getCellType() == CellType.NUMERIC) {
-            double v = cell.getNumericCellValue();
-            return v == Math.floor(v) && !Double.isInfinite(v)
-                    ? String.valueOf((long) v)
-                    : String.valueOf(v);
-        }
-        String val = cell.getStringCellValue();
-        return val != null ? val.trim() : null;
-    }
-
-    public List<String> parsePersonList(String raw) {
-        if (raw == null || raw.isBlank()) return List.of();
-        return Arrays.stream(raw.split("[;,]"))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .toList();
-    }
-
-    // Normalisation pour matcher les noms de colonnes malgré les accents / espaces
-    public String normalize(String s) {
-        if (s == null) return "";
-        String tmp = s.trim().toLowerCase(Locale.ROOT);
-        tmp = Normalizer.normalize(tmp, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", ""); // enlève les accents
-        tmp = tmp.replaceAll("\\s+", " "); // normalise les espaces
-        return tmp;
-    }
-
-    public OffsetDateTime parseOffsetDateTime(Cell cell) {
-        if (cell == null) return null;
-
-        try {
-            // 1) Cas "vraie" date Excel (numérique + format date)
-            if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-                Date d = cell.getDateCellValue();
-                return d.toInstant().atOffset(ZoneOffset.UTC);
-            }
-
-            // 2) Cas texte "yyyy-MM-dd"
-            String raw = cell.getStringCellValue();
-            if (raw == null || raw.isBlank()) return null;
-
-            raw = raw.trim();
-
-            // format aaaa-mm-jj = yyyy-MM-dd
-            LocalDate ld = LocalDate.parse(raw, DateTimeFormatter.ISO_LOCAL_DATE);
-            return ld.atStartOfDay().atOffset(ZoneOffset.UTC); // ou ZoneOffset.ofHours(1/2)
-
-        } catch (Exception e) {
             return null;
         }
+        return new ConceptSeeder.ConceptKey(vocabId, conceptId);
     }
-
-    public Set<SpatialUnitSeeder.SpatialUnitKey> parseSpatialNames(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return Set.of();
-        }
-
-        return Arrays.stream(raw.split("&&"))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .map(SpatialUnitSeeder.SpatialUnitKey::new) // 🔥 nom tel quel
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    private void forEachDataRow(Sheet sheet, Consumer<Row> consumer) {
-        for (int r = 1; r <= sheet.getLastRowNum(); r++) {
-            Row row = sheet.getRow(r);
-            if (row != null) {
-                try {
-                    consumer.accept(row);
-                } catch (Exception e) {
-                    throw new IllegalStateException("[ligne " + (r + 1) + "] : " + e.getMessage(), e);
-                }
-            }
-        }
-    }
-
-
 
 }
