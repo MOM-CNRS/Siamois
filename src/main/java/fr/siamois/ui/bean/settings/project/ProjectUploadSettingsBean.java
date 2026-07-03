@@ -40,6 +40,7 @@ public class ProjectUploadSettingsBean {
     public static final String ERREUR = " erreur";
     public static final String PHASE = "phase";
     public static final String STRATI = "strati";
+    public static final String UE_REL = "uerel";
 
     @Value
     public static class SheetMappingView {
@@ -260,10 +261,10 @@ public class ProjectUploadSettingsBean {
         return switch (tableId) {
             case "lieu", "spatial_unit"                          -> "lieu";
             case "ue", "recording_unit"                          -> "ue";
-            case "relation stratigraphique", "stratirel",
+            case "relation stratigraphique", "stratirel", "stratiRel",
                  "recording_unit_strati_rel"                     -> STRATI;
-            case "groupement d'ue", "recordingrel",
-                 "recording_unit_rel"                            -> "ue";
+            case "groupement d'ue", "recordingrel", "recordingRel",
+                 "recording_unit_rel"                            -> UE_REL;
             case "specimen", "mobilier"                          -> "mob";
             case PHASE -> PHASE;
             default                                              -> tableId;
@@ -276,6 +277,7 @@ public class ProjectUploadSettingsBean {
         return switch (key) {
             case "lieu"   -> specs.spatialUnits().size();
             case "ue"     -> specs.recordingUnits().size();
+            case UE_REL -> specs.recordingUnitRelSpecs().size();
             case STRATI -> specs.recordingUnitStratiRelSpecs().size();
             case "mob"    -> specs.specimenSpecs().size();
             case PHASE -> specs.phaseSpecs().size();
@@ -288,6 +290,7 @@ public class ProjectUploadSettingsBean {
         var s = importResult.specs();
         return s.spatialUnits().size()
              + s.recordingUnits().size()
+             + s.recordingUnitRelSpecs().size()
              + s.recordingUnitStratiRelSpecs().size()
              + s.specimenSpecs().size()
              + s.phaseSpecs().size();
@@ -346,6 +349,7 @@ public class ProjectUploadSettingsBean {
 
     public ValidationTabView getLieuTab()   { return buildTabForKey("lieu",   "Lieu"); }
     public ValidationTabView getUeTab()     { return buildTabForKey("ue",     "UE"); }
+    public ValidationTabView getUeRelTab()  { return buildTabForKey(UE_REL, "Relations UE"); }
     public ValidationTabView getStratiTab() { return buildTabForKey(STRATI, "Stratigraphie"); }
     public ValidationTabView getMobTab()    { return buildTabForKey("mob",    "Mobilier"); }
     public ValidationTabView getPhaseTab()  { return buildTabForKey(PHASE,  "Phase"); }

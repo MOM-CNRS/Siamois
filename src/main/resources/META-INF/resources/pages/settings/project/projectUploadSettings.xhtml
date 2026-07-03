@@ -222,12 +222,19 @@
 
                     <div style="padding:18px 24px 26px;display:flex;flex-direction:column;gap:16px;">
 
-                        <!-- Template download -->
-                        <p:commandButton value="Télécharger un exemple" icon="pi pi-arrow-down"
-                                         styleClass="ui-button-outlined"
-                                         style="background-color: white; align-self: flex-start;">
-                            <p:fileDownload value="#{projectUploadSettingsBean.templateFile}"/>
-                        </p:commandButton>
+                        <!-- Template download + documentation -->
+                        <div style="display:flex;gap:10px;align-self:flex-start;">
+                            <p:commandButton value="Télécharger un exemple" icon="pi pi-arrow-down"
+                                             styleClass="ui-button-outlined"
+                                             style="background-color: white;">
+                                <p:fileDownload value="#{projectUploadSettingsBean.templateFile}"/>
+                            </p:commandButton>
+                            <p:button value="Voir la documentation" icon="pi pi-external-link"
+                                      href="https://amplified-trampoline-ee0.notion.site/Format-d-import-dans-un-projet-39232b90b481801788c1f7561ad9fd86"
+                                      target="_blank"
+                                      styleClass="ui-button-outlined"
+                                      style="background-color: white;"/>
+                        </div>
 
                         <!-- ===== FILE UPLOAD (drag-and-drop) — affiché seulement sans fichier chargé ===== -->
                         <h:panelGroup rendered="#{projectUploadSettingsBean.importResult == null}">
@@ -410,6 +417,39 @@
                                                 </ui:repeat>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{!projectUploadSettingsBean.ueTab.hasErrors()}">
+                                                <div class="success-row"><span
+                                                        style="font-size:18px;">✓</span> Aucune erreur sur cette feuille.
+                                                </div>
+                                            </h:panelGroup>
+                                        </p:tab>
+
+                                        <!-- ── Relations UE (hiérarchie) ── -->
+                                        <p:tab>
+                                            <f:facet name="title">
+                                                <span style="display:flex;align-items:center;gap:7px;padding:2px 0;">
+                                                    <span>Relations UE</span>
+                                                    <span style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">#{projectUploadSettingsBean.ueRelTab.totalCount}</span>
+                                                    <h:panelGroup
+                                                            rendered="#{projectUploadSettingsBean.ueRelTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:700;color:#fff;background:#c2554c;">#{projectUploadSettingsBean.ueRelTab.errorCount}</span></h:panelGroup>
+                                                    <h:panelGroup
+                                                            rendered="#{!projectUploadSettingsBean.ueRelTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 7px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">✓</span></h:panelGroup>
+                                                </span>
+                                            </f:facet>
+                                            <h:panelGroup rendered="#{projectUploadSettingsBean.ueRelTab.hasErrors()}">
+                                                <div class="err-table-head">
+                                                    <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
+                                                </div>
+                                                <ui:repeat value="#{projectUploadSettingsBean.ueRelTab.errors}" var="e">
+                                                    <div class="err-row"><span style="display:flex;align-items:center;"><span
+                                                            class="error-dot"/><b>#{e.sheet()}</b></span><span
+                                                            style="color:#666;">ligne #{e.row()}</span><span
+                                                            style="color:#666;">#{e.column()}</span><span
+                                                            style="color:#555;">#{e.message()}</span></div>
+                                                </ui:repeat>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{!projectUploadSettingsBean.ueRelTab.hasErrors()}">
                                                 <div class="success-row"><span
                                                         style="font-size:18px;">✓</span> Aucune erreur sur cette feuille.
                                                 </div>
