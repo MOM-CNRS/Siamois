@@ -291,17 +291,20 @@
                                         </div>
                                         <ui:repeat value="#{projectUploadSettingsBean.sheetMappings}" var="m">
                                             <div class="mapping-sheet-row">
-                                                <!-- sheet header — yellow bg if unmapped -->
+                                                <!-- sheet header — yellow bg if unmapped, or mapped with unmapped columns -->
                                                 <div class="mapping-sheet-header"
-                                                     style="#{m.unmapped ? 'background:#fffdf4;' : ''}"
+                                                     style="#{m.unmapped or m.hasUnmappedColumns ? 'background:#fffdf4;' : ''}"
                                                      onclick="var b=this.nextElementSibling; b.style.display=b.style.display==='none'?'block':'none'; this.querySelector('.sheet-arrow').textContent=b.style.display==='none'?'▸':'▾';">
                                                     <span class="sheet-arrow"
                                                           style="color:#bbb;font-size:12px;width:12px;">▸</span>
                                                     <span style="font-weight:600;">#{m.sheetName}</span>
-                                                    <!-- mapped → table badge ; unmapped → warning badge -->
+                                                    <!-- mapped → table badge (+ warning badge if some columns are unmapped) ; unmapped → warning badge -->
                                                     <h:panelGroup rendered="#{!m.unmapped}">
                                                         <span style="margin-left:auto;color:#a3a3a0;font-size:13px;">→</span>
                                                         <span class="table-badge">#{m.tableLabel}</span>
+                                                        <h:panelGroup rendered="#{m.hasUnmappedColumns}">
+                                                            <span style="font-size:12.5px;font-weight:600;color:#8a6d1e;background:#fdf6e3;border:1px solid #ecdca0;border-radius:7px;padding:4px 11px;">⚠ #{m.unmappedColumnCount} colonne#{m.unmappedColumnCount > 1 ? 's' : ''} non mappée#{m.unmappedColumnCount > 1 ? 's' : ''}</span>
+                                                        </h:panelGroup>
                                                     </h:panelGroup>
                                                     <h:panelGroup rendered="#{m.unmapped}">
                                                         <span style="margin-left:auto;font-size:12.5px;font-weight:600;color:#8a6d1e;background:#fdf6e3;border:1px solid #ecdca0;border-radius:7px;padding:4px 11px;">⚠ feuille non mappée</span>
@@ -317,7 +320,7 @@
                                                     <ui:repeat value="#{m.columnAliases}" var="c">
                                                         <!-- unmapped column → yellow bg + warning ; alias ≠ canonical → light orange ; normal → plain -->
                                                         <div class="mapping-col-grid"
-                                                             style="#{c.columnUnmapped ? 'background:#fffdf4;' : (c.alias ne c.canonical ? 'background:#fffbf0;' : '')}">
+                                                             style="#{c.columnUnmapped ? 'background:#fffdf4;' : ''}">
                                                             <span style="font-weight:#{c.columnUnmapped or (c.alias ne c.canonical) ? '600' : '400'};">#{c.alias}</span>
                                                             <span style="color:#c4c4c0;text-align:center;">→</span>
                                                             <h:panelGroup rendered="#{!c.columnUnmapped}">

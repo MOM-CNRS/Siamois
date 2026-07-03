@@ -19,6 +19,13 @@ public final class ImportSchema {
     public static final String SIAMOIS_SYSTEM = "siamois system";
     public static final String DESCRIPTION    = "description";
 
+    public static final String ACTION_UNIT = "action_unit";
+    public static final String SPATIAL_UNIT = "spatial_unit";
+    public static final String RECORDING_UNIT = "recording_unit";
+    public static final String SPECIMEN = "specimen";
+    public static final String PHASE = "phase";
+    public static final String RECORDING_REL = "recordingRel";
+    public static final String STRATI_REL = "stratiRel";
     /**
      * Maps technical table ID → default French sheet name for workbooks without a _meta sheet
      * (or for tables not covered by an explicit _meta sheet entry).
@@ -30,13 +37,13 @@ public final class ImportSchema {
             Map.entry(INSTITUTION,      "Institution"),
             Map.entry(PERSON,           "Personne"),
             Map.entry("code",           "Code"),
-            Map.entry("action_unit",    "Unite action"),
-            Map.entry("spatial_unit",   "Unité spatiale"),
-            Map.entry("recording_unit", "UE"),
-            Map.entry("specimen",       "Prelev"),
-            Map.entry("phase",          "Phase"),
-            Map.entry("recordingRel",   "UE_rel"),
-            Map.entry("stratiRel",      "Strati_Rel")
+            Map.entry(ACTION_UNIT,    "Unite action"),
+            Map.entry(SPATIAL_UNIT,   "Unité spatiale"),
+            Map.entry(RECORDING_UNIT, "UE"),
+            Map.entry(SPECIMEN,       "Prelev"),
+            Map.entry(PHASE,          "Phase"),
+            Map.entry(RECORDING_REL,   "UE_rel"),
+            Map.entry(STRATI_REL,      "Strati_Rel")
     );
 
     /**
@@ -47,13 +54,13 @@ public final class ImportSchema {
             Map.entry(INSTITUTION,      "Institution"),
             Map.entry(PERSON,           "Personne"),
             Map.entry("code",           "Code"),
-            Map.entry("action_unit",    "Unité d'action"),
-            Map.entry("spatial_unit",   "Lieu"),
-            Map.entry("recording_unit", "UE"),
-            Map.entry("specimen",       "Mobilier"),
-            Map.entry("phase",          "Phase"),
-            Map.entry("recordingRel",   "Relations UE"),
-            Map.entry("stratiRel",      "Stratigraphie")
+            Map.entry(ACTION_UNIT,    "Unité d'action"),
+            Map.entry(SPATIAL_UNIT,   "Lieu"),
+            Map.entry(RECORDING_UNIT, "UE"),
+            Map.entry(SPECIMEN,       "Mobilier"),
+            Map.entry(PHASE,          "Phase"),
+            Map.entry(RECORDING_REL,   "Relations UE"),
+            Map.entry(STRATI_REL,      "Stratigraphie")
     );
 
     /** Maps technical table ID → canonical column names expected for that entity. */
@@ -61,22 +68,22 @@ public final class ImportSchema {
             Map.entry(INSTITUTION,      List.of("nom", DESCRIPTION, IDENTIFIANT, "email admins", "thesaurus")),
             Map.entry(PERSON,           List.of("email", "nom", "prenom", IDENTIFIANT)),
             Map.entry("code",           List.of("code", TYPE_URI)),
-            Map.entry("action_unit",    List.of("nom", IDENTIFIANT, "code", TYPE_URI, "createur", INSTITUTION,
+            Map.entry(ACTION_UNIT,    List.of("nom", IDENTIFIANT, "code", TYPE_URI, "createur", INSTITUTION,
                                                 "contexte spatiale", "date debut", "date fin", "localisation principale")),
-            Map.entry("spatial_unit",   List.of("nom", "uri type", INSTITUTION, "enfants")),
-            Map.entry("recording_unit", List.of(IDENTIFIANT, DESCRIPTION, TYPE_URI, "cycle uri", "agent uri",
+            Map.entry(SPATIAL_UNIT,   List.of("nom", "uri type", INSTITUTION, "enfants")),
+            Map.entry(RECORDING_UNIT, List.of(IDENTIFIANT, DESCRIPTION, TYPE_URI, "cycle uri", "agent uri",
                                                 "interpretation uri", "author email", INSTITUTION,
                                                 "contributeurs email", "date d'ouverture", "date de fermeture",
                                                 "unite spatiale", "unite d'action",
                                                 "couleur de la matrice", "texture de la matrice", "composition de la matrice",
                                                 "phases")),
-            Map.entry("specimen",       List.of(IDENTIFIANT, INSTITUTION, "auteur fiche email",
+            Map.entry(SPECIMEN,       List.of(IDENTIFIANT, INSTITUTION, "auteur fiche email",
                                                 "matiere", "categorie", "designation",
                                                 "collecteurs emails", "unite d'enregistrement")),
-            Map.entry("phase",          List.of(IDENTIFIANT, "titre", TYPE_URI, DESCRIPTION,
+            Map.entry(PHASE,          List.of(IDENTIFIANT, "titre", TYPE_URI, DESCRIPTION,
                                                 "ordre", "borne inferieure", "borne superieure",
                                                 "auteur", "projet", INSTITUTION)),
-            Map.entry("recordingRel",   List.of("parent", "enfant")),
-            Map.entry("stratiRel",      List.of("us1", "us2", "relation", "direction vocabulaire", "asynchrone", "incertain"))
+            Map.entry(RECORDING_REL,   List.of("parent", "enfant")),
+            Map.entry(STRATI_REL,      List.of("us1", "us2", "relation", "direction vocabulaire", "asynchrone", "incertain"))
     );
 }

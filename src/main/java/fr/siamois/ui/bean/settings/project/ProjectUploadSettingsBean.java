@@ -4,12 +4,7 @@ package fr.siamois.ui.bean.settings.project;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
-import fr.siamois.infrastructure.dataimport.ExcelCellHelper;
-import fr.siamois.infrastructure.dataimport.ImportError;
-import fr.siamois.infrastructure.dataimport.ImportResult;
-import fr.siamois.infrastructure.dataimport.ImportSchema;
-import fr.siamois.infrastructure.dataimport.OOXMLImportService;
-import fr.siamois.infrastructure.dataimport.SheetMetadata;
+import fr.siamois.infrastructure.dataimport.*;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Data;
@@ -32,7 +27,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
@@ -51,6 +45,10 @@ public class ProjectUploadSettingsBean {
         public boolean hasAliases() { return !columnAliases.isEmpty(); }
         /** French label for the table this sheet maps to (falls back to the technical ID if unknown). */
         public String getTableLabel() { return ImportSchema.TABLE_LABELS.getOrDefault(tableId, tableId); }
+        public int getUnmappedColumnCount() {
+            return (int) columnAliases.stream().filter(ColumnAliasView::isColumnUnmapped).count();
+        }
+        public boolean isHasUnmappedColumns() { return getUnmappedColumnCount() > 0; }
     }
 
     @Value
@@ -209,11 +207,10 @@ public class ProjectUploadSettingsBean {
 
     /** Unmapped columns within recognized sheets (columns of an already-unmapped sheet aren't counted twice). */
     public int getUnmappedColumnCount() {
-        return (int) getSheetMappings().stream()
+        return getSheetMappings().stream()
                 .filter(m -> !m.isUnmapped())
-                .flatMap(m -> m.getColumnAliases().stream())
-                .filter(ColumnAliasView::isColumnUnmapped)
-                .count();
+                .mapToInt(SheetMappingView::getUnmappedColumnCount)
+                .sum();
     }
 
     // ─── Errors ─────────────────────────────────────────────────────────────
