@@ -226,25 +226,45 @@
                                       style="background-color: white;"/>
                         </div>
 
-                        <!-- ===== FILE UPLOAD (drag-and-drop) — affiché seulement sans fichier chargé ===== -->
-                        <h:panelGroup rendered="#{projectUploadSettingsBean.importResult == null}">
-                            <div class="custom-upload-container">
-                                <p:fileUpload listener="#{projectUploadSettingsBean.handleFileUpload}"
-                                              mode="advanced"
-                                              dragDrop="true"
-                                              auto="true"
-                                              update="messages, projectImportForm:uploadOverview, projectImportForm:stickyBar"
-                                              allowTypes="/(\.|\/)(xlsx|xls)$/"
-                                              invalidSizeMessage="Le fichier dépasse la limite de 10 Mo."
-                                              invalidFileMessage="Seuls les fichiers .xlsx et .xls sont autorisés."
-                                              styleClass="modern-dropzone"
-                                              label="Faire glisser le fichier ici ou cliquer pour chercher un fichier"/>
-                                <p:growl id="messages" showDetail="true" keepAlive="true"/>
-                            </div>
-                            <div class="format-hint">Format accepté : <b
-                                    style="color:#999;">.xlsx</b> uniquement, un fichier à la fois.
-                            </div>
-                        </h:panelGroup>
+                        <!-- ===== UPLOAD / PROGRESS — one umbrella panel so toggling between dropzone and
+                             progress bar (and the growl nested in the dropzone) always re-renders together ===== -->
+                        <p:outputPanel id="uploadPhase" style="display: flex; flex-direction: column; gap:16px;">
+                            <!-- FILE UPLOAD (drag-and-drop) — affiché seulement sans fichier chargé ni import en cours -->
+                            <h:panelGroup rendered="#{projectUploadSettingsBean.importResult == null and !projectUploadSettingsBean.progress.running}">
+                                <div class="custom-upload-container">
+                                    <p:fileUpload listener="#{projectUploadSettingsBean.handleFileUpload}"
+                                                  mode="advanced"
+                                                  dragDrop="true"
+                                                  auto="true"
+                                                  update="projectImportForm:uploadPhase, projectImportForm:uploadOverview, projectImportForm:stickyBar"
+                                                  allowTypes="/(\.|\/)(xlsx|xls)$/"
+                                                  invalidSizeMessage="Le fichier dépasse la limite de 10 Mo."
+                                                  invalidFileMessage="Seuls les fichiers .xlsx et .xls sont autorisés."
+                                                  styleClass="modern-dropzone"
+                                                  label="Faire glisser le fichier ici ou cliquer pour chercher un fichier"/>
+                                    <p:growl id="messages" showDetail="true" keepAlive="true"/>
+                                </div>
+                                <div class="format-hint">Format accepté : <b
+                                        style="color:#999;">.xlsx</b> uniquement, un fichier à la fois.
+                                </div>
+                            </h:panelGroup>
+
+                            <!-- IMPORT IN PROGRESS (parse or persist phase) -->
+                            <h:panelGroup rendered="#{projectUploadSettingsBean.progress.running}">
+                                <div class="import-card" style="padding:16px 18px;">
+                                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:#666;font-weight:600;">
+                                        <span>#{projectUploadSettingsBean.progress.parsing ? 'Étape 1/2 : Analyse du fichier' : 'Étape 2/2 : Import en base'}</span>
+                                        <span>#{projectUploadSettingsBean.progress.current} / #{projectUploadSettingsBean.progress.total}</span>
+                                    </div>
+                                    <p:progressBar value="#{projectUploadSettingsBean.progress.percentage}"
+                                                   labelTemplate="{value}%"
+                                                   style="height:10px;"/>
+                                </div>
+                                <p:poll interval="1"
+                                        listener="#{projectUploadSettingsBean.pollProgress}"
+                                        update="projectImportForm:uploadPhase, projectImportForm:uploadOverview, projectImportForm:stickyBar"/>
+                            </h:panelGroup>
+                        </p:outputPanel>
 
                         <!-- ===== POST-UPLOAD SECTIONS ===== -->
                         <p:outputPanel id="uploadOverview" style="display: flex; flex-direction: column; gap:1rem">
@@ -371,6 +391,9 @@
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
+                                                <h:panelGroup rendered="#{projectUploadSettingsBean.lieuTab.errorsCapped}">
+                                                    <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
+                                                </h:panelGroup>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{!projectUploadSettingsBean.lieuTab.hasErrors()}">
                                                 <div class="success-row"><span
@@ -403,6 +426,9 @@
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
+                                                <h:panelGroup rendered="#{projectUploadSettingsBean.ueTab.errorsCapped}">
+                                                    <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
+                                                </h:panelGroup>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{!projectUploadSettingsBean.ueTab.hasErrors()}">
                                                 <div class="success-row"><span
@@ -435,6 +461,9 @@
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
+                                                <h:panelGroup rendered="#{projectUploadSettingsBean.ueRelTab.errorsCapped}">
+                                                    <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
+                                                </h:panelGroup>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{!projectUploadSettingsBean.ueRelTab.hasErrors()}">
                                                 <div class="success-row"><span
@@ -468,6 +497,9 @@
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
+                                                <h:panelGroup rendered="#{projectUploadSettingsBean.stratiTab.errorsCapped}">
+                                                    <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
+                                                </h:panelGroup>
                                             </h:panelGroup>
                                             <h:panelGroup
                                                     rendered="#{!projectUploadSettingsBean.stratiTab.hasErrors()}">
@@ -501,6 +533,9 @@
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
+                                                <h:panelGroup rendered="#{projectUploadSettingsBean.mobTab.errorsCapped}">
+                                                    <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
+                                                </h:panelGroup>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{!projectUploadSettingsBean.mobTab.hasErrors()}">
                                                 <div class="success-row"><span
@@ -533,6 +568,9 @@
                                                             style="color:#666;">#{e.column()}</span><span
                                                             style="color:#555;">#{e.message()}</span></div>
                                                 </ui:repeat>
+                                                <h:panelGroup rendered="#{projectUploadSettingsBean.phaseTab.errorsCapped}">
+                                                    <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
+                                                </h:panelGroup>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{!projectUploadSettingsBean.phaseTab.hasErrors()}">
                                                 <div class="success-row"><span
@@ -564,9 +602,9 @@
                     <p:commandButton
                             rendered="#{projectUploadSettingsBean.importResult != null and projectUploadSettingsBean.totalImportRows > 0}"
                             value="#{projectUploadSettingsBean.importButtonLabel}"
-                            disabled="#{projectUploadSettingsBean.importBlocked}"
+                            disabled="#{projectUploadSettingsBean.importBlocked or projectUploadSettingsBean.progress.running}"
                             action="#{projectUploadSettingsBean.uploadSpec()}"
-                            update="projectImportForm:uploadOverview, projectImportForm:stickyBar"/>
+                            update="projectImportForm:uploadOverview, projectImportForm:stickyBar, projectImportForm:uploadPhase"/>
                     <p:commandButton
                             rendered="#{projectUploadSettingsBean.importResult != null and projectUploadSettingsBean.totalImportRows == 0}"
                             value="Rien à importer"

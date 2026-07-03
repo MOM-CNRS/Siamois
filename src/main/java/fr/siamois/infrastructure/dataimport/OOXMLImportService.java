@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.domain.models.misc.ImportProgress;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -161,10 +162,38 @@ public class OOXMLImportService {
     }
 
     public ImportResult importFromExcel(InputStream is, ImportScope scope, ActionUnitDTO actionUnitDTO) throws IOException {
+        return importFromExcel(is, scope, actionUnitDTO, new ImportProgress());
+    }
+
+    public ImportResult importFromExcel(InputStream is, ImportScope scope, ActionUnitDTO actionUnitDTO, ImportProgress progress) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(is)) {
 
             SheetMetadata meta = readSheetMetadata(workbook);
             List<ImportError> errors = new ArrayList<>();
+
+            List<Sheet> institutionSheets  = scope == ImportScope.ALL ? getSheetsForTable(workbook, meta, INSTITUTION) : List.of();
+            List<Sheet> personSheets       = scope == ImportScope.ALL ? getSheetsForTable(workbook, meta, PERSON) : List.of();
+            List<Sheet> actionCodeSheets   = scope == ImportScope.ALL ? getSheetsForTable(workbook, meta, "code") : List.of();
+            List<Sheet> actionUnitSheets   = scope == ImportScope.ALL ? getSheetsForTable(workbook, meta, "action_unit") : List.of();
+            List<Sheet> spatialUnitSheets  = getSheetsForTable(workbook, meta, "spatial_unit");
+            List<Sheet> recordingUnitSheets = getSheetsForTable(workbook, meta, "recording_unit");
+            List<Sheet> specimenSheets     = getSheetsForTable(workbook, meta, "specimen");
+            List<Sheet> phaseSheets        = getSheetsForTable(workbook, meta, "phase");
+            List<Sheet> recordingRelSheets = getSheetsForTable(workbook, meta, "recordingRel");
+            List<Sheet> stratiRelSheets    = getSheetsForTable(workbook, meta, "stratiRel");
+
+            int institutionRows = sumDataRows(institutionSheets);
+            int personRows = sumDataRows(personSheets);
+            int actionCodeRows = sumDataRows(actionCodeSheets);
+            int actionUnitRows = sumDataRows(actionUnitSheets);
+            int spatialUnitRows = sumDataRows(spatialUnitSheets);
+            int recordingUnitRows = sumDataRows(recordingUnitSheets);
+            int specimenRows = sumDataRows(specimenSheets);
+            int phaseRows = sumDataRows(phaseSheets);
+            int recordingRelRows = sumDataRows(recordingRelSheets);
+            int stratiRelRows = sumDataRows(stratiRelSheets);
+            progress.start(ImportProgress.Phase.PARSING, institutionRows + personRows + actionCodeRows + actionUnitRows
+                    + spatialUnitRows + recordingUnitRows + specimenRows + phaseRows + recordingRelRows + stratiRelRows);
 
             List<InstitutionSeeder.InstitutionSpec>             institutions  = new ArrayList<>();
             List<PersonSeeder.PersonSpec>                       persons       = new ArrayList<>();
@@ -172,18 +201,28 @@ public class OOXMLImportService {
             List<ActionUnitSeeder.ActionUnitSpecs>              actionUnits   = new ArrayList<>();
 
             if (scope == ImportScope.ALL) {
-                institutions = parseInstitutions(getSheetsForTable(workbook, meta, INSTITUTION), meta, errors);
-                persons      = parsePersons(getSheetsForTable(workbook, meta, PERSON), meta, errors);
-                actionCodes  = parseActionCodes(getSheetsForTable(workbook, meta, "code"), meta, errors);
-                actionUnits  = parseActionUnits(getSheetsForTable(workbook, meta, "action_unit"), meta, errors);
+                institutions = parseInstitutions(institutionSheets, meta, errors);
+                progress.advance(institutionRows);
+                persons      = parsePersons(personSheets, meta, errors);
+                progress.advance(personRows);
+                actionCodes  = parseActionCodes(actionCodeSheets, meta, errors);
+                progress.advance(actionCodeRows);
+                actionUnits  = parseActionUnits(actionUnitSheets, meta, errors);
+                progress.advance(actionUnitRows);
             }
 
-            List<SpatialUnitSeeder.SpatialUnitSpecs>                          spatialUnits   = parseSpatialUnits(getSheetsForTable(workbook, meta, "spatial_unit"), actionUnitDTO, meta, errors);
-            List<RecordingUnitSeeder.RecordingUnitSpecs>                      recordingUnits = parseRecordingUnits(getSheetsForTable(workbook, meta, "recording_unit"), scope, actionUnitDTO, meta, errors);
-            List<SpecimenSeeder.SpecimenSpecs>                                specimenSpecs  = parseSpecimens(getSheetsForTable(workbook, meta, "specimen"), actionUnitDTO, meta, errors);
-            List<PhaseSeeder.PhaseSpecs>                                      phaseSpecs     = parsePhases(getSheetsForTable(workbook, meta, "phase"), actionUnitDTO, meta, errors);
-            List<RecordingUnitRelSeeder.RecordingUnitRelDTO>                  recordingRels  = parseRecordingRels(getSheetsForTable(workbook, meta, "recordingRel"), meta, errors);
-            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO>      stratiRels     = parseStratiRels(getSheetsForTable(workbook, meta, "stratiRel"), actionUnitDTO, meta, errors);
+            List<SpatialUnitSeeder.SpatialUnitSpecs>                          spatialUnits   = parseSpatialUnits(spatialUnitSheets, actionUnitDTO, meta, errors);
+            progress.advance(spatialUnitRows);
+            List<RecordingUnitSeeder.RecordingUnitSpecs>                      recordingUnits = parseRecordingUnits(recordingUnitSheets, scope, actionUnitDTO, meta, errors);
+            progress.advance(recordingUnitRows);
+            List<SpecimenSeeder.SpecimenSpecs>                                specimenSpecs  = parseSpecimens(specimenSheets, actionUnitDTO, meta, errors);
+            progress.advance(specimenRows);
+            List<PhaseSeeder.PhaseSpecs>                                      phaseSpecs     = parsePhases(phaseSheets, actionUnitDTO, meta, errors);
+            progress.advance(phaseRows);
+            List<RecordingUnitRelSeeder.RecordingUnitRelDTO>                  recordingRels  = parseRecordingRels(recordingRelSheets, meta, errors);
+            progress.advance(recordingRelRows);
+            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO>      stratiRels     = parseStratiRels(stratiRelSheets, actionUnitDTO, meta, errors);
+            progress.advance(stratiRelRows);
 
             ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
                     recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels);
@@ -192,6 +231,14 @@ public class OOXMLImportService {
 
             return new ImportResult(specs, errors, meta, allSheetColumns);
         }
+    }
+
+    private int sumDataRows(List<Sheet> sheets) {
+        int sum = 0;
+        for (Sheet s : sheets) {
+            sum += Math.max(0, s.getLastRowNum());
+        }
+        return sum;
     }
 
     /**

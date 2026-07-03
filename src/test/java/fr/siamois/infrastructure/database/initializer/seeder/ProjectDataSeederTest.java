@@ -131,7 +131,7 @@ class ProjectDataSeederTest {
         doThrow(new IllegalStateException("spatial error"))
                 .when(spatialUnitSeeder).seed(any());
 
-        assertThrows(IllegalStateException.class, () -> seeder.seedAll(emptySpecs, project));
+        assertThrows(SeedException.class, () -> seeder.seedAll(emptySpecs, project));
 
         verifyNoInteractions(phaseSeeder, recordingUnitSeeder, specimenSeeder,
                 recordingUnitStratiRelSeeder, recordingUnitRelSeeder);
@@ -142,7 +142,7 @@ class ProjectDataSeederTest {
         doThrow(new IllegalStateException("phase error"))
                 .when(phaseSeeder).seed(any());
 
-        assertThrows(IllegalStateException.class, () -> seeder.seedAll(emptySpecs, project));
+        assertThrows(SeedException.class, () -> seeder.seedAll(emptySpecs, project));
 
         verify(spatialUnitSeeder).seed(any());
         verifyNoInteractions(recordingUnitSeeder, specimenSeeder,
@@ -154,7 +154,7 @@ class ProjectDataSeederTest {
         doThrow(new IllegalStateException("ru error"))
                 .when(recordingUnitSeeder).seed(any());
 
-        assertThrows(IllegalStateException.class, () -> seeder.seedAll(emptySpecs, project));
+        assertThrows(SeedException.class, () -> seeder.seedAll(emptySpecs, project));
 
         verify(spatialUnitSeeder).seed(any());
         verify(phaseSeeder).seed(any());
@@ -166,7 +166,7 @@ class ProjectDataSeederTest {
         doThrow(new IllegalStateException("specimen error"))
                 .when(specimenSeeder).seed(any(), anyLong());
 
-        assertThrows(IllegalStateException.class, () -> seeder.seedAll(emptySpecs, project));
+        assertThrows(SeedException.class, () -> seeder.seedAll(emptySpecs, project));
 
         verify(spatialUnitSeeder).seed(any());
         verify(phaseSeeder).seed(any());

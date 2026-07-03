@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 
 public final class ExcelCellHelper {
 
+    /** Global cap on collected parse errors across the whole import, to bound memory on pathological files. */
+    public static final int MAX_ERRORS = 200;
+
     private ExcelCellHelper() {}
 
     public static Map<String, Integer> indexColumns(Row header) {
@@ -127,7 +130,9 @@ public final class ExcelCellHelper {
                 try {
                     consumer.accept(row);
                 } catch (Exception e) {
-                    errors.add(ImportError.forRow(sheet.getSheetName(), r + 1, e.getMessage()));
+                    if (errors.size() < MAX_ERRORS) {
+                        errors.add(ImportError.forRow(sheet.getSheetName(), r + 1, e.getMessage()));
+                    }
                 }
             }
         }

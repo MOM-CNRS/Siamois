@@ -2,6 +2,8 @@ package fr.siamois.ui.bean.settings.project;
 
 
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.services.dataimport.ImportAsyncRunner;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.SeedException;
@@ -39,6 +41,9 @@ public class ProjectUploadSettingsBean {
     public static final String TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL = "templateFormCC:templateForm:templateGrowl";
     public static final String FEUILLE = " feuille";
     public static final String ERREUR = " erreur";
+    private static final String SEVERITY_ERROR = "error";
+    private static final String SEVERITY_WARN = "warn";
+    private static final String SEVERITY_INFO = "info";
     public static final String PHASE = "phase";
     public static final String STRATI = "strati";
     public static final String UE_REL = "uerel";
@@ -74,10 +79,13 @@ public class ProjectUploadSettingsBean {
         int totalCount;
         public int getErrorCount() { return errors.size(); }
         public boolean hasErrors() { return !errors.isEmpty(); }
+        /** True when this tab's errors hit the global collection cap — some errors from this sheet may not be shown. */
+        public boolean isErrorsCapped() { return errors.size() >= ExcelCellHelper.MAX_ERRORS; }
     }
 
     private final OOXMLImportService importService;
     private final ProjectDataSeeder seeder;
+    private final ImportAsyncRunner asyncRunner;
 
     ActionUnitDTO project;
     UploadedFile originalFile;
@@ -87,6 +95,15 @@ public class ProjectUploadSettingsBean {
     boolean readyToUpload = false;
     String uploadedFileName = "";
     long uploadedFileSize = 0;
+
+    final ImportProgress progress = new ImportProgress();
+    // set by the background parse/persist task once it finishes, flushed to a real growl message
+    // by pollProgress() — never touched from the background thread itself, since FacesContext is
+    // thread-local to the request thread and would be null/stale there.
+    private volatile String pendingGrowlSeverity;
+    private volatile String pendingGrowlTarget;
+    private volatile String pendingGrowlSummary;
+    private volatile String pendingGrowlDetail;
 
     public void init(ActionUnitDTO project) {
         reset();
@@ -374,26 +391,40 @@ public class ProjectUploadSettingsBean {
     }
 
     // ─── Upload / persistence ────────────────────────────────────────────────
+    // Both phases run on a background thread (ImportAsyncRunner) so the UI can poll ImportProgress
+    // for live status. The async callbacks below only ever touch plain bean fields — never
+    // FacesContext/PrimeFaces, which are thread-local to the JSF request thread and would be
+    // null/stale from a background thread. Growl messages are queued as "pending" and flushed by
+    // pollProgress(), which runs on a real p:poll request thread.
 
     public void uploadSpec() {
-        if (importResult == null || isImportBlocked()) return;
-        try {
-            seeder.seedAll(importResult.specs(), project);
-            FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Données importées avec succès", null));
-            PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
-            reset();
-        } catch (SeedException e) {
-            persistenceErrors.add(new ImportError(e.getTableId(), 0, "—", e.getMessage()));
-            readyToUpload = false;
-            // panels re-render via the button's update attribute
-        } catch (Exception e) {
+        if (importResult == null || isImportBlocked() || progress.isRunning()) return;
+        persistenceErrors = new ArrayList<>();
+        // set synchronously, before dispatching, so the initiating request's own response already
+        // reflects PERSISTING — otherwise the progress panel/p:poll might not render on the first
+        // response if the background thread hasn't reached its own progress.start(...) call yet,
+        // and nothing would ever refresh the view again.
+        progress.start(ImportProgress.Phase.PERSISTING, 0);
+        asyncRunner.persistAsync(importResult.specs(), project, progress, this::onPersistSuccess, this::onPersistError);
+    }
+
+    private void onPersistSuccess() {
+        setPendingGrowl(SEVERITY_INFO, TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL, "Données importées avec succès", null);
+        reset(); // pure field resets, no FacesContext — safe here; progress itself is reset separately by pollProgress()
+    }
+
+    private void onPersistError(Exception e) {
+        if (e instanceof SeedException se) {
+            persistenceErrors.add(new ImportError(se.getTableId(), 0, "—", se.getMessage()));
+        } else {
             persistenceErrors.add(new ImportError("Import", 0, "—", e.getMessage()));
-            readyToUpload = false;
         }
+        readyToUpload = false;
+        // panels re-render via the poll's update attribute
     }
 
     public void handleFileUpload(FileUploadEvent event) {
+        if (progress.isRunning()) return;
         this.originalFile = null;
         persistenceErrors = new ArrayList<>();
         UploadedFile file = event.getFile();
@@ -401,22 +432,62 @@ public class ProjectUploadSettingsBean {
         if (file != null && file.getFileName() != null) {
             uploadedFileName = file.getFileName();
             uploadedFileSize = file.getSize();
+            byte[] bytes;
             try (InputStream is = file.getInputStream()) {
-                this.importResult = importService.importFromExcel(is,
-                        OOXMLImportService.ImportScope.PROJECT,
-                        project);
-                readyToUpload = !importResult.hasErrors();
-
-                if (importResult.hasErrors()) {
-                    String msg = importResult.errors().size() + " ligne(s) ignorée(s) lors du chargement";
-                    FacesContext.getCurrentInstance().addMessage(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL,
-                            new FacesMessage(FacesMessage.SEVERITY_WARN, "Import partiel", msg));
-                    PrimeFaces.current().ajax().update(TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL);
-                }
-            } catch (Exception e) {
-                FacesContext.getCurrentInstance().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erreur", "Échec du chargement du fichier : " + e.getMessage()));
+                bytes = is.readAllBytes();
+            } catch (IOException e) {
+                onParseError(e);
+                return;
             }
+            progress.start(ImportProgress.Phase.PARSING, 0);
+            asyncRunner.parseAsync(bytes, OOXMLImportService.ImportScope.PROJECT, project, progress,
+                    this::onParseSuccess, this::onParseError);
         }
+    }
+
+    private void onParseSuccess(ImportResult result) {
+        this.importResult = result;
+        this.readyToUpload = !result.hasErrors();
+        if (result.hasErrors()) {
+            String msg = result.errors().size() + " ligne(s) ignorée(s) lors du chargement";
+            setPendingGrowl(SEVERITY_WARN, TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL, "Import partiel", msg);
+        }
+    }
+
+    private void onParseError(Exception e) {
+        setPendingGrowl(SEVERITY_ERROR, null, "Erreur", "Échec du chargement du fichier : " + e.getMessage());
+    }
+
+    private void setPendingGrowl(String severity, String target, String summary, String detail) {
+        pendingGrowlSeverity = severity;
+        pendingGrowlTarget = target;
+        pendingGrowlSummary = summary;
+        pendingGrowlDetail = detail;
+    }
+
+    /** Bound to p:poll — runs on a real request thread, so this is where the pending growl (if any) is safely flushed. */
+    public void pollProgress() {
+        if (progress.isFinished()) {
+            flushPendingGrowl();
+            progress.reset();
+        }
+    }
+
+    private void flushPendingGrowl() {
+        if (pendingGrowlSeverity == null) return;
+        FacesMessage.Severity sev = switch (pendingGrowlSeverity) {
+            case SEVERITY_WARN -> FacesMessage.SEVERITY_WARN;
+            case SEVERITY_ERROR -> FacesMessage.SEVERITY_ERROR;
+            default -> FacesMessage.SEVERITY_INFO;
+        };
+        FacesContext.getCurrentInstance().addMessage(pendingGrowlTarget,
+                new FacesMessage(sev, pendingGrowlSummary, pendingGrowlDetail));
+        if (pendingGrowlTarget != null) {
+            PrimeFaces.current().ajax().update(pendingGrowlTarget);
+        }
+        pendingGrowlSeverity = null;
+        pendingGrowlTarget = null;
+        pendingGrowlSummary = null;
+        pendingGrowlDetail = null;
     }
 }
