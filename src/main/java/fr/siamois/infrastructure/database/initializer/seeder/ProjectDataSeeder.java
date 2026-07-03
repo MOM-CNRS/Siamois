@@ -32,8 +32,9 @@ public class ProjectDataSeeder {
         progress.advance(spec.spatialUnits().size());
         seedStep(ImportSchema.PHASE, () -> phaseSeeder.seed(spec.phaseSpecs()));
         progress.advance(spec.phaseSpecs().size());
-        seedStep(ImportSchema.RECORDING_UNIT, () -> recordingUnitSeeder.seed(spec.recordingUnits()));
-        progress.advance(spec.recordingUnits().size());
+        // RecordingUnitSeeder self-reports progress per 100-row flush/clear chunk internally
+        // (it's the only bulk-refactored seeder so far) — don't also advance here, that would double-count.
+        seedStep(ImportSchema.RECORDING_UNIT, () -> recordingUnitSeeder.seed(spec.recordingUnits(), progress));
         seedStep(ImportSchema.SPECIMEN, () -> specimenSeeder.seed(spec.specimenSpecs(), project.getCreatedByInstitution().getId()));
         progress.advance(spec.specimenSpecs().size());
         seedStep(ImportSchema.STRATI_REL, () -> recordingUnitStratiRelSeeder.seed(spec.recordingUnitStratiRelSpecs(),

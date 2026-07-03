@@ -7,6 +7,7 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,17 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
                     "WHERE LOWER(v.externalVocabularyId) = LOWER(:idt) AND LOWER(c.externalId) = LOWER(:idc)"
     )
     Optional<Concept> findConceptByExternalIdIgnoreCase(String idt, String idc);
+
+    /**
+     * Bulk variant of {@link #findConceptByExternalIdIgnoreCase} — one query per distinct vocabulary
+     * rather than one per concept. Callers should lowercase {@code lowerIdcs} themselves.
+     */
+    @Query(
+            "SELECT c FROM Concept c " +
+                    "JOIN c.vocabulary v " +
+                    "WHERE LOWER(v.externalVocabularyId) = LOWER(:idt) AND LOWER(c.externalId) IN (:lowerIdcs)"
+    )
+    List<Concept> findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(String idt, Collection<String> lowerIdcs);
 
     /**
      * Find the top term configuration for a field code of a user.

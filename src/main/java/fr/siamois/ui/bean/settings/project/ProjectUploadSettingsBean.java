@@ -439,7 +439,7 @@ public class ProjectUploadSettingsBean {
                 onParseError(e);
                 return;
             }
-            progress.start(ImportProgress.Phase.PARSING, 0);
+            progress.start(ImportProgress.Phase.OPENING, 0);
             asyncRunner.parseAsync(bytes, OOXMLImportService.ImportScope.PROJECT, project, progress,
                     this::onParseSuccess, this::onParseError);
         }

@@ -55,7 +55,7 @@ class ProjectDataSeederTest {
 
         verify(spatialUnitSeeder).seed(emptySpecs.spatialUnits());
         verify(phaseSeeder).seed(emptySpecs.phaseSpecs());
-        verify(recordingUnitSeeder).seed(emptySpecs.recordingUnits());
+        verify(recordingUnitSeeder).seed(eq(emptySpecs.recordingUnits()), any());
         verify(specimenSeeder).seed(emptySpecs.specimenSpecs(), 42L);
         verify(recordingUnitStratiRelSeeder).seed(emptySpecs.recordingUnitStratiRelSpecs(), 42L, "UA-FULL-001");
         verify(recordingUnitRelSeeder).seed(emptySpecs.recordingUnitRelSpecs(), 42L, "UA-FULL-001");
@@ -96,7 +96,7 @@ class ProjectDataSeederTest {
 
         verify(spatialUnitSeeder).seed(same(emptySpecs.spatialUnits()));
         verify(phaseSeeder).seed(same(emptySpecs.phaseSpecs()));
-        verify(recordingUnitSeeder).seed(same(emptySpecs.recordingUnits()));
+        verify(recordingUnitSeeder).seed(same(emptySpecs.recordingUnits()), any());
         verify(specimenSeeder).seed(same(emptySpecs.specimenSpecs()), eq(42L));
         verify(recordingUnitStratiRelSeeder).seed(same(emptySpecs.recordingUnitStratiRelSpecs()), anyLong(), anyString());
         verify(recordingUnitRelSeeder).seed(same(emptySpecs.recordingUnitRelSpecs()), anyLong(), anyString());
@@ -116,7 +116,7 @@ class ProjectDataSeederTest {
 
         order.verify(spatialUnitSeeder).seed(any());
         order.verify(phaseSeeder).seed(any());
-        order.verify(recordingUnitSeeder).seed(any());
+        order.verify(recordingUnitSeeder).seed(any(), any());
         order.verify(specimenSeeder).seed(any(), anyLong());
         order.verify(recordingUnitStratiRelSeeder).seed(any(), anyLong(), anyString());
         order.verify(recordingUnitRelSeeder).seed(any(), anyLong(), anyString());
@@ -152,7 +152,7 @@ class ProjectDataSeederTest {
     @Test
     void seedAll_recordingUnitSeederThrows_exceptionPropagatesAndSubsequentSeedersNotCalled() {
         doThrow(new IllegalStateException("ru error"))
-                .when(recordingUnitSeeder).seed(any());
+                .when(recordingUnitSeeder).seed(any(), any());
 
         assertThrows(SeedException.class, () -> seeder.seedAll(emptySpecs, project));
 
@@ -170,7 +170,7 @@ class ProjectDataSeederTest {
 
         verify(spatialUnitSeeder).seed(any());
         verify(phaseSeeder).seed(any());
-        verify(recordingUnitSeeder).seed(any());
+        verify(recordingUnitSeeder).seed(any(), any());
         verifyNoInteractions(recordingUnitStratiRelSeeder, recordingUnitRelSeeder);
     }
 }

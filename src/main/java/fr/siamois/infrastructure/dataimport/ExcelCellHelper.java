@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.domain.models.misc.ImportProgress;
 import fr.siamois.infrastructure.database.initializer.seeder.SpatialUnitSeeder;
 import org.apache.poi.ss.usermodel.*;
 
@@ -124,6 +125,10 @@ public final class ExcelCellHelper {
     }
 
     public static void forEachDataRow(Sheet sheet, List<ImportError> errors, Consumer<Row> consumer) {
+        forEachDataRow(sheet, errors, new ImportProgress(), consumer);
+    }
+
+    public static void forEachDataRow(Sheet sheet, List<ImportError> errors, ImportProgress progress, Consumer<Row> consumer) {
         for (int r = 1; r <= sheet.getLastRowNum(); r++) {
             Row row = sheet.getRow(r);
             if (row != null) {
@@ -134,6 +139,7 @@ public final class ExcelCellHelper {
                         errors.add(ImportError.forRow(sheet.getSheetName(), r + 1, e.getMessage()));
                     }
                 }
+                progress.increment();
             }
         }
     }

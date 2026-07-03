@@ -166,6 +166,7 @@ public class OOXMLImportService {
     }
 
     public ImportResult importFromExcel(InputStream is, ImportScope scope, ActionUnitDTO actionUnitDTO, ImportProgress progress) throws IOException {
+        progress.start(ImportProgress.Phase.OPENING, 0);
         try (Workbook workbook = WorkbookFactory.create(is)) {
 
             SheetMetadata meta = readSheetMetadata(workbook);
@@ -201,28 +202,18 @@ public class OOXMLImportService {
             List<ActionUnitSeeder.ActionUnitSpecs>              actionUnits   = new ArrayList<>();
 
             if (scope == ImportScope.ALL) {
-                institutions = parseInstitutions(institutionSheets, meta, errors);
-                progress.advance(institutionRows);
-                persons      = parsePersons(personSheets, meta, errors);
-                progress.advance(personRows);
-                actionCodes  = parseActionCodes(actionCodeSheets, meta, errors);
-                progress.advance(actionCodeRows);
-                actionUnits  = parseActionUnits(actionUnitSheets, meta, errors);
-                progress.advance(actionUnitRows);
+                institutions = parseInstitutions(institutionSheets, meta, errors, progress);
+                persons      = parsePersons(personSheets, meta, errors, progress);
+                actionCodes  = parseActionCodes(actionCodeSheets, meta, errors, progress);
+                actionUnits  = parseActionUnits(actionUnitSheets, meta, errors, progress);
             }
 
-            List<SpatialUnitSeeder.SpatialUnitSpecs>                          spatialUnits   = parseSpatialUnits(spatialUnitSheets, actionUnitDTO, meta, errors);
-            progress.advance(spatialUnitRows);
-            List<RecordingUnitSeeder.RecordingUnitSpecs>                      recordingUnits = parseRecordingUnits(recordingUnitSheets, scope, actionUnitDTO, meta, errors);
-            progress.advance(recordingUnitRows);
-            List<SpecimenSeeder.SpecimenSpecs>                                specimenSpecs  = parseSpecimens(specimenSheets, actionUnitDTO, meta, errors);
-            progress.advance(specimenRows);
-            List<PhaseSeeder.PhaseSpecs>                                      phaseSpecs     = parsePhases(phaseSheets, actionUnitDTO, meta, errors);
-            progress.advance(phaseRows);
-            List<RecordingUnitRelSeeder.RecordingUnitRelDTO>                  recordingRels  = parseRecordingRels(recordingRelSheets, meta, errors);
-            progress.advance(recordingRelRows);
-            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO>      stratiRels     = parseStratiRels(stratiRelSheets, actionUnitDTO, meta, errors);
-            progress.advance(stratiRelRows);
+            List<SpatialUnitSeeder.SpatialUnitSpecs>                          spatialUnits   = parseSpatialUnits(spatialUnitSheets, actionUnitDTO, meta, errors, progress);
+            List<RecordingUnitSeeder.RecordingUnitSpecs>                      recordingUnits = parseRecordingUnits(recordingUnitSheets, scope, actionUnitDTO, meta, errors, progress);
+            List<SpecimenSeeder.SpecimenSpecs>                                specimenSpecs  = parseSpecimens(specimenSheets, actionUnitDTO, meta, errors, progress);
+            List<PhaseSeeder.PhaseSpecs>                                      phaseSpecs     = parsePhases(phaseSheets, actionUnitDTO, meta, errors, progress);
+            List<RecordingUnitRelSeeder.RecordingUnitRelDTO>                  recordingRels  = parseRecordingRels(recordingRelSheets, meta, errors, progress);
+            List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO>      stratiRels     = parseStratiRels(stratiRelSheets, actionUnitDTO, meta, errors, progress);
 
             ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
                     recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels);
@@ -289,16 +280,16 @@ public class OOXMLImportService {
 
     public List<InstitutionSeeder.InstitutionSpec> parseInstitutions(Sheet sheet) {
         List<ImportError> errors = new ArrayList<>();
-        return parseInstitutions(List.of(sheet), SheetMetadata.empty(), errors);
+        return parseInstitutions(List.of(sheet), SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<InstitutionSeeder.InstitutionSpec> parseInstitutions(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+    public List<InstitutionSeeder.InstitutionSpec> parseInstitutions(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         List<InstitutionSeeder.InstitutionSpec> result = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 Row header = sheet.getRow(0);
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, row -> {
+                forEachDataRow(sheet, errors, progress, row -> {
                     String name = getStringCellOrNull(row, cols, "nom");
                     if (name == null || name.isBlank()) return;
                     String description = getStringCellOrNull(row, cols, DESCRIPTION);
@@ -320,16 +311,16 @@ public class OOXMLImportService {
 
     public List<PersonSeeder.PersonSpec> parsePersons(Sheet sheet) {
         List<ImportError> errors = new ArrayList<>();
-        return parsePersons(List.of(sheet), SheetMetadata.empty(), errors);
+        return parsePersons(List.of(sheet), SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<PersonSeeder.PersonSpec> parsePersons(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+    public List<PersonSeeder.PersonSpec> parsePersons(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         List<PersonSeeder.PersonSpec> result = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 Row header = sheet.getRow(0);
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, row -> {
+                forEachDataRow(sheet, errors, progress, row -> {
                     String email = getStringCellOrNull(row, cols, "email");
                     if (email == null || email.isBlank()) return;
                     result.add(new PersonSeeder.PersonSpec(
@@ -348,17 +339,17 @@ public class OOXMLImportService {
 
     public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet, ActionUnitDTO actionUnit) {
         List<ImportError> errors = new ArrayList<>();
-        return parseSpatialUnits(List.of(sheet), actionUnit, SheetMetadata.empty(), errors);
+        return parseSpatialUnits(List.of(sheet), actionUnit, SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors) {
+    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName = new LinkedHashMap<>();
         Map<String, String> childrenStringByName = new HashMap<>();
 
         for (Sheet sheet : sheets) {
             try {
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childrenStringByName));
+                forEachDataRow(sheet, errors, progress, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childrenStringByName));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -416,16 +407,16 @@ public class OOXMLImportService {
     public List<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRecordingRels(Sheet sheet) {
         if (sheet == null) return List.of();
         List<ImportError> errors = new ArrayList<>();
-        return parseRecordingRels(List.of(sheet), SheetMetadata.empty(), errors);
+        return parseRecordingRels(List.of(sheet), SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRecordingRels(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+    public List<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRecordingRels(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "parent", "enfant");
                 if (cols == null) continue;
-                forEachDataRow(sheet, errors, row -> parseRowToRecordingRel(row, cols).ifPresent(specs::add));
+                forEachDataRow(sheet, errors, progress, row -> parseRowToRecordingRel(row, cols).ifPresent(specs::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -462,18 +453,18 @@ public class OOXMLImportService {
     public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(Sheet sheet, @Nullable ActionUnitDTO actionUnit) {
         if (sheet == null) return List.of();
         List<ImportError> errors = new ArrayList<>();
-        return parseStratiRels(List.of(sheet), actionUnit, SheetMetadata.empty(), errors);
+        return parseStratiRels(List.of(sheet), actionUnit, SheetMetadata.empty(), errors, new ImportProgress());
     }
 
     public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(List<Sheet> sheets, @Nullable ActionUnitDTO actionUnit,
-                                                                                          SheetMetadata meta, List<ImportError> errors) {
+                                                                                          SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
         List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "us1", "us2");
                 if (cols == null) continue;
-                forEachDataRow(sheet, errors, row -> parseRowToStratiRel(row, cols, institutionDbId).ifPresent(specs::add));
+                forEachDataRow(sheet, errors, progress, row -> parseRowToStratiRel(row, cols, institutionDbId).ifPresent(specs::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -501,16 +492,16 @@ public class OOXMLImportService {
     public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(Sheet sheet) {
         if (sheet == null) return List.of();
         List<ImportError> errors = new ArrayList<>();
-        return parseActionCodes(List.of(sheet), SheetMetadata.empty(), errors);
+        return parseActionCodes(List.of(sheet), SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+    public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         List<ActionCodeSeeder.ActionCodeSpec> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "code", TYPE_URI);
                 if (cols == null) continue;
-                forEachDataRow(sheet, errors, row -> parseRowToActionCode(row, cols).ifPresent(specs::add));
+                forEachDataRow(sheet, errors, progress, row -> parseRowToActionCode(row, cols).ifPresent(specs::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -532,16 +523,16 @@ public class OOXMLImportService {
     public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(Sheet sheet) {
         if (sheet == null || sheet.getRow(0) == null) return List.of();
         List<ImportError> errors = new ArrayList<>();
-        return parseActionUnits(List.of(sheet), SheetMetadata.empty(), errors);
+        return parseActionUnits(List.of(sheet), SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors) {
+    public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         List<ActionUnitSeeder.ActionUnitSpecs> result = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 if (sheet.getRow(0) == null) continue;
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, row -> parseRowToActionUnit(row, cols).ifPresent(result::add));
+                forEachDataRow(sheet, errors, progress, row -> parseRowToActionUnit(row, cols).ifPresent(result::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -611,16 +602,16 @@ public class OOXMLImportService {
     public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(Sheet sheet, ImportScope scope, ActionUnitDTO actionUnit) {
         if (sheet == null || sheet.getRow(0) == null) return List.of();
         List<ImportError> errors = new ArrayList<>();
-        return parseRecordingUnits(List.of(sheet), scope, actionUnit, SheetMetadata.empty(), errors);
+        return parseRecordingUnits(List.of(sheet), scope, actionUnit, SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(List<Sheet> sheets, ImportScope scope, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors) {
+    public List<RecordingUnitSeeder.RecordingUnitSpecs> parseRecordingUnits(List<Sheet> sheets, ImportScope scope, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         List<RecordingUnitSeeder.RecordingUnitSpecs> result = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 if (sheet.getRow(0) == null) continue;
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, row ->
+                forEachDataRow(sheet, errors, progress, row ->
                         parseRowToRecordingUnit(row, cols, scope == ImportScope.PROJECT ? actionUnit : null).ifPresent(result::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
@@ -726,17 +717,17 @@ public class OOXMLImportService {
     public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(Sheet sheet, ActionUnitDTO actionUnit) {
         if (sheet == null) return List.of();
         List<ImportError> errors = new ArrayList<>();
-        return parseSpecimens(List.of(sheet), actionUnit, SheetMetadata.empty(), errors);
+        return parseSpecimens(List.of(sheet), actionUnit, SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors) {
+    public List<SpecimenSeeder.SpecimenSpecs> parseSpecimens(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         List<SpecimenSeeder.SpecimenSpecs> result = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
                 Row header = sheet.getRow(0);
                 if (header == null) continue;
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
+                forEachDataRow(sheet, errors, progress, row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -770,10 +761,10 @@ public class OOXMLImportService {
     public List<PhaseSeeder.PhaseSpecs> parsePhases(Sheet sheet, ActionUnitDTO actionUnit) {
         if (sheet == null) return List.of();
         List<ImportError> errors = new ArrayList<>();
-        return parsePhases(List.of(sheet), actionUnit, SheetMetadata.empty(), errors);
+        return parsePhases(List.of(sheet), actionUnit, SheetMetadata.empty(), errors, new ImportProgress());
     }
 
-    public List<PhaseSeeder.PhaseSpecs> parsePhases(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors) {
+    public List<PhaseSeeder.PhaseSpecs> parsePhases(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
         List<PhaseSeeder.PhaseSpecs> result = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
@@ -781,7 +772,7 @@ public class OOXMLImportService {
                 if (header == null) continue;
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
 
-                forEachDataRow(sheet, errors, row -> {
+                forEachDataRow(sheet, errors, progress, row -> {
                     String identifier = getStringCellOrNull(row, cols, IDENTIFIANT);
                     if (identifier == null || identifier.isBlank()) return;
 

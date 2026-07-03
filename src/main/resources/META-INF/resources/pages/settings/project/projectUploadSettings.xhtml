@@ -171,6 +171,30 @@
                 color: #bbb;
                 margin-top: -4px;
             }
+
+            /* indeterminate bar shown while the workbook is still being opened (row counts unknown yet) */
+            .indeterminate-bar {
+                height: 10px;
+                border-radius: 6px;
+                background: #eee;
+                overflow: hidden;
+                position: relative;
+            }
+            .indeterminate-bar::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 40%;
+                border-radius: 6px;
+                background: #5e8c61;
+                animation: indeterminate-slide 1.2s ease-in-out infinite;
+            }
+            @keyframes indeterminate-slide {
+                0%   { left: -40%; }
+                100% { left: 100%; }
+            }
         </style>
     </ui:define>
 
@@ -249,16 +273,23 @@
                                 </div>
                             </h:panelGroup>
 
-                            <!-- IMPORT IN PROGRESS (parse or persist phase) -->
+                            <!-- IMPORT IN PROGRESS (opening / parse / persist phase) -->
                             <h:panelGroup rendered="#{projectUploadSettingsBean.progress.running}">
                                 <div class="import-card" style="padding:16px 18px;">
                                     <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:#666;font-weight:600;">
-                                        <span>#{projectUploadSettingsBean.progress.parsing ? 'Étape 1/2 : Analyse du fichier' : 'Étape 2/2 : Import en base'}</span>
-                                        <span>#{projectUploadSettingsBean.progress.current} / #{projectUploadSettingsBean.progress.total}</span>
+                                        <span>#{projectUploadSettingsBean.progress.opening ? 'Ouverture du fichier...' : (projectUploadSettingsBean.progress.parsing ? 'Étape 1/2 : Analyse du fichier' : 'Étape 2/2 : Import en base')}</span>
+                                        <h:panelGroup rendered="#{!projectUploadSettingsBean.progress.opening}">
+                                            <span>#{projectUploadSettingsBean.progress.current} / #{projectUploadSettingsBean.progress.total}</span>
+                                        </h:panelGroup>
                                     </div>
-                                    <p:progressBar value="#{projectUploadSettingsBean.progress.percentage}"
-                                                   labelTemplate="{value}%"
-                                                   style="height:10px;"/>
+                                    <h:panelGroup rendered="#{projectUploadSettingsBean.progress.opening}">
+                                        <div class="indeterminate-bar"/>
+                                    </h:panelGroup>
+                                    <h:panelGroup rendered="#{!projectUploadSettingsBean.progress.opening}">
+                                        <p:progressBar value="#{projectUploadSettingsBean.progress.percentage}"
+                                                       labelTemplate="{value}%"
+                                                       style="height:10px;"/>
+                                    </h:panelGroup>
                                 </div>
                                 <p:poll interval="1"
                                         listener="#{projectUploadSettingsBean.pollProgress}"

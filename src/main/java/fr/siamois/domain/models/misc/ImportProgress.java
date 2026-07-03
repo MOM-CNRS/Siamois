@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ImportProgress implements Serializable {
 
-    public enum Phase { IDLE, PARSING, PERSISTING, DONE, ERROR }
+    public enum Phase { IDLE, OPENING, PARSING, PERSISTING, DONE, ERROR }
 
     private volatile Phase phase = Phase.IDLE;
     private final AtomicInteger current = new AtomicInteger(0);
@@ -64,7 +64,11 @@ public class ImportProgress implements Serializable {
     }
 
     public boolean isRunning() {
-        return phase == Phase.PARSING || phase == Phase.PERSISTING;
+        return phase == Phase.OPENING || phase == Phase.PARSING || phase == Phase.PERSISTING;
+    }
+
+    public boolean isOpening() {
+        return phase == Phase.OPENING;
     }
 
     public boolean isParsing() {
