@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.dataimport;
 
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -25,6 +26,8 @@ import static fr.siamois.infrastructure.dataimport.ImportSchema.*;
 @Service
 public class OOXMLImportService {
 
+    private static final String HEADER_READ_ERROR_PREFIX = "Erreur lecture en-tête: ";
+
     // -------------------------------------------------------------------------
     // Sheet metadata
     // -------------------------------------------------------------------------
@@ -46,30 +49,42 @@ public class OOXMLImportService {
         enriched.forEach((tableId, names) -> names.forEach(n -> sheetToTableId.put(n, tableId)));
 
         Map<String, Map<String, String>> enrichedAliases = new LinkedHashMap<>();
-        enriched.values().stream().flatMap(List::stream).distinct().forEach(sheetName -> {
-            Sheet sheet = workbook.getSheet(sheetName);
-            if (sheet == null) return;
-            String tableId = sheetToTableId.get(sheetName);
-            Set<String> expected = new HashSet<>(EXPECTED_COLUMNS.getOrDefault(tableId, List.of()));
-            Map<String, String> explicit = base.columnAliases().getOrDefault(sheetName, Map.of());
-            Map<String, String> full = new LinkedHashMap<>(explicit);
-            Row header = sheet.getRow(0);
-            if (header != null) {
-                for (int c = 0; c < header.getLastCellNum(); c++) {
-                    String raw = getStringCell(header.getCell(c));
-                    if (raw != null && !raw.isBlank()) {
-                        String norm = normalize(raw);
-                        String canonical = explicit.getOrDefault(norm, norm);
-                        if (!explicit.containsKey(norm) && expected.contains(canonical)) {
-                            full.put(norm, canonical);
-                        }
-                    }
-                }
-            }
-            if (!full.isEmpty()) enrichedAliases.put(sheetName, full);
-        });
+        enriched.values().stream().flatMap(List::stream).distinct()
+                .forEach(sheetName -> enrichAliasesForSheet(workbook, sheetName, sheetToTableId, base, enrichedAliases));
 
         return new SheetMetadata(enriched, enrichedAliases);
+    }
+
+    private void enrichAliasesForSheet(Workbook workbook, String sheetName, Map<String, String> sheetToTableId,
+                                        SheetMetadata base, Map<String, Map<String, String>> enrichedAliases) {
+        Sheet sheet = workbook.getSheet(sheetName);
+        if (sheet == null) return;
+
+        String tableId = sheetToTableId.get(sheetName);
+        Set<String> expected = new HashSet<>(EXPECTED_COLUMNS.getOrDefault(tableId, List.of()));
+        Map<String, String> explicit = base.columnAliases().getOrDefault(sheetName, Map.of());
+        Map<String, String> full = new LinkedHashMap<>(explicit);
+
+        for (String raw : headerCellValues(sheet.getRow(0))) {
+            String norm = normalize(raw);
+            String canonical = explicit.getOrDefault(norm, norm);
+            if (!explicit.containsKey(norm) && expected.contains(canonical)) {
+                full.put(norm, canonical);
+            }
+        }
+
+        if (!full.isEmpty()) enrichedAliases.put(sheetName, full);
+    }
+
+    /** Non-blank cell values of a header row, in column order (empty list if the row is missing). */
+    private List<String> headerCellValues(Row header) {
+        List<String> values = new ArrayList<>();
+        if (header == null) return values;
+        for (int c = 0; c < header.getLastCellNum(); c++) {
+            String raw = getStringCell(header.getCell(c));
+            if (raw != null && !raw.isBlank()) values.add(raw);
+        }
+        return values;
     }
 
     private SheetMetadata fallbackSheetMapping(Workbook workbook) {
@@ -99,30 +114,33 @@ public class OOXMLImportService {
         if (sheetIdCol == null || sheetNameCol == null) return new SheetMetadata(Map.of(), columnAliases);
 
         for (int r = 1; r <= metaSheet.getLastRowNum(); r++) {
-            Row row = metaSheet.getRow(r);
-            if (row == null) continue;
-            String id   = getStringCell(row, sheetIdCol);
-            String name = getStringCell(row, sheetNameCol);
-            if (id == null || name == null) continue;
-            id   = id.trim();
-            name = name.trim();
-
-            tableToSheetsTemp.computeIfAbsent(id, k -> new LinkedHashSet<>()).add(name);
-
-            if (aliasCol != null && canonicalCol != null) {
-                String alias     = getStringCellOrNull(row, aliasCol);
-                String canonical = getStringCellOrNull(row, canonicalCol);
-                if (alias != null && !alias.isBlank() && canonical != null && !canonical.isBlank()) {
-                    columnAliases
-                            .computeIfAbsent(name, k -> new HashMap<>())
-                            .put(normalize(alias.trim()), normalize(canonical.trim()));
-                }
-            }
+            registerMetaRow(metaSheet.getRow(r), sheetIdCol, sheetNameCol, aliasCol, canonicalCol,
+                    tableToSheetsTemp, columnAliases);
         }
 
         Map<String, List<String>> tableToSheets = new LinkedHashMap<>();
         tableToSheetsTemp.forEach((k, v) -> tableToSheets.put(k, new ArrayList<>(v)));
         return new SheetMetadata(tableToSheets, columnAliases);
+    }
+
+    private void registerMetaRow(Row row, int sheetIdCol, int sheetNameCol, Integer aliasCol, Integer canonicalCol,
+                                  Map<String, LinkedHashSet<String>> tableToSheetsTemp,
+                                  Map<String, Map<String, String>> columnAliases) {
+        String id   = row != null ? getStringCell(row, sheetIdCol) : null;
+        String name = row != null ? getStringCell(row, sheetNameCol) : null;
+        if (id == null || name == null) return;
+        id = id.trim();
+        name = name.trim();
+
+        tableToSheetsTemp.computeIfAbsent(id, k -> new LinkedHashSet<>()).add(name);
+
+        if (aliasCol == null || canonicalCol == null) return;
+        String alias     = getStringCellOrNull(row, aliasCol);
+        String canonical = getStringCellOrNull(row, canonicalCol);
+        if (alias == null || alias.isBlank() || canonical == null || canonical.isBlank()) return;
+
+        columnAliases.computeIfAbsent(name, k -> new HashMap<>())
+                .put(normalize(alias.trim()), normalize(canonical.trim()));
     }
 
     // -------------------------------------------------------------------------
@@ -162,29 +180,38 @@ public class OOXMLImportService {
             ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
                     recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels);
 
-            // Collect raw column headers for every sheet except _meta, for display in the mapping UI.
-            // Whether a column is "recognized" is decided from meta.columnAliases(), which already
-            // combines explicit _meta aliases with auto-matched canonical names filtered by EXPECTED_COLUMNS.
-            Map<String, List<String>> allSheetColumns = new java.util.LinkedHashMap<>();
-            for (int si = 0; si < workbook.getNumberOfSheets(); si++) {
-                org.apache.poi.ss.usermodel.Sheet sheet = workbook.getSheetAt(si);
-                if ("_meta".equalsIgnoreCase(sheet.getSheetName())) continue;
-                org.apache.poi.ss.usermodel.Row hdr = sheet.getRow(0);
-                List<String> cols = new ArrayList<>();
-                if (hdr != null) {
-                    for (int ci = 0; ci <= hdr.getLastCellNum(); ci++) {
-                        org.apache.poi.ss.usermodel.Cell cell = hdr.getCell(ci);
-                        if (cell != null) {
-                            String v = cell.toString().trim();
-                            if (!v.isEmpty()) cols.add(v);
-                        }
-                    }
-                }
-                allSheetColumns.put(sheet.getSheetName(), cols);
-            }
+            Map<String, List<String>> allSheetColumns = collectAllSheetColumns(workbook);
 
             return new ImportResult(specs, errors, meta, allSheetColumns);
         }
+    }
+
+    /**
+     * Raw column headers for every sheet except _meta, for display in the mapping UI.
+     * Whether a column is "recognized" is decided from meta.columnAliases(), which already
+     * combines explicit _meta aliases with auto-matched canonical names filtered by EXPECTED_COLUMNS.
+     */
+    private Map<String, List<String>> collectAllSheetColumns(Workbook workbook) {
+        Map<String, List<String>> allSheetColumns = new LinkedHashMap<>();
+        for (int si = 0; si < workbook.getNumberOfSheets(); si++) {
+            Sheet sheet = workbook.getSheetAt(si);
+            if ("_meta".equalsIgnoreCase(sheet.getSheetName())) continue;
+            allSheetColumns.put(sheet.getSheetName(), rawHeaderLabels(sheet.getRow(0)));
+        }
+        return allSheetColumns;
+    }
+
+    private List<String> rawHeaderLabels(Row header) {
+        List<String> labels = new ArrayList<>();
+        if (header == null) return labels;
+        for (int ci = 0; ci <= header.getLastCellNum(); ci++) {
+            Cell cell = header.getCell(ci);
+            if (cell != null) {
+                String v = cell.toString().trim();
+                if (!v.isEmpty()) labels.add(v);
+            }
+        }
+        return labels;
     }
 
     private List<Sheet> getSheetsForTable(Workbook workbook, SheetMetadata meta, String tableId) {
@@ -230,7 +257,7 @@ public class OOXMLImportService {
                             name, description, identifier, adminEmails, thesaurusInstance, vocabularyId));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return result;
@@ -258,7 +285,7 @@ public class OOXMLImportService {
                     ));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return result;
@@ -278,7 +305,7 @@ public class OOXMLImportService {
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
                 forEachDataRow(sheet, errors, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childrenStringByName));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         resolveChildrenKeys(specsByName, childrenStringByName);
@@ -338,25 +365,38 @@ public class OOXMLImportService {
         List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
-                Row header = sheet.getRow(0);
-                if (header == null) continue;
-                Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "parent", "enfant");
+                if (cols == null) continue;
                 Integer parentNum = cols.get("parent");
                 Integer childNum  = cols.get("enfant");
-                if (parentNum == null || childNum == null) continue;
-
-                forEachDataRow(sheet, errors, row -> {
-                    String parent = getStringCell(row, parentNum);
-                    String child  = getStringCell(row, childNum);
-                    if (parent == null || parent.isBlank()) return;
-                    if (child  == null || child.isBlank())  return;
-                    specs.add(new RecordingUnitRelSeeder.RecordingUnitRelDTO(parent, child));
-                });
+                forEachDataRow(sheet, errors, row -> parseRowToRecordingRel(row, parentNum, childNum).ifPresent(specs::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return specs;
+    }
+
+    private Optional<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRowToRecordingRel(Row row, int parentCol, int childCol) {
+        String parent = getStringCell(row, parentCol);
+        String child  = getStringCell(row, childCol);
+        if (parent == null || parent.isBlank()) return Optional.empty();
+        if (child  == null || child.isBlank())  return Optional.empty();
+        return Optional.of(new RecordingUnitRelSeeder.RecordingUnitRelDTO(parent, child));
+    }
+
+    /**
+     * Indexes a sheet's header columns and returns null if the header is missing or any
+     * required column isn't present — a single guard for the "sheet not usable" case.
+     */
+    private Map<String, Integer> indexRequiredColumns(Sheet sheet, SheetMetadata meta, String... requiredColumns) {
+        Row header = sheet.getRow(0);
+        if (header == null) return null;
+        Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
+        for (String required : requiredColumns) {
+            if (cols.get(required) == null) return null;
+        }
+        return cols;
     }
 
     public List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseStratiRels(Sheet sheet) {
@@ -369,31 +409,30 @@ public class OOXMLImportService {
         List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
-                Row header = sheet.getRow(0);
-                if (header == null) continue;
-                Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                if (cols.get("us1") == null || cols.get("us2") == null) continue;
-
-                forEachDataRow(sheet, errors, row -> {
-                    String us1 = getStringCellOrNull(row, cols, "us1");
-                    String us2 = getStringCellOrNull(row, cols, "us2");
-                    if (us1 == null || us1.isBlank()) return;
-                    if (us2 == null || us2.isBlank()) return;
-                    ConceptSeeder.ConceptKey relKey = conceptKeyFromUri(getStringCellOrNull(row, cols, "relation"));
-                    String direction  = getStringCellOrNull(row, cols, "direction vocabulaire");
-                    String asynchrone = getStringCellOrNull(row, cols, "asynchrone");
-                    String incertain  = getStringCellOrNull(row, cols, "incertain");
-                    specs.add(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                            us1, us2, relKey,
-                            "True".equals(direction),
-                            "True".equals(asynchrone),
-                            "True".equals(incertain)));
-                });
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "us1", "us2");
+                if (cols == null) continue;
+                forEachDataRow(sheet, errors, row -> parseRowToStratiRel(row, cols).ifPresent(specs::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return specs;
+    }
+
+    private Optional<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> parseRowToStratiRel(Row row, Map<String, Integer> cols) {
+        String us1 = getStringCellOrNull(row, cols, "us1");
+        String us2 = getStringCellOrNull(row, cols, "us2");
+        if (us1 == null || us1.isBlank()) return Optional.empty();
+        if (us2 == null || us2.isBlank()) return Optional.empty();
+        ConceptSeeder.ConceptKey relKey = conceptKeyFromUri(getStringCellOrNull(row, cols, "relation"));
+        String direction  = getStringCellOrNull(row, cols, "direction vocabulaire");
+        String asynchrone = getStringCellOrNull(row, cols, "asynchrone");
+        String incertain  = getStringCellOrNull(row, cols, "incertain");
+        return Optional.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
+                us1, us2, relKey,
+                "True".equals(direction),
+                "True".equals(asynchrone),
+                "True".equals(incertain)));
     }
 
     public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(Sheet sheet) {
@@ -406,26 +445,25 @@ public class OOXMLImportService {
         List<ActionCodeSeeder.ActionCodeSpec> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
-                Row header = sheet.getRow(0);
-                if (header == null) continue;
-                Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                if (cols.get("code") == null || cols.get(TYPE_URI) == null) continue;
-
-                forEachDataRow(sheet, errors, row -> {
-                    String code = getStringCellOrNull(row, cols, "code");
-                    if (code == null || code.isBlank()) return;
-                    String typeUri = getStringCellOrNull(row, cols, TYPE_URI);
-                    specs.add(new ActionCodeSeeder.ActionCodeSpec(
-                            code,
-                            extractIdcFromUri(typeUri).orElse(null),
-                            extractIdtFromUri(typeUri).orElse(null)
-                    ));
-                });
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "code", TYPE_URI);
+                if (cols == null) continue;
+                forEachDataRow(sheet, errors, row -> parseRowToActionCode(row, cols).ifPresent(specs::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return specs;
+    }
+
+    private Optional<ActionCodeSeeder.ActionCodeSpec> parseRowToActionCode(Row row, Map<String, Integer> cols) {
+        String code = getStringCellOrNull(row, cols, "code");
+        if (code == null || code.isBlank()) return Optional.empty();
+        String typeUri = getStringCellOrNull(row, cols, TYPE_URI);
+        return Optional.of(new ActionCodeSeeder.ActionCodeSpec(
+                code,
+                extractIdcFromUri(typeUri).orElse(null),
+                extractIdtFromUri(typeUri).orElse(null)
+        ));
     }
 
     public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(Sheet sheet) {
@@ -442,7 +480,7 @@ public class OOXMLImportService {
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
                 forEachDataRow(sheet, errors, row -> parseRowToActionUnit(row, cols).ifPresent(result::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return result;
@@ -522,7 +560,7 @@ public class OOXMLImportService {
                 forEachDataRow(sheet, errors, row ->
                         parseRowToRecordingUnit(row, cols, scope == ImportScope.PROJECT ? actionUnit : null).ifPresent(result::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return result;
@@ -632,7 +670,7 @@ public class OOXMLImportService {
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
                 forEachDataRow(sheet, errors, row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return result;
@@ -699,7 +737,7 @@ public class OOXMLImportService {
                             identifier, title, type, description, orderNumber, lowerBound, upperBound, authorEmail, actionKey));
                 });
             } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", "Erreur lecture en-tête: " + e.getMessage()));
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
         return result;
@@ -722,20 +760,18 @@ public class OOXMLImportService {
     }
 
     public Optional<String> extractIdtFromUri(String uri) {
-        if (uri == null) return Optional.empty();
-        int idx = uri.indexOf("idt=");
-        if (idx < 0) throw new IllegalStateException("URL de concept " + uri + " invalide");
-        String sub = uri.substring(idx + 4);
-        int amp = sub.indexOf('&');
-        if (amp >= 0) sub = sub.substring(0, amp);
-        return Optional.of(URLDecoder.decode(sub, StandardCharsets.UTF_8));
+        return extractQueryParam(uri, "idt=");
     }
 
     public Optional<String> extractIdcFromUri(String uri) {
+        return extractQueryParam(uri, "idc=");
+    }
+
+    private Optional<String> extractQueryParam(String uri, String paramKey) {
         if (uri == null) return Optional.empty();
-        int idx = uri.indexOf("idc=");
+        int idx = uri.indexOf(paramKey);
         if (idx < 0) throw new IllegalStateException("URL de concept " + uri + " invalide");
-        String sub = uri.substring(idx + 4);
+        String sub = uri.substring(idx + paramKey.length());
         int amp = sub.indexOf('&');
         if (amp >= 0) sub = sub.substring(0, amp);
         return Optional.of(URLDecoder.decode(sub, StandardCharsets.UTF_8));
