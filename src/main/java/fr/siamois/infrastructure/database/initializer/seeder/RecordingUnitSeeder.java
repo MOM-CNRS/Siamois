@@ -13,7 +13,6 @@ import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
-import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import jakarta.persistence.EntityManager;
@@ -38,7 +37,6 @@ public class RecordingUnitSeeder {
     private final PersonSeeder personSeeder;
     private final PhaseRepository phaseRepository;
     private final InstitutionRepository institutionRepository;
-    private final PersonRepository personRepository;
     private final ConceptRepository conceptRepository;
 
     @PersistenceContext
@@ -96,6 +94,25 @@ public class RecordingUnitSeeder {
         return recordingUnitRepository.findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier(
                 key.fullIdentifier, institutionId, key.actionIdentifier())
                 .orElseThrow(() -> new IllegalStateException("Recording unit introuvable"));
+    }
+
+    /**
+     * Bulk variant of {@link #getRecordingUnitFromKey} — one query per distinct action unit rather
+     * than one per key. Missing keys are simply absent from the returned map (callers decide how to
+     * report that, matching how {@code getRecordingUnitFromKey} throws for a single missing key).
+     */
+    public Map<RecordingUnitKey, RecordingUnit> bulkGetRecordingUnitsFromKeys(Collection<RecordingUnitKey> keys, Long institutionId) {
+        Map<String, List<String>> fullIdsByActionIdentifier = keys.stream()
+                .collect(Collectors.groupingBy(RecordingUnitKey::actionIdentifier,
+                        Collectors.mapping(RecordingUnitKey::fullIdentifier, Collectors.toList())));
+        Map<RecordingUnitKey, RecordingUnit> result = new HashMap<>();
+        for (var entry : fullIdsByActionIdentifier.entrySet()) {
+            for (RecordingUnit ru : recordingUnitRepository.findAllByFullIdentifierInAndInstitutionIdAndActionUnitFullIdentifier(
+                    entry.getValue(), institutionId, entry.getKey())) {
+                result.put(new RecordingUnitKey(ru.getFullIdentifier(), entry.getKey()), ru);
+            }
+        }
+        return result;
     }
 
     // -------------------------------------------------------------------------
@@ -164,13 +181,13 @@ public class RecordingUnitSeeder {
             return inst;
         });
 
-        Person authorPerson = SeederUtils.field("author",    () -> resolvePerson(personCache, s.author));
-        Person createdBy    = SeederUtils.field("createdBy", () -> resolvePerson(personCache, s.createdBy));
+        Person authorPerson = SeederUtils.field("author",    () -> personSeeder.resolveCached(personCache, s.author));
+        Person createdBy    = SeederUtils.field("createdBy", () -> personSeeder.resolveCached(personCache, s.createdBy));
 
         List<Person> contributors = new ArrayList<>();
         if (s.excavators != null) {
             for (var email : s.excavators) {
-                contributors.add(SeederUtils.field("excavators[" + email + "]", () -> resolvePerson(personCache, email)));
+                contributors.add(SeederUtils.field("excavators[" + email + "]", () -> personSeeder.resolveCached(personCache, email)));
             }
         }
 
@@ -227,26 +244,6 @@ public class RecordingUnitSeeder {
         return c;
     }
 
-    private Person resolvePerson(Map<String, Person> cache, String nameLastName) {
-        String cacheKey = personCacheKey(nameLastName);
-        if (cacheKey != null) {
-            Person cached = cache.get(cacheKey);
-            if (cached != null) return cached;
-        }
-        // cache miss — genuinely new person, or malformed input (personSeeder throws the right message either way)
-        Person resolved = personSeeder.findOrCreatePerson(nameLastName);
-        if (cacheKey != null) cache.put(cacheKey, resolved);
-        return resolved;
-    }
-
-    private String personCacheKey(String nameLastName) {
-        if (nameLastName == null || nameLastName.isBlank()) return null;
-        String trimmed = nameLastName.trim();
-        int lastSpace = trimmed.lastIndexOf(' ');
-        if (lastSpace < 1) return null;
-        return trimmed.substring(0, lastSpace).trim().toLowerCase() + "|" + trimmed.substring(lastSpace + 1).trim().toLowerCase();
-    }
-
     private String phaseCompositeKey(Long actionUnitId, String phaseIdentifier) {
         return actionUnitId + "|" + phaseIdentifier;
     }
@@ -260,27 +257,13 @@ public class RecordingUnitSeeder {
     }
 
     private Map<String, Person> prefetchPersons(List<RecordingUnitSpecs> specs) {
-        Set<String> firstnames = new HashSet<>();
+        List<String> nameLastNameStrings = new ArrayList<>();
         for (RecordingUnitSpecs s : specs) {
-            addFirstname(firstnames, s.author());
-            addFirstname(firstnames, s.createdBy());
-            if (s.excavators() != null) s.excavators().forEach(e -> addFirstname(firstnames, e));
+            nameLastNameStrings.add(s.author());
+            nameLastNameStrings.add(s.createdBy());
+            if (s.excavators() != null) nameLastNameStrings.addAll(s.excavators());
         }
-        Map<String, Person> cache = new HashMap<>();
-        if (firstnames.isEmpty()) return cache;
-        for (Person p : personRepository.findAllByNameIgnoreCaseIn(firstnames)) {
-            if (p.getName() != null && p.getLastname() != null) {
-                cache.put(p.getName().toLowerCase() + "|" + p.getLastname().toLowerCase(), p);
-            }
-        }
-        return cache;
-    }
-
-    private void addFirstname(Set<String> firstnames, String nameLastName) {
-        if (nameLastName == null || nameLastName.isBlank()) return;
-        String trimmed = nameLastName.trim();
-        int lastSpace = trimmed.lastIndexOf(' ');
-        if (lastSpace >= 1) firstnames.add(trimmed.substring(0, lastSpace).trim());
+        return personSeeder.prefetchByNameLastName(nameLastNameStrings);
     }
 
     private Map<ConceptSeeder.ConceptKey, Concept> fetchConcepts(List<RecordingUnitSpecs> specs) {

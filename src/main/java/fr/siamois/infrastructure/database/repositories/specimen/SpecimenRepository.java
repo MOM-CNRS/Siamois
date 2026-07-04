@@ -13,6 +13,7 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -254,6 +255,28 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
     )
     Optional<Specimen> findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
             @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionId") Long institutionId,
+            @Param("recordingUnitFullIdentifier") String recordingUnitFullIdentifier,
+            @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
+    );
+
+    /**
+     * Bulk variant of {@link #findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier} —
+     * one query per distinct (institution, recording unit, action unit) group rather than one per specimen.
+     */
+    @Query(
+            value = "SELECT s.* " +
+                    "FROM specimen s " +
+                    "JOIN recording_unit ru ON s.fk_recording_unit_id = ru.recording_unit_id " +
+                    "JOIN action_unit au ON ru.fk_action_unit_id = au.action_unit_id " +
+                    "WHERE s.full_identifier IN (:fullIdentifiers) " +
+                    "AND s.fk_institution_id = :institutionId " +
+                    "AND ru.full_identifier = :recordingUnitFullIdentifier " +
+                    "AND au.full_identifier = :actionUnitFullIdentifier",
+            nativeQuery = true
+    )
+    List<Specimen> findAllByFullIdentifierInAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
+            @Param("fullIdentifiers") Collection<String> fullIdentifiers,
             @Param("institutionId") Long institutionId,
             @Param("recordingUnitFullIdentifier") String recordingUnitFullIdentifier,
             @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier

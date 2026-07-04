@@ -7,6 +7,8 @@ import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,24 +17,25 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PhaseSeederTest {
 
     @Mock PhaseRepository phaseRepository;
-    @Mock ConceptSeeder conceptSeeder;
+    @Mock ConceptRepository conceptRepository;
     @Mock ActionUnitRepository actionUnitRepository;
     @Mock PersonSeeder personSeeder;
+    @Mock EntityManager entityManager;
 
-    @Captor ArgumentCaptor<Phase> phaseCaptor;
+    @Captor ArgumentCaptor<Iterable<Phase>> phasesCaptor;
 
     @InjectMocks
     PhaseSeeder seeder;
@@ -45,11 +48,14 @@ class PhaseSeederTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(seeder, "entityManager", entityManager);
+
         institution = new Institution();
         institution.setId(10L);
 
         actionUnit = new ActionUnit();
         actionUnit.setId(99L);
+        actionUnit.setFullIdentifier("UA-001");
         actionUnit.setCreatedByInstitution(institution);
     }
 
@@ -61,15 +67,23 @@ class PhaseSeederTest {
                 1, 100, 200, authorEmail, AU_KEY);
     }
 
+    private void stubActionUnitFound() {
+        when(actionUnitRepository.findAllByIdentifierInAndCreatedByInstitutionIdentifier(anyCollection(), eq("INST")))
+                .thenReturn(List.of(actionUnit));
+    }
+
+    private Phase savedPhase() {
+        verify(phaseRepository).saveAll(phasesCaptor.capture());
+        return phasesCaptor.getValue().iterator().next();
+    }
+
     // ------------------------------------------------------------------
     // Action unit not found
     // ------------------------------------------------------------------
 
     @Test
     void seed_actionUnitNotFound_throwsWithProjetIntrouvable() {
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.empty());
-
+        // actionUnitRepository left unstubbed -> empty -> action unit not found
         var specs = List.of(spec("PH-01", null, null));
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
 
@@ -77,19 +91,20 @@ class PhaseSeederTest {
     }
 
     // ------------------------------------------------------------------
-    // Already exists → save never called
+    // Already exists → saveAll never called
     // ------------------------------------------------------------------
 
     @Test
     void seed_alreadyExists_saveNeverCalled() {
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.of(actionUnit));
-        when(phaseRepository.findByIdentifierAndActionUnitId("PH-01", 99L))
-                .thenReturn(Optional.of(new Phase()));
+        stubActionUnitFound();
+        Phase existing = new Phase();
+        existing.setIdentifier("PH-01");
+        when(phaseRepository.findAllByIdentifierInAndActionUnitId(anyCollection(), eq(99L)))
+                .thenReturn(List.of(existing));
 
         seeder.seed(List.of(spec("PH-01", null, null)));
 
-        verify(phaseRepository, never()).save(any(Phase.class));
+        verify(phaseRepository, never()).saveAll(any());
     }
 
     // ------------------------------------------------------------------
@@ -98,23 +113,22 @@ class PhaseSeederTest {
 
     @Test
     void seed_created_savesPhaseWithAllFields() {
+        stubActionUnitFound();
         ConceptSeeder.ConceptKey typeKey = new ConceptSeeder.ConceptKey("th240", "42");
         Concept concept = new Concept();
+        concept.setExternalId("42");
         Person author = new Person();
 
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.of(actionUnit));
-        when(conceptSeeder.findConceptOrThrow(typeKey)).thenReturn(concept);
-        when(personSeeder.findOrCreatePerson("author@site.fr")).thenReturn(author);
-        when(phaseRepository.findByIdentifierAndActionUnitId("PH-01", 99L))
-                .thenReturn(Optional.empty());
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq("th240"), anyCollection()))
+                .thenReturn(List.of(concept));
+        when(personSeeder.resolveCached(any(), eq("author@site.fr"))).thenReturn(author);
+        // phaseRepository bulk-existence lookup left unstubbed -> empty -> not already present
 
         PhaseSeeder.PhaseSpecs s = new PhaseSeeder.PhaseSpecs(
                 "PH-01", "Titre", typeKey, "Desc", 2, 500, 1000, "author@site.fr", AU_KEY);
         seeder.seed(List.of(s));
 
-        verify(phaseRepository).save(phaseCaptor.capture());
-        Phase saved = phaseCaptor.getValue();
+        Phase saved = savedPhase();
         assertThat(saved.getIdentifier()).isEqualTo("PH-01");
         assertThat(saved.getTitle()).isEqualTo("Titre");
         assertThat(saved.getActionUnit()).isSameAs(actionUnit);
@@ -126,6 +140,8 @@ class PhaseSeederTest {
         assertThat(saved.getCreatedByInstitution()).isSameAs(institution);
         assertThat(saved.getAuthor()).isSameAs(author);
         assertThat(saved.getCreatedBy()).isSameAs(author);
+        verify(entityManager, times(1)).flush();
+        verify(entityManager, times(1)).clear();
     }
 
     // ------------------------------------------------------------------
@@ -134,16 +150,12 @@ class PhaseSeederTest {
 
     @Test
     void seed_typeNull_savedWithNullType() {
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.of(actionUnit));
-        when(phaseRepository.findByIdentifierAndActionUnitId("PH-02", 99L))
-                .thenReturn(Optional.empty());
+        stubActionUnitFound();
 
         seeder.seed(List.of(spec("PH-02", null, null)));
 
-        verify(phaseRepository).save(phaseCaptor.capture());
-        assertThat(phaseCaptor.getValue().getType()).isNull();
-        verifyNoInteractions(conceptSeeder);
+        assertThat(savedPhase().getType()).isNull();
+        verifyNoInteractions(conceptRepository);
     }
 
     // ------------------------------------------------------------------
@@ -152,17 +164,14 @@ class PhaseSeederTest {
 
     @Test
     void seed_conceptNotFound_throwsWrappingConceptError() {
+        stubActionUnitFound();
         ConceptSeeder.ConceptKey typeKey = new ConceptSeeder.ConceptKey("th240", "99");
-
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.of(actionUnit));
-        when(conceptSeeder.findConceptOrThrow(typeKey))
-                .thenThrow(new IllegalStateException("Concept introuvable"));
+        // conceptRepository left unstubbed -> empty -> concept not found
 
         var specs = List.of(spec("PH-03", typeKey, null));
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
 
-        assertThat(ex.getMessage()).contains("Concept introuvable");
+        assertThat(ex.getMessage()).contains("Concept").contains("introuvable");
     }
 
     // ------------------------------------------------------------------
@@ -171,31 +180,24 @@ class PhaseSeederTest {
 
     @Test
     void seed_authorEmailNull_savedWithNullAuthor() {
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.of(actionUnit));
-        when(phaseRepository.findByIdentifierAndActionUnitId("PH-04", 99L))
-                .thenReturn(Optional.empty());
+        stubActionUnitFound();
 
         seeder.seed(List.of(spec("PH-04", null, null)));
 
-        verify(phaseRepository).save(phaseCaptor.capture());
-        assertThat(phaseCaptor.getValue().getAuthor()).isNull();
-        assertThat(phaseCaptor.getValue().getCreatedBy()).isNull();
-        verifyNoInteractions(personSeeder);
+        Phase saved = savedPhase();
+        assertThat(saved.getAuthor()).isNull();
+        assertThat(saved.getCreatedBy()).isNull();
+        verify(personSeeder, never()).resolveCached(any(), any());
     }
 
     @Test
     void seed_authorEmailBlank_savedWithNullAuthor() {
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.of(actionUnit));
-        when(phaseRepository.findByIdentifierAndActionUnitId("PH-05", 99L))
-                .thenReturn(Optional.empty());
+        stubActionUnitFound();
 
         seeder.seed(List.of(spec("PH-05", null, "   ")));
 
-        verify(phaseRepository).save(phaseCaptor.capture());
-        assertThat(phaseCaptor.getValue().getAuthor()).isNull();
-        verifyNoInteractions(personSeeder);
+        assertThat(savedPhase().getAuthor()).isNull();
+        verify(personSeeder, never()).resolveCached(any(), any());
     }
 
     // ------------------------------------------------------------------
@@ -204,17 +206,13 @@ class PhaseSeederTest {
 
     @Test
     void seed_authorEmailPresent_authorAndCreatedBySetToPerson() {
+        stubActionUnitFound();
         Person author = new Person();
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.of(actionUnit));
-        when(personSeeder.findOrCreatePerson("user@example.fr")).thenReturn(author);
-        when(phaseRepository.findByIdentifierAndActionUnitId("PH-06", 99L))
-                .thenReturn(Optional.empty());
+        when(personSeeder.resolveCached(any(), eq("user@example.fr"))).thenReturn(author);
 
         seeder.seed(List.of(spec("PH-06", null, "user@example.fr")));
 
-        verify(phaseRepository).save(phaseCaptor.capture());
-        Phase saved = phaseCaptor.getValue();
+        Phase saved = savedPhase();
         assertThat(saved.getAuthor()).isSameAs(author);
         assertThat(saved.getCreatedBy()).isSameAs(author);
     }
@@ -225,9 +223,7 @@ class PhaseSeederTest {
 
     @Test
     void seed_errorIncludesLineNumberAndIdentifier() {
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.empty());
-
+        // actionUnitRepository left unstubbed -> empty -> action unit not found
         var specs = List.of(spec("PH-ERR", null, null));
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
 
@@ -241,15 +237,18 @@ class PhaseSeederTest {
 
     @Test
     void seed_multipleSpecs_twoCreatedOneSaved() {
-        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionIdentifier("UA-001", "INST"))
-                .thenReturn(Optional.of(actionUnit));
-        when(phaseRepository.findByIdentifierAndActionUnitId("PH-A", 99L))
-                .thenReturn(Optional.empty());
-        when(phaseRepository.findByIdentifierAndActionUnitId("PH-B", 99L))
-                .thenReturn(Optional.of(new Phase()));   // already exists
+        stubActionUnitFound();
+        Phase existingB = new Phase();
+        existingB.setIdentifier("PH-B");
+        when(phaseRepository.findAllByIdentifierInAndActionUnitId(anyCollection(), eq(99L)))
+                .thenReturn(List.of(existingB));   // PH-B already exists
 
         seeder.seed(List.of(spec("PH-A", null, null), spec("PH-B", null, null)));
 
-        verify(phaseRepository, times(1)).save(any(Phase.class));
+        verify(phaseRepository, times(1)).saveAll(argThat(list -> {
+            int count = 0;
+            for (var ignored : list) count++;
+            return count == 1;
+        }));
     }
 }

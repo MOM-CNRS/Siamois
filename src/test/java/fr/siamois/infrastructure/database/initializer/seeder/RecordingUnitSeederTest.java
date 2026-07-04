@@ -9,7 +9,6 @@ import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
-import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import jakarta.persistence.EntityManager;
@@ -51,8 +50,6 @@ class RecordingUnitSeederTest {
     PhaseRepository phaseRepository;
     @Mock
     InstitutionRepository institutionRepository;
-    @Mock
-    PersonRepository personRepository;
     @Mock
     ConceptRepository conceptRepository;
     @Mock
@@ -157,7 +154,7 @@ class RecordingUnitSeederTest {
         stubConceptsFound();
         stubInstitutionFound();
 
-        when(personSeeder.findOrCreatePerson("author@siamois.fr"))
+        when(personSeeder.resolveCached(any(), eq("author@siamois.fr")))
                 .thenThrow(new IllegalStateException("Person introuvable"));
 
         IllegalStateException ex = assertThrows(

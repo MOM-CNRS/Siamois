@@ -6,9 +6,12 @@ import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -67,6 +70,55 @@ public class PersonSeeder {
             personRepository.save(authorGetOrCreated);
         }
         return authorGetOrCreated;
+    }
+
+    /**
+     * Bulk-prefetches persons by the distinct firstnames appearing in {@code nameLastNameStrings}
+     * (each a "Firstname Lastname" string as accepted by {@link #findOrCreatePerson}), for use with
+     * {@link #resolveCached}. One query instead of one per row — callers still fall back to the
+     * normal single-row get-or-create on a cache miss, so correctness is unaffected, only redundant
+     * repeated lookups (e.g. the same excavator named on hundreds of rows) are eliminated.
+     */
+    public Map<String, Person> prefetchByNameLastName(Collection<String> nameLastNameStrings) {
+        Set<String> firstnames = new HashSet<>();
+        for (String n : nameLastNameStrings) {
+            String trimmed = n == null ? null : n.trim();
+            if (trimmed == null || trimmed.isBlank()) continue;
+            int lastSpace = trimmed.lastIndexOf(' ');
+            if (lastSpace >= 1) firstnames.add(trimmed.substring(0, lastSpace).trim());
+        }
+        Map<String, Person> cache = new HashMap<>();
+        if (firstnames.isEmpty()) return cache;
+        for (Person p : personRepository.findAllByNameIgnoreCaseIn(firstnames)) {
+            if (p.getName() != null && p.getLastname() != null) {
+                cache.put(cacheKey(p.getName(), p.getLastname()), p);
+            }
+        }
+        return cache;
+    }
+
+    /** Resolves a "Firstname Lastname" string against a cache built by {@link #prefetchByNameLastName}, falling back to {@link #findOrCreatePerson} (and populating the cache) on a miss. */
+    public Person resolveCached(Map<String, Person> cache, String nameLastName) {
+        String key = normalizeKey(nameLastName);
+        if (key != null) {
+            Person cached = cache.get(key);
+            if (cached != null) return cached;
+        }
+        Person resolved = findOrCreatePerson(nameLastName);
+        if (key != null) cache.put(key, resolved);
+        return resolved;
+    }
+
+    private String normalizeKey(String nameLastName) {
+        if (nameLastName == null || nameLastName.isBlank()) return null;
+        String trimmed = nameLastName.trim();
+        int lastSpace = trimmed.lastIndexOf(' ');
+        if (lastSpace < 1) return null;
+        return cacheKey(trimmed.substring(0, lastSpace).trim(), trimmed.substring(lastSpace + 1).trim());
+    }
+
+    private String cacheKey(String name, String lastname) {
+        return name.toLowerCase() + "|" + lastname.toLowerCase();
     }
 
     public Map<String, Person> seed(List<PersonSpec> specs) {
