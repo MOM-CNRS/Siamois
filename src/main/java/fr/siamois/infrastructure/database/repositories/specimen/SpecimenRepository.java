@@ -13,7 +13,6 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -260,25 +259,28 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
             @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
     );
 
+    /** Narrow projection so the bulk existing-specimen lookup below never has to touch the (lazy) recordingUnit association per row. */
+    interface ExistingSpecimenKey {
+        String getFullIdentifier();
+        String getRecordingUnitFullIdentifier();
+    }
+
     /**
      * Bulk variant of {@link #findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier} —
-     * one query per distinct (institution, recording unit, action unit) group rather than one per specimen.
+     * one query per distinct (institution, action unit) rather than one per distinct recording unit, so it stays a
+     * handful of queries even when there are thousands of recording units each with a single specimen.
      */
     @Query(
-            value = "SELECT s.* " +
+            value = "SELECT s.full_identifier AS fullIdentifier, ru.full_identifier AS recordingUnitFullIdentifier " +
                     "FROM specimen s " +
                     "JOIN recording_unit ru ON s.fk_recording_unit_id = ru.recording_unit_id " +
                     "JOIN action_unit au ON ru.fk_action_unit_id = au.action_unit_id " +
-                    "WHERE s.full_identifier IN (:fullIdentifiers) " +
-                    "AND s.fk_institution_id = :institutionId " +
-                    "AND ru.full_identifier = :recordingUnitFullIdentifier " +
+                    "WHERE s.fk_institution_id = :institutionId " +
                     "AND au.full_identifier = :actionUnitFullIdentifier",
             nativeQuery = true
     )
-    List<Specimen> findAllByFullIdentifierInAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
-            @Param("fullIdentifiers") Collection<String> fullIdentifiers,
+    List<ExistingSpecimenKey> findAllKeysByInstitutionIdAndActionUnitFullIdentifier(
             @Param("institutionId") Long institutionId,
-            @Param("recordingUnitFullIdentifier") String recordingUnitFullIdentifier,
             @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
     );
 

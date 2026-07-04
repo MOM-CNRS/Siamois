@@ -62,5 +62,6 @@ public class RecordingUnitRelSeeder {
 
         // Step 3: Save all parents at once
         recordingUnitRepository.saveAll(parents);
+        SeederUtils.logBatch("RecordingUnitRelSeeder", parents.size(), Math.max(1, parents.size()), parents.size());
     }
 }

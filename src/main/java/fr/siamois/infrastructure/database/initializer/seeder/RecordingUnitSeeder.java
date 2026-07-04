@@ -158,6 +158,7 @@ public class RecordingUnitSeeder {
             entityManager.flush();
             entityManager.clear();
             progress.advance(chunk.size());
+            SeederUtils.logBatch("RecordingUnitSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toInsert.size());
         }
         // specs that were skipped as already-existing never went into toInsert, so they'd otherwise
         // never be accounted for in the running total — advance for them too so the overall import

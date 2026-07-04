@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.misc.ImportProgress;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
@@ -49,6 +50,10 @@ public class PhaseSeeder {
     // -------------------------------------------------------------------------
 
     public void seed(List<PhaseSpecs> specs) {
+        seed(specs, new ImportProgress());
+    }
+
+    public void seed(List<PhaseSpecs> specs, ImportProgress progress) {
         if (specs.isEmpty()) return;
 
         Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey = fetchActionUnits(specs);
@@ -111,7 +116,12 @@ public class PhaseSeeder {
             phaseRepository.saveAll(chunk);
             entityManager.flush();
             entityManager.clear();
+            progress.advance(chunk.size());
+            SeederUtils.logBatch("PhaseSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toInsert.size());
         }
+        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
+        // so they'd otherwise never be accounted for in the running total.
+        progress.advance(specs.size() - toInsert.size());
     }
 
     private Set<String> fetchExistingPhaseKeys(Map<Long, List<String>> idsByActionUnitId) {

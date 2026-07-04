@@ -137,10 +137,11 @@ class SpecimenSeederTest {
         stubInstitutionFound();
         RecordingUnit ru = stubRecordingUnitFound();
 
-        Specimen existing = new Specimen();
-        existing.setFullIdentifier("chartres-C309_01-1100-1");
-        when(specimenRepository.findAllByFullIdentifierInAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
-                anyCollection(), any(), eq(ru.getFullIdentifier()), eq(ru.getActionUnit().getFullIdentifier())))
+        SpecimenRepository.ExistingSpecimenKey existing = mock(SpecimenRepository.ExistingSpecimenKey.class);
+        when(existing.getFullIdentifier()).thenReturn("chartres-C309_01-1100-1");
+        when(existing.getRecordingUnitFullIdentifier()).thenReturn(ru.getFullIdentifier());
+        when(specimenRepository.findAllKeysByInstitutionIdAndActionUnitFullIdentifier(
+                any(), eq(ru.getActionUnit().getFullIdentifier())))
                 .thenReturn(List.of(existing));
 
         seeder.seed(toInsert, 1L);

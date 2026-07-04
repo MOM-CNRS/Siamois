@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ImportProgress;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -11,12 +12,14 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SpecimenSeeder {
@@ -63,8 +66,13 @@ public class SpecimenSeeder {
     // -------------------------------------------------------------------------
 
     public void seed(List<SpecimenSpecs> specs, Long institutionId) {
+        seed(specs, institutionId, new ImportProgress());
+    }
+
+    public void seed(List<SpecimenSpecs> specs, Long institutionId, ImportProgress progress) {
         if (specs.isEmpty()) return;
 
+        log.info("[SpecimenSeeder] starting seed of {} specs", specs.size());
         Map<String, Institution> institutionsByIdentifier = fetchInstitutions(specs);
         Map<String, Person> personCache = prefetchPersons(specs);
         Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey = fetchConcepts(specs);
@@ -72,6 +80,8 @@ public class SpecimenSeeder {
                 recordingUnitSeeder.bulkGetRecordingUnitsFromKeys(
                         specs.stream().map(SpecimenSpecs::recordingUnitKey).filter(Objects::nonNull).collect(Collectors.toSet()),
                         institutionId);
+        log.info("[SpecimenSeeder] bulk-fetch done (institutions={}, persons={}, concepts={}, recordingUnits={})",
+                institutionsByIdentifier.size(), personCache.size(), conceptsByKey.size(), recordingUnitsByKey.size());
 
         List<Specimen> built = new ArrayList<>();
         for (int i = 0; i < specs.size(); i++) {
@@ -115,7 +125,9 @@ public class SpecimenSeeder {
             }
         }
 
+        log.info("[SpecimenSeeder] {} specs built, resolving existing-specimen keys...", built.size());
         Set<String> existingKeys = fetchExistingSpecimenKeys(built);
+        log.info("[SpecimenSeeder] existing-key lookup done ({} existing keys found)", existingKeys.size());
 
         List<Specimen> toInsert = new ArrayList<>();
         Set<String> queuedKeys = new HashSet<>();
@@ -125,13 +137,19 @@ public class SpecimenSeeder {
                 toInsert.add(sp);
             }
         }
+        log.info("[SpecimenSeeder] {} to insert in batches of {}", toInsert.size(), FLUSH_CHUNK_SIZE);
 
         for (int i = 0; i < toInsert.size(); i += FLUSH_CHUNK_SIZE) {
             List<Specimen> chunk = toInsert.subList(i, Math.min(i + FLUSH_CHUNK_SIZE, toInsert.size()));
             specimenRepository.saveAll(chunk);
             entityManager.flush();
             entityManager.clear();
+            progress.advance(chunk.size());
+            SeederUtils.logBatch("SpecimenSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toInsert.size());
         }
+        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
+        // so they'd otherwise never be accounted for in the running total.
+        progress.advance(specs.size() - toInsert.size());
     }
 
     private String dedupKey(Specimen sp) {
@@ -139,20 +157,23 @@ public class SpecimenSeeder {
                 + "|" + sp.getRecordingUnit().getActionUnit().getFullIdentifier() + "|" + sp.getFullIdentifier();
     }
 
+    /**
+     * Grouped by (institution, action unit) only — NOT by recording unit — so this stays a handful of
+     * queries even when there are thousands of recording units, each with only one or two specimens.
+     * Grouping by recording unit here (as earlier revisions did) degenerates to one query per recording
+     * unit for that common shape, which is effectively N+1 again and can silently stall this whole step.
+     */
     private Set<String> fetchExistingSpecimenKeys(List<Specimen> built) {
-        record GroupKey(Long institutionId, String recordingUnitFullIdentifier, String actionUnitFullIdentifier) {}
-        Map<GroupKey, List<String>> fullIdsByGroup = new HashMap<>();
+        record GroupKey(Long institutionId, String actionUnitFullIdentifier) {}
+        Set<GroupKey> groups = new HashSet<>();
         for (Specimen sp : built) {
-            GroupKey key = new GroupKey(sp.getCreatedByInstitution().getId(), sp.getRecordingUnit().getFullIdentifier(),
-                    sp.getRecordingUnit().getActionUnit().getFullIdentifier());
-            fullIdsByGroup.computeIfAbsent(key, k -> new ArrayList<>()).add(sp.getFullIdentifier());
+            groups.add(new GroupKey(sp.getCreatedByInstitution().getId(), sp.getRecordingUnit().getActionUnit().getFullIdentifier()));
         }
         Set<String> result = new HashSet<>();
-        for (var entry : fullIdsByGroup.entrySet()) {
-            GroupKey key = entry.getKey();
-            for (Specimen existing : specimenRepository.findAllByFullIdentifierInAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier(
-                    entry.getValue(), key.institutionId(), key.recordingUnitFullIdentifier(), key.actionUnitFullIdentifier())) {
-                result.add(key.institutionId() + "|" + key.recordingUnitFullIdentifier() + "|" + key.actionUnitFullIdentifier()
+        for (GroupKey key : groups) {
+            for (SpecimenRepository.ExistingSpecimenKey existing : specimenRepository.findAllKeysByInstitutionIdAndActionUnitFullIdentifier(
+                    key.institutionId(), key.actionUnitFullIdentifier())) {
+                result.add(key.institutionId() + "|" + existing.getRecordingUnitFullIdentifier() + "|" + key.actionUnitFullIdentifier()
                         + "|" + existing.getFullIdentifier());
             }
         }

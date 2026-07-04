@@ -121,6 +121,7 @@ public class SpatialUnitSeeder {
 
         if (!toInsert.isEmpty()) {
             spatialUnitRepository.saveAll(toInsert);
+            SeederUtils.logBatch("SpatialUnitSeeder", toInsert.size(), toInsert.size(), toInsert.size());
         }
 
         return result;

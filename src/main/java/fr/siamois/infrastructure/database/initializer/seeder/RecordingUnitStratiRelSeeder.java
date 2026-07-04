@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
+import fr.siamois.domain.models.misc.ImportProgress;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -44,6 +45,10 @@ public class RecordingUnitStratiRelSeeder {
     // -------------------------------------------------------------------------
 
     public void seed(List<RecordingUnitStratiRelDTO> specs, Long institutionId, String actionUnitIdentifier) {
+        seed(specs, institutionId, actionUnitIdentifier, new ImportProgress());
+    }
+
+    public void seed(List<RecordingUnitStratiRelDTO> specs, Long institutionId, String actionUnitIdentifier, ImportProgress progress) {
         if (specs.isEmpty()) return;
 
         Set<RecordingUnitSeeder.RecordingUnitKey> keys = new HashSet<>();
@@ -97,7 +102,12 @@ public class RecordingUnitStratiRelSeeder {
             stratigraphicRelationshipRepository.saveAll(chunk);
             entityManager.flush();
             entityManager.clear();
+            progress.advance(chunk.size());
+            SeederUtils.logBatch("RecordingUnitStratiRelSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toInsert.size());
         }
+        // specs skipped (null rel, in-batch duplicate, or already-existing) never went into toInsert,
+        // so they'd otherwise never be accounted for in the running total.
+        progress.advance(specs.size() - toInsert.size());
     }
 
     private Set<String> fetchExistingPairs(List<StratigraphicRelationship> built) {
