@@ -1,11 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.permissions.Permission;
-import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.models.permissions.PermissionScopeType;
-import fr.siamois.domain.models.permissions.PersonProfileAssignment;
-import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.models.permissions.*;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
