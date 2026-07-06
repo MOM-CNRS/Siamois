@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean;
 
+import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.Bookmark;
 import fr.siamois.domain.models.events.LoginEvent;
@@ -318,6 +319,7 @@ public class NavBean implements Serializable {
         }
     }
 
+    @ExecutionTimeLogger
     public void goToRecordingUnitList(String mode) throws IOException {
         if (Objects.equals(mode, FLOW)) {
             flowBean.addRecordingUnitListPanel();

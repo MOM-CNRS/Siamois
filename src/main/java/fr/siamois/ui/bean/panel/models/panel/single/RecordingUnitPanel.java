@@ -199,7 +199,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
             // Get  the CHILDREN of the recording unit
             RecordingUnitLazyDataModel lazyDataModelChildren = new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
-            lazyDataModelChildren.withConstantFilter(RecordingUnitSpec.PARENT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
+            lazyDataModelChildren.withConstantFilter(RecordingUnitSpec.PARENTS_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             selectedCategoriesChildren = new ArrayList<>();
             totalChildrenCount = 0;
             // Get all the Parents of the recording unit

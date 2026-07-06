@@ -21,7 +21,7 @@ public class ExecutionTimeAspect {
         Object result = joinPoint.proceed();
 
         long duration = System.currentTimeMillis() - start;
-        logger.info("⏱ Method [{}] executed in {} ms", joinPoint.getSignature(), duration);
+        logger.debug("⏱ Method [{}] executed in {} ms", joinPoint.getSignature(), duration);
 
         return result;
     }

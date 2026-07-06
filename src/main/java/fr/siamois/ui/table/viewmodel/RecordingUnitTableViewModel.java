@@ -239,7 +239,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
                 // Duplicate row (RecordingUnit only)
                 RowAction.builder()
-                        .action(TableColumnAction.DUPLICATE_ROW)
+                        .action(DUPLICATE_ROW)
                         .processExpr(THIS)
                         .updateSelfTable(true) // <-- mettra à jour :#{cc.clientId}:entityDatatable
                         .styleClass(SIA_ICON_BTN)
@@ -399,7 +399,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
-    protected @org.springframework.lang.NonNull List<RecordingUnitDTO> loadChildrensOfUnit(@NonNull RecordingUnitDTO parentUnit) {
+    protected @NonNull List<RecordingUnitDTO> loadChildrensOfUnit(@NonNull RecordingUnitDTO parentUnit) {
         return recordingUnitService.findAllByParentRecordingUnit(parentUnit.getId());
     }
 

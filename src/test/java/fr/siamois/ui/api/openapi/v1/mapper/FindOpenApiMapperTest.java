@@ -1,10 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;

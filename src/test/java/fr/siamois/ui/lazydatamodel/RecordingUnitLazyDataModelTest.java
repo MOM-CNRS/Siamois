@@ -6,6 +6,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
@@ -265,6 +266,8 @@ class RecordingUnitLazyDataModelTest {
 
         RecordingUnitDTO copied = new RecordingUnitDTO();
         copied.setId(999L);
+        copied.setActionUnit(new ActionUnitSummaryDTO());
+        copied.getActionUnit().setId(1L);
 
         BaseRecordingUnitLazyDataModel spyModel = spy(lazyModel);
         doReturn(original).when(spyModel).getRowData();
@@ -272,7 +275,7 @@ class RecordingUnitLazyDataModelTest {
 
         // Le service save est appelé 2 fois : 1 pour initialiser, 1 pour valider l'identifiant
         when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(copied);
-        when(recordingUnitService.generateFullIdentifier(any(), any())).thenReturn("RU-Copy-Generated");
+        when(recordingUnitService.generateFullIdentifier(any(ActionUnitSummaryDTO.class), any())).thenReturn("RU-Copy-Generated");
         when(recordingUnitService.fullIdentifierAlreadyExistInAction(any())).thenReturn(false);
 
         // WHEN
@@ -292,13 +295,15 @@ class RecordingUnitLazyDataModelTest {
 
         RecordingUnitDTO copied = spy(new RecordingUnitDTO()); // Spy pour vérifier resetFullIdentifier()
         copied.setId(999L);
+        copied.setActionUnit(new ActionUnitSummaryDTO());
+        copied.getActionUnit().setId(1L);
 
         BaseRecordingUnitLazyDataModel spyModel = spy(lazyModel);
         doReturn(original).when(spyModel).getRowData();
         doNothing().when(spyModel).addRowToModel(any());
 
         when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(copied);
-        when(recordingUnitService.generateFullIdentifier(any(), any())).thenReturn("RU-Copy-Generated");
+        when(recordingUnitService.generateFullIdentifier(any(ActionUnitSummaryDTO.class), any())).thenReturn("RU-Copy-Generated");
         when(recordingUnitService.fullIdentifierAlreadyExistInAction(any())).thenReturn(true); // Provoque le bloc IF
 
         try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {

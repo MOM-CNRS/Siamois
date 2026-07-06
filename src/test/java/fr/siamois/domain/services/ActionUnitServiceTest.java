@@ -27,10 +27,9 @@ import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitR
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitMapper;
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,15 +39,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.mockito.Answers.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mockStatic;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.OffsetDateTime;
@@ -57,6 +49,7 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;

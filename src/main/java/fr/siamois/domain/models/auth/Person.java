@@ -60,7 +60,6 @@ public class Person implements UserDetails {
     @NotAudited
     private String password;
 
-    @NotNull
     @Column(name = "mail", nullable = true, length = MAIL_MAX_LENGTH, unique = true, columnDefinition = "citext")
     private String email;
 
