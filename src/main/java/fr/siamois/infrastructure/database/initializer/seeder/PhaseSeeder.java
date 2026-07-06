@@ -42,17 +42,18 @@ public class PhaseSeeder {
             ActionUnitSeeder.ActionUnitKey actionUnitKey
     ) {}
 
-    // -------------------------------------------------------------------------
-    // Bulk seeding: collect distinct lookup keys, fetch each reference type in a
-    // handful of queries instead of per-row, then build + batch-write with periodic
-    // flush+clear to bound the persistence context for large imports. Safe to chunk
-    // since phases never reference each other, only externally pre-existing entities.
-    // -------------------------------------------------------------------------
-
     public void seed(List<PhaseSpecs> specs) {
         seed(specs, new ImportProgress());
     }
 
+    /**
+     * Bulk-seeds phases: resolves each spec's action unit, type concept and author in a handful of
+     * queries, deduplicates against already-queued and already-existing phases, then persists the
+     * rest in chunked batches.
+     *
+     * @param specs phase specs to seed; a no-op if empty
+     * @param progress advanced by the number of specs accounted for (persisted or skipped as duplicates)
+     */
     public void seed(List<PhaseSpecs> specs, ImportProgress progress) {
         if (specs.isEmpty()) return;
 
