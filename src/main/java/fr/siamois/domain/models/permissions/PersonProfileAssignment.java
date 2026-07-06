@@ -8,7 +8,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@Table(name = "person_profile_assignment")
+@Table(name = "person_profile_assignment", indexes = {
+        @Index(columnList = "fk_person_id", name = "idx_ppa_person"),
+        @Index(columnList = "fk_profile_id", name = "idx_ppa_profile")
+})
 public class PersonProfileAssignment {
 
     @EmbeddedId
@@ -16,10 +19,12 @@ public class PersonProfileAssignment {
 
     @MapsId("profileId")
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_profile_id")
     private Profile profile;
 
     @MapsId("personId")
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_person_id")
     private Person person;
 
     public PersonProfileAssignment() {

@@ -16,7 +16,11 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "profile")
+@Table(name = "profile", indexes = {
+        @Index(columnList = "code", name = "idx_profile_code"),
+        @Index(columnList = "fk_institution_id", name = "idx_profile_institution"),
+        @Index(columnList = "fk_action_unit_id", name = "idx_profile_action_unit")
+})
 public class Profile {
 
     @Id
@@ -41,7 +45,11 @@ public class Profile {
     @ManyToMany
     @JoinTable(name = "profile_permission",
             joinColumns = @JoinColumn(name = "fk_profile_id"),
-            inverseJoinColumns = @JoinColumn(name = "fk_permission_id")
+            inverseJoinColumns = @JoinColumn(name = "fk_permission_id"),
+            indexes = {
+                    @Index(columnList = "fk_profile_id", name = "idx_profile_permission_profile"),
+                    @Index(columnList = "fk_permission_id", name = "idx_profile_permission_permission")
+            }
     )
     @Builder.Default
     private final Set<Permission> permissions = new HashSet<>();

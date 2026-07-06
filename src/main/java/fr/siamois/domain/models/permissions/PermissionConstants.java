@@ -16,6 +16,11 @@ public final class PermissionConstants {
     public static final String ORGANIZATION_CREATE = "ORGANIZATION_CREATE";
 
     /**
+     * Allows the user to see the list of all institutions
+     */
+    public static final String ORGANIZATION_LIST_ACCESS = "ORGANIZATION_LIST_ACCESS";
+
+    /**
      * Allows the user to manage the member of the specified organization
      */
     public static final String ORGANIZATION_MANAGE_MEMBERS = "ORGANIZATION_MANAGE_MEMBERS";
