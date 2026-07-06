@@ -16,6 +16,7 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@Deprecated(since = "0.12.0")
 public class PermissionServiceImpl implements PermissionService {
 
     private final InstitutionService institutionService;

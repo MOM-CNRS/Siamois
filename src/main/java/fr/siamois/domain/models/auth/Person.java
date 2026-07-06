@@ -73,6 +73,7 @@ public class Person implements UserDetails {
 
     @ColumnDefault("false")
     @Column(name = "is_super_admin")
+    @Deprecated(forRemoval = true)
     private boolean isSuperAdmin = false;
 
     @Column(name = "api_key", length = Integer.MAX_VALUE)
@@ -107,10 +108,7 @@ public class Person implements UserDetails {
     @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<SystemRole> roles = new ArrayList<>();
-        if (this.isSuperAdmin)
-            roles.add(new SystemRole("SUPER_ADMIN"));
-        return roles;
+        return new ArrayList<>();
     }
 
     @JsonIgnore

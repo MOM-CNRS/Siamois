@@ -1,0 +1,64 @@
+package fr.siamois.domain.models.permissions;
+
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.institution.Institution;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "profile")
+public class Profile {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "profile_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    private Long id;
+
+    @NonNull
+    @EqualsAndHashCode.Include
+    private String code;
+
+    @EqualsAndHashCode.Include
+    private String name;
+
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "scope")
+    @EqualsAndHashCode.Include
+    private PermissionScopeType scope;
+
+    @ManyToMany
+    @JoinTable(name = "profile_permission",
+            joinColumns = @JoinColumn(name = "fk_profile_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_permission_id")
+    )
+    private Set<Permission> permissions = new HashSet<>();
+
+    /**
+     * Institution is mandatory if the scope is ORGANISATION or PROJECT
+     */
+    @Nullable
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_institution_id")
+    @EqualsAndHashCode.Include
+    private Institution institution;
+
+    /**
+     * Action unit is mandatory if the score is PROJECT
+     */
+    @Nullable
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_action_unit_id")
+    @EqualsAndHashCode.Include
+    private ActionUnit actionUnit;
+
+}
