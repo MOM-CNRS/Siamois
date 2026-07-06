@@ -3,6 +3,7 @@ package fr.siamois.domain.models.permissions;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -31,8 +32,9 @@ public class Profile {
     @EqualsAndHashCode.Include
     private String name;
 
+    @NotNull
     @Enumerated(EnumType.ORDINAL)
-    @Column(name = "scope")
+    @Column(name = "scope", nullable = false)
     @EqualsAndHashCode.Include
     private PermissionScopeType scope;
 
@@ -41,7 +43,8 @@ public class Profile {
             joinColumns = @JoinColumn(name = "fk_profile_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_permission_id")
     )
-    private Set<Permission> permissions = new HashSet<>();
+    @Builder.Default
+    private final Set<Permission> permissions = new HashSet<>();
 
     /**
      * Institution is mandatory if the scope is ORGANISATION or PROJECT

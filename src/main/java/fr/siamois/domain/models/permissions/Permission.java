@@ -1,8 +1,12 @@
 package fr.siamois.domain.models.permissions;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.springframework.lang.NonNull;
 
 /**
  * This class represents a permission (Create an organization, access an organization info, manage members).
@@ -13,6 +17,8 @@ import lombok.EqualsAndHashCode;
 @Table(name = "permission", indexes = {
         @Index(columnList = "permission_code", name = "idx_permission_code")
 })
+@NoArgsConstructor
+@AllArgsConstructor
 public class Permission {
 
     @Id
@@ -21,15 +27,14 @@ public class Permission {
     @EqualsAndHashCode.Exclude
     private Long id;
 
+    @NotNull
+    @NonNull
     @EqualsAndHashCode.Include
     @Column(name = "permission_code", nullable = false)
     private String code;
 
     @Override
     public String toString() {
-        if (code == null) {
-            return "";
-        }
         return code;
     }
 }
