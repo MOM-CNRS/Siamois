@@ -59,64 +59,14 @@ public class SpatialUnitSeeder {
                 specs.stream().map(SpatialUnitSpecs::authorEmail).toList());
         Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey = fetchConcepts(specs);
 
-        Map<String, SpatialUnit> builtByName = new LinkedHashMap<>();
-        for (int i = 0; i < specs.size(); i++) {
-            var s = specs.get(i);
-            try {
-                Concept type = SeederUtils.field("type", () -> {
-                    Concept c = conceptsByKey.get(new ConceptSeeder.ConceptKey(s.typeVocabularyExtId(), s.typeConceptExtId()));
-                    if (c == null) throw new IllegalStateException("Concept introuvable");
-                    return c;
-                });
-                Person author = SeederUtils.field("auteur", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
-                Institution institution = SeederUtils.field("institutionIdentifier", () -> {
-                    Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
-                    if (inst == null) throw new IllegalStateException("Institution introuvable");
-                    return inst;
-                });
-
-                SpatialUnit toGetOrCreate = new SpatialUnit();
-                toGetOrCreate.setName(s.name());
-                toGetOrCreate.setCreatedByInstitution(institution);
-                toGetOrCreate.setCreatedBy(author);
-                toGetOrCreate.setCategory(type);
-                builtByName.put(s.name(), toGetOrCreate);
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "[Lieu Ligne " + (i + 1) + "] '" + s.name() + "' : " + e.getMessage(), e);
-            }
-        }
-
+        Map<String, SpatialUnit> builtByName = buildEntities(specs, institutionsByIdentifier, personCache, conceptsByKey);
         Map<String, SpatialUnit> existingByKey = fetchExistingSpatialUnits(specs, institutionsByIdentifier);
 
         Map<String, SpatialUnit> result = new LinkedHashMap<>();
         List<SpatialUnit> toInsert = new ArrayList<>();
         Set<String> queuedNames = new HashSet<>();
         for (int i = 0; i < specs.size(); i++) {
-            var s = specs.get(i);
-            try {
-                SpatialUnit built = builtByName.get(s.name());
-                Set<SpatialUnit> children = SeederUtils.field("childrenKey", () -> resolveChildren(builtByName, s.childrenKey()));
-                built.setChildren(children);
-
-                Institution institution = institutionsByIdentifier.get(s.institutionIdentifier());
-                SpatialUnit existing = institution != null
-                        ? existingByKey.get(existingDedupKey(institution.getId(), s.name()))
-                        : null;
-                if (existing != null) {
-                    result.put(s.name(), existing);
-                } else {
-                    // multiple spec rows can share the same name (last-write-wins in builtByName above) —
-                    // only queue the built entity once, or saveAll would insert the same object twice
-                    if (queuedNames.add(s.name())) {
-                        toInsert.add(built);
-                    }
-                    result.put(s.name(), built);
-                }
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "[Lieu Ligne " + (i + 1) + "] '" + s.name() + "' : " + e.getMessage(), e);
-            }
+            resolveSpatialUnit(specs.get(i), i, builtByName, existingByKey, institutionsByIdentifier, queuedNames, toInsert, result);
         }
 
         if (!toInsert.isEmpty()) {
@@ -125,6 +75,74 @@ public class SpatialUnitSeeder {
         }
 
         return result;
+    }
+
+    private Map<String, SpatialUnit> buildEntities(List<SpatialUnitSpecs> specs, Map<String, Institution> institutionsByIdentifier,
+                                                     Map<String, Person> personCache, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey) {
+        Map<String, SpatialUnit> builtByName = new LinkedHashMap<>();
+        for (int i = 0; i < specs.size(); i++) {
+            var s = specs.get(i);
+            try {
+                builtByName.put(s.name(), buildSpatialUnit(s, institutionsByIdentifier, personCache, conceptsByKey));
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "[Lieu Ligne " + (i + 1) + "] '" + s.name() + "' : " + e.getMessage(), e);
+            }
+        }
+        return builtByName;
+    }
+
+    private SpatialUnit buildSpatialUnit(SpatialUnitSpecs s, Map<String, Institution> institutionsByIdentifier,
+                                          Map<String, Person> personCache, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey) {
+        Concept type = SeederUtils.field("type", () -> {
+            Concept c = conceptsByKey.get(new ConceptSeeder.ConceptKey(s.typeVocabularyExtId(), s.typeConceptExtId()));
+            if (c == null) throw new IllegalStateException("Concept introuvable");
+            return c;
+        });
+        Person author = SeederUtils.field("auteur", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
+        Institution institution = SeederUtils.field("institutionIdentifier", () -> {
+            Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
+            if (inst == null) throw new IllegalStateException("Institution introuvable");
+            return inst;
+        });
+
+        SpatialUnit toGetOrCreate = new SpatialUnit();
+        toGetOrCreate.setName(s.name());
+        toGetOrCreate.setCreatedByInstitution(institution);
+        toGetOrCreate.setCreatedBy(author);
+        toGetOrCreate.setCategory(type);
+        return toGetOrCreate;
+    }
+
+    private void resolveSpatialUnit(SpatialUnitSpecs s, int index, Map<String, SpatialUnit> builtByName,
+                                     Map<String, SpatialUnit> existingByKey, Map<String, Institution> institutionsByIdentifier,
+                                     Set<String> queuedNames, List<SpatialUnit> toInsert, Map<String, SpatialUnit> result) {
+        try {
+            SpatialUnit built = builtByName.get(s.name());
+            Set<SpatialUnit> children = SeederUtils.field("childrenKey", () -> resolveChildren(builtByName, s.childrenKey()));
+            built.setChildren(children);
+
+            SpatialUnit existing = findExistingSpatialUnit(s, institutionsByIdentifier, existingByKey);
+            if (existing != null) {
+                result.put(s.name(), existing);
+                return;
+            }
+            // multiple spec rows can share the same name (last-write-wins in builtByName above) —
+            // only queue the built entity once, or saveAll would insert the same object twice
+            if (queuedNames.add(s.name())) {
+                toInsert.add(built);
+            }
+            result.put(s.name(), built);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "[Lieu Ligne " + (index + 1) + "] '" + s.name() + "' : " + e.getMessage(), e);
+        }
+    }
+
+    private SpatialUnit findExistingSpatialUnit(SpatialUnitSpecs s, Map<String, Institution> institutionsByIdentifier,
+                                                 Map<String, SpatialUnit> existingByKey) {
+        Institution institution = institutionsByIdentifier.get(s.institutionIdentifier());
+        return institution != null ? existingByKey.get(existingDedupKey(institution.getId(), s.name())) : null;
     }
 
     private Set<SpatialUnit> resolveChildren(Map<String, SpatialUnit> builtByName, Set<SpatialUnitKey> childrenKeys) {

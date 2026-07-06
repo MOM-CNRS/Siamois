@@ -128,9 +128,11 @@ class RecordingUnitSeederTest {
     @Test
     void seed_ConceptDoesNotExist() {
         // conceptRepository left unstubbed -> returns empty list by default -> concept not found
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
+
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> seeder.seed(oneSpec())
+                () -> seeder.seed(specs)
         );
 
         assertThat(ex.getMessage()).contains("Concept").contains("introuvable");
@@ -140,10 +142,11 @@ class RecordingUnitSeederTest {
     void seed_InstitutionDoesNotExist() {
         stubConceptsFound();
         // institutionRepository left unstubbed -> returns empty list by default -> institution not found
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> seeder.seed(oneSpec())
+                () -> seeder.seed(specs)
         );
 
         assertThat(ex.getMessage()).contains("Institution introuvable");
@@ -156,10 +159,11 @@ class RecordingUnitSeederTest {
 
         when(personSeeder.resolveCached(any(), eq("author@siamois.fr")))
                 .thenThrow(new IllegalStateException("Person introuvable"));
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> seeder.seed(oneSpec())
+                () -> seeder.seed(specs)
         );
 
         assertThat(ex.getMessage()).contains("Person introuvable");
@@ -170,10 +174,11 @@ class RecordingUnitSeederTest {
         stubConceptsFound();
         stubInstitutionFound();
         // spatialUnitRepository left unstubbed -> returns empty list by default -> spatial unit not found
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> seeder.seed(oneSpec())
+                () -> seeder.seed(specs)
         );
 
         assertThat(ex.getMessage()).contains("Lieu Spatial introuvable");
@@ -185,10 +190,11 @@ class RecordingUnitSeederTest {
         stubInstitutionFound();
         stubSpatialUnitFound();
         // actionUnitRepository left unstubbed -> returns empty list by default -> action unit not found
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
 
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> seeder.seed(oneSpec())
+                () -> seeder.seed(specs)
         );
 
         assertThat(ex.getMessage()).contains("Action introuvable");

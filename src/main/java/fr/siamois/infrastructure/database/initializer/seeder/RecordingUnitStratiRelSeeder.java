@@ -63,33 +63,8 @@ public class RecordingUnitStratiRelSeeder {
         List<StratigraphicRelationship> built = new ArrayList<>();
         Set<String> queuedPairs = new HashSet<>();
         for (int i = 0; i < specs.size(); i++) {
-            var s = specs.get(i);
-            try {
-                RecordingUnit us1 = recordingUnitsByKey.get(new RecordingUnitSeeder.RecordingUnitKey(s.us1, actionUnitIdentifier));
-                if (us1 == null) throw new IllegalStateException("Recording unit introuvable");
-                RecordingUnit us2 = recordingUnitsByKey.get(new RecordingUnitSeeder.RecordingUnitKey(s.us2, actionUnitIdentifier));
-                if (us2 == null) throw new IllegalStateException("Recording unit introuvable");
-
-                Concept rel = null;
-                if (s.rel != null) {
-                    rel = conceptsByKey.get(s.rel);
-                    if (rel == null) throw new IllegalStateException("Concept " + s.rel + " introuvable");
-                }
-
-                if (rel != null && queuedPairs.add(us1.getId() + "|" + us2.getId())) {
-                    StratigraphicRelationship newRelationship = new StratigraphicRelationship();
-                    newRelationship.setUnit1(us1);
-                    newRelationship.setUnit2(us2);
-                    newRelationship.setConcept(rel);
-                    newRelationship.setConceptDirection(s.conceptDirection);
-                    newRelationship.setIsAsynchronous(s.isAsynchronous);
-                    newRelationship.setUncertain(s.isUncertain);
-                    built.add(newRelationship);
-                }
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "[Relation strati ligne " + (i + 1) + "] '" + s.us1 + " -> " + s.us2 + "' : " + e.getMessage(), e);
-            }
+            buildRelationship(specs.get(i), i, actionUnitIdentifier, recordingUnitsByKey, conceptsByKey, queuedPairs)
+                    .ifPresent(built::add);
         }
 
         Set<String> existingPairs = fetchExistingPairs(built);
@@ -97,6 +72,52 @@ public class RecordingUnitStratiRelSeeder {
                 .filter(r -> !existingPairs.contains(r.getUnit1().getId() + "|" + r.getUnit2().getId()))
                 .toList();
 
+        flushInBatches(toInsert, progress);
+        // specs skipped (null rel, in-batch duplicate, or already-existing) never went into toInsert,
+        // so they'd otherwise never be accounted for in the running total.
+        progress.advance(specs.size() - toInsert.size());
+    }
+
+    private Optional<StratigraphicRelationship> buildRelationship(RecordingUnitStratiRelDTO s, int index, String actionUnitIdentifier,
+                                                                    Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> recordingUnitsByKey,
+                                                                    Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey,
+                                                                    Set<String> queuedPairs) {
+        try {
+            RecordingUnit us1 = resolveRecordingUnit(s.us1, actionUnitIdentifier, recordingUnitsByKey);
+            RecordingUnit us2 = resolveRecordingUnit(s.us2, actionUnitIdentifier, recordingUnitsByKey);
+            Concept rel = resolveRelConcept(s, conceptsByKey);
+
+            if (rel == null || !queuedPairs.add(us1.getId() + "|" + us2.getId())) return Optional.empty();
+
+            StratigraphicRelationship newRelationship = new StratigraphicRelationship();
+            newRelationship.setUnit1(us1);
+            newRelationship.setUnit2(us2);
+            newRelationship.setConcept(rel);
+            newRelationship.setConceptDirection(s.conceptDirection);
+            newRelationship.setIsAsynchronous(s.isAsynchronous);
+            newRelationship.setUncertain(s.isUncertain);
+            return Optional.of(newRelationship);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "[Relation strati ligne " + (index + 1) + "] '" + s.us1 + " -> " + s.us2 + "' : " + e.getMessage(), e);
+        }
+    }
+
+    private RecordingUnit resolveRecordingUnit(String identifier, String actionUnitIdentifier,
+                                                Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> recordingUnitsByKey) {
+        RecordingUnit ru = recordingUnitsByKey.get(new RecordingUnitSeeder.RecordingUnitKey(identifier, actionUnitIdentifier));
+        if (ru == null) throw new IllegalStateException("Recording unit introuvable");
+        return ru;
+    }
+
+    private Concept resolveRelConcept(RecordingUnitStratiRelDTO s, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey) {
+        if (s.rel == null) return null;
+        Concept rel = conceptsByKey.get(s.rel);
+        if (rel == null) throw new IllegalStateException("Concept " + s.rel + " introuvable");
+        return rel;
+    }
+
+    private void flushInBatches(List<StratigraphicRelationship> toInsert, ImportProgress progress) {
         for (int i = 0; i < toInsert.size(); i += FLUSH_CHUNK_SIZE) {
             List<StratigraphicRelationship> chunk = toInsert.subList(i, Math.min(i + FLUSH_CHUNK_SIZE, toInsert.size()));
             stratigraphicRelationshipRepository.saveAll(chunk);
@@ -105,9 +126,6 @@ public class RecordingUnitStratiRelSeeder {
             progress.advance(chunk.size());
             SeederUtils.logBatch("RecordingUnitStratiRelSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toInsert.size());
         }
-        // specs skipped (null rel, in-batch duplicate, or already-existing) never went into toInsert,
-        // so they'd otherwise never be accounted for in the running total.
-        progress.advance(specs.size() - toInsert.size());
     }
 
     private Set<String> fetchExistingPairs(List<StratigraphicRelationship> built) {

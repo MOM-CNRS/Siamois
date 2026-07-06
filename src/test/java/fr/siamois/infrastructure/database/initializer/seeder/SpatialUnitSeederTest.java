@@ -1,6 +1,5 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;

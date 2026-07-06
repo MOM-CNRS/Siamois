@@ -3,7 +3,6 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;

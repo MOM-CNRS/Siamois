@@ -85,44 +85,7 @@ public class SpecimenSeeder {
 
         List<Specimen> built = new ArrayList<>();
         for (int i = 0; i < specs.size(); i++) {
-            var s = specs.get(i);
-            try {
-                Concept cat = SeederUtils.field("category", () -> {
-                    Concept c = conceptsByKey.get(s.category());
-                    if (c == null) throw new IllegalStateException("Concept " + s.category() + " introuvable");
-                    return c;
-                });
-                Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
-                Institution institution = SeederUtils.field("institutionIdentifier", () -> {
-                    Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
-                    if (inst == null) throw new IllegalStateException("Institution introuvable");
-                    return inst;
-                });
-
-                List<Person> authors    = buildPersonList(personCache, s.authors,    "authors");
-                List<Person> collectors = buildPersonList(personCache, s.collectors, "collectors");
-
-                RecordingUnit ru = SeederUtils.field("UE", () -> {
-                    RecordingUnit found = recordingUnitsByKey.get(s.recordingUnitKey());
-                    if (found == null) throw new IllegalStateException("Recording unit introuvable");
-                    return found;
-                });
-
-                Specimen toGetOrCreate = new Specimen();
-                toGetOrCreate.setCreatedByInstitution(institution);
-                toGetOrCreate.setIdentifier(s.identifier);
-                toGetOrCreate.setCategory(cat);
-                toGetOrCreate.setCreatedBy(author);
-                toGetOrCreate.setFullIdentifier(s.fullIdentifier);
-                toGetOrCreate.setRecordingUnit(ru);
-                toGetOrCreate.setAuthors(authors);
-                toGetOrCreate.setCollectors(collectors);
-                toGetOrCreate.setCreationTime(s.creationTime);
-                built.add(toGetOrCreate);
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "[Spécimen ligne " + (i + 1) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
-            }
+            built.add(buildSpecimen(specs.get(i), i, institutionsByIdentifier, personCache, conceptsByKey, recordingUnitsByKey));
         }
 
         log.info("[SpecimenSeeder] {} specs built, resolving existing-specimen keys...", built.size());
@@ -139,6 +102,55 @@ public class SpecimenSeeder {
         }
         log.info("[SpecimenSeeder] {} to insert in batches of {}", toInsert.size(), FLUSH_CHUNK_SIZE);
 
+        flushInBatches(toInsert, progress);
+        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
+        // so they'd otherwise never be accounted for in the running total.
+        progress.advance(specs.size() - toInsert.size());
+    }
+
+    private Specimen buildSpecimen(SpecimenSpecs s, int index, Map<String, Institution> institutionsByIdentifier,
+                                    Map<String, Person> personCache, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey,
+                                    Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> recordingUnitsByKey) {
+        try {
+            Concept cat = SeederUtils.field("category", () -> {
+                Concept c = conceptsByKey.get(s.category());
+                if (c == null) throw new IllegalStateException("Concept " + s.category() + " introuvable");
+                return c;
+            });
+            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
+            Institution institution = SeederUtils.field("institutionIdentifier", () -> {
+                Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
+                if (inst == null) throw new IllegalStateException("Institution introuvable");
+                return inst;
+            });
+
+            List<Person> authors    = buildPersonList(personCache, s.authors,    "authors");
+            List<Person> collectors = buildPersonList(personCache, s.collectors, "collectors");
+
+            RecordingUnit ru = SeederUtils.field("UE", () -> {
+                RecordingUnit found = recordingUnitsByKey.get(s.recordingUnitKey());
+                if (found == null) throw new IllegalStateException("Recording unit introuvable");
+                return found;
+            });
+
+            Specimen toGetOrCreate = new Specimen();
+            toGetOrCreate.setCreatedByInstitution(institution);
+            toGetOrCreate.setIdentifier(s.identifier);
+            toGetOrCreate.setCategory(cat);
+            toGetOrCreate.setCreatedBy(author);
+            toGetOrCreate.setFullIdentifier(s.fullIdentifier);
+            toGetOrCreate.setRecordingUnit(ru);
+            toGetOrCreate.setAuthors(authors);
+            toGetOrCreate.setCollectors(collectors);
+            toGetOrCreate.setCreationTime(s.creationTime);
+            return toGetOrCreate;
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "[Spécimen ligne " + (index + 1) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
+        }
+    }
+
+    private void flushInBatches(List<Specimen> toInsert, ImportProgress progress) {
         for (int i = 0; i < toInsert.size(); i += FLUSH_CHUNK_SIZE) {
             List<Specimen> chunk = toInsert.subList(i, Math.min(i + FLUSH_CHUNK_SIZE, toInsert.size()));
             specimenRepository.saveAll(chunk);
@@ -147,9 +159,6 @@ public class SpecimenSeeder {
             progress.advance(chunk.size());
             SeederUtils.logBatch("SpecimenSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toInsert.size());
         }
-        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
-        // so they'd otherwise never be accounted for in the running total.
-        progress.advance(specs.size() - toInsert.size());
     }
 
     private String dedupKey(Specimen sp) {

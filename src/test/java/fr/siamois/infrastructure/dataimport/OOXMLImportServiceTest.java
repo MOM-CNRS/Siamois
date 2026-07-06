@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OOXMLImportServiceTest {
@@ -633,7 +634,7 @@ class OOXMLImportServiceTest {
     @Test
     void parseStratiRels_labelFallback_resolvesConceptViaConceptService() {
         var au = actionUnitWithInstitution(42L);
-        org.mockito.Mockito.when(conceptService.resolveConceptByLabel(42L, RecordingUnit.STRATI_FIELD_CODE, "Postérieur"))
+        when(conceptService.resolveConceptByLabel(42L, RecordingUnit.STRATI_FIELD_CODE, "Postérieur"))
                 .thenReturn(conceptWithKey("th240", "9999"));
 
         Workbook wb = workbook();
@@ -662,7 +663,7 @@ class OOXMLImportServiceTest {
     @Test
     void parseStratiRels_labelNoMatch_errorAddedWithLabelColumnName() {
         var au = actionUnitWithInstitution(42L);
-        org.mockito.Mockito.when(conceptService.resolveConceptByLabel(42L, RecordingUnit.STRATI_FIELD_CODE, "Inconnu"))
+        when(conceptService.resolveConceptByLabel(42L, RecordingUnit.STRATI_FIELD_CODE, "Inconnu"))
                 .thenThrow(new IllegalStateException("Concept 'Inconnu' introuvable dans le thésaurus configuré"));
 
         Workbook wb = workbook();
@@ -682,7 +683,7 @@ class OOXMLImportServiceTest {
     @Test
     void parseRecordingUnits_labelFallback_resolvesTypeConceptViaConceptService() {
         var au = actionUnitWithInstitution(7L);
-        org.mockito.Mockito.when(conceptService.resolveConceptByLabel(7L, RecordingUnit.TYPE_FIELD_CODE, "Fosse"))
+        when(conceptService.resolveConceptByLabel(7L, RecordingUnit.TYPE_FIELD_CODE, "Fosse"))
                 .thenReturn(conceptWithKey("th1", "5"));
 
         Workbook wb = workbook();
@@ -697,7 +698,7 @@ class OOXMLImportServiceTest {
     @Test
     void parseSpatialUnits_labelFallback_resolvesCategoryConceptViaConceptService() {
         var au = actionUnitWithInstitution(9L);
-        org.mockito.Mockito.when(conceptService.resolveConceptByLabel(9L, SpatialUnit.CATEGORY_FIELD_CODE, "Site"))
+        when(conceptService.resolveConceptByLabel(9L, SpatialUnit.CATEGORY_FIELD_CODE, "Site"))
                 .thenReturn(conceptWithKey("th2", "10"));
 
         Workbook wb = workbook();
