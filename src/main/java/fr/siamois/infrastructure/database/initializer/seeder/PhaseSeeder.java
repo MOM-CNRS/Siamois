@@ -65,52 +65,76 @@ public class PhaseSeeder {
         Map<Long, List<String>> existingIdsByActionUnitId = new HashMap<>();
 
         for (int i = 0; i < specs.size(); i++) {
-            var s = specs.get(i);
-            try {
-                ActionUnit au = SeederUtils.field("projet", () -> {
-                    ActionUnit found = actionUnitsByKey.get(s.actionUnitKey());
-                    if (found == null) throw new IllegalStateException("Projet introuvable");
-                    return found;
-                });
-
-                Concept type = s.type() != null
-                        ? SeederUtils.field("type", () -> {
-                            Concept c = conceptsByKey.get(s.type());
-                            if (c == null) throw new IllegalStateException("Concept " + s.type() + " introuvable");
-                            return c;
-                        })
-                        : null;
-
-                Person author = s.authorEmail() != null && !s.authorEmail().isBlank()
-                        ? SeederUtils.field("auteur", () -> personSeeder.resolveCached(personCache, s.authorEmail()))
-                        : null;
-
-                String dedupKey = au.getId() + "|" + s.identifier();
-                if (queuedKeys.add(dedupKey)) {
-                    Phase phase = new Phase();
-                    phase.setIdentifier(s.identifier());
-                    phase.setTitle(s.title());
-                    phase.setActionUnit(au);
-                    phase.setType(type);
-                    phase.setDescription(s.description());
-                    phase.setOrderNumber(s.orderNumber());
-                    phase.setLowerBound(s.lowerBound());
-                    phase.setUpperBound(s.upperBound());
-                    phase.setCreatedByInstitution(au.getCreatedByInstitution());
-                    phase.setAuthor(author);
-                    phase.setCreatedBy(author);
-                    toInsert.add(phase);
-                    existingIdsByActionUnitId.computeIfAbsent(au.getId(), k -> new ArrayList<>()).add(s.identifier());
-                }
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "[Phase ligne " + (i + 1) + "] '" + s.identifier() + "' : " + e.getMessage(), e);
-            }
+            buildPhase(specs.get(i), i, actionUnitsByKey, conceptsByKey, personCache,
+                    queuedKeys, existingIdsByActionUnitId).ifPresent(toInsert::add);
         }
 
         Set<String> existingKeys = fetchExistingPhaseKeys(existingIdsByActionUnitId);
         toInsert.removeIf(phase -> existingKeys.contains(phase.getActionUnit().getId() + "|" + phase.getIdentifier()));
 
+        flushInBatches(toInsert, progress);
+        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
+        // so they'd otherwise never be accounted for in the running total.
+        progress.advance(specs.size() - toInsert.size());
+    }
+
+    private Optional<Phase> buildPhase(PhaseSpecs s, int index,
+                                        Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey,
+                                        Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey,
+                                        Map<String, Person> personCache,
+                                        Set<String> queuedKeys,
+                                        Map<Long, List<String>> existingIdsByActionUnitId) {
+        try {
+            ActionUnit au = resolveActionUnit(s, actionUnitsByKey);
+            Concept type = resolveType(s, conceptsByKey);
+            Person author = resolveAuthor(s, personCache);
+
+            String dedupKey = au.getId() + "|" + s.identifier();
+            if (!queuedKeys.add(dedupKey)) return Optional.empty();
+
+            Phase phase = new Phase();
+            phase.setIdentifier(s.identifier());
+            phase.setTitle(s.title());
+            phase.setActionUnit(au);
+            phase.setType(type);
+            phase.setDescription(s.description());
+            phase.setOrderNumber(s.orderNumber());
+            phase.setLowerBound(s.lowerBound());
+            phase.setUpperBound(s.upperBound());
+            phase.setCreatedByInstitution(au.getCreatedByInstitution());
+            phase.setAuthor(author);
+            phase.setCreatedBy(author);
+            existingIdsByActionUnitId.computeIfAbsent(au.getId(), k -> new ArrayList<>()).add(s.identifier());
+            return Optional.of(phase);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "[Phase ligne " + (index + 1) + "] '" + s.identifier() + "' : " + e.getMessage(), e);
+        }
+    }
+
+    private ActionUnit resolveActionUnit(PhaseSpecs s, Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey) {
+        return SeederUtils.field("projet", () -> {
+            ActionUnit found = actionUnitsByKey.get(s.actionUnitKey());
+            if (found == null) throw new IllegalStateException("Projet introuvable");
+            return found;
+        });
+    }
+
+    private Concept resolveType(PhaseSpecs s, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey) {
+        if (s.type() == null) return null;
+        return SeederUtils.field("type", () -> {
+            Concept c = conceptsByKey.get(s.type());
+            if (c == null) throw new IllegalStateException("Concept " + s.type() + " introuvable");
+            return c;
+        });
+    }
+
+    private Person resolveAuthor(PhaseSpecs s, Map<String, Person> personCache) {
+        if (s.authorEmail() == null || s.authorEmail().isBlank()) return null;
+        return SeederUtils.field("auteur", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
+    }
+
+    private void flushInBatches(List<Phase> toInsert, ImportProgress progress) {
         for (int i = 0; i < toInsert.size(); i += FLUSH_CHUNK_SIZE) {
             List<Phase> chunk = toInsert.subList(i, Math.min(i + FLUSH_CHUNK_SIZE, toInsert.size()));
             phaseRepository.saveAll(chunk);
@@ -119,9 +143,6 @@ public class PhaseSeeder {
             progress.advance(chunk.size());
             SeederUtils.logBatch("PhaseSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toInsert.size());
         }
-        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
-        // so they'd otherwise never be accounted for in the running total.
-        progress.advance(specs.size() - toInsert.size());
     }
 
     private Set<String> fetchExistingPhaseKeys(Map<Long, List<String>> idsByActionUnitId) {

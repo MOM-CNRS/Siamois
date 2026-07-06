@@ -18,9 +18,6 @@ public class ProjectDataSeeder {
     private final SpatialUnitSeeder spatialUnitSeeder;
     private final PhaseSeeder phaseSeeder;
 
-    public void seedAll(ImportSpecs spec, ActionUnitDTO project) {
-        seedAll(spec, project, new ImportProgress());
-    }
 
     @Transactional
     public void seedAll(ImportSpecs spec, ActionUnitDTO project, ImportProgress progress) {
