@@ -11,7 +11,8 @@ import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.Map;
 
-import static fr.siamois.infrastructure.dataimport.ExcelCellHelper.*;
+import static fr.siamois.infrastructure.dataimport.ExcelCellHelper.indexColumns;
+import static fr.siamois.infrastructure.dataimport.ExcelCellHelper.parseOffsetDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ExcelCellHelperTest {
