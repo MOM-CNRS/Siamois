@@ -5,7 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -77,7 +77,7 @@ class OrganizationControllerApiTest {
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -109,7 +109,7 @@ class OrganizationControllerApiTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);

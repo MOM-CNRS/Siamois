@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -59,7 +59,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
     @Mock
     private PersonMapper personMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -85,7 +85,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);

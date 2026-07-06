@@ -5,9 +5,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -84,7 +85,7 @@ class ProjectControllerApiTest {
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -117,7 +118,7 @@ class ProjectControllerApiTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);
@@ -591,8 +592,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(institutionService.findById(100L)).thenReturn(institutionDto);
-        when(permissionService.isInstitutionManager(any())).thenReturn(false);
-        when(permissionService.isActionManager(any())).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(false);
 
         mockMvc.perform(post("/api/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -608,7 +608,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(institutionService.findById(100L)).thenReturn(institutionDto);
-        when(permissionService.isInstitutionManager(any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
 
         fr.siamois.domain.models.vocabulary.Concept typeConcept = mock(fr.siamois.domain.models.vocabulary.Concept.class);
         when(conceptService.findById(42L)).thenReturn(java.util.Optional.of(typeConcept));
@@ -666,7 +666,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("1", Set.of(100L))).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(false);
 
         mockMvc.perform(patch("/api/v1/projects/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -690,7 +690,7 @@ class ProjectControllerApiTest {
         when(actionUnitService.findAccessibleProjectByKey("8", Set.of(100L)))
                 .thenReturn(row)
                 .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
         when(actionUnitService.save(any(), any(), any())).thenReturn(au);
 
         ProjectResource resource = new ProjectResource();
@@ -722,7 +722,7 @@ class ProjectControllerApiTest {
         when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L)))
                 .thenReturn(row)
                 .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
 
         SpatialUnitDTO place = new SpatialUnitDTO();
         place.setId(50L);
@@ -767,7 +767,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("3", Set.of(100L))).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/3"))
                 .andExpect(status().isConflict());
@@ -786,7 +786,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 1L);
         when(actionUnitService.findAccessibleProjectByKey("4", Set.of(100L))).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/4"))
                 .andExpect(status().isConflict());
@@ -805,7 +805,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L))).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/9"))
                 .andExpect(status().isNoContent());

@@ -12,13 +12,14 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOn
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -97,7 +98,7 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private ActionUnitService actionUnitService;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private PersonService personService;
     @Mock
@@ -127,7 +128,7 @@ class RecordingUnitOpenApiServiceTest {
                 specimenService,
                 langService,
                 actionUnitService,
-                permissionService,
+                profilePermissionService,
                 personService,
                 spatialUnitService,
                 personMapper);
@@ -664,7 +665,7 @@ class RecordingUnitOpenApiServiceTest {
         parentDto.setCreatedByInstitution(institution);
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("5"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
-        when(permissionService.hasWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(true);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(99L, SCOPE)).thenReturn(new RecordingUnitDTO());
         when(recordingUnitService.findRelationsForAccessibleRecordingUnit("5", SCOPE)).thenReturn(
                 new RecordingUnitService.RecordingUnitRelationsBundle(List.of(), List.of(), List.of()));
@@ -687,7 +688,7 @@ class RecordingUnitOpenApiServiceTest {
         parentDto.setCreatedByInstitution(institution);
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("5"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
-        when(permissionService.hasWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(false);
 
         assertThatThrownBy(() -> service.addExistingChild("5", 99L, personDto, SCOPE))
                 .isInstanceOf(ResponseStatusException.class)
@@ -999,7 +1000,7 @@ class RecordingUnitOpenApiServiceTest {
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
         request.setExpectedRevision(3L);
@@ -1017,7 +1018,7 @@ class RecordingUnitOpenApiServiceTest {
         ruDto.setCreatedByInstitution(inst);
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(false);
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
 
@@ -1150,7 +1151,7 @@ class RecordingUnitOpenApiServiceTest {
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
         request.setExpectedRevision(0L);
@@ -1179,7 +1180,7 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(false);
 
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
         request.setActionUnitId("5");
@@ -1199,7 +1200,7 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
         Concept typeConcept = new Concept();
         typeConcept.setId(42L);
         when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
@@ -1225,7 +1226,7 @@ class RecordingUnitOpenApiServiceTest {
         au.setRecordingUnitIdentifierFormat("RU-%s");
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
 
         Concept typeConcept = new Concept();
         typeConcept.setId(42L);
@@ -1296,7 +1297,7 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(permissionService.hasWritePermission(any(UserInfo.class), same(au))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
         Concept typeConcept = new Concept();
         typeConcept.setId(42L);
         ConceptDTO typeDto = new ConceptDTO();
@@ -1341,7 +1342,7 @@ class RecordingUnitOpenApiServiceTest {
         ruDto.setType(new ConceptDTO());
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
@@ -1381,7 +1382,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
@@ -1453,7 +1454,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
@@ -1493,7 +1494,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(conceptField));
         when(formService.initOrReuseResponse(isNull(), any(), any(FieldSource.class), eq(true))).thenReturn(responseVm);
@@ -1522,7 +1523,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(any(), any())).thenReturn(customForm);
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(textField));
         when(formService.initOrReuseResponse(isNull(), any(), any(FieldSource.class), eq(true))).thenReturn(responseVm);
@@ -1564,7 +1565,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(permissionService.hasWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);

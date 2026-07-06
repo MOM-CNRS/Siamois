@@ -5,9 +5,10 @@ import fr.siamois.domain.events.publisher.LoginEventPublisher;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.StratigraphicRelationshipService;
@@ -71,7 +72,7 @@ public class FlowBean implements Serializable {
     private final transient PersonService personService;
     private final transient ConceptService conceptService;
     private final transient StratigraphicRelationshipService stratigraphicRelationshipService;
-    private final transient PermissionService permissionService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final transient HistoryBean historyBean;
@@ -654,7 +655,9 @@ public class FlowBean implements Serializable {
 
     public boolean userHasAddSpatialOrActionUnitPermission() {
         UserInfo info = sessionSettings.getUserInfo();
-        return info.getUser().isSuperAdmin() || permissionService.isActionManager(info) || permissionService.isInstitutionManager(info);
+        return info.getUser().isSuperAdmin()
+                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_CREATE_PLACES)
+                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
     }
 
     public String invokeOnClick(MethodExpression method, Long id, AbstractPanel panelModel) {
@@ -678,8 +681,7 @@ public class FlowBean implements Serializable {
      * @return true if creation is allowed
      */
     public boolean isActionUnitCreateAllowed() {
-        return permissionService.isInstitutionManager(sessionSettings.getUserInfo())
-                || permissionService.isActionManager(sessionSettings.getUserInfo());
+        return profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
     }
 
     /**

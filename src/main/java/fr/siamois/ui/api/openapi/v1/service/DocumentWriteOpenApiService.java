@@ -9,7 +9,7 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -44,7 +44,7 @@ public class DocumentWriteOpenApiService {
     private final DocumentService documentService;
     private final ConceptService conceptService;
     private final InstitutionService institutionService;
-    private final PermissionService permissionService;
+    private final ProfilePermissionService profilePermissionService;
     private final ArkService arkService;
     private final ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
 
@@ -101,7 +101,7 @@ public class DocumentWriteOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!permissionService.hasWritePermission(userInfo, ru)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de document non autorisée sur cette UE");
         }
 

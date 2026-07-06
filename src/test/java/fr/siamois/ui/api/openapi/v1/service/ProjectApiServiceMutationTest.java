@@ -1,10 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -62,7 +63,7 @@ class ProjectApiServiceMutationTest {
     @Mock
     private PersonMapper personMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -87,7 +88,7 @@ class ProjectApiServiceMutationTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);
@@ -124,8 +125,7 @@ class ProjectApiServiceMutationTest {
     void createProject_notManager_throws403() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any())).thenReturn(false);
-        when(permissionService.isActionManager(any())).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(false);
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -138,7 +138,7 @@ class ProjectApiServiceMutationTest {
     void createProject_success_savesAndReturnsAccessibleProject() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
 
         Concept typeConcept = new Concept();
         typeConcept.setId(42L);
@@ -163,7 +163,7 @@ class ProjectApiServiceMutationTest {
     void createProject_duplicateIdentifier_throws409() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
         when(actionUnitService.save(any(), any(), any()))
@@ -179,7 +179,7 @@ class ProjectApiServiceMutationTest {
         ActionUnitDTO au = projectWithInstitution();
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), same(au))).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(false);
 
         var patchRequest = new ProjectPatchRequest();
         assertThatThrownBy(() -> service.patchProject(caller, "7", patchRequest, "fr"))
@@ -194,7 +194,7 @@ class ProjectApiServiceMutationTest {
         au.setType(new ConceptDTO());
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), same(au))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
         when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
 
         ProjectPatchRequest patch = new ProjectPatchRequest();
@@ -212,7 +212,7 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), same(au))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -225,7 +225,7 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), same(au))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
 
         service.deleteProject(caller, "7", "fr");
 
@@ -238,7 +238,7 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), same(au))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_CREATE_ACTIONS))).thenReturn(true);
         doThrow(new IllegalStateException("blocked")).when(actionUnitService).deleteProjectWhenEmpty(7L);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
