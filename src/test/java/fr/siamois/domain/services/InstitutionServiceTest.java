@@ -8,6 +8,7 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.team.ActionManagerRelation;
 import fr.siamois.domain.models.team.TeamMemberRelation;
@@ -280,9 +281,11 @@ class InstitutionServiceTest {
         PersonDTO person = new PersonDTO();
         person.setId(1L);
 
-        when(institutionRepository.findAllAsMember(person.getId())).thenReturn(Set.of(institution1));
-        when(institutionRepository.findAllAsActionManager(person.getId())).thenReturn(Set.of(institution2));
-        when(institutionRepository.findAllAsInstitutionManager(person.getId())).thenReturn(Set.of(institution1, institution2));
+        when(institutionRepository.findAllVisibleToPerson(
+                person.getId(),
+                List.of(PermissionConstants.ORGANIZATION_ACCESS, PermissionConstants.ORGANIZATION_LIST_ACCESS),
+                PermissionConstants.ORGANIZATION_ACCESS))
+                .thenReturn(Set.of(institution1, institution2));
 
         when(institutionMapper.convert(institution1)).thenReturn(institution1DTO);
         when(institutionMapper.convert(institution2)).thenReturn(institution2DTO);
@@ -296,9 +299,10 @@ class InstitutionServiceTest {
                 .hasSize(2)
                 .containsExactlyInAnyOrder(institution1DTO, institution2DTO);
 
-        verify(institutionRepository, times(1)).findAllAsMember(person.getId());
-        verify(institutionRepository, times(1)).findAllAsActionManager(person.getId());
-        verify(institutionRepository, times(1)).findAllAsInstitutionManager(person.getId());
+        verify(institutionRepository, times(1)).findAllVisibleToPerson(
+                person.getId(),
+                List.of(PermissionConstants.ORGANIZATION_ACCESS, PermissionConstants.ORGANIZATION_LIST_ACCESS),
+                PermissionConstants.ORGANIZATION_ACCESS);
         verify(institutionMapper, times(1)).convert(institution1);
         verify(institutionMapper, times(1)).convert(institution2);
     }

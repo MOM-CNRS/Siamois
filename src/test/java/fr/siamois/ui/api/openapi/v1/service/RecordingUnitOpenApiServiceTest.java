@@ -115,6 +115,7 @@ class RecordingUnitOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
         service = new RecordingUnitOpenApiService(
                 recordingUnitService,
                 formService,

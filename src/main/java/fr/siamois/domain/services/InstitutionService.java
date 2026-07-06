@@ -7,6 +7,7 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.team.ActionManagerRelation;
 import fr.siamois.domain.models.team.TeamMemberRelation;
@@ -92,24 +93,21 @@ public class InstitutionService {
     }
 
     /**
-     * Finds all institutions that a person is associated with.
+     * Finds all institutions that a person is allowed to display, based on the
+     * profile permission system: an INSTANCE-scoped profile with an organization
+     * access permission grants every institution, an ORGANISATION-scoped profile
+     * with {@link PermissionConstants#ORGANIZATION_ACCESS} grants its institution,
+     * and a PROJECT-scoped profile grants the institution owning its action unit.
      *
-     * @param person the person whose institutions to find
-     * @return a set of institutions associated with the person as DTOs
+     * @param person the person whose visible institutions to find
+     * @return a set of institutions the person can display, as DTOs
      */
     public Set<InstitutionDTO> findInstitutionsOfPerson(PersonDTO person) {
-        Set<Institution> institutions = new HashSet<>();
+        Set<Institution> institutions = institutionRepository.findAllVisibleToPerson(
+                person.getId(),
+                List.of(PermissionConstants.ORGANIZATION_ACCESS, PermissionConstants.ORGANIZATION_LIST_ACCESS),
+                PermissionConstants.ORGANIZATION_ACCESS);
 
-        if(person.isSuperAdmin()) {
-            institutions.addAll((Collection<? extends Institution>) institutionRepository.findAll());
-        }
-        else {
-            institutions.addAll(institutionRepository.findAllAsMember(person.getId()));
-            institutions.addAll(institutionRepository.findAllAsActionManager(person.getId()));
-            institutions.addAll(institutionRepository.findAllAsInstitutionManager(person.getId()));
-        }
-
-        // Convert Set<Institution> to Set<InstitutionDTO>
         return institutions.stream()
                 .map(institutionMapper::convert)
                 .collect(Collectors.toSet());

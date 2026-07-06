@@ -106,4 +106,48 @@ public class ProfilePermissionService {
         Long actionUnitId = recordingUnit.getActionUnit() != null ? recordingUnit.getActionUnit().getId() : null;
         return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
     }
+
+    /**
+     * Checks if the person can display the data of the given institution, i.e. holds
+     * {@link PermissionConstants#ORGANIZATION_ACCESS} through an INSTANCE- or
+     * ORGANISATION-scoped profile.
+     *
+     * @param person      the person to check
+     * @param institution the institution whose data is displayed
+     * @return true if the institution data can be displayed
+     */
+    public boolean canViewInstitutionData(PersonDTO person, InstitutionDTO institution) {
+        return hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_ACCESS);
+    }
+
+    /**
+     * Checks if the person can display the given project (action unit): either the
+     * whole institution data is visible ({@link #canViewInstitutionData}), or the
+     * person has a PROJECT-scoped profile assigned on that action unit.
+     *
+     * @param person       the person to check
+     * @param institution  the institution owning the project
+     * @param actionUnitId the project's action unit id; may be null
+     * @return true if the project can be displayed
+     */
+    public boolean canViewProject(PersonDTO person, InstitutionDTO institution, Long actionUnitId) {
+        if (canViewInstitutionData(person, institution)) {
+            return true;
+        }
+        return actionUnitId != null && person != null && person.getId() != null
+                && assignmentRepository.personHasAnyProfileOnActionUnit(person.getId(), actionUnitId);
+    }
+
+    /**
+     * Checks if the person can display the given recording unit, i.e. can display
+     * the project it belongs to.
+     *
+     * @param person        the person to check
+     * @param recordingUnit the recording unit to display
+     * @return true if the recording unit can be displayed
+     */
+    public boolean canViewRecordingUnit(PersonDTO person, RecordingUnitDTO recordingUnit) {
+        Long actionUnitId = recordingUnit.getActionUnit() != null ? recordingUnit.getActionUnit().getId() : null;
+        return canViewProject(person, recordingUnit.getCreatedByInstitution(), actionUnitId);
+    }
 }

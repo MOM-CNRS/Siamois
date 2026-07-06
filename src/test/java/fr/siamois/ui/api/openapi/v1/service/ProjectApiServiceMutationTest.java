@@ -78,6 +78,7 @@ class ProjectApiServiceMutationTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
         service = new ProjectApiService(
                 institutionService,
                 actionUnitService,

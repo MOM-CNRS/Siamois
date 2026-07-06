@@ -4,7 +4,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.form.CustomFieldService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -78,7 +78,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
-    private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient FormMapper formMapper;
 
 
@@ -123,7 +123,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
-        this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.formMapper = context.getBean(FormMapper.class);
     }
 
@@ -405,8 +405,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 navBean,
                 flowBean,
                 (GenericNewUnitDialogBean<SpatialUnitDTO>) genericNewUnitDialogBean,
-                spatialUnitWriteVerifier,
-                institutionService,
+                profilePermissionService,
                 formContextServices
         );
         childTableModel.setParentPanel(this);

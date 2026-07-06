@@ -2,8 +2,8 @@ package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
-import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.authorization.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -57,8 +57,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     private final BaseSpatialUnitLazyDataModel spatialUnitLazyDataModel;
     private final FlowBean flowBean;
 
-    private final SpatialUnitWriteVerifier spatialUnitWriteVerifier;
-    private final InstitutionService institutionService;
+    private final ProfilePermissionService profilePermissionService;
 
     private final SessionSettingsBean sessionSettingsBean;
 
@@ -70,8 +69,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                                      SpatialUnitService spatialUnitService,
                                      NavBean navBean,
                                      FlowBean flowBean, GenericNewUnitDialogBean<SpatialUnitDTO> genericNewUnitDialogBean,
-                                     SpatialUnitWriteVerifier writeVerifier,
-                                     InstitutionService institutionService,
+                                     ProfilePermissionService profilePermissionService,
                                      FormContextServices formContextService) {
 
         super(
@@ -90,8 +88,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
 
-        this.spatialUnitWriteVerifier = writeVerifier;
-        this.institutionService = institutionService;
+        this.profilePermissionService = profilePermissionService;
     }
 
     @Override
@@ -152,10 +149,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     public boolean isRendered(TableColumn column, String key, SpatialUnitDTO su) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "spatialUnitCreateAllowed" -> spatialUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), su);
-            case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
-                    flowBean.getSessionSettings().getUserInfo().getUser(),
-                    flowBean.getSessionSettings().getSelectedInstitution());
+            case "spatialUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_CREATE_PLACES);
+            case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
             default -> false;
         };
     }
@@ -264,8 +259,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                     spatialUnitService.hasCreatePermission(sessionSettingsBean.getUserInfo());
             case TOGGLE_BOOKMARK -> true; // Anyone can add to fav
             case NEW_ACTION -> flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
-                    institutionService.personIsInstitutionManagerOrActionManager(sessionSettingsBean.getUserInfo().getUser(),
-                            sessionSettingsBean.getSelectedInstitution());
+                    profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
             default -> true;
         };
     }
@@ -417,8 +411,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     @Override
     public boolean canUserEditRow(SpatialUnitDTO unit) {
         return flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
-                institutionService.personIsInstitutionManagerOrActionManager(sessionSettingsBean.getUserInfo().getUser(),
-                        sessionSettingsBean.getSelectedInstitution());
+                profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
     }
 
     @Override

@@ -98,6 +98,10 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO dto = bundle.dto();
         RecordingUnit entity = bundle.entity();
 
+        if (!profilePermissionService.canViewRecordingUnit(personDto, dto)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
+        }
+
         RecordingUnitResource recordingUnit = recordingUnitResponseMapper.convert(dto);
 
         InstitutionDTO institution = dto.getCreatedByInstitution();

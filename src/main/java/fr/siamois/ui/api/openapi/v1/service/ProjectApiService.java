@@ -114,6 +114,7 @@ public class ProjectApiService {
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit, sort);
         return actionUnitService.findAccessibleProjects(
+                caller.person().getId(),
                 caller.accessibleInstitutionIds(),
                 organizationId,
                 search,
@@ -121,7 +122,12 @@ public class ProjectApiService {
     }
 
     public AccessibleProjectForApi requireAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
-        return actionUnitService.findAccessibleProjectByKey(projectIdOrKey, caller.accessibleInstitutionIds());
+        AccessibleProjectForApi row = actionUnitService.findAccessibleProjectByKey(projectIdOrKey, caller.accessibleInstitutionIds());
+        ActionUnitDTO project = row.actionUnit();
+        if (!profilePermissionService.canViewProject(caller.person(), project.getCreatedByInstitution(), project.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Projet introuvable ou non accessible");
+        }
+        return row;
     }
 
     /**
@@ -366,7 +372,14 @@ public class ProjectApiService {
     public List<ProjectDocumentResource> listDocumentsForAccessibleRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
+        requireRecordingUnitViewPermission(caller, ru);
         return toSortedDocumentResources(documentService.findForRecordingUnit(ru));
+    }
+
+    private void requireRecordingUnitViewPermission(ProjectApiCaller caller, RecordingUnitDTO ru) {
+        if (!profilePermissionService.canViewRecordingUnit(caller.person(), ru)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
+        }
     }
 
     private List<ProjectDocumentResource> toSortedDocumentResources(List<Document> docs) {
@@ -389,6 +402,7 @@ public class ProjectApiService {
             String acceptLanguage) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
+        requireRecordingUnitViewPermission(caller, ru);
         InstitutionDTO institution = ru.getCreatedByInstitution();
         if (institution == null || institution.getId() == null || ru.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité d'enregistrement sans institution");

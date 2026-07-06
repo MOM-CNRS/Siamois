@@ -68,6 +68,8 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
+        lenient().when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
         personDto.setId(1L);
         projectApiService = new ProjectApiService(
                 institutionService,

@@ -74,6 +74,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
         personDto.setId(1L);
         projectApiService = new ProjectApiService(
                 institutionService,

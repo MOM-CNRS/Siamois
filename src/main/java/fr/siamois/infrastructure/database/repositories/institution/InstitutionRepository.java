@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
@@ -47,6 +48,35 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
     )
     boolean personIsInstitutionManagerOf(Long institutionId, Long personId);
 
-
+    /**
+     * Institutions the person is allowed to display, based on the profile permission system:
+     * an INSTANCE-scoped profile holding one of {@code instancePermissionCodes} grants every institution,
+     * an ORGANISATION-scoped profile holding {@code organizationAccessCode} grants its institution,
+     * and a PROJECT-scoped profile grants the institution owning its action unit.
+     */
+    @Query("""
+            SELECT DISTINCT i FROM Institution i
+            WHERE EXISTS (
+                SELECT a FROM PersonProfileAssignment a
+                JOIN a.profile prof
+                JOIN prof.permissions perm
+                WHERE a.person.id = :personId
+                  AND ((prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.INSTANCE
+                            AND perm.code IN :instancePermissionCodes)
+                    OR (prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.ORGANISATION
+                            AND prof.institution = i
+                            AND perm.code = :organizationAccessCode))
+            )
+            OR EXISTS (
+                SELECT a2 FROM PersonProfileAssignment a2
+                JOIN a2.profile prof2
+                WHERE a2.person.id = :personId
+                  AND prof2.scope = fr.siamois.domain.models.permissions.PermissionScopeType.PROJECT
+                  AND prof2.actionUnit.createdByInstitution = i
+            )
+            """)
+    Set<Institution> findAllVisibleToPerson(Long personId,
+                                            Collection<String> instancePermissionCodes,
+                                            String organizationAccessCode);
 
 }

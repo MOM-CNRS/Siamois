@@ -1251,7 +1251,8 @@ class ActionUnitServiceTest {
         Pageable pageable1 = PageRequest.of(0, 20);
 
         Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
-                Set.of(), null, null, pageable1);
+                 1L,
+                 Set.of(), null, null, pageable1);
 
         assertThat(page1.getContent()).isEmpty();
         assertThat(page1.getTotalElements()).isZero();
@@ -1265,7 +1266,8 @@ class ActionUnitServiceTest {
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
-                Set.of(1L), null, null, PageRequest.of(0, 20));
+                 1L,
+                 Set.of(1L), null, null, PageRequest.of(0, 20));
 
         assertThat(page1.getContent()).isEmpty();
         assertThat(page1.getTotalElements()).isZero();
@@ -1296,7 +1298,8 @@ class ActionUnitServiceTest {
                 .thenReturn(childRows);
 
         Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
-                Set.of(10L), null, "alpha", PageRequest.of(0, 20, Sort.by("name")));
+                 1L,
+                 Set.of(10L), null, "alpha", PageRequest.of(0, 20, Sort.by("name")));
 
         assertThat(page1.getTotalElements()).isEqualTo(2);
         assertThat(page1.getContent()).hasSize(2);

@@ -48,4 +48,15 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
     boolean personHasPermissionInActionUnit(@Param("personId") Long personId,
                                             @Param("actionUnitId") Long actionUnitId,
                                             @Param("permissionCode") String permissionCode);
+
+    @Query("""
+            SELECT COUNT(a) > 0
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE a.person.id = :personId
+              AND prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.PROJECT
+              AND prof.actionUnit.id = :actionUnitId
+            """)
+    boolean personHasAnyProfileOnActionUnit(@Param("personId") Long personId,
+                                            @Param("actionUnitId") Long actionUnitId);
 }

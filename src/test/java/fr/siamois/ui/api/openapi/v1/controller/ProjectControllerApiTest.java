@@ -105,6 +105,7 @@ class ProjectControllerApiTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
@@ -209,6 +210,7 @@ class ProjectControllerApiTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 4L, 2L);
 
         when(actionUnitService.findAccessibleProjects(
+                anyLong(),
                 eq(Set.of(100L)),
                 isNull(),
                 isNull(),
@@ -231,6 +233,7 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.meta.offset").value(0));
 
         verify(actionUnitService).findAccessibleProjects(
+                anyLong(),
                 eq(Set.of(100L)),
                 isNull(),
                 isNull(),
@@ -246,7 +249,7 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(1L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjects(eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class)))
+        when(actionUnitService.findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();

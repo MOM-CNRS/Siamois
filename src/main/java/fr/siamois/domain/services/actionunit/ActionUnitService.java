@@ -611,14 +611,17 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * Projects (action units) visible in the API: all units belonging to the given institutions.
-     * Aligné sur l'interface web (liste des opérations par institution), pas sur la seule équipe {@code team_member}.
+     * Projects (action units) visible in the API: units the person is allowed to display
+     * through the profile permission system ({@link ActionUnitSpec#visibleToPerson(Long)}),
+     * restricted to the given institutions.
      *
+     * @param personId       the person whose display permissions filter the results
      * @param organizationId when non-null, restrict to this institution (caller must ensure it is allowed for the person)
      */
     // TODO [ARCH] Définir avec Julien si on décide que les service n'expose que des DTOs domaine et si c'est le rôle des package ui de mapper vers le DTO API
     @Transactional(readOnly = true)
     public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
             Set<Long> accessibleInstitutionIds,
             Long organizationId,
             String search,
@@ -631,6 +634,7 @@ public class ActionUnitService implements ArkEntityService {
                 : accessibleInstitutionIds;
 
         Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
+                .and(ActionUnitSpec.visibleToPerson(personId))
                 .and(ActionUnitSpec.projectSearch(search));
 
         Page<ActionUnit> page = actionUnitRepository.findAll(spec, pageable);

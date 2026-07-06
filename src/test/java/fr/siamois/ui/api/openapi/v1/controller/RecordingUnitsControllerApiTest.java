@@ -100,6 +100,8 @@ class RecordingUnitsControllerApiTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
+        lenient().when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
