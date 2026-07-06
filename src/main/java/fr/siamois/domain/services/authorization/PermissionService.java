@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
  * Service interface for managing permissions related to resources.
  */
 @Service
+@Deprecated(since = "0.12.0")
 public interface PermissionService {
 
     /**
