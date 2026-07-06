@@ -68,16 +68,6 @@ public class RecordingUnitSeeder {
     public record RecordingUnitKey(String fullIdentifier, String actionIdentifier) {
     }
 
-    private void getOrCreateRecordingUnit(RecordingUnit recordingUnit) {
-
-        Optional<RecordingUnit> opt = recordingUnitRepository.findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier(
-                recordingUnit.getFullIdentifier(),
-                recordingUnit.getCreatedByInstitution().getId(),
-                recordingUnit.getActionUnit().getFullIdentifier());
-        if (opt.isEmpty()) {
-            recordingUnitRepository.save(recordingUnit);
-        }
-    }
 
 
     public ActionUnit getActionUnitFromKey(ActionUnitSeeder.ActionUnitKey key) {
@@ -171,40 +161,17 @@ public class RecordingUnitSeeder {
                                               Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey,
                                               Map<SpatialUnitSeeder.SpatialUnitKey, SpatialUnit> spatialUnitsByKey,
                                               Map<String, Phase> phasesByCompositeKey) {
-        Concept type           = SeederUtils.field("type",                  () -> resolveConcept(conceptsByKey, s.type));
-        Concept geoCycle       = s.geomorphologicalCycle  != null ? SeederUtils.field("geomorphologicalCycle",  () -> resolveConcept(conceptsByKey, s.geomorphologicalCycle))  : null;
-        Concept geoAgent       = s.geomorphologicalAgent  != null ? SeederUtils.field("geomorphologicalAgent",  () -> resolveConcept(conceptsByKey, s.geomorphologicalAgent))  : null;
-        Concept interpretation = s.interpretation         != null ? SeederUtils.field("interpretation",         () -> resolveConcept(conceptsByKey, s.interpretation))         : null;
+        Concept type = SeederUtils.field("type", () -> resolveConcept(conceptsByKey, s.type));
+        Concept geoCycle = resolveOptionalConcept(conceptsByKey, "geomorphologicalCycle", s.geomorphologicalCycle);
+        Concept geoAgent = resolveOptionalConcept(conceptsByKey, "geomorphologicalAgent", s.geomorphologicalAgent);
+        Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation);
 
-        Institution institution = SeederUtils.field("institutionIdentifier", () -> {
-            Institution inst = institutionsByIdentifier.get(s.institutionIdentifier);
-            if (inst == null) throw new IllegalStateException("Institution introuvable");
-            return inst;
-        });
-
+        Institution institution = resolveInstitution(s, institutionsByIdentifier);
         Person authorPerson = SeederUtils.field("author",    () -> personSeeder.resolveCached(personCache, s.author));
         Person createdBy    = SeederUtils.field("createdBy", () -> personSeeder.resolveCached(personCache, s.createdBy));
-
-        List<Person> contributors = new ArrayList<>();
-        if (s.excavators != null) {
-            for (var email : s.excavators) {
-                contributors.add(SeederUtils.field("excavators[" + email + "]", () -> personSeeder.resolveCached(personCache, email)));
-            }
-        }
-
-        SpatialUnit su = null;
-        if (s.spatialUnitName != null) {
-            su = SeederUtils.field("spatialUnitName", () -> {
-                SpatialUnit found = spatialUnitsByKey.get(s.spatialUnitName);
-                if (found == null) throw new IllegalStateException("Lieu " + s.spatialUnitName.unitName() + " introuvable");
-                return found;
-            });
-        }
-        ActionUnit au = SeederUtils.field("actionUnitIdentifier", () -> {
-            ActionUnit found = actionUnitsByKey.get(s.actionUnitIdentifier);
-            if (found == null) throw new IllegalStateException("Action introuvable");
-            return found;
-        });
+        List<Person> contributors = resolveContributors(s, personCache);
+        SpatialUnit su = resolveSpatialUnit(s, spatialUnitsByKey);
+        ActionUnit au = resolveActionUnit(s, actionUnitsByKey);
 
         RecordingUnit toGetOrCreate = new RecordingUnit();
         toGetOrCreate.setCreatedByInstitution(institution);
@@ -228,12 +195,7 @@ public class RecordingUnitSeeder {
         toGetOrCreate.setSpatialUnit(su);
 
         if (s.phaseIdentifiers != null && !s.phaseIdentifiers.isEmpty()) {
-            Set<Phase> phases = new HashSet<>();
-            for (String phaseId : s.phaseIdentifiers) {
-                Phase p = phasesByCompositeKey.get(phaseCompositeKey(au.getId(), phaseId));
-                if (p != null) phases.add(p);
-            }
-            toGetOrCreate.setPhases(phases);
+            toGetOrCreate.setPhases(resolvePhases(s, au, phasesByCompositeKey));
         }
 
         return toGetOrCreate;
@@ -243,6 +205,54 @@ public class RecordingUnitSeeder {
         Concept c = cache.get(key);
         if (c == null) throw new IllegalStateException("Concept " + key + " introuvable");
         return c;
+    }
+
+    private Concept resolveOptionalConcept(Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, String fieldName, ConceptSeeder.ConceptKey key) {
+        if (key == null) return null;
+        return SeederUtils.field(fieldName, () -> resolveConcept(conceptsByKey, key));
+    }
+
+    private Institution resolveInstitution(RecordingUnitSpecs s, Map<String, Institution> institutionsByIdentifier) {
+        return SeederUtils.field("institutionIdentifier", () -> {
+            Institution inst = institutionsByIdentifier.get(s.institutionIdentifier);
+            if (inst == null) throw new IllegalStateException("Institution introuvable");
+            return inst;
+        });
+    }
+
+    private List<Person> resolveContributors(RecordingUnitSpecs s, Map<String, Person> personCache) {
+        List<Person> contributors = new ArrayList<>();
+        if (s.excavators == null) return contributors;
+        for (var email : s.excavators) {
+            contributors.add(SeederUtils.field("excavators[" + email + "]", () -> personSeeder.resolveCached(personCache, email)));
+        }
+        return contributors;
+    }
+
+    private SpatialUnit resolveSpatialUnit(RecordingUnitSpecs s, Map<SpatialUnitSeeder.SpatialUnitKey, SpatialUnit> spatialUnitsByKey) {
+        if (s.spatialUnitName == null) return null;
+        return SeederUtils.field("spatialUnitName", () -> {
+            SpatialUnit found = spatialUnitsByKey.get(s.spatialUnitName);
+            if (found == null) throw new IllegalStateException("Lieu " + s.spatialUnitName.unitName() + " introuvable");
+            return found;
+        });
+    }
+
+    private ActionUnit resolveActionUnit(RecordingUnitSpecs s, Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey) {
+        return SeederUtils.field("actionUnitIdentifier", () -> {
+            ActionUnit found = actionUnitsByKey.get(s.actionUnitIdentifier);
+            if (found == null) throw new IllegalStateException("Action introuvable");
+            return found;
+        });
+    }
+
+    private Set<Phase> resolvePhases(RecordingUnitSpecs s, ActionUnit au, Map<String, Phase> phasesByCompositeKey) {
+        Set<Phase> phases = new HashSet<>();
+        for (String phaseId : s.phaseIdentifiers) {
+            Phase p = phasesByCompositeKey.get(phaseCompositeKey(au.getId(), phaseId));
+            if (p != null) phases.add(p);
+        }
+        return phases;
     }
 
     private String phaseCompositeKey(Long actionUnitId, String phaseIdentifier) {
@@ -308,12 +318,12 @@ public class RecordingUnitSeeder {
     private Map<SpatialUnitSeeder.SpatialUnitKey, SpatialUnit> fetchSpatialUnits(List<RecordingUnitSpecs> specs,
                                                                                   Map<String, Institution> institutionsByIdentifier) {
         Map<Long, List<String>> namesByInstitutionId = new HashMap<>();
-        Map<Long, String> upperNameToOriginal = new HashMap<>(); // not needed but kept simple below via direct key match
         for (RecordingUnitSpecs s : specs) {
             if (s.spatialUnitName() == null) continue;
             Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
-            if (inst == null) continue; // will surface as "Institution introuvable" during build
-            namesByInstitutionId.computeIfAbsent(inst.getId(), k -> new ArrayList<>()).add(s.spatialUnitName().unitName().toUpperCase());
+            if (inst != null) { // if null, will surface as "Institution introuvable" during build
+                namesByInstitutionId.computeIfAbsent(inst.getId(), k -> new ArrayList<>()).add(s.spatialUnitName().unitName().toUpperCase());
+            }
         }
         Map<SpatialUnitSeeder.SpatialUnitKey, SpatialUnit> result = new HashMap<>();
         for (var entry : namesByInstitutionId.entrySet()) {
@@ -329,8 +339,9 @@ public class RecordingUnitSeeder {
         for (RecordingUnitSpecs s : specs) {
             if (s.phaseIdentifiers() == null || s.phaseIdentifiers().isEmpty() || s.actionUnitIdentifier() == null) continue;
             ActionUnit au = actionUnitsByKey.get(s.actionUnitIdentifier());
-            if (au == null) continue; // will surface as "Action introuvable" during build
-            phaseIdsByActionUnitId.computeIfAbsent(au.getId(), k -> new ArrayList<>()).addAll(s.phaseIdentifiers());
+            if (au != null) { // if null, will surface as "Action introuvable" during build
+                phaseIdsByActionUnitId.computeIfAbsent(au.getId(), k -> new ArrayList<>()).addAll(s.phaseIdentifiers());
+            }
         }
         Map<String, Phase> result = new HashMap<>();
         for (var entry : phaseIdsByActionUnitId.entrySet()) {
