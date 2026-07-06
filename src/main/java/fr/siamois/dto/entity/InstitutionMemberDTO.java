@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.util.Set;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -12,7 +12,7 @@ import java.util.Set;
 public class InstitutionMemberDTO extends AbstractEntityDTO {
 
     private PersonDTO person;
-    private Set<ProfileDTO> profiles;
+    private List<ProfileDTO> profiles;
 
     public String displayName() {
         return person.displayName();

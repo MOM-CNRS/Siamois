@@ -291,3 +291,20 @@ a:hover {
     color: #b07a1e;
     border-color: #ecd6a8;
 }
+
+.profile-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-cell .edit-pencil {
+    opacity: 0;
+    cursor: pointer;
+    color: var(--siamois-green-active);
+    transition: opacity .15s ease;
+}
+
+.profile-cell:hover .edit-pencil {
+    opacity: 1;
+}

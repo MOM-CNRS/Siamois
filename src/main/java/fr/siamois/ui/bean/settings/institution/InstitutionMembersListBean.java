@@ -23,10 +23,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayInfoMessage;
 import static fr.siamois.utils.MessageUtils.displayWarnMessage;
@@ -38,6 +38,8 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Setter
 public class InstitutionMembersListBean implements SettingsDatatableBean {
 
+    private static final List<ProfileDTO> AVAILABLE_PROFILES = buildAvailableProfiles();
+
     private final transient InstitutionService institutionService;
     private final transient PersonService personService;
     private final UserDialogBean userDialogBean;
@@ -47,8 +49,8 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     private InstitutionDTO institution;
     private transient Map<Person, String> roles;
 
-    private transient Set<InstitutionMemberDTO> members;
-    private transient Set<InstitutionMemberDTO> refMembers;
+    private transient List<InstitutionMemberDTO> members;
+    private transient List<InstitutionMemberDTO> refMembers;
     private String searchInput;
 
     public InstitutionMembersListBean(InstitutionService institutionService,
@@ -80,32 +82,47 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         profile.setName("Super Administrateur");
         ProfileDTO profile2 = new ProfileDTO();
         profile2.setName("Profil 2");
-        member.setProfiles(new HashSet<>());
-        member.getProfiles().add(profile);
-        member.getProfiles().add(profile2);
-        refMembers = new HashSet<>(Set.of(member));
+        member.setProfiles(new ArrayList<>(List.of(profile, profile2)));
+        refMembers = new ArrayList<>(List.of(member));
         roles = new HashMap<>();
-        members = new HashSet<>(refMembers);
+        members = new ArrayList<>(refMembers);
     }
 
     @Override
     public void filter() {
         log.trace("Filtering values with text: {}", searchInput);
         if (searchInput == null || searchInput.isEmpty()) {
-            members = new HashSet<>(refMembers);
+            members = new ArrayList<>(refMembers);
         } else {
-            members = new HashSet<>();
-            for (InstitutionMemberDTO person : refMembers) {
-                if (person.displayName().toLowerCase().contains(searchInput.toLowerCase())) {
-                    members.add(person);
-                }
-            }
-            for (InstitutionMemberDTO person : refMembers) {
-                if (person.getPerson().displayName().toLowerCase().contains(searchInput.toLowerCase())) {
-                    members.add(person);
+            String query = searchInput.toLowerCase();
+            members = new ArrayList<>();
+            for (InstitutionMemberDTO member : refMembers) {
+                if (member.displayName().toLowerCase().contains(query)) {
+                    members.add(member);
                 }
             }
         }
+    }
+
+    /** Mock autocomplete source for the profile-chips editor — filters the fixed in-memory catalog, no DB call. */
+    public List<ProfileDTO> completeProfile(String query) {
+        if (query == null || query.isBlank()) {
+            return AVAILABLE_PROFILES;
+        }
+        String q = query.trim().toLowerCase();
+        return AVAILABLE_PROFILES.stream()
+                .filter(p -> p.getName().toLowerCase().contains(q))
+                .toList();
+    }
+
+    private static List<ProfileDTO> buildAvailableProfiles() {
+        List<ProfileDTO> profiles = new ArrayList<>();
+        for (String name : List.of("Super Administrateur", "Responsable scientifique", "Contributeur", "Profil 2", "Lecture seule")) {
+            ProfileDTO profile = new ProfileDTO();
+            profile.setName(name);
+            profiles.add(profile);
+        }
+        return profiles;
     }
 
     @Override
@@ -136,7 +153,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         Boolean processed = addPersonToInstitution(saved);
         InstitutionMemberDTO member = new InstitutionMemberDTO();
         member.setPerson(saved.person());
-        member.setProfiles(saved.profiles());
+        member.setProfiles(new ArrayList<>(saved.profiles()));
         refMembers.add(member);
         members.add(member);
         return processed;
