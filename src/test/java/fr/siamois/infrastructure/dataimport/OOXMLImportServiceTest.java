@@ -12,7 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.misc.ImportProgress;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,15 +27,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OOXMLImportServiceTest {
 
     private OOXMLImportService service;
 
+    @Mock
+    private ConceptService conceptService;
+
     @BeforeEach
     void setUp() {
-        service = new OOXMLImportService();
+        service = new OOXMLImportService(conceptService);
     }
 
     // -------------------------------------------------------------------------
@@ -88,7 +97,7 @@ class OOXMLImportServiceTest {
         row(s, 1, "john@doe.fr", "Doe", "John", "jdoe");
 
         List<ImportError> errs = errors();
-        List<PersonSeeder.PersonSpec> persons = service.parsePersons(List.of(s), SheetMetadata.empty(), errs);
+        List<PersonSeeder.PersonSpec> persons = service.parsePersons(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(persons).hasSize(1);
         assertThat(errs).isEmpty();
@@ -120,7 +129,7 @@ class OOXMLImportServiceTest {
         row(s, 3, "US 2", "uri?idt=th1&idc=3", "a@b.fr", "INST", null);
 
         List<ImportError> errs = errors();
-        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(List.of(s), null, SheetMetadata.empty(), errs);
+        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(errs).isEmpty();
         SpatialUnitSeeder.SpatialUnitSpecs parent =
@@ -149,7 +158,7 @@ class OOXMLImportServiceTest {
         row(s, 1, "FOU", "uri?idt=th9&idc=99");
 
         List<ImportError> errs = errors();
-        List<ActionCodeSeeder.ActionCodeSpec> specs = service.parseActionCodes(List.of(s), SheetMetadata.empty(), errs);
+        List<ActionCodeSeeder.ActionCodeSpec> specs = service.parseActionCodes(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(specs).hasSize(1);
         assertThat(errs).isEmpty();
@@ -173,7 +182,7 @@ class OOXMLImportServiceTest {
         row(s, 1, "100", "101");
 
         List<ImportError> errs = errors();
-        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> rels = service.parseRecordingRels(List.of(s), SheetMetadata.empty(), errs);
+        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> rels = service.parseRecordingRels(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(rels).hasSize(1);
         assertThat(errs).isEmpty();
@@ -360,7 +369,7 @@ class OOXMLImportServiceTest {
 
         List<ImportError> errs = errors();
         List<RecordingUnitSeeder.RecordingUnitSpecs> specs =
-                service.parseRecordingUnits(List.of(s), OOXMLImportService.ImportScope.ALL, null, SheetMetadata.empty(), errs);
+                service.parseRecordingUnits(List.of(s), OOXMLImportService.ImportScope.ALL, null, SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(specs).hasSize(1);
         assertThat(errs).isEmpty();
@@ -426,7 +435,7 @@ class OOXMLImportServiceTest {
 
         List<ImportError> errs = errors();
         List<ActionUnitSeeder.ActionUnitSpecs> specs =
-                service.parseActionUnits(List.of(s), SheetMetadata.empty(), errs);
+                service.parseActionUnits(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(specs).hasSize(1);
         assertThat(errs).isEmpty();
@@ -478,7 +487,7 @@ class OOXMLImportServiceTest {
 
         List<ImportError> errs = errors();
         List<InstitutionSeeder.InstitutionSpec> specs =
-                service.parseInstitutions(List.of(s), SheetMetadata.empty(), errs);
+                service.parseInstitutions(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(specs).hasSize(1);
         assertThat(errs).isEmpty();
@@ -522,7 +531,7 @@ class OOXMLImportServiceTest {
 
         List<ImportError> errs = errors();
         List<SpecimenSeeder.SpecimenSpecs> specs =
-                service.parseSpecimens(List.of(s), null, SheetMetadata.empty(), errs);
+                service.parseSpecimens(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(specs).hasSize(1);
         assertThat(errs).isEmpty();
@@ -601,6 +610,105 @@ class OOXMLImportServiceTest {
         assertThat(dto.conceptDirection()).isTrue();
         assertThat(dto.isAsynchronous()).isTrue();
         assertThat(dto.isUncertain()).isFalse();
+    }
+
+    private ActionUnitDTO actionUnitWithInstitution(long institutionId) {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(institutionId);
+        inst.setIdentifier("INST");
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setFullIdentifier("AU-001");
+        au.setCreatedByInstitution(inst);
+        return au;
+    }
+
+    private fr.siamois.domain.models.vocabulary.Concept conceptWithKey(String vocabExtId, String conceptExtId) {
+        fr.siamois.domain.models.vocabulary.Vocabulary vocabulary = new fr.siamois.domain.models.vocabulary.Vocabulary();
+        vocabulary.setExternalVocabularyId(vocabExtId);
+        fr.siamois.domain.models.vocabulary.Concept concept = new fr.siamois.domain.models.vocabulary.Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId(conceptExtId);
+        return concept;
+    }
+
+    @Test
+    void parseStratiRels_labelFallback_resolvesConceptViaConceptService() {
+        var au = actionUnitWithInstitution(42L);
+        when(conceptService.resolveConceptByLabel(42L, RecordingUnit.STRATI_FIELD_CODE, "Postérieur"))
+                .thenReturn(conceptWithKey("th240", "9999"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2", "relation", "relation label");
+        row(s, 1, "US-001", "US-002", "", "Postérieur");
+
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = service.parseStratiRels(s, au).get(0);
+
+        assertThat(dto.rel()).isEqualTo(new ConceptSeeder.ConceptKey("th240", "9999"));
+    }
+
+    @Test
+    void parseStratiRels_uriAndLabelBothPresent_uriWinsAndLabelIsIgnored() {
+        var au = actionUnitWithInstitution(42L);
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2", "relation", "relation label");
+        row(s, 1, "US-001", "US-002", "uri?idt=th240&idc=4287979", "Postérieur");
+
+        RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO dto = service.parseStratiRels(s, au).get(0);
+
+        assertThat(dto.rel()).isEqualTo(new ConceptSeeder.ConceptKey("th240", "4287979"));
+        org.mockito.Mockito.verifyNoInteractions(conceptService);
+    }
+
+    @Test
+    void parseStratiRels_labelNoMatch_errorAddedWithLabelColumnName() {
+        var au = actionUnitWithInstitution(42L);
+        when(conceptService.resolveConceptByLabel(42L, RecordingUnit.STRATI_FIELD_CODE, "Inconnu"))
+                .thenThrow(new IllegalStateException("Concept 'Inconnu' introuvable dans le thésaurus configuré"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Strati", "us1", "us2", "relation", "relation label");
+        row(s, 1, "US-001", "US-002", "", "Inconnu");
+
+        List<ImportError> errors = new ArrayList<>();
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs =
+                service.parseStratiRels(List.of(s), au, SheetMetadata.empty(), errors, new ImportProgress());
+
+        assertThat(specs).isEmpty();
+        assertThat(errors).hasSize(1);
+        assertThat(errors.get(0).column()).isEqualTo("relation label");
+        assertThat(errors.get(0).message()).contains("introuvable");
+    }
+
+    @Test
+    void parseRecordingUnits_labelFallback_resolvesTypeConceptViaConceptService() {
+        var au = actionUnitWithInstitution(7L);
+        when(conceptService.resolveConceptByLabel(7L, RecordingUnit.TYPE_FIELD_CODE, "Fosse"))
+                .thenReturn(conceptWithKey("th1", "5"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description", "type uri", "type label");
+        row(s, 1, "UE-001", "desc", "", "Fosse");
+
+        RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.PROJECT, au).get(0);
+
+        assertThat(spec.type()).isEqualTo(new ConceptSeeder.ConceptKey("th1", "5"));
+    }
+
+    @Test
+    void parseSpatialUnits_labelFallback_resolvesCategoryConceptViaConceptService() {
+        var au = actionUnitWithInstitution(9L);
+        when(conceptService.resolveConceptByLabel(9L, SpatialUnit.CATEGORY_FIELD_CODE, "Site"))
+                .thenReturn(conceptWithKey("th2", "10"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Lieu", "nom", "uri type", "type label", "enfants");
+        row(s, 1, "Lieu A", "", "Site", "");
+
+        SpatialUnitSeeder.SpatialUnitSpecs spec = service.parseSpatialUnits(s, au).get(0);
+
+        assertThat(spec.typeVocabularyExtId()).isEqualTo("th2");
+        assertThat(spec.typeConceptExtId()).isEqualTo("10");
     }
 
     @Test
@@ -803,7 +911,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "INRAP-BAD", "Desc", "ID2", "a@b.fr", BAD_URI);
 
         List<ImportError> errs = errors();
-        List<InstitutionSeeder.InstitutionSpec> result = service.parseInstitutions(List.of(s), SheetMetadata.empty(), errs);
+        List<InstitutionSeeder.InstitutionSpec> result = service.parseInstitutions(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).isEqualTo("INRAP-OK");
@@ -820,7 +928,7 @@ class OOXMLImportServiceTest {
         formulaCell(bad, 0);
 
         List<ImportError> errs = errors();
-        List<PersonSeeder.PersonSpec> result = service.parsePersons(List.of(s), SheetMetadata.empty(), errs);
+        List<PersonSeeder.PersonSpec> result = service.parsePersons(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(errs).hasSize(1);
@@ -835,7 +943,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "Site Bad", BAD_URI, "sys", "INST", null);
 
         List<ImportError> errs = errors();
-        List<SpatialUnitSeeder.SpatialUnitSpecs> result = service.parseSpatialUnits(List.of(s), null, SheetMetadata.empty(), errs);
+        List<SpatialUnitSeeder.SpatialUnitSpecs> result = service.parseSpatialUnits(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).isEqualTo("Site OK");
@@ -853,7 +961,7 @@ class OOXMLImportServiceTest {
         bad.createCell(1).setCellValue("child");
 
         List<ImportError> errs = errors();
-        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> result = service.parseRecordingRels(List.of(s), SheetMetadata.empty(), errs);
+        List<RecordingUnitRelSeeder.RecordingUnitRelDTO> result = service.parseRecordingRels(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(errs).hasSize(1);
@@ -869,7 +977,7 @@ class OOXMLImportServiceTest {
 
         List<ImportError> errs = errors();
         List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> result =
-                service.parseStratiRels(List.of(s), SheetMetadata.empty(), errs);
+                service.parseStratiRels(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(errs).hasSize(1);
@@ -884,7 +992,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "BAD", BAD_URI);
 
         List<ImportError> errs = errors();
-        List<ActionCodeSeeder.ActionCodeSpec> result = service.parseActionCodes(List.of(s), SheetMetadata.empty(), errs);
+        List<ActionCodeSeeder.ActionCodeSpec> result = service.parseActionCodes(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).code()).isEqualTo("FOU");
@@ -903,7 +1011,7 @@ class OOXMLImportServiceTest {
                 "user@fr", "INST", null, null, null);
 
         List<ImportError> errs = errors();
-        List<ActionUnitSeeder.ActionUnitSpecs> result = service.parseActionUnits(List.of(s), SheetMetadata.empty(), errs);
+        List<ActionUnitSeeder.ActionUnitSpecs> result = service.parseActionUnits(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).fullIdentifier()).isEqualTo("UA-001");
@@ -930,7 +1038,7 @@ class OOXMLImportServiceTest {
 
         List<ImportError> errs = errors();
         List<RecordingUnitSeeder.RecordingUnitSpecs> result =
-                service.parseRecordingUnits(List.of(s), OOXMLImportService.ImportScope.ALL, null, SheetMetadata.empty(), errs);
+                service.parseRecordingUnits(List.of(s), OOXMLImportService.ImportScope.ALL, null, SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).fullIdentifier()).isEqualTo("100");
@@ -949,7 +1057,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "SP-001", BAD_URI, null, null, "INST", "a@b.fr", null, "US-001");
 
         List<ImportError> errs = errors();
-        List<SpecimenSeeder.SpecimenSpecs> result = service.parseSpecimens(List.of(s), null, SheetMetadata.empty(), errs);
+        List<SpecimenSeeder.SpecimenSpecs> result = service.parseSpecimens(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).fullIdentifier()).isEqualTo("SP-OK");
@@ -970,7 +1078,7 @@ class OOXMLImportServiceTest {
                 null, null, null, "a@b.fr", "UA-001", "INST");
 
         List<ImportError> errs = errors();
-        List<PhaseSeeder.PhaseSpecs> result = service.parsePhases(List.of(s), null, SheetMetadata.empty(), errs);
+        List<PhaseSeeder.PhaseSpecs> result = service.parsePhases(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).identifier()).isEqualTo("PH-OK");

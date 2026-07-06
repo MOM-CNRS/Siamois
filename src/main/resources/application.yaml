@@ -44,6 +44,8 @@ spring:
       minimum-idle: 1
       idle-timeout: 30000
       connection-test-query: SELECT 1
+      data-source-properties:
+        reWriteBatchedInserts: true
   jpa:
     generate-ddl: true
     hibernate:
@@ -51,6 +53,10 @@ spring:
     properties:
       hibernate:
         show_sql: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
         envers:
           audit_table_suffix: _AUD
           store_data_at_delete: true

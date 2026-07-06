@@ -16,6 +16,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -221,6 +222,21 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     Optional<RecordingUnit> findByFullIdentifierAndInstitutionIdAndActionUnitFullIdentifier(
             @Param("fullIdentifier") String fullIdentifier,
+            @Param("institutionId") Long institutionId,
+            @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
+    );
+
+    @Query(
+            value = "SELECT ru.* " +
+                    "FROM recording_unit ru " +
+                    "JOIN action_unit au ON ru.fk_action_unit_id = au.action_unit_id " +
+                    "WHERE ru.full_identifier IN (:fullIdentifiers) " +
+                    "AND ru.fk_institution_id = :institutionId " +
+                    "AND au.full_identifier = :actionUnitFullIdentifier",
+            nativeQuery = true
+    )
+    List<RecordingUnit> findAllByFullIdentifierInAndInstitutionIdAndActionUnitFullIdentifier(
+            @Param("fullIdentifiers") Collection<String> fullIdentifiers,
             @Param("institutionId") Long institutionId,
             @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
     );

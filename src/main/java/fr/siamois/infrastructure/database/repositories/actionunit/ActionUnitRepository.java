@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -42,6 +43,8 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionId(String identifier, Long institutionId);
 
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionIdentifier(String identifier, String institutionId);
+
+    List<ActionUnit> findAllByIdentifierInAndCreatedByInstitutionIdentifier(Collection<String> identifiers, String institutionId);
 
     @Query(value = """
     SELECT su.*
