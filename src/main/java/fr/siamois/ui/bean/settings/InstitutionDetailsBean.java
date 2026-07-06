@@ -9,6 +9,7 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.components.OptionElement;
 import fr.siamois.ui.bean.settings.institution.InstitutionInfoSettingsBean;
 import fr.siamois.ui.bean.settings.institution.InstitutionManagerListBean;
+import fr.siamois.ui.bean.settings.institution.InstitutionMembersListBean;
 import fr.siamois.ui.bean.settings.institution.InstitutionThesaurusSettingsBean;
 import fr.siamois.ui.bean.settings.team.TeamListBean;
 import lombok.Getter;
@@ -38,6 +39,7 @@ public class InstitutionDetailsBean implements Serializable {
     private final transient PermissionService permissionService;
     private final SessionSettingsBean sessionSettingsBean;
     private final TeamListBean teamListBean;
+    private final InstitutionMembersListBean institutionMembersListBean;
     private InstitutionDTO institution;
     private transient List<OptionElement> elements;
     private final transient InstitutionService institutionService;
@@ -48,7 +50,7 @@ public class InstitutionDetailsBean implements Serializable {
                                   LangBean langBean,
                                   InstitutionActionManagerListBean institutionActionManagerListBean,
                                   PermissionService permissionService,
-                                  SessionSettingsBean sessionSettingsBean, TeamListBean teamListBean, InstitutionService institutionService) {
+                                  SessionSettingsBean sessionSettingsBean, TeamListBean teamListBean, InstitutionService institutionService, InstitutionMembersListBean institutionMembersListBean) {
 
         this.institutionInfoSettingsBean = institutionInfoSettingsBean;
         this.institutionManagerListBean = institutionManagerListBean;
@@ -59,6 +61,7 @@ public class InstitutionDetailsBean implements Serializable {
         this.sessionSettingsBean = sessionSettingsBean;
         this.teamListBean = teamListBean;
         this.institutionService = institutionService;
+        this.institutionMembersListBean = institutionMembersListBean;
     }
 
     public void init() {
@@ -76,6 +79,12 @@ public class InstitutionDetailsBean implements Serializable {
                     langBean.msg("organisationSettings.descriptions.thesaurus"), () -> {
                 institutionThesaurusSettingsBean.init(institution);
                 return "/pages/settings/institution/thesaurusSettings.xhtml?faces-redirect=true";
+            }));
+
+            elements.add(new OptionElement("bi bi-people", langBean.msg("organisationSettings.titles.members"),
+                    langBean.msg("organisationSettings.descriptions.members", institution.getName()), () -> {
+                institutionMembersListBean.init(institution);
+                return "/pages/settings/institution/institutionMembersSettings.xhtml?faces-redirect=true";
             }));
 
             elements.add(new OptionElement("bi bi-person-circle", langBean.msg("organisationSettings.titles.managers"),
