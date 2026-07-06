@@ -39,18 +39,14 @@ public class SpatialUnitSeeder {
         return opt.orElse(null);
     }
 
-    // -------------------------------------------------------------------------
-    // Bulk seeding: collect distinct lookup keys, fetch each reference type in a
-    // handful of queries instead of per-row, then build in two passes (entities,
-    // then self-referential children — a parent can reference another spec from
-    // this very same batch, so children can only be resolved once every entity in
-    // the batch has been built) and write with a single saveAll. Unlike
-    // RecordingUnitSeeder, this is NOT chunked with periodic flush+clear: a parent
-    // built in a later chunk could hold a reference to a child built in an earlier
-    // one, and clearing the persistence context between chunks would detach that
-    // child, breaking the save.
-    // -------------------------------------------------------------------------
 
+    /**
+     * Bulk-seeds spatial units, resolving each spec's institution, type concept, author and
+     * (self-referential) children, then persisting the newly-built ones in a single {@code saveAll}.
+     *
+     * @param specs spatial unit specs to seed; a no-op returning an empty map if empty
+     * @return every resolved spatial unit (newly created or already-existing) keyed by name
+     */
     public Map<String, SpatialUnit> seed(List<SpatialUnitSpecs> specs) {
         if (specs.isEmpty()) return Map.of();
 

@@ -18,14 +18,15 @@ public class RecordingUnitRelSeeder {
 
     }
 
-    // -------------------------------------------------------------------------
-    // Bulk seeding: one query for every recording unit involved (parents and
-    // children together) instead of one per row, then a single saveAll — not
-    // chunked, since a parent's children set can reference other parents in this
-    // same batch, and a chunked flush+clear would detach those cross-referenced
-    // entities before a later chunk's save needs them (see SpatialUnitSeeder).
-    // -------------------------------------------------------------------------
 
+    /**
+     * Bulk-seeds parent/child relations between recording units by adding each child to its parent's
+     * children set and saving all affected parents in one batch.
+     *
+     * @param specs parent/child identifier pairs to link; a no-op if empty
+     * @param institutionId institution the recording units belong to, used to resolve identifiers
+     * @param actionUnitIdentifier action unit identifier shared by all recording units in {@code specs}
+     */
     public void seed(List<RecordingUnitRelDTO> specs, Long institutionId, String actionUnitIdentifier) {
         if (specs.isEmpty()) return;
 
