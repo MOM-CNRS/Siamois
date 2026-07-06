@@ -55,28 +55,11 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
      * and a PROJECT-scoped profile grants the institution owning its action unit.
      */
     @Query("""
-            SELECT DISTINCT i FROM Institution i
-            WHERE EXISTS (
-                SELECT a FROM PersonProfileAssignment a
-                JOIN a.profile prof
-                JOIN prof.permissions perm
-                WHERE a.person.id = :personId
-                  AND ((prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.INSTANCE
-                            AND perm.code IN :instancePermissionCodes)
-                    OR (prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.ORGANISATION
-                            AND prof.institution = i
-                            AND perm.code = :organizationAccessCode))
-            )
-            OR EXISTS (
-                SELECT a2 FROM PersonProfileAssignment a2
-                JOIN a2.profile prof2
-                WHERE a2.person.id = :personId
-                  AND prof2.scope = fr.siamois.domain.models.permissions.PermissionScopeType.PROJECT
-                  AND prof2.actionUnit.createdByInstitution = i
-            )
+            SELECT DISTINCT i FROM PersonProfileAssignment a
+                        JOIN a.profile prof
+                        JOIN prof.institution i
+                        WHERE a.profile.id = :personId
             """)
-    Set<Institution> findAllVisibleToPerson(Long personId,
-                                            Collection<String> instancePermissionCodes,
-                                            String organizationAccessCode);
+    Set<Institution> findAllVisibleToPerson(Long personId);
 
 }

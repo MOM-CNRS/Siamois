@@ -282,9 +282,7 @@ class InstitutionServiceTest {
         person.setId(1L);
 
         when(institutionRepository.findAllVisibleToPerson(
-                person.getId(),
-                List.of(PermissionConstants.ORGANIZATION_ACCESS, PermissionConstants.ORGANIZATION_LIST_ACCESS),
-                PermissionConstants.ORGANIZATION_ACCESS))
+                person.getId()))
                 .thenReturn(Set.of(institution1, institution2));
 
         when(institutionMapper.convert(institution1)).thenReturn(institution1DTO);
@@ -300,9 +298,7 @@ class InstitutionServiceTest {
                 .containsExactlyInAnyOrder(institution1DTO, institution2DTO);
 
         verify(institutionRepository, times(1)).findAllVisibleToPerson(
-                person.getId(),
-                List.of(PermissionConstants.ORGANIZATION_ACCESS, PermissionConstants.ORGANIZATION_LIST_ACCESS),
-                PermissionConstants.ORGANIZATION_ACCESS);
+                person.getId());
         verify(institutionMapper, times(1)).convert(institution1);
         verify(institutionMapper, times(1)).convert(institution2);
     }

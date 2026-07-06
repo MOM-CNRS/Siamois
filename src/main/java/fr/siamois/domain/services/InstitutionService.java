@@ -104,9 +104,7 @@ public class InstitutionService {
      */
     public Set<InstitutionDTO> findInstitutionsOfPerson(PersonDTO person) {
         Set<Institution> institutions = institutionRepository.findAllVisibleToPerson(
-                person.getId(),
-                List.of(PermissionConstants.ORGANIZATION_ACCESS, PermissionConstants.ORGANIZATION_LIST_ACCESS),
-                PermissionConstants.ORGANIZATION_ACCESS);
+                person.getId());
 
         return institutions.stream()
                 .map(institutionMapper::convert)
