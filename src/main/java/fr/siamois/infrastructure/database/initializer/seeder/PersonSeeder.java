@@ -78,6 +78,9 @@ public class PersonSeeder {
      * {@link #resolveCached}. One query instead of one per row — callers still fall back to the
      * normal single-row get-or-create on a cache miss, so correctness is unaffected, only redundant
      * repeated lookups (e.g. the same excavator named on hundreds of rows) are eliminated.
+     *
+     * @param nameLastNameStrings "Firstname Lastname" strings to prefetch persons for
+     * @return persons found, keyed by {@code cacheKey(firstname, lastname)}; entries with no match are omitted
      */
     public Map<String, Person> prefetchByNameLastName(Collection<String> nameLastNameStrings) {
         Set<String> firstnames = new HashSet<>();
@@ -97,7 +100,14 @@ public class PersonSeeder {
         return cache;
     }
 
-    /** Resolves a "Firstname Lastname" string against a cache built by {@link #prefetchByNameLastName}, falling back to {@link #findOrCreatePerson} (and populating the cache) on a miss. */
+    /**
+     * Resolves a "Firstname Lastname" string against a cache built by {@link #prefetchByNameLastName},
+     * falling back to {@link #findOrCreatePerson} (and populating the cache) on a miss.
+     *
+     * @param cache cache built by {@link #prefetchByNameLastName}, mutated in place on a cache miss
+     * @param nameLastName "Firstname Lastname" string to resolve
+     * @return the resolved (or newly created) {@link Person}
+     */
     public Person resolveCached(Map<String, Person> cache, String nameLastName) {
         String key = normalizeKey(nameLastName);
         if (key != null) {

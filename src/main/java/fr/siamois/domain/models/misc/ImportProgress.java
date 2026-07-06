@@ -75,10 +75,6 @@ public class ImportProgress implements Serializable {
         return phase == Phase.PARSING;
     }
 
-    public boolean isPersisting() {
-        return phase == Phase.PERSISTING;
-    }
-
     public boolean isFinished() {
         return phase == Phase.DONE || phase == Phase.ERROR;
     }
