@@ -11,6 +11,12 @@ public record ImportError(String sheet, int row, String column, String message) 
      * Builds a row-level error from a raw exception message, pulling the column name out of the
      * "[colonne 'X'] : ..." prefix that {@code getOptionalCell}/{@code parseOptionalDate} and similar
      * helpers add when a specific column fails to parse.
+     *
+     * @param sheet name of the sheet the error occurred on
+     * @param row row number (1-based, as shown to the user) the error occurred on
+     * @param rawMessage raw exception message, optionally prefixed with "[colonne 'X'] : "
+     * @return an error with {@code column} and {@code message} split out of the prefix, or an empty
+     *         column and the raw message unchanged if it didn't match the prefix
      */
     public static ImportError forRow(String sheet, int row, String rawMessage) {
         if (rawMessage != null) {

@@ -397,6 +397,11 @@ public class ProjectUploadSettingsBean {
     // null/stale from a background thread. Growl messages are queued as "pending" and flushed by
     // pollProgress(), which runs on a real p:poll request thread.
 
+    /**
+     * Dispatches the persist phase (seeding the previously-parsed {@link #importResult} into the
+     * database) to a background thread; a no-op if there's nothing to persist, import is blocked,
+     * or a phase is already running.
+     */
     public void uploadSpec() {
         if (importResult == null || isImportBlocked() || progress.isRunning()) return;
         persistenceErrors = new ArrayList<>();
@@ -423,6 +428,12 @@ public class ProjectUploadSettingsBean {
         // panels re-render via the poll's update attribute
     }
 
+    /**
+     * Reads the uploaded file's bytes and dispatches the parse phase to a background thread; a no-op
+     * if a phase is already running.
+     *
+     * @param event PrimeFaces upload event carrying the uploaded file
+     */
     public void handleFileUpload(FileUploadEvent event) {
         if (progress.isRunning()) return;
         this.originalFile = null;
