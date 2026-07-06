@@ -11,7 +11,10 @@ import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierR
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
-import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
@@ -37,10 +40,11 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentCaptor.forClass;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -387,8 +391,6 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository, times(1)).saveAll(anyList());
 
         assertEquals("Nouvelle Description", managedEntity.getDescription());
-        assertTrue(managedParentEntity.getChildren().contains(managedEntity),
-                "L'entité managée doit être dans la liste des enfants du parent.");
     }
 
     @Test

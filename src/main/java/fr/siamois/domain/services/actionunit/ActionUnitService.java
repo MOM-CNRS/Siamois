@@ -36,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -104,6 +105,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param typeConceptDTO The concept type of the ActionUnit
      * @return The saved ActionUnit
      */
+    @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnit saveNotTransactional(UserInfo info, ActionUnitDTO actionUnitDTO, ConceptDTO typeConceptDTO)
             throws ActionUnitAlreadyExistsException {
 
@@ -199,6 +201,7 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Transactional
+    @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
         return actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
@@ -242,10 +245,13 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Override
-    @CacheEvict({
-            "InstitutionHasRootChildrenAU",
-            "InstitutionHasRootChildrenSU",
-            "ActionUnitHasChildrenInInstitution"
+    @Caching(evict = {
+            @CacheEvict({
+                    "InstitutionHasRootChildrenAU",
+                    "InstitutionHasRootChildrenSU",
+                    "ActionUnitHasChildrenInInstitution"
+            }),
+            @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
@@ -438,6 +444,7 @@ public class ActionUnitService implements ArkEntityService {
     }
 
 
+    @Cacheable(value = "MyActionUnits", key = "#member.id + '-' + #institution.id + '-' + #limit")
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
         List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
         return actionUnits.stream()
@@ -498,9 +505,6 @@ public class ActionUnitService implements ArkEntityService {
     public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-        if (filters.containsColumn("name")) {
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
-        }
         return res.map(this::convertWithCount);
     }
 
@@ -688,10 +692,13 @@ public class ActionUnitService implements ArkEntityService {
      *
      * @throws IllegalStateException si le projet n'est pas supprimable
      */
-    @CacheEvict({
-            "InstitutionHasRootChildrenAU",
-            "InstitutionHasRootChildrenSU",
-            "ActionUnitHasChildrenInInstitution"
+    @Caching(evict = {
+            @CacheEvict({
+                    "InstitutionHasRootChildrenAU",
+                    "InstitutionHasRootChildrenSU",
+                    "ActionUnitHasChildrenInInstitution"
+            }),
+            @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
     public void deleteProjectWhenEmpty(long actionUnitId) {
         if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {

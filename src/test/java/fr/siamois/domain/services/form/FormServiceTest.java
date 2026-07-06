@@ -19,15 +19,13 @@ import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 import lombok.Data;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import org.junit.jupiter.api.Nested;
 
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;

@@ -68,6 +68,14 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
         relationshipCount = original.getRelationshipCount();
     }
 
+    public boolean hierarchyIsInitialized() {
+      return parents != null && children != null;
+    }
+
+    public boolean phasesIsInitialized() {
+      return phases != null;
+    }
+
     /**
      * Resets the full identifier to it's base format.
      */
