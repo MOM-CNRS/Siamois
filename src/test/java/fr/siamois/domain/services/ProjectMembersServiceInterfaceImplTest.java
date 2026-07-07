@@ -2,6 +2,7 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
+import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
@@ -21,7 +22,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -85,10 +85,8 @@ class ProjectMembersServiceInterfaceImplTest {
         managerProfileDTO.setCode(ProfileConstants.PROJECT_MANAGER);
         managerProfileDTO.setScope(PermissionScopeType.PROJECT);
 
-        when(personProfileAssignmentRepository.findAllPersonsByProfileActionUnitId(project.getId()))
-                .thenReturn(Set.of(member));
-        when(personProfileAssignmentRepository.findAllProfilesOfPersonInActionUnit(member.getId(), project.getId()))
-                .thenReturn(List.of(memberProfile, managerProfile));
+        when(personProfileAssignmentRepository.findAllAssignmentsByActionUnitId(project.getId()))
+                .thenReturn(List.of(assignment(member, memberProfile), assignment(member, managerProfile)));
         when(personMapper.convert(member)).thenReturn(memberDTO);
         when(profileMapper.convert(memberProfile)).thenReturn(memberProfileDTO);
         when(profileMapper.convert(managerProfile)).thenReturn(managerProfileDTO);
@@ -111,10 +109,8 @@ class ProjectMembersServiceInterfaceImplTest {
         otherMemberDTO.setId(11L);
         otherMemberDTO.setUsername("other");
 
-        when(personProfileAssignmentRepository.findAllPersonsByProfileActionUnitId(project.getId()))
-                .thenReturn(Set.of(member, otherMember));
-        when(personProfileAssignmentRepository.findAllProfilesOfPersonInActionUnit(anyLong(), eq(project.getId())))
-                .thenReturn(List.of(memberProfile));
+        when(personProfileAssignmentRepository.findAllAssignmentsByActionUnitId(project.getId()))
+                .thenReturn(List.of(assignment(member, memberProfile), assignment(otherMember, memberProfile)));
         when(personMapper.convert(member)).thenReturn(memberDTO);
         when(personMapper.convert(otherMember)).thenReturn(otherMemberDTO);
         when(profileMapper.convert(memberProfile)).thenReturn(memberProfileDTO);
@@ -129,13 +125,14 @@ class ProjectMembersServiceInterfaceImplTest {
 
     @Test
     void findMembersOf_shouldReturnEmptyList_whenProjectHasNoMember() {
-        when(personProfileAssignmentRepository.findAllPersonsByProfileActionUnitId(project.getId()))
-                .thenReturn(Set.of());
+        when(personProfileAssignmentRepository.findAllAssignmentsByActionUnitId(project.getId()))
+                .thenReturn(List.of());
 
         List<ProjectMemberDTO> result = projectMembersService.findMembersOf(project);
 
         assertThat(result).isEmpty();
-        verify(personProfileAssignmentRepository, never()).findAllProfilesOfPersonInActionUnit(anyLong(), anyLong());
+        verify(profileMapper, never()).convert(any(Profile.class));
+        verify(personMapper, never()).convert(any(Person.class));
     }
 
     @Test
@@ -172,5 +169,12 @@ class ProjectMembersServiceInterfaceImplTest {
 
         assertThat(result).isEqualTo(expected);
         verify(personProfileAssignmentService, times(1)).addToProjectMembers(project, memberDTO, profiles);
+    }
+
+    private PersonProfileAssignment assignment(Person person, Profile profile) {
+        PersonProfileAssignment assignment = new PersonProfileAssignment();
+        assignment.setPerson(person);
+        assignment.setProfile(profile);
+        return assignment;
     }
 }

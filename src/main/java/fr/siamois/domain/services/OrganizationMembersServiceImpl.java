@@ -1,6 +1,7 @@
 package fr.siamois.domain.services;
 
-import fr.siamois.domain.models.permissions.ProfileConstants;
+import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
@@ -15,7 +16,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 
 @Service
 @Primary
@@ -30,18 +31,21 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
 
     @Override
     public List<InstitutionMemberDTO> findMembersOf(@NonNull InstitutionDTO institution) {
-        return assignmentRepository
-                .findAllPersonsByProfileCodeAndInstitutionId(ProfileConstants.ORGANIZATION_MEMBER, institution.getId())
+        Map<Person, Set<ProfileDTO>> profilesByPerson = new HashMap<>();
+
+        for (PersonProfileAssignment personProfileAssignment : assignmentRepository.findAllAssignmentsByInstitutionId(institution.getId())) {
+            if (!profilesByPerson.containsKey(personProfileAssignment.getPerson())) {
+                profilesByPerson.put(personProfileAssignment.getPerson(), new HashSet<>());
+            }
+            profilesByPerson.get(personProfileAssignment.getPerson()).add(profileMapper.convert(personProfileAssignment.getProfile()));
+        }
+
+        return profilesByPerson.keySet()
                 .stream()
                 .map((person) -> {
                     InstitutionMemberDTO dto = new InstitutionMemberDTO();
-                    List<ProfileDTO> profiles = assignmentRepository
-                            .findAllProfilesOfPersonInInstitution(person.getId(), institution.getId())
-                            .stream()
-                            .map(profileMapper::convert)
-                            .toList();
                     dto.setPerson(personMapper.convert(person));
-                    dto.setProfiles(profiles);
+                    dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
                     return dto;
                 })
                 .toList();

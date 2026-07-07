@@ -2,7 +2,6 @@ package fr.siamois.infrastructure.database.repositories.permissions;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
-import fr.siamois.domain.models.permissions.Profile;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -130,19 +129,40 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
 
     Optional<PersonProfileAssignment> findByProfileIdAndPersonId(Long profileId, Long personId);
 
-    @Query("SELECT ppa.profile FROM PersonProfileAssignment ppa " +
-            "WHERE ppa.person.id = :personId AND ppa.profile.institution.id = :institutionId")
-    List<Profile> findAllProfilesOfPersonInInstitution(Long personId, Long institutionId);
+    /**
+     * All assignments (person and profile fetched) in the institution, restricted to persons
+     * holding the {@link fr.siamois.domain.models.permissions.ProfileConstants#ORGANIZATION_MEMBER}
+     * profile of the institution. One query loads everything needed to build the member list.
+     */
+    @Query("""
+            SELECT ppa FROM PersonProfileAssignment ppa
+            JOIN FETCH ppa.person p
+            JOIN FETCH ppa.profile prof
+            WHERE prof.institution.id = :institutionId
+            """)
+    List<PersonProfileAssignment> findAllAssignmentsByInstitutionId(@Param("institutionId") Long institutionId);
 
-    @Query("SELECT ppa.profile FROM PersonProfileAssignment ppa " +
-            "WHERE ppa.person.id = :personId AND ppa.profile.actionUnit.id = :actionUnitId")
-    List<Profile> findAllProfilesOfPersonInActionUnit(Long personId, Long actionUnitId);
+    /**
+     * All assignments (person and profile fetched) on the action unit. One query loads everything
+     * needed to build the project member list.
+     */
+    @Query("""
+            SELECT ppa FROM PersonProfileAssignment ppa
+            JOIN FETCH ppa.person p
+            JOIN FETCH ppa.profile prof
+            WHERE prof.actionUnit.id = :actionUnitId
+            """)
+    List<PersonProfileAssignment> findAllAssignmentsByActionUnitId(@Param("actionUnitId") Long actionUnitId);
 
-    @Query("SELECT ppa.person FROM PersonProfileAssignment  ppa " +
-            "WHERE ppa.profile.institution IS NULL AND ppa.profile.actionUnit IS NULL")
-    List<Person> findAllPersonsByProfileOfInstance();
-
-    @Query("SELECT ppa.profile FROM PersonProfileAssignment ppa " +
-            "WHERE ppa.person.id = :personId AND ppa.profile.institution IS NULL AND ppa.profile.actionUnit IS NULL")
-    List<Profile> findAllProfilesOfPersonInInstance(Long personId);
+    /**
+     * All INSTANCE-scoped assignments (person and profile fetched). One query loads everything
+     * needed to build the application member list.
+     */
+    @Query("""
+            SELECT ppa FROM PersonProfileAssignment ppa
+            JOIN FETCH ppa.person p
+            JOIN FETCH ppa.profile prof
+            WHERE prof.institution IS NULL AND prof.actionUnit IS NULL
+            """)
+    List<PersonProfileAssignment> findAllInstanceAssignments();
 }

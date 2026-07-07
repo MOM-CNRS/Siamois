@@ -1,11 +1,10 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.ProfileDTO;
-import fr.siamois.dto.entity.ProjectMemberDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
@@ -13,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 
 @Service
 @Primary
@@ -28,18 +27,21 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
 
     @Override
     public List<ProjectMemberDTO> findMembersOf(ActionUnitDTO project) {
-        return personProfileAssignmentRepository
-                .findAllPersonsByProfileActionUnitId(project.getId())
+        Map<Person, Set<ProfileDTO>> profilesByPerson = new HashMap<>();
+
+        for (PersonProfileAssignment personProfileAssignment : personProfileAssignmentRepository.findAllAssignmentsByActionUnitId(project.getId())) {
+            if (!profilesByPerson.containsKey(personProfileAssignment.getPerson())) {
+                profilesByPerson.put(personProfileAssignment.getPerson(), new HashSet<>());
+            }
+            profilesByPerson.get(personProfileAssignment.getPerson()).add(profileMapper.convert(personProfileAssignment.getProfile()));
+        }
+
+        return profilesByPerson.keySet()
                 .stream()
                 .map((person) -> {
-                    ProjectMemberDTO dto = new ProjectMemberDTO();
-                    List<ProfileDTO> profiles = personProfileAssignmentRepository
-                            .findAllProfilesOfPersonInActionUnit(person.getId(), project.getId())
-                            .stream()
-                            .map(profileMapper::convert)
-                            .toList();
+                    InstitutionMemberDTO dto = new InstitutionMemberDTO();
                     dto.setPerson(personMapper.convert(person));
-                    dto.setProfiles(profiles);
+                    dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
                     return dto;
                 })
                 .toList();

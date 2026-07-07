@@ -2,6 +2,7 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
+import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
@@ -21,7 +22,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -87,11 +87,8 @@ class OrganizationMembersServiceImplTest {
         managerProfileDTO.setCode(ProfileConstants.ORGANIZATION_MANAGER);
         managerProfileDTO.setScope(PermissionScopeType.ORGANISATION);
 
-        when(assignmentRepository.findAllPersonsByProfileCodeAndInstitutionId(
-                ProfileConstants.ORGANIZATION_MEMBER, institution.getId()))
-                .thenReturn(Set.of(member));
-        when(assignmentRepository.findAllProfilesOfPersonInInstitution(member.getId(), institution.getId()))
-                .thenReturn(List.of(memberProfile, managerProfile));
+        when(assignmentRepository.findAllAssignmentsByInstitutionId(institution.getId()))
+                .thenReturn(List.of(assignment(member, memberProfile), assignment(member, managerProfile)));
         when(personMapper.convert(member)).thenReturn(memberDTO);
         when(profileMapper.convert(memberProfile)).thenReturn(memberProfileDTO);
         when(profileMapper.convert(managerProfile)).thenReturn(managerProfileDTO);
@@ -114,11 +111,8 @@ class OrganizationMembersServiceImplTest {
         otherMemberDTO.setId(11L);
         otherMemberDTO.setUsername("other");
 
-        when(assignmentRepository.findAllPersonsByProfileCodeAndInstitutionId(
-                ProfileConstants.ORGANIZATION_MEMBER, institution.getId()))
-                .thenReturn(Set.of(member, otherMember));
-        when(assignmentRepository.findAllProfilesOfPersonInInstitution(anyLong(), eq(institution.getId())))
-                .thenReturn(List.of(memberProfile));
+        when(assignmentRepository.findAllAssignmentsByInstitutionId(institution.getId()))
+                .thenReturn(List.of(assignment(member, memberProfile), assignment(otherMember, memberProfile)));
         when(personMapper.convert(member)).thenReturn(memberDTO);
         when(personMapper.convert(otherMember)).thenReturn(otherMemberDTO);
         when(profileMapper.convert(memberProfile)).thenReturn(memberProfileDTO);
@@ -133,14 +127,14 @@ class OrganizationMembersServiceImplTest {
 
     @Test
     void findMembersOf_shouldReturnEmptyList_whenInstitutionHasNoMember() {
-        when(assignmentRepository.findAllPersonsByProfileCodeAndInstitutionId(
-                ProfileConstants.ORGANIZATION_MEMBER, institution.getId()))
-                .thenReturn(Set.of());
+        when(assignmentRepository.findAllAssignmentsByInstitutionId(institution.getId()))
+                .thenReturn(List.of());
 
         List<InstitutionMemberDTO> result = organizationMembersService.findMembersOf(institution);
 
         assertThat(result).isEmpty();
-        verify(assignmentRepository, never()).findAllProfilesOfPersonInInstitution(anyLong(), anyLong());
+        verify(profileMapper, never()).convert(any(Profile.class));
+        verify(personMapper, never()).convert(any(Person.class));
     }
 
     @Test
@@ -180,5 +174,12 @@ class OrganizationMembersServiceImplTest {
 
         assertThat(result).isEqualTo(expected);
         verify(personProfileAssignmentService, times(1)).addToInstitution(institution, memberDTO, profiles);
+    }
+
+    private PersonProfileAssignment assignment(Person person, Profile profile) {
+        PersonProfileAssignment assignment = new PersonProfileAssignment();
+        assignment.setPerson(person);
+        assignment.setProfile(profile);
+        return assignment;
     }
 }
