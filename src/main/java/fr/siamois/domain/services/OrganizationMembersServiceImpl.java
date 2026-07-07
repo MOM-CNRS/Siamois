@@ -58,6 +58,6 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
 
     @Override
     public InstitutionMemberDTO addMemberToInstitution(InstitutionDTO institution, PersonDTO person, List<ProfileDTO> profiles) {
-        return null;
+        return personProfileAssignmentService.addToInstitution(institution, person, profiles);
     }
 }
