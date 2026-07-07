@@ -2,11 +2,13 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
-import fr.siamois.domain.models.permissions.*;
+import fr.siamois.domain.models.permissions.Permission;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.infrastructure.database.repositories.permissions.PermissionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
-import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.Optional;
 
 @Slf4j
 @Service

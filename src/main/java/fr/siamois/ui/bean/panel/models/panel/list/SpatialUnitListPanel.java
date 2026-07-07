@@ -1,8 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
