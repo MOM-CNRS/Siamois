@@ -12,7 +12,6 @@ import java.util.Set;
 @ToString(callSuper = true)
 public class ProfileDTO extends AbstractEntityDTO {
 
-    private Long id;
     private String code;
     private String name;
     private PermissionScopeType scope;
