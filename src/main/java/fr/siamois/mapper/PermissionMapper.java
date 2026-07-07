@@ -1,9 +1,7 @@
 package fr.siamois.mapper;
 
 import fr.siamois.domain.models.permissions.Permission;
-import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.dto.entity.PermissionDTO;
-import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.InjectionStrategy;

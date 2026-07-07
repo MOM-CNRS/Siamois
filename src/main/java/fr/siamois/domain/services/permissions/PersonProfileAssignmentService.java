@@ -6,7 +6,6 @@ import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
-import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;

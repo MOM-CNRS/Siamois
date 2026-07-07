@@ -3,8 +3,6 @@ package fr.siamois.infrastructure.database.repositories.permissions;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
-import fr.siamois.dto.entity.ApplicationMemberDTO;
-import fr.siamois.dto.entity.ProfileDTO;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;

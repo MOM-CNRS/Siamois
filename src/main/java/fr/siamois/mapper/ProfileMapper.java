@@ -1,8 +1,6 @@
 package fr.siamois.mapper;
 
 import fr.siamois.domain.models.permissions.Profile;
-import fr.siamois.domain.models.phase.Phase;
-import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InheritInverseConfiguration;
