@@ -96,7 +96,7 @@ class ProjectMembersServiceInterfaceImplTest {
         assertThat(result).hasSize(1);
         ProjectMemberDTO memberResult = result.get(0);
         assertThat(memberResult.getPerson()).isEqualTo(memberDTO);
-        assertThat(memberResult.getProfiles().size()).isEqualTo(2);
+        assertThat(memberResult.getProfiles()).hasSize(2);
     }
 
     @Test
