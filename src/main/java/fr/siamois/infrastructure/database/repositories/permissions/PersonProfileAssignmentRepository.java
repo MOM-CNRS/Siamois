@@ -130,7 +130,7 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
 
     Optional<PersonProfileAssignment> findByProfileIdAndPersonId(Long profileId, Long personId);
 
-    @Query("SELECT ppa FROM PersonProfileAssignment ppa " +
+    @Query("SELECT ppa.profile FROM PersonProfileAssignment ppa " +
             "WHERE ppa.person.id = :personId AND ppa.profile.institution.id = :institutionId")
     List<Profile> findAllProfilesOfPersonInInstitution(Long personId, Long institutionId);
 }
