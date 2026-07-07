@@ -40,4 +40,5 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
             """)
     Set<Institution> findAllVisibleToPerson(Long personId);
 
+    List<Institution> findAllByIdentifierIn(Collection<String> identifiers);
 }
