@@ -133,4 +133,8 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
     @Query("SELECT ppa.profile FROM PersonProfileAssignment ppa " +
             "WHERE ppa.person.id = :personId AND ppa.profile.institution.id = :institutionId")
     List<Profile> findAllProfilesOfPersonInInstitution(Long personId, Long institutionId);
+
+    @Query("SELECT ppa.profile FROM PersonProfileAssignment ppa " +
+            "WHERE ppa.person.id = :personId AND ppa.profile.actionUnit.id = :actionUnitId")
+    List<Profile> findAllProfilesOfPersonInActionUnit(Long personId, Long actionUnitId);
 }

@@ -19,4 +19,6 @@ public interface ProfileRepository extends CrudRepository<Profile, Integer> {
     void deleteAllByActionUnitId(Long actionUnitId);
 
     List<Profile> findProfilesByInstitutionId(Long institutionId);
+
+    List<Profile> findProfilesByActionUnitId(Long actionUnitId);
 }

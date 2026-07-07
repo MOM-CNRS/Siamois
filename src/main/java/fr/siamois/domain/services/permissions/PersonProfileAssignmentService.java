@@ -69,4 +69,23 @@ public class PersonProfileAssignmentService {
         institutionMemberDTO.setProfiles(profiles);
         return institutionMemberDTO;
     }
+
+    public ProjectMemberDTO addToProjectMembers(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles) {
+        int i = 0;
+        Person personToAdd = personMapper.invertConvert(person);
+        while (i < profiles.size() && !profiles.get(i).getCode().equals(ProfileConstants.PROJECT_MEMBER)) i++;
+        if (i == profiles.size()) {
+            Profile member = profileService.createOrGetProjectMemberProfile(project);
+            assignProfile(member, personToAdd);
+        }
+        for (ProfileDTO profile : profiles) {
+            Profile currentProfile = profileMapper.invertConvert(profile);
+            assignProfile(currentProfile, personToAdd);
+        }
+
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(person);
+        projectMemberDTO.setProfiles(profiles);
+        return projectMemberDTO;
+    }
 }

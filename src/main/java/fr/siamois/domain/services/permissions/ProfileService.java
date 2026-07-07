@@ -11,6 +11,7 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepo
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PermissionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
+import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final InstitutionRepository institutionRepository;
     private final ActionUnitRepository actionUnitRepository;
+    private final ProfileMapper profileMapper;
 
     private Permission findOrThrowPermission(String permissionCode) {
         return permissionRepository.findByCode(permissionCode).orElseThrow(() -> new IllegalStateException("System permission " + permissionCode + " not found"));
@@ -146,4 +148,10 @@ public class ProfileService {
         ), actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
     }
 
+    public List<ProfileDTO> findAllProfilesByActionUnit(ActionUnitDTO project) {
+        return profileRepository.findProfilesByActionUnitId(project.getId())
+                .stream()
+                .map(profileMapper::convert)
+                .toList();
+    }
 }
