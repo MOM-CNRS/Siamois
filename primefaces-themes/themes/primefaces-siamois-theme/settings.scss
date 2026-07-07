@@ -334,26 +334,27 @@ a:hover {
     padding: 18px 22px;
 }
 
-.member-chip-box, .profile-chip-box {
+.invite-form {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 1em;
 }
 
-.chip-member {
-    background-color: var(--siamois-green-light-100);
-    color: var(--siamois-green-active);
-    border-color: var(--siamois-green-light-350);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+.invite-form-row {
+    display: flex;
+    gap: 1em;
 }
 
-.chip-remove {
-    cursor: pointer;
-    color: inherit;
-    font-weight: 400;
+.invite-form-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .3em;
+}
+
+.invite-form-field input {
+    width: 100%;
 }
 
 .invite-by-email-link {

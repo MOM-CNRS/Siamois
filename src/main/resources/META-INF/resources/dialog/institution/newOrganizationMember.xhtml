@@ -1,0 +1,155 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:form="http://xmlns.jcp.org/jsf/composite/pages/shared/form"
+             xmlns:h="http://java.sun.com/jsf/html"
+>
+
+    <p:dialog
+            widgetVar="newOrganizationMemberDialog"
+            id="newOrganizationMemberDialog"
+            width="480px"
+            showEffect="fade"
+            appendToBody="true"
+            closable="false"
+            showHeader="false"
+            styleClass="newOrganizationMemberDialog"
+    >
+        <div class="dialog-new-organization-member">
+            <div class="dialog-new-organization-member-header">
+                <h3>#{newOrganizationMemberDialogBean.title}</h3>
+            </div>
+            <form:csrfform id="newOrganizationMemberFormCC" formId="newOrganizationMemberForm">
+                <div class="dialog-new-organization-member-body">
+
+                    <h:panelGroup layout="block" rendered="#{newOrganizationMemberDialogBean.stepMain}">
+                        <div class="form-group">
+                            <p:outputLabel value="#{langBean.msg('newOrganizationMember.label.members')}"/>
+                            <p:autoComplete id="memberSearch"
+                                            value="#{newOrganizationMemberDialogBean.selectedMembers}"
+                                            completeMethod="#{newOrganizationMemberDialogBean.completeMember}"
+                                            queryDelay="300"
+                                            var="u"
+                                            itemLabel="#{u.displayName()}"
+                                            itemValue="#{u}"
+                                            converter="#{personDTOConverter}"
+                                            placeholder="#{langBean.msg('newOrganizationMember.placeholder.search')}"
+                                            multiple="true"
+                                            unique="true"
+                                            forceSelection="true"
+                                            dropdown="false">
+                                <p:ajax event="itemSelect" process="@this" update="@form"/>
+                                <p:ajax event="itemUnselect" process="@this" update="@form"/>
+                            </p:autoComplete>
+                            <p:commandLink action="#{newOrganizationMemberDialogBean.goToInvite()}"
+                                           process="@this"
+                                           update="@form"
+                                           styleClass="invite-by-email-link">
+                                <i class="bi bi-envelope"/>
+                                #{langBean.msg('newOrganizationMember.action.inviteByEmail')}
+                            </p:commandLink>
+                        </div>
+
+                        <div class="form-group">
+                            <p:outputLabel value="#{langBean.msg('newOrganizationMember.label.profile')}"/>
+                            <p:autoComplete value="#{newOrganizationMemberDialogBean.selectedProfiles}"
+                                            completeMethod="#{newOrganizationMemberDialogBean.completeProfile}"
+                                            var="p"
+                                            itemLabel="#{p.name}"
+                                            itemValue="#{p}"
+                                            converter="#{profileDTOConverter}"
+                                            placeholder="#{langBean.msg('newOrganizationMember.placeholder.profile')}"
+                                            multiple="true"
+                                            unique="true"
+                                            forceSelection="true"
+                                            dropdown="false">
+                                <p:ajax event="itemSelect" process="@this" update="@form"/>
+                                <p:ajax event="itemUnselect" process="@this" update="@form"/>
+                            </p:autoComplete>
+                        </div>
+                    </h:panelGroup>
+
+                    <h:panelGroup layout="block" styleClass="invite-form"
+                                  rendered="#{newOrganizationMemberDialogBean.stepInvite}">
+                        <div class="invite-form-row">
+                            <div class="invite-form-field">
+                                <p:outputLabel class="col-form-label" for="inviteFirstName">
+                                    #{langBean.msg('newOrganizationMember.label.firstname')}
+                                </p:outputLabel>
+                                <p:inputText id="inviteFirstName"
+                                             placeholder="#{langBean.msg('newOrganizationMember.label.firstname')}"
+                                             value="#{newOrganizationMemberDialogBean.inviteFirstName}"/>
+                            </div>
+                            <div class="invite-form-field">
+                                <p:outputLabel class="col-form-label" for="inviteLastName">
+                                    #{langBean.msg('newOrganizationMember.label.lastname')}
+                                </p:outputLabel>
+                                <p:inputText id="inviteLastName"
+                                             placeholder="#{langBean.msg('newOrganizationMember.label.lastname')}"
+                                             value="#{newOrganizationMemberDialogBean.inviteLastName}"/>
+                            </div>
+                        </div>
+                        <div class="invite-form-row">
+                            <div class="invite-form-field">
+                                <p:outputLabel class="col-form-label" for="inviteEmail">
+                                    #{langBean.msg('newOrganizationMember.label.email')}
+                                </p:outputLabel>
+                                <p:inputText id="inviteEmail" type="email"
+                                             placeholder="#{langBean.msg('newOrganizationMember.placeholder.email')}"
+                                             value="#{newOrganizationMemberDialogBean.inviteEmail}"/>
+                            </div>
+                            <div class="invite-form-field">
+                                <p:outputLabel class="col-form-label" for="inviteUsername">
+                                    #{langBean.msg('newOrganizationMember.label.username')}
+                                </p:outputLabel>
+                                <p:inputText id="inviteUsername"
+                                             placeholder="#{langBean.msg('newOrganizationMember.placeholder.username')}"
+                                             value="#{newOrganizationMemberDialogBean.inviteUsername}"/>
+                            </div>
+                        </div>
+                        <div class="invite-form-row">
+                            <div class="invite-form-field">
+                                <p:outputLabel for="invitePassword">
+                                    #{langBean.msg('newOrganizationMember.label.password')}
+                                </p:outputLabel>
+                                <p:inputText type="password" id="invitePassword"
+                                             placeholder="••••••••"
+                                             value="#{newOrganizationMemberDialogBean.invitePassword}"/>
+                            </div>
+                            <div class="invite-form-field">
+                                <p:outputLabel for="invitePasswordConfirm">
+                                    #{langBean.msg('newOrganizationMember.label.passwordConfirm')}
+                                </p:outputLabel>
+                                <p:inputText type="password" id="invitePasswordConfirm"
+                                             placeholder="••••••••"
+                                             value="#{newOrganizationMemberDialogBean.invitePasswordConfirm}"/>
+                            </div>
+                        </div>
+                    </h:panelGroup>
+
+                </div>
+
+                <div class="dialog-buttons">
+                    <p:commandButton value="#{langBean.msg('newOrganizationMember.action.back')}"
+                                     rendered="#{newOrganizationMemberDialogBean.stepInvite}"
+                                     immediate="true"
+                                     styleClass="ui-button-secondary"
+                                     action="#{newOrganizationMemberDialogBean.back()}"
+                                     update="@form"/>
+                    <p:commandButton value="#{langBean.msg('common.action.cancel')}"
+                                     rendered="#{newOrganizationMemberDialogBean.stepMain}"
+                                     immediate="true"
+                                     styleClass="ui-button-secondary"
+                                     action="#{newOrganizationMemberDialogBean.exit()}"
+                                     update="@form"/>
+                    <p:commandButton value="#{newOrganizationMemberDialogBean.primaryActionLabel}"
+                                     disabled="#{!newOrganizationMemberDialogBean.primaryActionEnabled}"
+                                     action="#{newOrganizationMemberDialogBean.primaryAction()}"
+                                     process="@form"
+                                     update="@form"/>
+                </div>
+            </form:csrfform>
+        </div>
+    </p:dialog>
+
+</ui:fragment>
