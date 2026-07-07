@@ -308,3 +308,69 @@ a:hover {
 .profile-cell:hover .edit-pencil {
     opacity: 1;
 }
+
+.newOrganizationMemberDialog .ui-dialog-content {
+    padding: 0 !important;
+}
+
+.dialog-new-organization-member {
+    display: flex;
+    flex-direction: column;
+}
+
+.dialog-new-organization-member-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--siamois-green-light-350);
+}
+
+.dialog-new-organization-member-header h3 {
+    margin: 0;
+}
+
+.dialog-new-organization-member-body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px 22px;
+}
+
+.member-chip-box, .profile-chip-box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.chip-member {
+    background-color: var(--siamois-green-light-100);
+    color: var(--siamois-green-active);
+    border-color: var(--siamois-green-light-350);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chip-remove {
+    cursor: pointer;
+    color: inherit;
+    font-weight: 400;
+}
+
+.invite-by-email-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    color: var(--siamois-green-active);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.dialog-new-organization-member .dialog-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 15px 22px;
+    border-top: 1px solid var(--siamois-green-light-350);
+}

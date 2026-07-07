@@ -11,8 +11,8 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.bean.dialog.institution.NewOrganizationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
-import fr.siamois.ui.bean.dialog.institution.UserDialogBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import io.swagger.models.auth.In;
 import lombok.Getter;
@@ -42,7 +42,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
 
     private final transient InstitutionService institutionService;
     private final transient PersonService personService;
-    private final UserDialogBean userDialogBean;
+    private final NewOrganizationMemberDialogBean newOrganizationMemberDialogBean;
     private final LangBean langBean;
     private final transient PendingPersonService pendingPersonService;
     private final SessionSettingsBean sessionSettingsBean;
@@ -55,13 +55,13 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
 
     public InstitutionMembersListBean(InstitutionService institutionService,
                                       PersonService personService,
-                                      UserDialogBean userDialogBean,
+                                      NewOrganizationMemberDialogBean newOrganizationMemberDialogBean,
                                       LangBean langBean,
                                       PendingPersonService pendingPersonService,
                                       SessionSettingsBean sessionSettingsBean) {
         this.institutionService = institutionService;
         this.personService = personService;
-        this.userDialogBean = userDialogBean;
+        this.newOrganizationMemberDialogBean = newOrganizationMemberDialogBean;
         this.langBean = langBean;
         this.pendingPersonService = pendingPersonService;
         this.sessionSettingsBean = sessionSettingsBean;
@@ -115,6 +115,11 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
                 .toList();
     }
 
+    /** Mock profile catalog, also used by {@link fr.siamois.ui.bean.dialog.institution.NewOrganizationMemberDialogBean}. */
+    public static List<ProfileDTO> availableProfiles() {
+        return AVAILABLE_PROFILES;
+    }
+
     private static List<ProfileDTO> buildAvailableProfiles() {
         List<ProfileDTO> profiles = new ArrayList<>();
         for (String name : List.of("Super Administrateur", "Responsable scientifique", "Contributeur", "Profil 2", "Lecture seule")) {
@@ -128,35 +133,27 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     @Override
     public void add() {
         log.trace("Creating member");
-        userDialogBean.init(langBean.msg("organisationSettings.managers.dialog.label"),
+        newOrganizationMemberDialogBean.init(langBean.msg("organisationSettings.managers.dialog.label"),
                 langBean.msg("organisationSettings.managers.add"),
                 institution,
                 this::processPerson);
-        PrimeFaces.current().ajax().update("newMemberDialog");
-        PrimeFaces.current().executeScript("PF('newMemberDialog').show();");
-    }
-
-    private Boolean addPersonToInstitution(PersonRole saved) {
-        try {
-            // todo persist member
-            processPerson(saved);
-            return true;
-        } catch(Exception err) {
-            displayWarnMessage(langBean, "organisationSettings.error.manager", saved.person().getEmail(), institution.getName());
-            PrimeFaces.current().executeScript("PF('newMemberDialog').showError();");
-            return false;
-        }
-
+        PrimeFaces.current().ajax().update("newOrganizationMemberDialog");
+        PrimeFaces.current().executeScript("PF('newOrganizationMemberDialog').show();");
     }
 
     private Boolean processPerson(PersonRole saved) {
-        Boolean processed = addPersonToInstitution(saved);
-        InstitutionMemberDTO member = new InstitutionMemberDTO();
-        member.setPerson(saved.person());
-        member.setProfiles(new ArrayList<>(saved.profiles()));
-        refMembers.add(member);
-        members.add(member);
-        return processed;
+        try {
+            // todo persist member to institution
+            InstitutionMemberDTO member = new InstitutionMemberDTO();
+            member.setPerson(saved.person());
+            member.setProfiles(new ArrayList<>(saved.profiles()));
+            refMembers.add(member);
+            members.add(member);
+            return true;
+        } catch (Exception err) {
+            displayWarnMessage(langBean, "organisationSettings.error.manager", saved.person().getEmail(), institution.getName());
+            return false;
+        }
     }
 
     @EventListener(LoginEvent.class)
