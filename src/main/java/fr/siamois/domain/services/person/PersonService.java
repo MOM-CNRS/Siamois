@@ -87,7 +87,7 @@ public class PersonService {
     }
 
     /**
-     * Create a new Person in the database.
+     * Create a new enabled Person in the database.
      *
      * @param personDTO The Person to create with a plain password. It will be hashed before saving.
      * @return The created Person with its ID set.
@@ -110,6 +110,7 @@ public class PersonService {
         Person person = conversionService.convert(personDTO,Person.class);
         assert person != null;
         person.setPassword(passwordEncoder.encode(password));
+        person.setEnabled(true);
 
         person = personRepository.save(person);
 
