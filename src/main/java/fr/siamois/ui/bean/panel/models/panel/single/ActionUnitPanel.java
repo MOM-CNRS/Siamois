@@ -27,7 +27,6 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
-import fr.siamois.ui.bean.settings.team.TeamMembersBean;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
@@ -74,7 +73,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
-    private final TeamMembersBean teamMembersBean;
     private final transient RecordingUnitService recordingUnitService;
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
@@ -126,7 +124,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
         this.redirectBean = context.getBean(RedirectBean.class);
         this.labelService = context.getBean(LabelService.class);
-        this.teamMembersBean = context.getBean(TeamMembersBean.class);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
