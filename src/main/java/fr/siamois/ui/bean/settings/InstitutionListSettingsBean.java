@@ -7,7 +7,9 @@ import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -41,6 +43,7 @@ import java.util.*;
 public class InstitutionListSettingsBean implements Serializable {
 
     private final transient InstitutionService institutionService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final InstitutionDialogBean institutionDialogBean;
@@ -100,8 +103,9 @@ public class InstitutionListSettingsBean implements Serializable {
         }
     }
 
-    public boolean userIsSuperadmin() {
-        return sessionSettingsBean.getAuthenticatedUser().isSuperAdmin();
+    public boolean userCanCreateInstitution() {
+        return profilePermissionService.hasInstancePermission(
+                sessionSettingsBean.getAuthenticatedUser(), PermissionConstants.ORGANIZATION_CREATE);
     }
 
     public boolean hasMoreThenOneInstitution() {

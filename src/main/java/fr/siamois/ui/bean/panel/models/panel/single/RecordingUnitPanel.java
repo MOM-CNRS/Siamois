@@ -8,7 +8,7 @@ import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.history.RevisionWithInfo;
-import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -71,7 +71,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
-    private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final transient ProfilePermissionService profilePermissionService;
 
 
     // lazy model for children
@@ -99,7 +99,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
-        this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
 
     }
 
@@ -492,7 +492,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 navBean,
                 flowBean,
                 (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
-                recordingUnitWriteVerifier,
+                profilePermissionService,
                 recordingUnitService,
                 langBean,
                 formContextServices

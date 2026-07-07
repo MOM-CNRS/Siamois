@@ -1,19 +1,16 @@
 package fr.siamois.ui.bean.settings.team;
 
-import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.ui.bean.LabelBean;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.institution.UserDialogBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
-import fr.siamois.utils.DateUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -21,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -36,7 +32,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class TeamMembersBean implements SettingsDatatableBean {
 
-    private final LabelBean labelBean;
     private final transient InstitutionService institutionService;
     private final UserDialogBean userDialogBean;
     private final transient PersonService personService;
@@ -45,23 +40,22 @@ public class TeamMembersBean implements SettingsDatatableBean {
     private final RedirectBean redirectBean;
     private final LangBean langBean;
     private ActionUnitDTO actionUnit;
-    private final transient ConversionService conversionService;
 
     private String searchInput;
 
-    private Set<TeamMemberRelation> memberRelations;
-    private List<TeamMemberRelation> filteredMemberRelations;
+    private Set<PersonDTO> members;
+    private List<PersonDTO> filteredMembers;
 
     public void reset() {
         this.actionUnit = null;
-        this.memberRelations = null;
-        this.filteredMemberRelations = null;
+        this.members = null;
+        this.filteredMembers = null;
     }
 
     public void init(ActionUnitDTO actionUnit) {
         this.actionUnit = actionUnit;
-        this.memberRelations = institutionService.findRelationsOf(actionUnit);
-        this.filteredMemberRelations = new ArrayList<>(memberRelations);
+        this.members = institutionService.findMembersOf(actionUnit);
+        this.filteredMembers = new ArrayList<>(members);
     }
 
     @Override
@@ -76,7 +70,7 @@ public class TeamMembersBean implements SettingsDatatableBean {
     }
 
     private void addPersonToActionunit(PersonRole saved) {
-        if (institutionService.addPersonToActionUnit(actionUnit, saved.person(), saved.role())) {
+        if (institutionService.addPersonAsMemberOfActionUnit(actionUnit, saved.person())) {
             log.debug("Added person to action unit");
         } else {
             log.debug("Person was not added to action unit, maybe already exists");
@@ -85,32 +79,20 @@ public class TeamMembersBean implements SettingsDatatableBean {
 
     private Boolean processPerson(PersonRole saved) {
         addPersonToActionunit(saved);
-        TeamMemberRelation relation = new TeamMemberRelation(actionUnit, saved.person());
-        memberRelations.add(relation);
-        filteredMemberRelations.add(relation);
+        members.add(saved.person());
+        filteredMembers.add(saved.person());
         return true;
     }
 
     @Override
     public void filter() {
         if (searchInput == null || searchInput.isEmpty()) {
-            filteredMemberRelations = new ArrayList<>(memberRelations);
+            filteredMembers = new ArrayList<>(members);
         } else {
-            filteredMemberRelations = memberRelations.stream()
-                    .filter(relation -> relation.getPerson().getName().toLowerCase().contains(searchInput.toLowerCase()))
+            filteredMembers = members.stream()
+                    .filter(member -> member.getName().toLowerCase().contains(searchInput.toLowerCase()))
                     .toList();
         }
-    }
-
-    public String formatRole(TeamMemberRelation relation) {
-        if (relation.getRole() == null) {
-            return "";
-        }
-        return labelBean.findLabelOf(conversionService.convert(relation.getRole(), ConceptDTO.class));
-    }
-
-    public String formatDate(TeamMemberRelation relation) {
-        return DateUtils.formatOffsetDateTime(relation.getAddedAt());
     }
 
     public void redirectToActionUnit() {

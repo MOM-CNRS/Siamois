@@ -7,11 +7,12 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -69,7 +70,7 @@ public class ProjectApiService {
     private final ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
     private final FindOpenApiMapper findOpenApiMapper;
     private final PersonMapper personMapper;
-    private final PermissionService permissionService;
+    private final ProfilePermissionService profilePermissionService;
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
@@ -113,6 +114,7 @@ public class ProjectApiService {
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit, sort);
         return actionUnitService.findAccessibleProjects(
+                caller.person().getId(),
                 caller.accessibleInstitutionIds(),
                 organizationId,
                 search,
@@ -120,7 +122,12 @@ public class ProjectApiService {
     }
 
     public AccessibleProjectForApi requireAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
-        return actionUnitService.findAccessibleProjectByKey(projectIdOrKey, caller.accessibleInstitutionIds());
+        AccessibleProjectForApi row = actionUnitService.findAccessibleProjectByKey(projectIdOrKey, caller.accessibleInstitutionIds());
+        ActionUnitDTO project = row.actionUnit();
+        if (!profilePermissionService.canViewProject(caller.person(), project.getCreatedByInstitution(), project.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Projet introuvable ou non accessible");
+        }
+        return row;
     }
 
     /**
@@ -139,7 +146,7 @@ public class ProjectApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!permissionService.isInstitutionManager(userInfo) && !permissionService.isActionManager(userInfo)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de projet non autorisée");
         }
 
@@ -190,7 +197,7 @@ public class ProjectApiService {
     }
 
     /**
-     * Mise à jour partielle d'un projet accessible, avec contrôle d'écriture ({@link PermissionService}).
+     * Mise à jour partielle d'un projet accessible, avec contrôle d'écriture ({@link ProfilePermissionService}).
      */
     @Transactional
     public AccessibleProjectForApi patchProject(
@@ -205,7 +212,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!permissionService.hasWritePermission(userInfo, dto)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
         }
         applyProjectPatch(dto, patch);
@@ -242,7 +249,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!permissionService.hasWritePermission(userInfo, dto)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression du projet non autorisée");
         }
         if (row.recordingUnitCount() > 0) {
@@ -348,7 +355,7 @@ public class ProjectApiService {
         }
         String lang = primaryAcceptLanguage(acceptLanguage);
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!permissionService.hasWritePermission(userInfo, dto)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression de l'unité non autorisée");
         }
         try {
@@ -365,7 +372,14 @@ public class ProjectApiService {
     public List<ProjectDocumentResource> listDocumentsForAccessibleRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
+        requireRecordingUnitViewPermission(caller, ru);
         return toSortedDocumentResources(documentService.findForRecordingUnit(ru));
+    }
+
+    private void requireRecordingUnitViewPermission(ProjectApiCaller caller, RecordingUnitDTO ru) {
+        if (!profilePermissionService.canViewRecordingUnit(caller.person(), ru)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
+        }
     }
 
     private List<ProjectDocumentResource> toSortedDocumentResources(List<Document> docs) {
@@ -388,6 +402,7 @@ public class ProjectApiService {
             String acceptLanguage) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
+        requireRecordingUnitViewPermission(caller, ru);
         InstitutionDTO institution = ru.getCreatedByInstitution();
         if (institution == null || institution.getId() == null || ru.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité d'enregistrement sans institution");

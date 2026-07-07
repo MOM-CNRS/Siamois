@@ -7,8 +7,8 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -80,7 +80,7 @@ class RecordingUnitsControllerApiTest {
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -100,6 +100,8 @@ class RecordingUnitsControllerApiTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
+        lenient().when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
@@ -113,7 +115,7 @@ class RecordingUnitsControllerApiTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);
@@ -949,7 +951,7 @@ class RecordingUnitsControllerApiTest {
         ru.setCreatedByInstitution(institutionDto);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, Set.of(10L)))
                 .thenReturn(ru);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(false);
 
         mockMvc.perform(delete("/api/v1/recording-units/5"))
                 .andExpect(status().isForbidden());
@@ -967,7 +969,7 @@ class RecordingUnitsControllerApiTest {
         ru.setCreatedByInstitution(institutionDto);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(9L, Set.of(10L)))
                 .thenReturn(ru);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
         doNothing().when(recordingUnitService).deleteRecordingUnitById(9L);
 
         mockMvc.perform(delete("/api/v1/recording-units/9"))
@@ -986,7 +988,7 @@ class RecordingUnitsControllerApiTest {
         ru.setCreatedByInstitution(institutionDto);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(10L)))
                 .thenReturn(ru);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
         doThrow(new IllegalStateException("mobiliers")).when(recordingUnitService).deleteRecordingUnitById(3L);
 
         mockMvc.perform(delete("/api/v1/recording-units/3"))

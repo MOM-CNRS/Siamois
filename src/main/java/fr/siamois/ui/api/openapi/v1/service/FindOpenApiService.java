@@ -7,8 +7,8 @@ import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -57,7 +57,7 @@ public class FindOpenApiService {
     private final ConceptRepository conceptRepository;
     private final ConceptMapper conceptMapper;
     private final ConversionService conversionService;
-    private final PermissionService permissionService;
+    private final ProfilePermissionService profilePermissionService;
     private final PersonService personService;
     private final PersonMapper personMapper;
     private final ActionUnitService actionUnitService;
@@ -81,7 +81,7 @@ public class FindOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UE sans organisation");
         }
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!permissionService.hasWritePermission(userInfo, ru)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de mobilier non autorisée sur cette UE");
         }
 
@@ -142,7 +142,7 @@ public class FindOpenApiService {
                 ruSum.getId(), accessibleInstitutionIds);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!permissionService.hasWritePermission(userInfo, ru)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
 
@@ -193,7 +193,7 @@ public class FindOpenApiService {
                 ruSum.getId(), accessibleInstitutionIds);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!permissionService.hasWritePermission(userInfo, ru)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression non autorisée");
         }
 

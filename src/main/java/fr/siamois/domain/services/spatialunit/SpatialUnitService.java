@@ -10,6 +10,7 @@ import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsE
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -17,7 +18,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
-import fr.siamois.domain.services.authorization.PermissionServiceImpl;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
@@ -61,7 +62,7 @@ public class SpatialUnitService implements ArkEntityService {
     private final ArkService arkService;
     private final InstitutionService institutionService;
     private final PersonService personService;
-    private final PermissionServiceImpl permissionService;
+    private final ProfilePermissionService profilePermissionService;
     private final SpatialUnitMapper spatialUnitMapper;
     private final RecordingUnitMapper recordingUnitMapper;
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
@@ -379,8 +380,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @return True if the user has sufficient permissions
      */
     public boolean hasCreatePermission(UserInfo user) {
-        return permissionService.isInstitutionManager(user)
-                || permissionService.isActionManager(user);
+        return profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_PLACES);
     }
 
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {

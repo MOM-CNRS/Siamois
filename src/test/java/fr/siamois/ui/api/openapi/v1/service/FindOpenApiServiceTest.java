@@ -5,8 +5,8 @@ import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -64,7 +64,7 @@ class FindOpenApiServiceTest {
     @Mock
     private ConversionService conversionService;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private PersonService personService;
     @Mock
@@ -93,7 +93,7 @@ class FindOpenApiServiceTest {
                 conceptRepository,
                 conceptMapper,
                 conversionService,
-                permissionService,
+                profilePermissionService,
                 personService,
                 personMapper,
                 actionUnitService,
@@ -118,7 +118,7 @@ class FindOpenApiServiceTest {
         findResource.setId("99");
         lenient().when(findOpenApiMapper.toResource(any(SpecimenDTO.class))).thenReturn(findResource);
         lenient().when(findOpenApiMapper.toResource(isNull())).thenReturn(findResource);
-        lenient().when(permissionService.hasWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
+        lenient().when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
     }
 
     // --- createFind ---
@@ -174,7 +174,7 @@ class FindOpenApiServiceTest {
     void createFind_withoutWritePermission_throws403() {
         when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
         stubTypeConcept();
-        when(permissionService.hasWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
 
         var request = createRequest("UE-1", "3");
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
@@ -710,7 +710,7 @@ class FindOpenApiServiceTest {
         SpecimenDTO specimen = accessibleSpecimen();
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
-        when(permissionService.hasWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
 
         var patchRequest = new FindPatchRequest();
         assertThatThrownBy(() -> service.patchFind(7L, patchRequest, personDto, SCOPE, LANG))
@@ -847,7 +847,7 @@ class FindOpenApiServiceTest {
         SpecimenDTO specimen = accessibleSpecimen();
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
-        when(permissionService.hasWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
 
         assertThatThrownBy(() -> service.deleteFind(7L, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)

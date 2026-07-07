@@ -7,7 +7,7 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -80,7 +80,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
-    private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient FormMapper formMapper;
 
     // For entering new code
@@ -132,7 +132,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
-        this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.formMapper = context.getBean(FormMapper.class);
     }
 
@@ -390,7 +390,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 navBean,
                 flowBean,
                 (GenericNewUnitDialogBean<RecordingUnitDTO>) genericNewUnitDialogBean,
-                recordingUnitWriteVerifier,
+                profilePermissionService,
                 recordingUnitService,
                 langBean,
                 formContextServices

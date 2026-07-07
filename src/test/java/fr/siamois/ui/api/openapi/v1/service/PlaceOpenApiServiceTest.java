@@ -3,9 +3,10 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.*;
@@ -53,7 +54,7 @@ class PlaceOpenApiServiceTest {
     @Mock
     private ConceptMapper conceptMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private PlaceOpenApiMapper placeOpenApiMapper;
 
@@ -70,7 +71,7 @@ class PlaceOpenApiServiceTest {
                 spatialUnitService,
                 conceptService,
                 conceptMapper,
-                permissionService,
+                profilePermissionService,
                 placeOpenApiMapper);
 
         personDto = new PersonDTO();
@@ -130,7 +131,7 @@ class PlaceOpenApiServiceTest {
         ConceptDTO category = new ConceptDTO();
         category.setId(42L);
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(concept));
         when(conceptMapper.convert(concept)).thenReturn(category);
 
@@ -161,8 +162,7 @@ class PlaceOpenApiServiceTest {
         request.setTypeConceptId(42L);
 
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
-        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(false);
 
         assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -180,7 +180,7 @@ class PlaceOpenApiServiceTest {
         request.setTypeConceptId(42L);
 
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         Concept concept = new Concept();
         when(conceptService.findById(42L)).thenReturn(Optional.of(concept));
         when(conceptMapper.convert(concept)).thenReturn(new ConceptDTO());
@@ -201,7 +201,7 @@ class PlaceOpenApiServiceTest {
         request.setTypeConceptId(42L);
 
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
 
         assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -221,7 +221,7 @@ class PlaceOpenApiServiceTest {
         patch.setTypeConceptId(42L);
 
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         Concept concept = new Concept();
         ConceptDTO category = new ConceptDTO();
         category.setId(42L);
@@ -262,8 +262,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
-        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(false);
 
         PlacePatchRequest patch = new PlacePatchRequest();
         assertThatThrownBy(() -> service.updatePlace(caller, 5L, patch, "fr"))
@@ -278,7 +277,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
 
         PlacePatchRequest patch = new PlacePatchRequest();
         patch.setName("Doublon");
@@ -297,7 +296,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
 
         service.deletePlace(caller, 5L, "fr");
 
@@ -311,7 +310,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         doThrow(new IllegalStateException("Impossible de supprimer : le lieu possède des lieux enfants"))
                 .when(spatialUnitService).deleteIfUnused(5L);
 
@@ -327,8 +326,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
-        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(false);
 
         assertThatThrownBy(() -> service.deletePlace(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -376,8 +374,7 @@ class PlaceOpenApiServiceTest {
         request.setTypeConceptId(42L);
 
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
-        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         Concept concept = new Concept();
         when(conceptService.findById(42L)).thenReturn(Optional.of(concept));
         when(conceptMapper.convert(concept)).thenReturn(new ConceptDTO());
@@ -399,7 +396,7 @@ class PlaceOpenApiServiceTest {
         request.setTypeConceptId(42L);
 
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
 
         assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -414,7 +411,7 @@ class PlaceOpenApiServiceTest {
         request.setName("Lieu");
 
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
 
         assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -430,7 +427,7 @@ class PlaceOpenApiServiceTest {
         request.setTypeConceptId(99L);
 
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         when(conceptService.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
@@ -450,7 +447,7 @@ class PlaceOpenApiServiceTest {
         request.setAddress(address);
 
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         Concept concept = new Concept();
         when(conceptService.findById(42L)).thenReturn(Optional.of(concept));
         when(conceptMapper.convert(concept)).thenReturn(new ConceptDTO());
@@ -472,7 +469,7 @@ class PlaceOpenApiServiceTest {
         existing.setCreatedByInstitution(institution);
 
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), eq(null), eq(null), eq(null)))
                 .thenReturn(existing);
 
@@ -487,7 +484,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         when(conceptService.findById(99L)).thenReturn(Optional.empty());
 
         PlacePatchRequest patch = new PlacePatchRequest();
@@ -505,7 +502,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
 
         PlacePatchRequest patch = new PlacePatchRequest();
         patch.setName("   ");
@@ -522,7 +519,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
 
         FullAddress address = new FullAddress();
         address.setCity("Lyon");
@@ -546,8 +543,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
-        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), eq(null), eq(null), eq(null)))
                 .thenReturn(existing);
 
@@ -592,7 +588,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         doThrow(new SpatialUnitNotFoundException("missing"))
                 .when(spatialUnitService).deleteIfUnused(5L);
 
@@ -608,8 +604,7 @@ class PlaceOpenApiServiceTest {
         existing.setId(5L);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
-        when(permissionService.isInstitutionManager(any(UserInfo.class))).thenReturn(false);
-        when(permissionService.isActionManager(any(UserInfo.class))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
 
         service.deletePlace(caller, 5L, "fr");
 

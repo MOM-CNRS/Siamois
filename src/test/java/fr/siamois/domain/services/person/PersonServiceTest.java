@@ -7,14 +7,12 @@ import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.PersonSettings;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.EmailVerifier;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
@@ -22,7 +20,6 @@ import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepos
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
 import fr.siamois.mapper.ActionUnitMapper;
-import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.email.EmailManager;
@@ -77,8 +74,6 @@ class PersonServiceTest {
     @Mock
     private ActionUnitMapper actionUnitMapper;
     @Mock
-    private ConceptMapper conceptMapper;
-    @Mock
     private PersonMapper personMapper;
 
 
@@ -120,8 +115,7 @@ class PersonServiceTest {
                 pendingInstitutionInviteRepository,
                 institutionMapper,
                 actionUnitMapper,
-                personMapper,
-                conceptMapper
+                personMapper
         );
     }
 
@@ -295,8 +289,7 @@ class PersonServiceTest {
                 pendingInstitutionInviteRepository,
                 institutionMapper,
                 actionUnitMapper,
-                personMapper,
-                conceptMapper
+                personMapper
         );
 
         // Act
@@ -413,7 +406,6 @@ class PersonServiceTest {
 
         PendingActionUnitAttribution attribution = mock(PendingActionUnitAttribution.class);
         when(attribution.getActionUnit()).thenReturn(null);
-        when(attribution.getRole()).thenReturn(new Concept());
 
         Set<PendingInstitutionInvite> invites = Set.of(invite);
         Set<PendingActionUnitAttribution> attributions = Set.of(attribution);
@@ -431,8 +423,6 @@ class PersonServiceTest {
         when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(newPerson);
         when(institutionMapper.convert(any(Institution.class))).thenReturn(institutionDTO);
         when(personMapper.convert(any(Person.class))).thenReturn(newPersonDto);
-        ConceptDTO c  = new ConceptDTO(); c.setId(2L);
-        when(conceptMapper.convert(any(Concept.class))).thenReturn(c);
         // Act
 
         personService.createPerson(newPersonRequest,"password");
@@ -441,7 +431,7 @@ class PersonServiceTest {
 
         verify(institutionService).addToManagers(institutionDTO, newPersonDto);
         verify(institutionService).addPersonToActionManager(institutionDTO, newPersonDto);
-        verify(institutionService).addPersonToActionUnit(null, newPersonDto, c);
+        verify(institutionService).addPersonAsMemberOfActionUnit(null, newPersonDto);
         verify(pendingPersonService).delete(attribution);
         verify(pendingPersonService).delete(invite);
         verify(pendingPersonRepository).delete(pendingPerson);
@@ -483,7 +473,7 @@ class PersonServiceTest {
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());
         verify(institutionService, never()).addPersonToActionManager(any(), any());
-        verify(institutionService, never()).addPersonToActionUnit(any(), any(), any());
+        verify(institutionService, never()).addPersonAsMemberOfActionUnit(any(), any());
         verify(pendingPersonService, never()).delete(any(PendingActionUnitAttribution.class));
         verify(pendingPersonService).delete(invite);
         verify(pendingPersonRepository).delete(pendingPerson);
@@ -513,7 +503,7 @@ class PersonServiceTest {
         // Assert
         verify(institutionService, never()).addToManagers(any(), any());
         verify(institutionService, never()).addPersonToActionManager(any(), any());
-        verify(institutionService, never()).addPersonToActionUnit(any(), any(), any());
+        verify(institutionService, never()).addPersonAsMemberOfActionUnit(any(), any());
         verify(pendingPersonService, never()).delete(any(PendingActionUnitAttribution.class));
         verify(pendingPersonService, never()).delete(any(PendingInstitutionInvite.class));
         verify(pendingPersonRepository).delete(pendingPerson);
@@ -640,8 +630,7 @@ class PersonServiceTest {
                 pendingInstitutionInviteRepository,
                 institutionMapper,
                 actionUnitMapper,
-                personMapper,
-                conceptMapper
+                personMapper
         );
 
         assertThrows(IllegalStateException.class, () -> serviceWithoutVerifier.updatePassword(1L, "password"));

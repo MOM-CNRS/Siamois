@@ -37,21 +37,18 @@
                 <p:dataTable
                         id="managerDatatable"
                         value="#{institutionActionManagerListBean.filteredActionManagers}"
-                        var="relation"
+                        var="manager"
                         sortMode="single"
                         widgetVar="institutionManagerDatatable"
-                        rowKey="#{relation.id}"
+                        rowKey="#{manager.id}"
                 >
                     <p:autoUpdate/>
                     <p:column headerText="#{langBean.msg('common.label.user')}">
                         <div style="display: flex; flex-direction: column">
-                            <strong>#{relation.person.displayName()}</strong>
-                            <p style="margin-bottom: 0; font-style: italic">#{relation.person.email}</p>
-                            <p style="margin-bottom: 0">#{relation.person.username}</p>
+                            <strong>#{manager.displayName()}</strong>
+                            <p style="margin-bottom: 0; font-style: italic">#{manager.email}</p>
+                            <p style="margin-bottom: 0">#{manager.username}</p>
                         </div>
-                    </p:column>
-                    <p:column headerText="#{langBean.msg('organisationSettings.managers.adddate')}">
-                        <p:outputLabel value="#{institutionActionManagerListBean.formatDate(relation)}"/>
                     </p:column>
                 </p:dataTable>
             </settings:datatable>

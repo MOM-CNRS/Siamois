@@ -69,10 +69,11 @@ public class InstitutionDialogBean implements Serializable {
         InstitutionDTO institution = new InstitutionDTO();
         institution.setName(institutionName);
         institution.setIdentifier(identifier);
-        institution.getManagers().add(sessionSettingsBean.getAuthenticatedUser());
         institution.setDescription(description);
 
-        return institutionService.createInstitution(institution, selected.completeThesaurusUrl());
+        InstitutionDTO created = institutionService.createInstitution(institution, selected.completeThesaurusUrl());
+        institutionService.addToManagers(created, sessionSettingsBean.getAuthenticatedUser());
+        return created;
     }
 
     public void save() {

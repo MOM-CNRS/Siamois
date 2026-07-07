@@ -50,25 +50,19 @@
                     <div class="dt-content">
                         <p:dataTable
                                 id="actionUnitMemberDatatable"
-                                value="#{teamMembersBean.filteredMemberRelations}"
-                                var="relation"
+                                value="#{teamMembersBean.filteredMembers}"
+                                var="member"
                                 sortMode="single"
                                 widgetVar="actionUnitMemberDatatable"
-                                rowKey="#{relation.id}"
+                                rowKey="#{member.id}"
                         >
                             <p:autoUpdate/>
                             <p:column headerText="#{langBean.msg('common.label.user')}">
                                 <div style="display: flex; flex-direction: column">
-                                    <strong>#{relation.person.displayName()}</strong>
-                                    <p style="margin-bottom: 0; font-style: italic">#{relation.person.email}</p>
-                                    <p>#{relation.person.username}</p>
+                                    <strong>#{member.displayName()}</strong>
+                                    <p style="margin-bottom: 0; font-style: italic">#{member.email}</p>
+                                    <p>#{member.username}</p>
                                 </div>
-                            </p:column>
-                            <p:column headerText="#{langBean.msg('common.label.role')}">
-                                <p:outputLabel value="#{teamMembersBean.formatRole(relation)}"/>
-                            </p:column>
-                            <p:column headerText="#{langBean.msg('organisationSettings.managers.adddate')}">
-                                <p:outputLabel value="#{teamMembersBean.formatDate(relation)}"/>
                             </p:column>
                         </p:dataTable>
                     </div>

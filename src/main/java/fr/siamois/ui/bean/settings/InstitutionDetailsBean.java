@@ -2,7 +2,6 @@ package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -35,7 +34,6 @@ public class InstitutionDetailsBean implements Serializable {
     private final InstitutionThesaurusSettingsBean institutionThesaurusSettingsBean;
     private final LangBean langBean;
     private final InstitutionActionManagerListBean institutionActionManagerListBean;
-    private final transient PermissionService permissionService;
     private final SessionSettingsBean sessionSettingsBean;
     private final TeamListBean teamListBean;
     private InstitutionDTO institution;
@@ -47,7 +45,6 @@ public class InstitutionDetailsBean implements Serializable {
                                   InstitutionThesaurusSettingsBean institutionThesaurusSettingsBean,
                                   LangBean langBean,
                                   InstitutionActionManagerListBean institutionActionManagerListBean,
-                                  PermissionService permissionService,
                                   SessionSettingsBean sessionSettingsBean, TeamListBean teamListBean, InstitutionService institutionService) {
 
         this.institutionInfoSettingsBean = institutionInfoSettingsBean;
@@ -55,7 +52,6 @@ public class InstitutionDetailsBean implements Serializable {
         this.institutionThesaurusSettingsBean = institutionThesaurusSettingsBean;
         this.langBean = langBean;
         this.institutionActionManagerListBean = institutionActionManagerListBean;
-        this.permissionService = permissionService;
         this.sessionSettingsBean = sessionSettingsBean;
         this.teamListBean = teamListBean;
         this.institutionService = institutionService;

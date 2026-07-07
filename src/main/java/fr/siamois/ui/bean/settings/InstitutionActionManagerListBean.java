@@ -1,17 +1,15 @@
 package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.team.ActionManagerRelation;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.mapper.PersonMapper;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.institution.UserDialogBean;
-import fr.siamois.utils.DateUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -42,9 +40,8 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
     private final transient PendingPersonService pendingPersonService;
     private final SessionSettingsBean sessionSettingsBean;
     private InstitutionDTO institution;
-    private transient Set<ActionManagerRelation> refActionManagers;
-    private transient List<ActionManagerRelation> filteredActionManagers;
-    private transient PersonMapper personMapper;
+    private transient Set<PersonDTO> refActionManagers;
+    private transient List<PersonDTO> filteredActionManagers;
 
     private String searchInput;
 
@@ -77,12 +74,7 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
                 institution,
                 this::processPerson);
 
-        userDialogBean.getAlreadyExistingPersons().addAll(
-                refActionManagers.stream()
-                        .map(ActionManagerRelation::getPerson) // Gets the Person entity
-                        .map(personMapper::convert)            // Converts Person to PersonDto
-                        .toList()
-        );
+        userDialogBean.getAlreadyExistingPersons().addAll(refActionManagers);
 
         PrimeFaces.current().ajax().update("newMemberDialog");
         PrimeFaces.current().executeScript("PF('newMemberDialog').show();");
@@ -95,15 +87,15 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
         } else {
             filteredActionManagers.clear();
 
-            for (ActionManagerRelation relation : refActionManagers) {
-                if (relation.getPerson().displayName().toLowerCase().contains(searchInput.toLowerCase())) {
-                    filteredActionManagers.add(relation);
+            for (PersonDTO manager : refActionManagers) {
+                if (manager.displayName().toLowerCase().contains(searchInput.toLowerCase())) {
+                    filteredActionManagers.add(manager);
                 }
             }
 
-            for (ActionManagerRelation relation : refActionManagers) {
-                if (relation.getPerson().getEmail().toLowerCase().contains(searchInput.toLowerCase())) {
-                    filteredActionManagers.add(relation);
+            for (PersonDTO manager : refActionManagers) {
+                if (manager.getEmail().toLowerCase().contains(searchInput.toLowerCase())) {
+                    filteredActionManagers.add(manager);
                 }
             }
         }
@@ -120,14 +112,9 @@ public class InstitutionActionManagerListBean implements SettingsDatatableBean {
 
     private Boolean processPerson(PersonRole personRole) {
         addToActionManagers(personRole);
-        ActionManagerRelation relation = new ActionManagerRelation(institution, personRole.person());
-        refActionManagers.add(relation);
-        filteredActionManagers.add(relation);
+        refActionManagers.add(personRole.person());
+        filteredActionManagers.add(personRole.person());
         return true;
-    }
-
-    public String formatDate(ActionManagerRelation relation) {
-        return DateUtils.formatOffsetDateTime(relation.getAddedAt());
     }
 
 }

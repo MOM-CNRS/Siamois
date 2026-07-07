@@ -23,12 +23,13 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -67,7 +68,8 @@ class ActionUnitServiceTest {
     @Mock private PersonMapper personMapper;
     @Mock private ConceptMapper conceptMapper;
     @Mock private SpatialUnitRepository spatialUnitRepository;
-    @Mock private TeamMemberRepository teamMemberRepository;
+    @Mock private PersonProfileAssignmentRepository personProfileAssignmentRepository;
+    @Mock private ProfileRepository profileRepository;
     @Mock private DocumentRepository documentRepository;
     @Mock private PendingActionUnitRepository pendingActionUnitRepository;
     @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
@@ -905,21 +907,6 @@ class ActionUnitServiceTest {
     }
 
     @Test
-    void findByTeamMember_mapsToDtos() {
-        PersonDTO member = new PersonDTO();
-        member.setId(3L);
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(4L);
-        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(3L, 4L, 5L))
-                .thenReturn(List.of(actionUnit1));
-        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-
-        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(member, inst, 5L);
-
-        assertEquals(List.of(actionUnit1dto), result);
-    }
-
-    @Test
     void findRootsByInstitution_delegatesToRepository() {
         when(actionUnitRepository.findRootsByInstitution(1L, 0, 10)).thenReturn(List.of(actionUnit1));
         List<ActionUnit> result = actionUnitService.findRootsByInstitution(1L, 0, 10);
@@ -1251,7 +1238,8 @@ class ActionUnitServiceTest {
         Pageable pageable1 = PageRequest.of(0, 20);
 
         Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
-                Set.of(), null, null, pageable1);
+                 1L,
+                 Set.of(), null, null, pageable1);
 
         assertThat(page1.getContent()).isEmpty();
         assertThat(page1.getTotalElements()).isZero();
@@ -1265,7 +1253,8 @@ class ActionUnitServiceTest {
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
-                Set.of(1L), null, null, PageRequest.of(0, 20));
+                 1L,
+                 Set.of(1L), null, null, PageRequest.of(0, 20));
 
         assertThat(page1.getContent()).isEmpty();
         assertThat(page1.getTotalElements()).isZero();
@@ -1296,7 +1285,8 @@ class ActionUnitServiceTest {
                 .thenReturn(childRows);
 
         Page<AccessibleProjectForApi> page1 = actionUnitService.findAccessibleProjects(
-                Set.of(10L), null, "alpha", PageRequest.of(0, 20, Sort.by("name")));
+                 1L,
+                 Set.of(10L), null, "alpha", PageRequest.of(0, 20, Sort.by("name")));
 
         assertThat(page1.getTotalElements()).isEqualTo(2);
         assertThat(page1.getContent()).hasSize(2);
