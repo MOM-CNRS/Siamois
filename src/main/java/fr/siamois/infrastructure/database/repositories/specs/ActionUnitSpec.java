@@ -19,6 +19,9 @@ public class ActionUnitSpec {
     public static final String NAME_FILTER = "name";
     public static final String ID_FILTER = "id";
     public static final String SPATIAL_UNIT_FILTER = "mainLocation";
+    public static final String CREATED_BY_INSTITUTION = "createdByInstitution";
+    public static final String SCOPE = "scope";
+    public static final String CODE = "code";
 
     private ActionUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -26,7 +29,7 @@ public class ActionUnitSpec {
 
     @NonNull
     public static Specification<ActionUnit> belongsToInstitution(long institutionId) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(CREATED_BY_INSTITUTION).get("id"), institutionId));
     }
 
     @NonNull
@@ -55,7 +58,7 @@ public class ActionUnitSpec {
             if (institutionIds == null || institutionIds.isEmpty()) {
                 return cb.disjunction();
             }
-            return root.get("createdByInstitution").get("id").in(institutionIds);
+            return root.get(CREATED_BY_INSTITUTION).get("id").in(institutionIds);
         };
     }
 
@@ -95,14 +98,14 @@ public class ActionUnitSpec {
                     cb.equal(assignment.get("person").get("id"), personId),
                     cb.or(
                             cb.and(
-                                    cb.equal(profile.get("scope"), PermissionScopeType.INSTANCE),
-                                    cb.equal(permission.get("code"), PermissionConstants.ORGANIZATION_ACCESS)),
+                                    cb.equal(profile.get(SCOPE), PermissionScopeType.INSTANCE),
+                                    cb.equal(permission.get(CODE), PermissionConstants.ORGANIZATION_ACCESS)),
                             cb.and(
-                                    cb.equal(profile.get("scope"), PermissionScopeType.ORGANISATION),
-                                    cb.equal(profile.get("institution"), root.get("createdByInstitution")),
-                                    cb.equal(permission.get("code"), PermissionConstants.ORGANIZATION_ACCESS)),
+                                    cb.equal(profile.get(SCOPE), PermissionScopeType.ORGANISATION),
+                                    cb.equal(profile.get("institution"), root.get(CREATED_BY_INSTITUTION)),
+                                    cb.equal(permission.get(CODE), PermissionConstants.ORGANIZATION_ACCESS)),
                             cb.and(
-                                    cb.equal(profile.get("scope"), PermissionScopeType.PROJECT),
+                                    cb.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
                                     cb.equal(profile.get("actionUnit"), root))
                     ));
             return cb.exists(subquery);
