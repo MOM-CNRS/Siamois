@@ -11,32 +11,32 @@ public final class PermissionConstants {
 
     // ORGANIZATION SCOPE
     /**
-     * Allows the user to create new organizations
+     * Allows the user to create new {@link fr.siamois.domain.models.institution.Institution}
      */
     public static final String ORGANIZATION_CREATE = "ORGANIZATION_CREATE";
 
     /**
-     * Allows the user to see the list of all institutions
+     * Allows the user to see the list of all {@link fr.siamois.domain.models.institution.Institution}
      */
     public static final String ORGANIZATION_LIST_ACCESS = "ORGANIZATION_LIST_ACCESS";
 
     /**
-     * Allows the user to manage the member of the specified organization
+     * Allows the user to manage the {@link fr.siamois.domain.models.auth.Person} of the specified {@link fr.siamois.domain.models.institution.Institution}
      */
     public static final String ORGANIZATION_MANAGE_MEMBERS = "ORGANIZATION_MANAGE_MEMBERS";
 
     /**
-     * Allows the user to create new action units in specified organization
+     * Allows the user to manage new {@link fr.siamois.domain.models.actionunit.ActionUnit} in specified {@link fr.siamois.domain.models.institution.Institution}
      */
-    public static final String ORGANIZATION_CREATE_ACTIONS = "ORGANIZATION_CREATE_ACTIONS";
+    public static final String ORGANIZATION_MANAGE_ACTIONS = "ORGANIZATION_MANAGE_ACTIONS";
 
     /**
-     * Allows the user to create spatial unit in the specified organization
+     * Allows the user to manage {@link fr.siamois.domain.models.spatialunit.SpatialUnit} in the specified {@link fr.siamois.domain.models.institution.Institution}
      */
-    public static final String ORGANIZATION_CREATE_PLACES = "ORGANIZATION_CREATE_PLACES";
+    public static final String ORGANIZATION_MANAGE_PLACES = "ORGANIZATION_MANAGE_PLACES";
 
     /**
-     * Allows the user to access all of the organization data
+     * Allows the user to access all of the {@link fr.siamois.domain.models.institution.Institution} data
      */
     public static final String ORGANIZATION_ACCESS = "ORGANIZATION_ACCESS";
 
@@ -45,6 +45,8 @@ public final class PermissionConstants {
     public static final String PROJECT_MANAGE_MEMBERS = "PROJET_MANAGE_MEMBERS";
     public static final String PROJECT_EDIT_RECORDING_UNITS = "PROJECT_EDIT_RECORDING_UNITS";
     public static final String PROJECT_EDIT_PHASES = "PROJECT_EDIT_PHASES";
+    public static final String PROJECT_EDIT_FINDS = "PROJECT_EDIT_FINDS";
+    public static final String PROJECT_EDIT_CONTAINERS = "PROJECT_EDIT_CONTAINERS";
 
     private PermissionConstants() {
         throw new UnsupportedOperationException("PermissionConstants should never be instantiated");
