@@ -6,7 +6,7 @@ import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundExcept
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.ProfilePermissionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.ConceptDTO;
@@ -79,7 +79,7 @@ public class PlaceOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_CREATE_PLACES)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de lieu non autorisée");
         }
 
@@ -178,7 +178,7 @@ public class PlaceOpenApiService {
                                              String forbiddenMessage) {
         InstitutionDTO institution = dto.getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_CREATE_PLACES)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, forbiddenMessage);
         }
     }

@@ -18,7 +18,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
-import fr.siamois.domain.services.authorization.ProfilePermissionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
@@ -380,7 +380,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @return True if the user has sufficient permissions
      */
     public boolean hasCreatePermission(UserInfo user) {
-        return profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_CREATE_PLACES);
+        return profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_PLACES);
     }
 
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {

@@ -2,6 +2,7 @@ package fr.siamois.domain.services.authorization;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ProfilePermissionServiceTest {
 
-    private static final String CODE = PermissionConstants.ORGANIZATION_CREATE_PLACES;
+    private static final String CODE = PermissionConstants.ORGANIZATION_MANAGE_PLACES;
 
     @Mock
     private PersonProfileAssignmentRepository assignmentRepository;

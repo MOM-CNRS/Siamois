@@ -8,7 +8,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.ProfilePermissionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.StratigraphicRelationshipService;
@@ -656,8 +656,8 @@ public class FlowBean implements Serializable {
     public boolean userHasAddSpatialOrActionUnitPermission() {
         UserInfo info = sessionSettings.getUserInfo();
         return info.getUser().isSuperAdmin()
-                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_CREATE_PLACES)
-                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
+                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_PLACES)
+                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
     }
 
     public String invokeOnClick(MethodExpression method, Long id, AbstractPanel panelModel) {
@@ -681,7 +681,7 @@ public class FlowBean implements Serializable {
      * @return true if creation is allowed
      */
     public boolean isActionUnitCreateAllowed() {
-        return profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
+        return profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
     }
 
     /**

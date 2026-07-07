@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.initializer;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.permissions.*;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.infrastructure.database.repositories.permissions.PermissionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
@@ -21,11 +22,10 @@ import java.util.*;
 @RequiredArgsConstructor
 public class SystemPermissionsInitializer implements DatabaseInitializer{
 
-    private final ProfileRepository profileRepository;
     private final PermissionRepository permissionRepository;
-    private final Map<String, Permission> permissions = new HashMap<>();
     private final PersonRepository personRepository;
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
+    private final ProfileService profileService;
 
     @Value("${siamois.admin.username}")
     private String adminUsername;
@@ -37,10 +37,7 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
             permission = new Permission();
             permission.setCode(code);
             permissionRepository.save(permission);
-        } else {
-            permission = opt.get();
         }
-        permissions.put(code, permission);
     }
 
     private void initializePermissions() {
@@ -61,28 +58,12 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
     @Override
     public void initialize() throws DatabaseDataInitException {
         initializePermissions();
-        Optional<Profile> profile = profileRepository.findByCode("SUPERADMIN");
-        Profile superAdmin;
-        if (profile.isEmpty()) {
-            Set<Permission> profilePermission = new HashSet<>();
+        Profile superAdmin = profileService.createOrGetSuperadminProfile();
+        Person admin = personRepository
+                .findByUsernameIgnoreCase(adminUsername)
+                .orElseThrow(() -> new DatabaseDataInitException("Super administrator profile not found"));
 
-            profilePermission.add(permissions.get(PermissionConstants.INSTANCE_MANAGE_MEMBERS));
-            profilePermission.add(permissions.get(PermissionConstants.ORGANIZATION_CREATE));
-            profilePermission.add(permissions.get(PermissionConstants.ORGANIZATION_ACCESS));
-
-            superAdmin = Profile.builder()
-                    .code("SUPERADMIN")
-                    .name("Super administrateur")
-                    .permissions(profilePermission)
-                    .scope(PermissionScopeType.INSTANCE)
-                    .build();
-
-            superAdmin = profileRepository.save(superAdmin);
-            log.info("Super administrator profile created");
-            Person admin = personRepository
-                    .findByUsernameIgnoreCase(adminUsername)
-                    .orElseThrow(() -> new DatabaseDataInitException("Super administrator profile not found"));
-
+        if (!personProfileAssignmentRepository.personIsSuperAdmin(admin)) {
             PersonProfileAssignment personProfileAssignment = new PersonProfileAssignment();
             personProfileAssignment.setPerson(admin);
             personProfileAssignment.setProfile(superAdmin);

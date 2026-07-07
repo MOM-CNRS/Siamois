@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.permissions;
 
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -59,4 +60,13 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             """)
     boolean personHasAnyProfileOnActionUnit(@Param("personId") Long personId,
                                             @Param("actionUnitId") Long actionUnitId);
+
+    @Query("""
+            SELECT COUNT(p) > 0
+            FROM PersonProfileAssignment ppa
+            JOIN ppa.person p
+            JOIN ppa.profile prof
+            WHERE prof.code = fr.siamois.domain.models.permissions.ProfileConstants.SUPERADMIN AND p = :admin
+            """)
+    boolean personIsSuperAdmin(Person admin);
 }

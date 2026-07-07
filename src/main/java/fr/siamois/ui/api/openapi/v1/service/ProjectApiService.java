@@ -11,7 +11,7 @@ import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.ProfilePermissionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -146,7 +146,7 @@ public class ProjectApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_CREATE_ACTIONS)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de projet non autorisée");
         }
 
@@ -212,7 +212,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_CREATE_ACTIONS)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
         }
         applyProjectPatch(dto, patch);
@@ -249,7 +249,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_CREATE_ACTIONS)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression du projet non autorisée");
         }
         if (row.recordingUnitCount() > 0) {

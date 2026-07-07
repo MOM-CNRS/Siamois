@@ -1,4 +1,4 @@
-package fr.siamois.domain.services.authorization;
+package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;

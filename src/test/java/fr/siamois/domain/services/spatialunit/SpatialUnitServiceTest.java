@@ -14,7 +14,7 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.ProfilePermissionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
@@ -456,7 +456,7 @@ class SpatialUnitServiceTest {
         i.setId(1L);
         UserInfo user = new UserInfo(i, person, "fr");
 
-        when(profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_CREATE_PLACES)).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_PLACES)).thenReturn(true);
 
         assertTrue(spatialUnitService.hasCreatePermission(user));
     }
@@ -469,7 +469,7 @@ class SpatialUnitServiceTest {
         i.setId(1L);
         UserInfo user = new UserInfo(i, person, "fr");
 
-        when(profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_CREATE_PLACES)).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_PLACES)).thenReturn(false);
 
         assertFalse(spatialUnitService.hasCreatePermission(user));
     }
