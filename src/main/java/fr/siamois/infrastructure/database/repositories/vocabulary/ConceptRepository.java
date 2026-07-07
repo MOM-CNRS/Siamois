@@ -7,6 +7,7 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,17 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
                     "WHERE LOWER(v.externalVocabularyId) = LOWER(:idt) AND LOWER(c.externalId) = LOWER(:idc)"
     )
     Optional<Concept> findConceptByExternalIdIgnoreCase(String idt, String idc);
+
+    /**
+     * Bulk variant of {@link #findConceptByExternalIdIgnoreCase} — one query per distinct vocabulary
+     * rather than one per concept. Callers should lowercase {@code lowerIdcs} themselves.
+     */
+    @Query(
+            "SELECT c FROM Concept c " +
+                    "JOIN c.vocabulary v " +
+                    "WHERE LOWER(v.externalVocabularyId) = LOWER(:idt) AND LOWER(c.externalId) IN (:lowerIdcs)"
+    )
+    List<Concept> findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(String idt, Collection<String> lowerIdcs);
 
     /**
      * Find the top term configuration for a field code of a user.
@@ -68,5 +80,26 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
                     "AND cfc.fk_user_id IS NULL"
     )
     Optional<Concept> findTopTermConfigForFieldCodeOfInstitution(Long institutionId, String fieldCode);
+
+    /**
+     * Finds concepts whose pref or alt label exactly matches (case/accent-insensitive) the given
+     * label, within the subtree of a field's configured root concept — including the root concept
+     * itself, whose own label isn't tagged with fk_field_parent_concept_id pointing to itself
+     * (only its descendants are), so it needs a separate match on the concept id.
+     * @param fieldConceptId The id of the field's root concept (from ConceptFieldConfig)
+     * @param lang The language code of the label
+     * @param label The label to match exactly (case/accent-insensitive)
+     * @return All concepts matching the label — callers should treat anything other than exactly one as an error
+     */
+    @Query(
+            nativeQuery = true,
+            value = "SELECT DISTINCT c.* FROM concept c " +
+                    "JOIN concept_label cl ON cl.fk_concept_id = c.concept_id " +
+                    "WHERE (cl.fk_field_parent_concept_id = :fieldConceptId OR c.concept_id = :fieldConceptId) " +
+                    "AND cl.lang_code = :lang " +
+                    "AND NOT c.is_deleted " +
+                    "AND unaccent(cl.label) ILIKE unaccent(:label)"
+    )
+    List<Concept> findAllByFieldContextAndExactLabel(Long fieldConceptId, String lang, String label);
 
 }

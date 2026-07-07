@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.domain.models.misc.ImportProgress;
 import fr.siamois.infrastructure.database.initializer.seeder.SpatialUnitSeeder;
 import org.apache.poi.ss.usermodel.*;
 
@@ -13,6 +14,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public final class ExcelCellHelper {
+
+    /** Global cap on collected parse errors across the whole import, to bound memory on pathological files. */
+    public static final int MAX_ERRORS = 200;
 
     private ExcelCellHelper() {}
 
@@ -121,14 +125,21 @@ public final class ExcelCellHelper {
     }
 
     public static void forEachDataRow(Sheet sheet, List<ImportError> errors, Consumer<Row> consumer) {
+        forEachDataRow(sheet, errors, new ImportProgress(), consumer);
+    }
+
+    public static void forEachDataRow(Sheet sheet, List<ImportError> errors, ImportProgress progress, Consumer<Row> consumer) {
         for (int r = 1; r <= sheet.getLastRowNum(); r++) {
             Row row = sheet.getRow(r);
             if (row != null) {
                 try {
                     consumer.accept(row);
                 } catch (Exception e) {
-                    errors.add(new ImportError(sheet.getSheetName(), r + 1, "", e.getMessage()));
+                    if (errors.size() < MAX_ERRORS) {
+                        errors.add(ImportError.forRow(sheet.getSheetName(), r + 1, e.getMessage()));
+                    }
                 }
+                progress.increment();
             }
         }
     }

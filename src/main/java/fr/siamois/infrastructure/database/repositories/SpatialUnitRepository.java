@@ -16,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -64,6 +65,13 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
                     "WHERE UPPER(su.name) = UPPER(:spatialUnitName) AND su.fk_institution_id = :institutionId"
     )
     Optional<SpatialUnit> findByNameAndInstitution(String spatialUnitName, Long institutionId);
+
+    @Query(
+            nativeQuery = true,
+            value = "SELECT su.* FROM spatial_unit su " +
+                    "WHERE UPPER(su.name) IN (:upperNames) AND su.fk_institution_id = :institutionId"
+    )
+    List<SpatialUnit> findAllByNameInAndInstitution(@Param("upperNames") Collection<String> upperNames, @Param("institutionId") Long institutionId);
 
     Optional<SpatialUnit> findByArk(@NotNull Ark ark);
 

@@ -64,6 +64,14 @@ public class ProjectDetailsBean {
     public void checkProjectOrRedirect() {
         if (project == null) {
             redirectBean.redirectTo("/settings/project");
+            return;
+        }
+        // projectUploadSettingsBean.project is only set via its own .init(project) call (wired to the
+        // upload tile's action in init() above) — if this page was reached any other way (direct URL,
+        // refresh, browser back/forward) while this bean's project survived, it can be desynced and
+        // stay null, silently breaking institution resolution during import. Re-sync it here.
+        if (projectUploadSettingsBean.getProject() == null) {
+            projectUploadSettingsBean.init(project);
         }
     }
 
