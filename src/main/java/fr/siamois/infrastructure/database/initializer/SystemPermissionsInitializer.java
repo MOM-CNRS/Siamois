@@ -8,6 +8,7 @@ import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.services.permissions.ProfileService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PermissionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
@@ -86,8 +87,10 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
 
         Institution defaultInstitution = institutionRepository.findInstitutionByIdentifier("siamois")
                 .orElseThrow(() -> new DatabaseDataInitException("Default Institution not found"));
+        InstitutionDTO institutionDTO = institutionMapper.convert(defaultInstitution);
+        assert institutionDTO != null;
         Profile organizationManager = profileService
-                .createOrGetOrganizationManagerProfile(institutionMapper.convert(defaultInstitution));
+                .createOrGetOrganizationManagerProfile(institutionDTO);
 
         assignProfilIfMissing(organizationManager, admin);
     }
