@@ -3,12 +3,12 @@ package fr.siamois.ui.bean.dialog.institution;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.OrganizationMembersServiceInterface;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
-import fr.siamois.ui.bean.settings.institution.InstitutionMembersListBean;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +48,7 @@ public class NewOrganizationMemberDialogBean implements Serializable {
 
     private final transient PersonService personService;
     private final transient InstitutionService institutionService;
+    private final transient OrganizationMembersServiceInterface organizationMembersService;
     private final LangBean langBean;
 
     private InstitutionDTO institution;
@@ -74,12 +75,24 @@ public class NewOrganizationMemberDialogBean implements Serializable {
     private String invitePassword;
     private String invitePasswordConfirm;
 
-    public NewOrganizationMemberDialogBean(PersonService personService, InstitutionService institutionService, LangBean langBean) {
+    public NewOrganizationMemberDialogBean(PersonService personService,
+                                            InstitutionService institutionService,
+                                            OrganizationMembersServiceInterface organizationMembersService,
+                                            LangBean langBean) {
         this.personService = personService;
         this.institutionService = institutionService;
+        this.organizationMembersService = organizationMembersService;
         this.langBean = langBean;
     }
 
+    /**
+     * Resets and opens the wizard for the given institution.
+     *
+     * @param title         the dialog title
+     * @param buttonLabel   the label of the primary action button on the main step
+     * @param institution   the institution members will be added to
+     * @param processPerson callback invoked once per member on final submission
+     */
     public void init(String title, String buttonLabel, InstitutionDTO institution, ProcessPerson processPerson) {
         reset();
         this.title = title;
@@ -89,6 +102,7 @@ public class NewOrganizationMemberDialogBean implements Serializable {
         PrimeFaces.current().ajax().update("newOrganizationMemberDialog");
     }
 
+    /** Clears the whole wizard state: selections, invite fields, step, and the pending callback. */
     @EventListener(LoginEvent.class)
     public final void reset() {
         institution = null;
@@ -113,15 +127,18 @@ public class NewOrganizationMemberDialogBean implements Serializable {
         invitePasswordConfirm = null;
     }
 
+    /** Resets the wizard and closes the dialog without submitting anything. */
     public void exit() {
         reset();
         PrimeFaces.current().executeScript("PF('newOrganizationMemberDialog').hide();");
     }
 
+    /** @return true when the wizard is on the member/profile selection step */
     public boolean isStepMain() {
         return step == WizardStep.MAIN;
     }
 
+    /** @return true when the wizard is on the "invite a new user" sub-step */
     public boolean isStepInvite() {
         return step == WizardStep.INVITE;
     }
@@ -130,7 +147,13 @@ public class NewOrganizationMemberDialogBean implements Serializable {
         return person.getId() != null && person.getId() < 0;
     }
 
-    /** Autocomplete source for the members field — excludes already-selected and already-member persons. */
+    /**
+     * Autocomplete source for the members field — excludes already-selected and already-member persons.
+     * As a side effect, remembers the query so {@link #goToInvite()} can prefill the invite form from it.
+     *
+     * @param query the text currently typed in the members field
+     * @return matching persons, filtered
+     */
     public List<PersonDTO> completeMember(String query) {
         searchQuery = query;
         List<PersonDTO> result = new ArrayList<>(personService.findClosestByUsernameOrEmail(query));
@@ -139,9 +162,14 @@ public class NewOrganizationMemberDialogBean implements Serializable {
         return result;
     }
 
-    /** Mock autocomplete source for the profiles field, shared with the members datatable editor. */
+    /**
+     * Autocomplete source for the profiles field.
+     *
+     * @param query the text currently typed in the profiles field
+     * @return the assignable profiles matching the query
+     */
     public List<ProfileDTO> completeProfile(String query) {
-        List<ProfileDTO> all = InstitutionMembersListBean.availableProfiles();
+        List<ProfileDTO> all = organizationMembersService.findAvailableProfiles(institution);
         if (query == null || query.isBlank()) {
             return all;
         }
@@ -149,6 +177,10 @@ public class NewOrganizationMemberDialogBean implements Serializable {
         return all.stream().filter(p -> p.getName().toLowerCase().contains(q)).toList();
     }
 
+    /**
+     * Switches to the "invite a new user" sub-step, prefilling the e-mail/username or last name
+     * from whatever was typed in the members search field.
+     */
     public void goToInvite() {
         String q = searchQuery == null ? "" : searchQuery.trim();
         if (q.contains("@")) {
@@ -167,11 +199,16 @@ public class NewOrganizationMemberDialogBean implements Serializable {
         step = WizardStep.INVITE;
     }
 
+    /** Discards the invite sub-form and returns to the member/profile selection step. */
     public void back() {
         clearInviteFields();
         step = WizardStep.MAIN;
     }
 
+    /**
+     * Runs whatever the current step's primary button means: validates and stages the invite draft
+     * on the invite step, or creates/submits every selected member on the main step.
+     */
     public void primaryAction() {
         if (step == WizardStep.INVITE) {
             confirmInvite();
@@ -271,7 +308,8 @@ public class NewOrganizationMemberDialogBean implements Serializable {
         }
     }
 
-    private PersonDTO createInvitedPerson(PersonDTO draft) {
+    private PersonDTO
+    createInvitedPerson(PersonDTO draft) {
         String password = draftPasswords.remove(draft.getId());
 
         PersonDTO person = new PersonDTO();
@@ -305,6 +343,7 @@ public class NewOrganizationMemberDialogBean implements Serializable {
         return sanitized.isBlank() ? "user" : sanitized;
     }
 
+    /** @return the label of the primary action button for the current step */
     public String getPrimaryActionLabel() {
         if (step == WizardStep.INVITE) {
             return langBean.msg("newOrganizationMember.action.invite");
@@ -315,6 +354,7 @@ public class NewOrganizationMemberDialogBean implements Serializable {
                 : langBean.msg("newOrganizationMember.action.addCount", selectedMembers.size());
     }
 
+    /** @return false when the primary action would have nothing to do (no member selected on the main step) */
     public boolean isPrimaryActionEnabled() {
         return step == WizardStep.INVITE || !selectedMembers.isEmpty();
     }

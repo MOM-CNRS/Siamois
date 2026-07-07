@@ -3,18 +3,17 @@ package fr.siamois.ui.bean.settings.institution;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.OrganizationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
-import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.NewOrganizationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
-import io.swagger.models.auth.In;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static fr.siamois.utils.MessageUtils.displayInfoMessage;
 import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 
 @Slf4j
@@ -38,10 +36,9 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Setter
 public class InstitutionMembersListBean implements SettingsDatatableBean {
 
-    private static final List<ProfileDTO> AVAILABLE_PROFILES = buildAvailableProfiles();
-
     private final transient InstitutionService institutionService;
     private final transient PersonService personService;
+    private final transient OrganizationMembersServiceInterface organizationMembersService;
     private final NewOrganizationMemberDialogBean newOrganizationMemberDialogBean;
     private final LangBean langBean;
     private final transient PendingPersonService pendingPersonService;
@@ -55,39 +52,33 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
 
     public InstitutionMembersListBean(InstitutionService institutionService,
                                       PersonService personService,
+                                      OrganizationMembersServiceInterface organizationMembersService,
                                       NewOrganizationMemberDialogBean newOrganizationMemberDialogBean,
                                       LangBean langBean,
                                       PendingPersonService pendingPersonService,
                                       SessionSettingsBean sessionSettingsBean) {
         this.institutionService = institutionService;
         this.personService = personService;
+        this.organizationMembersService = organizationMembersService;
         this.newOrganizationMemberDialogBean = newOrganizationMemberDialogBean;
         this.langBean = langBean;
         this.pendingPersonService = pendingPersonService;
         this.sessionSettingsBean = sessionSettingsBean;
     }
 
+    /**
+     * Loads the members of the given institution and resets the search filter.
+     *
+     * @param institution the institution whose members page is being displayed
+     */
     public void init(InstitutionDTO institution) {
         this.institution = institution;
-        // TODO : fetch members from institution
-        InstitutionMemberDTO member = new InstitutionMemberDTO();
-        PersonDTO person = new PersonDTO();
-        person.setName("Chirac");
-        person.setLastname("Jacques");
-        person.setEmail("jacques.chirac@siamois.fr");
-        person.setUsername("jacqouillelafripouille");
-        person.setEnabled(true);
-        member.setPerson(person);
-        ProfileDTO profile = new ProfileDTO();
-        profile.setName("Super Administrateur");
-        ProfileDTO profile2 = new ProfileDTO();
-        profile2.setName("Profil 2");
-        member.setProfiles(new ArrayList<>(List.of(profile, profile2)));
-        refMembers = new ArrayList<>(List.of(member));
+        refMembers = new ArrayList<>(organizationMembersService.findMembersOf(institution));
         roles = new HashMap<>();
         members = new ArrayList<>(refMembers);
     }
 
+    /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
     @Override
     public void filter() {
         log.trace("Filtering values with text: {}", searchInput);
@@ -104,32 +95,24 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         }
     }
 
-    /** Mock autocomplete source for the profile-chips editor — filters the fixed in-memory catalog, no DB call. */
+    /**
+     * Autocomplete source for the profile-chips editor in the members datatable.
+     *
+     * @param query the text currently typed in the profile field
+     * @return the assignable profiles matching the query
+     */
     public List<ProfileDTO> completeProfile(String query) {
+        List<ProfileDTO> all = organizationMembersService.findAvailableProfiles(institution);
         if (query == null || query.isBlank()) {
-            return AVAILABLE_PROFILES;
+            return all;
         }
         String q = query.trim().toLowerCase();
-        return AVAILABLE_PROFILES.stream()
+        return all.stream()
                 .filter(p -> p.getName().toLowerCase().contains(q))
                 .toList();
     }
 
-    /** Mock profile catalog, also used by {@link fr.siamois.ui.bean.dialog.institution.NewOrganizationMemberDialogBean}. */
-    public static List<ProfileDTO> availableProfiles() {
-        return AVAILABLE_PROFILES;
-    }
-
-    private static List<ProfileDTO> buildAvailableProfiles() {
-        List<ProfileDTO> profiles = new ArrayList<>();
-        for (String name : List.of("Super Administrateur", "Responsable scientifique", "Contributeur", "Profil 2", "Lecture seule")) {
-            ProfileDTO profile = new ProfileDTO();
-            profile.setName(name);
-            profiles.add(profile);
-        }
-        return profiles;
-    }
-
+    /** Opens the "add members" wizard dialog for the current institution. */
     @Override
     public void add() {
         log.trace("Creating member");
@@ -143,19 +126,19 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
 
     private Boolean processPerson(PersonRole saved) {
         try {
-            // todo persist member to institution
-            InstitutionMemberDTO member = new InstitutionMemberDTO();
-            member.setPerson(saved.person());
-            member.setProfiles(new ArrayList<>(saved.profiles()));
+            InstitutionMemberDTO member = organizationMembersService.addMemberToInstitution(
+                    institution, saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);
             members.add(member);
             return true;
+
         } catch (Exception err) {
             displayWarnMessage(langBean, "organisationSettings.error.manager", saved.person().getEmail(), institution.getName());
             return false;
         }
     }
 
+    /** Clears the bean's state between sessions/logins. */
     @EventListener(LoginEvent.class)
     public void reset() {
         institution = null;
