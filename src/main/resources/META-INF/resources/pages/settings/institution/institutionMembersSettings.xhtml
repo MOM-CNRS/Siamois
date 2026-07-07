@@ -25,6 +25,7 @@
                 </p:breadCrumb>
             </form:csrfform>
             <settings:datatable
+                    id="orgMembersDatatable"
                     title="#{langBean.msg('organisationSettings.managers.title', institutionManagerListBean.institution.name)}"
                     filterAction="#{institutionManagerListBean.filter()}"
                     formId="institutionMembersForm"

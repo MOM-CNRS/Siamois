@@ -129,9 +129,8 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
             InstitutionMemberDTO member = organizationMembersService.addMemberToInstitution(
                     institution, saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);
-            members.add(member);
+            filter();
             return true;
-
         } catch (Exception err) {
             displayWarnMessage(langBean, "organisationSettings.error.manager", saved.person().getEmail(), institution.getName());
             return false;
