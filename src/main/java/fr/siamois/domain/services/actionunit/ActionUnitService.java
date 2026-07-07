@@ -448,7 +448,12 @@ public class ActionUnitService implements ArkEntityService {
 
     @Cacheable(value = "MyActionUnits", key = "#member.id + '-' + #institution.id + '-' + #limit")
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
-        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
+        Specification<ActionUnit> specs = prepareSpecs(institution, new FilterDTO());
+        Pageable pageLimit = PageRequest.of(0, Math.toIntExact(limit));
+
+        specs = specs.and(ActionUnitSpec.visibleToPerson(member.getId()));
+
+        Page<ActionUnit> actionUnits = actionUnitRepository.findAll(specs, pageLimit);
         return actionUnits.stream()
                 .map(this::convertWithCount)
                 .toList();

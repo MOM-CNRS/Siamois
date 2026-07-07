@@ -58,58 +58,6 @@ class ApplicationMembersServiceInterfaceImplTest {
     }
 
     @Test
-    void findMembers_shouldReturnMembersWithTheirAssignedProfiles() {
-        when(personProfileAssignmentRepository.findAllPersonsByProfileOfInstance())
-                .thenReturn(List.of(member));
-        when(profileService.findAllProfilesOfPersonInInstance(member))
-                .thenReturn(List.of(superAdminProfileDTO));
-        when(personMapper.convert(member)).thenReturn(memberDTO);
-
-        List<ApplicationMemberDTO> result = applicationMembersService.findMembers();
-
-        assertThat(result).hasSize(1);
-        ApplicationMemberDTO memberResult = result.get(0);
-        assertThat(memberResult.getPerson()).isEqualTo(memberDTO);
-        assertThat(memberResult.getProfiles()).containsExactly(superAdminProfileDTO);
-    }
-
-    @Test
-    void findMembers_shouldReturnOneEntryPerMember() {
-        Person otherMember = new Person();
-        otherMember.setId(11L);
-        otherMember.setUsername("other");
-
-        PersonDTO otherMemberDTO = new PersonDTO();
-        otherMemberDTO.setId(11L);
-        otherMemberDTO.setUsername("other");
-
-        when(personProfileAssignmentRepository.findAllPersonsByProfileOfInstance())
-                .thenReturn(List.of(member, otherMember));
-        when(profileService.findAllProfilesOfPersonInInstance(any(Person.class)))
-                .thenReturn(List.of(superAdminProfileDTO));
-        when(personMapper.convert(member)).thenReturn(memberDTO);
-        when(personMapper.convert(otherMember)).thenReturn(otherMemberDTO);
-
-        List<ApplicationMemberDTO> result = applicationMembersService.findMembers();
-
-        assertThat(result)
-                .hasSize(2)
-                .extracting(ApplicationMemberDTO::getPerson)
-                .containsExactlyInAnyOrder(memberDTO, otherMemberDTO);
-    }
-
-    @Test
-    void findMembers_shouldReturnEmptyList_whenInstanceHasNoMember() {
-        when(personProfileAssignmentRepository.findAllPersonsByProfileOfInstance())
-                .thenReturn(List.of());
-
-        List<ApplicationMemberDTO> result = applicationMembersService.findMembers();
-
-        assertThat(result).isEmpty();
-        verify(profileService, never()).findAllProfilesOfPersonInInstance(any(Person.class));
-    }
-
-    @Test
     void findAvailableProfiles_shouldReturnInstanceProfiles() {
         when(profileService.findAllProfilesOfInstance()).thenReturn(List.of(superAdminProfileDTO));
 

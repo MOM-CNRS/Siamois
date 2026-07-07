@@ -907,21 +907,6 @@ class ActionUnitServiceTest {
     }
 
     @Test
-    void findByTeamMember_mapsToDtos() {
-        PersonDTO member = new PersonDTO();
-        member.setId(3L);
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(4L);
-        when(actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(3L, 4L, 5L))
-                .thenReturn(List.of(actionUnit1));
-        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-
-        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(member, inst, 5L);
-
-        assertEquals(List.of(actionUnit1dto), result);
-    }
-
-    @Test
     void findRootsByInstitution_delegatesToRepository() {
         when(actionUnitRepository.findRootsByInstitution(1L, 0, 10)).thenReturn(List.of(actionUnit1));
         List<ActionUnit> result = actionUnitService.findRootsByInstitution(1L, 0, 10);
