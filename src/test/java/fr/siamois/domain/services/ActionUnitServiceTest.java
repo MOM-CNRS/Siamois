@@ -28,7 +28,8 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -67,7 +68,8 @@ class ActionUnitServiceTest {
     @Mock private PersonMapper personMapper;
     @Mock private ConceptMapper conceptMapper;
     @Mock private SpatialUnitRepository spatialUnitRepository;
-    @Mock private TeamMemberRepository teamMemberRepository;
+    @Mock private PersonProfileAssignmentRepository personProfileAssignmentRepository;
+    @Mock private ProfileRepository profileRepository;
     @Mock private DocumentRepository documentRepository;
     @Mock private PendingActionUnitRepository pendingActionUnitRepository;
     @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;

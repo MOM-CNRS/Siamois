@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
  * an ORGANISATION-scoped profile grants it within its institution, and a
  * PROJECT-scoped profile grants it on its action unit only.
  * <p>
- * Replaces the deprecated {@link PermissionService}.
+ * Replaces the removed {@code PermissionService}.
  */
 @Service
 public class ProfilePermissionService {
@@ -26,6 +26,19 @@ public class ProfilePermissionService {
 
     public ProfilePermissionService(PersonProfileAssignmentRepository assignmentRepository) {
         this.assignmentRepository = assignmentRepository;
+    }
+
+    /**
+     * Checks if the person holds the SUPERADMIN profile.
+     *
+     * @param person the person to check
+     * @return true if the SUPERADMIN profile is assigned to the person
+     */
+    public boolean isSuperAdmin(PersonDTO person) {
+        if (person == null || person.getId() == null) {
+            return false;
+        }
+        return assignmentRepository.personIsSuperAdmin(person.getId());
     }
 
     /**

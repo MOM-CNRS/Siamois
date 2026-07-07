@@ -8,7 +8,9 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface PersonProfileAssignmentRepository extends CrudRepository<PersonProfileAssignment, PersonProfileAssignment.PersonProfileAssignmentId> {
@@ -73,5 +75,62 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             """)
     boolean personIsSuperAdmin(Person admin);
 
-    Optional<PersonProfileAssignment> findByProfileAndPersonId(Profile profile, Long personId);
+    @Query("""
+            SELECT COUNT(a) > 0
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE a.person.id = :personId
+              AND prof.code = fr.siamois.domain.models.permissions.ProfileConstants.SUPERADMIN
+            """)
+    boolean personIsSuperAdmin(@Param("personId") Long personId);
+
+    @Query("""
+            SELECT COUNT(a) > 0
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE a.person.id = :personId
+              AND prof.institution.id = :institutionId
+            """)
+    boolean personHasAnyProfileInInstitution(@Param("personId") Long personId,
+                                             @Param("institutionId") Long institutionId);
+
+    @Query("""
+            SELECT COUNT(a) > 0
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE a.person.id = :personId
+              AND prof.institution.id = :institutionId
+              AND prof.code = :profileCode
+            """)
+    boolean personHasProfileWithCodeInInstitution(@Param("personId") Long personId,
+                                                  @Param("institutionId") Long institutionId,
+                                                  @Param("profileCode") String profileCode);
+
+    @Query("""
+            SELECT DISTINCT p
+            FROM PersonProfileAssignment a
+            JOIN a.person p
+            JOIN a.profile prof
+            WHERE prof.institution.id = :institutionId
+              AND prof.code = :profileCode
+            """)
+    Set<Person> findAllPersonsByProfileCodeAndInstitutionId(@Param("profileCode") String profileCode,
+                                                            @Param("institutionId") Long institutionId);
+
+    @Query("""
+            SELECT DISTINCT p
+            FROM PersonProfileAssignment a
+            JOIN a.person p
+            JOIN a.profile prof
+            WHERE prof.actionUnit.id = :actionUnitId
+            """)
+    Set<Person> findAllPersonsByProfileActionUnitId(@Param("actionUnitId") Long actionUnitId);
+
+    void deleteAllByProfileActionUnitId(Long actionUnitId);
+
+    Optional<PersonProfileAssignment> findByProfileIdAndPersonId(Long profileId, Long personId);
+
+    @Query("SELECT ppa FROM PersonProfileAssignment ppa " +
+            "WHERE ppa.person.id = :personId AND ppa.profile.institution.id = :institutionId")
+    List<Profile> findAllProfilesOfPersonInInstitution(Long personId, Long institutionId);
 }

@@ -14,37 +14,14 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
 
     Optional<Institution> findInstitutionByIdentifier(@NotNull String identifier);
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT i.* FROM institution i " +
-                    "JOIN action_unit au ON i.institution_id = au.fk_institution_id " +
-                    "JOIN team_member tm ON tm.fk_action_unit_id = au.action_unit_id " +
-                    "WHERE tm.fk_person_id = :personId"
-    )
-    Set<Institution> findAllAsMember(Long personId);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT i.* FROM institution i " +
-                    "JOIN institution_manager im ON im.fk_institution_id = i.institution_id " +
-                    "WHERE im.fk_person_id = :personId"
-    )
-    Set<Institution> findAllAsInstitutionManager(Long personId);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT i.* FROM institution i " +
-                    "JOIN action_manager am ON i.institution_id = am.fk_institution_id " +
-                    "WHERE am.fk_person_id = :personId"
-    )
-    Set<Institution> findAllAsActionManager(Long personId);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT COUNT(*) >= 1 " +
-                    "FROM institution_manager im " +
-                    "WHERE im.fk_person_id = :personId AND im.fk_institution_id = :institutionId"
-    )
+    @Query("""
+            SELECT COUNT(a) > 0
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE a.person.id = :personId
+              AND prof.institution.id = :institutionId
+              AND prof.code = fr.siamois.domain.models.permissions.ProfileConstants.ORGANIZATION_MANAGER
+            """)
     boolean personIsInstitutionManagerOf(Long institutionId, Long personId);
 
     /**
@@ -57,7 +34,7 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
             SELECT DISTINCT i FROM PersonProfileAssignment a
                         JOIN a.profile prof
                         JOIN prof.institution i
-                        WHERE a.profile.id = :personId
+                        WHERE a.person.id = :personId
             """)
     Set<Institution> findAllVisibleToPerson(Long personId);
 

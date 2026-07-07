@@ -2,17 +2,21 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.Permission;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.services.permissions.ProfileService;
+import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PermissionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.mapper.InstitutionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
@@ -21,6 +25,7 @@ import java.util.Optional;
 
 @Slf4j
 @Service
+@Order(-9)
 @RequiredArgsConstructor
 public class SystemPermissionsInitializer implements DatabaseInitializer{
 
@@ -28,6 +33,8 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
     private final PersonRepository personRepository;
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
     private final ProfileService profileService;
+    private final InstitutionRepository institutionRepository;
+    private final InstitutionMapper institutionMapper;
 
     @Value("${siamois.admin.username}")
     private String adminUsername;
@@ -57,6 +64,16 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
         }
     }
 
+    private void assignProfilIfMissing(Profile profile, Person person) {
+        if (personProfileAssignmentRepository.findByProfileIdAndPersonId(profile.getId(), person.getId()).isEmpty()) {
+            PersonProfileAssignment personProfileAssignment = new PersonProfileAssignment();
+            personProfileAssignment.setPerson(person);
+            personProfileAssignment.setProfile(profile);
+            personProfileAssignmentRepository.save(personProfileAssignment);
+            log.info("Profile {} assigned to {}", profile.getCode(), person.getUsername());
+        }
+    }
+
     @Override
     public void initialize() throws DatabaseDataInitException {
         initializePermissions();
@@ -65,12 +82,13 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
                 .findByUsernameIgnoreCase(adminUsername)
                 .orElseThrow(() -> new DatabaseDataInitException("Super administrator profile not found"));
 
-        if (!personProfileAssignmentRepository.personIsSuperAdmin(admin)) {
-            PersonProfileAssignment personProfileAssignment = new PersonProfileAssignment();
-            personProfileAssignment.setPerson(admin);
-            personProfileAssignment.setProfile(superAdmin);
-            personProfileAssignmentRepository.save(personProfileAssignment);
-            log.info("Super administrator profile assignment created");
-        }
+        assignProfilIfMissing(superAdmin, admin);
+
+        Institution defaultInstitution = institutionRepository.findInstitutionByIdentifier("siamois")
+                .orElseThrow(() -> new DatabaseDataInitException("Default Institution not found"));
+        Profile organizationManager = profileService
+                .createOrGetOrganizationManagerProfile(institutionMapper.convert(defaultInstitution));
+
+        assignProfilIfMissing(organizationManager, admin);
     }
 }

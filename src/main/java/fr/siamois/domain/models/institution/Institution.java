@@ -2,21 +2,17 @@ package fr.siamois.domain.models.institution;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import fr.siamois.domain.models.auth.Person;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.DefaultValue;
 import lombok.Data;
-import org.hibernate.envers.NotAudited;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 @Data
 @Entity
@@ -42,14 +38,6 @@ public class Institution implements Serializable {
     @Column(name = "creation_date", nullable = false)
     @JsonIgnore
     private OffsetDateTime creationDate = OffsetDateTime.now(ZoneOffset.UTC);
-
-    @Deprecated(forRemoval = true)
-    @ManyToMany(fetch = FetchType.LAZY)
-    @NotAudited
-    @JoinTable(name = "institution_manager",
-            joinColumns = @JoinColumn(name = "fk_institution_id"),
-            inverseJoinColumns = @JoinColumn(name = "fk_person_id"))
-    private Set<Person> managers = new HashSet<>();
 
     @JsonProperty("creationDate")
     private String creationDateString() {

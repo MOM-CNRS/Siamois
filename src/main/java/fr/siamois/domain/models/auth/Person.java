@@ -70,11 +70,6 @@ public class Person implements UserDetails {
     @Column(name = "alert_mail")
     private boolean alertMail = false;
 
-    @ColumnDefault("false")
-    @Column(name = "is_super_admin")
-    @Deprecated(forRemoval = true)
-    private boolean isSuperAdmin = false;
-
     @Column(name = "api_key", length = Integer.MAX_VALUE)
     private String apiKey;
 

@@ -655,7 +655,7 @@ public class FlowBean implements Serializable {
 
     public boolean userHasAddSpatialOrActionUnitPermission() {
         UserInfo info = sessionSettings.getUserInfo();
-        return info.getUser().isSuperAdmin()
+        return profilePermissionService.isSuperAdmin(info.getUser())
                 || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_PLACES)
                 || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
     }

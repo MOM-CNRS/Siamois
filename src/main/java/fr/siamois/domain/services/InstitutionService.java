@@ -1,6 +1,5 @@
 package fr.siamois.domain.services;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
@@ -9,9 +8,8 @@ import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistEx
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
-import fr.siamois.domain.models.team.ActionManagerRelation;
-import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
@@ -19,21 +17,17 @@ import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
-import fr.siamois.infrastructure.database.repositories.team.ActionManagerRepository;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
-import fr.siamois.mapper.ActionUnitMapper;
-import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,16 +50,12 @@ public class InstitutionService {
     private final InstitutionRepository institutionRepository;
     private final InstitutionSettingsRepository institutionSettingsRepository;
     private final PersonRepository personRepository;
-    private final TeamMemberRepository teamMemberRepository;
-    private final ActionManagerRepository actionManagerRepository;
     private final VocabularyService vocabularyService;
     private final FieldConfigurationService fieldConfigurationService;
     private final PersonMapper personMapper;
     private final InstitutionMapper institutionMapper;
-    private final ActionUnitMapper actionUnitMapper;
-    private final ConceptMapper conceptMapper;
-    private final ProfileService profileService;
     private final PersonProfileAssignmentService personProfileAssignmentService;
+    private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
 
     /**
      * Finds an institution by its identifier.
@@ -155,40 +145,25 @@ public class InstitutionService {
 
 
     /**
-     * Finds all relations of a given action unit.
-     *
-     * @param actionUnitDTO the action unit whose relations to find
-     * @return a set of team member relations associated with the action unit, including the author
-     */
-    public Set<TeamMemberRelation> findRelationsOf(ActionUnitDTO actionUnitDTO) {
-        ActionUnit actionUnit = actionUnitMapper.invertConvert(actionUnitDTO);
-        Set<TeamMemberRelation> result = teamMemberRepository.findAllByActionUnitId(actionUnit.getId());
-        PersonDTO creator = actionUnitDTO.getCreatedBy();
-
-        // Add creator
-        TeamMemberRelation rel = new TeamMemberRelation(actionUnitDTO, creator);
-        rel.setPerson(personMapper.invertConvert(creator));
-        result.add(rel);
-
-        for (TeamMemberRelation relation : result) {
-            relation.setPerson(Hibernate.unproxy(relation.getPerson(), Person.class));
-        }
-
-        return result;
-    }
-
-    /**
-     * Finds all members of a given action unit.
+     * Finds all members of a given action unit, i.e. all persons holding a
+     * PROJECT-scoped profile on the action unit, including the author.
      *
      * @param actionUnit the action unit whose members to find
      * @return a set of persons who are members of the action unit
      */
-    @Transactional
-    public Set<Person> findMembersOf(ActionUnitDTO actionUnit) {
-        return findRelationsOf(actionUnit)
+    @Transactional(readOnly = true)
+    public Set<PersonDTO> findMembersOf(ActionUnitDTO actionUnit) {
+        Set<PersonDTO> members = personProfileAssignmentRepository
+                .findAllPersonsByProfileActionUnitId(actionUnit.getId())
                 .stream()
-                .map(TeamMemberRelation::getPerson)
-                .collect(Collectors.toSet());
+                .map(personMapper::convert)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        if (actionUnit.getCreatedBy() != null) {
+            members.add(actionUnit.getCreatedBy());
+        }
+
+        return members;
     }
 
     /**
@@ -241,8 +216,7 @@ public class InstitutionService {
      */
     @Transactional
     public boolean addToManagers(InstitutionDTO institution, PersonDTO person) {
-        Profile profile = profileService.createOrGetOrganizationManagerProfile(institution);
-        return personProfileAssignmentService.assignProfile(profile, person);
+        return personProfileAssignmentService.addToManagers(institution, person);
     }
 
 
@@ -280,31 +254,33 @@ public class InstitutionService {
     }
 
     /**
-     * Checks if a person is associated with a given institution, either as an action manager or as a team member.
+     * Checks if a person is associated with a given institution, i.e. holds any
+     * profile (ORGANISATION or PROJECT scoped) attached to the institution.
      *
      * @param person      the person to check
      * @param institution the institution to check against
      * @return true if the person is associated with the institution, false otherwise
      */
     public boolean personIsInInstitution(PersonDTO person, InstitutionDTO institution) {
-
-        Optional<ActionManagerRelation> optManager = actionManagerRepository.findByPersonIdAndInstitutionId(
+        return personProfileAssignmentRepository.personHasAnyProfileInInstitution(
                 person.getId(), institution.getId());
-        if (optManager.isPresent()) {
-            return true;
-        }
-
-        return teamMemberRepository.personIsInInstitution(person.getId(), institution.getId());
     }
 
     /**
-     * Finds all action managers of a given institution.
+     * Finds all action managers of a given institution, i.e. all persons holding
+     * the {@link ProfileConstants#ORGANIZATION_PROJECT_MANAGER} profile of the institution.
      *
      * @param institution the institution for which to find action managers
-     * @return a set of action manager relations associated with the institution
+     * @return a set of persons managing the actions of the institution
      */
-    public Set<ActionManagerRelation> findAllActionManagersOf(InstitutionDTO institution) {
-        return actionManagerRepository.findAllByInstitutionId(institution.getId());
+    @Transactional(readOnly = true)
+    public Set<PersonDTO> findAllActionManagersOf(InstitutionDTO institution) {
+        return personProfileAssignmentRepository
+                .findAllPersonsByProfileCodeAndInstitutionId(
+                        ProfileConstants.ORGANIZATION_PROJECT_MANAGER, institution.getId())
+                .stream()
+                .map(personMapper::convert)
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -326,7 +302,8 @@ public class InstitutionService {
      * @return true if the person is an action manager, false otherwise
      */
     public boolean personIsActionManager(PersonDTO person, InstitutionDTO institution) {
-        return actionManagerRepository.findByPersonIdAndInstitutionId(person.getId(), institution.getId()).isPresent();
+        return personProfileAssignmentRepository.personHasProfileWithCodeInInstitution(
+                person.getId(), institution.getId(), ProfileConstants.ORGANIZATION_PROJECT_MANAGER);
     }
 
     /**
@@ -348,40 +325,12 @@ public class InstitutionService {
      * @return true if the person was added successfully, false if they were already an action manager
      */
     public boolean addPersonToActionManager(InstitutionDTO institution, PersonDTO person) {
-        Profile profile = profileService.createOrGetOrganizationProjectManagerProfile(institution);
-        return personProfileAssignmentService.assignProfile(profile, person);
+        return personProfileAssignmentService.addToActionManagers(institution, person);
     }
 
-
-    /**
-     * Adds a person to an action unit with a specific role.
-     *
-     * @param actionUnitDTO the action unit to which the person will be added
-     * @param personDTO     the person to add to the action unit
-     * @param roleDTO       the role concept that defines the person's role in the action unit
-     * @return true if the person was added successfully, false if they were already a member of the action unit
-     */
-    @Deprecated(forRemoval = true, since = "0.12.0")
-    public boolean addPersonToActionUnit(ActionUnitDTO actionUnitDTO, PersonDTO personDTO, ConceptDTO roleDTO) {
-        ActionUnit actionUnit = actionUnitMapper.invertConvert(actionUnitDTO);
-
-        Concept role = conceptMapper.invertConvert(roleDTO);
-        Optional<TeamMemberRelation> optRelation = teamMemberRepository.findByActionUnitIdAndPersonId(actionUnitDTO.getId(), personDTO.getId());
-        if (optRelation.isPresent()) {
-            log.warn("Person {} is already a member of action unit {}", personDTO.getId(), actionUnit.getId());
-            return false;
-        }
-        TeamMemberRelation relation = new TeamMemberRelation(actionUnitDTO, personDTO);
-        relation.setRole(role);
-
-        teamMemberRepository.save(relation);
-
-        return true;
-    }
 
     public boolean addPersonAsMemberOfActionUnit(ActionUnitDTO actionUnitDTO, PersonDTO personDTO) {
-        Profile member = profileService.createOrGetProjectMemberProfile(actionUnitDTO);
-        return personProfileAssignmentService.assignProfile(member, personDTO);
+        return personProfileAssignmentService.addToProjectMembers(actionUnitDTO, personDTO);
     }
 
     @Transactional(readOnly = true)

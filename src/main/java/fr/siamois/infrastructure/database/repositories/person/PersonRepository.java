@@ -56,12 +56,6 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
     )
     void addPersonToInstitution(Long personId, Long institutionId, Long conceptId);
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT p.* FROM person p WHERE p.is_super_admin = TRUE"
-    )
-    List<Person> findAllSuperAdmin();
-
     Optional<Person> findByEmailIgnoreCase(String email);
 
     Optional<Person> findByNameIgnoreCaseAndLastnameIgnoreCase(String name, String lastname);
@@ -84,40 +78,26 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
     )
     Set<Person> findClosestByUsernameLimit10(String input);
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT COUNT(DISTINCT p.person_id) " +
-                    "FROM person p " +
-                    "         LEFT JOIN institution_manager im ON p.person_id = im.fk_person_id AND im.fk_institution_id = :institutionId " +
-                    "         LEFT JOIN action_manager am ON p.person_id = am.fk_person_id AND am.fk_institution_id = :institutionId " +
-                    "         LEFT JOIN team_member tm ON p.person_id = tm.fk_person_id " +
-                    "         LEFT JOIN action_unit au ON tm.fk_action_unit_id = au.action_unit_id AND au.fk_institution_id = :institutionId " +
-                    "WHERE (im.fk_person_id IS NOT NULL " +
-                    "    OR am.fk_person_id IS NOT NULL " +
-                    "    OR au.action_unit_id IS NOT NULL) " +
-                    "  AND NOT p.is_super_admin;"
-    )
+    @Query("""
+            SELECT COUNT(DISTINCT p.id)
+            FROM PersonProfileAssignment a
+            JOIN a.person p
+            JOIN a.profile prof
+            WHERE prof.institution.id = :institutionId
+            """)
     long countPersonsInInstitution(Long institutionId);
 
     /**
-     * Personnes rattachées à une institution (gestionnaires, gestionnaires d'action, membres d'équipe de projet),
-     * hors super-admins.
+     * Personnes rattachées à une institution, c'est-à-dire ayant au moins un profil
+     * (ORGANISATION ou PROJECT) rattaché à cette institution.
      */
     @Query(
             value = """
                     SELECT DISTINCT p.*
                     FROM person p
-                             LEFT JOIN institution_manager im
-                                       ON p.person_id = im.fk_person_id AND im.fk_institution_id = :institutionId
-                             LEFT JOIN action_manager am
-                                       ON p.person_id = am.fk_person_id AND am.fk_institution_id = :institutionId
-                             LEFT JOIN team_member tm ON p.person_id = tm.fk_person_id
-                             LEFT JOIN action_unit au ON tm.fk_action_unit_id = au.action_unit_id
-                        AND au.fk_institution_id = :institutionId
-                    WHERE (im.fk_person_id IS NOT NULL
-                        OR am.fk_person_id IS NOT NULL
-                        OR au.action_unit_id IS NOT NULL)
-                      AND NOT p.is_super_admin
+                             JOIN person_profile_assignment ppa ON ppa.fk_person_id = p.person_id
+                             JOIN profile prof ON prof.profile_id = ppa.fk_profile_id
+                    WHERE prof.fk_institution_id = :institutionId
                       AND (CAST(:search AS TEXT) IS NULL
                         OR LOWER(COALESCE(p.name, '')) LIKE LOWER(CONCAT('%', CAST(:search AS TEXT), '%'))
                         OR LOWER(COALESCE(p.lastname, '')) LIKE LOWER(CONCAT('%', CAST(:search AS TEXT), '%'))
@@ -128,15 +108,14 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
             nativeQuery = true)
     List<Person> findAllInInstitution(@Param("institutionId") Long institutionId, @Param("search") String search);
 
-    @Query(
-            value = """
-              select p.* 
-              from person p
-              inner join institution_manager im 
-                     on p.person_id = im.fk_person_id
-              where im.fk_institution_id = :id
-              """,
-            nativeQuery = true)
+    @Query("""
+            SELECT DISTINCT p
+            FROM PersonProfileAssignment a
+            JOIN a.person p
+            JOIN a.profile prof
+            WHERE prof.institution.id = :id
+              AND prof.code = fr.siamois.domain.models.permissions.ProfileConstants.ORGANIZATION_MANAGER
+            """)
     Set<Person> findManagersOfInstitution(@Param("id") Long institutionId);
 
     @Modifying

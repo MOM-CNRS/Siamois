@@ -7,9 +7,12 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +27,8 @@ public class InstitutionSeeder {
     private final PersonSeeder personSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
     private final InstitutionMapper institutionMapper;
+    private final PersonMapper personMapper;
+    private final PersonProfileAssignmentService personProfileAssignmentService;
 
     public record InstitutionSpec(String name, String description, String identifier, List<String> managerEmails,
                                   String baseUri, String externalId) {
@@ -34,7 +39,7 @@ public class InstitutionSeeder {
         return opt.orElse(null);
     }
 
-    private void getOrCreateInstitution(Institution i, Vocabulary vocabulary) throws DatabaseDataInitException {
+    private Institution getOrCreateInstitution(Institution i, Vocabulary vocabulary) throws DatabaseDataInitException {
         Institution inst = findInstitutionOrReturnNull(i.getIdentifier());
         if (inst == null) {
             inst = institutionRepository.save(i);
@@ -46,6 +51,7 @@ public class InstitutionSeeder {
         } catch (NotSiamoisThesaurusException | ErrorProcessingExpansionException e) {
             throw new DatabaseDataInitException("error with thesaurus init:",e);
         }
+        return inst;
     }
 
     private Set<Person> buildManagers(List<String> managerEmails) {
@@ -77,8 +83,14 @@ public class InstitutionSeeder {
                 toCreate.setName(s.name);
                 toCreate.setIdentifier(s.identifier);
                 toCreate.setDescription(s.description);
-                toCreate.setManagers(managers);
-                getOrCreateInstitution(toCreate, thesaurus);
+                Institution institution = getOrCreateInstitution(toCreate, thesaurus);
+
+                if (!managers.isEmpty()) {
+                    InstitutionDTO institutionDTO = institutionMapper.convert(institution);
+                    for (Person manager : managers) {
+                        personProfileAssignmentService.addToManagers(institutionDTO, personMapper.convert(manager));
+                    }
+                }
             } catch (Exception e) {
                 throw new IllegalStateException(
                         "[Institution ligne " + (i + 1) + "] '" + s.identifier() + "' : " + e.getMessage(), e);

@@ -22,12 +22,13 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -69,7 +70,8 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonMapper personMapper;
     private final SpatialUnitRepository spatialUnitRepository;
     private final ConceptMapper conceptMapper;
-    private final TeamMemberRepository teamMemberRepository;
+    private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
+    private final ProfileRepository profileRepository;
     private final DocumentRepository documentRepository;
     private final PendingActionUnitRepository pendingActionUnitRepository;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
@@ -713,7 +715,8 @@ public class ActionUnitService implements ArkEntityService {
         if (childrenByProject.getOrDefault(actionUnitId, 0L) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des sous-projets");
         }
-        teamMemberRepository.deleteAll(teamMemberRepository.findAllByActionUnitId(actionUnitId));
+        personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
+        profileRepository.deleteAllByActionUnitId(actionUnitId);
         pendingActionUnitRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdCounterRepository.deleteAllByConfigActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);

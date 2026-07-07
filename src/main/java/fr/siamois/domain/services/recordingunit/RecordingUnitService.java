@@ -33,7 +33,8 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.mapper.*;
 import fr.siamois.utils.CodeUtils;
 import jakarta.validation.constraints.NotNull;
@@ -74,7 +75,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final PersonRepository personRepository;
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
-    private final TeamMemberRepository teamMemberRepository;
+    private final ProfilePermissionService profilePermissionService;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
     private final RecordingUnitMapper recordingUnitMapper;
@@ -734,7 +735,7 @@ public class RecordingUnitService implements ArkEntityService {
         ActionUnitSummaryDTO action = ru.getActionUnit();
         return institutionService.isManagerOf(action.getCreatedByInstitution(), user.getUser()) ||
                 actionUnitService.isManagerOf(action, user.getUser()) ||
-                (teamMemberRepository.existsByActionUnitIdAndPerson(action.getId(), user.getUser())
+                (profilePermissionService.hasProjectPermission(user, action.getId(), PermissionConstants.PROJECT_EDIT_FINDS)
                         && actionUnitService.isActionUnitStillOngoing(action));
     }
 

@@ -26,6 +26,7 @@ import fr.siamois.mapper.PersonMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -39,6 +40,7 @@ import java.util.*;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PersonService {
 
     private final PersonRepository personRepository;
@@ -55,33 +57,6 @@ public class PersonService {
     private final InstitutionMapper institutionMapper;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
-    private final ConceptMapper conceptMapper;
-
-    public PersonService(PersonRepository personRepository,
-                         BCryptPasswordEncoder passwordEncoder,
-                         List<PersonDataVerifier> verifiers, List<PasswordVerifier> passVerifiers,
-                         PersonSettingsRepository personSettingsRepository,
-                         InstitutionService institutionService,
-                         LangService langService,
-                         PendingPersonRepository pendingPersonRepository,
-                         PendingPersonService pendingPersonService, ConversionService conversionService,
-                         PendingInstitutionInviteRepository pendingInstitutionInviteRepository, InstitutionMapper institutionMapper, ActionUnitMapper actionUnitMapper, PersonMapper personMapper, ConceptMapper conceptMapper) {
-        this.personRepository = personRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.verifiers = verifiers;
-        this.passVerifiers = passVerifiers;
-        this.personSettingsRepository = personSettingsRepository;
-        this.institutionService = institutionService;
-        this.langService = langService;
-        this.pendingPersonRepository = pendingPersonRepository;
-        this.pendingPersonService = pendingPersonService;
-        this.conversionService = conversionService;
-        this.pendingInstitutionInviteRepository = pendingInstitutionInviteRepository;
-        this.institutionMapper = institutionMapper;
-        this.actionUnitMapper = actionUnitMapper;
-        this.personMapper = personMapper;
-        this.conceptMapper = conceptMapper;
-    }
 
     private void createAndDeletePendingRelations(PendingPerson pendingPerson, Person person) {
         Set<PendingInstitutionInvite> institutionInvites = pendingInstitutionInviteRepository.findAllByPendingPerson(pendingPerson);
@@ -135,7 +110,7 @@ public class PersonService {
         checkPassword(password);
 
         Person person = conversionService.convert(personDTO,Person.class);
-
+        assert person != null;
         person.setPassword(passwordEncoder.encode(password));
 
         person = personRepository.save(person);

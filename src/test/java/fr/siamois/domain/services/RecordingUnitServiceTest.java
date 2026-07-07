@@ -35,7 +35,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.mapper.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -83,7 +83,7 @@ class RecordingUnitServiceTest {
     @Mock
     private ActionUnitService actionUnitService;
     @Mock
-    private TeamMemberRepository teamMemberRepository;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     @Mock
@@ -470,7 +470,7 @@ class RecordingUnitServiceTest {
 
         when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(anyLong(), any(PersonDTO.class))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), anyLong(), anyString())).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(true);
 
         boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnitToSave);
@@ -484,7 +484,7 @@ class RecordingUnitServiceTest {
 
         when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(anyLong(), any(PersonDTO.class))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), anyLong(), anyString())).thenReturn(true);
         when(actionUnitService.isActionUnitStillOngoing(actionUnit)).thenReturn(false);
 
         boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnitToSave);
@@ -498,7 +498,7 @@ class RecordingUnitServiceTest {
 
         when(institutionService.isManagerOf(any(InstitutionDTO.class), any(PersonDTO.class))).thenReturn(false);
         when(actionUnitService.isManagerOf(actionUnit, user)).thenReturn(false);
-        when(teamMemberRepository.existsByActionUnitIdAndPerson(anyLong(), any(PersonDTO.class))).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), anyLong(), anyString())).thenReturn(false);
 
         boolean result = recordingUnitService.canCreateSpecimen(userInfo, recordingUnitToSave);
 
