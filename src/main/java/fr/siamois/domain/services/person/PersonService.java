@@ -99,9 +99,7 @@ public class PersonService {
             Set<PendingActionUnitAttribution> attributions = pendingPersonService.findActionAttributionsByPendingInvite(invite);
             for (PendingActionUnitAttribution attribution : attributions) {
                 ActionUnitDTO actionUnitDTO = actionUnitMapper.convert(attribution.getActionUnit());
-                institutionService.addPersonToActionUnit(actionUnitDTO,
-                        personDTO,
-                        conceptMapper.convert(attribution.getRole()));
+                institutionService.addPersonAsMemberOfActionUnit(actionUnitDTO, personDTO);
                 pendingPersonService.delete(attribution);
             }
 

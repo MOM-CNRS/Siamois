@@ -43,6 +43,7 @@ public class Institution implements Serializable {
     @JsonIgnore
     private OffsetDateTime creationDate = OffsetDateTime.now(ZoneOffset.UTC);
 
+    @Deprecated(forRemoval = true)
     @ManyToMany(fetch = FetchType.LAZY)
     @NotAudited
     @JoinTable(name = "institution_manager",

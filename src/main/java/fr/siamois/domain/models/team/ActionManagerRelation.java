@@ -16,6 +16,7 @@ import java.time.ZoneOffset;
 @Table(name = "action_manager")
 @Data
 @NoArgsConstructor
+@Deprecated(forRemoval = true, since = "0.12.0")
 public class ActionManagerRelation {
 
     @EmbeddedId

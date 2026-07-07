@@ -2,10 +2,13 @@ package fr.siamois.infrastructure.database.repositories.permissions;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.models.permissions.Profile;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
 
 @Repository
 public interface PersonProfileAssignmentRepository extends CrudRepository<PersonProfileAssignment, PersonProfileAssignment.PersonProfileAssignmentId> {
@@ -69,4 +72,6 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             WHERE prof.code = fr.siamois.domain.models.permissions.ProfileConstants.SUPERADMIN AND p = :admin
             """)
     boolean personIsSuperAdmin(Person admin);
+
+    Optional<PersonProfileAssignment> findByProfileAndPersonId(Profile profile, Long personId);
 }

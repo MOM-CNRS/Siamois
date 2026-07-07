@@ -8,11 +8,14 @@ import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveExce
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.team.ActionManagerRelation;
 import fr.siamois.domain.models.team.TeamMemberRelation;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -61,6 +64,8 @@ public class InstitutionService {
     private final InstitutionMapper institutionMapper;
     private final ActionUnitMapper actionUnitMapper;
     private final ConceptMapper conceptMapper;
+    private final ProfileService profileService;
+    private final PersonProfileAssignmentService personProfileAssignmentService;
 
     /**
      * Finds an institution by its identifier.
@@ -236,9 +241,8 @@ public class InstitutionService {
      */
     @Transactional
     public boolean addToManagers(InstitutionDTO institution, PersonDTO person) {
-        Institution inst = institutionRepository.findById(institution.getId()).orElseThrow();
-        Person p = personRepository.getReferenceById(person.getId());
-        return inst.getManagers().add(p); // no explicit save()
+        Profile profile = profileService.createOrGetOrganizationManagerProfile(institution);
+        return personProfileAssignmentService.assignProfile(profile, person);
     }
 
 
@@ -344,14 +348,8 @@ public class InstitutionService {
      * @return true if the person was added successfully, false if they were already an action manager
      */
     public boolean addPersonToActionManager(InstitutionDTO institution, PersonDTO person) {
-        Optional<ActionManagerRelation> optRelation = actionManagerRepository.findByPersonIdAndInstitutionId(person.getId(), institution.getId());
-        if (optRelation.isPresent())
-            return false;
-
-        ActionManagerRelation relation = new ActionManagerRelation(institution, person);
-        actionManagerRepository.save(relation);
-
-        return true;
+        Profile profile = profileService.createOrGetOrganizationProjectManagerProfile(institution);
+        return personProfileAssignmentService.assignProfile(profile, person);
     }
 
 
@@ -363,6 +361,7 @@ public class InstitutionService {
      * @param roleDTO       the role concept that defines the person's role in the action unit
      * @return true if the person was added successfully, false if they were already a member of the action unit
      */
+    @Deprecated(forRemoval = true, since = "0.12.0")
     public boolean addPersonToActionUnit(ActionUnitDTO actionUnitDTO, PersonDTO personDTO, ConceptDTO roleDTO) {
         ActionUnit actionUnit = actionUnitMapper.invertConvert(actionUnitDTO);
 
@@ -378,6 +377,11 @@ public class InstitutionService {
         teamMemberRepository.save(relation);
 
         return true;
+    }
+
+    public boolean addPersonAsMemberOfActionUnit(ActionUnitDTO actionUnitDTO, PersonDTO personDTO) {
+        Profile member = profileService.createOrGetProjectMemberProfile(actionUnitDTO);
+        return personProfileAssignmentService.assignProfile(member, personDTO);
     }
 
     @Transactional(readOnly = true)

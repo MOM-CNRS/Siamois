@@ -18,6 +18,7 @@ import java.util.Objects;
 @Table(name = "team_member")
 @Data
 @NoArgsConstructor
+@Deprecated(forRemoval = true, since = "0.12.0")
 public class TeamMemberRelation implements Serializable{
 
     @EmbeddedId

@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
+@Deprecated(forRemoval = true, since = "0.12.0")
 public interface TeamMemberRepository extends CrudRepository<TeamMemberRelation, TeamMemberRelation.TeamMemberId> {
 
     @Query(

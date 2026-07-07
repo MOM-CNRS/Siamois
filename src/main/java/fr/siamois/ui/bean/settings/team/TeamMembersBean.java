@@ -76,7 +76,7 @@ public class TeamMembersBean implements SettingsDatatableBean {
     }
 
     private void addPersonToActionunit(PersonRole saved) {
-        if (institutionService.addPersonToActionUnit(actionUnit, saved.person(), saved.role())) {
+        if (institutionService.addPersonAsMemberOfActionUnit(actionUnit, saved.person())) {
             log.debug("Added person to action unit");
         } else {
             log.debug("Person was not added to action unit, maybe already exists");

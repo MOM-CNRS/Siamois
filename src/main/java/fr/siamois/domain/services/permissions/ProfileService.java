@@ -5,6 +5,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.*;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PermissionRepository;
@@ -124,24 +125,24 @@ public class ProfileService {
     }
 
     @NonNull
-    public Profile createOrGetProjectManagerProfile(@NonNull InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO) {
+    public Profile createOrGetProjectManagerProfile(@NonNull ActionUnitDTO actionUnitDTO) {
         return createOrGetProjectProfile("Gestionnaire du projet", ProfileConstants.PROJECT_MANAGER, List.of(
                 PermissionConstants.PROJECT_MANAGE_MEMBERS,
                 PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
                 PermissionConstants.PROJECT_EDIT_FINDS,
                 PermissionConstants.PROJECT_EDIT_PHASES,
                 PermissionConstants.PROJECT_EDIT_CONTAINERS
-        ), institutionDTO, actionUnitDTO);
+        ), actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
     }
 
     @NonNull
-    public Profile createOrGetProjectMemberProfile(@NonNull InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO) {
+    public Profile createOrGetProjectMemberProfile(@NonNull ActionUnitDTO actionUnitDTO) {
         return createOrGetProjectProfile("Membre du projet", ProfileConstants.PROJECT_MEMBER, List.of(
                 PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
                 PermissionConstants.PROJECT_EDIT_FINDS,
                 PermissionConstants.PROJECT_EDIT_PHASES,
                 PermissionConstants.PROJECT_EDIT_CONTAINERS
-        ), institutionDTO, actionUnitDTO);
+        ), actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
     }
 
 }
