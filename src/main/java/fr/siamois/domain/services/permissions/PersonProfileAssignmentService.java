@@ -88,4 +88,16 @@ public class PersonProfileAssignmentService {
         projectMemberDTO.setProfiles(profiles);
         return projectMemberDTO;
     }
+
+    public ApplicationMemberDTO addToInstance(PersonDTO person, List<ProfileDTO> profiles) {
+        Person personToAdd = personMapper.invertConvert(person);
+        for (ProfileDTO profile : profiles) {
+            Profile currentProfile = profileMapper.invertConvert(profile);
+            assignProfile(currentProfile, personToAdd);
+        }
+        ApplicationMemberDTO applicationMemberDTO = new ApplicationMemberDTO();
+        applicationMemberDTO.setPerson(person);
+        applicationMemberDTO.setProfiles(profiles);
+        return applicationMemberDTO;
+    }
 }

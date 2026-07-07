@@ -1,7 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.permissions;
 
 import fr.siamois.domain.models.permissions.Profile;
-import fr.siamois.dto.entity.ProfileDTO;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
@@ -21,4 +21,7 @@ public interface ProfileRepository extends CrudRepository<Profile, Integer> {
     List<Profile> findProfilesByInstitutionId(Long institutionId);
 
     List<Profile> findProfilesByActionUnitId(Long actionUnitId);
+
+    @Query("SELECT p FROM Profile p WHERE p.actionUnit IS NULL AND p.institution IS NULL")
+    List<Profile> findAllOfInstanceLevel();
 }

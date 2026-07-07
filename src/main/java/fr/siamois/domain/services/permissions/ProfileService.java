@@ -1,25 +1,23 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.*;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PermissionRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +28,7 @@ public class ProfileService {
     private final InstitutionRepository institutionRepository;
     private final ActionUnitRepository actionUnitRepository;
     private final ProfileMapper profileMapper;
+    private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
 
     private Permission findOrThrowPermission(String permissionCode) {
         return permissionRepository.findByCode(permissionCode).orElseThrow(() -> new IllegalStateException("System permission " + permissionCode + " not found"));
@@ -150,6 +149,20 @@ public class ProfileService {
 
     public List<ProfileDTO> findAllProfilesByActionUnit(ActionUnitDTO project) {
         return profileRepository.findProfilesByActionUnitId(project.getId())
+                .stream()
+                .map(profileMapper::convert)
+                .toList();
+    }
+
+    public List<ProfileDTO> findAllProfilesOfPersonInInstance(Person person) {
+        return personProfileAssignmentRepository.findAllProfilesOfPersonInInstance(person.getId())
+                .stream()
+                .map(profileMapper::convert)
+                .toList();
+    }
+
+    public List<ProfileDTO> findAllProfilesOfInstance() {
+        return profileRepository.findAllOfInstanceLevel()
                 .stream()
                 .map(profileMapper::convert)
                 .toList();
