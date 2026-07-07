@@ -30,8 +30,10 @@ public class ProfileService {
     private final ActionUnitRepository actionUnitRepository;
     private final ProfileMapper profileMapper;
 
+
+
     private Permission findOrThrowPermission(String permissionCode) {
-        return permissionRepository.findByCode(permissionCode).orElseThrow(() -> new IllegalStateException("System permission " + permissionCode + " not found"));
+        return permissionRepository.findByCode(permissionCode).orElseThrow(() -> new IllegalStateException(String.format("Permission with code %s not found", permissionCode)));
     }
 
 
@@ -64,7 +66,7 @@ public class ProfileService {
             profilePermission.add(findOrThrowPermission(permissionCode));
         }
 
-        Institution institution = institutionRepository.findById(institutionDTO.getId()).orElseThrow(() -> new IllegalStateException("Institution " + institutionDTO.getId() + " not found"));
+        Institution institution = institutionRepository.findById(institutionDTO.getId()).orElseThrow(() -> new IllegalStateException(String.format("Institution with code %s not found", institutionDTO.getId())));
 
         Profile organizationProfile = Profile.builder()
                 .code(code)
@@ -111,8 +113,8 @@ public class ProfileService {
             profilePermission.add(findOrThrowPermission(permissionCode));
         }
 
-        Institution institution = institutionRepository.findById(institutionDTO.getId()).orElseThrow(() -> new IllegalStateException("Institution " + institutionDTO.getId() + " not found"));
-        ActionUnit actionUnit = actionUnitRepository.findById(actionUnitDTO.getId()).orElseThrow(() -> new IllegalStateException("Action unit " + actionUnitDTO.getId() + " not found"));
+        Institution institution = institutionRepository.findById(institutionDTO.getId()).orElseThrow(() -> new IllegalStateException(String.format("Institution with code %s not found", institutionDTO.getId())));
+        ActionUnit actionUnit = actionUnitRepository.findById(actionUnitDTO.getId()).orElseThrow(() -> new IllegalStateException(String.format("Action unit with code %s not found", actionUnitDTO.getId())));
 
         Profile projectProfile = Profile.builder()
                 .name(name)
