@@ -41,7 +41,7 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
 
         return profilesByPerson.keySet()
                 .stream()
-                .map((person) -> {
+                .map(person -> {
                     ProjectMemberDTO dto = new ProjectMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));

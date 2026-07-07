@@ -42,7 +42,7 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
 
         return profilesByPerson.keySet()
                 .stream()
-                .map((person) -> {
+                .map(person -> {
                     InstitutionMemberDTO dto = new InstitutionMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));

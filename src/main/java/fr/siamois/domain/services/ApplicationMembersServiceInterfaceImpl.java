@@ -39,7 +39,7 @@ public class ApplicationMembersServiceInterfaceImpl implements ApplicationMember
 
         return profilesByPerson.keySet()
                 .stream()
-                .map((person) -> {
+                .map(person -> {
                     ApplicationMemberDTO dto = new ApplicationMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
