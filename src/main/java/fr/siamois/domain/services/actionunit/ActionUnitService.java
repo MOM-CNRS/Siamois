@@ -221,14 +221,14 @@ public class ActionUnitService implements ArkEntityService {
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
-        assignRoles(info, actionUnit, savedDTO);
+        assignRoles(info, savedDTO);
         return savedDTO;
     }
 
-    private void assignRoles(UserInfo info, ActionUnitDTO actionUnit, ActionUnitDTO savedDTO) {
+    private void assignRoles(UserInfo info, ActionUnitDTO savedDTO) {
         Map<String, Profile> profiles = createProjectProfiles(savedDTO);
-        assignAsOrganisationMember(info, actionUnit);
-        assignAsProjectMember(info, actionUnit, profiles);
+        assignAsOrganisationMember(info, savedDTO);
+        assignAsProjectMember(info, savedDTO, profiles);
     }
 
     private void assignAsProjectMember(UserInfo info, ActionUnitDTO actionUnit, Map<String, Profile> profiles) {
