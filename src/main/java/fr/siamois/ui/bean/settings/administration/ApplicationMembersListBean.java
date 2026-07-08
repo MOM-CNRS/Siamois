@@ -11,11 +11,10 @@ import fr.siamois.ui.bean.dialog.administration.NewApplicationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
-import org.primefaces.event.SelectEvent;
-import org.primefaces.event.UnselectEvent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -30,6 +29,7 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Scope(value = "session")
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class ApplicationMembersListBean implements SettingsDatatableBean {
 
     private final transient ApplicationMembersServiceInterface applicationMembersService;
@@ -43,15 +43,6 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     private transient List<ProfileDTO> availableProfiles;
     private String searchInput;
 
-    public ApplicationMembersListBean(ApplicationMembersServiceInterface applicationMembersService,
-                                      NewApplicationMemberDialogBean newApplicationMemberDialogBean,
-                                      LangBean langBean, SessionSettingsBean sessionSettingsBean, PersonProfileAssignmentService personProfileAssignmentService) {
-        this.applicationMembersService = applicationMembersService;
-        this.newApplicationMemberDialogBean = newApplicationMemberDialogBean;
-        this.langBean = langBean;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.personProfileAssignmentService = personProfileAssignmentService;
-    }
 
     /** Loads the application's user accounts and resets the search filter. */
     public void init() {
