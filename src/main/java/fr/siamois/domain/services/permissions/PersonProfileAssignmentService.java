@@ -70,11 +70,13 @@ public class PersonProfileAssignmentService {
 
     public ProjectMemberDTO addToProjectMembers(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles) {
         int i = 0;
+        Set<ProfileDTO> profileSet = new HashSet<>();
         Person personToAdd = personMapper.invertConvert(person);
         while (i < profiles.size() && !profiles.get(i).getCode().equals(ProfileConstants.PROJECT_MEMBER)) i++;
         if (i == profiles.size()) {
             Profile member = profileService.createOrGetProjectMemberProfile(project);
             assignProfile(member, personToAdd);
+            profileSet.add(profileMapper.convert(member));
         }
 
         Profile institutionMemberProfile = profileService.createOrGetProjectMemberProfile(project);
@@ -83,11 +85,12 @@ public class PersonProfileAssignmentService {
         for (ProfileDTO profile : profiles) {
             Profile currentProfile = profileMapper.invertConvert(profile);
             assignProfile(currentProfile, personToAdd);
+            profileSet.add(profileMapper.convert(currentProfile));
         }
 
         ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
         projectMemberDTO.setPerson(person);
-        projectMemberDTO.setProfiles(profiles);
+        projectMemberDTO.setProfiles(new ArrayList<>(profileSet));
         return projectMemberDTO;
     }
 
