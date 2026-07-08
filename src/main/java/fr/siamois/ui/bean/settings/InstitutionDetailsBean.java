@@ -7,6 +7,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.components.OptionElement;
 import fr.siamois.ui.bean.settings.institution.InstitutionInfoSettingsBean;
+import fr.siamois.ui.bean.settings.institution.InstitutionMembersListBean;
 import fr.siamois.ui.bean.settings.institution.InstitutionThesaurusSettingsBean;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,11 +35,14 @@ public class InstitutionDetailsBean implements Serializable {
     private InstitutionDTO institution;
     private transient List<OptionElement> elements;
     private final transient InstitutionService institutionService;
+    private final transient InstitutionMembersListBean institutionMembersListBean;
 
     public InstitutionDetailsBean(InstitutionInfoSettingsBean institutionInfoSettingsBean,
                                   InstitutionThesaurusSettingsBean institutionThesaurusSettingsBean,
                                   LangBean langBean,
-                                  SessionSettingsBean sessionSettingsBean, InstitutionService institutionService) {
+                                  SessionSettingsBean sessionSettingsBean,
+                                  InstitutionService institutionService,
+                                  InstitutionMembersListBean institutionMembersListBean) {
 
         this.institutionInfoSettingsBean = institutionInfoSettingsBean;
         this.institutionThesaurusSettingsBean = institutionThesaurusSettingsBean;
