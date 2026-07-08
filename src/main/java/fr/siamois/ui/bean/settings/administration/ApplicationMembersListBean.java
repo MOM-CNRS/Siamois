@@ -12,6 +12,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
+import org.primefaces.event.SelectEvent;
+import org.primefaces.event.UnselectEvent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -34,6 +36,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
 
     private transient List<ApplicationMemberDTO> members;
     private transient List<ApplicationMemberDTO> refMembers;
+    private transient List<ProfileDTO> availableProfiles;
     private String searchInput;
 
     public ApplicationMembersListBean(ApplicationMembersServiceInterface applicationMembersService,
@@ -48,6 +51,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     public void init() {
         refMembers = new ArrayList<>(applicationMembersService.findMembers());
         members = new ArrayList<>(refMembers);
+        availableProfiles = applicationMembersService.findAvailableProfiles();
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -67,23 +71,6 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
         }
     }
 
-    /**
-     * Autocomplete source for the profile-chips editor in the members datatable.
-     *
-     * @param query the text currently typed in the profile field
-     * @return the assignable profiles matching the query
-     */
-    public List<ProfileDTO> completeProfile(String query) {
-        List<ProfileDTO> all = applicationMembersService.findAvailableProfiles();
-        if (query == null || query.isBlank()) {
-            return all;
-        }
-        String q = query.trim().toLowerCase();
-        return all.stream()
-                .filter(p -> p.getName().toLowerCase().contains(q))
-                .toList();
-    }
-
     /** Opens the "add users" wizard dialog. */
     @Override
     public void add() {
@@ -93,6 +80,16 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
                 this::processPerson);
         PrimeFaces.current().ajax().update("newApplicationMemberDialog");
         PrimeFaces.current().executeScript("PF('newApplicationMemberDialog').show();");
+    }
+
+    /** Assigns the newly checked profile to the given member. */
+    public void onProfileSelect(ApplicationMemberDTO member, SelectEvent<ProfileDTO> event) {
+        applicationMembersService.addProfileToMember(member, event.getObject());
+    }
+
+    /** Unassigns the newly unchecked profile from the given member. */
+    public void onProfileUnselect(ApplicationMemberDTO member, UnselectEvent<ProfileDTO> event) {
+        applicationMembersService.removeProfileFromMember(member, event.getObject());
     }
 
     private Boolean processPerson(PersonRole saved) {
@@ -113,6 +110,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     public void reset() {
         members = null;
         refMembers = null;
+        availableProfiles = null;
         searchInput = null;
     }
 

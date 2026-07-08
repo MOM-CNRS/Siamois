@@ -57,4 +57,17 @@ public class ApplicationMembersServiceInterfaceImpl implements ApplicationMember
     public ApplicationMemberDTO addMember(PersonDTO person, List<ProfileDTO> profiles) {
         return personProfileAssignmentService.addToInstance(person, profiles);
     }
+
+    @Override
+    public void addProfileToMember(ApplicationMemberDTO member, ProfileDTO profile) {
+        // TODO : implement
+        // only superadmin can assign a profile to a user
+    }
+
+    @Override
+    public void removeProfileFromMember(ApplicationMemberDTO member, ProfileDTO profile) {
+        // TODO : implement
+        // only a superadmin can remove a profile to a user
+        // at least superadmin is required so that last superadmin cannot be unassigned from superadming profile
+    }
 }

@@ -63,8 +63,9 @@ public class NewApplicationMemberDialogBean implements Serializable {
     private transient Map<Long, String> draftPasswords = new HashMap<>();
     private long nextDraftId = -1;
 
-    // Profiles multi-autocomplete (applied to every member added in this batch)
+    // Profiles multi-select (applied to every member added in this batch)
     private transient List<ProfileDTO> selectedProfiles = new ArrayList<>();
+    private transient List<ProfileDTO> availableProfiles = new ArrayList<>();
 
     // Invite sub-step
     private String inviteEmail;
@@ -94,6 +95,7 @@ public class NewApplicationMemberDialogBean implements Serializable {
         this.title = title;
         this.buttonLabel = buttonLabel;
         this.processPerson = processPerson;
+        this.availableProfiles = applicationMembersService.findAvailableProfiles();
         PrimeFaces.current().ajax().update("newApplicationMemberDialog");
     }
 
@@ -109,6 +111,7 @@ public class NewApplicationMemberDialogBean implements Serializable {
         draftPasswords = new HashMap<>();
         nextDraftId = -1;
         selectedProfiles = new ArrayList<>();
+        availableProfiles = new ArrayList<>();
         clearInviteFields();
     }
 
@@ -158,21 +161,6 @@ public class NewApplicationMemberDialogBean implements Serializable {
         result.removeIf(p -> alreadyMemberIds.contains(p.getId()));
         result.removeIf(p -> selectedMembers.stream().anyMatch(m -> m.getId().equals(p.getId())));
         return result;
-    }
-
-    /**
-     * Autocomplete source for the profiles field.
-     *
-     * @param query the text currently typed in the profiles field
-     * @return the assignable profiles matching the query
-     */
-    public List<ProfileDTO> completeProfile(String query) {
-        List<ProfileDTO> all = applicationMembersService.findAvailableProfiles();
-        if (query == null || query.isBlank()) {
-            return all;
-        }
-        String q = query.trim().toLowerCase();
-        return all.stream().filter(p -> p.getName().toLowerCase().contains(q)).toList();
     }
 
     /**
