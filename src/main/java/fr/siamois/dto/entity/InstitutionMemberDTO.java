@@ -8,5 +8,10 @@ import lombok.ToString;
 @Data
 @ToString(callSuper = true)
 public class InstitutionMemberDTO extends MemberDTO {
+    protected InstitutionDTO institution;
 
+    @Override
+    public InstitutionDTO getCreatedByInstitution() {
+        return institution;
+    }
 }

@@ -2,6 +2,8 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -32,7 +34,6 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
     public List<ProjectMemberDTO> findMembersOf(ActionUnitDTO project) {
         Map<Person, Set<ProfileDTO>> profilesByPerson = new HashMap<>();
 
-
         for (PersonProfileAssignment personProfileAssignment : personProfileAssignmentRepository.findAllAssignmentsByActionUnitId(project.getId())) {
             if (!profilesByPerson.containsKey(personProfileAssignment.getPerson())) {
                 profilesByPerson.put(personProfileAssignment.getPerson(), new HashSet<>());
@@ -46,6 +47,8 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
                     ProjectMemberDTO dto = new ProjectMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
+                    dto.setActionUnit(project);
+                    dto.setInstitution(project.getCreatedByInstitution());
                     return dto;
                 })
                 .toList();
@@ -58,28 +61,35 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
 
     @Override
     public ProjectMemberDTO addMemberToProject(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles) {
-        // TODO: Only the project admins can add members
         return personProfileAssignmentService.addToProjectMembers(project, person, profiles);
     }
 
     @Override
     public void removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member) {
-        // TODO : implement
-        // Cannot remove the last Admin of the project.
-        // Only the project admins car remove members
+        if (personProfileAssignmentService.isNotLastProjectManager(project, member.getPerson())) {
+            personProfileAssignmentService.removeFromProject(project, member.getPerson());
+        }
     }
 
     @Override
     public void addProfileToMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
-        // TODO : implement
-        // only project admin can assign profiles
-
+        // The project parameter is not used because the profile is already associated with the action unit
+        personProfileAssignmentService.assign(member.getPerson(), profile);
     }
 
     @Override
-    public void removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
-        // TODO : implement
-        // only project admin can unassign profiles
-        // the project profile cannot be removed from the last project admin, otherwise no one will be the admin
+    public boolean removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
+        if (ProfileConstants.PROJECT_MANAGER.equals(profile.getCode())
+                && !personProfileAssignmentService.isNotLastProjectManager(project, member.getPerson())) {
+            return false;
+        }
+        personProfileAssignmentService.remove(member.getPerson(), profile);
+
+        if (!personProfileAssignmentRepository.personHasAnyProfileOnActionUnit(member.getPerson().getId(), project.getId())) {
+            Profile projectMemberProfile = profileService.createOrGetProjectMemberProfile(project);
+            personProfileAssignmentService.assign(member.getPerson(), profileMapper.convert(projectMemberProfile));
+        }
+
+        return true;
     }
 }

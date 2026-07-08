@@ -54,10 +54,13 @@ public interface ApplicationMembersServiceInterface {
 
     /**
      * Unassigns a profile from an application member.
+     * <p>
+     * Refuses to remove the {@code SUPERADMIN} profile from the last remaining superadmin.
      *
      * @param member  the member the profile is unassigned from
      * @param profile the profile to unassign
+     * @return true if the profile was actually unassigned, false if the removal was refused
      */
-    void removeProfileFromMember(ApplicationMemberDTO member, ProfileDTO profile);
+    boolean removeProfileFromMember(ApplicationMemberDTO member, ProfileDTO profile);
 
 }

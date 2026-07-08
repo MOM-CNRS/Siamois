@@ -171,6 +171,111 @@ class ProjectMembersServiceInterfaceImplTest {
         verify(personProfileAssignmentService, times(1)).addToProjectMembers(project, memberDTO, profiles);
     }
 
+    @Test
+    void removeMemberFromProject_shouldRemoveMember_whenNotLastProjectManager() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(this.memberDTO);
+
+        when(personProfileAssignmentService.isNotLastProjectManager(project, this.memberDTO)).thenReturn(true);
+
+        projectMembersService.removeMemberFromProject(project, projectMemberDTO);
+
+        verify(personProfileAssignmentService, times(1)).removeFromProject(project, this.memberDTO);
+    }
+
+    @Test
+    void removeMemberFromProject_shouldNotRemoveMember_whenLastProjectManager() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        when(personProfileAssignmentService.isNotLastProjectManager(project, memberDTO)).thenReturn(false);
+
+        projectMembersService.removeMemberFromProject(project, projectMemberDTO);
+
+        verify(personProfileAssignmentService, never()).removeFromProject(any(), any());
+    }
+
+    @Test
+    void addProfileToMember_shouldDelegateToAssignmentService() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        projectMembersService.addProfileToMember(project, projectMemberDTO, memberProfileDTO);
+
+        verify(personProfileAssignmentService, times(1)).assign(memberDTO, memberProfileDTO);
+    }
+
+    @Test
+    void removeProfileFromMember_shouldDelegateToAssignmentService() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        when(personProfileAssignmentRepository.personHasAnyProfileOnActionUnit(memberDTO.getId(), project.getId()))
+                .thenReturn(true);
+
+        boolean result = projectMembersService.removeProfileFromMember(project, projectMemberDTO, memberProfileDTO);
+
+        assertThat(result).isTrue();
+        verify(personProfileAssignmentService, times(1)).remove(memberDTO, memberProfileDTO);
+        verify(personProfileAssignmentService, never()).isNotLastProjectManager(any(), any());
+        verify(profileService, never()).createOrGetProjectMemberProfile(any());
+    }
+
+    @Test
+    void removeProfileFromMember_shouldRemove_whenManagerIsNotLast() {
+        ProfileDTO managerProfileDTO = new ProfileDTO();
+        managerProfileDTO.setId(101L);
+        managerProfileDTO.setCode(ProfileConstants.PROJECT_MANAGER);
+        managerProfileDTO.setScope(PermissionScopeType.PROJECT);
+
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        when(personProfileAssignmentService.isNotLastProjectManager(project, memberDTO)).thenReturn(true);
+        when(personProfileAssignmentRepository.personHasAnyProfileOnActionUnit(memberDTO.getId(), project.getId()))
+                .thenReturn(true);
+
+        boolean result = projectMembersService.removeProfileFromMember(project, projectMemberDTO, managerProfileDTO);
+
+        assertThat(result).isTrue();
+        verify(personProfileAssignmentService, times(1)).remove(memberDTO, managerProfileDTO);
+    }
+
+    @Test
+    void removeProfileFromMember_shouldReassignMemberProfile_whenMemberHasNoProfileLeft() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        when(personProfileAssignmentRepository.personHasAnyProfileOnActionUnit(memberDTO.getId(), project.getId()))
+                .thenReturn(false);
+        when(profileService.createOrGetProjectMemberProfile(project)).thenReturn(memberProfile);
+        when(profileMapper.convert(memberProfile)).thenReturn(memberProfileDTO);
+
+        boolean result = projectMembersService.removeProfileFromMember(project, projectMemberDTO, memberProfileDTO);
+
+        assertThat(result).isTrue();
+        verify(personProfileAssignmentService, times(1)).remove(memberDTO, memberProfileDTO);
+        verify(personProfileAssignmentService, times(1)).assign(memberDTO, memberProfileDTO);
+    }
+
+    @Test
+    void removeProfileFromMember_shouldNotRemove_whenMemberIsLastManager() {
+        ProfileDTO managerProfileDTO = new ProfileDTO();
+        managerProfileDTO.setId(101L);
+        managerProfileDTO.setCode(ProfileConstants.PROJECT_MANAGER);
+        managerProfileDTO.setScope(PermissionScopeType.PROJECT);
+
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        when(personProfileAssignmentService.isNotLastProjectManager(project, memberDTO)).thenReturn(false);
+
+        boolean result = projectMembersService.removeProfileFromMember(project, projectMemberDTO, managerProfileDTO);
+
+        assertThat(result).isFalse();
+        verify(personProfileAssignmentService, never()).remove(any(), any());
+    }
+
     private PersonProfileAssignment assignment(Person person, Profile profile) {
         PersonProfileAssignment assignment = new PersonProfileAssignment();
         assignment.setPerson(person);

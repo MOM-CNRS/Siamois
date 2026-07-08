@@ -1,11 +1,14 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.dto.entity.ProjectMemberDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.project.NewProjectMemberDialogBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
@@ -34,6 +37,8 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
     private final transient ProjectMembersServiceInterface projectMembersService;
     private final NewProjectMemberDialogBean newProjectMemberDialogBean;
     private final LangBean langBean;
+    private final transient PersonProfileAssignmentService personProfileAssignmentService;
+    private final SessionSettingsBean sessionSettingsBean;
 
     private ActionUnitDTO project;
 
@@ -44,10 +49,12 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
 
     public ProjectMembersListBean(ProjectMembersServiceInterface projectMembersService,
                                   NewProjectMemberDialogBean newProjectMemberDialogBean,
-                                  LangBean langBean) {
+                                  LangBean langBean, PersonProfileAssignmentService personProfileAssignmentService, SessionSettingsBean sessionSettingsBean) {
         this.projectMembersService = projectMembersService;
         this.newProjectMemberDialogBean = newProjectMemberDialogBean;
         this.langBean = langBean;
+        this.personProfileAssignmentService = personProfileAssignmentService;
+        this.sessionSettingsBean = sessionSettingsBean;
     }
 
     /**
@@ -100,17 +107,34 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
     }
 
     /** Assigns the newly checked profile to the given member. */
-    public void onProfileSelect(ProjectMemberDTO member, SelectEvent<ProfileDTO> event) {
+    public void onProfileSelect(SelectEvent<ProfileDTO> event) {
+        ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
         projectMembersService.addProfileToMember(project, member, event.getObject());
     }
 
     /** Unassigns the newly unchecked profile from the given member. */
-    public void onProfileUnselect(ProjectMemberDTO member, UnselectEvent<ProfileDTO> event) {
-        projectMembersService.removeProfileFromMember(project, member, event.getObject());
+    public void onProfileUnselect(UnselectEvent<ProfileDTO> event) {
+        ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
+        ProfileDTO profile = event.getObject();
+        boolean removed = projectMembersService.removeProfileFromMember(project, member, profile);
+        if (!removed) {
+            member.getProfiles().add(profile);
+            displayWarnMessage(langBean, "projectSettings.error.lastManager");
+        } else if (member.getProfiles().isEmpty()) {
+            // The service reassigns the base "member" profile when a member is left with none
+            availableProfiles.stream()
+                    .filter(p -> ProfileConstants.PROJECT_MEMBER.equals(p.getCode()))
+                    .findFirst()
+                    .ifPresent(member.getProfiles()::add);
+        }
     }
 
     private Boolean processPerson(PersonRole saved) {
         try {
+            if (personProfileAssignmentService.isNotProjectManager(project, sessionSettingsBean.getAuthenticatedUser())) {
+                displayWarnMessage(langBean, "projectSettings.error.notManager");
+                return false;
+            }
             ProjectMemberDTO member = projectMembersService.addMemberToProject(
                     project, saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);

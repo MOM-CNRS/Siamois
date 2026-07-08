@@ -92,4 +92,46 @@ class ApplicationMembersServiceInterfaceImplTest {
         assertThat(result).isEqualTo(expected);
         verify(personProfileAssignmentService, times(1)).addToInstance(memberDTO, profiles);
     }
+
+    @Test
+    void removeProfileFromMember_shouldRemove_whenProfileIsNotSuperAdmin() {
+        ProfileDTO regularProfileDTO = new ProfileDTO();
+        regularProfileDTO.setId(200L);
+        regularProfileDTO.setCode("SOME_OTHER_CODE");
+
+        ApplicationMemberDTO member = new ApplicationMemberDTO();
+        member.setPerson(memberDTO);
+
+        boolean result = applicationMembersService.removeProfileFromMember(member, regularProfileDTO);
+
+        assertThat(result).isTrue();
+        verify(personProfileAssignmentService, times(1)).remove(memberDTO, regularProfileDTO);
+        verify(personProfileAssignmentService, never()).isNotLastSuperAdmin(any());
+    }
+
+    @Test
+    void removeProfileFromMember_shouldRemove_whenSuperAdminIsNotLast() {
+        ApplicationMemberDTO member = new ApplicationMemberDTO();
+        member.setPerson(memberDTO);
+
+        when(personProfileAssignmentService.isNotLastSuperAdmin(memberDTO)).thenReturn(true);
+
+        boolean result = applicationMembersService.removeProfileFromMember(member, superAdminProfileDTO);
+
+        assertThat(result).isTrue();
+        verify(personProfileAssignmentService, times(1)).remove(memberDTO, superAdminProfileDTO);
+    }
+
+    @Test
+    void removeProfileFromMember_shouldNotRemove_whenMemberIsLastSuperAdmin() {
+        ApplicationMemberDTO member = new ApplicationMemberDTO();
+        member.setPerson(memberDTO);
+
+        when(personProfileAssignmentService.isNotLastSuperAdmin(memberDTO)).thenReturn(false);
+
+        boolean result = applicationMembersService.removeProfileFromMember(member, superAdminProfileDTO);
+
+        assertThat(result).isFalse();
+        verify(personProfileAssignmentService, never()).remove(any(), any());
+    }
 }
