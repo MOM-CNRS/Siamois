@@ -105,4 +105,19 @@ public class PersonProfileAssignmentService {
         applicationMemberDTO.setProfiles(profiles);
         return applicationMemberDTO;
     }
+
+    public boolean isNotSuperAdmin(PersonDTO person) {
+        return !personProfileAssignmentRepository.personIsSuperAdmin(person.getId());
+    }
+
+    public void assign(PersonDTO person, ProfileDTO profile) {
+        Profile currentProfile = profileMapper.invertConvert(profile);
+        Person personToAssign = personMapper.invertConvert(person);
+        assignProfile(currentProfile, personToAssign);
+    }
+
+    public void remove(PersonDTO person, ProfileDTO profile) {
+        Optional<PersonProfileAssignment> ppaOpt = personProfileAssignmentRepository.findByProfileIdAndPersonId(profile.getId(), person.getId());
+        ppaOpt.ifPresent(personProfileAssignmentRepository::delete);
+    }
 }

@@ -1,5 +1,6 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
@@ -59,15 +60,18 @@ public class ApplicationMembersServiceInterfaceImpl implements ApplicationMember
     }
 
     @Override
-    public void addProfileToMember(ApplicationMemberDTO member, ProfileDTO profile) {
-        // TODO : implement
-        // only superadmin can assign a profile to a user
+    public void addProfileToMember(UserInfo callerInfo, ApplicationMemberDTO member, ProfileDTO profile) {
+        if (personProfileAssignmentService.isNotSuperAdmin(callerInfo.getUser())) {
+            throw new IllegalStateException("Only a SUPERADMIN can call addProfileToMember");
+        }
+        personProfileAssignmentService.assign(member.getPerson(), profile);
     }
 
     @Override
-    public void removeProfileFromMember(ApplicationMemberDTO member, ProfileDTO profile) {
-        // TODO : implement
-        // only a superadmin can remove a profile to a user
-        // at least superadmin is required so that last superadmin cannot be unassigned from superadming profile
+    public void removeProfileFromMember(UserInfo callerInfo ,ApplicationMemberDTO member, ProfileDTO profile) {
+        if (personProfileAssignmentService.isNotSuperAdmin(callerInfo.getUser())) {
+            throw new IllegalStateException("Only a SUPERADMIN can call removeProfileFromMember");
+        }
+        personProfileAssignmentService.remove(member.getPerson(), profile);
     }
 }
