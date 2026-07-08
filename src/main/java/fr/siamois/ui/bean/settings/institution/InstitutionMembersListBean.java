@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.settings.institution;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.OrganizationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
@@ -134,6 +135,12 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         if (!removed) {
             member.getProfiles().add(profile);
             displayWarnMessage(langBean, "organisationSettings.error.lastManager");
+        } else if (member.getProfiles().isEmpty()) {
+            // The service reassigns the base "member" profile when a member is left with none
+            availableProfiles.stream()
+                    .filter(p -> ProfileConstants.ORGANIZATION_MEMBER.equals(p.getCode()))
+                    .findFirst()
+                    .ifPresent(member.getProfiles()::add);
         }
     }
 

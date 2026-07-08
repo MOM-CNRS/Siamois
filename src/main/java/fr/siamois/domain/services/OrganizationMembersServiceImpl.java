@@ -2,8 +2,10 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -29,6 +31,7 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
     private final ProfileMapper profileMapper;
     private final ProfileRepository profileRepository;
     private final PersonProfileAssignmentService personProfileAssignmentService;
+    private final ProfileService profileService;
 
     @Override
     public List<InstitutionMemberDTO> findMembersOf(@NonNull InstitutionDTO institution) {
@@ -87,6 +90,12 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
             return false;
         }
         personProfileAssignmentService.remove(member.getPerson(), profile);
+
+        if (!assignmentRepository.personHasAnyProfileInInstitution(member.getPerson().getId(), institution.getId())) {
+            Profile organizationMemberProfile = profileService.createOrGetOrganizationMemberProfile(institution);
+            personProfileAssignmentService.assign(member.getPerson(), profileMapper.convert(organizationMemberProfile));
+        }
+
         return true;
     }
 }

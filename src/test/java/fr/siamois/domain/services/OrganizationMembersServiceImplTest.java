@@ -6,6 +6,7 @@ import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -39,6 +40,8 @@ class OrganizationMembersServiceImplTest {
     private ProfileRepository profileRepository;
     @Mock
     private PersonProfileAssignmentService personProfileAssignmentService;
+    @Mock
+    private ProfileService profileService;
 
     @InjectMocks
     private OrganizationMembersServiceImpl organizationMembersService;
@@ -181,11 +184,15 @@ class OrganizationMembersServiceImplTest {
         InstitutionMemberDTO member = new InstitutionMemberDTO();
         member.setPerson(memberDTO);
 
+        when(assignmentRepository.personHasAnyProfileInInstitution(memberDTO.getId(), institution.getId()))
+                .thenReturn(true);
+
         boolean result = organizationMembersService.removeProfileFromMember(institution, member, memberProfileDTO);
 
         assertThat(result).isTrue();
         verify(personProfileAssignmentService, times(1)).remove(memberDTO, memberProfileDTO);
         verify(personProfileAssignmentService, never()).isNotLastOrganizationManager(any(), any());
+        verify(profileService, never()).createOrGetOrganizationMemberProfile(any());
     }
 
     @Test
@@ -199,11 +206,30 @@ class OrganizationMembersServiceImplTest {
         member.setPerson(memberDTO);
 
         when(personProfileAssignmentService.isNotLastOrganizationManager(institution, memberDTO)).thenReturn(true);
+        when(assignmentRepository.personHasAnyProfileInInstitution(memberDTO.getId(), institution.getId()))
+                .thenReturn(true);
 
         boolean result = organizationMembersService.removeProfileFromMember(institution, member, managerProfileDTO);
 
         assertThat(result).isTrue();
         verify(personProfileAssignmentService, times(1)).remove(memberDTO, managerProfileDTO);
+    }
+
+    @Test
+    void removeProfileFromMember_shouldReassignMemberProfile_whenMemberHasNoProfileLeft() {
+        InstitutionMemberDTO member = new InstitutionMemberDTO();
+        member.setPerson(memberDTO);
+
+        when(assignmentRepository.personHasAnyProfileInInstitution(memberDTO.getId(), institution.getId()))
+                .thenReturn(false);
+        when(profileService.createOrGetOrganizationMemberProfile(institution)).thenReturn(memberProfile);
+        when(profileMapper.convert(memberProfile)).thenReturn(memberProfileDTO);
+
+        boolean result = organizationMembersService.removeProfileFromMember(institution, member, memberProfileDTO);
+
+        assertThat(result).isTrue();
+        verify(personProfileAssignmentService, times(1)).remove(memberDTO, memberProfileDTO);
+        verify(personProfileAssignmentService, times(1)).assign(memberDTO, memberProfileDTO);
     }
 
     @Test
