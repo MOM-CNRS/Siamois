@@ -3,6 +3,7 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:form="http://xmlns.jcp.org/jsf/composite/pages/shared/form"
              xmlns:h="http://java.sun.com/jsf/html"
+             xmlns:f="http://java.sun.com/jsf/core"
 >
 
     <p:dialog
@@ -52,20 +53,18 @@
 
                         <div class="form-group">
                             <p:outputLabel value="#{langBean.msg('newOrganizationMember.label.profile')}"/>
-                            <p:autoComplete value="#{newApplicationMemberDialogBean.selectedProfiles}"
-                                            completeMethod="#{newApplicationMemberDialogBean.completeProfile}"
-                                            var="p"
-                                            itemLabel="#{p.name}"
-                                            itemValue="#{p}"
-                                            converter="#{profileDTOConverter}"
-                                            placeholder="#{langBean.msg('newOrganizationMember.placeholder.profile')}"
-                                            multiple="true"
-                                            unique="true"
-                                            forceSelection="true"
-                                            dropdown="false">
-                                <p:ajax event="itemSelect" process="@this" update="@form"/>
-                                <p:ajax event="itemUnselect" process="@this" update="@form"/>
-                            </p:autoComplete>
+                            <p:selectCheckboxMenu value="#{newApplicationMemberDialogBean.selectedProfiles}"
+                                                   converter="#{profileDTOConverter}"
+                                                   panelStyleClass="profile-select-panel"
+                                                   label="#{langBean.msg('newOrganizationMember.placeholder.profile')}"
+                                                   updateLabel="true"
+                                                   multiple="true"
+                                                   filter="true"
+                                                   filterMatchMode="contains"
+                                                   scrollHeight="200">
+                                <f:selectItems value="#{newApplicationMemberDialogBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
+                                <p:ajax process="@this" update="@form"/>
+                            </p:selectCheckboxMenu>
                         </div>
                     </h:panelGroup>
 

@@ -44,4 +44,20 @@ public interface ApplicationMembersServiceInterface {
      */
     ApplicationMemberDTO addMember(PersonDTO person, List<ProfileDTO> profiles);
 
+    /**
+     * Assigns a profile to an application member.
+     *
+     * @param member  the member the profile is assigned to
+     * @param profile the profile to assign
+     */
+    void addProfileToMember(ApplicationMemberDTO member, ProfileDTO profile);
+
+    /**
+     * Unassigns a profile from an application member.
+     *
+     * @param member  the member the profile is unassigned from
+     * @param profile the profile to unassign
+     */
+    void removeProfileFromMember(ApplicationMemberDTO member, ProfileDTO profile);
+
 }
