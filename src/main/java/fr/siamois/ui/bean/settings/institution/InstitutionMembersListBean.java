@@ -48,6 +48,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
 
     private transient List<InstitutionMemberDTO> members;
     private transient List<InstitutionMemberDTO> refMembers;
+    private transient List<ProfileDTO> availableProfiles;
     private String searchInput;
 
     public InstitutionMembersListBean(InstitutionService institutionService,
@@ -76,6 +77,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         refMembers = new ArrayList<>(organizationMembersService.findMembersOf(institution));
         roles = new HashMap<>();
         members = new ArrayList<>(refMembers);
+        availableProfiles = organizationMembersService.findAvailableProfiles(institution);
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -93,23 +95,6 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
                 }
             }
         }
-    }
-
-    /**
-     * Autocomplete source for the profile-chips editor in the members datatable.
-     *
-     * @param query the text currently typed in the profile field
-     * @return the assignable profiles matching the query
-     */
-    public List<ProfileDTO> completeProfile(String query) {
-        List<ProfileDTO> all = organizationMembersService.findAvailableProfiles(institution);
-        if (query == null || query.isBlank()) {
-            return all;
-        }
-        String q = query.trim().toLowerCase();
-        return all.stream()
-                .filter(p -> p.getName().toLowerCase().contains(q))
-                .toList();
     }
 
     /** Opens the "add members" wizard dialog for the current institution. */
@@ -152,6 +137,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         members = null;
         refMembers = null;
         roles = null;
+        availableProfiles = null;
         searchInput = null;
     }
 
