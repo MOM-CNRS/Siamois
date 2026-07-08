@@ -14,6 +14,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -76,7 +77,7 @@ public class ActionUnitService implements ArkEntityService {
     private final PendingActionUnitRepository pendingActionUnitRepository;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
-
+    private final ProfileService profileService;
 
 
     /**
@@ -97,6 +98,11 @@ public class ActionUnitService implements ArkEntityService {
             log.error(e.getMessage(), e);
             throw e;
         }
+    }
+
+    private void createProjectProfiles(ActionUnitDTO actionUnitDTO) {
+        profileService.createOrGetProjectManagerProfile(actionUnitDTO);
+        profileService.createOrGetProjectMemberProfile(actionUnitDTO);
     }
 
     /**
@@ -206,7 +212,9 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
-        return actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
+        ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
+        createProjectProfiles(savedDTO);
+        return savedDTO;
     }
 
     /**
