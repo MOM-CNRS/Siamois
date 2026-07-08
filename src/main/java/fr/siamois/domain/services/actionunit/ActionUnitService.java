@@ -221,12 +221,28 @@ public class ActionUnitService implements ArkEntityService {
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
+        assignRoles(info, actionUnit, savedDTO);
+        return savedDTO;
+    }
+
+    private void assignRoles(UserInfo info, ActionUnitDTO actionUnit, ActionUnitDTO savedDTO) {
         Map<String, Profile> profiles = createProjectProfiles(savedDTO);
+        assignAsOrganisationMember(info, actionUnit);
+        assignAsProjectMember(info, actionUnit, profiles);
+    }
+
+    private void assignAsProjectMember(UserInfo info, ActionUnitDTO actionUnit, Map<String, Profile> profiles) {
         List<ProfileDTO> profileDTOS = new ArrayList<>();
         profileDTOS.add(profileMapper.convert(profiles.get(ProfileConstants.PROJECT_MANAGER)));
         profileDTOS.add(profileMapper.convert(profiles.get(ProfileConstants.PROJECT_MEMBER)));
         personProfileAssignmentService.addToProjectMembers(actionUnit, info.getUser(), profileDTOS);
-        return savedDTO;
+    }
+
+    private void assignAsOrganisationMember(UserInfo info, ActionUnitDTO actionUnit) {
+        Profile institutionMember = profileService.createOrGetOrganizationMemberProfile(actionUnit.getCreatedByInstitution());
+        List<ProfileDTO> institutionMemberProfileDTOS = new ArrayList<>();
+        institutionMemberProfileDTOS.add(profileMapper.convert(institutionMember));
+        personProfileAssignmentService.addToInstitution(actionUnit.getCreatedByInstitution(), info.getUser(), institutionMemberProfileDTOS);
     }
 
     /**
