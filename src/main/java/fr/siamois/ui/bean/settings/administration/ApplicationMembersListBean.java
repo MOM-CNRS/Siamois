@@ -91,7 +91,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     /** Assigns the newly checked profile to the given member. */
     public void onProfileSelect(ApplicationMemberDTO member, SelectEvent<ProfileDTO> event) {
         if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
-            log.debug("User is not superadmin and can't addProfileToMember");
+            displayWarnMessage(langBean, "administrationSettings.error.notAdmin");
             return;
         }
         applicationMembersService.addProfileToMember(member, event.getObject());
@@ -100,7 +100,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(ApplicationMemberDTO member, UnselectEvent<ProfileDTO> event) {
         if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
-            log.debug("User is not superadmin and can't removeProfileFromMember");
+            displayWarnMessage(langBean, "administrationSettings.error.notAdmin");
             return;
         }
         applicationMembersService.removeProfileFromMember(member, event.getObject());

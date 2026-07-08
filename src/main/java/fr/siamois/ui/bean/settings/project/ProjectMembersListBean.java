@@ -118,7 +118,7 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
     private Boolean processPerson(PersonRole saved) {
         try {
             if (personProfileAssignmentService.isNotProjectManager(project, sessionSettingsBean.getAuthenticatedUser())) {
-                log.debug("Not project manager");
+                displayWarnMessage(langBean, "projectSettings.error.notManager");
                 return false;
             }
             ProjectMemberDTO member = projectMembersService.addMemberToProject(

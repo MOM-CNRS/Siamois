@@ -39,6 +39,7 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Setter
 public class InstitutionMembersListBean implements SettingsDatatableBean {
 
+    public static final String SETTINGS_ERROR_NOT_MANAGER = "organisationSettings.error.notManager";
     private final transient InstitutionService institutionService;
     private final transient PersonService personService;
     private final transient OrganizationMembersServiceInterface organizationMembersService;
@@ -118,7 +119,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     public void removeMember(InstitutionMemberDTO member) {
         log.trace("Removing institution member {}", member.displayName());
         if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution() ,sessionSettingsBean.getAuthenticatedUser())) {
-            log.debug("The user is not an organisation manager and can't removeMemberFromInstitution");
+            displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
         organizationMembersService.removeMemberFromInstitution(institution, member);
@@ -129,7 +130,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     /** Assigns the newly checked profile to the given member. */
     public void onProfileSelect(InstitutionMemberDTO member, SelectEvent<ProfileDTO> event) {
         if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
-            log.debug("The user is not an organisation manager and can't addProfileToMember");
+            displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
         organizationMembersService.addProfileToMember(institution, member, event.getObject());
@@ -138,7 +139,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(InstitutionMemberDTO member, UnselectEvent<ProfileDTO> event) {
         if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
-            log.debug("The user is not an organisation manager and can't removeProfileFromMember");
+            displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
         organizationMembersService.removeProfileFromMember(institution, member, event.getObject());
@@ -147,7 +148,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     private Boolean processPerson(PersonRole saved) {
         try {
             if (personProfileAssignmentService.isNotOrganisationManager(sessionSettingsBean.getSelectedInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
-                log.debug("The user is not an organisation manager and can't addMemberToInstitution");
+                displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
                 return false;
             }
             InstitutionMemberDTO member = organizationMembersService.addMemberToInstitution(
