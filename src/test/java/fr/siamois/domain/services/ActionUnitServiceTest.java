@@ -15,6 +15,8 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -33,6 +35,7 @@ import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.ProfileMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,6 +77,9 @@ class ActionUnitServiceTest {
     @Mock private PendingActionUnitRepository pendingActionUnitRepository;
     @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     @Mock private RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
+    @Mock private ProfileService profileService;
+    @Mock private PersonProfileAssignmentService personProfileAssignmentService;
+    @Mock private ProfileMapper profileMapper;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -295,6 +301,8 @@ class ActionUnitServiceTest {
         verify(personMapper).invertConvert(personDto);
         verify(actionUnitRepository).save(actionUnit);
         verify(actionUnitMapper).convert(actionUnit);
+        verify(personProfileAssignmentService).addToProjectMembers(eq(expectedResult), eq(personDto), anyList());
+        verify(personProfileAssignmentService).addToInstitution(eq(institutionDto), eq(personDto), anyList());
     }
 
 

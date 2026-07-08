@@ -8,6 +8,7 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
@@ -18,7 +19,9 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.InstitutionMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
@@ -29,6 +32,7 @@ import fr.siamois.mapper.ProfileMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -300,26 +304,30 @@ class InstitutionServiceTest {
         PersonDTO p = new PersonDTO();
         p.setId(2L);
 
-        when(personProfileAssignmentService.addToManagers(instDto, p)).thenReturn(true);
+        Profile memberProfile = new Profile();
+        memberProfile.setCode(ProfileConstants.ORGANIZATION_MEMBER);
+        Profile managerProfile = new Profile();
+        managerProfile.setCode(ProfileConstants.ORGANIZATION_MANAGER);
+
+        ProfileDTO memberDTO = new ProfileDTO();
+        memberDTO.setCode(ProfileConstants.ORGANIZATION_MEMBER);
+        ProfileDTO managerProfileDTO = new ProfileDTO();
+        managerProfileDTO.setCode(ProfileConstants.ORGANIZATION_MANAGER);
+
+        when(profileService.createOrGetOrganizationMemberProfile(instDto)).thenReturn(memberProfile);
+        when(profileService.createOrGetOrganizationManagerProfile(instDto)).thenReturn(managerProfile);
+        when(profileMapper.convert(memberProfile)).thenReturn(memberDTO);
+        when(profileMapper.convert(managerProfile)).thenReturn(managerProfileDTO);
+        when(personProfileAssignmentService.addToInstitution(eq(instDto), eq(p), anyList()))
+                .thenReturn(new InstitutionMemberDTO());
 
         boolean added = institutionService.addToManagers(instDto, p);
 
         assertTrue(added);
-    }
 
-    @Test
-    void addToManagers_shouldNotAddManagerIfAlreadyExists() {
-        InstitutionDTO instDto = new InstitutionDTO();
-        instDto.setId(1L);
-
-        PersonDTO p = new PersonDTO();
-        p.setId(2L);
-
-        when(personProfileAssignmentService.addToManagers(instDto, p)).thenReturn(false);
-
-        boolean added = institutionService.addToManagers(instDto, p);
-
-        assertFalse(added);
+        ArgumentCaptor<List<ProfileDTO>> profilesCaptor = ArgumentCaptor.forClass(List.class);
+        verify(personProfileAssignmentService).addToInstitution(eq(instDto), eq(p), profilesCaptor.capture());
+        assertThat(profilesCaptor.getValue()).containsExactlyInAnyOrder(memberDTO, managerProfileDTO);
     }
 
     @Test

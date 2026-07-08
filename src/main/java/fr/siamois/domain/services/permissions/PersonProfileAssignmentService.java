@@ -79,7 +79,7 @@ public class PersonProfileAssignmentService {
             profileSet.add(profileMapper.convert(member));
         }
 
-        Profile institutionMemberProfile = profileService.createOrGetProjectMemberProfile(project);
+        Profile institutionMemberProfile = profileService.createOrGetOrganizationMemberProfile(project.getCreatedByInstitution());
         assignProfile(institutionMemberProfile, personToAdd);
 
         for (ProfileDTO profile : profiles) {
