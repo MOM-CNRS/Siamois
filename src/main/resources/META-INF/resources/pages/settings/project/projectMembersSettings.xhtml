@@ -62,11 +62,13 @@
                                                panelStyleClass="profile-select-panel"
                                                label="#{langBean.msg('common.label.profile')}"
                                                updateLabel="true"
+                                               multiple="true"
                                                filter="true"
                                                filterMatchMode="contains"
                                                scrollHeight="200">
                             <f:selectItems value="#{projectMembersListBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
-                            <p:ajax process="@this"/>
+                            <p:ajax event="itemSelect" listener="#{projectMembersListBean.onProfileSelect(member, event)}" process="@this"/>
+                            <p:ajax event="itemUnselect" listener="#{projectMembersListBean.onProfileUnselect(member, event)}" process="@this"/>
                         </p:selectCheckboxMenu>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">

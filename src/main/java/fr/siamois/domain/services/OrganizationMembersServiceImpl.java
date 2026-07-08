@@ -73,4 +73,17 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
         // Only the organization admins car remove members
 
     }
+
+    @Override
+    public void addProfileToMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile) {
+        // TODO : implement
+        // Only the organization admins car assign profiles
+    }
+
+    @Override
+    public void removeProfileFromMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile) {
+        // TODO : implement
+        // Only the organization admins car unassign profiles
+        // the organisation admin profile cannot be removed fromt the last organisation admin, otherwise no one will be the admin
+    }
 }

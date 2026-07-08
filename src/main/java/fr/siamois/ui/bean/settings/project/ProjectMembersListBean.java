@@ -13,6 +13,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
+import org.primefaces.event.SelectEvent;
+import org.primefaces.event.UnselectEvent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -95,6 +97,16 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
         projectMembersService.removeMemberFromProject(project, member);
         refMembers.remove(member);
         filter();
+    }
+
+    /** Assigns the newly checked profile to the given member. */
+    public void onProfileSelect(ProjectMemberDTO member, SelectEvent<ProfileDTO> event) {
+        projectMembersService.addProfileToMember(project, member, event.getObject());
+    }
+
+    /** Unassigns the newly unchecked profile from the given member. */
+    public void onProfileUnselect(ProjectMemberDTO member, UnselectEvent<ProfileDTO> event) {
+        projectMembersService.removeProfileFromMember(project, member, event.getObject());
     }
 
     private Boolean processPerson(PersonRole saved) {
