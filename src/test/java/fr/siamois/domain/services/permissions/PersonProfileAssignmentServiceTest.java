@@ -349,6 +349,35 @@ class PersonProfileAssignmentServiceTest {
     }
 
     @Test
+    void isNotLastSuperAdmin_ReturnsTrueWhenPersonIsNotSuperAdmin() {
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.personIsSuperAdmin(1L)).thenReturn(false);
+
+        assertTrue(service.isNotLastSuperAdmin(personDTO));
+
+        // Pas besoin de compter les superadmins si la personne n'en est pas un
+        verify(personProfileAssignmentRepository, never()).countPersonsWithSuperAdminProfile();
+    }
+
+    @Test
+    void isNotLastSuperAdmin_ReturnsTrueWhenOtherSuperAdminsExist() {
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.personIsSuperAdmin(1L)).thenReturn(true);
+        when(personProfileAssignmentRepository.countPersonsWithSuperAdminProfile()).thenReturn(2L);
+
+        assertTrue(service.isNotLastSuperAdmin(personDTO));
+    }
+
+    @Test
+    void isNotLastSuperAdmin_ReturnsFalseWhenPersonIsLastSuperAdmin() {
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.personIsSuperAdmin(1L)).thenReturn(true);
+        when(personProfileAssignmentRepository.countPersonsWithSuperAdminProfile()).thenReturn(1L);
+
+        assertFalse(service.isNotLastSuperAdmin(personDTO));
+    }
+
+    @Test
     void removeFromProject_DeletesAllAssignmentsOfPersonInProject() {
         actionUnitDTO.setId(7L);
         personDTO.setId(1L);

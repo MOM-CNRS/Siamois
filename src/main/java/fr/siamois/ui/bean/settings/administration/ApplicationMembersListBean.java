@@ -82,7 +82,8 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     }
 
     /** Assigns the newly checked profile to the given member. */
-    public void onProfileSelect(ApplicationMemberDTO member, SelectEvent<ProfileDTO> event) {
+    public void onProfileSelect(SelectEvent<ProfileDTO> event) {
+        ApplicationMemberDTO member = (ApplicationMemberDTO) event.getComponent().getAttributes().get("member");
         if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
             displayWarnMessage(langBean, "administrationSettings.error.notAdmin");
             return;
@@ -91,12 +92,18 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     }
 
     /** Unassigns the newly unchecked profile from the given member. */
-    public void onProfileUnselect(ApplicationMemberDTO member, UnselectEvent<ProfileDTO> event) {
+    public void onProfileUnselect(UnselectEvent<?> event) {
+        ApplicationMemberDTO member = (ApplicationMemberDTO) event.getComponent().getAttributes().get("member");
         if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
             displayWarnMessage(langBean, "administrationSettings.error.notAdmin");
             return;
         }
-        applicationMembersService.removeProfileFromMember(member, event.getObject());
+        ProfileDTO profile = (ProfileDTO) event.getObject();
+        boolean removed = applicationMembersService.removeProfileFromMember(member, profile);
+        if (!removed) {
+            member.getProfiles().add(profile);
+            displayWarnMessage(langBean, "administrationSettings.error.lastSuperAdmin");
+        }
     }
 
     private Boolean processPerson(PersonRole saved) {

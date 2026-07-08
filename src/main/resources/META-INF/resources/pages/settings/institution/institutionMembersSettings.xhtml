@@ -67,8 +67,9 @@
                                                filterMatchMode="contains"
                                                scrollHeight="200">
                             <f:selectItems value="#{institutionMembersListBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
-                            <p:ajax event="itemSelect" listener="#{institutionMembersListBean.onProfileSelect(member, event)}" process="@this"/>
-                            <p:ajax event="itemUnselect" listener="#{institutionMembersListBean.onProfileUnselect(member, event)}" process="@this"/>
+                            <f:attribute name="member" value="#{member}"/>
+                            <p:ajax event="itemSelect" listener="#{institutionMembersListBean.onProfileSelect}" process="@this"/>
+                            <p:ajax event="itemUnselect" listener="#{institutionMembersListBean.onProfileUnselect}" process="@this"/>
                         </p:selectCheckboxMenu>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">

@@ -113,7 +113,8 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     }
 
     /** Assigns the newly checked profile to the given member. */
-    public void onProfileSelect(InstitutionMemberDTO member, SelectEvent<ProfileDTO> event) {
+    public void onProfileSelect(SelectEvent<ProfileDTO> event) {
+        InstitutionMemberDTO member = (InstitutionMemberDTO) event.getComponent().getAttributes().get("member");
         if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
@@ -122,7 +123,8 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     }
 
     /** Unassigns the newly unchecked profile from the given member. */
-    public void onProfileUnselect(InstitutionMemberDTO member, UnselectEvent<ProfileDTO> event) {
+    public void onProfileUnselect(UnselectEvent<ProfileDTO> event) {
+        InstitutionMemberDTO member = (InstitutionMemberDTO) event.getComponent().getAttributes().get("member");
         if (personProfileAssignmentService.isNotOrganisationManager(member.getInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;

@@ -114,6 +114,14 @@ public class PersonProfileAssignmentService {
         return !personProfileAssignmentRepository.personIsSuperAdmin(person.getId());
     }
 
+    public boolean isNotLastSuperAdmin(PersonDTO person) {
+        if (isNotSuperAdmin(person)) {
+            return true;
+        }
+        long superAdminCount = personProfileAssignmentRepository.countPersonsWithSuperAdminProfile();
+        return superAdminCount > 1;
+    }
+
     public void assign(PersonDTO person, ProfileDTO profile) {
         Profile currentProfile = profileMapper.invertConvert(profile);
         Person personToAssign = personMapper.invertConvert(person);

@@ -85,6 +85,14 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
     boolean personIsSuperAdmin(@Param("personId") Long personId);
 
     @Query("""
+            SELECT COUNT(DISTINCT a.person.id)
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE prof.code = fr.siamois.domain.models.permissions.ProfileConstants.SUPERADMIN
+            """)
+    long countPersonsWithSuperAdminProfile();
+
+    @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a
             JOIN a.profile prof

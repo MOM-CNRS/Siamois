@@ -106,12 +106,14 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
     }
 
     /** Assigns the newly checked profile to the given member. */
-    public void onProfileSelect(ProjectMemberDTO member, SelectEvent<ProfileDTO> event) {
+    public void onProfileSelect(SelectEvent<ProfileDTO> event) {
+        ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
         projectMembersService.addProfileToMember(project, member, event.getObject());
     }
 
     /** Unassigns the newly unchecked profile from the given member. */
-    public void onProfileUnselect(ProjectMemberDTO member, UnselectEvent<ProfileDTO> event) {
+    public void onProfileUnselect(UnselectEvent<ProfileDTO> event) {
+        ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
         projectMembersService.removeProfileFromMember(project, member, event.getObject());
     }
 
