@@ -37,6 +37,7 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
 
     private transient List<ProjectMemberDTO> members;
     private transient List<ProjectMemberDTO> refMembers;
+    private transient List<ProfileDTO> availableProfiles;
     private String searchInput;
 
     public ProjectMembersListBean(ProjectMembersServiceInterface projectMembersService,
@@ -56,6 +57,7 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
         this.project = project;
         refMembers = new ArrayList<>(projectMembersService.findMembersOf(project));
         members = new ArrayList<>(refMembers);
+        availableProfiles = projectMembersService.findAvailableProfiles(project);
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -73,23 +75,6 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
                 }
             }
         }
-    }
-
-    /**
-     * Autocomplete source for the profile-chips editor in the members datatable.
-     *
-     * @param query the text currently typed in the profile field
-     * @return the assignable profiles matching the query
-     */
-    public List<ProfileDTO> completeProfile(String query) {
-        List<ProfileDTO> all = projectMembersService.findAvailableProfiles(project);
-        if (query == null || query.isBlank()) {
-            return all;
-        }
-        String q = query.trim().toLowerCase();
-        return all.stream()
-                .filter(p -> p.getName().toLowerCase().contains(q))
-                .toList();
     }
 
     /** Opens the "add members" wizard dialog for the current project. */
@@ -131,6 +116,7 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
         project = null;
         members = null;
         refMembers = null;
+        availableProfiles = null;
         searchInput = null;
     }
 
