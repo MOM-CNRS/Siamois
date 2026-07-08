@@ -12,6 +12,7 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -53,6 +54,7 @@ public class InstitutionService {
     private final InstitutionMapper institutionMapper;
     private final PersonProfileAssignmentService personProfileAssignmentService;
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
+    private final ProfileService profileService;
 
     /**
      * Finds an institution by its identifier.
@@ -129,8 +131,10 @@ public class InstitutionService {
             // Verifier que le thesaurus soit compatible
 
             Institution i = institutionRepository.save(Objects.requireNonNull(institutionMapper.invertConvert(institution)));
-            fieldConfigurationService.setupFieldConfigurationForInstitution(institutionMapper.convert(i), vocabulary);
-            return institutionMapper.convert(i);
+            fieldConfigurationService.setupFieldConfigurationForInstitution(Objects.requireNonNull(institutionMapper.convert(i)), vocabulary);
+            InstitutionDTO institutionDTO = institutionMapper.convert(i);
+            createInstitutionProfiles(institutionDTO);
+            return  institutionDTO;
         } catch (NotSiamoisThesaurusException e) {
             log.error("The thesaurus is not a siamois thesaurus : {}", thesaurusUrl, e);
             throw e;
@@ -138,6 +142,12 @@ public class InstitutionService {
             log.error("Error while saving institution", e);
             throw new FailedInstitutionSaveException("Failed to save institution");
         }
+    }
+
+    private void createInstitutionProfiles(InstitutionDTO institutionDTO) {
+        profileService.createOrGetOrganizationManagerProfile(institutionDTO);
+        profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO);
+        profileService.createOrGetOrganizationMemberProfile(institutionDTO);
     }
 
 
