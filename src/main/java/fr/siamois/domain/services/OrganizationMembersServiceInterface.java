@@ -54,4 +54,22 @@ public interface OrganizationMembersServiceInterface {
      */
     void removeMemberFromInstitution(InstitutionDTO institution, InstitutionMemberDTO member);
 
+    /**
+     * Assigns a profile to an institution member.
+     *
+     * @param institution the institution the member belongs to
+     * @param member      the member the profile is assigned to
+     * @param profile     the profile to assign
+     */
+    void addProfileToMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile);
+
+    /**
+     * Unassigns a profile from an institution member.
+     *
+     * @param institution the institution the member belongs to
+     * @param member      the member the profile is unassigned from
+     * @param profile     the profile to unassign
+     */
+    void removeProfileFromMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile);
+
 }

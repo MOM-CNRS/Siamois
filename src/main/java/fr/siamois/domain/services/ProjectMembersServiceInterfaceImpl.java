@@ -68,4 +68,18 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
         // Cannot remove the last Admin of the project.
         // Only the project admins car remove members
     }
+
+    @Override
+    public void addProfileToMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
+        // TODO : implement
+        // only project admin can assign profiles
+
+    }
+
+    @Override
+    public void removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
+        // TODO : implement
+        // only project admin can unassign profiles
+        // the project profile cannot be removed from the last project admin, otherwise no one will be the admin
+    }
 }
