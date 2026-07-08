@@ -28,6 +28,7 @@ import java.util.List;
 public class ProjectDetailsBean {
 
     private final ProjectUploadSettingsBean projectUploadSettingsBean;
+    private final ProjectMembersListBean projectMembersListBean;
     private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final RedirectBean redirectBean;
@@ -48,7 +49,10 @@ public class ProjectDetailsBean {
         }));
 
         elements.add(new OptionElement("bi bi-people", langBean.msg("projectSettings.titles.members"),
-                "(A venir) Les membres du projet et leurs rôles", () -> null));
+                langBean.msg("projectSettings.descriptions.members", project.getName()), () -> {
+            projectMembersListBean.init(project);
+            return "/pages/settings/project/projectMembersSettings.xhtml?faces-redirect=true";
+        }));
 
         elements.add(new OptionElement("bi bi-ui-radios",
                 langBean.msg("projectSettings.titles.tables"),
@@ -92,6 +96,7 @@ public class ProjectDetailsBean {
         project = null;
         elements = null;
         projectUploadSettingsBean.reset();
+        projectMembersListBean.reset();
     }
 
     public StreamedContent getFile() {

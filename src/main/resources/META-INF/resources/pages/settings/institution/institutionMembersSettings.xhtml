@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:settings="http://java.sun.com/jsf/composite/pages/settings/components"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form" xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main>
+            <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
+                <p:breadCrumb homeDisplay="false">
+                    <p:menuitem value="Organisations" action="#{institutionDetailsBean.goToInstitutionList()}"/>
+                    <p:menuitem value="#{institutionManagerListBean.institution.name}" action="#{institutionDetailsBean.backToInstitutionSettings()}"/>
+                    <p:menuitem value="#{langBean.msg('organisationSettings.titles.members')}"/>
+                </p:breadCrumb>
+            </form:csrfform>
+            <settings:datatable
+                    id="orgMembersDatatable"
+                    title="#{langBean.msg('organisationSettings.managers.title', institutionManagerListBean.institution.name)}"
+                    filterAction="#{institutionManagerListBean.filter()}"
+                    formId="institutionMembersForm"
+                    addAction="#{institutionMembersListBean.add()}"
+                    searchInputTextValue="#{institutionMembersListBean.searchInput}"
+                    description="#{langBean.msg('organisationSettings.members.description')}"
+                    renderCreateButton="true"
+                    createButtonLabel="#{langBean.msg('organisationSettings.managers.dialog.label')}"
+            >
+                <p:dataTable
+                        id="membersDatatable"
+                        value="#{institutionMembersListBean.members}"
+                        var="member"
+                        sortMode="single"
+                        widgetVar="institutionMembersDatatable"
+                        rowKey="#{member.id}"
+                >
+                    <p:autoUpdate/>
+                    <p:column headerText="#{langBean.msg('common.label.user')}">
+                        <div style="display: flex; align-items: center; gap: 11px">
+                            <span class="member-avatar">#{member.person.initials()}</span>
+                            <div style="display: flex; flex-direction: column">
+                                <strong>#{member.displayName()}</strong>
+                                <p style="margin-bottom: 0; font-style: italic">#{member.person.email}</p>
+                                <p>#{member.person.username}</p>
+                            </div>
+                        </div>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('common.label.profile')}">
+                        <div class="profile-cell">
+                            <h:panelGroup id="profileChips" layout="block" styleClass="profile-chips" style="display: flex; flex-wrap: wrap; gap: 6px">
+                                <ui:repeat value="#{member.profiles}" var="profile">
+                                    <span class="chip chip-profile">#{profile.name}</span>
+                                </ui:repeat>
+                            </h:panelGroup>
+                            <h:panelGroup id="editProfilePencil" layout="block" styleClass="edit-pencil" title="#{langBean.msg('common.action.edit')}">
+                                <i class="bi bi-pencil"/>
+                            </h:panelGroup>
+                        </div>
+
+                        <p:overlayPanel for="editProfilePencil" id="profileOverlay" my="left bottom" at="left top" style="min-width: 260px">
+                            <p:autoComplete value="#{member.profiles}"
+                                            id="profileAutoComplete"
+                                            completeMethod="#{institutionMembersListBean.completeProfile}"
+                                            panelStyleClass="profile-autocomplete-panel"
+                                            var="p" itemLabel="#{p.name}" itemValue="#{p}"
+                                            converter="#{profileDTOConverter}"
+                                            multiple="true" unique="true" forceSelection="true" dropdown="false"
+                                            showEmptyMessage="true"
+                                            scrollHeight="200"
+                                            onmousedown="event.stopPropagation();"
+                                            onclick="event.stopPropagation();">
+                                <p:ajax event="itemSelect" process="@this" update="profileChips"/>
+                                <p:ajax event="itemUnselect" process="@this" update="profileChips"/>
+                            </p:autoComplete>
+                        </p:overlayPanel>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('common.label.accountStatus')}">
+                        <span class="chip #{member.person.enabled ? 'chip-status-active' : 'chip-status-inactive'}">
+                            #{member.person.enabled ? langBean.msg('common.label.accountStatus.enabled') : langBean.msg('common.label.accountStatus.disabled')}
+                        </span>
+                    </p:column>
+                </p:dataTable>
+            </settings:datatable>
+            <ui:include src="/dialog/institution/newOrganizationMember.xhtml"/>
+        </main>
+    </ui:define>
+
+</ui:composition>
