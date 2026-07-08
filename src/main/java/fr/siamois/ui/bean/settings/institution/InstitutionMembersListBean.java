@@ -16,6 +16,7 @@ import fr.siamois.ui.bean.dialog.institution.NewOrganizationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
@@ -37,6 +38,7 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Scope(value = "session")
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class InstitutionMembersListBean implements SettingsDatatableBean {
 
     public static final String SETTINGS_ERROR_NOT_MANAGER = "organisationSettings.error.notManager";
@@ -55,23 +57,6 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     private transient List<InstitutionMemberDTO> refMembers;
     private transient List<ProfileDTO> availableProfiles;
     private String searchInput;
-
-    public InstitutionMembersListBean(InstitutionService institutionService,
-                                      PersonService personService,
-                                      OrganizationMembersServiceInterface organizationMembersService,
-                                      NewOrganizationMemberDialogBean newOrganizationMemberDialogBean,
-                                      LangBean langBean,
-                                      PendingPersonService pendingPersonService,
-                                      SessionSettingsBean sessionSettingsBean, PersonProfileAssignmentService personProfileAssignmentService) {
-        this.institutionService = institutionService;
-        this.personService = personService;
-        this.organizationMembersService = organizationMembersService;
-        this.newOrganizationMemberDialogBean = newOrganizationMemberDialogBean;
-        this.langBean = langBean;
-        this.pendingPersonService = pendingPersonService;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.personProfileAssignmentService = personProfileAssignmentService;
-    }
 
     /**
      * Loads the members of the given institution and resets the search filter.
@@ -138,7 +123,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
 
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(InstitutionMemberDTO member, UnselectEvent<ProfileDTO> event) {
-        if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
+        if (personProfileAssignmentService.isNotOrganisationManager(member.getInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }

@@ -46,6 +46,8 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
                     ProjectMemberDTO dto = new ProjectMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
+                    dto.setActionUnit(project);
+                    dto.setInstitution(project.getCreatedByInstitution());
                     return dto;
                 })
                 .toList();

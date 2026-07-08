@@ -66,6 +66,7 @@ public class PersonProfileAssignmentService {
         InstitutionMemberDTO institutionMemberDTO = new InstitutionMemberDTO();
         institutionMemberDTO.setPerson(person);
         institutionMemberDTO.setProfiles(new ArrayList<>(profileSet));
+        institutionMemberDTO.setCreatedByInstitution(institution);
         return institutionMemberDTO;
     }
 
@@ -92,6 +93,8 @@ public class PersonProfileAssignmentService {
         ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
         projectMemberDTO.setPerson(person);
         projectMemberDTO.setProfiles(new ArrayList<>(profileSet));
+        projectMemberDTO.setInstitution(project.getCreatedByInstitution());
+        projectMemberDTO.setActionUnit(project);
         return projectMemberDTO;
     }
 

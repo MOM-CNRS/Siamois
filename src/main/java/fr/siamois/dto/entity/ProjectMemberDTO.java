@@ -7,6 +7,6 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @ToString(callSuper = true)
-public class ProjectMemberDTO extends MemberDTO {
-
+public class ProjectMemberDTO extends InstitutionMemberDTO {
+    protected ActionUnitDTO actionUnit;
 }

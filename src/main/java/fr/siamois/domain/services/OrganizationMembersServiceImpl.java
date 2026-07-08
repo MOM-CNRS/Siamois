@@ -46,6 +46,7 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
                     InstitutionMemberDTO dto = new InstitutionMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
+                    dto.setInstitution(institution);
                     return dto;
                 })
                 .toList();
