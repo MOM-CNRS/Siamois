@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -31,7 +30,6 @@ public class ProjectDetailsBean {
     private final ProjectUploadSettingsBean projectUploadSettingsBean;
     private final ProjectMembersListBean projectMembersListBean;
     private final LangBean langBean;
-    private final PermissionService permissionService;
     private final SessionSettingsBean sessionSettingsBean;
     private final RedirectBean redirectBean;
 

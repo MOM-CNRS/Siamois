@@ -4,8 +4,8 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -53,7 +53,7 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
     @Mock
     private PersonMapper personMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -68,6 +68,8 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
+        lenient().when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
         personDto.setId(1L);
         projectApiService = new ProjectApiService(
                 institutionService,
@@ -79,7 +81,7 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);

@@ -1,6 +1,11 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.permissions.*;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -14,6 +19,9 @@ public class ActionUnitSpec {
     public static final String NAME_FILTER = "name";
     public static final String ID_FILTER = "id";
     public static final String SPATIAL_UNIT_FILTER = "mainLocation";
+    public static final String CREATED_BY_INSTITUTION = "createdByInstitution";
+    public static final String SCOPE = "scope";
+    public static final String CODE = "code";
 
     private ActionUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -21,7 +29,7 @@ public class ActionUnitSpec {
 
     @NonNull
     public static Specification<ActionUnit> belongsToInstitution(long institutionId) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("createdByInstitution").get("id"), institutionId));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(CREATED_BY_INSTITUTION).get("id"), institutionId));
     }
 
     @NonNull
@@ -50,7 +58,7 @@ public class ActionUnitSpec {
             if (institutionIds == null || institutionIds.isEmpty()) {
                 return cb.disjunction();
             }
-            return root.get("createdByInstitution").get("id").in(institutionIds);
+            return root.get(CREATED_BY_INSTITUTION).get("id").in(institutionIds);
         };
     }
 
@@ -69,6 +77,38 @@ public class ActionUnitSpec {
                     cb.like(cb.lower(cb.coalesce(root.get("identifier"), "")), pattern),
                     cb.like(cb.lower(cb.coalesce(root.get("fullIdentifier"), "")), pattern)
             );
+        };
+    }
+
+    /**
+     * Action units the person is allowed to display through the profile permission
+     * system: an INSTANCE- or ORGANISATION-scoped profile holding
+     * {@link PermissionConstants#ORGANIZATION_ACCESS} (the latter restricted to the
+     * unit's institution), or any PROJECT-scoped profile assigned on the unit itself.
+     */
+    @NonNull
+    public static Specification<ActionUnit> visibleToPerson(Long personId) {
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
+            Join<PersonProfileAssignment, Profile> profile = assignment.join("profile");
+            Join<Profile, Permission> permission = profile.join("permissions", JoinType.LEFT);
+
+            subquery.select(cb.literal(1L)).where(
+                    cb.equal(assignment.get("person").get("id"), personId),
+                    cb.or(
+                            cb.and(
+                                    cb.equal(profile.get(SCOPE), PermissionScopeType.INSTANCE),
+                                    cb.equal(permission.get(CODE), PermissionConstants.ORGANIZATION_ACCESS)),
+                            cb.and(
+                                    cb.equal(profile.get(SCOPE), PermissionScopeType.ORGANISATION),
+                                    cb.equal(profile.get("institution"), root.get(CREATED_BY_INSTITUTION)),
+                                    cb.equal(permission.get(CODE), PermissionConstants.ORGANIZATION_ACCESS)),
+                            cb.and(
+                                    cb.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
+                                    cb.equal(profile.get("actionUnit"), root))
+                    ));
+            return cb.exists(subquery);
         };
     }
 

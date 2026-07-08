@@ -3,8 +3,8 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
@@ -48,7 +48,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<RecordingUnitDTO> genericNewUnitDialogBean;
-    private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
 
@@ -77,7 +77,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
-        this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.navBean = context.getBean(NavBean.class);
         this.formContextServices = context.getBean(FormContextServices.class);
     }
@@ -107,7 +107,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
                 navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                recordingUnitWriteVerifier,
+                profilePermissionService,
                 recordingUnitService,
                                 langBean,
                 formContextServices

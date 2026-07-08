@@ -8,12 +8,13 @@ import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsE
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.PermissionServiceImpl;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
@@ -57,7 +58,7 @@ class SpatialUnitServiceTest {
     private PersonService personService;
 
     @Mock
-    private PermissionServiceImpl permissionService;
+    private ProfilePermissionService profilePermissionService;
 
     @Mock
     private ConceptService conceptService;
@@ -448,28 +449,14 @@ class SpatialUnitServiceTest {
 
 
     @Test
-    void returnsTrue_whenUserIsInstitutionManager() {
+    void returnsTrue_whenUserHasCreatePlacesPermission() {
         PersonDTO person = new PersonDTO();
         person.setId(1L);
         InstitutionDTO i = new InstitutionDTO();
         i.setId(1L);
-        UserInfo user = new UserInfo(i ,person, "fr");
+        UserInfo user = new UserInfo(i, person, "fr");
 
-        when(permissionService.isInstitutionManager(user)).thenReturn(true);
-
-
-        assertTrue(spatialUnitService.hasCreatePermission(user));
-    }
-
-    @Test
-    void returnsTrue_whenUserIsActionManager() {
-        PersonDTO person = new PersonDTO();
-        person.setId(1L);
-        InstitutionDTO i = new InstitutionDTO();
-        i.setId(1L);
-        UserInfo user = new UserInfo(i ,person, "fr");
-        when(permissionService.isInstitutionManager(user)).thenReturn(false);
-        when(permissionService.isActionManager(user)).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_PLACES)).thenReturn(true);
 
         assertTrue(spatialUnitService.hasCreatePermission(user));
     }
@@ -480,9 +467,9 @@ class SpatialUnitServiceTest {
         person.setId(1L);
         InstitutionDTO i = new InstitutionDTO();
         i.setId(1L);
-        UserInfo user = new UserInfo(i ,person, "fr");
-        when(permissionService.isInstitutionManager(user)).thenReturn(false);
-        when(permissionService.isActionManager(user)).thenReturn(false);
+        UserInfo user = new UserInfo(i, person, "fr");
+
+        when(profilePermissionService.hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_PLACES)).thenReturn(false);
 
         assertFalse(spatialUnitService.hasCreatePermission(user));
     }

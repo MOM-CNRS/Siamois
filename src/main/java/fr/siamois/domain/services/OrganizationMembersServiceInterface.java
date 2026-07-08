@@ -4,6 +4,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ import java.util.List;
  * depend on this interface rather than build fake data themselves, so swapping in a real,
  * database-backed implementation later is a one-class change.
  */
+@Service
 public interface OrganizationMembersServiceInterface {
 
     /**

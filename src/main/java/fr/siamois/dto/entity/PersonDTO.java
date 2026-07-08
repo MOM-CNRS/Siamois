@@ -9,7 +9,6 @@ import lombok.ToString;
 @ToString(callSuper = true)
 public class PersonDTO extends AbstractEntityDTO {
 
-    private boolean isSuperAdmin;
     private String name;
     private String email;
     private String lastname;

@@ -36,7 +36,7 @@
                          value="Ouvrir le projet dans les paramètres"
                          process="@this"
                          styleClass="ui-button-flat">
-            <f:param name="id" value="#{panelModel.unit.id}" />
+            <f:param name="id" value="#{panelModel.unit.id}"/>
         </p:commandButton>
 
         <p:panel
@@ -134,6 +134,7 @@
 
         </p:panel>
 
+
         <p:panel
                 toggleableHeader="true"
                 header="Membres du projet"
@@ -141,7 +142,7 @@
                 toggleable="true">
             <p:commandButton
                     value="Gérer les membre du projet"
-                    action="#{teamListBean.manageTeamMember(panelModel.unit)}"
+                    disabled="true"
             />
         </p:panel>
 
