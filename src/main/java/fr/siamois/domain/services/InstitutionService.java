@@ -321,7 +321,12 @@ public class InstitutionService {
      * @return true if the person was added successfully, false if they were already an action manager
      */
     public boolean addPersonToActionManager(InstitutionDTO institution, PersonDTO person) {
-        return personProfileAssignmentService.addToActionManagers(institution, person);
+        List<ProfileDTO> profiles = new ArrayList<>();
+        Profile institutionProjectManager = profileService.createOrGetOrganizationProjectManagerProfile(institution);
+        Profile institutionMember =  profileService.createOrGetOrganizationMemberProfile(institution);
+        profiles.add(profileMapper.convert(institutionProjectManager));
+        profiles.add(profileMapper.convert(institutionMember));
+        return personProfileAssignmentService.addToInstitution(institution, person, profiles) != null;
     }
 
 
