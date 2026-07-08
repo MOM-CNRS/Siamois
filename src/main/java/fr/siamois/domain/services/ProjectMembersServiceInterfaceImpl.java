@@ -2,6 +2,8 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -76,7 +78,18 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
     }
 
     @Override
-    public void removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
+    public boolean removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
+        if (ProfileConstants.PROJECT_MANAGER.equals(profile.getCode())
+                && !personProfileAssignmentService.isNotLastProjectManager(project, member.getPerson())) {
+            return false;
+        }
         personProfileAssignmentService.remove(member.getPerson(), profile);
+
+        if (!personProfileAssignmentRepository.personHasAnyProfileOnActionUnit(member.getPerson().getId(), project.getId())) {
+            Profile projectMemberProfile = profileService.createOrGetProjectMemberProfile(project);
+            personProfileAssignmentService.assign(member.getPerson(), profileMapper.convert(projectMemberProfile));
+        }
+
+        return true;
     }
 }

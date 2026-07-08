@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -114,7 +115,18 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(UnselectEvent<ProfileDTO> event) {
         ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
-        projectMembersService.removeProfileFromMember(project, member, event.getObject());
+        ProfileDTO profile = event.getObject();
+        boolean removed = projectMembersService.removeProfileFromMember(project, member, profile);
+        if (!removed) {
+            member.getProfiles().add(profile);
+            displayWarnMessage(langBean, "projectSettings.error.lastManager");
+        } else if (member.getProfiles().isEmpty()) {
+            // The service reassigns the base "member" profile when a member is left with none
+            availableProfiles.stream()
+                    .filter(p -> ProfileConstants.PROJECT_MEMBER.equals(p.getCode()))
+                    .findFirst()
+                    .ifPresent(member.getProfiles()::add);
+        }
     }
 
     private Boolean processPerson(PersonRole saved) {

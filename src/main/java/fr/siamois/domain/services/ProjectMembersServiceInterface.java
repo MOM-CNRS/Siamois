@@ -64,11 +64,15 @@ public interface ProjectMembersServiceInterface {
 
     /**
      * Unassigns a profile from a project member.
+     * <p>
+     * Refuses to remove the {@code PROJECT_MANAGER} profile from the last remaining manager of
+     * the project.
      *
      * @param project the project the member belongs to
      * @param member  the member the profile is unassigned from
      * @param profile the profile to unassign
+     * @return true if the profile was actually unassigned, false if the removal was refused
      */
-    void removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile);
+    boolean removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile);
 
 }
