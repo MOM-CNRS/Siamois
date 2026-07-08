@@ -7,7 +7,6 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.components.OptionElement;
 import fr.siamois.ui.bean.settings.institution.InstitutionInfoSettingsBean;
-import fr.siamois.ui.bean.settings.institution.InstitutionManagerListBean;
 import fr.siamois.ui.bean.settings.institution.InstitutionThesaurusSettingsBean;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,27 +28,21 @@ import java.util.List;
 public class InstitutionDetailsBean implements Serializable {
 
     private final InstitutionInfoSettingsBean institutionInfoSettingsBean;
-    private final InstitutionManagerListBean institutionManagerListBean;
     private final InstitutionThesaurusSettingsBean institutionThesaurusSettingsBean;
     private final LangBean langBean;
-    private final InstitutionActionManagerListBean institutionActionManagerListBean;
     private final SessionSettingsBean sessionSettingsBean;
     private InstitutionDTO institution;
     private transient List<OptionElement> elements;
     private final transient InstitutionService institutionService;
 
     public InstitutionDetailsBean(InstitutionInfoSettingsBean institutionInfoSettingsBean,
-                                  InstitutionManagerListBean institutionManagerListBean,
                                   InstitutionThesaurusSettingsBean institutionThesaurusSettingsBean,
                                   LangBean langBean,
-                                  InstitutionActionManagerListBean institutionActionManagerListBean,
                                   SessionSettingsBean sessionSettingsBean, InstitutionService institutionService) {
 
         this.institutionInfoSettingsBean = institutionInfoSettingsBean;
-        this.institutionManagerListBean = institutionManagerListBean;
         this.institutionThesaurusSettingsBean = institutionThesaurusSettingsBean;
         this.langBean = langBean;
-        this.institutionActionManagerListBean = institutionActionManagerListBean;
         this.sessionSettingsBean = sessionSettingsBean;
         this.institutionService = institutionService;
     }
@@ -71,18 +64,6 @@ public class InstitutionDetailsBean implements Serializable {
                 return "/pages/settings/institution/thesaurusSettings.xhtml?faces-redirect=true";
             }));
 
-            elements.add(new OptionElement("bi bi-person-circle", langBean.msg("organisationSettings.titles.managers"),
-                    langBean.msg("organisationSettings.descriptions.managers", institution.getName()), () -> {
-                institutionManagerListBean.init(institution);
-                return "/pages/settings/institution/institutionManagerSettings.xhtml?faces-redirect=true";
-            }));
-
-            elements.add(new OptionElement("bi bi-person-circle",
-                    langBean.msg("organisationSettings.titles.actionManagers"),
-                    langBean.msg("organisationSettings.descriptions.actionManagers"), () -> {
-                institutionActionManagerListBean.init(institution);
-                return "/pages/settings/institution/institutionActionManagerSettings.xhtml?faces-redirect=true";
-            }));
         }
     }
 
@@ -103,9 +84,7 @@ public class InstitutionDetailsBean implements Serializable {
         institution = null;
         elements = null;
         institutionInfoSettingsBean.reset();
-        institutionManagerListBean.reset();
         institutionThesaurusSettingsBean.reset();
-        institutionActionManagerListBean.reset();
     }
 
 }
