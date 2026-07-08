@@ -93,19 +93,6 @@ class PersonProfileAssignmentServiceTest {
     }
 
     @Test
-    void addToActionManagers_ReturnsTrueWhenNotAlreadyAssigned() {
-        when(profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO)).thenReturn(profile);
-        when(personMapper.invertConvert(personDTO)).thenReturn(person);
-        when(personProfileAssignmentRepository.findByProfileIdAndPersonId(profile.getId(), person.getId()))
-                .thenReturn(Optional.empty());
-
-        boolean result = service.addToActionManagers(institutionDTO, personDTO);
-
-        assertTrue(result);
-        verify(personProfileAssignmentRepository, times(1)).save(any(PersonProfileAssignment.class));
-    }
-
-    @Test
     void addToProjectMembers_ReturnsTrueWhenNotAlreadyAssigned() {
         when(profileService.createOrGetProjectMemberProfile(actionUnitDTO)).thenReturn(profile);
         when(personMapper.invertConvert(personDTO)).thenReturn(person);

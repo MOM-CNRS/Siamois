@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,29 +25,26 @@ public class PersonProfileAssignmentService {
     private final ProfileService profileService;
     private final ProfileMapper profileMapper;
 
-    private boolean assignProfile(@NonNull Profile profile, @NonNull Person person) {
+    private void assignProfile(@NonNull Profile profile, @NonNull Person person) {
         Optional<PersonProfileAssignment> opt = personProfileAssignmentRepository.findByProfileIdAndPersonId(profile.getId(), person.getId());
-        if (opt.isPresent()) return false;
+        if (opt.isPresent()) return;
         PersonProfileAssignment assignment = new PersonProfileAssignment();
         assignment.setProfile(profile);
         assignment.setPerson(person);
         personProfileAssignmentRepository.save(assignment);
-        return true;
     }
 
     public boolean addToManagers(InstitutionDTO institution, PersonDTO person) {
         Profile organizationManagers = profileService.createOrGetOrganizationManagerProfile(institution);
-        return assignProfile(organizationManagers, personMapper.invertConvert(person));
-    }
-
-    public boolean addToActionManagers(InstitutionDTO institution, PersonDTO person) {
-        Profile projectManagers = profileService.createOrGetOrganizationProjectManagerProfile(institution);
-        return assignProfile(projectManagers, personMapper.invertConvert(person));
+        Profile organizationMember = profileService.createOrGetOrganizationMemberProfile(institution);
+        List<ProfileDTO> profiles = new ArrayList<>();
+        profiles.add(profileMapper.convert(organizationManagers));
+        profiles.add(profileMapper.convert(organizationMember));
+        return addToInstitution(institution, person, profiles) != null;
     }
 
     public boolean addToProjectMembers(ActionUnitDTO actionUnit, PersonDTO person) {
-        Profile projectMembers = profileService.createOrGetProjectMemberProfile(actionUnit);
-        return assignProfile(projectMembers, personMapper.invertConvert(person));
+        return addToProjectMembers(actionUnit, person, List.of()) != null;
     }
 
     public InstitutionMemberDTO addToInstitution(InstitutionDTO institution, PersonDTO person, List<ProfileDTO> profiles) {
@@ -77,6 +75,10 @@ public class PersonProfileAssignmentService {
             Profile member = profileService.createOrGetProjectMemberProfile(project);
             assignProfile(member, personToAdd);
         }
+
+        Profile institutionMemberProfile = profileService.createOrGetProjectMemberProfile(project);
+        assignProfile(institutionMemberProfile, personToAdd);
+
         for (ProfileDTO profile : profiles) {
             Profile currentProfile = profileMapper.invertConvert(profile);
             assignProfile(currentProfile, personToAdd);

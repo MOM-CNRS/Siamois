@@ -482,35 +482,6 @@ class InstitutionServiceTest {
         assertThat(result).isFalse();
     }
 
-    @Test
-    void addPersonToActionManager_shouldAddManagerAndReturnTrue() {
-        InstitutionDTO institution = new InstitutionDTO();
-        institution.setId(1L);
-
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-
-        when(personProfileAssignmentService.addToActionManagers(institution, personDto)).thenReturn(true);
-
-        boolean result = institutionService.addPersonToActionManager(institution, personDto);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void addPersonToActionManager_shouldNotAddManagerIfAlreadyExists() {
-        InstitutionDTO institution = new InstitutionDTO();
-        institution.setId(1L);
-
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-
-        when(personProfileAssignmentService.addToActionManagers(institution, personDto)).thenReturn(false);
-
-        boolean result = institutionService.addPersonToActionManager(institution, personDto);
-
-        assertThat(result).isFalse();
-    }
 
     @Test
     void addPersonAsMemberOfActionUnit_shouldAddMemberAndReturnTrue() {
