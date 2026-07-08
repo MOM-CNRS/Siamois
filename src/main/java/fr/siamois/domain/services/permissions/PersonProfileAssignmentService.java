@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.permissions;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
@@ -119,5 +120,24 @@ public class PersonProfileAssignmentService {
     public void remove(PersonDTO person, ProfileDTO profile) {
         Optional<PersonProfileAssignment> ppaOpt = personProfileAssignmentRepository.findByProfileIdAndPersonId(profile.getId(), person.getId());
         ppaOpt.ifPresent(personProfileAssignmentRepository::delete);
+    }
+
+    public boolean isNotOrganisationManager(InstitutionDTO institutionDTO, PersonDTO person) {
+        Optional<PersonProfileAssignment> ppaOpt = personProfileAssignmentRepository
+                .findByProfileCodeAndInstitutionIdAndPersonId(ProfileConstants.ORGANIZATION_MANAGER, institutionDTO.getId(), person.getId());
+        return ppaOpt.isEmpty();
+    }
+
+    public boolean isNotLastOrganizationManager(InstitutionDTO institution, PersonDTO person) {
+        if (isNotOrganisationManager(institution, person)) {
+            return true;
+        }
+        long managerCount = personProfileAssignmentRepository
+                .countPersonsByProfileCodeAndInstitutionId(ProfileConstants.ORGANIZATION_MANAGER, institution.getId());
+        return managerCount > 1;
+    }
+
+    public void removeFromInstitution(InstitutionDTO institution, PersonDTO person) {
+        personProfileAssignmentRepository.deleteByInstitutionIdAndPersonId(institution.getId(), person.getId());
     }
 }

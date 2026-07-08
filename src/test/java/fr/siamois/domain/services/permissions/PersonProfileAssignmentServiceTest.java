@@ -273,4 +273,41 @@ class PersonProfileAssignmentServiceTest {
         // Vérifie qu'on sauvegarde autant d'assignations qu'il y a de profils dans la liste
         verify(personProfileAssignmentRepository, times(2)).save(any(PersonProfileAssignment.class));
     }
+
+    @Test
+    void isNotLastOrganizationManager_ReturnsTrueWhenPersonIsNotManager() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndInstitutionIdAndPersonId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L, 1L)).thenReturn(Optional.empty());
+
+        assertTrue(service.isNotLastOrganizationManager(institutionDTO, personDTO));
+
+        // Pas besoin de compter les managers si la personne n'est pas manager
+        verify(personProfileAssignmentRepository, never()).countPersonsByProfileCodeAndInstitutionId(anyString(), anyLong());
+    }
+
+    @Test
+    void isNotLastOrganizationManager_ReturnsTrueWhenOtherManagersExist() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndInstitutionIdAndPersonId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L, 1L)).thenReturn(Optional.of(new PersonProfileAssignment()));
+        when(personProfileAssignmentRepository.countPersonsByProfileCodeAndInstitutionId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L)).thenReturn(2L);
+
+        assertTrue(service.isNotLastOrganizationManager(institutionDTO, personDTO));
+    }
+
+    @Test
+    void isNotLastOrganizationManager_ReturnsFalseWhenPersonIsLastManager() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndInstitutionIdAndPersonId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L, 1L)).thenReturn(Optional.of(new PersonProfileAssignment()));
+        when(personProfileAssignmentRepository.countPersonsByProfileCodeAndInstitutionId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L)).thenReturn(1L);
+
+        assertFalse(service.isNotLastOrganizationManager(institutionDTO, personDTO));
+    }
 }

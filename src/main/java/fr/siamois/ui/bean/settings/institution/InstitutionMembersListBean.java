@@ -5,6 +5,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.OrganizationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
@@ -45,6 +46,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     private final LangBean langBean;
     private final transient PendingPersonService pendingPersonService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final transient PersonProfileAssignmentService personProfileAssignmentService;
     private InstitutionDTO institution;
     private transient Map<Person, String> roles;
 
@@ -59,7 +61,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
                                       NewOrganizationMemberDialogBean newOrganizationMemberDialogBean,
                                       LangBean langBean,
                                       PendingPersonService pendingPersonService,
-                                      SessionSettingsBean sessionSettingsBean) {
+                                      SessionSettingsBean sessionSettingsBean, PersonProfileAssignmentService personProfileAssignmentService) {
         this.institutionService = institutionService;
         this.personService = personService;
         this.organizationMembersService = organizationMembersService;
@@ -67,6 +69,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         this.langBean = langBean;
         this.pendingPersonService = pendingPersonService;
         this.sessionSettingsBean = sessionSettingsBean;
+        this.personProfileAssignmentService = personProfileAssignmentService;
     }
 
     /**
@@ -114,6 +117,10 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     /** Removes the given member from the current institution. */
     public void removeMember(InstitutionMemberDTO member) {
         log.trace("Removing institution member {}", member.displayName());
+        if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution() ,sessionSettingsBean.getAuthenticatedUser())) {
+            log.debug("The user is not an organisation manager and can't removeMemberFromInstitution");
+            return;
+        }
         organizationMembersService.removeMemberFromInstitution(institution, member);
         refMembers.remove(member);
         filter();
@@ -121,16 +128,28 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
 
     /** Assigns the newly checked profile to the given member. */
     public void onProfileSelect(InstitutionMemberDTO member, SelectEvent<ProfileDTO> event) {
+        if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
+            log.debug("The user is not an organisation manager and can't addProfileToMember");
+            return;
+        }
         organizationMembersService.addProfileToMember(institution, member, event.getObject());
     }
 
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(InstitutionMemberDTO member, UnselectEvent<ProfileDTO> event) {
+        if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
+            log.debug("The user is not an organisation manager and can't removeProfileFromMember");
+            return;
+        }
         organizationMembersService.removeProfileFromMember(institution, member, event.getObject());
     }
 
     private Boolean processPerson(PersonRole saved) {
         try {
+            if (personProfileAssignmentService.isNotOrganisationManager(sessionSettingsBean.getSelectedInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
+                log.debug("The user is not an organisation manager and can't addMemberToInstitution");
+                return false;
+            }
             InstitutionMemberDTO member = organizationMembersService.addMemberToInstitution(
                     institution, saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);

@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.repositories.permissions;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -165,4 +166,22 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             WHERE prof.institution IS NULL AND prof.actionUnit IS NULL
             """)
     List<PersonProfileAssignment> findAllInstanceAssignments();
+
+    @Query("SELECT ppa FROM PersonProfileAssignment ppa " +
+            "WHERE ppa.profile.code = :profileCode AND ppa.profile.institution.id = :institutionId AND ppa.person.id = :personId")
+    Optional<PersonProfileAssignment> findByProfileCodeAndInstitutionIdAndPersonId(String profileCode, Long institutionId, Long personId);
+
+    @Query("""
+            SELECT COUNT(DISTINCT a.person.id)
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE prof.institution.id = :institutionId
+              AND prof.code = :profileCode
+            """)
+    long countPersonsByProfileCodeAndInstitutionId(@Param("profileCode") String profileCode,
+                                                   @Param("institutionId") Long institutionId);
+
+    @Modifying
+    @Query("DELETE FROM PersonProfileAssignment ppa WHERE ppa.profile.institution.id = :institutionId AND ppa.person.id = :personid")
+    void deleteByInstitutionIdAndPersonId(Long institutionId, Long personid);
 }
