@@ -46,4 +46,12 @@ public interface OrganizationMembersServiceInterface {
      */
     InstitutionMemberDTO addMemberToInstitution(InstitutionDTO institution, PersonDTO person, List<ProfileDTO> profiles);
 
+    /**
+     * Removes a member from the given institution.
+     *
+     * @param institution the institution the person is removed from
+     * @param member      the member to remove
+     */
+    void removeMemberFromInstitution(InstitutionDTO institution, InstitutionMemberDTO member);
+
 }

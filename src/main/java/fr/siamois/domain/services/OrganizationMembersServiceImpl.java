@@ -62,6 +62,15 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
 
     @Override
     public InstitutionMemberDTO addMemberToInstitution(InstitutionDTO institution, PersonDTO person, List<ProfileDTO> profiles) {
+        // TODO : Only the organization admins car add members
         return personProfileAssignmentService.addToInstitution(institution, person, profiles);
+    }
+
+    @Override
+    public void removeMemberFromInstitution(InstitutionDTO institution, InstitutionMemberDTO member) {
+        // TODO : implement
+        // Cannot remove the last Admin of the organization.
+        // Only the organization admins car remove members
+
     }
 }

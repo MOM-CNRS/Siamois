@@ -124,6 +124,14 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         PrimeFaces.current().executeScript("PF('newOrganizationMemberDialog').show();");
     }
 
+    /** Removes the given member from the current institution. */
+    public void removeMember(InstitutionMemberDTO member) {
+        log.trace("Removing institution member {}", member.displayName());
+        organizationMembersService.removeMemberFromInstitution(institution, member);
+        refMembers.remove(member);
+        filter();
+    }
+
     private Boolean processPerson(PersonRole saved) {
         try {
             InstitutionMemberDTO member = organizationMembersService.addMemberToInstitution(

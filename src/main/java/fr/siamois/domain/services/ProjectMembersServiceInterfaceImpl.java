@@ -32,6 +32,7 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
     public List<ProjectMemberDTO> findMembersOf(ActionUnitDTO project) {
         Map<Person, Set<ProfileDTO>> profilesByPerson = new HashMap<>();
 
+
         for (PersonProfileAssignment personProfileAssignment : personProfileAssignmentRepository.findAllAssignmentsByActionUnitId(project.getId())) {
             if (!profilesByPerson.containsKey(personProfileAssignment.getPerson())) {
                 profilesByPerson.put(personProfileAssignment.getPerson(), new HashSet<>());
@@ -57,6 +58,14 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
 
     @Override
     public ProjectMemberDTO addMemberToProject(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles) {
+        // TODO: Only the project admins can add members
         return personProfileAssignmentService.addToProjectMembers(project, person, profiles);
+    }
+
+    @Override
+    public void removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member) {
+        // TODO : implement
+        // Cannot remove the last Admin of the project.
+        // Only the project admins car remove members
     }
 }
