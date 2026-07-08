@@ -69,7 +69,7 @@
                             <f:selectItems value="#{institutionMembersListBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
                             <f:attribute name="member" value="#{member}"/>
                             <p:ajax event="itemSelect" listener="#{institutionMembersListBean.onProfileSelect}" process="@this"/>
-                            <p:ajax event="itemUnselect" listener="#{institutionMembersListBean.onProfileUnselect}" process="@this"/>
+                            <p:ajax event="itemUnselect" listener="#{institutionMembersListBean.onProfileUnselect}" process="@this" update="profileSelect"/>
                         </p:selectCheckboxMenu>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">

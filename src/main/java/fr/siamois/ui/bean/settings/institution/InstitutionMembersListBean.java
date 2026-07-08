@@ -129,7 +129,12 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
-        organizationMembersService.removeProfileFromMember(institution, member, event.getObject());
+        ProfileDTO profile = event.getObject();
+        boolean removed = organizationMembersService.removeProfileFromMember(institution, member, profile);
+        if (!removed) {
+            member.getProfiles().add(profile);
+            displayWarnMessage(langBean, "organisationSettings.error.lastManager");
+        }
     }
 
     private Boolean processPerson(PersonRole saved) {

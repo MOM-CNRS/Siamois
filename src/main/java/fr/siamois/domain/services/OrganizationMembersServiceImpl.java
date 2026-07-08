@@ -2,6 +2,7 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
@@ -80,7 +81,12 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
     }
 
     @Override
-    public void removeProfileFromMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile) {
+    public boolean removeProfileFromMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile) {
+        if (ProfileConstants.ORGANIZATION_MANAGER.equals(profile.getCode())
+                && !personProfileAssignmentService.isNotLastOrganizationManager(institution, member.getPerson())) {
+            return false;
+        }
         personProfileAssignmentService.remove(member.getPerson(), profile);
+        return true;
     }
 }
