@@ -12,8 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -24,67 +23,74 @@ public class PersonProfileAssignmentService {
     private final ProfileService profileService;
     private final ProfileMapper profileMapper;
 
-    private boolean assignProfile(@NonNull Profile profile, @NonNull Person person) {
+    private void assignProfile(@NonNull Profile profile, @NonNull Person person) {
         Optional<PersonProfileAssignment> opt = personProfileAssignmentRepository.findByProfileIdAndPersonId(profile.getId(), person.getId());
-        if (opt.isPresent()) return false;
+        if (opt.isPresent()) return;
         PersonProfileAssignment assignment = new PersonProfileAssignment();
         assignment.setProfile(profile);
         assignment.setPerson(person);
         personProfileAssignmentRepository.save(assignment);
-        return true;
     }
 
     public boolean addToManagers(InstitutionDTO institution, PersonDTO person) {
         Profile organizationManagers = profileService.createOrGetOrganizationManagerProfile(institution);
-        return assignProfile(organizationManagers, personMapper.invertConvert(person));
-    }
-
-    public boolean addToActionManagers(InstitutionDTO institution, PersonDTO person) {
-        Profile projectManagers = profileService.createOrGetOrganizationProjectManagerProfile(institution);
-        return assignProfile(projectManagers, personMapper.invertConvert(person));
+        Profile organizationMember = profileService.createOrGetOrganizationMemberProfile(institution);
+        List<ProfileDTO> profiles = new ArrayList<>();
+        profiles.add(profileMapper.convert(organizationManagers));
+        profiles.add(profileMapper.convert(organizationMember));
+        return addToInstitution(institution, person, profiles) != null;
     }
 
     public boolean addToProjectMembers(ActionUnitDTO actionUnit, PersonDTO person) {
-        Profile projectMembers = profileService.createOrGetProjectMemberProfile(actionUnit);
-        return assignProfile(projectMembers, personMapper.invertConvert(person));
+        return addToProjectMembers(actionUnit, person, List.of()) != null;
     }
 
     public InstitutionMemberDTO addToInstitution(InstitutionDTO institution, PersonDTO person, List<ProfileDTO> profiles) {
         int i = 0;
+        Set<ProfileDTO> profileSet = new HashSet<>();
         Person personToAdd = personMapper.invertConvert(person);
         while (i < profiles.size() && !profiles.get(i).getCode().equals(ProfileConstants.ORGANIZATION_MEMBER)) i++;
         if (i == profiles.size()) {
             Profile member = profileService.createOrGetOrganizationMemberProfile(institution);
             assignProfile(member, personToAdd);
+            profileSet.add(profileMapper.convert(member));
         }
 
         for (ProfileDTO profile : profiles) {
             Profile currentProfile = profileMapper.invertConvert(profile);
             assignProfile(currentProfile, personToAdd);
+            profileSet.add(profileMapper.convert(currentProfile));
         }
 
         InstitutionMemberDTO institutionMemberDTO = new InstitutionMemberDTO();
         institutionMemberDTO.setPerson(person);
-        institutionMemberDTO.setProfiles(profiles);
+        institutionMemberDTO.setProfiles(new ArrayList<>(profileSet));
         return institutionMemberDTO;
     }
 
     public ProjectMemberDTO addToProjectMembers(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles) {
         int i = 0;
+        Set<ProfileDTO> profileSet = new HashSet<>();
         Person personToAdd = personMapper.invertConvert(person);
         while (i < profiles.size() && !profiles.get(i).getCode().equals(ProfileConstants.PROJECT_MEMBER)) i++;
         if (i == profiles.size()) {
             Profile member = profileService.createOrGetProjectMemberProfile(project);
             assignProfile(member, personToAdd);
+            profileSet.add(profileMapper.convert(member));
         }
+
+        Profile institutionMemberProfile = profileService.createOrGetOrganizationMemberProfile(project.getCreatedByInstitution());
+        assignProfile(institutionMemberProfile, personToAdd);
+
         for (ProfileDTO profile : profiles) {
             Profile currentProfile = profileMapper.invertConvert(profile);
             assignProfile(currentProfile, personToAdd);
+            profileSet.add(profileMapper.convert(currentProfile));
         }
 
         ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
         projectMemberDTO.setPerson(person);
-        projectMemberDTO.setProfiles(profiles);
+        projectMemberDTO.setProfiles(new ArrayList<>(profileSet));
         return projectMemberDTO;
     }
 

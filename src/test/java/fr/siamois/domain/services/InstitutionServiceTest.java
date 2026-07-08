@@ -8,9 +8,9 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
@@ -19,7 +19,9 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.InstitutionMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
@@ -30,6 +32,7 @@ import fr.siamois.mapper.ProfileMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -183,29 +186,6 @@ class InstitutionServiceTest {
     }
 
     @Test
-    void addUserToInstitution() throws FailedInstitutionSaveException {
-        Concept realRole = new Concept();
-        realRole.setId(1L);
-
-        institutionService.addUserToInstitution(manager, institution1, realRole);
-
-        verify(personRepository, times(1)).addPersonToInstitution(manager.getId(), institution1.getId(), realRole.getId());
-    }
-
-    @Test
-    void addUserToInstitution_throwsFailedInstitutionSaveException() {
-        Concept realRole = new Concept();
-        realRole.setId(1L);
-
-        doThrow(new RuntimeException("Error while adding person to institution"))
-                .when(personRepository)
-                .addPersonToInstitution(manager.getId(), institution1.getId(), realRole.getId());
-
-        assertThrows(FailedInstitutionSaveException.class, () ->
-                institutionService.addUserToInstitution(manager, institution1, realRole));
-    }
-
-    @Test
     void createOrGetSettingsOf_shouldReturnSettings_whenSet() {
         InstitutionDTO institutionDto = new InstitutionDTO();
         institutionDto.setId(1L);
@@ -324,26 +304,30 @@ class InstitutionServiceTest {
         PersonDTO p = new PersonDTO();
         p.setId(2L);
 
-        when(personProfileAssignmentService.addToManagers(instDto, p)).thenReturn(true);
+        Profile memberProfile = new Profile();
+        memberProfile.setCode(ProfileConstants.ORGANIZATION_MEMBER);
+        Profile managerProfile = new Profile();
+        managerProfile.setCode(ProfileConstants.ORGANIZATION_MANAGER);
+
+        ProfileDTO memberDTO = new ProfileDTO();
+        memberDTO.setCode(ProfileConstants.ORGANIZATION_MEMBER);
+        ProfileDTO managerProfileDTO = new ProfileDTO();
+        managerProfileDTO.setCode(ProfileConstants.ORGANIZATION_MANAGER);
+
+        when(profileService.createOrGetOrganizationMemberProfile(instDto)).thenReturn(memberProfile);
+        when(profileService.createOrGetOrganizationManagerProfile(instDto)).thenReturn(managerProfile);
+        when(profileMapper.convert(memberProfile)).thenReturn(memberDTO);
+        when(profileMapper.convert(managerProfile)).thenReturn(managerProfileDTO);
+        when(personProfileAssignmentService.addToInstitution(eq(instDto), eq(p), anyList()))
+                .thenReturn(new InstitutionMemberDTO());
 
         boolean added = institutionService.addToManagers(instDto, p);
 
         assertTrue(added);
-    }
 
-    @Test
-    void addToManagers_shouldNotAddManagerIfAlreadyExists() {
-        InstitutionDTO instDto = new InstitutionDTO();
-        instDto.setId(1L);
-
-        PersonDTO p = new PersonDTO();
-        p.setId(2L);
-
-        when(personProfileAssignmentService.addToManagers(instDto, p)).thenReturn(false);
-
-        boolean added = institutionService.addToManagers(instDto, p);
-
-        assertFalse(added);
+        ArgumentCaptor<List<ProfileDTO>> profilesCaptor = ArgumentCaptor.forClass(List.class);
+        verify(personProfileAssignmentService).addToInstitution(eq(instDto), eq(p), profilesCaptor.capture());
+        assertThat(profilesCaptor.getValue()).containsExactlyInAnyOrder(memberDTO, managerProfileDTO);
     }
 
     @Test
@@ -506,35 +490,6 @@ class InstitutionServiceTest {
         assertThat(result).isFalse();
     }
 
-    @Test
-    void addPersonToActionManager_shouldAddManagerAndReturnTrue() {
-        InstitutionDTO institution = new InstitutionDTO();
-        institution.setId(1L);
-
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-
-        when(personProfileAssignmentService.addToActionManagers(institution, personDto)).thenReturn(true);
-
-        boolean result = institutionService.addPersonToActionManager(institution, personDto);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void addPersonToActionManager_shouldNotAddManagerIfAlreadyExists() {
-        InstitutionDTO institution = new InstitutionDTO();
-        institution.setId(1L);
-
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-
-        when(personProfileAssignmentService.addToActionManagers(institution, personDto)).thenReturn(false);
-
-        boolean result = institutionService.addPersonToActionManager(institution, personDto);
-
-        assertThat(result).isFalse();
-    }
 
     @Test
     void addPersonAsMemberOfActionUnit_shouldAddMemberAndReturnTrue() {

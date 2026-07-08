@@ -138,7 +138,7 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             SELECT ppa FROM PersonProfileAssignment ppa
             JOIN FETCH ppa.person p
             JOIN FETCH ppa.profile prof
-            WHERE prof.institution.id = :institutionId
+            WHERE prof.institution.id = :institutionId AND prof.actionUnit IS NULL
             """)
     List<PersonProfileAssignment> findAllAssignmentsByInstitutionId(@Param("institutionId") Long institutionId);
 

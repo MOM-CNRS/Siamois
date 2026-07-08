@@ -11,9 +11,13 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -32,6 +36,7 @@ import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -76,7 +81,9 @@ public class ActionUnitService implements ArkEntityService {
     private final PendingActionUnitRepository pendingActionUnitRepository;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
-
+    private final ProfileService profileService;
+    private final PersonProfileAssignmentService personProfileAssignmentService;
+    private final ProfileMapper profileMapper;
 
 
     /**
@@ -97,6 +104,13 @@ public class ActionUnitService implements ArkEntityService {
             log.error(e.getMessage(), e);
             throw e;
         }
+    }
+
+    private Map<String, Profile> createProjectProfiles(ActionUnitDTO actionUnitDTO) {
+        Map<String, Profile> projectProfiles = new HashMap<>();
+        projectProfiles.put(ProfileConstants.PROJECT_MANAGER, profileService.createOrGetProjectManagerProfile(actionUnitDTO));
+        projectProfiles.put(ProfileConstants.PROJECT_MEMBER, profileService.createOrGetProjectMemberProfile(actionUnitDTO));
+        return projectProfiles;
     }
 
     /**
@@ -206,7 +220,29 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
-        return actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
+        ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
+        assignRoles(info, savedDTO);
+        return savedDTO;
+    }
+
+    private void assignRoles(UserInfo info, ActionUnitDTO savedDTO) {
+        Map<String, Profile> profiles = createProjectProfiles(savedDTO);
+        assignAsOrganisationMember(info, savedDTO);
+        assignAsProjectMember(info, savedDTO, profiles);
+    }
+
+    private void assignAsProjectMember(UserInfo info, ActionUnitDTO actionUnit, Map<String, Profile> profiles) {
+        List<ProfileDTO> profileDTOS = new ArrayList<>();
+        profileDTOS.add(profileMapper.convert(profiles.get(ProfileConstants.PROJECT_MANAGER)));
+        profileDTOS.add(profileMapper.convert(profiles.get(ProfileConstants.PROJECT_MEMBER)));
+        personProfileAssignmentService.addToProjectMembers(actionUnit, info.getUser(), profileDTOS);
+    }
+
+    private void assignAsOrganisationMember(UserInfo info, ActionUnitDTO actionUnit) {
+        Profile institutionMember = profileService.createOrGetOrganizationMemberProfile(actionUnit.getCreatedByInstitution());
+        List<ProfileDTO> institutionMemberProfileDTOS = new ArrayList<>();
+        institutionMemberProfileDTOS.add(profileMapper.convert(institutionMember));
+        personProfileAssignmentService.addToInstitution(actionUnit.getCreatedByInstitution(), info.getUser(), institutionMemberProfileDTOS);
     }
 
     /**
