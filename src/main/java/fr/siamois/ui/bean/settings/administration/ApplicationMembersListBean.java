@@ -1,6 +1,5 @@
 package fr.siamois.ui.bean.settings.administration;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.ApplicationMembersServiceInterface;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;

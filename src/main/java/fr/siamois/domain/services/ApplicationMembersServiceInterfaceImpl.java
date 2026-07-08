@@ -1,6 +1,5 @@
 package fr.siamois.domain.services;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
