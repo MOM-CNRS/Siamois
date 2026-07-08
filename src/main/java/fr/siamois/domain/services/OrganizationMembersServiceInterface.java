@@ -65,11 +65,15 @@ public interface OrganizationMembersServiceInterface {
 
     /**
      * Unassigns a profile from an institution member.
+     * <p>
+     * Refuses to remove the {@code ORGANIZATION_MANAGER} profile from the last remaining manager
+     * of the institution.
      *
      * @param institution the institution the member belongs to
      * @param member      the member the profile is unassigned from
      * @param profile     the profile to unassign
+     * @return true if the profile was actually unassigned, false if the removal was refused
      */
-    void removeProfileFromMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile);
+    boolean removeProfileFromMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile);
 
 }
