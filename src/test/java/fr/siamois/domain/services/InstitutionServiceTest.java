@@ -10,7 +10,6 @@ import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistEx
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
@@ -180,29 +179,6 @@ class InstitutionServiceTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenThrow(new InvalidEndpointException("Invalid url"));
 
         assertThrows(InvalidEndpointException.class, () -> institutionService.createInstitution(institution1DTO, "invalid_url"));
-    }
-
-    @Test
-    void addUserToInstitution() throws FailedInstitutionSaveException {
-        Concept realRole = new Concept();
-        realRole.setId(1L);
-
-        institutionService.addUserToInstitution(manager, institution1, realRole);
-
-        verify(personRepository, times(1)).addPersonToInstitution(manager.getId(), institution1.getId(), realRole.getId());
-    }
-
-    @Test
-    void addUserToInstitution_throwsFailedInstitutionSaveException() {
-        Concept realRole = new Concept();
-        realRole.setId(1L);
-
-        doThrow(new RuntimeException("Error while adding person to institution"))
-                .when(personRepository)
-                .addPersonToInstitution(manager.getId(), institution1.getId(), realRole.getId());
-
-        assertThrows(FailedInstitutionSaveException.class, () ->
-                institutionService.addUserToInstitution(manager, institution1, realRole));
     }
 
     @Test

@@ -7,6 +7,7 @@ import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveExce
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -18,12 +19,14 @@ import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.InstitutionSettingsRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,10 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +55,7 @@ public class InstitutionService {
     private final PersonProfileAssignmentService personProfileAssignmentService;
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
     private final ProfileService profileService;
+    private final ProfileMapper profileMapper;
 
     /**
      * Finds an institution by its identifier.
@@ -174,23 +175,6 @@ public class InstitutionService {
     }
 
     /**
-     * Adds a user to an institution with a specific role.
-     *
-     * @param person      the person to add to the institution
-     * @param institution the institution to which the person will be added
-     * @param roleConcept the role concept that defines the person's role in the institution
-     * @throws FailedInstitutionSaveException if there is an error while saving the institution
-     */
-    public void addUserToInstitution(Person person, Institution institution, Concept roleConcept) throws FailedInstitutionSaveException {
-        try {
-            personRepository.addPersonToInstitution(person.getId(), institution.getId(), roleConcept.getId());
-        } catch (Exception e) {
-            log.error("Failed to add user to institution", e);
-            throw new FailedInstitutionSaveException("Failed to add user to institution");
-        }
-    }
-
-    /**
      * Creates or retrieves the settings for a given institution.
      *
      * @param institution the institution for which to create or retrieve settings
@@ -223,7 +207,12 @@ public class InstitutionService {
      */
     @Transactional
     public boolean addToManagers(InstitutionDTO institution, PersonDTO person) {
-        return personProfileAssignmentService.addToManagers(institution, person);
+        Profile member = profileService.createOrGetOrganizationMemberProfile(institution);
+        Profile institutionManager = profileService.createOrGetOrganizationManagerProfile(institution);
+        List<ProfileDTO> profiles =  new ArrayList<>();
+        profiles.add(profileMapper.convert(member));
+        profiles.add(profileMapper.convert(institutionManager));
+        return personProfileAssignmentService.addToInstitution(institution, person, profiles) != null;
     }
 
 
