@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.settings.administration;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.ApplicationMembersServiceInterface;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -36,6 +37,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     private final NewApplicationMemberDialogBean newApplicationMemberDialogBean;
     private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
+    private final transient PersonProfileAssignmentService personProfileAssignmentService;
 
     private transient List<ApplicationMemberDTO> members;
     private transient List<ApplicationMemberDTO> refMembers;
@@ -44,11 +46,12 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
 
     public ApplicationMembersListBean(ApplicationMembersServiceInterface applicationMembersService,
                                       NewApplicationMemberDialogBean newApplicationMemberDialogBean,
-                                      LangBean langBean, SessionSettingsBean sessionSettingsBean) {
+                                      LangBean langBean, SessionSettingsBean sessionSettingsBean, PersonProfileAssignmentService personProfileAssignmentService) {
         this.applicationMembersService = applicationMembersService;
         this.newApplicationMemberDialogBean = newApplicationMemberDialogBean;
         this.langBean = langBean;
         this.sessionSettingsBean = sessionSettingsBean;
+        this.personProfileAssignmentService = personProfileAssignmentService;
     }
 
     /** Loads the application's user accounts and resets the search filter. */
@@ -88,14 +91,20 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
 
     /** Assigns the newly checked profile to the given member. */
     public void onProfileSelect(ApplicationMemberDTO member, SelectEvent<ProfileDTO> event) {
-        UserInfo userInfo = sessionSettingsBean.getUserInfo();
-        applicationMembersService.addProfileToMember(userInfo, member, event.getObject());
+        if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
+            log.debug("User is not superadmin and can't addProfileToMember");
+            return;
+        }
+        applicationMembersService.addProfileToMember(member, event.getObject());
     }
 
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(ApplicationMemberDTO member, UnselectEvent<ProfileDTO> event) {
-        UserInfo userInfo = sessionSettingsBean.getUserInfo();
-        applicationMembersService.removeProfileFromMember(userInfo, member, event.getObject());
+        if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
+            log.debug("User is not superadmin and can't removeProfileFromMember");
+            return;
+        }
+        applicationMembersService.removeProfileFromMember(member, event.getObject());
     }
 
     private Boolean processPerson(PersonRole saved) {

@@ -60,18 +60,12 @@ public class ApplicationMembersServiceInterfaceImpl implements ApplicationMember
     }
 
     @Override
-    public void addProfileToMember(UserInfo callerInfo, ApplicationMemberDTO member, ProfileDTO profile) {
-        if (personProfileAssignmentService.isNotSuperAdmin(callerInfo.getUser())) {
-            throw new IllegalStateException("Only a SUPERADMIN can call addProfileToMember");
-        }
+    public void addProfileToMember(ApplicationMemberDTO member, ProfileDTO profile) {
         personProfileAssignmentService.assign(member.getPerson(), profile);
     }
 
     @Override
-    public void removeProfileFromMember(UserInfo callerInfo ,ApplicationMemberDTO member, ProfileDTO profile) {
-        if (personProfileAssignmentService.isNotSuperAdmin(callerInfo.getUser())) {
-            throw new IllegalStateException("Only a SUPERADMIN can call removeProfileFromMember");
-        }
+    public void removeProfileFromMember(ApplicationMemberDTO member, ProfileDTO profile) {
         personProfileAssignmentService.remove(member.getPerson(), profile);
     }
 }

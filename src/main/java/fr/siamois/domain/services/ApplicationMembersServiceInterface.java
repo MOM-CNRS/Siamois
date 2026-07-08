@@ -1,6 +1,5 @@
 package fr.siamois.domain.services;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
@@ -51,7 +50,7 @@ public interface ApplicationMembersServiceInterface {
      * @param member  the member the profile is assigned to
      * @param profile the profile to assign
      */
-    void addProfileToMember(UserInfo userInfo, ApplicationMemberDTO member, ProfileDTO profile);
+    void addProfileToMember(ApplicationMemberDTO member, ProfileDTO profile);
 
     /**
      * Unassigns a profile from an application member.
@@ -59,6 +58,6 @@ public interface ApplicationMembersServiceInterface {
      * @param member  the member the profile is unassigned from
      * @param profile the profile to unassign
      */
-    void removeProfileFromMember(UserInfo userInfo, ApplicationMemberDTO member, ProfileDTO profile);
+    void removeProfileFromMember(ApplicationMemberDTO member, ProfileDTO profile);
 
 }
