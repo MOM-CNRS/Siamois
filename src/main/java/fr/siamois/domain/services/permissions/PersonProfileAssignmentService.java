@@ -12,9 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -49,21 +47,24 @@ public class PersonProfileAssignmentService {
 
     public InstitutionMemberDTO addToInstitution(InstitutionDTO institution, PersonDTO person, List<ProfileDTO> profiles) {
         int i = 0;
+        Set<ProfileDTO> profileSet = new HashSet<>();
         Person personToAdd = personMapper.invertConvert(person);
         while (i < profiles.size() && !profiles.get(i).getCode().equals(ProfileConstants.ORGANIZATION_MEMBER)) i++;
         if (i == profiles.size()) {
             Profile member = profileService.createOrGetOrganizationMemberProfile(institution);
             assignProfile(member, personToAdd);
+            profileSet.add(profileMapper.convert(member));
         }
 
         for (ProfileDTO profile : profiles) {
             Profile currentProfile = profileMapper.invertConvert(profile);
             assignProfile(currentProfile, personToAdd);
+            profileSet.add(profileMapper.convert(currentProfile));
         }
 
         InstitutionMemberDTO institutionMemberDTO = new InstitutionMemberDTO();
         institutionMemberDTO.setPerson(person);
-        institutionMemberDTO.setProfiles(profiles);
+        institutionMemberDTO.setProfiles(new ArrayList<>(profileSet));
         return institutionMemberDTO;
     }
 
