@@ -45,4 +45,12 @@ public interface ProjectMembersServiceInterface {
      */
     ProjectMemberDTO addMemberToProject(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles);
 
+    /**
+     * Removes a member from the given project.
+     *
+     * @param project the project the person is removed from
+     * @param member  the member to remove
+     */
+    void removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member);
+
 }

@@ -89,6 +89,12 @@
                             #{member.person.enabled ? langBean.msg('common.label.accountStatus.enabled') : langBean.msg('common.label.accountStatus.disabled')}
                         </span>
                     </p:column>
+                    <p:column>
+                        <p:commandButton value="#{langBean.msg('common.action.remove')}"
+                                         actionListener="#{projectMembersListBean.removeMember(member)}"
+                                         update="membersDatatable"
+                                         styleClass="ui-button-danger"/>
+                    </p:column>
                 </p:dataTable>
             </settings:datatable>
             <ui:include src="/dialog/project/newProjectMember.xhtml"/>

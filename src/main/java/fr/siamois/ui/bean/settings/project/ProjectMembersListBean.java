@@ -104,6 +104,14 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
         PrimeFaces.current().executeScript("PF('newProjectMemberDialog').show();");
     }
 
+    /** Removes the given member from the current project. */
+    public void removeMember(ProjectMemberDTO member) {
+        log.trace("Removing project member {}", member.displayName());
+        projectMembersService.removeMemberFromProject(project, member);
+        refMembers.remove(member);
+        filter();
+    }
+
     private Boolean processPerson(PersonRole saved) {
         try {
             ProjectMemberDTO member = projectMembersService.addMemberToProject(
