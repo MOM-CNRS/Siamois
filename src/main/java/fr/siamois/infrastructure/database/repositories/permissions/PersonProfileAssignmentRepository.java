@@ -184,4 +184,22 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
     @Modifying
     @Query("DELETE FROM PersonProfileAssignment ppa WHERE ppa.profile.institution.id = :institutionId AND ppa.person.id = :personid")
     void deleteByInstitutionIdAndPersonId(Long institutionId, Long personid);
+
+    @Query("SELECT ppa FROM PersonProfileAssignment ppa " +
+            "WHERE ppa.profile.code = :code AND ppa.profile.actionUnit.id = :actionUnitId AND ppa.person.id = :personId")
+    Optional<PersonProfileAssignment> findByProfileCodeAndActionIdAndPersonId(String code, Long actionUnitId, Long personId);
+
+    @Query("""
+            SELECT COUNT(DISTINCT a.person.id)
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE prof.actionUnit.id = :actionUnitId
+              AND prof.code = :profileCode
+            """)
+    long countPersonsByProfileCodeAndActionUnitId(@Param("profileCode") String profileCode,
+                                                  @Param("actionUnitId") Long actionUnitId);
+
+    @Modifying
+    @Query("DELETE FROM PersonProfileAssignment ppa WHERE ppa.profile.actionUnit.id = :actionUnitId AND ppa.person.id = :personId")
+    void deleteByActionUnitIdAndPersonId(Long actionUnitId, Long personId);
 }

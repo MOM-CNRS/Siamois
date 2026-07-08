@@ -11,6 +11,7 @@ import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -136,7 +137,27 @@ public class PersonProfileAssignmentService {
         return managerCount > 1;
     }
 
+    @Transactional
     public void removeFromInstitution(InstitutionDTO institution, PersonDTO person) {
         personProfileAssignmentRepository.deleteByInstitutionIdAndPersonId(institution.getId(), person.getId());
+    }
+
+    public boolean isNotProjectManager(ActionUnitDTO project, PersonDTO authenticatedUser) {
+        Optional<PersonProfileAssignment> opt = personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(ProfileConstants.PROJECT_MANAGER, project.getId(), authenticatedUser.getId());
+        return opt.isEmpty();
+    }
+
+    public boolean isNotLastProjectManager(ActionUnitDTO project, PersonDTO person) {
+        if (isNotProjectManager(project, person)) {
+            return true;
+        }
+        long managerCount = personProfileAssignmentRepository
+                .countPersonsByProfileCodeAndActionUnitId(ProfileConstants.PROJECT_MANAGER, project.getId());
+        return managerCount > 1;
+    }
+
+    @Transactional
+    public void removeFromProject(ActionUnitDTO project, PersonDTO person) {
+        personProfileAssignmentRepository.deleteByActionUnitIdAndPersonId(project.getId(), person.getId());
     }
 }

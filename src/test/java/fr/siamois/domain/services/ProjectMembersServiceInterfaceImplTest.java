@@ -171,6 +171,50 @@ class ProjectMembersServiceInterfaceImplTest {
         verify(personProfileAssignmentService, times(1)).addToProjectMembers(project, memberDTO, profiles);
     }
 
+    @Test
+    void removeMemberFromProject_shouldRemoveMember_whenNotLastProjectManager() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(this.memberDTO);
+
+        when(personProfileAssignmentService.isNotLastProjectManager(project, this.memberDTO)).thenReturn(true);
+
+        projectMembersService.removeMemberFromProject(project, projectMemberDTO);
+
+        verify(personProfileAssignmentService, times(1)).removeFromProject(project, this.memberDTO);
+    }
+
+    @Test
+    void removeMemberFromProject_shouldNotRemoveMember_whenLastProjectManager() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        when(personProfileAssignmentService.isNotLastProjectManager(project, memberDTO)).thenReturn(false);
+
+        projectMembersService.removeMemberFromProject(project, projectMemberDTO);
+
+        verify(personProfileAssignmentService, never()).removeFromProject(any(), any());
+    }
+
+    @Test
+    void addProfileToMember_shouldDelegateToAssignmentService() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        projectMembersService.addProfileToMember(project, projectMemberDTO, memberProfileDTO);
+
+        verify(personProfileAssignmentService, times(1)).assign(memberDTO, memberProfileDTO);
+    }
+
+    @Test
+    void removeProfileFromMember_shouldDelegateToAssignmentService() {
+        ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
+        projectMemberDTO.setPerson(memberDTO);
+
+        projectMembersService.removeProfileFromMember(project, projectMemberDTO, memberProfileDTO);
+
+        verify(personProfileAssignmentService, times(1)).remove(memberDTO, memberProfileDTO);
+    }
+
     private PersonProfileAssignment assignment(Person person, Profile profile) {
         PersonProfileAssignment assignment = new PersonProfileAssignment();
         assignment.setPerson(person);

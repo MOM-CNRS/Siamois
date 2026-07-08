@@ -310,4 +310,51 @@ class PersonProfileAssignmentServiceTest {
 
         assertFalse(service.isNotLastOrganizationManager(institutionDTO, personDTO));
     }
+
+    @Test
+    void isNotLastProjectManager_ReturnsTrueWhenPersonIsNotManager() {
+        actionUnitDTO.setId(7L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(
+                ProfileConstants.PROJECT_MANAGER, 7L, 1L)).thenReturn(Optional.empty());
+
+        assertTrue(service.isNotLastProjectManager(actionUnitDTO, personDTO));
+
+        // Pas besoin de compter les managers si la personne n'est pas manager
+        verify(personProfileAssignmentRepository, never()).countPersonsByProfileCodeAndActionUnitId(anyString(), anyLong());
+    }
+
+    @Test
+    void isNotLastProjectManager_ReturnsTrueWhenOtherManagersExist() {
+        actionUnitDTO.setId(7L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(
+                ProfileConstants.PROJECT_MANAGER, 7L, 1L)).thenReturn(Optional.of(new PersonProfileAssignment()));
+        when(personProfileAssignmentRepository.countPersonsByProfileCodeAndActionUnitId(
+                ProfileConstants.PROJECT_MANAGER, 7L)).thenReturn(2L);
+
+        assertTrue(service.isNotLastProjectManager(actionUnitDTO, personDTO));
+    }
+
+    @Test
+    void isNotLastProjectManager_ReturnsFalseWhenPersonIsLastManager() {
+        actionUnitDTO.setId(7L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(
+                ProfileConstants.PROJECT_MANAGER, 7L, 1L)).thenReturn(Optional.of(new PersonProfileAssignment()));
+        when(personProfileAssignmentRepository.countPersonsByProfileCodeAndActionUnitId(
+                ProfileConstants.PROJECT_MANAGER, 7L)).thenReturn(1L);
+
+        assertFalse(service.isNotLastProjectManager(actionUnitDTO, personDTO));
+    }
+
+    @Test
+    void removeFromProject_DeletesAllAssignmentsOfPersonInProject() {
+        actionUnitDTO.setId(7L);
+        personDTO.setId(1L);
+
+        service.removeFromProject(actionUnitDTO, personDTO);
+
+        verify(personProfileAssignmentRepository).deleteByActionUnitIdAndPersonId(7L, 1L);
+    }
 }

@@ -58,28 +58,24 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
 
     @Override
     public ProjectMemberDTO addMemberToProject(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles) {
-        // TODO: Only the project admins can add members
         return personProfileAssignmentService.addToProjectMembers(project, person, profiles);
     }
 
     @Override
     public void removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member) {
-        // TODO : implement
-        // Cannot remove the last Admin of the project.
-        // Only the project admins car remove members
+        if (personProfileAssignmentService.isNotLastProjectManager(project, member.getPerson())) {
+            personProfileAssignmentService.removeFromProject(project, member.getPerson());
+        }
     }
 
     @Override
     public void addProfileToMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
-        // TODO : implement
-        // only project admin can assign profiles
-
+        // The project parameter is not used because the profile is already associated with the action unit
+        personProfileAssignmentService.assign(member.getPerson(), profile);
     }
 
     @Override
     public void removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
-        // TODO : implement
-        // only project admin can unassign profiles
-        // the project profile cannot be removed from the last project admin, otherwise no one will be the admin
+        personProfileAssignmentService.remove(member.getPerson(), profile);
     }
 }
