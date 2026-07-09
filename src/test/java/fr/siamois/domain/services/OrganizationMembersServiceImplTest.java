@@ -181,13 +181,13 @@ class OrganizationMembersServiceImplTest {
 
     @Test
     void removeProfileFromMember_shouldRemove_whenProfileIsNotOrganizationManager() {
-        InstitutionMemberDTO member = new InstitutionMemberDTO();
-        member.setPerson(memberDTO);
+        InstitutionMemberDTO membertest = new InstitutionMemberDTO();
+        membertest.setPerson(memberDTO);
 
         when(assignmentRepository.personHasAnyProfileInInstitution(memberDTO.getId(), institution.getId()))
                 .thenReturn(true);
 
-        boolean result = organizationMembersService.removeProfileFromMember(institution, member, memberProfileDTO);
+        boolean result = organizationMembersService.removeProfileFromMember(institution, membertest, memberProfileDTO);
 
         assertThat(result).isTrue();
         verify(personProfileAssignmentService, times(1)).remove(memberDTO, memberProfileDTO);
@@ -202,14 +202,14 @@ class OrganizationMembersServiceImplTest {
         managerProfileDTO.setCode(ProfileConstants.ORGANIZATION_MANAGER);
         managerProfileDTO.setScope(PermissionScopeType.ORGANISATION);
 
-        InstitutionMemberDTO member = new InstitutionMemberDTO();
-        member.setPerson(memberDTO);
+        InstitutionMemberDTO membertest = new InstitutionMemberDTO();
+        membertest.setPerson(memberDTO);
 
         when(personProfileAssignmentService.isNotLastOrganizationManager(institution, memberDTO)).thenReturn(true);
         when(assignmentRepository.personHasAnyProfileInInstitution(memberDTO.getId(), institution.getId()))
                 .thenReturn(true);
 
-        boolean result = organizationMembersService.removeProfileFromMember(institution, member, managerProfileDTO);
+        boolean result = organizationMembersService.removeProfileFromMember(institution, membertest, managerProfileDTO);
 
         assertThat(result).isTrue();
         verify(personProfileAssignmentService, times(1)).remove(memberDTO, managerProfileDTO);
@@ -217,15 +217,15 @@ class OrganizationMembersServiceImplTest {
 
     @Test
     void removeProfileFromMember_shouldReassignMemberProfile_whenMemberHasNoProfileLeft() {
-        InstitutionMemberDTO member = new InstitutionMemberDTO();
-        member.setPerson(memberDTO);
+        InstitutionMemberDTO membertest = new InstitutionMemberDTO();
+        membertest.setPerson(memberDTO);
 
         when(assignmentRepository.personHasAnyProfileInInstitution(memberDTO.getId(), institution.getId()))
                 .thenReturn(false);
         when(profileService.createOrGetOrganizationMemberProfile(institution)).thenReturn(memberProfile);
         when(profileMapper.convert(memberProfile)).thenReturn(memberProfileDTO);
 
-        boolean result = organizationMembersService.removeProfileFromMember(institution, member, memberProfileDTO);
+        boolean result = organizationMembersService.removeProfileFromMember(institution, membertest, memberProfileDTO);
 
         assertThat(result).isTrue();
         verify(personProfileAssignmentService, times(1)).remove(memberDTO, memberProfileDTO);
@@ -239,12 +239,12 @@ class OrganizationMembersServiceImplTest {
         managerProfileDTO.setCode(ProfileConstants.ORGANIZATION_MANAGER);
         managerProfileDTO.setScope(PermissionScopeType.ORGANISATION);
 
-        InstitutionMemberDTO member = new InstitutionMemberDTO();
-        member.setPerson(memberDTO);
+        InstitutionMemberDTO membertest = new InstitutionMemberDTO();
+        membertest.setPerson(memberDTO);
 
         when(personProfileAssignmentService.isNotLastOrganizationManager(institution, memberDTO)).thenReturn(false);
 
-        boolean result = organizationMembersService.removeProfileFromMember(institution, member, managerProfileDTO);
+        boolean result = organizationMembersService.removeProfileFromMember(institution, membertest, managerProfileDTO);
 
         assertThat(result).isFalse();
         verify(personProfileAssignmentService, never()).remove(any(), any());

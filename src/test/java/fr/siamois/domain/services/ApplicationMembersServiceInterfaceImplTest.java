@@ -99,10 +99,10 @@ class ApplicationMembersServiceInterfaceImplTest {
         regularProfileDTO.setId(200L);
         regularProfileDTO.setCode("SOME_OTHER_CODE");
 
-        ApplicationMemberDTO member = new ApplicationMemberDTO();
-        member.setPerson(memberDTO);
+        ApplicationMemberDTO membertest = new ApplicationMemberDTO();
+        membertest.setPerson(memberDTO);
 
-        boolean result = applicationMembersService.removeProfileFromMember(member, regularProfileDTO);
+        boolean result = applicationMembersService.removeProfileFromMember(membertest, regularProfileDTO);
 
         assertThat(result).isTrue();
         verify(personProfileAssignmentService, times(1)).remove(memberDTO, regularProfileDTO);
@@ -111,12 +111,12 @@ class ApplicationMembersServiceInterfaceImplTest {
 
     @Test
     void removeProfileFromMember_shouldRemove_whenSuperAdminIsNotLast() {
-        ApplicationMemberDTO member = new ApplicationMemberDTO();
-        member.setPerson(memberDTO);
+        ApplicationMemberDTO membertest = new ApplicationMemberDTO();
+        membertest.setPerson(memberDTO);
 
         when(personProfileAssignmentService.isNotLastSuperAdmin(memberDTO)).thenReturn(true);
 
-        boolean result = applicationMembersService.removeProfileFromMember(member, superAdminProfileDTO);
+        boolean result = applicationMembersService.removeProfileFromMember(membertest, superAdminProfileDTO);
 
         assertThat(result).isTrue();
         verify(personProfileAssignmentService, times(1)).remove(memberDTO, superAdminProfileDTO);
@@ -124,12 +124,12 @@ class ApplicationMembersServiceInterfaceImplTest {
 
     @Test
     void removeProfileFromMember_shouldNotRemove_whenMemberIsLastSuperAdmin() {
-        ApplicationMemberDTO member = new ApplicationMemberDTO();
-        member.setPerson(memberDTO);
+        ApplicationMemberDTO membertest = new ApplicationMemberDTO();
+        membertest.setPerson(memberDTO);
 
         when(personProfileAssignmentService.isNotLastSuperAdmin(memberDTO)).thenReturn(false);
 
-        boolean result = applicationMembersService.removeProfileFromMember(member, superAdminProfileDTO);
+        boolean result = applicationMembersService.removeProfileFromMember(membertest, superAdminProfileDTO);
 
         assertThat(result).isFalse();
         verify(personProfileAssignmentService, never()).remove(any(), any());
