@@ -17,8 +17,8 @@ import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
-import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -44,7 +44,8 @@ public class PlaceOpenApiService {
                                               long organizationId,
                                               int offset,
                                               int limit,
-                                              String sortParam) {
+                                              String sortParam,
+                                              String lang) {
         projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
 
         InstitutionDTO institution = institutionService.findById(organizationId);
@@ -56,7 +57,7 @@ public class PlaceOpenApiService {
         Page<SpatialUnitDTO> page = spatialUnitService.findByInstitutionId(organizationId, limit, offset, sort);
 
         var resources = page.getContent().stream()
-                .map(placeOpenApiMapper::toResource)
+                .map(dto -> placeOpenApiMapper.toResource(dto, lang))
                 .toList();
 
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);

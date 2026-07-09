@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.controller.place.PlaceControllerApi;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -144,5 +145,27 @@ class PlaceControllerApiTest {
 
         mockMvc.perform(delete("/api/v1/places/5"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getById_notImplemented_returns501() throws Exception {
+        mockMvc.perform(get("/api/v1/places/5"))
+                .andExpect(status().isNotImplemented());
+    }
+
+    @Test
+    void getFinds_notImplemented_returns501() throws Exception {
+        mockMvc.perform(get("/api/v1/places/5/mobiliers")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isNotImplemented());
+    }
+
+    @Test
+    void getList_notImplemented_returns501() throws Exception {
+        mockMvc.perform(get("/api/v1/places/5/recording-units")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isNotImplemented());
     }
 }

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.find;
 
+import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -14,5 +15,5 @@ import java.util.Map;
 public class FindPatchRequest {
 
     @Schema(description = "Valeurs par id de champ (string numérique)")
-    private Map<String, Object> fieldAnswers = new HashMap<>();
+    private Map<String, AnswerInput> fieldAnswers = new HashMap<>();
 }

@@ -2,7 +2,6 @@ package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.generic.mapper.ResourceIdentifierMapper;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
 import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.*;
@@ -19,11 +18,11 @@ public interface PersonResourceIdentifierMapper
     PersonResourceIdentifier convert(PersonDTO personDTO);
 
     @Named("toAuthorRelationship")
-    default RelationshipToOne<PersonResourceIdentifier> toAuthorRelationship(PersonDTO personDTO) {
+    default PersonResourceIdentifier toAuthorRelationship(PersonDTO personDTO) {
         if (personDTO == null) {
             return null;
         }
-        return new RelationshipToOne<>(convert(personDTO));
+        return convert(personDTO);
     }
 
 }

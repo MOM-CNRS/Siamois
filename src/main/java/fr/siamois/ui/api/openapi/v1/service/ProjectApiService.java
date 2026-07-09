@@ -6,7 +6,6 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
-import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -25,7 +24,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +36,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.lang.Long.parseLong;
 
 /**
  * Orchestration des cas d'usage OpenAPI « projet » et listes liées : pagination, tri, périmètre institutions.
@@ -102,14 +103,24 @@ public class ProjectApiService {
         }
     }
 
+    public InstitutionDTO requireOrganization(Long id, ProjectApiCaller caller) {
+        assertOrganizationInCallerScope(id, caller.accessibleInstitutionIds());
+        return caller.institutions().stream()
+                .filter(inst -> id.equals(inst.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
     public Page<AccessibleProjectForApi> pageAccessibleProjects(
             ProjectApiCaller caller,
             Long organizationId,
             String search,
             int offset,
             int limit,
-            String sortParam) {
+            List<String> sortParams) {
         assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+        // TODO: implement multi-sort; for now only the first element is used
+        String sortParam = (sortParams != null && !sortParams.isEmpty()) ? sortParams.get(0) : null;
         Sort sort = parseProjectSort(sortParam);
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit, sort);
@@ -138,9 +149,9 @@ public class ProjectApiService {
         if (request.getOrganizationId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
-        assertOrganizationInCallerScope(request.getOrganizationId(), caller.accessibleInstitutionIds());
+        assertOrganizationInCallerScope(parseLong(request.getOrganizationId()), caller.accessibleInstitutionIds());
 
-        InstitutionDTO institution = institutionService.findById(request.getOrganizationId());
+        InstitutionDTO institution = institutionService.findById(parseLong(request.getOrganizationId()));
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organisation introuvable");
         }
@@ -158,13 +169,15 @@ public class ProjectApiService {
         if (identifier.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "identifier est obligatoire");
         }
-        if (request.getTypeConceptId() == null) {
+        if (request.getTypeId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "typeConceptId est obligatoire");
         }
 
-        Concept typeConcept = conceptService.findById(request.getTypeConceptId())
+        Concept typeConcept = conceptService.findById(parseLong(request.getTypeId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de projet introuvable"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
+
+        // todo map request dto to domain dto and use service
 
         ActionUnitDTO shell = new ActionUnitDTO();
         shell.setCreatedByInstitution(institution);
@@ -176,14 +189,9 @@ public class ProjectApiService {
         shell.setType(typeDto);
         shell.setSpatialContext(new LinkedHashSet<>());
 
-        if (request.getSpatialContextSpatialUnitIds() != null) {
-            ProjectPatchRequest spatialPatch = new ProjectPatchRequest();
-            spatialPatch.setSpatialContextSpatialUnitIds(request.getSpatialContextSpatialUnitIds());
-            applySpatialContextPatch(shell, institution, spatialPatch);
-        }
 
         recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
-                shell, request.getFieldAnswers(), caller.person(), lang);
+                shell, null, caller.person(), lang);
 
         try {
             ActionUnitDTO saved = actionUnitService.save(userInfo, shell, typeDto);
@@ -216,10 +224,9 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
         }
         applyProjectPatch(dto, patch);
-        applySpatialContextPatch(dto, inst, patch);
         ConceptDTO type = dto.getType();
-        if (patch.getTypeConceptId() != null) {
-            Concept concept = conceptService.findById(patch.getTypeConceptId())
+        if (patch.getTypeId() != null) {
+            Concept concept = conceptService.findById(parseLong(patch.getTypeId()))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de projet inconnu"));
             type = conceptMapper.convert(concept);
             dto.setType(type);
@@ -277,41 +284,14 @@ public class ProjectApiService {
         }
     }
 
-    private void applySpatialContextPatch(ActionUnitDTO dto, InstitutionDTO projectInstitution, ProjectPatchRequest patch) {
-        if (patch.getSpatialContextSpatialUnitIds() == null) {
-            return;
-        }
-        if (projectInstitution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
-        }
-        long orgId = projectInstitution.getId();
-        LinkedHashSet<SpatialUnitSummaryDTO> resolved = new LinkedHashSet<>();
-        for (Long spatialUnitId : patch.getSpatialContextSpatialUnitIds()) {
-            if (spatialUnitId == null) {
-                continue;
-            }
-            SpatialUnitDTO place;
-            try {
-                place = spatialUnitService.findById(spatialUnitId);
-            } catch (SpatialUnitNotFoundException e) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lieu introuvable : " + spatialUnitId, e);
-            }
-            InstitutionDTO placeOrg = place.getCreatedByInstitution();
-            if (placeOrg == null || placeOrg.getId() == null || !Objects.equals(placeOrg.getId(), orgId)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Le lieu " + spatialUnitId + " n'appartient pas à l'organisation du projet");
-            }
-            resolved.add(new SpatialUnitSummaryDTO(place));
-        }
-        dto.setSpatialContext(resolved);
-    }
-
     /**
      * Institutions que l'utilisateur peut consulter.
      * Tri et pagination appliqués sur la liste déjà portée par {@link ProjectApiCaller#institutions()}
      * (chargée une seule fois lors de l'appel à {@link #requireCaller()}).
      */
-    public Page<InstitutionDTO> pageAccessibleOrganizations(ProjectApiCaller caller, int offset, int limit, String sortParam) {
+    public Page<InstitutionDTO> pageAccessibleOrganizations(ProjectApiCaller caller, int offset, int limit, List<String> sortParams) {
+        // TODO: implement multi-sort; for now only the first element is used
+        String sortParam = (sortParams != null && !sortParams.isEmpty()) ? sortParams.get(0) : null;
         Sort sort = parseOrganizationSort(sortParam);
         List<InstitutionDTO> sorted = sortInstitutions(caller.institutions(), sort);
         long total = sorted.size();
@@ -337,7 +317,7 @@ public class ProjectApiService {
      * Documents rattachés au projet (unité d'action) via la table {@code action_unit_document}.
      */
     @Transactional(readOnly = true)
-    public List<ProjectDocumentResource> listDocumentsForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
+    public List<DocumentResource> listDocumentsForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
         return toSortedDocumentResources(documentService.findForActionUnit(row.actionUnit()));
     }
@@ -369,24 +349,24 @@ public class ProjectApiService {
      * Documents rattachés à une UE via la table {@code recording_unit_document}.
      */
     @Transactional(readOnly = true)
-    public List<ProjectDocumentResource> listDocumentsForAccessibleRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
+    public List<DocumentResource> listDocumentsForAccessibleRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         requireRecordingUnitViewPermission(caller, ru);
         return toSortedDocumentResources(documentService.findForRecordingUnit(ru));
     }
 
-    private void requireRecordingUnitViewPermission(ProjectApiCaller caller, RecordingUnitDTO ru) {
-        if (!profilePermissionService.canViewRecordingUnit(caller.person(), ru)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
-        }
-    }
-
-    private List<ProjectDocumentResource> toSortedDocumentResources(List<Document> docs) {
+    private List<DocumentResource> toSortedDocumentResources(List<Document> docs) {
         return docs.stream()
                 .sorted(Comparator.comparing(Document::getId, Comparator.nullsLast(Long::compareTo)))
                 .map(projectDocumentOpenApiMapper::toResource)
                 .toList();
+    }
+
+    private void requireRecordingUnitViewPermission(ProjectApiCaller caller, RecordingUnitDTO ru) {
+        if (!profilePermissionService.canViewRecordingUnit(caller.person(), ru)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
+        }
     }
 
     /**

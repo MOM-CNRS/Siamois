@@ -19,6 +19,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
@@ -127,7 +128,7 @@ class FindOpenApiServiceTest {
     void createFind_blankRecordingUnitId_throws400() {
         FindCreateRequest request = new FindCreateRequest();
         request.setRecordingUnitId("  ");
-        request.setSpecimenTypeConceptId("3");
+        request.setTypeId("3");
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -217,7 +218,7 @@ class FindOpenApiServiceTest {
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution)).thenReturn(null);
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("1", "x"));
+        request.setFieldAnswers(Map.of("1", new AnswerInput("x", null)));
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -249,7 +250,11 @@ class FindOpenApiServiceTest {
         when(specimenService.save(any(SpecimenDTO.class))).thenReturn(saved);
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("1", 7, "2", "note", "not-a-number", "oops", "999", 1));
+        request.setFieldAnswers(Map.of(
+                "1", new AnswerInput(7, null),
+                "2", new AnswerInput("note", null),
+                "not-a-number", new AnswerInput("oops", null),
+                "999", new AnswerInput(1, null)));
 
         FindResource result = service.createFind(request, personDto, SCOPE, LANG);
 
@@ -304,7 +309,7 @@ class FindOpenApiServiceTest {
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("5", 42));
+        request.setFieldAnswers(Map.of("5", new AnswerInput(42, null)));
 
         service.createFind(request, personDto, SCOPE, LANG);
 
@@ -381,14 +386,14 @@ class FindOpenApiServiceTest {
         OffsetDateTime odt = OffsetDateTime.parse("2025-06-01T10:15:30Z");
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of(
-                "1", "15",
-                "2", 123,
-                "3", odt,
-                "4", Map.of("id", "100"),
-                "5", "8",
-                "6", 20L,
-                "7", Map.of("id", 30),
-                "8", "ignored"
+                "1", new AnswerInput("15", null),
+                "2", new AnswerInput(123, null),
+                "3", new AnswerInput(odt, null),
+                "4", new AnswerInput(Map.of("id", "100"), null),
+                "5", new AnswerInput("8", null),
+                "6", new AnswerInput(20L, null),
+                "7", new AnswerInput(Map.of("id", 30), null),
+                "8", new AnswerInput("ignored", null)
         ));
 
         service.createFind(request, personDto, SCOPE, LANG);
@@ -420,7 +425,7 @@ class FindOpenApiServiceTest {
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("1", "not-a-number"));
+        request.setFieldAnswers(Map.of("1", new AnswerInput("not-a-number", null)));
 
         service.createFind(request, personDto, SCOPE, LANG);
 
@@ -444,7 +449,7 @@ class FindOpenApiServiceTest {
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("1", 1, "2", 2));
+        request.setFieldAnswers(Map.of("1", new AnswerInput(1, null), "2", new AnswerInput(2, null)));
 
         service.createFind(request, personDto, SCOPE, LANG);
 
@@ -472,9 +477,9 @@ class FindOpenApiServiceTest {
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        Map<String, Object> fieldAnswers = new HashMap<>();
-        fieldAnswers.put("10", "2025-01-02T08:00:00Z");
-        fieldAnswers.put("11", null);
+        Map<String, AnswerInput> fieldAnswers = new HashMap<>();
+        fieldAnswers.put("10", new AnswerInput("2025-01-02T08:00:00Z", null));
+        fieldAnswers.put("11", new AnswerInput(null, null));
         request.setFieldAnswers(fieldAnswers);
 
         service.createFind(request, personDto, SCOPE, LANG);
@@ -500,7 +505,7 @@ class FindOpenApiServiceTest {
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("10", "not-a-date"));
+        request.setFieldAnswers(Map.of("10", new AnswerInput("not-a-date", null)));
 
         service.createFind(request, personDto, SCOPE, LANG);
 
@@ -524,7 +529,7 @@ class FindOpenApiServiceTest {
         when(conceptRepository.findById(404L)).thenReturn(Optional.empty());
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("4", 404L));
+        request.setFieldAnswers(Map.of("4", new AnswerInput(404L, null)));
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -547,7 +552,7 @@ class FindOpenApiServiceTest {
         when(personService.findById(99L)).thenReturn(null);
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("5", 99L));
+        request.setFieldAnswers(Map.of("5", new AnswerInput(99L, null)));
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -572,7 +577,7 @@ class FindOpenApiServiceTest {
         when(actionUnitService.findById(77L)).thenReturn(null);
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("6", 77L));
+        request.setFieldAnswers(Map.of("6", new AnswerInput(77L, null)));
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -597,7 +602,7 @@ class FindOpenApiServiceTest {
         when(spatialUnitService.findById(55L)).thenThrow(new RuntimeException("missing"));
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("7", 55L));
+        request.setFieldAnswers(Map.of("7", new AnswerInput(55L, null)));
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -622,7 +627,7 @@ class FindOpenApiServiceTest {
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("4", Map.of()));
+        request.setFieldAnswers(Map.of("4", new AnswerInput(Map.of(), null)));
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -647,7 +652,7 @@ class FindOpenApiServiceTest {
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
-        request.setFieldAnswers(Map.of("1", 1));
+        request.setFieldAnswers(Map.of("1", new AnswerInput(1, null)));
 
         service.createFind(request, personDto, SCOPE, LANG);
 
@@ -742,7 +747,7 @@ class FindOpenApiServiceTest {
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
 
         FindPatchRequest request = new FindPatchRequest();
-        request.setFieldAnswers(Map.of("1", "x"));
+        request.setFieldAnswers(Map.of("1", new AnswerInput("x", null)));
 
         assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -758,7 +763,7 @@ class FindOpenApiServiceTest {
         when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution)).thenReturn(null);
 
         FindPatchRequest request = new FindPatchRequest();
-        request.setFieldAnswers(Map.of("1", "x"));
+        request.setFieldAnswers(Map.of("1", new AnswerInput("x", null)));
 
         assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -782,7 +787,7 @@ class FindOpenApiServiceTest {
         when(specimenService.save(same(specimen))).thenReturn(specimen);
 
         FindPatchRequest request = new FindPatchRequest();
-        request.setFieldAnswers(Map.of("2", "updated"));
+        request.setFieldAnswers(Map.of("2", new AnswerInput("updated", null)));
 
         FindResource result = service.patchFind(7L, request, personDto, SCOPE, LANG);
 
@@ -901,7 +906,7 @@ class FindOpenApiServiceTest {
     private static FindCreateRequest createRequest(String ruKey, String typeConceptId) {
         FindCreateRequest request = new FindCreateRequest();
         request.setRecordingUnitId(ruKey);
-        request.setSpecimenTypeConceptId(typeConceptId);
+        request.setTypeId(typeConceptId);
         return request;
     }
 

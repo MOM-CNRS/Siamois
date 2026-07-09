@@ -15,8 +15,8 @@ import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
-import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,9 +100,9 @@ class PlaceOpenApiServiceTest {
         resource.setResourceType("places");
         resource.setId("5");
         resource.setName("Cave A");
-        when(placeOpenApiMapper.toResource(dto)).thenReturn(resource);
+        when(placeOpenApiMapper.toResource(eq(dto), any())).thenReturn(resource);
 
-        PlaceListResponse response = service.listByOrganization(caller, 10L, 0, 50, "name:asc");
+        PlaceListResponse response = service.listByOrganization(caller, 10L, 0, 50, "name:asc", "fr");
 
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getName()).isEqualTo("Cave A");
@@ -114,7 +114,7 @@ class PlaceOpenApiServiceTest {
     void listByOrganization_unknownOrg_throws404() {
         when(institutionService.findById(10L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.listByOrganization(caller, 10L, 0, 50, "name:asc"))
+        assertThatThrownBy(() -> service.listByOrganization(caller, 10L, 0, 50, "name:asc", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.NOT_FOUND.value()));

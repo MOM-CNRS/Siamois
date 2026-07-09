@@ -1,9 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
+import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,21 +13,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PlaceOpenApiMapperTest {
 
     @Mock
-    private ConceptResourceIdentifierMapper conceptResourceIdentifierMapper;
+    private LabelService labelService;
 
     @InjectMocks
     private PlaceOpenApiMapper mapper;
 
     @Test
     void toResource_null_returnsNull() {
-        assertThat(mapper.toResource(null)).isNull();
+        assertThat(mapper.toResource(null, "fr")).isNull();
     }
 
     @Test
@@ -34,7 +36,7 @@ class PlaceOpenApiMapperTest {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setName("Cave A");
 
-        PlaceResource resource = mapper.toResource(dto);
+        PlaceResource resource = mapper.toResource(dto, "fr");
 
         assertThat(resource.getResourceType()).isEqualTo("places");
         assertThat(resource.getName()).isEqualTo("Cave A");
@@ -49,7 +51,7 @@ class PlaceOpenApiMapperTest {
         dto.setId(7L);
         dto.setName("Cave A");
 
-        PlaceResource resource = mapper.toResource(dto);
+        PlaceResource resource = mapper.toResource(dto, "fr");
 
         assertThat(resource.getId()).isEqualTo("7");
     }
@@ -58,20 +60,23 @@ class PlaceOpenApiMapperTest {
     void toResource_withCategory_mapsTypeRelationship() {
         ConceptDTO category = new ConceptDTO();
         category.setId(3L);
-        ConceptResourceIdentifier typeRef = new ConceptResourceIdentifier();
-        typeRef.setId("3");
-        when(conceptResourceIdentifierMapper.convert(category)).thenReturn(typeRef);
+        category.setExternalId("EXT-3");
+
+        ConceptPrefLabelDTO label = new ConceptPrefLabelDTO();
+        label.setLabel("Tranchée");
+        when(labelService.findLabelOf(eq(category), any())).thenReturn(label);
 
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setId(1L);
         dto.setName("Lieu");
         dto.setCategory(category);
 
-        PlaceResource resource = mapper.toResource(dto);
+        PlaceResource resource = mapper.toResource(dto, "fr");
 
         assertThat(resource.getType()).isNotNull();
-        assertThat(resource.getType().getData()).isSameAs(typeRef);
-        verify(conceptResourceIdentifierMapper).convert(category);
+        assertThat(resource.getType().getId()).isEqualTo("3");
+        assertThat(resource.getType().getExternalUrl()).isEqualTo("EXT-3");
+        assertThat(resource.getType().getResolvedLabel()).isEqualTo("Tranchée");
     }
 
     @Test
@@ -83,11 +88,11 @@ class PlaceOpenApiMapperTest {
         dto.setId(1L);
         dto.setCreatedByInstitution(institution);
 
-        PlaceResource resource = mapper.toResource(dto);
+        PlaceResource resource = mapper.toResource(dto, "fr");
 
         assertThat(resource.getOrganization()).isNotNull();
-        assertThat(resource.getOrganization().getData().getResourceType()).isEqualTo("organizations");
-        assertThat(resource.getOrganization().getData().getId()).isEqualTo("10");
+        assertThat(resource.getOrganization().getResourceType()).isEqualTo("organizations");
+        assertThat(resource.getOrganization().getId()).isEqualTo("10");
     }
 
     @Test
@@ -95,7 +100,7 @@ class PlaceOpenApiMapperTest {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setCreatedByInstitution(new InstitutionDTO());
 
-        PlaceResource resource = mapper.toResource(dto);
+        PlaceResource resource = mapper.toResource(dto, "fr");
 
         assertThat(resource.getOrganization()).isNull();
     }
@@ -105,7 +110,7 @@ class PlaceOpenApiMapperTest {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setCreatedByInstitution(null);
 
-        PlaceResource resource = mapper.toResource(dto);
+        PlaceResource resource = mapper.toResource(dto, "fr");
 
         assertThat(resource.getOrganization()).isNull();
     }
@@ -116,7 +121,7 @@ class PlaceOpenApiMapperTest {
         dto.setId(2L);
         dto.setCategory(null);
 
-        PlaceResource resource = mapper.toResource(dto);
+        PlaceResource resource = mapper.toResource(dto, "fr");
 
         assertThat(resource.getType()).isNull();
     }

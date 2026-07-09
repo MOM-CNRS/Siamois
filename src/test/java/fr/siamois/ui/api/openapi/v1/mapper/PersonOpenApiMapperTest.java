@@ -20,7 +20,7 @@ class PersonOpenApiMapperTest {
 
         PersonResource resource = mapper.toResource(dto);
 
-        assertThat(resource.resourceId()).isEqualTo("42");
+        assertThat(resource.id()).isEqualTo("42");
         assertThat(resource.username()).isEqualTo("alice");
         assertThat(resource.name()).isEqualTo("Alice");
         assertThat(resource.lastname()).isEqualTo("Martin");
@@ -33,7 +33,7 @@ class PersonOpenApiMapperTest {
 
         PersonResource resource = mapper.toResource(dto);
 
-        assertThat(resource.resourceId()).isNull();
+        assertThat(resource.id()).isNull();
         assertThat(resource.username()).isEqualTo("bob");
     }
 }

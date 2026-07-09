@@ -13,17 +13,23 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.StratigraphicRelationshipDTO;
-import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.controller.recordingunit.*;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.*;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -122,10 +128,18 @@ class RecordingUnitsControllerApiTest {
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,
-                recordingUnitOpenApiService,
-                documentWriteOpenApiService);
+                recordingUnitOpenApiService);
+        RecordingUnitChildrenControllerApi childrenController = new RecordingUnitChildrenControllerApi(
+                projectApiService,
+                recordingUnitOpenApiService);
+        RecordingUnitFindsControllerApi findsController = new RecordingUnitFindsControllerApi(projectApiService);
+        RecordingUnitDocumentsControllerApi documentsController = new RecordingUnitDocumentsControllerApi(
+                projectApiService, documentWriteOpenApiService);
+        RecordingUnitParentsControllerApi parentsController = new RecordingUnitParentsControllerApi(
+                projectApiService, recordingUnitOpenApiService);
 
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                controller, childrenController, findsController, documentsController, parentsController)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
                 .build();
@@ -157,12 +171,12 @@ class RecordingUnitsControllerApiTest {
         resource.setId("5");
         when(recordingUnitOpenApiService.buildMobileDetail(
                 "5", personDto, Set.of(10L), null, "fr"))
-                .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/recording-units/5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("5"))
-                .andExpect(jsonPath("$.data.recordingUnit.resourceType").value("recording-units"));
+                .andExpect(jsonPath("$.data.id").value("5"))
+                .andExpect(jsonPath("$.data.resourceType").value("recording-units"));
     }
 
     @Test
@@ -174,13 +188,13 @@ class RecordingUnitsControllerApiTest {
         resource.setResourceType("recording-units");
         resource.setId("99");
         when(recordingUnitOpenApiService.createRecordingUnit(any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
-                .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
+                .thenReturn(resource);
 
         mockMvc.perform(post("/api/v1/recording-units")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"actionUnitId\":1,\"recordingUnitTypeConceptId\":2,\"fieldAnswers\":{}}"))
+                        .content("{\"projectId\":\"5\",\"typeId\":\"42\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("99"));
+                .andExpect(jsonPath("$.data.id").value("99"));
     }
 
     @Test
@@ -192,13 +206,13 @@ class RecordingUnitsControllerApiTest {
         resource.setResourceType("recording-units");
         resource.setId("5");
         when(recordingUnitOpenApiService.patchRecordingUnit(eq("5"), any(), eq(personDto), eq(Set.of(10L)), eq("fr")))
-                .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
+                .thenReturn(resource);
 
         mockMvc.perform(patch("/api/v1/recording-units/5")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("5"));
+                .andExpect(jsonPath("$.data.id").value("5"));
     }
 
     @Test
@@ -211,18 +225,17 @@ class RecordingUnitsControllerApiTest {
         resource.setId("5");
         when(recordingUnitOpenApiService.buildMobileDetail(
                 "5", personDto, Set.of(10L), List.of("specimen"), "fr"))
-                .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/recording-units/5").param("counts", "specimen"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("5"));
+                .andExpect(jsonPath("$.data.id").value("5"));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {
             "/api/v1/recording-units/5",
             "/api/v1/recording-units/5/mobiliers",
-            "/api/v1/recording-units/5/relations",
             "/api/v1/recording-units/5/documents"
     })
     void get_withoutAuth_returns401(String url) throws Exception {
@@ -242,12 +255,12 @@ class RecordingUnitsControllerApiTest {
         resource.setId("7");
         when(recordingUnitOpenApiService.buildMobileDetail(
                 "7", personDto, Set.of(10L), null, "en"))
-                .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/recording-units/7")
                         .header("Accept-Language", "en-US,en;q=0.9"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.recordingUnit.resourceId").value("7"));
+                .andExpect(jsonPath("$.data.id").value("7"));
 
         verify(recordingUnitOpenApiService).buildMobileDetail(
                 "7", personDto, Set.of(10L), null, "en");
@@ -266,7 +279,7 @@ class RecordingUnitsControllerApiTest {
         resource.setId("1");
         when(recordingUnitOpenApiService.buildMobileDetail(
                 "x-id", personDto, Set.of(10L, 20L), null, "fr"))
-                .thenReturn(new RecordingUnitMobileDetailData(resource, null, Map.of(), Map.of()));
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/recording-units/x-id"))
                 .andExpect(status().isOk());
@@ -366,7 +379,7 @@ class RecordingUnitsControllerApiTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Total-Count", "1"))
                 .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].resourceId").value("99"))
+                .andExpect(jsonPath("$.data[0].id").value("99"))
                 .andExpect(jsonPath("$.data[0].resourceType").value("finds"))
                 .andExpect(jsonPath("$.data[0].fullIdentifier").value("INST-UE-99"));
 
@@ -464,89 +477,17 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
-    void getRelations_returns200_withData() throws Exception {
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        StratigraphicRelationshipDTO rel = new StratigraphicRelationshipDTO();
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations("5", Set.of(10L)))
-                .thenReturn(new RecordingUnitRelationsData(List.of(rel), List.of(), List.of()));
-
-        mockMvc.perform(get("/api/v1/recording-units/5/relations"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.stratigraphicRelationships").isArray())
-                .andExpect(jsonPath("$.data.stratigraphicRelationships.length()").value(1))
-                .andExpect(jsonPath("$.data.parents").isArray())
-                .andExpect(jsonPath("$.data.parents.length()").value(0))
-                .andExpect(jsonPath("$.data.children").isArray())
-                .andExpect(jsonPath("$.data.children.length()").value(0));
-
-        verify(recordingUnitOpenApiService).buildRecordingUnitRelations("5", Set.of(10L));
-    }
-
-    @Test
-    void getRelations_withSeveralInstitutions_passesFullScopeToService() throws Exception {
-        InstitutionDTO inst20 = new InstitutionDTO();
-        inst20.setId(20L);
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto))
-                .thenReturn(Set.of(institutionDto, inst20));
-
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations("ru-key", Set.of(10L, 20L)))
-                .thenReturn(new RecordingUnitRelationsData(List.of(), List.of(), List.of()));
-
-        mockMvc.perform(get("/api/v1/recording-units/ru-key/relations"))
-                .andExpect(status().isOk());
-
-        verify(recordingUnitOpenApiService).buildRecordingUnitRelations("ru-key", Set.of(10L, 20L));
-    }
-
-    @Test
-    void getRelations_returns200_withParentsAndChildrenInPayload() throws Exception {
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        RecordingUnitSummaryDTO parent = new RecordingUnitSummaryDTO();
-        parent.setId(99L);
-        parent.setFullIdentifier("INST-A-UE-P");
-        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
-        child.setId(100L);
-        child.setFullIdentifier("INST-A-UE-C");
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations("5", Set.of(10L)))
-                .thenReturn(new RecordingUnitRelationsData(List.of(), List.of(parent), List.of(child)));
-
-        mockMvc.perform(get("/api/v1/recording-units/5/relations"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.parents[0].id").value(99))
-                .andExpect(jsonPath("$.data.parents[0].fullIdentifier").value("INST-A-UE-P"))
-                .andExpect(jsonPath("$.data.children[0].id").value(100))
-                .andExpect(jsonPath("$.data.children[0].fullIdentifier").value("INST-A-UE-C"));
-    }
-
-    @Test
-    void getRelations_whenRecordingUnitNotFound_returns404() throws Exception {
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(recordingUnitOpenApiService.buildRecordingUnitRelations(any(), any()))
-                .thenThrow(new RecordingUnitNotFoundException("missing"));
-
-        mockMvc.perform(get("/api/v1/recording-units/404-key/relations"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("missing"));
-    }
-
-    @Test
     void getChildren_returns200_withEmptyList() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
         when(recordingUnitOpenApiService.buildRecordingUnitChildren("5", Set.of(10L)))
-                .thenReturn(new RecordingUnitChildrenData(List.of()));
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/recording-units/5/children"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.children").isArray())
-                .andExpect(jsonPath("$.data.children.length()").value(0));
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(0));
 
         verify(recordingUnitOpenApiService).buildRecordingUnitChildren("5", Set.of(10L));
     }
@@ -556,16 +497,17 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
-        child.setId(100L);
+        RecordingUnitResource child = new RecordingUnitResource();
+        child.setId("100");
         child.setFullIdentifier("INST-A-UE-C");
+        child.setResourceType("recording-units");
         when(recordingUnitOpenApiService.buildRecordingUnitChildren("5", Set.of(10L)))
-                .thenReturn(new RecordingUnitChildrenData(List.of(child)));
+                .thenReturn(List.of(child));
 
         mockMvc.perform(get("/api/v1/recording-units/5/children"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.children[0].id").value(100))
-                .andExpect(jsonPath("$.data.children[0].fullIdentifier").value("INST-A-UE-C"));
+                .andExpect(jsonPath("$.data[0].id").value("100"))
+                .andExpect(jsonPath("$.data[0].fullIdentifier").value("INST-A-UE-C"));
 
         verify(recordingUnitOpenApiService).buildRecordingUnitChildren("5", Set.of(10L));
     }
@@ -575,20 +517,20 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        RecordingUnitSummaryDTO first = new RecordingUnitSummaryDTO();
-        first.setId(10L);
-        first.setFullIdentifier("UE-10");
-        RecordingUnitSummaryDTO second = new RecordingUnitSummaryDTO();
-        second.setId(20L);
-        second.setFullIdentifier("UE-20");
+        RecordingUnitResource first = new RecordingUnitResource();
+        first.setId("10");
+        first.setResourceType("recording-units");
+        RecordingUnitResource second = new RecordingUnitResource();
+        second.setId("20");
+        second.setResourceType("recording-units");
         when(recordingUnitOpenApiService.buildRecordingUnitChildren("1", Set.of(10L)))
-                .thenReturn(new RecordingUnitChildrenData(List.of(first, second)));
+                .thenReturn(List.of(first, second));
 
         mockMvc.perform(get("/api/v1/recording-units/1/children"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.children.length()").value(2))
-                .andExpect(jsonPath("$.data.children[0].id").value(10))
-                .andExpect(jsonPath("$.data.children[1].id").value(20));
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].id").value("10"))
+                .andExpect(jsonPath("$.data[1].id").value("20"));
 
         verify(recordingUnitOpenApiService).buildRecordingUnitChildren("1", Set.of(10L));
     }
@@ -602,7 +544,7 @@ class RecordingUnitsControllerApiTest {
                 .thenReturn(Set.of(institutionDto, inst20));
 
         when(recordingUnitOpenApiService.buildRecordingUnitChildren("ru-key", Set.of(10L, 20L)))
-                .thenReturn(new RecordingUnitChildrenData(List.of()));
+                .thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/recording-units/ru-key/children"))
                 .andExpect(status().isOk());
@@ -634,22 +576,14 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
-    void addExistingChild_returns200_withRelations() throws Exception {
+    void addExistingChild_returns204() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
-        child.setId(99L);
-        RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(), List.of(child));
-        when(recordingUnitOpenApiService.addExistingChild("5", 99L, personDto, Set.of(10L)))
-                .thenReturn(relations);
 
         mockMvc.perform(post("/api/v1/recording-units/5/children")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"relatedRecordingUnitId\":99}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.children", hasSize(1)))
-                .andExpect(jsonPath("$.data.children[0].id").value(99));
+                .andExpect(status().isNoContent());
 
         verify(recordingUnitOpenApiService).addExistingChild("5", 99L, personDto, Set.of(10L));
     }
@@ -668,20 +602,12 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
-    void removeExistingParent_returns200_withRelations() throws Exception {
+    void removeExistingParent_returns204() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        RecordingUnitSummaryDTO parent = new RecordingUnitSummaryDTO();
-        parent.setId(88L);
-        RecordingUnitRelationsData relations = new RecordingUnitRelationsData(List.of(), List.of(parent), List.of());
-        when(recordingUnitOpenApiService.removeExistingParent("5", 88L, personDto, Set.of(10L)))
-                .thenReturn(relations);
-
         mockMvc.perform(delete("/api/v1/recording-units/5/parents/88"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.parents", hasSize(1)))
-                .andExpect(jsonPath("$.data.parents[0].id").value(88));
+                .andExpect(status().isNoContent());
 
         verify(recordingUnitOpenApiService).removeExistingParent("5", 88L, personDto, Set.of(10L));
     }
@@ -710,7 +636,7 @@ class RecordingUnitsControllerApiTest {
         Document doc = mock(Document.class);
         when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of(doc));
 
-        ProjectDocumentResource dr = new ProjectDocumentResource();
+        DocumentResource dr = new DocumentResource();
         dr.setResourceType("documents");
         dr.setId("100");
         dr.setTitle("Photo de coupe");
@@ -718,10 +644,10 @@ class RecordingUnitsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/recording-units/7/documents"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.documents", hasSize(1)))
-                .andExpect(jsonPath("$.data.documents[0].resourceId").value("100"))
-                .andExpect(jsonPath("$.data.documents[0].resourceType").value("documents"))
-                .andExpect(jsonPath("$.data.documents[0].title").value("Photo de coupe"));
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value("100"))
+                .andExpect(jsonPath("$.data[0].resourceType").value("documents"))
+                .andExpect(jsonPath("$.data[0].title").value("Photo de coupe"));
 
         verify(documentService).findForRecordingUnit(ruDto);
         verify(projectDocumentOpenApiMapper).toResource(same(doc));
@@ -739,7 +665,7 @@ class RecordingUnitsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/recording-units/2/documents"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.documents", hasSize(0)));
+                .andExpect(jsonPath("$.data", hasSize(0)));
     }
 
     @Test
@@ -758,7 +684,7 @@ class RecordingUnitsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/recording-units/ru-key/documents"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.documents", hasSize(0)));
+                .andExpect(jsonPath("$.data", hasSize(0)));
 
         verify(recordingUnitService).findAccessibleRecordingUnitByKey("ru-key", Set.of(10L, 20L), null);
     }
@@ -796,11 +722,11 @@ class RecordingUnitsControllerApiTest {
         when(doc7.getId()).thenReturn(7L);
         when(documentService.findForRecordingUnit(ruDto)).thenReturn(List.of(doc30, doc7));
 
-        ProjectDocumentResource r30 = new ProjectDocumentResource();
+        DocumentResource r30 = new DocumentResource();
         r30.setResourceType("documents");
         r30.setId("30");
         r30.setTitle("second");
-        ProjectDocumentResource r7 = new ProjectDocumentResource();
+        DocumentResource r7 = new DocumentResource();
         r7.setResourceType("documents");
         r7.setId("7");
         r7.setTitle("first");
@@ -809,11 +735,11 @@ class RecordingUnitsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/recording-units/1/documents"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.documents", hasSize(2)))
-                .andExpect(jsonPath("$.data.documents[0].resourceId").value("7"))
-                .andExpect(jsonPath("$.data.documents[0].title").value("first"))
-                .andExpect(jsonPath("$.data.documents[1].resourceId").value("30"))
-                .andExpect(jsonPath("$.data.documents[1].title").value("second"));
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[0].id").value("7"))
+                .andExpect(jsonPath("$.data[0].title").value("first"))
+                .andExpect(jsonPath("$.data[1].id").value("30"))
+                .andExpect(jsonPath("$.data[1].title").value("second"));
     }
 
     @Test
@@ -821,7 +747,7 @@ class RecordingUnitsControllerApiTest {
         SecurityContextHolder.clearContext();
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("organizationId", "10")
+                        .param("projectId", "10")
                         .param("recordingUnitTypeConceptId", "1"))
                 .andExpect(status().isUnauthorized());
     }
@@ -832,7 +758,7 @@ class RecordingUnitsControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("organizationId", "999")
+                        .param("projectId", "999")
                         .param("recordingUnitTypeConceptId", "1"))
                 .andExpect(status().isForbidden());
     }
@@ -842,18 +768,18 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        ConceptDTO type = new ConceptDTO();
-        type.setId(3L);
-        RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, null, Map.of(), Map.of());
+        ResolvedConceptResource type = new ResolvedConceptResource();
+        type.setId("3");
+        RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, null, Map.of());
         when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 3L, personDto, "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("organizationId", "10")
+                        .param("projectId", "10")
                         .param("recordingUnitTypeConceptId", "3")
                         .header("Accept-Language", "fr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.recordingUnitType.id").value(3));
+                .andExpect(jsonPath("$.data.recordingUnitType.id").value("3"));
 
         verify(recordingUnitOpenApiService).buildRecordingUnitCreateForm(10L, 3L, personDto, "fr");
     }
@@ -866,7 +792,7 @@ class RecordingUnitsControllerApiTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Recording unit type not found"));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("organizationId", "10")
+                        .param("projectId", "10")
                         .param("recordingUnitTypeConceptId", "99"))
                 .andExpect(status().isNotFound());
     }
@@ -876,13 +802,13 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        ConceptDTO type = new ConceptDTO();
-        type.setId(1L);
+        ResolvedConceptResource type = new ResolvedConceptResource();
+        type.setId("1");
         when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 1L, personDto, "en"))
-                .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of(), Map.of()));
+                .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("organizationId", "10")
+                        .param("projectId", "10")
                         .param("recordingUnitTypeConceptId", "1")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
                 .andExpect(status().isOk());
@@ -895,13 +821,13 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        ConceptDTO type = new ConceptDTO();
-        type.setId(2L);
+        ResolvedConceptResource type = new ResolvedConceptResource();
+        type.setId("2");
         when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 2L, personDto, "fr"))
-                .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of(), Map.of()));
+                .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("organizationId", "10")
+                        .param("projectId", "10")
                         .param("recordingUnitTypeConceptId", "2"))
                 .andExpect(status().isOk());
 
@@ -913,23 +839,22 @@ class RecordingUnitsControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
-        ConceptDTO type = new ConceptDTO();
-        type.setId(8L);
-        RecordingUnitFormBundle bundle = new RecordingUnitFormBundle(50L, "Mon formulaire", "D", "{\"layout\":[]}");
-        RecordingUnitFormFieldApi field = new RecordingUnitFormFieldApi(
-                12L, "TEXT", "Libellé", null, null, false, null, null);
-        Map<String, RecordingUnitFormFieldApi> fields = Map.of("12", field);
-        RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, bundle, fields, Map.of());
+        ResolvedConceptResource type = new ResolvedConceptResource();
+        type.setId("8");
+        FormResource bundle = new FormResource(50L, "Mon formulaire", "D", "{\"layout\":[]}");
+        FieldResource field = new FieldResource("12", "fields", "Libellé", "TEXT", null, false, null);
+        Map<String, FieldResource> fields = Map.of("12", field);
+        RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, bundle, fields);
         when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 8L, personDto, "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("organizationId", "10")
+                        .param("projectId", "10")
                         .param("recordingUnitTypeConceptId", "8"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.form.formId").value(50))
+                .andExpect(jsonPath("$.data.form.resourceId").value(50))
                 .andExpect(jsonPath("$.data.form.name").value("Mon formulaire"))
-                .andExpect(jsonPath("$.data.fields['12'].fieldId").value(12))
+                .andExpect(jsonPath("$.data.fields['12'].id").value("12"))
                 .andExpect(jsonPath("$.data.fields['12'].answerType").value("TEXT"));
     }
 

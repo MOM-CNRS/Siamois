@@ -115,7 +115,7 @@ class ProjectApiServiceMutationTest {
     @Test
     void createProject_organizationOutOfScope_throws403() {
         ProjectCreateRequest request = validCreateRequest();
-        request.setOrganizationId(99L);
+        request.setOrganizationId("99");
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -157,7 +157,6 @@ class ProjectApiServiceMutationTest {
         AccessibleProjectForApi result = service.createProject(caller, request, "fr");
 
         assertThat(result).isSameAs(row);
-        verify(recordingUnitOpenApiService).applySystemProjectFormFieldAnswers(any(), any(), same(personDto), eq("fr"));
     }
 
     @Test
@@ -249,10 +248,10 @@ class ProjectApiServiceMutationTest {
 
     private ProjectCreateRequest validCreateRequest() {
         ProjectCreateRequest request = new ProjectCreateRequest();
-        request.setOrganizationId(10L);
+        request.setOrganizationId("10");
         request.setName("Projet");
         request.setIdentifier("PRJ");
-        request.setTypeConceptId(42L);
+        request.setTypeId("42");
         return request;
     }
 

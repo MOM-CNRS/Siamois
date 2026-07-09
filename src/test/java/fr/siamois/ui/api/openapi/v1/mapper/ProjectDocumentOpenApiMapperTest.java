@@ -5,7 +5,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,7 +46,7 @@ class ProjectDocumentOpenApiMapperTest {
 
   @Test
   void toResource_mapsScalarFields() {
-    ProjectDocumentResource resource = mapper.toResource(document);
+    DocumentResource resource = mapper.toResource(document);
 
     assertThat(resource.getResourceType()).isEqualTo("documents");
     assertThat(resource.getId()).isEqualTo("10");
@@ -67,7 +67,7 @@ class ProjectDocumentOpenApiMapperTest {
   void toResource_nullId_mapsNullResourceId() {
     document.setId(null);
 
-    ProjectDocumentResource resource = mapper.toResource(document);
+    DocumentResource resource = mapper.toResource(document);
 
     assertThat(resource.getId()).isNull();
   }
@@ -95,11 +95,11 @@ class ProjectDocumentOpenApiMapperTest {
       return new ConceptResourceIdentifier("concepts", String.valueOf(dto.getId()));
     });
 
-    ProjectDocumentResource resource = mapper.toResource(document);
+    DocumentResource resource = mapper.toResource(document);
 
-    assertThat(resource.getNature().getData().getId()).isEqualTo("1");
-    assertThat(resource.getScale().getData().getId()).isEqualTo("2");
-    assertThat(resource.getFormat().getData().getId()).isEqualTo("3");
+    assertThat(resource.getNature().getId()).isEqualTo("1");
+    assertThat(resource.getScale().getId()).isEqualTo("2");
+    assertThat(resource.getFormat().getId()).isEqualTo("3");
     verify(conceptMapper, times(3)).convert(any(Concept.class));
     verify(conceptResourceIdentifierMapper, times(3)).convert(any(ConceptDTO.class));
   }

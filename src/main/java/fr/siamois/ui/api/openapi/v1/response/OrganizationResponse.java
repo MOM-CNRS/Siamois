@@ -12,4 +12,3 @@ public class OrganizationResponse extends Response<OrganizationResource> {
         super(data);
     }
 }
-

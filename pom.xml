@@ -84,6 +84,7 @@
             **/*Converter.*,
             **/*Builder.*,
             **/*Controller.*,
+            **/ui/api/openapi/v1/controller/**/*Controller*.*,
             **/*Settings.*,
             **/**Factory.*,
             **/SiamoisApplication.*,

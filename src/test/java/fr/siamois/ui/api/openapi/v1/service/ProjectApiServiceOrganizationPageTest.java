@@ -77,7 +77,7 @@ class ProjectApiServiceOrganizationPageTest {
 
     @Test
     void pageAccessibleOrganizations_empty_returnsEmptyPage() {
-        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of()), 0, 10, "name:asc");
+        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of()), 0, 10, List.of("name:asc"));
 
         assertThat(page.getTotalElements()).isZero();
         assertThat(page.getContent()).isEmpty();
@@ -88,7 +88,7 @@ class ProjectApiServiceOrganizationPageTest {
         InstitutionDTO low = dto(1L, "B", "id-1");
         InstitutionDTO high = dto(10L, "A", "id-2");
 
-        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(low, high)), 0, 10, "id:desc");
+        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(low, high)), 0, 10, List.of("id:desc"));
 
         assertThat(page.getContent()).extracting(InstitutionDTO::getId).containsExactly(10L, 1L);
     }
@@ -98,7 +98,7 @@ class ProjectApiServiceOrganizationPageTest {
         InstitutionDTO z = dto(1L, "N", "zeta");
         InstitutionDTO a = dto(2L, "N", "Alpha");
 
-        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(z, a)), 0, 10, "identifier:asc");
+        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(z, a)), 0, 10, List.of("identifier:asc"));
 
         assertThat(page.getContent()).extracting(InstitutionDTO::getIdentifier).containsExactly("Alpha", "zeta");
     }
@@ -112,7 +112,7 @@ class ProjectApiServiceOrganizationPageTest {
         InstitutionDTO newer = dto(2L, "New", "n");
         newer.setCreationDate(t2);
 
-        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(newer, older)), 0, 10, "creationDate:asc");
+        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(newer, older)), 0, 10, List.of("creationDate:asc"));
 
         assertThat(page.getContent()).extracting(InstitutionDTO::getId).containsExactly(1L, 2L);
     }
@@ -122,7 +122,7 @@ class ProjectApiServiceOrganizationPageTest {
         InstitutionDTO b = dto(1L, "Bbb", "x");
         InstitutionDTO a = dto(2L, "Aaa", "y");
 
-        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(b, a)), 0, 10, "unknownField:desc");
+        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(b, a)), 0, 10, List.of("unknownField:desc"));
 
         assertThat(page.getContent()).extracting(InstitutionDTO::getName).containsExactly("Bbb", "Aaa");
     }
@@ -131,7 +131,7 @@ class ProjectApiServiceOrganizationPageTest {
     void pageAccessibleOrganizations_offsetBeyondTotal_returnsEmptySlice() {
         InstitutionDTO only = dto(1L, "Solo", "s");
 
-        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(only)), 10, 10, "name:asc");
+        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller(List.of(only)), 10, 10, List.of("name:asc"));
 
         assertThat(page.getTotalElements()).isEqualTo(1);
         assertThat(page.getContent()).isEmpty();

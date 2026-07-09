@@ -4,7 +4,6 @@ import java.util.List;
 
 public record AuthUserResponse(
         Long id,
-        String email,
         String username,
         String name,
         String lastname,

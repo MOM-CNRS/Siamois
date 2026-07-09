@@ -18,7 +18,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,10 +103,10 @@ class DocumentWriteOpenApiServiceTest {
         when(documentService.saveFile(any(UserInfo.class), any(Document.class), any(InputStream.class), eq("/siamois")))
                 .thenReturn(saved);
 
-        ProjectDocumentResource resource = new ProjectDocumentResource();
+        DocumentResource resource = new DocumentResource();
         when(projectDocumentOpenApiMapper.toResource(saved)).thenReturn(resource);
 
-        ProjectDocumentResource result = service.createForProject(
+        DocumentResource result = service.createForProject(
                 caller, "5", "Title", "Desc", null, null, null, file, "fr");
 
         assertThat(result).isSameAs(resource);
@@ -204,10 +204,10 @@ class DocumentWriteOpenApiServiceTest {
 
         Document saved = new Document();
         when(documentService.saveFile(any(), any(), any(), any())).thenReturn(saved);
-        ProjectDocumentResource resource = new ProjectDocumentResource();
+        DocumentResource resource = new DocumentResource();
         when(projectDocumentOpenApiMapper.toResource(saved)).thenReturn(resource);
 
-        ProjectDocumentResource result = service.createForRecordingUnit(
+        DocumentResource result = service.createForRecordingUnit(
                 caller, "UE-1", "Title", null, null, null, null, file, "fr");
 
         assertThat(result).isSameAs(resource);
@@ -225,10 +225,10 @@ class DocumentWriteOpenApiServiceTest {
 
         Document saved = new Document();
         when(documentService.save(doc)).thenReturn(saved);
-        ProjectDocumentResource resource = new ProjectDocumentResource();
+        DocumentResource resource = new DocumentResource();
         when(projectDocumentOpenApiMapper.toResource(saved)).thenReturn(resource);
 
-        ProjectDocumentResource result = service.updateDocument(
+        DocumentResource result = service.updateDocument(
                 caller, 8L, "New title", "New desc", 3L, null, null);
 
         assertThat(result).isSameAs(resource);

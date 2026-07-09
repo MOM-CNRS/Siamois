@@ -15,6 +15,7 @@ public class ProjectResourceIdentifier implements ResourceIdentifier {
             allowableValues = {"projects"})
     private String resourceType;
 
+    @Schema(description = "Identifiant unique du projet au sein de la base")
     private String id;
 
 }

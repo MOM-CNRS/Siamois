@@ -723,58 +723,6 @@ class RecordingUnitServiceTest {
         verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
     }
 
-    @Test
-    void findByInstitutionId_shouldReturnPaginatedRecordingUnits() {
-        // Arrange
-        Long institutionId = 1L;
-        int limit = 2;
-        int offset = 0;
-        Pageable pageable = PageRequest.of(offset, limit);
-
-        RecordingUnit ru1 = new RecordingUnit(); ru1.setId(1L); ru1.setFullIdentifier("RU-001");
-        RecordingUnit ru2 = new RecordingUnit(); ru2.setId(2L); ru2.setFullIdentifier("RU-002");
-        Page<RecordingUnit> recordingUnitPage = new PageImpl<>(List.of(ru1, ru2), pageable, 2);
-
-        RecordingUnitDTO dto1 = new RecordingUnitDTO(); dto1.setId(1L); dto1.setFullIdentifier("RU-001");
-        RecordingUnitDTO dto2 = new RecordingUnitDTO(); dto2.setId(2L); dto2.setFullIdentifier("RU-002");
-
-        when(recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable)).thenReturn(recordingUnitPage);
-        when(recordingUnitMapper.convert(ru1)).thenReturn(dto1);
-        when(recordingUnitMapper.convert(ru2)).thenReturn(dto2);
-
-        // Act
-        Page<RecordingUnitDTO> result = recordingUnitService.findByInstitutionId(institutionId, limit, offset);
-
-        // Assert
-        assertThat(result).hasSize(2);
-        assertThat(result.getContent()).containsExactly(dto1, dto2);
-        assertThat(result.getTotalElements()).isEqualTo(2);
-        verify(recordingUnitRepository, times(1)).findByCreatedByInstitutionId(institutionId, pageable);
-        verify(recordingUnitMapper, times(1)).convert(ru1);
-        verify(recordingUnitMapper, times(1)).convert(ru2);
-    }
-
-    @Test
-    void findByInstitutionId_shouldReturnEmptyPage_whenNoRecordingUnitsFound() {
-        // Arrange
-        Long institutionId = 1L;
-        int limit = 2;
-        int offset = 0;
-        Pageable pageable = PageRequest.of(offset, limit);
-
-        Page<RecordingUnit> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
-
-        when(recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable)).thenReturn(emptyPage);
-
-        // Act
-        Page<RecordingUnitDTO> result = recordingUnitService.findByInstitutionId(institutionId, limit, offset);
-
-        // Assert
-        assertThat(result).isEmpty();
-        assertThat(result.getTotalElements()).isZero();
-        verify(recordingUnitRepository, times(1)).findByCreatedByInstitutionId(institutionId, pageable);
-        verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
-    }
 
     // =====================================================================
     // autocompleteInActionUnit / searchRecordingUnitInRecordingUnit /
