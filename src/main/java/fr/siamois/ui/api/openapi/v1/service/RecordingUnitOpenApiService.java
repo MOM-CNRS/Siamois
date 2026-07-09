@@ -567,26 +567,6 @@ public class RecordingUnitOpenApiService {
         return dv != null ? dv.value() : field.getClass().getSimpleName();
     }
 
-    private Map<String, List<ConceptAutocompleteDTO>> loadVocabularies(FieldSource fieldSource, UserInfo userInfo) {
-        Set<String> codes = new LinkedHashSet<>();
-        for (CustomField f : fieldSource.getAllFields()) {
-            if (f instanceof CustomFieldSelectOneFromFieldCode ff
-                    && ff.getFieldCode() != null
-                    && !ff.getFieldCode().isBlank()) {
-                codes.add(ff.getFieldCode());
-            }
-        }
-        Map<String, List<ConceptAutocompleteDTO>> out = new LinkedHashMap<>();
-        for (String code : codes) {
-            try {
-                out.put(code, fieldConfigurationService.fetchAutocomplete(userInfo, code, null));
-            } catch (NoConfigForFieldException e) {
-                out.put(code, List.of());
-            }
-        }
-        return out;
-    }
-
     private void applyPersistedCustomAnswers(RecordingUnit entity,
                                              CustomForm effectiveForm,
                                              CustomFormResponseViewModel response,
