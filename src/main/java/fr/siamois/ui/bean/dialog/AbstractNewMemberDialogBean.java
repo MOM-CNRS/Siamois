@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.*;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
+import static fr.siamois.utils.MessageUtils.displayInfoMessage;
 
 /**
  * Backs the "Ajouter des membres/utilisateurs" wizard dialog shared by the institution, project and
@@ -365,10 +366,18 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         String invitationLink = pendingPersonService.invitationLink(pendingPerson);
         String expirationDate = DateUtils.formatOffsetDateTime(pendingPerson.getPendingInvitationExpirationDate());
         String body = invitationEmailRenderer.render(invitationScopeName(), invitationLink, expirationDate);
-        emailManager.sendEmail(person.getEmail(),
-                invitationMailSubject(),
-                body,
-                EmailManager.TEXT_HTML);
+        try {
+            emailManager.sendEmail(person.getEmail(),
+                    invitationMailSubject(),
+                    body,
+                    EmailManager.TEXT_HTML);
+            displayInfoMessage(langBean, "newMember.invitation.sent", person.getEmail());
+        } catch (RuntimeException e) {
+            // The member and their profiles are already persisted; only the e-mail delivery failed,
+            // so keep going and let the manager know they may need to resend the invitation.
+            log.error("Failed to send invitation e-mail to {}", person.getEmail(), e);
+            displayErrorMessage(langBean, "newMember.invitation.failed", person.getEmail());
+        }
     }
 
     private static String usernameFromEmail(String email) {
