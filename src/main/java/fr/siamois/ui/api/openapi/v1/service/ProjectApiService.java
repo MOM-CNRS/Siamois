@@ -6,7 +6,6 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
-import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -225,7 +224,6 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
         }
         applyProjectPatch(dto, patch);
-        applySpatialContextPatch(dto, inst, patch);
         ConceptDTO type = dto.getType();
         if (patch.getTypeId() != null) {
             Concept concept = conceptService.findById(parseLong(patch.getTypeId()))
@@ -284,14 +282,6 @@ public class ProjectApiService {
         if (patch.getEndDate() != null) {
             dto.setEndDate(patch.getEndDate());
         }
-    }
-
-    private void applySpatialContextPatch(ActionUnitDTO dto, InstitutionDTO projectInstitution, ProjectPatchRequest patch) {
-        if (projectInstitution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
-        }
-        LinkedHashSet<SpatialUnitSummaryDTO> resolved = new LinkedHashSet<>();
-        dto.setSpatialContext(resolved);
     }
 
     /**

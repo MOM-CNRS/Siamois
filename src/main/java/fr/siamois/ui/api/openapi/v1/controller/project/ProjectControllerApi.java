@@ -154,8 +154,7 @@ public class ProjectControllerApi {
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Mise à jour partielle d'un projet",
             description = "Champs modifiables : nom, catégorie (type d'opération, "
-                    + "`typeConceptId`), date de début, date de fin, localisation précise, "
-                    + "liste d'identifiants d'unités spatiales de l'organisation ; tableau vide = tout retirer). "
+                    + "`typeConceptId`), date de début, date de fin, localisation précise. "
                     + "Champs absents = inchangés, champ null = valeur effacé . Droit d'écriture sur le projet requis.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),

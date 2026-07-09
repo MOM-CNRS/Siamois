@@ -15,11 +15,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
@@ -726,43 +722,6 @@ class ProjectControllerApiTest {
         verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) -> "Après".equals(d.getName())), any());
     }
 
-    @Test
-    void patchProject_spatialContext_passesResolvedPlacesToSave() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(9L);
-        au.setName("P");
-        au.setCreatedByInstitution(institutionDto);
-        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L)))
-                .thenReturn(row)
-                .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
-
-        SpatialUnitDTO place = new SpatialUnitDTO();
-        place.setId(50L);
-        place.setCreatedByInstitution(institutionDto);
-        when(spatialUnitService.findById(50L)).thenReturn(place);
-        when(actionUnitService.save(any(), any(), any())).thenReturn(au);
-
-        ProjectResource resource = new ProjectResource();
-        resource.setResourceType("projects");
-        resource.setId("9");
-        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString())).thenReturn(resource);
-
-        mockMvc.perform(patch("/api/v1/projects/9")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"spatialContextSpatialUnitIds\":[50]}"))
-                .andExpect(status().isOk());
-
-        verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) ->
-                d.getSpatialContext() != null
-                        && d.getSpatialContext().size() == 1
-                        && d.getSpatialContext().iterator().next().getId().equals(50L)), any());
-    }
 
     @Test
     void deleteProject_withoutAuthentication_returns401() throws Exception {
