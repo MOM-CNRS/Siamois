@@ -27,8 +27,7 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -93,7 +92,7 @@ class ProjectConceptsControllerApiTest {
         mockMvc.perform(get("/api/v1/projects/9/concepts").param("fieldCode", ""))
                 .andExpect(status().isBadRequest());
 
-        verify(projectApiService, Mockito.never()).requireCaller();
+        verify(projectApiService, never()).requireCaller();
     }
 
     @Test

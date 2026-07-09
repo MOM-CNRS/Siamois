@@ -58,7 +58,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
@@ -209,7 +208,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildMobileDetail_whenFormPresent_populatesBundleLayoutJsonFieldsAndVocabularies() throws Exception {
+    void buildMobileDetail_whenFormPresent_populatesBundleLayoutJsonFieldsAndVocabularies()  {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ruDto.setCreatedByInstitution(inst);
@@ -617,7 +616,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildRecordingUnitCreateForm_whenFormPresent_populatesFormFieldsAndVocabularies() throws Exception {
+    void buildRecordingUnitCreateForm_whenFormPresent_populatesFormFieldsAndVocabularies() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         when(institutionService.findById(10L)).thenReturn(inst);

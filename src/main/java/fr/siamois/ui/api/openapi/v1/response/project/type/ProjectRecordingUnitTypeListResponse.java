@@ -5,10 +5,12 @@ import fr.siamois.ui.api.openapi.v1.generic.response.Response;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Getter
 public class ProjectRecordingUnitTypeListResponse extends Response<List<RecordingUnitType>> {
 
