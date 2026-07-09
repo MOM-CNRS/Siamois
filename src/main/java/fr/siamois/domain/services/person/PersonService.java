@@ -50,7 +50,7 @@ public class PersonService {
      * @param savedPerson The person but saved
      */
     private void deletePendingInvitation(Person savedPerson) {
-        pendingPersonRepository.findByEmail(savedPerson.getEmail()).ifPresent(pendingPersonRepository::delete);
+        pendingPersonRepository.deleteById(savedPerson.getId());
     }
 
     /**
@@ -314,5 +314,19 @@ public class PersonService {
         return result.stream()
                 .map(personMapper::convert)
                 .toList();
+    }
+
+    public void enableAndUpdatePerson(PersonDTO person, String password) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
+        Person savedPerson = personRepository.findById(person.getId()).orElseThrow(() -> new EntityNotFoundException("Person not found"));
+
+        checkPersonData(person, true);
+        checkPassword(password);
+
+        savedPerson.setUsername(person.getUsername());
+        savedPerson.setName(person.getName());
+        savedPerson.setLastname(person.getLastname());
+        savedPerson.setPassword(passwordEncoder.encode(password));
+        savedPerson.setEnabled(true);
+        personRepository.save(savedPerson);
     }
 }

@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.auth;
 
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.LangService;
@@ -40,15 +41,23 @@ class PendingPersonServiceTest {
     @InjectMocks
     private PendingPersonService pendingPersonService;
 
+    private Person person;
     private PendingPerson pendingPerson;
     private Institution institution;
 
     @BeforeEach
     void setUp() {
+        person = new Person();
+        person.setId(1L);
+        person.setUsername("username");
+        person.setEmail("email");
+        person.setPassword("password");
+        person.setEnabled(false);
+
         pendingPerson = new PendingPerson();
-        pendingPerson.setEmail("test@example.com");
         pendingPerson.setRegisterToken("testToken");
         pendingPerson.setPendingInvitationExpirationDate(NOW.plusDays(3));
+        pendingPerson.setDisabledPerson(person);
 
         institution = new Institution();
         institution.setName("Test Institution");
@@ -82,26 +91,6 @@ class PendingPersonServiceTest {
         String link = pendingPersonService.invitationLink(pendingPerson);
 
         assertEquals("http://localhost:8080/app/register/testToken", link);
-    }
-
-    @Test
-    void createOrGetPendingPerson_shouldReturnExistingPerson() {
-        when(pendingPersonRepository.findByEmail("test@example.com")).thenReturn(Optional.of(pendingPerson));
-
-        PendingPerson result = pendingPersonService.createOrGetPendingPerson("test@example.com");
-
-        assertEquals(pendingPerson, result);
-    }
-
-    @Test
-    void createOrGetPendingPerson_shouldCreateNewPerson() {
-        when(pendingPersonRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
-        when(pendingPersonRepository.save(any(PendingPerson.class))).thenReturn(pendingPerson);
-
-        PendingPerson result = pendingPersonService.createOrGetPendingPerson("test@example.com");
-
-        assertNotNull(result);
-        assertEquals("test@example.com", result.getEmail());
     }
 
     @Test

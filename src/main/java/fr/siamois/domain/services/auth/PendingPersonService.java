@@ -1,15 +1,13 @@
 package fr.siamois.domain.services.auth;
 
 import fr.siamois.domain.models.auth.pending.PendingPerson;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.constraints.Email;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Optional;
 
 /**
@@ -70,29 +68,6 @@ public class PendingPersonService {
     }
 
     /**
-     * Create or get a pending person by email.
-     *
-     * @param email the email of the pending person
-     * @return the pending person
-     */
-    public PendingPerson createOrGetPendingPerson(@Email String email) {
-        Optional<PendingPerson> pendingPerson = pendingPersonRepository.findByEmail(email);
-        if (pendingPerson.isPresent()) {
-            return pendingPerson.get();
-        } else {
-            PendingPerson person = new PendingPerson();
-            person.setEmail(email);
-            person.setId(-1L);
-            person.setRegisterToken(generateToken());
-            person.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(3));
-            person = pendingPersonRepository.save(person);
-
-            return person;
-        }
-    }
-
-
-    /**
      * Delete a pending person from the database.
      *
      * @param pendingPerson the pending person to delete
@@ -111,4 +86,7 @@ public class PendingPersonService {
         return pendingPersonRepository.findByRegisterToken(token);
     }
 
+    public void deleteByPerson(PersonDTO person) {
+        pendingPersonRepository.deleteByDisabledPersonId(person.getId());
+    }
 }

@@ -30,7 +30,7 @@ public class PendingPerson implements Serializable {
     private OffsetDateTime pendingInvitationExpirationDate;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_person_id", nullable = false)
+    @JoinColumn(name = "fk_person_id")
     private Person disabledPerson;
 
     @Override
