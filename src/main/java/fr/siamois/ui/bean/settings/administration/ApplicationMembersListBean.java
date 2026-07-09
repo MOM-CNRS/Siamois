@@ -5,15 +5,13 @@ import fr.siamois.domain.services.ApplicationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
-import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.administration.NewApplicationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
-import fr.siamois.ui.bean.settings.SettingsDatatableBean;
+import fr.siamois.ui.bean.settings.AbstractMembersListBean;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
@@ -24,9 +22,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 
@@ -35,37 +31,39 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Scope(value = "session")
 @Getter
 @Setter
-@RequiredArgsConstructor
-public class ApplicationMembersListBean implements SettingsDatatableBean {
+public class ApplicationMembersListBean extends AbstractMembersListBean {
 
     private final transient ApplicationMembersServiceInterface applicationMembersService;
     private final NewApplicationMemberDialogBean newApplicationMemberDialogBean;
     private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient PersonProfileAssignmentService personProfileAssignmentService;
-    private final transient PendingPersonService pendingPersonService;
 
     private transient List<ApplicationMemberDTO> members;
     private transient List<ApplicationMemberDTO> refMembers;
     private transient List<ProfileDTO> availableProfiles;
-    private transient Set<Long> pendingInvitationPersonIds;
     private String searchInput;
 
+    public ApplicationMembersListBean(ApplicationMembersServiceInterface applicationMembersService,
+                                      NewApplicationMemberDialogBean newApplicationMemberDialogBean,
+                                      LangBean langBean,
+                                      SessionSettingsBean sessionSettingsBean,
+                                      PersonProfileAssignmentService personProfileAssignmentService,
+                                      PendingPersonService pendingPersonService) {
+        super(pendingPersonService);
+        this.applicationMembersService = applicationMembersService;
+        this.newApplicationMemberDialogBean = newApplicationMemberDialogBean;
+        this.langBean = langBean;
+        this.sessionSettingsBean = sessionSettingsBean;
+        this.personProfileAssignmentService = personProfileAssignmentService;
+    }
 
     /** Loads the application's user accounts and resets the search filter. */
     public void init() {
         refMembers = new ArrayList<>(applicationMembersService.findMembers());
         members = new ArrayList<>(refMembers);
         availableProfiles = applicationMembersService.findAvailableProfiles();
-        pendingInvitationPersonIds = new HashSet<>(pendingPersonService.findPersonIdsWithPendingInvitation(
-                refMembers.stream().map(m -> m.getPerson().getId()).toList()));
-    }
-
-    /** @return true when the member's account is disabled and still waiting on its invitation. */
-    public boolean hasPendingInvitation(PersonDTO person) {
-        return !person.isEnabled()
-                && pendingInvitationPersonIds != null
-                && pendingInvitationPersonIds.contains(person.getId());
+        loadPendingInvitations(refMembers.stream().map(m -> m.getPerson().getId()).toList());
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -126,9 +124,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
             ApplicationMemberDTO member = applicationMembersService.addMember(
                     saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);
-            if (!saved.person().isEnabled() && pendingPersonService.hasPendingInvitation(saved.person().getId())) {
-                pendingInvitationPersonIds.add(saved.person().getId());
-            }
+            trackPendingInvitation(saved.person());
             filter();
             return true;
         } catch (Exception err) {
@@ -143,7 +139,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
         members = null;
         refMembers = null;
         availableProfiles = null;
-        pendingInvitationPersonIds = null;
+        resetPendingInvitations();
         searchInput = null;
     }
 

@@ -164,6 +164,16 @@ class PendingPersonServiceTest {
     }
 
     @Test
+    void deleteByPerson_shouldDeleteByDisabledPersonId() {
+        PersonDTO personDTO = new PersonDTO();
+        personDTO.setId(1L);
+
+        pendingPersonService.deleteByPerson(personDTO);
+
+        verify(pendingPersonRepository).deleteByDisabledPersonId(1L);
+    }
+
+    @Test
     void findByToken_shouldReturnPendingPerson() {
         when(pendingPersonRepository.findByRegisterToken("testToken")).thenReturn(Optional.of(pendingPerson));
 

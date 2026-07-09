@@ -19,6 +19,7 @@ import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.email.EmailManager;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -229,6 +230,43 @@ class PersonServiceTest {
     void createDisabledPersonWithRandomPassword_ThrowsInvalidEmailException() {
         personDto.setEmail("invalid-email");
         assertThrows(InvalidEmailException.class, () -> personService.createDisabledPersonWithRandomPassword(personDto));
+    }
+
+    @Test
+    void enableAndUpdatePerson_Success() throws Exception {
+        personDto.setUsername("newUsername");
+        personDto.setName("John");
+        personDto.setLastname("Doe");
+        when(personRepository.findById(personDto.getId())).thenReturn(Optional.of(person));
+        when(passwordEncoder.encode("newPassword1")).thenReturn("encodedPassword");
+        when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        personService.enableAndUpdatePerson(personDto, "newPassword1");
+
+        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
+        verify(personRepository).save(captor.capture());
+        Person saved = captor.getValue();
+        assertEquals("newUsername", saved.getUsername());
+        assertEquals("John", saved.getName());
+        assertEquals("Doe", saved.getLastname());
+        assertEquals("encodedPassword", saved.getPassword());
+        assertTrue(saved.isEnabled());
+    }
+
+    @Test
+    void enableAndUpdatePerson_ThrowsWhenPersonNotFound() {
+        when(personRepository.findById(personDto.getId())).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> personService.enableAndUpdatePerson(personDto, "newPassword1"));
+        verify(personRepository, never()).save(any(Person.class));
+    }
+
+    @Test
+    void enableAndUpdatePerson_ThrowsInvalidPasswordException() {
+        when(personRepository.findById(personDto.getId())).thenReturn(Optional.of(person));
+
+        assertThrows(InvalidPasswordException.class, () -> personService.enableAndUpdatePerson(personDto, "short"));
+        verify(personRepository, never()).save(any(Person.class));
     }
 
     @Test
