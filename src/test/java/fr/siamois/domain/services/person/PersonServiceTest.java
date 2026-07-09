@@ -1,8 +1,6 @@
 package fr.siamois.domain.services.person;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.auth.pending.PendingActionUnitAttribution;
-import fr.siamois.domain.models.auth.pending.PendingInstitutionInvite;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
@@ -15,7 +13,6 @@ import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
@@ -76,11 +73,6 @@ class PersonServiceTest {
     @Mock
     private PersonMapper personMapper;
 
-
-
-    @Mock
-    private PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
-
     private PersonService personService;
 
     Person person;
@@ -109,12 +101,7 @@ class PersonServiceTest {
                 personSettingsRepository,
                 institutionService,
                 langService,
-                pendingPersonRepository,
-                pendingPersonService,
                 conversionService,
-                pendingInstitutionInviteRepository,
-                institutionMapper,
-                actionUnitMapper,
                 personMapper
         );
     }
@@ -283,12 +270,7 @@ class PersonServiceTest {
                 personSettingsRepository,
                 institutionService,
                 langService,
-                pendingPersonRepository,
-                pendingPersonService,
                 conversionService,
-                pendingInstitutionInviteRepository,
-                institutionMapper,
-                actionUnitMapper,
                 personMapper
         );
 
@@ -377,137 +359,7 @@ class PersonServiceTest {
     }
 
     // Pour createAndDeletePendingRelations, on teste via createPerson (chemins principaux)
-    @Test
-    void createAndDeletePendingRelations_ShouldAddManagerAndActionManagerAndAttributions() throws Exception {
-        // Arrange
-        Person newPerson = new Person();
-        newPerson.setId(42L);
-        PersonDTO newPersonDto = new PersonDTO();
-        newPersonDto.setId(42L);
-        newPersonDto.setEmail("mail@localhost.com");
-        PendingPerson pendingPerson = new PendingPerson();
-        pendingPerson.setEmail("mail@localhost.com");
-        newPerson.setPassword("password");
-        newPersonDto.setEmail("mail@localhost.com");
 
-        PersonDTO newPersonRequest = new PersonDTO();
-        newPersonRequest.setId(42L);
-        newPersonRequest.setEmail("mail@localhost.com");
-
-        Institution institution = new Institution();
-        institution.setId(1L);
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(1L);
-
-        PendingInstitutionInvite invite = mock(PendingInstitutionInvite.class);
-        when(invite.getInstitution()).thenReturn(institution);
-        when(invite.isManager()).thenReturn(true);
-        when(invite.isActionManager()).thenReturn(true);
-
-        PendingActionUnitAttribution attribution = mock(PendingActionUnitAttribution.class);
-        when(attribution.getActionUnit()).thenReturn(null);
-
-        Set<PendingInstitutionInvite> invites = Set.of(invite);
-        Set<PendingActionUnitAttribution> attributions = Set.of(attribution);
-
-        when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(invites);
-        when(pendingPersonService.findActionAttributionsByPendingInvite(invite)).thenReturn(attributions);
-
-        // On mock la création du PendingPerson
-        when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
-
-
-
-        // On mock le save du person
-        when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(newPerson);
-        when(institutionMapper.convert(any(Institution.class))).thenReturn(institutionDTO);
-        when(personMapper.convert(any(Person.class))).thenReturn(newPersonDto);
-        // Act
-
-        personService.createPerson(newPersonRequest,"password");
-
-        // Assert
-
-        verify(institutionService).addToManagers(institutionDTO, newPersonDto);
-        verify(institutionService).addPersonToActionManager(institutionDTO, newPersonDto);
-        verify(institutionService).addPersonAsMemberOfActionUnit(null, newPersonDto);
-        verify(pendingPersonService).delete(attribution);
-        verify(pendingPersonService).delete(invite);
-        verify(pendingPersonRepository).delete(pendingPerson);
-    }
-
-    @Test
-    void createAndDeletePendingRelations_ShouldNotAddManagerOrActionManager_WhenFlagsFalse() throws Exception {
-        // Arrange
-        Person newPerson = new Person();
-        newPerson.setId(42L);
-        PersonDTO newPersonDto = new PersonDTO();
-        newPersonDto.setId(42L);
-        PendingPerson pendingPerson = new PendingPerson();
-        pendingPerson.setEmail("mail@localhost.com");
-
-        Institution institution = new Institution();
-        institution.setId(1L);
-
-        PendingInstitutionInvite invite = mock(PendingInstitutionInvite.class);
-        when(invite.getInstitution()).thenReturn(institution);
-        when(invite.isManager()).thenReturn(false);
-        when(invite.isActionManager()).thenReturn(false);
-
-        Set<PendingInstitutionInvite> invites = Set.of(invite);
-        when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(invites);
-        when(pendingPersonService.findActionAttributionsByPendingInvite(invite)).thenReturn(Set.of());
-
-        when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
-        when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-
-        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(newPerson);
-
-        // Act
-        person.setPassword("password");
-        person.setEmail("mail@localhost.com");
-        person.setId(-1L);
-        personService.createPerson(personDto, "password");
-
-        // Assert
-        verify(institutionService, never()).addToManagers(any(), any());
-        verify(institutionService, never()).addPersonToActionManager(any(), any());
-        verify(institutionService, never()).addPersonAsMemberOfActionUnit(any(), any());
-        verify(pendingPersonService, never()).delete(any(PendingActionUnitAttribution.class));
-        verify(pendingPersonService).delete(invite);
-        verify(pendingPersonRepository).delete(pendingPerson);
-    }
-
-    @Test
-    void createAndDeletePendingRelations_ShouldHandleNoInvites() throws Exception {
-        // Arrange
-        Person newPerson = new Person();
-        newPerson.setId(42L);
-        PendingPerson pendingPerson = new PendingPerson();
-        pendingPerson.setEmail("mail@localhost.com");
-        PersonDTO newPersonDto = new PersonDTO();
-        newPersonDto.setId(42L);
-        newPersonDto.setEmail("mail@localhost.com");
-
-        when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(Set.of());
-        when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
-        when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-        when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(person);
-        // Act
-        person.setPassword("password");
-        person.setEmail("mail@localhost.com");
-        person.setId(-1L);
-        personService.createPerson(personDto, "password");
-
-        // Assert
-        verify(institutionService, never()).addToManagers(any(), any());
-        verify(institutionService, never()).addPersonToActionManager(any(), any());
-        verify(institutionService, never()).addPersonAsMemberOfActionUnit(any(), any());
-        verify(pendingPersonService, never()).delete(any(PendingActionUnitAttribution.class));
-        verify(pendingPersonService, never()).delete(any(PendingInstitutionInvite.class));
-        verify(pendingPersonRepository).delete(pendingPerson);
-    }
 
     @Test
     void findAllInInstitution_nullSearch_passesNullFilter() {
@@ -624,12 +476,7 @@ class PersonServiceTest {
                 personSettingsRepository,
                 institutionService,
                 langService,
-                pendingPersonRepository,
-                pendingPersonService,
                 conversionService,
-                pendingInstitutionInviteRepository,
-                institutionMapper,
-                actionUnitMapper,
                 personMapper
         );
 

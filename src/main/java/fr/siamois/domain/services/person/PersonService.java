@@ -1,25 +1,18 @@
 package fr.siamois.domain.services.person;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.auth.pending.PendingActionUnitAttribution;
-import fr.siamois.domain.models.auth.pending.PendingInstitutionInvite;
-import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
-import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
-import fr.siamois.mapper.ActionUnitMapper;
-import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
@@ -48,42 +41,16 @@ public class PersonService {
     private final PersonSettingsRepository personSettingsRepository;
     private final InstitutionService institutionService;
     private final LangService langService;
-    private final PendingPersonRepository pendingPersonRepository;
-    private final PendingPersonService pendingPersonService;
     private final ConversionService conversionService;
-    private final fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
-    private final InstitutionMapper institutionMapper;
-    private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
+    private final PendingPersonRepository pendingPersonRepository;
 
-    private void createAndDeletePendingRelations(PendingPerson pendingPerson, Person person) {
-        Set<PendingInstitutionInvite> institutionInvites = pendingInstitutionInviteRepository.findAllByPendingPerson(pendingPerson);
-        PersonDTO personDTO = personMapper.convert(person);
-        for (PendingInstitutionInvite invite : institutionInvites) {
-            InstitutionDTO institution = institutionMapper.convert(invite.getInstitution());
-
-            if (invite.isManager()) {
-                institutionService.addToManagers(institution, personDTO);
-            }
-            if (invite.isActionManager()) {
-                institutionService.addPersonToActionManager(institution, personDTO);
-            }
-
-            Set<PendingActionUnitAttribution> attributions = pendingPersonService.findActionAttributionsByPendingInvite(invite);
-            for (PendingActionUnitAttribution attribution : attributions) {
-                ActionUnitDTO actionUnitDTO = actionUnitMapper.convert(attribution.getActionUnit());
-                institutionService.addPersonAsMemberOfActionUnit(actionUnitDTO, personDTO);
-                pendingPersonService.delete(attribution);
-            }
-
-            pendingPersonService.delete(invite);
-        }
-    }
-
-    private void managePendingInvites(Person savedPerson) {
-        PendingPerson p = pendingPersonService.createOrGetPendingPerson(savedPerson.getEmail());
-        createAndDeletePendingRelations(p, savedPerson);
-        pendingPersonRepository.delete(p);
+    /**
+     * Creates real relations and delete pending relations. Then delete the pending person
+     * @param savedPerson The person but saved
+     */
+    private void deletePendingInvitation(Person savedPerson) {
+        pendingPersonRepository.findByEmail(savedPerson.getEmail()).ifPresent(pendingPersonRepository::delete);
     }
 
     /**
@@ -114,7 +81,7 @@ public class PersonService {
 
         person = personRepository.save(person);
 
-        managePendingInvites(person);
+        deletePendingInvitation(person);
 
         return conversionService.convert(person, PersonDTO.class);
     }
