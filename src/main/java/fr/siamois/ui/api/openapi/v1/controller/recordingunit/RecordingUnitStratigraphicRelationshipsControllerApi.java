@@ -1,7 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import io.swagger.v3.oas.annotations.Operation;

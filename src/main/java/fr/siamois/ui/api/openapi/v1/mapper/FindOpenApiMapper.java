@@ -3,12 +3,9 @@ package fr.siamois.ui.api.openapi.v1.mapper;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceIdentifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Mobilier OpenAPI ({@code finds}) à partir du DTO métier spécimen.

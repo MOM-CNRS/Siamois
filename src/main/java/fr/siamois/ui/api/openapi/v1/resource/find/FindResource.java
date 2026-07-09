@@ -1,18 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.resource.find;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
-import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceLinks;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,7 +13,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.lang.Nullable;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Map;
 
 @Data

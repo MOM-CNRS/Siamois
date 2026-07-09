@@ -13,10 +13,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import static fr.siamois.ui.api.openapi.v1.OpenApiTags.MOBILE_APP;
 import static fr.siamois.ui.api.openapi.v1.OpenApiTags.PROJECT_CONFIG;

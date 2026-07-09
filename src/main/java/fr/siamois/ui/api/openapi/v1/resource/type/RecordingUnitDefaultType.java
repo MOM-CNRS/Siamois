@@ -1,6 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.resource.type;
 
-import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import io.swagger.v3.oas.annotations.media.Schema;

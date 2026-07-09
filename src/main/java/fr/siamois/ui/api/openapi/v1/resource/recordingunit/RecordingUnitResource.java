@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
-import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -1,15 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.controller.organization;
 
-import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
-import fr.siamois.ui.api.openapi.v1.mapper.OrganizationOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,10 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/v1/organizations")

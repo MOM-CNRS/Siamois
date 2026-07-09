@@ -9,18 +9,14 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.FullAddress;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
-import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,13 +35,8 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PlaceOpenApiServiceTest {

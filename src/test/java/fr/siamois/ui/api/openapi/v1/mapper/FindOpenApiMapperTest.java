@@ -1,9 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import org.junit.jupiter.api.Test;
