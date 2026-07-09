@@ -145,4 +145,26 @@ class PlaceControllerApiTest {
         mockMvc.perform(delete("/api/v1/places/5"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void getById_notImplemented_returns501() throws Exception {
+        mockMvc.perform(get("/api/v1/places/5"))
+                .andExpect(status().isNotImplemented());
+    }
+
+    @Test
+    void getFinds_notImplemented_returns501() throws Exception {
+        mockMvc.perform(get("/api/v1/places/5/mobiliers")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isNotImplemented());
+    }
+
+    @Test
+    void getList_notImplemented_returns501() throws Exception {
+        mockMvc.perform(get("/api/v1/places/5/recording-units")
+                        .param("offset", "0")
+                        .param("limit", "10"))
+                .andExpect(status().isNotImplemented());
+    }
 }
