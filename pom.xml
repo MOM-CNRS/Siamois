@@ -449,6 +449,13 @@
             <version>3.2.3</version>
             <scope>compile</scope>
         </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-mail -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+            <version>4.1.0</version>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
 

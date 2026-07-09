@@ -78,12 +78,23 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 300MB
-      max-request-size: 300MB
-
+      max-file-size: 8MB
+      max-request-size: 8MB
   cache:
     caffeine:
       spec: expireAfterAccess=1h,maximumSize=500
+
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH_ENABLED:true}
+          starttls:
+            enable: ${SMTP_STARTTLS_ENABLED:true}
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
 
 joinfaces:
   faces:
