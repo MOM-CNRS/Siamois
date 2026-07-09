@@ -547,4 +547,25 @@ class PersonServiceTest {
         assertThrows(IllegalStateException.class, () -> serviceWithoutVerifier.updatePassword(1L, "password"));
     }
 
+    @Test
+    void findByUsername_returnsMappedPerson_whenFound() {
+        when(personRepository.findByUsernameIgnoreCase("system")).thenReturn(Optional.of(person));
+        when(personMapper.convert(person)).thenReturn(personDto);
+
+        Optional<PersonDTO> result = personService.findByUsername("system");
+
+        assertTrue(result.isPresent());
+        assertEquals(personDto, result.get());
+    }
+
+    @Test
+    void findByUsername_returnsEmpty_whenNotFound() {
+        when(personRepository.findByUsernameIgnoreCase("unknown")).thenReturn(Optional.empty());
+
+        Optional<PersonDTO> result = personService.findByUsername("unknown");
+
+        assertTrue(result.isEmpty());
+        verify(personMapper, never()).convert(any(Person.class));
+    }
+
 }
