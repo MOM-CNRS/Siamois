@@ -78,7 +78,10 @@
                     </p:column>
                 </p:dataTable>
             </settings:datatable>
-            <ui:include src="/dialog/administration/newApplicationMember.xhtml"/>
+            <ui:include src="/dialog/shared/newMemberDialog.xhtml">
+                <ui:param name="dialogBean" value="#{newApplicationMemberDialogBean}"/>
+                <ui:param name="updateTarget" value=":applicationMembersDatatable:formCC:applicationMembersForm:membersDatatable"/>
+            </ui:include>
         </main>
     </ui:define>
 

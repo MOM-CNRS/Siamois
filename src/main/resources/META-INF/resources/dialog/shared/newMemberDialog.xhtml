@@ -5,10 +5,15 @@
              xmlns:h="http://java.sun.com/jsf/html"
              xmlns:f="http://java.sun.com/jsf/core"
 >
+    <!-- Shared "Ajouter des membres/utilisateurs" wizard dialog for institution/project/application
+         member management. Callers must pass in via ui:param:
+           - dialogBean: the AbstractNewMemberDialogBean subclass instance backing this dialog
+           - updateTarget: the absolute client id of the caller's members datatable to refresh on submit
+    -->
 
     <p:dialog
-            widgetVar="newApplicationMemberDialog"
-            id="newApplicationMemberDialog"
+            widgetVar="#{dialogBean.dialogId}"
+            id="#{dialogBean.dialogId}"
             width="480px"
             showEffect="fade"
             appendToBody="true"
@@ -18,17 +23,17 @@
     >
         <div class="dialog-new-organization-member">
             <div class="dialog-new-organization-member-header">
-                <h3>#{newApplicationMemberDialogBean.title}</h3>
+                <h3>#{dialogBean.title}</h3>
             </div>
-            <form:csrfform id="newApplicationMemberFormCC" formId="newApplicationMemberForm">
+            <form:csrfform id="#{dialogBean.dialogId}FormCC" formId="#{dialogBean.dialogId}Form">
                 <div class="dialog-new-organization-member-body">
 
-                    <h:panelGroup layout="block" rendered="#{newApplicationMemberDialogBean.stepMain}">
+                    <h:panelGroup layout="block" rendered="#{dialogBean.stepMain}">
                         <div class="form-group">
                             <p:outputLabel value="#{langBean.msg('newOrganizationMember.label.members')}"/>
                             <p:autoComplete id="memberSearch"
-                                            value="#{newApplicationMemberDialogBean.selectedMembers}"
-                                            completeMethod="#{newApplicationMemberDialogBean.completeMember}"
+                                            value="#{dialogBean.selectedMembers}"
+                                            completeMethod="#{dialogBean.completeMember}"
                                             queryDelay="300"
                                             var="u"
                                             itemLabel="#{u.displayName()}"
@@ -42,7 +47,7 @@
                                 <p:ajax event="itemSelect" process="@this" update="@form"/>
                                 <p:ajax event="itemUnselect" process="@this" update="@form"/>
                             </p:autoComplete>
-                            <p:commandLink action="#{newApplicationMemberDialogBean.goToInvite()}"
+                            <p:commandLink action="#{dialogBean.goToInvite()}"
                                            process="@this"
                                            update="@form"
                                            styleClass="invite-by-email-link">
@@ -53,7 +58,7 @@
 
                         <div class="form-group">
                             <p:outputLabel value="#{langBean.msg('newOrganizationMember.label.profile')}"/>
-                            <p:selectCheckboxMenu value="#{newApplicationMemberDialogBean.selectedProfiles}"
+                            <p:selectCheckboxMenu value="#{dialogBean.selectedProfiles}"
                                                    converter="#{profileDTOConverter}"
                                                    panelStyleClass="profile-select-panel"
                                                    label="#{langBean.msg('newOrganizationMember.placeholder.profile')}"
@@ -62,14 +67,14 @@
                                                    filter="true"
                                                    filterMatchMode="contains"
                                                    scrollHeight="200">
-                                <f:selectItems value="#{newApplicationMemberDialogBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
+                                <f:selectItems value="#{dialogBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
                                 <p:ajax process="@this" update="@form"/>
                             </p:selectCheckboxMenu>
                         </div>
                     </h:panelGroup>
 
                     <h:panelGroup layout="block" styleClass="invite-form"
-                                  rendered="#{newApplicationMemberDialogBean.stepInvite}">
+                                  rendered="#{dialogBean.stepInvite}">
                         <div class="invite-form-row">
                             <div class="invite-form-field">
                                 <p:outputLabel class="col-form-label" for="inviteFirstName">
@@ -77,7 +82,7 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteFirstName"
                                              placeholder="#{langBean.msg('newOrganizationMember.label.firstname')}"
-                                             value="#{newApplicationMemberDialogBean.inviteFirstName}"/>
+                                             value="#{dialogBean.inviteFirstName}"/>
                             </div>
                             <div class="invite-form-field">
                                 <p:outputLabel class="col-form-label" for="inviteLastName">
@@ -85,7 +90,7 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteLastName"
                                              placeholder="#{langBean.msg('newOrganizationMember.label.lastname')}"
-                                             value="#{newApplicationMemberDialogBean.inviteLastName}"/>
+                                             value="#{dialogBean.inviteLastName}"/>
                             </div>
                         </div>
                         <div class="invite-form-row">
@@ -95,7 +100,7 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteEmail" type="email"
                                              placeholder="#{langBean.msg('newOrganizationMember.placeholder.email')}"
-                                             value="#{newApplicationMemberDialogBean.inviteEmail}"/>
+                                             value="#{dialogBean.inviteEmail}"/>
                             </div>
                             <div class="invite-form-field">
                                 <p:outputLabel class="col-form-label" for="inviteUsername">
@@ -103,7 +108,7 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteUsername"
                                              placeholder="#{langBean.msg('newOrganizationMember.placeholder.username')}"
-                                             value="#{newApplicationMemberDialogBean.inviteUsername}"/>
+                                             value="#{dialogBean.inviteUsername}"/>
                             </div>
                         </div>
                         <div class="invite-form-row">
@@ -113,7 +118,7 @@
                                 </p:outputLabel>
                                 <p:inputText type="password" id="invitePassword"
                                              placeholder="••••••••"
-                                             value="#{newApplicationMemberDialogBean.invitePassword}"/>
+                                             value="#{dialogBean.invitePassword}"/>
                             </div>
                             <div class="invite-form-field">
                                 <p:outputLabel for="invitePasswordConfirm">
@@ -121,7 +126,7 @@
                                 </p:outputLabel>
                                 <p:inputText type="password" id="invitePasswordConfirm"
                                              placeholder="••••••••"
-                                             value="#{newApplicationMemberDialogBean.invitePasswordConfirm}"/>
+                                             value="#{dialogBean.invitePasswordConfirm}"/>
                             </div>
                         </div>
                     </h:panelGroup>
@@ -130,22 +135,22 @@
 
                 <div class="dialog-buttons">
                     <p:commandButton value="#{langBean.msg('newOrganizationMember.action.back')}"
-                                     rendered="#{newApplicationMemberDialogBean.stepInvite}"
+                                     rendered="#{dialogBean.stepInvite}"
                                      immediate="true"
                                      styleClass="ui-button-secondary"
-                                     action="#{newApplicationMemberDialogBean.back()}"
+                                     action="#{dialogBean.back()}"
                                      update="@form"/>
                     <p:commandButton value="#{langBean.msg('common.action.cancel')}"
-                                     rendered="#{newApplicationMemberDialogBean.stepMain}"
+                                     rendered="#{dialogBean.stepMain}"
                                      immediate="true"
                                      styleClass="ui-button-secondary"
-                                     action="#{newApplicationMemberDialogBean.exit()}"
+                                     action="#{dialogBean.exit()}"
                                      update="@form"/>
-                    <p:commandButton value="#{newApplicationMemberDialogBean.primaryActionLabel}"
-                                     disabled="#{!newApplicationMemberDialogBean.primaryActionEnabled}"
-                                     action="#{newApplicationMemberDialogBean.primaryAction()}"
+                    <p:commandButton value="#{dialogBean.primaryActionLabel}"
+                                     disabled="#{!dialogBean.primaryActionEnabled}"
+                                     action="#{dialogBean.primaryAction()}"
                                      process="@form"
-                                     update="@form :applicationMembersDatatable:formCC:applicationMembersForm:membersDatatable"/>
+                                     update="@form #{updateTarget}"/>
                 </div>
             </form:csrfform>
         </div>
