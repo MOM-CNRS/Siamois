@@ -142,7 +142,7 @@ class OrganizationMembersServiceImplTest {
 
     @Test
     void findAvailableProfiles_shouldReturnProfilesOfInstitution() {
-        when(profileRepository.findProfilesByInstitutionId(institution.getId()))
+        when(profileRepository.findAllOfInstitutionScope(institution.getId()))
                 .thenReturn(List.of(memberProfile));
         when(profileMapper.convert(memberProfile)).thenReturn(memberProfileDTO);
 
@@ -153,7 +153,7 @@ class OrganizationMembersServiceImplTest {
 
     @Test
     void findAvailableProfiles_shouldReturnEmptyList_whenInstitutionHasNoProfile() {
-        when(profileRepository.findProfilesByInstitutionId(institution.getId()))
+        when(profileRepository.findAllOfInstitutionScope(institution.getId()))
                 .thenReturn(List.of());
 
         List<ProfileDTO> result = organizationMembersService.findAvailableProfiles(institution);

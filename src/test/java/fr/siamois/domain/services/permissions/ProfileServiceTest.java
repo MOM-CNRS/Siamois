@@ -185,7 +185,7 @@ class ProfileServiceTest {
         ProfileDTO dto1 = new ProfileDTO();
         ProfileDTO dto2 = new ProfileDTO();
 
-        when(profileRepository.findProfilesByActionUnitId(actionUnitDTO.getId())).thenReturn(List.of(profile1, profile2));
+        when(profileRepository.findAllOfActionUnitScope(actionUnitDTO.getId())).thenReturn(List.of(profile1, profile2));
         when(profileMapper.convert(profile1)).thenReturn(dto1);
         when(profileMapper.convert(profile2)).thenReturn(dto2);
 
@@ -201,7 +201,7 @@ class ProfileServiceTest {
         Profile profile = new Profile();
         ProfileDTO dto = new ProfileDTO();
 
-        when(profileRepository.findAllOfInstanceLevel()).thenReturn(List.of(profile));
+        when(profileRepository.findAllOfInstanceScope()).thenReturn(List.of(profile));
         when(profileMapper.convert(profile)).thenReturn(dto);
 
         List<ProfileDTO> result = profileService.findAllProfilesOfInstance();
