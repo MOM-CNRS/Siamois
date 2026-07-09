@@ -7,19 +7,23 @@ import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts;
+import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.stereotype.Component;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+@Mapper(uses = ConversionServiceAdapter.class,
+        componentModel = MappingConstants.ComponentModel.SPRING,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR)
+@RequiredArgsConstructor
 public abstract class RecordingUnitResponseMapper implements Converter<RecordingUnitDTO, RecordingUnitResource> {
 
-    @Autowired
-    protected LabelService labelService;
+    protected final LabelService labelService;
 
     @Mapping(target = "resourceType", constant = "recording-units")
     @Mapping(target = "id", expression = "java(String.valueOf(dto.getId()))")

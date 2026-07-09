@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
@@ -92,7 +93,7 @@ class ProjectConceptsControllerApiTest {
         mockMvc.perform(get("/api/v1/projects/9/concepts").param("fieldCode", ""))
                 .andExpect(status().isBadRequest());
 
-        verify(projectApiService, org.mockito.Mockito.never()).requireCaller();
+        verify(projectApiService, Mockito.never()).requireCaller();
     }
 
     @Test

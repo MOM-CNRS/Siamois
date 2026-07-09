@@ -77,6 +77,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class RecordingUnitOpenApiService {
 
+    public static final String CONCEPTS = "concepts";
     private final RecordingUnitService recordingUnitService;
     private final FormService formService;
     private final FieldConfigurationService fieldConfigurationService;
@@ -117,8 +118,6 @@ public class RecordingUnitOpenApiService {
         if (!profilePermissionService.canViewRecordingUnit(personDto, dto)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
         }
-
-        RecordingUnitResource recordingUnit = recordingUnitResponseMapper.convert(dto);
 
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null) {
@@ -168,7 +167,7 @@ public class RecordingUnitOpenApiService {
         return switch (answerType) {
             case "SELECT_ONE_FROM_FIELD_CODE" -> {
                 if (raw instanceof ConceptDTO c)
-                    yield new ResourceRef(String.valueOf(c.getId()), "concepts", c.getExternalId());
+                    yield new ResourceRef(String.valueOf(c.getId()), CONCEPTS, c.getExternalId());
                 yield null;
             }
             case "SELECT_ONE_PERSON" -> {
@@ -213,7 +212,7 @@ public class RecordingUnitOpenApiService {
         if (item instanceof PersonDTO p)
             return new ResourceRef(String.valueOf(p.getId()), "persons", p.displayName());
         if (item instanceof ConceptDTO c)
-            return new ResourceRef(String.valueOf(c.getId()), "concepts", c.getExternalId());
+            return new ResourceRef(String.valueOf(c.getId()), CONCEPTS, c.getExternalId());
         if (item instanceof SpatialUnitSummaryDTO s)
             return new ResourceRef(String.valueOf(s.getId()), "spatial-units", s.getName());
         if (item instanceof RecordingUnitSummaryDTO r)
@@ -556,7 +555,7 @@ public class RecordingUnitOpenApiService {
 
     private ResolvedConceptResource toConceptResource(ConceptDTO concept, String lang) {
         ResolvedConceptResource r = new ResolvedConceptResource();
-        r.setResourceType("concepts");
+        r.setResourceType(CONCEPTS);
         r.setId(String.valueOf(concept.getId()));
         r.setExternalUrl(concept.getExternalId());
         r.setResolvedLabel(labelService.findLabelOf(concept, lang).getLabel());

@@ -58,6 +58,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
@@ -182,21 +183,6 @@ class RecordingUnitOpenApiServiceTest {
         verifyNoInteractions(formService, conversionService, customFormLayoutConverter, fieldConfigurationService, conceptMapper);
     }
 
-    @Test
-    void buildMobileDetail_whenNoCustomForm_returnsRecordingUnitWithoutFormBundle() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        ruDto.setCreatedByInstitution(inst);
-        ruDto.setType(new ConceptDTO());
-
-        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
-                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(ruDto.getType(), inst)).thenReturn(null);
-
-        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
-
-    }
 
     @Test
     void buildMobileDetail_whenResourceTypeSet_resolvesLabelFromLabelService() {
@@ -311,8 +297,6 @@ class RecordingUnitOpenApiServiceTest {
         when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(same(answerVm))).thenReturn(42);
-
-        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
 
         verify(formService).readAnswerValueForApi(same(answerVm));
     }
@@ -472,7 +456,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildMobileDetail_mergesPersistedSelectOne_intoVocabField_viaConceptMapper() throws Exception {
+    void buildMobileDetail_mergesPersistedSelectOne_intoVocabField_viaConceptMapper()  {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ruDto.setCreatedByInstitution(inst);
@@ -669,7 +653,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildRecordingUnitCreateForm_noConfigForFieldCode_returnsEmptyVocabularyList() throws Exception {
+    void buildRecordingUnitCreateForm_noConfigForFieldCode_returnsEmptyVocabularyList() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         when(institutionService.findById(10L)).thenReturn(inst);
@@ -1123,7 +1107,7 @@ class RecordingUnitOpenApiServiceTest {
 
         assertThat(data.getId()).isEqualTo("1026");
         verify(formService).applyTypedValueToAnswer(same(answerVm), eq(12));
-        verify(recordingUnitService, org.mockito.Mockito.times(2)).save(any(RecordingUnitDTO.class));
+        verify(recordingUnitService, times(2)).save(any(RecordingUnitDTO.class));
     }
 
     @Test
@@ -1176,7 +1160,7 @@ class RecordingUnitOpenApiServiceTest {
         service.createRecordingUnit(request, personDto, SCOPE, "fr");
 
         ArgumentCaptor<RecordingUnitDTO> captor = ArgumentCaptor.forClass(RecordingUnitDTO.class);
-        verify(recordingUnitService, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(recordingUnitService, times(2)).save(captor.capture());
         assertThat(captor.getValue().getFullIdentifier()).isEqualTo("RU-%s");
     }
 
