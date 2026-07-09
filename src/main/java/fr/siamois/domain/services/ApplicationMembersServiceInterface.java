@@ -44,4 +44,23 @@ public interface ApplicationMembersServiceInterface {
      */
     ApplicationMemberDTO addMember(PersonDTO person, List<ProfileDTO> profiles);
 
+    /**
+     * Assigns a profile to an application member.
+     *
+     * @param member  the member the profile is assigned to
+     * @param profile the profile to assign
+     */
+    void addProfileToMember(ApplicationMemberDTO member, ProfileDTO profile);
+
+    /**
+     * Unassigns a profile from an application member.
+     * <p>
+     * Refuses to remove the {@code SUPERADMIN} profile from the last remaining superadmin.
+     *
+     * @param member  the member the profile is unassigned from
+     * @param profile the profile to unassign
+     * @return true if the profile was actually unassigned, false if the removal was refused
+     */
+    boolean removeProfileFromMember(ApplicationMemberDTO member, ProfileDTO profile);
+
 }

@@ -3,11 +3,17 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:form="http://xmlns.jcp.org/jsf/composite/pages/shared/form"
              xmlns:h="http://java.sun.com/jsf/html"
+             xmlns:f="http://java.sun.com/jsf/core"
 >
+    <!-- Shared "Ajouter des membres/utilisateurs" wizard dialog for institution/project/application
+         member management. Callers must pass in via ui:param:
+           - dialogBean: the AbstractNewMemberDialogBean subclass instance backing this dialog
+           - updateTarget: the absolute client id of the caller's members datatable to refresh on submit
+    -->
 
     <p:dialog
-            widgetVar="newProjectMemberDialog"
-            id="newProjectMemberDialog"
+            widgetVar="#{dialogBean.dialogId}"
+            id="#{dialogBean.dialogId}"
             width="480px"
             showEffect="fade"
             appendToBody="true"
@@ -17,17 +23,17 @@
     >
         <div class="dialog-new-organization-member">
             <div class="dialog-new-organization-member-header">
-                <h3>#{newProjectMemberDialogBean.title}</h3>
+                <h3>#{dialogBean.title}</h3>
             </div>
-            <form:csrfform id="newProjectMemberFormCC" formId="newProjectMemberForm">
+            <form:csrfform id="#{dialogBean.dialogId}FormCC" formId="#{dialogBean.dialogId}Form">
                 <div class="dialog-new-organization-member-body">
 
-                    <h:panelGroup layout="block" rendered="#{newProjectMemberDialogBean.stepMain}">
+                    <h:panelGroup layout="block" rendered="#{dialogBean.stepMain}">
                         <div class="form-group">
                             <p:outputLabel value="#{langBean.msg('newOrganizationMember.label.members')}"/>
                             <p:autoComplete id="memberSearch"
-                                            value="#{newProjectMemberDialogBean.selectedMembers}"
-                                            completeMethod="#{newProjectMemberDialogBean.completeMember}"
+                                            value="#{dialogBean.selectedMembers}"
+                                            completeMethod="#{dialogBean.completeMember}"
                                             queryDelay="300"
                                             var="u"
                                             itemLabel="#{u.displayName()}"
@@ -41,7 +47,7 @@
                                 <p:ajax event="itemSelect" process="@this" update="@form"/>
                                 <p:ajax event="itemUnselect" process="@this" update="@form"/>
                             </p:autoComplete>
-                            <p:commandLink action="#{newProjectMemberDialogBean.goToInvite()}"
+                            <p:commandLink action="#{dialogBean.goToInvite()}"
                                            process="@this"
                                            update="@form"
                                            styleClass="invite-by-email-link">
@@ -52,25 +58,23 @@
 
                         <div class="form-group">
                             <p:outputLabel value="#{langBean.msg('newOrganizationMember.label.profile')}"/>
-                            <p:autoComplete value="#{newProjectMemberDialogBean.selectedProfiles}"
-                                            completeMethod="#{newProjectMemberDialogBean.completeProfile}"
-                                            var="p"
-                                            itemLabel="#{p.name}"
-                                            itemValue="#{p}"
-                                            converter="#{profileDTOConverter}"
-                                            placeholder="#{langBean.msg('newOrganizationMember.placeholder.profile')}"
-                                            multiple="true"
-                                            unique="true"
-                                            forceSelection="true"
-                                            dropdown="false">
-                                <p:ajax event="itemSelect" process="@this" update="@form"/>
-                                <p:ajax event="itemUnselect" process="@this" update="@form"/>
-                            </p:autoComplete>
+                            <p:selectCheckboxMenu value="#{dialogBean.selectedProfiles}"
+                                                   converter="#{profileDTOConverter}"
+                                                   panelStyleClass="profile-select-panel"
+                                                   label="#{langBean.msg('newOrganizationMember.placeholder.profile')}"
+                                                   updateLabel="true"
+                                                   multiple="true"
+                                                   filter="true"
+                                                   filterMatchMode="contains"
+                                                   scrollHeight="200">
+                                <f:selectItems value="#{dialogBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
+                                <p:ajax process="@this" update="@form"/>
+                            </p:selectCheckboxMenu>
                         </div>
                     </h:panelGroup>
 
                     <h:panelGroup layout="block" styleClass="invite-form"
-                                  rendered="#{newProjectMemberDialogBean.stepInvite}">
+                                  rendered="#{dialogBean.stepInvite}">
                         <div class="invite-form-row">
                             <div class="invite-form-field">
                                 <p:outputLabel class="col-form-label" for="inviteFirstName">
@@ -78,7 +82,7 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteFirstName"
                                              placeholder="#{langBean.msg('newOrganizationMember.label.firstname')}"
-                                             value="#{newProjectMemberDialogBean.inviteFirstName}"/>
+                                             value="#{dialogBean.inviteFirstName}"/>
                             </div>
                             <div class="invite-form-field">
                                 <p:outputLabel class="col-form-label" for="inviteLastName">
@@ -86,7 +90,7 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteLastName"
                                              placeholder="#{langBean.msg('newOrganizationMember.label.lastname')}"
-                                             value="#{newProjectMemberDialogBean.inviteLastName}"/>
+                                             value="#{dialogBean.inviteLastName}"/>
                             </div>
                         </div>
                         <div class="invite-form-row">
@@ -96,7 +100,7 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteEmail" type="email"
                                              placeholder="#{langBean.msg('newOrganizationMember.placeholder.email')}"
-                                             value="#{newProjectMemberDialogBean.inviteEmail}"/>
+                                             value="#{dialogBean.inviteEmail}"/>
                             </div>
                             <div class="invite-form-field">
                                 <p:outputLabel class="col-form-label" for="inviteUsername">
@@ -104,7 +108,7 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteUsername"
                                              placeholder="#{langBean.msg('newOrganizationMember.placeholder.username')}"
-                                             value="#{newProjectMemberDialogBean.inviteUsername}"/>
+                                             value="#{dialogBean.inviteUsername}"/>
                             </div>
                         </div>
                         <div class="invite-form-row">
@@ -114,7 +118,7 @@
                                 </p:outputLabel>
                                 <p:inputText type="password" id="invitePassword"
                                              placeholder="••••••••"
-                                             value="#{newProjectMemberDialogBean.invitePassword}"/>
+                                             value="#{dialogBean.invitePassword}"/>
                             </div>
                             <div class="invite-form-field">
                                 <p:outputLabel for="invitePasswordConfirm">
@@ -122,7 +126,7 @@
                                 </p:outputLabel>
                                 <p:inputText type="password" id="invitePasswordConfirm"
                                              placeholder="••••••••"
-                                             value="#{newProjectMemberDialogBean.invitePasswordConfirm}"/>
+                                             value="#{dialogBean.invitePasswordConfirm}"/>
                             </div>
                         </div>
                     </h:panelGroup>
@@ -131,22 +135,22 @@
 
                 <div class="dialog-buttons">
                     <p:commandButton value="#{langBean.msg('newOrganizationMember.action.back')}"
-                                     rendered="#{newProjectMemberDialogBean.stepInvite}"
+                                     rendered="#{dialogBean.stepInvite}"
                                      immediate="true"
                                      styleClass="ui-button-secondary"
-                                     action="#{newProjectMemberDialogBean.back()}"
+                                     action="#{dialogBean.back()}"
                                      update="@form"/>
                     <p:commandButton value="#{langBean.msg('common.action.cancel')}"
-                                     rendered="#{newProjectMemberDialogBean.stepMain}"
+                                     rendered="#{dialogBean.stepMain}"
                                      immediate="true"
                                      styleClass="ui-button-secondary"
-                                     action="#{newProjectMemberDialogBean.exit()}"
+                                     action="#{dialogBean.exit()}"
                                      update="@form"/>
-                    <p:commandButton value="#{newProjectMemberDialogBean.primaryActionLabel}"
-                                     disabled="#{!newProjectMemberDialogBean.primaryActionEnabled}"
-                                     action="#{newProjectMemberDialogBean.primaryAction()}"
+                    <p:commandButton value="#{dialogBean.primaryActionLabel}"
+                                     disabled="#{!dialogBean.primaryActionEnabled}"
+                                     action="#{dialogBean.primaryAction()}"
                                      process="@form"
-                                     update="@form :projectMembersDatatable:formCC:projectMembersForm:membersDatatable"/>
+                                     update="@form #{updateTarget}"/>
                 </div>
             </form:csrfform>
         </div>

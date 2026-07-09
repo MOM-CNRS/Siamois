@@ -334,6 +334,12 @@ a:hover {
     padding: 18px 22px;
 }
 
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: .3em;
+}
+
 .invite-form {
     display: flex;
     flex-direction: column;

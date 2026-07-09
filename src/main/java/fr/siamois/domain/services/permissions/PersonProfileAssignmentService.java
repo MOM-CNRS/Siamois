@@ -11,6 +11,7 @@ import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -65,6 +66,7 @@ public class PersonProfileAssignmentService {
         InstitutionMemberDTO institutionMemberDTO = new InstitutionMemberDTO();
         institutionMemberDTO.setPerson(person);
         institutionMemberDTO.setProfiles(new ArrayList<>(profileSet));
+        institutionMemberDTO.setCreatedByInstitution(institution);
         return institutionMemberDTO;
     }
 
@@ -91,6 +93,8 @@ public class PersonProfileAssignmentService {
         ProjectMemberDTO projectMemberDTO = new ProjectMemberDTO();
         projectMemberDTO.setPerson(person);
         projectMemberDTO.setProfiles(new ArrayList<>(profileSet));
+        projectMemberDTO.setInstitution(project.getCreatedByInstitution());
+        projectMemberDTO.setActionUnit(project);
         return projectMemberDTO;
     }
 
@@ -104,5 +108,67 @@ public class PersonProfileAssignmentService {
         applicationMemberDTO.setPerson(person);
         applicationMemberDTO.setProfiles(profiles);
         return applicationMemberDTO;
+    }
+
+    public boolean isNotSuperAdmin(PersonDTO person) {
+        return !personProfileAssignmentRepository.personIsSuperAdmin(person.getId());
+    }
+
+    public boolean isNotLastSuperAdmin(PersonDTO person) {
+        if (isNotSuperAdmin(person)) {
+            return true;
+        }
+        long superAdminCount = personProfileAssignmentRepository.countPersonsWithSuperAdminProfile();
+        return superAdminCount > 1;
+    }
+
+    public void assign(PersonDTO person, ProfileDTO profile) {
+        Profile currentProfile = profileMapper.invertConvert(profile);
+        Person personToAssign = personMapper.invertConvert(person);
+        assignProfile(currentProfile, personToAssign);
+    }
+
+    public void remove(PersonDTO person, ProfileDTO profile) {
+        Optional<PersonProfileAssignment> ppaOpt = personProfileAssignmentRepository.findByProfileIdAndPersonId(profile.getId(), person.getId());
+        ppaOpt.ifPresent(personProfileAssignmentRepository::delete);
+    }
+
+    public boolean isNotOrganisationManager(InstitutionDTO institutionDTO, PersonDTO person) {
+        Optional<PersonProfileAssignment> ppaOpt = personProfileAssignmentRepository
+                .findByProfileCodeAndInstitutionIdAndPersonId(ProfileConstants.ORGANIZATION_MANAGER, institutionDTO.getId(), person.getId());
+        return ppaOpt.isEmpty();
+    }
+
+    public boolean isNotLastOrganizationManager(InstitutionDTO institution, PersonDTO person) {
+        if (isNotOrganisationManager(institution, person)) {
+            return true;
+        }
+        long managerCount = personProfileAssignmentRepository
+                .countPersonsByProfileCodeAndInstitutionId(ProfileConstants.ORGANIZATION_MANAGER, institution.getId());
+        return managerCount > 1;
+    }
+
+    @Transactional
+    public void removeFromInstitution(InstitutionDTO institution, PersonDTO person) {
+        personProfileAssignmentRepository.deleteByInstitutionIdAndPersonId(institution.getId(), person.getId());
+    }
+
+    public boolean isNotProjectManager(ActionUnitDTO project, PersonDTO authenticatedUser) {
+        Optional<PersonProfileAssignment> opt = personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(ProfileConstants.PROJECT_MANAGER, project.getId(), authenticatedUser.getId());
+        return opt.isEmpty();
+    }
+
+    public boolean isNotLastProjectManager(ActionUnitDTO project, PersonDTO person) {
+        if (isNotProjectManager(project, person)) {
+            return true;
+        }
+        long managerCount = personProfileAssignmentRepository
+                .countPersonsByProfileCodeAndActionUnitId(ProfileConstants.PROJECT_MANAGER, project.getId());
+        return managerCount > 1;
+    }
+
+    @Transactional
+    public void removeFromProject(ActionUnitDTO project, PersonDTO person) {
+        personProfileAssignmentRepository.deleteByActionUnitIdAndPersonId(project.getId(), person.getId());
     }
 }

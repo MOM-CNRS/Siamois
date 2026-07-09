@@ -46,4 +46,34 @@ public interface OrganizationMembersServiceInterface {
      */
     InstitutionMemberDTO addMemberToInstitution(InstitutionDTO institution, PersonDTO person, List<ProfileDTO> profiles);
 
+    /**
+     * Removes a member from the given institution.
+     *
+     * @param institution the institution the person is removed from
+     * @param member      the member to remove
+     */
+    void removeMemberFromInstitution(InstitutionDTO institution, InstitutionMemberDTO member);
+
+    /**
+     * Assigns a profile to an institution member.
+     *
+     * @param institution the institution the member belongs to
+     * @param member      the member the profile is assigned to
+     * @param profile     the profile to assign
+     */
+    void addProfileToMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile);
+
+    /**
+     * Unassigns a profile from an institution member.
+     * <p>
+     * Refuses to remove the {@code ORGANIZATION_MANAGER} profile from the last remaining manager
+     * of the institution.
+     *
+     * @param institution the institution the member belongs to
+     * @param member      the member the profile is unassigned from
+     * @param profile     the profile to unassign
+     * @return true if the profile was actually unassigned, false if the removal was refused
+     */
+    boolean removeProfileFromMember(InstitutionDTO institution, InstitutionMemberDTO member, ProfileDTO profile);
+
 }

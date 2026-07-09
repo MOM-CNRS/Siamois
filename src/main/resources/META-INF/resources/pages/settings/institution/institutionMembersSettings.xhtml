@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <ui:composition template="/template.xhtml"
                 xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:h="http://xmlns.jcp.org/jsf/html"
@@ -55,42 +56,39 @@
                         </div>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.profile')}">
-                        <div class="profile-cell">
-                            <h:panelGroup id="profileChips" layout="block" styleClass="profile-chips" style="display: flex; flex-wrap: wrap; gap: 6px">
-                                <ui:repeat value="#{member.profiles}" var="profile">
-                                    <span class="chip chip-profile">#{profile.name}</span>
-                                </ui:repeat>
-                            </h:panelGroup>
-                            <h:panelGroup id="editProfilePencil" layout="block" styleClass="edit-pencil" title="#{langBean.msg('common.action.edit')}">
-                                <i class="bi bi-pencil"/>
-                            </h:panelGroup>
-                        </div>
-
-                        <p:overlayPanel for="editProfilePencil" id="profileOverlay" my="left bottom" at="left top" style="min-width: 260px">
-                            <p:autoComplete value="#{member.profiles}"
-                                            id="profileAutoComplete"
-                                            completeMethod="#{institutionMembersListBean.completeProfile}"
-                                            panelStyleClass="profile-autocomplete-panel"
-                                            var="p" itemLabel="#{p.name}" itemValue="#{p}"
-                                            converter="#{profileDTOConverter}"
-                                            multiple="true" unique="true" forceSelection="true" dropdown="false"
-                                            showEmptyMessage="true"
-                                            scrollHeight="200"
-                                            onmousedown="event.stopPropagation();"
-                                            onclick="event.stopPropagation();">
-                                <p:ajax event="itemSelect" process="@this" update="profileChips"/>
-                                <p:ajax event="itemUnselect" process="@this" update="profileChips"/>
-                            </p:autoComplete>
-                        </p:overlayPanel>
+                        <p:selectCheckboxMenu value="#{member.profiles}"
+                                               id="profileSelect"
+                                               converter="#{profileDTOConverter}"
+                                               panelStyleClass="profile-select-panel"
+                                               label="#{langBean.msg('common.label.profile')}"
+                                               updateLabel="true"
+                                               multiple="true"
+                                               filter="true"
+                                               filterMatchMode="contains"
+                                               scrollHeight="200">
+                            <f:selectItems value="#{institutionMembersListBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
+                            <f:attribute name="member" value="#{member}"/>
+                            <p:ajax event="itemSelect" listener="#{institutionMembersListBean.onProfileSelect}" process="@this"/>
+                            <p:ajax event="itemUnselect" listener="#{institutionMembersListBean.onProfileUnselect}" process="@this" update="profileSelect"/>
+                        </p:selectCheckboxMenu>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">
                         <span class="chip #{member.person.enabled ? 'chip-status-active' : 'chip-status-inactive'}">
                             #{member.person.enabled ? langBean.msg('common.label.accountStatus.enabled') : langBean.msg('common.label.accountStatus.disabled')}
                         </span>
                     </p:column>
+                    <p:column>
+                        <p:commandButton value="#{langBean.msg('common.action.remove')}"
+                                         actionListener="#{institutionMembersListBean.removeMember(member)}"
+                                         update="membersDatatable"
+                                         styleClass="ui-button-danger ui-button-flat"/>
+                    </p:column>
                 </p:dataTable>
             </settings:datatable>
-            <ui:include src="/dialog/institution/newOrganizationMember.xhtml"/>
+            <ui:include src="/dialog/shared/newMemberDialog.xhtml">
+                <ui:param name="dialogBean" value="#{newOrganizationMemberDialogBean}"/>
+                <ui:param name="updateTarget" value=":orgMembersDatatable:formCC:institutionMembersForm:membersDatatable"/>
+            </ui:include>
         </main>
     </ui:define>
 

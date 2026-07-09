@@ -45,4 +45,34 @@ public interface ProjectMembersServiceInterface {
      */
     ProjectMemberDTO addMemberToProject(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles);
 
+    /**
+     * Removes a member from the given project.
+     *
+     * @param project the project the person is removed from
+     * @param member  the member to remove
+     */
+    void removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member);
+
+    /**
+     * Assigns a profile to a project member.
+     *
+     * @param project the project the member belongs to
+     * @param member  the member the profile is assigned to
+     * @param profile the profile to assign
+     */
+    void addProfileToMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile);
+
+    /**
+     * Unassigns a profile from a project member.
+     * <p>
+     * Refuses to remove the {@code PROJECT_MANAGER} profile from the last remaining manager of
+     * the project.
+     *
+     * @param project the project the member belongs to
+     * @param member  the member the profile is unassigned from
+     * @param profile the profile to unassign
+     * @return true if the profile was actually unassigned, false if the removal was refused
+     */
+    boolean removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile);
+
 }

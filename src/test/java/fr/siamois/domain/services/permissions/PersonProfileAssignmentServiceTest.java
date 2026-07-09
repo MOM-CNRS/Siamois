@@ -273,4 +273,117 @@ class PersonProfileAssignmentServiceTest {
         // Vérifie qu'on sauvegarde autant d'assignations qu'il y a de profils dans la liste
         verify(personProfileAssignmentRepository, times(2)).save(any(PersonProfileAssignment.class));
     }
+
+    @Test
+    void isNotLastOrganizationManager_ReturnsTrueWhenPersonIsNotManager() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndInstitutionIdAndPersonId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L, 1L)).thenReturn(Optional.empty());
+
+        assertTrue(service.isNotLastOrganizationManager(institutionDTO, personDTO));
+
+        // Pas besoin de compter les managers si la personne n'est pas manager
+        verify(personProfileAssignmentRepository, never()).countPersonsByProfileCodeAndInstitutionId(anyString(), anyLong());
+    }
+
+    @Test
+    void isNotLastOrganizationManager_ReturnsTrueWhenOtherManagersExist() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndInstitutionIdAndPersonId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L, 1L)).thenReturn(Optional.of(new PersonProfileAssignment()));
+        when(personProfileAssignmentRepository.countPersonsByProfileCodeAndInstitutionId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L)).thenReturn(2L);
+
+        assertTrue(service.isNotLastOrganizationManager(institutionDTO, personDTO));
+    }
+
+    @Test
+    void isNotLastOrganizationManager_ReturnsFalseWhenPersonIsLastManager() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndInstitutionIdAndPersonId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L, 1L)).thenReturn(Optional.of(new PersonProfileAssignment()));
+        when(personProfileAssignmentRepository.countPersonsByProfileCodeAndInstitutionId(
+                ProfileConstants.ORGANIZATION_MANAGER, 5L)).thenReturn(1L);
+
+        assertFalse(service.isNotLastOrganizationManager(institutionDTO, personDTO));
+    }
+
+    @Test
+    void isNotLastProjectManager_ReturnsTrueWhenPersonIsNotManager() {
+        actionUnitDTO.setId(7L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(
+                ProfileConstants.PROJECT_MANAGER, 7L, 1L)).thenReturn(Optional.empty());
+
+        assertTrue(service.isNotLastProjectManager(actionUnitDTO, personDTO));
+
+        // Pas besoin de compter les managers si la personne n'est pas manager
+        verify(personProfileAssignmentRepository, never()).countPersonsByProfileCodeAndActionUnitId(anyString(), anyLong());
+    }
+
+    @Test
+    void isNotLastProjectManager_ReturnsTrueWhenOtherManagersExist() {
+        actionUnitDTO.setId(7L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(
+                ProfileConstants.PROJECT_MANAGER, 7L, 1L)).thenReturn(Optional.of(new PersonProfileAssignment()));
+        when(personProfileAssignmentRepository.countPersonsByProfileCodeAndActionUnitId(
+                ProfileConstants.PROJECT_MANAGER, 7L)).thenReturn(2L);
+
+        assertTrue(service.isNotLastProjectManager(actionUnitDTO, personDTO));
+    }
+
+    @Test
+    void isNotLastProjectManager_ReturnsFalseWhenPersonIsLastManager() {
+        actionUnitDTO.setId(7L);
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(
+                ProfileConstants.PROJECT_MANAGER, 7L, 1L)).thenReturn(Optional.of(new PersonProfileAssignment()));
+        when(personProfileAssignmentRepository.countPersonsByProfileCodeAndActionUnitId(
+                ProfileConstants.PROJECT_MANAGER, 7L)).thenReturn(1L);
+
+        assertFalse(service.isNotLastProjectManager(actionUnitDTO, personDTO));
+    }
+
+    @Test
+    void isNotLastSuperAdmin_ReturnsTrueWhenPersonIsNotSuperAdmin() {
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.personIsSuperAdmin(1L)).thenReturn(false);
+
+        assertTrue(service.isNotLastSuperAdmin(personDTO));
+
+        // Pas besoin de compter les superadmins si la personne n'en est pas un
+        verify(personProfileAssignmentRepository, never()).countPersonsWithSuperAdminProfile();
+    }
+
+    @Test
+    void isNotLastSuperAdmin_ReturnsTrueWhenOtherSuperAdminsExist() {
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.personIsSuperAdmin(1L)).thenReturn(true);
+        when(personProfileAssignmentRepository.countPersonsWithSuperAdminProfile()).thenReturn(2L);
+
+        assertTrue(service.isNotLastSuperAdmin(personDTO));
+    }
+
+    @Test
+    void isNotLastSuperAdmin_ReturnsFalseWhenPersonIsLastSuperAdmin() {
+        personDTO.setId(1L);
+        when(personProfileAssignmentRepository.personIsSuperAdmin(1L)).thenReturn(true);
+        when(personProfileAssignmentRepository.countPersonsWithSuperAdminProfile()).thenReturn(1L);
+
+        assertFalse(service.isNotLastSuperAdmin(personDTO));
+    }
+
+    @Test
+    void removeFromProject_DeletesAllAssignmentsOfPersonInProject() {
+        actionUnitDTO.setId(7L);
+        personDTO.setId(1L);
+
+        service.removeFromProject(actionUnitDTO, personDTO);
+
+        verify(personProfileAssignmentRepository).deleteByActionUnitIdAndPersonId(7L, 1L);
+    }
 }

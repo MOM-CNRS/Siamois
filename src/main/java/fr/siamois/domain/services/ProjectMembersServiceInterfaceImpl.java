@@ -2,6 +2,8 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -45,6 +47,8 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
                     ProjectMemberDTO dto = new ProjectMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
+                    dto.setActionUnit(project);
+                    dto.setInstitution(project.getCreatedByInstitution());
                     return dto;
                 })
                 .toList();
@@ -58,5 +62,34 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
     @Override
     public ProjectMemberDTO addMemberToProject(ActionUnitDTO project, PersonDTO person, List<ProfileDTO> profiles) {
         return personProfileAssignmentService.addToProjectMembers(project, person, profiles);
+    }
+
+    @Override
+    public void removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member) {
+        if (personProfileAssignmentService.isNotLastProjectManager(project, member.getPerson())) {
+            personProfileAssignmentService.removeFromProject(project, member.getPerson());
+        }
+    }
+
+    @Override
+    public void addProfileToMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
+        // The project parameter is not used because the profile is already associated with the action unit
+        personProfileAssignmentService.assign(member.getPerson(), profile);
+    }
+
+    @Override
+    public boolean removeProfileFromMember(ActionUnitDTO project, ProjectMemberDTO member, ProfileDTO profile) {
+        if (ProfileConstants.PROJECT_MANAGER.equals(profile.getCode())
+                && !personProfileAssignmentService.isNotLastProjectManager(project, member.getPerson())) {
+            return false;
+        }
+        personProfileAssignmentService.remove(member.getPerson(), profile);
+
+        if (!personProfileAssignmentRepository.personHasAnyProfileOnActionUnit(member.getPerson().getId(), project.getId())) {
+            Profile projectMemberProfile = profileService.createOrGetProjectMemberProfile(project);
+            personProfileAssignmentService.assign(member.getPerson(), profileMapper.convert(projectMemberProfile));
+        }
+
+        return true;
     }
 }

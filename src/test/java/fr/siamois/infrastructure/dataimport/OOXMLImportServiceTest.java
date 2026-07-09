@@ -1,5 +1,9 @@
 package fr.siamois.infrastructure.dataimport;
 
+import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
@@ -14,10 +18,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.misc.ImportProgress;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

@@ -2,16 +2,21 @@ package fr.siamois.ui.bean.settings.administration;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.ApplicationMembersServiceInterface;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.administration.NewApplicationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
+import org.primefaces.event.SelectEvent;
+import org.primefaces.event.UnselectEvent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -26,28 +31,26 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Scope(value = "session")
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class ApplicationMembersListBean implements SettingsDatatableBean {
 
     private final transient ApplicationMembersServiceInterface applicationMembersService;
     private final NewApplicationMemberDialogBean newApplicationMemberDialogBean;
     private final LangBean langBean;
+    private final SessionSettingsBean sessionSettingsBean;
+    private final transient PersonProfileAssignmentService personProfileAssignmentService;
 
     private transient List<ApplicationMemberDTO> members;
     private transient List<ApplicationMemberDTO> refMembers;
+    private transient List<ProfileDTO> availableProfiles;
     private String searchInput;
 
-    public ApplicationMembersListBean(ApplicationMembersServiceInterface applicationMembersService,
-                                      NewApplicationMemberDialogBean newApplicationMemberDialogBean,
-                                      LangBean langBean) {
-        this.applicationMembersService = applicationMembersService;
-        this.newApplicationMemberDialogBean = newApplicationMemberDialogBean;
-        this.langBean = langBean;
-    }
 
     /** Loads the application's user accounts and resets the search filter. */
     public void init() {
         refMembers = new ArrayList<>(applicationMembersService.findMembers());
         members = new ArrayList<>(refMembers);
+        availableProfiles = applicationMembersService.findAvailableProfiles();
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -67,23 +70,6 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
         }
     }
 
-    /**
-     * Autocomplete source for the profile-chips editor in the members datatable.
-     *
-     * @param query the text currently typed in the profile field
-     * @return the assignable profiles matching the query
-     */
-    public List<ProfileDTO> completeProfile(String query) {
-        List<ProfileDTO> all = applicationMembersService.findAvailableProfiles();
-        if (query == null || query.isBlank()) {
-            return all;
-        }
-        String q = query.trim().toLowerCase();
-        return all.stream()
-                .filter(p -> p.getName().toLowerCase().contains(q))
-                .toList();
-    }
-
     /** Opens the "add users" wizard dialog. */
     @Override
     public void add() {
@@ -93,6 +79,31 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
                 this::processPerson);
         PrimeFaces.current().ajax().update("newApplicationMemberDialog");
         PrimeFaces.current().executeScript("PF('newApplicationMemberDialog').show();");
+    }
+
+    /** Assigns the newly checked profile to the given member. */
+    public void onProfileSelect(SelectEvent<ProfileDTO> event) {
+        ApplicationMemberDTO member = (ApplicationMemberDTO) event.getComponent().getAttributes().get("member");
+        if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
+            displayWarnMessage(langBean, "administrationSettings.error.notAdmin");
+            return;
+        }
+        applicationMembersService.addProfileToMember(member, event.getObject());
+    }
+
+    /** Unassigns the newly unchecked profile from the given member. */
+    public void onProfileUnselect(UnselectEvent<?> event) {
+        ApplicationMemberDTO member = (ApplicationMemberDTO) event.getComponent().getAttributes().get("member");
+        if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
+            displayWarnMessage(langBean, "administrationSettings.error.notAdmin");
+            return;
+        }
+        ProfileDTO profile = (ProfileDTO) event.getObject();
+        boolean removed = applicationMembersService.removeProfileFromMember(member, profile);
+        if (!removed) {
+            member.getProfiles().add(profile);
+            displayWarnMessage(langBean, "administrationSettings.error.lastSuperAdmin");
+        }
     }
 
     private Boolean processPerson(PersonRole saved) {
@@ -113,6 +124,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     public void reset() {
         members = null;
         refMembers = null;
+        availableProfiles = null;
         searchInput = null;
     }
 
