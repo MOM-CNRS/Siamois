@@ -6,6 +6,7 @@ import fr.siamois.domain.models.events.LangageChangeEvent;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -38,6 +39,7 @@ import java.util.Set;
 public class SessionSettingsBean implements Serializable {
 
     private final transient InstitutionService institutionService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final LangBean langBean;
     private final transient RedirectBean redirectBean;
     private final transient PersonService personService;
@@ -93,7 +95,7 @@ public class SessionSettingsBean implements Serializable {
 
     private Set<InstitutionDTO> findReferencedInstitutions() {
         PersonDTO person = getAuthenticatedUser();
-        if (person.isSuperAdmin()) {
+        if (profilePermissionService.isSuperAdmin(person)) {
             return institutionService.findAll();
         } else {
             return institutionService.findInstitutionsOfPerson(person);

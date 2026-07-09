@@ -6,10 +6,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.*;
 
 class RecordingUnitRelSeederTest {
@@ -25,39 +28,34 @@ class RecordingUnitRelSeederTest {
         relSeeder = new RecordingUnitRelSeeder(recordingUnitSeeder, recordingUnitRepository);
     }
 
+    private void stubBulkLookup(RecordingUnit... units) {
+        Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> byKey = new HashMap<>();
+        for (RecordingUnit u : units) {
+            byKey.put(new RecordingUnitSeeder.RecordingUnitKey(u.getFullIdentifier(), ""), u);
+        }
+        when(recordingUnitSeeder.bulkGetRecordingUnitsFromKeys(anyCollection(), eq(1L))).thenReturn(byKey);
+    }
+
     @Test
     void seed_shouldAssociateChildrenToParents_andSaveAll() {
-        // Préparer les mocks
         RecordingUnit parent1 = new RecordingUnit(); parent1.setFullIdentifier("P1");
         RecordingUnit parent2 = new RecordingUnit(); parent2.setFullIdentifier("P2");
         RecordingUnit child1 = new RecordingUnit();  child1.setFullIdentifier("C1");
-        RecordingUnit child2 = new RecordingUnit();   child2.setFullIdentifier("C2");
+        RecordingUnit child2 = new RecordingUnit();  child2.setFullIdentifier("C2");
 
-        // Mockito : renvoyer les objets à partir des clés
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P1",""), 1L))
-                .thenReturn(parent1);
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P2",""), 1L))
-                .thenReturn(parent2);
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C1",""), 1L))
-                .thenReturn(child1);
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C2",""), 1L))
-                .thenReturn(child2);
+        stubBulkLookup(parent1, parent2, child1, child2);
 
-        // Données de test
         List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = List.of(
                 new RecordingUnitRelSeeder.RecordingUnitRelDTO("P1", "C1"),
                 new RecordingUnitRelSeeder.RecordingUnitRelDTO("P1", "C2"),
                 new RecordingUnitRelSeeder.RecordingUnitRelDTO("P2", "C1")
         );
 
-        // Appel de la méthode
         relSeeder.seed(specs, 1L, "");
 
-        // Vérifier que les enfants ont été ajoutés aux parents
         assertThat(parent1.getChildren()).containsExactlyInAnyOrder(child1, child2);
         assertThat(parent2.getChildren()).containsExactly(child1);
 
-        // Vérifier que saveAll a été appelé avec les bons parents
         ArgumentCaptor<List<RecordingUnit>> captor = ArgumentCaptor.forClass(List.class);
         verify(recordingUnitRepository).saveAll(captor.capture());
 
@@ -65,29 +63,26 @@ class RecordingUnitRelSeederTest {
         assertThat(savedParents).containsExactlyInAnyOrder(parent1, parent2);
     }
 
-
     @Test
-    void seed_shouldHandleNonExistentChildGracefully() {
+    void seed_missingChild_throwsWithLineContext() {
         RecordingUnit parent = new RecordingUnit(); parent.setFullIdentifier("P1");
-        parent.setChildren(new HashSet<>());
-
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("P1",""), 1L))
-                .thenReturn(parent);
-        // Simuler un enfant introuvable (null)
-        when(recordingUnitSeeder.getRecordingUnitFromKey(new RecordingUnitSeeder.RecordingUnitKey("C1",""), 1L))
-                .thenReturn(null);
+        stubBulkLookup(parent);
+        // "C1" isn't in the bulk lookup result -> missing
 
         List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = List.of(
                 new RecordingUnitRelSeeder.RecordingUnitRelDTO("P1", "C1")
         );
 
-        relSeeder.seed(specs, 1L,"");
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> relSeeder.seed(specs, 1L, ""));
 
-        // Aucun enfant ajouté
-        assertThat(parent.getChildren()).isEmpty();
-
-        // Vérifier que saveAll est quand même appelé avec le parent
-        verify(recordingUnitRepository).saveAll(List.of());
+        assertThat(ex.getMessage()).contains("[Relation UE ligne 1]").contains("Recording unit introuvable");
+        verify(recordingUnitRepository, never()).saveAll(any());
     }
 
+    @Test
+    void seed_emptySpecs_noInteractionWithRepository() {
+        relSeeder.seed(List.of(), 1L, "");
+
+        verify(recordingUnitRepository, never()).saveAll(any());
     }
+}

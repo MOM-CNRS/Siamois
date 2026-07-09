@@ -20,6 +20,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 
 @Getter
@@ -227,6 +228,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     @Override
     @Transactional
     public List<T> load(int first, int pageSize, Map<String, SortMeta> sortBy, Map<String, FilterMeta> filterBy) {
+        Instant before = Instant.now();
         // 1. Nettoyage et préparation des maps PrimeFaces brutes
         Map<String, SortMeta> activeSorts = prepareSorts(sortBy);
         if (!columnFilteringEnabled) {
@@ -248,6 +250,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
                 isFilterSame &&
                 this.queryResult != null) {
             setRowCount(this.cachedRowCount);
+            log.debug("Temps d'exécution de {}#load (Cached) : {} ms", this.getClass().getSimpleName(), Instant.now().toEpochMilli() - before.toEpochMilli());
             return this.queryResult;
         }
 
@@ -271,6 +274,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         setRowCount((int) result.getTotalElements());
         updateCache(result, activeFilters, activeSorts, first, pageSize);
 
+        log.debug("Temps d'exécution de {}#load : {} ms", this.getClass().getSimpleName(), Instant.now().toEpochMilli() - before.toEpochMilli());
         return result.getContent();
     }
 

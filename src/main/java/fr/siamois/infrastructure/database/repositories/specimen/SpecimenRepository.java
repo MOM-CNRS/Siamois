@@ -259,7 +259,35 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
             @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
     );
 
-    Optional<Specimen> findByFullIdentifier(@NotNull String fullIdentifier);
+    /** Narrow projection so the bulk existing-specimen lookup below never has to touch the (lazy) recordingUnit association per row. */
+    interface ExistingSpecimenKey {
+        String getFullIdentifier();
+        String getRecordingUnitFullIdentifier();
+    }
+
+    /**
+     * Bulk variant of {@link #findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier} —
+     * one query per distinct (institution, action unit) rather than one per distinct recording unit, so it stays a
+     * handful of queries even when there are thousands of recording units each with a single specimen.
+     *
+     * @param institutionId institution to scope the lookup to
+     * @param actionUnitFullIdentifier full identifier of the action unit to scope the lookup to
+     * @return the full identifier of every specimen in that (institution, action unit), paired with its recording unit's full identifier
+     */
+    @Query(
+            value = "SELECT s.full_identifier AS fullIdentifier, ru.full_identifier AS recordingUnitFullIdentifier " +
+                    "FROM specimen s " +
+                    "JOIN recording_unit ru ON s.fk_recording_unit_id = ru.recording_unit_id " +
+                    "JOIN action_unit au ON ru.fk_action_unit_id = au.action_unit_id " +
+                    "WHERE s.fk_institution_id = :institutionId " +
+                    "AND au.full_identifier = :actionUnitFullIdentifier",
+            nativeQuery = true
+    )
+    List<ExistingSpecimenKey> findAllKeysByInstitutionIdAndActionUnitFullIdentifier(
+            @Param("institutionId") Long institutionId,
+            @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
+    );
+
 
     @Query(
             value = "SELECT s.* FROM specimen s " +
@@ -273,14 +301,6 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
             @Param("fullIdentifier") String fullIdentifier,
             @Param("institutionIds") Set<Long> institutionIds
     );
-
-    @Query(
-            value = "SELECT COUNT(*) FROM specimen s "+
-                    "LEFT JOIN recording_unit ru ON s.fk_recording_unit_id = ru.recording_unit_id "+
-                    "WHERE ru.fk_spatial_unit_id = :spatialUnitId",
-            nativeQuery = true
-    )
-    Integer countBySpatialContext(@Param("spatialUnitId") Long spatialUnitId);
 
     @Query(
             value = "SELECT COUNT(*) FROM specimen s "+

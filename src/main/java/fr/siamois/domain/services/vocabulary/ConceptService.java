@@ -12,10 +12,7 @@ import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatedLinkRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +43,37 @@ public class ConceptService {
     private final ConceptLabelRepository conceptLabelRepository;
     private final ConceptHierarchyRepository conceptHierarchyRepository;
     private final ConversionService conversionService;
+    private final ConceptFieldConfigRepository conceptFieldConfigRepository;
+
+    private static final String DEFAULT_LABEL_RESOLUTION_LANG = "fr";
+
+    /**
+     * Resolves a concept by exact label (case/accent-insensitive) within the institution's
+     * configured thesaurus subtree for the given field code. Used as a fallback when an import
+     * column provides a label instead of a concept URI.
+     *
+     * @param institutionId the institution whose field configuration to use
+     * @param fieldCode     the field code (e.g. RecordingUnit.TYPE_FIELD_CODE) identifying which configured thesaurus subtree to search
+     * @param label         the label to match exactly
+     * @return the matching concept
+     * @throws IllegalStateException if no thesaurus is configured for the field, or if the label matches zero or more than one concept
+     */
+    @NonNull
+    public Concept resolveConceptByLabel(@NonNull Long institutionId, @NonNull String fieldCode, @NonNull String label) {
+        ConceptFieldConfig config = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institutionId, fieldCode)
+                .orElseThrow(() -> new IllegalStateException("Aucun thésaurus configuré pour ce champ"));
+
+        List<Concept> matches = conceptRepository.findAllByFieldContextAndExactLabel(
+                config.getConcept().getId(), DEFAULT_LABEL_RESOLUTION_LANG, label);
+
+        if (matches.isEmpty()) {
+            throw new IllegalStateException("Concept '" + label + "' introuvable dans le thésaurus configuré");
+        }
+        if (matches.size() > 1) {
+            throw new IllegalStateException("Label '" + label + "' ambigu (" + matches.size() + " concepts correspondants)");
+        }
+        return matches.get(0);
+    }
 
     /**
      * Saves a concept if it does not already exist in the repository.

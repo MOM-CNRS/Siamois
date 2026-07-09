@@ -15,17 +15,16 @@ import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
 import fr.siamois.mapper.ActionUnitMapper;
-import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -39,6 +38,7 @@ import java.util.*;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PersonService {
 
     private final PersonRepository personRepository;
@@ -55,33 +55,6 @@ public class PersonService {
     private final InstitutionMapper institutionMapper;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
-    private final ConceptMapper conceptMapper;
-
-    public PersonService(PersonRepository personRepository,
-                         BCryptPasswordEncoder passwordEncoder,
-                         List<PersonDataVerifier> verifiers, List<PasswordVerifier> passVerifiers,
-                         PersonSettingsRepository personSettingsRepository,
-                         InstitutionService institutionService,
-                         LangService langService,
-                         PendingPersonRepository pendingPersonRepository,
-                         PendingPersonService pendingPersonService, ConversionService conversionService,
-                         PendingInstitutionInviteRepository pendingInstitutionInviteRepository, InstitutionMapper institutionMapper, ActionUnitMapper actionUnitMapper, PersonMapper personMapper, ConceptMapper conceptMapper) {
-        this.personRepository = personRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.verifiers = verifiers;
-        this.passVerifiers = passVerifiers;
-        this.personSettingsRepository = personSettingsRepository;
-        this.institutionService = institutionService;
-        this.langService = langService;
-        this.pendingPersonRepository = pendingPersonRepository;
-        this.pendingPersonService = pendingPersonService;
-        this.conversionService = conversionService;
-        this.pendingInstitutionInviteRepository = pendingInstitutionInviteRepository;
-        this.institutionMapper = institutionMapper;
-        this.actionUnitMapper = actionUnitMapper;
-        this.personMapper = personMapper;
-        this.conceptMapper = conceptMapper;
-    }
 
     private void createAndDeletePendingRelations(PendingPerson pendingPerson, Person person) {
         Set<PendingInstitutionInvite> institutionInvites = pendingInstitutionInviteRepository.findAllByPendingPerson(pendingPerson);
@@ -99,9 +72,7 @@ public class PersonService {
             Set<PendingActionUnitAttribution> attributions = pendingPersonService.findActionAttributionsByPendingInvite(invite);
             for (PendingActionUnitAttribution attribution : attributions) {
                 ActionUnitDTO actionUnitDTO = actionUnitMapper.convert(attribution.getActionUnit());
-                institutionService.addPersonToActionUnit(actionUnitDTO,
-                        personDTO,
-                        conceptMapper.convert(attribution.getRole()));
+                institutionService.addPersonAsMemberOfActionUnit(actionUnitDTO, personDTO);
                 pendingPersonService.delete(attribution);
             }
 
@@ -116,7 +87,7 @@ public class PersonService {
     }
 
     /**
-     * Create a new Person in the database.
+     * Create a new enabled Person in the database.
      *
      * @param personDTO The Person to create with a plain password. It will be hashed before saving.
      * @return The created Person with its ID set.
@@ -137,8 +108,9 @@ public class PersonService {
         checkPassword(password);
 
         Person person = conversionService.convert(personDTO,Person.class);
-
+        assert person != null;
         person.setPassword(passwordEncoder.encode(password));
+        person.setEnabled(true);
 
         person = personRepository.save(person);
 

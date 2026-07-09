@@ -5,9 +5,10 @@ import fr.siamois.domain.events.publisher.LoginEventPublisher;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.StratigraphicRelationshipService;
@@ -71,7 +72,7 @@ public class FlowBean implements Serializable {
     private final transient PersonService personService;
     private final transient ConceptService conceptService;
     private final transient StratigraphicRelationshipService stratigraphicRelationshipService;
-    private final transient PermissionService permissionService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final transient HistoryBean historyBean;
@@ -93,7 +94,6 @@ public class FlowBean implements Serializable {
     private transient int fullscreenPanelIndex = -1;
 
     private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
-
 
     public void init() {
         fullscreenPanelIndex = -1;
@@ -655,7 +655,9 @@ public class FlowBean implements Serializable {
 
     public boolean userHasAddSpatialOrActionUnitPermission() {
         UserInfo info = sessionSettings.getUserInfo();
-        return info.getUser().isSuperAdmin() || permissionService.isActionManager(info) || permissionService.isInstitutionManager(info);
+        return profilePermissionService.isSuperAdmin(info.getUser())
+                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_PLACES)
+                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
     }
 
     public String invokeOnClick(MethodExpression method, Long id, AbstractPanel panelModel) {
@@ -679,8 +681,7 @@ public class FlowBean implements Serializable {
      * @return true if creation is allowed
      */
     public boolean isActionUnitCreateAllowed() {
-        return permissionService.isInstitutionManager(sessionSettings.getUserInfo())
-                || permissionService.isActionManager(sessionSettings.getUserInfo());
+        return profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
     }
 
     /**
@@ -775,7 +776,10 @@ public class FlowBean implements Serializable {
      * Return the active actions units for which i'm a member
      */
     public List<ActionUnitDTO> getMyActionUnits() {
-        return actionUnitService.findByTeamMember(sessionSettings.getUserInfo().getUser(), sessionSettings.getSelectedInstitution(), 10);
+        return actionUnitService.findByTeamMember(
+                sessionSettings.getUserInfo().getUser(),
+                sessionSettings.getSelectedInstitution(),
+                10);
     }
 
 

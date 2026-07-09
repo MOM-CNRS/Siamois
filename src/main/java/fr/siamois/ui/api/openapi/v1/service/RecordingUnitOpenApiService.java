@@ -10,6 +10,7 @@ import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -17,8 +18,8 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -87,7 +88,7 @@ public class RecordingUnitOpenApiService {
     private final SpecimenService specimenService;
     private final LangService langService;
     private final ActionUnitService actionUnitService;
-    private final PermissionService permissionService;
+    private final ProfilePermissionService profilePermissionService;
     private final PersonService personService;
     private final SpatialUnitService spatialUnitService;
     private final PersonMapper personMapper;
@@ -112,6 +113,11 @@ public class RecordingUnitOpenApiService {
         if (resource.getType() != null && dto.getType() != null) {
             resource.getType().setResolvedLabel(labelService.findLabelOf(dto.getType(), lang).getLabel());
         }
+        if (!profilePermissionService.canViewRecordingUnit(personDto, dto)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
+        }
+
+        RecordingUnitResource recordingUnit = recordingUnitResponseMapper.convert(dto);
 
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null) {
@@ -715,7 +721,7 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité sans organisation");
         }
         UserInfo userInfo = new UserInfo(institution, personDto, null);
-        if (!permissionService.hasWritePermission(userInfo, dto)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
     }
@@ -751,7 +757,7 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
         }
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!permissionService.hasWritePermission(userInfo, au)) {
+        if (!profilePermissionService.hasProjectPermission(userInfo, au.getId(), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création d'unité non autorisée sur ce projet");
         }
         Concept typeConcept = conceptRepository.findById(Long.parseLong(request.getTypeId()))
@@ -851,7 +857,7 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité sans organisation");
         }
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!permissionService.hasWritePermission(userInfo, dto)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
 

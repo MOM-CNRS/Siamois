@@ -14,6 +14,10 @@ public interface ActionUnitMapper extends Converter<ActionUnit, ActionUnitDTO> {
 
     @Override
     @Mapping(target = "recordingUnitList", ignore = true)
+    @Mapping(target = "documents", ignore = true)
+    @Mapping(target = "children", ignore = true)
+    @Mapping(target = "parents", ignore = true)
+    @Mapping(target = "spatialContext", ignore = true)
     ActionUnitDTO convert(@NonNull ActionUnit source);
 
     @InheritInverseConfiguration(name="convert")

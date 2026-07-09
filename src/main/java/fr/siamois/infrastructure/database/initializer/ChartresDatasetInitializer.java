@@ -6,6 +6,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.infrastructure.dataimport.ImportResult;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -79,18 +80,23 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         // Init vocabs
         thesaurusSeeder.seed(thesauri);
 
-        ImportSpecs specs;
+        ImportResult result;
 
         try {
             InputStream is = getClass().getResourceAsStream("/datasets/Import_Chartres.xlsx");
             if (is == null) {
                 throw new IllegalStateException("Impossible de trouver Import Chartres.xlsx");
             }
-            specs = ooxmlImportService.importFromExcel(is, OOXMLImportService.ImportScope.ALL, null);
+            result = ooxmlImportService.importFromExcel(is, OOXMLImportService.ImportScope.ALL, null);
         } catch (IOException e) {
             throw new DatabaseDataInitException(e.getMessage(), e);
         }
 
+        if (result.hasErrors()) {
+            result.errors().forEach(e -> log.warn("[Chartres] Erreur import ligne {} feuille '{}': {}", e.row(), e.sheet(), e.message()));
+        }
+
+        ImportSpecs specs = result.specs();
         personSeeder.seed(specs.persons());
         institutionSeeder.seed(specs.institutions());
         Institution ch = institutionRepository.findInstitutionByIdentifier("chartres").orElseThrow(() -> new RuntimeException("CHARTRES NOT FOUND"));

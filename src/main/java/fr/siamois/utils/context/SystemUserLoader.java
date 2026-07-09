@@ -36,7 +36,6 @@ public class SystemUserLoader {
                     p.setLastname("SYSTEM");
                     p.setEmail("system@siamois.fr");
                     p.setPassword("SIAMOIS_UNHASHED");
-                    p.setSuperAdmin(false);
                     return personRepository.save(p);
                 }));
 

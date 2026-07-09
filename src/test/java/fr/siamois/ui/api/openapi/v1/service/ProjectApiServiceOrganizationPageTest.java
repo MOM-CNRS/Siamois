@@ -2,11 +2,11 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -39,7 +39,7 @@ class ProjectApiServiceOrganizationPageTest {
     @Mock private ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
     @Mock private FindOpenApiMapper findOpenApiMapper;
     @Mock private PersonMapper personMapper;
-    @Mock private PermissionService permissionService;
+    @Mock private ProfilePermissionService profilePermissionService;
     @Mock private ConceptService conceptService;
     @Mock private ConceptMapper conceptMapper;
     @Mock private RecordingUnitOpenApiService recordingUnitOpenApiService;
@@ -61,7 +61,7 @@ class ProjectApiServiceOrganizationPageTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);

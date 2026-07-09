@@ -19,7 +19,7 @@ public class RecordingUnitSpec {
     public static final String CONTRIBUTORS_FILTER = "contributors";
     public static final String TYPE_FILTER = "type";
     public static final String ID_FILTER = "id";
-    public static final String PARENT_FILTER = "parents";
+    public static final String PARENTS_FILTER = "parents";
 
 
     private RecordingUnitSpec() {
@@ -118,7 +118,7 @@ public class RecordingUnitSpec {
 
     @NonNull
     public static Specification<RecordingUnit> unitIsRoot() {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENT_FILTER)));
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENTS_FILTER)));
     }
 
     @NonNull
@@ -129,7 +129,7 @@ public class RecordingUnitSpec {
     @NonNull
     public static Specification<RecordingUnit> isChildOf(List<Long> parentIds) {
         return (root, query, cb) -> {
-            jakarta.persistence.criteria.Join<RecordingUnit, RecordingUnit> parentsJoin = root.join(PARENT_FILTER);
+            jakarta.persistence.criteria.Join<RecordingUnit, RecordingUnit> parentsJoin = root.join(PARENTS_FILTER);
             return cb.in(parentsJoin.get("id")).value(parentIds);
         };
     }

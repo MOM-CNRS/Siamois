@@ -3,15 +3,16 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -32,11 +33,11 @@ import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,24 +63,10 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectControllerApiTest {
@@ -105,7 +92,7 @@ class ProjectControllerApiTest {
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -125,6 +112,7 @@ class ProjectControllerApiTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
@@ -138,7 +126,7 @@ class ProjectControllerApiTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);
@@ -237,6 +225,7 @@ class ProjectControllerApiTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 4L, 2L);
 
         when(actionUnitService.findAccessibleProjects(
+                anyLong(),
                 eq(Set.of(100L)),
                 isNull(),
                 isNull(),
@@ -259,6 +248,7 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.meta.offset").value(0));
 
         verify(actionUnitService).findAccessibleProjects(
+                anyLong(),
                 eq(Set.of(100L)),
                 isNull(),
                 isNull(),
@@ -274,7 +264,7 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(1L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjects(eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class)))
+        when(actionUnitService.findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();
@@ -620,8 +610,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(institutionService.findById(100L)).thenReturn(institutionDto);
-        when(permissionService.isInstitutionManager(any())).thenReturn(false);
-        when(permissionService.isActionManager(any())).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(false);
 
         mockMvc.perform(post("/api/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -637,7 +626,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(institutionService.findById(100L)).thenReturn(institutionDto);
-        when(permissionService.isInstitutionManager(any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
 
         fr.siamois.domain.models.vocabulary.Concept typeConcept = mock(fr.siamois.domain.models.vocabulary.Concept.class);
         when(conceptService.findById(42L)).thenReturn(java.util.Optional.of(typeConcept));
@@ -695,7 +684,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("1", Set.of(100L))).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(false);
 
         mockMvc.perform(patch("/api/v1/projects/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -719,7 +708,7 @@ class ProjectControllerApiTest {
         when(actionUnitService.findAccessibleProjectByKey("8", Set.of(100L)))
                 .thenReturn(row)
                 .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
         when(actionUnitService.save(any(), any(), any())).thenReturn(au);
 
         ProjectResource resource = new ProjectResource();
@@ -735,6 +724,44 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.name").value("Après"));
 
         verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) -> "Après".equals(d.getName())), any());
+    }
+
+    @Test
+    void patchProject_spatialContext_passesResolvedPlacesToSave() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(9L);
+        au.setName("P");
+        au.setCreatedByInstitution(institutionDto);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L)))
+                .thenReturn(row)
+                .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+
+        SpatialUnitDTO place = new SpatialUnitDTO();
+        place.setId(50L);
+        place.setCreatedByInstitution(institutionDto);
+        when(spatialUnitService.findById(50L)).thenReturn(place);
+        when(actionUnitService.save(any(), any(), any())).thenReturn(au);
+
+        ProjectResource resource = new ProjectResource();
+        resource.setResourceType("projects");
+        resource.setId("9");
+        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString())).thenReturn(resource);
+
+        mockMvc.perform(patch("/api/v1/projects/9")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"spatialContextSpatialUnitIds\":[50]}"))
+                .andExpect(status().isOk());
+
+        verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) ->
+                d.getSpatialContext() != null
+                        && d.getSpatialContext().size() == 1
+                        && d.getSpatialContext().iterator().next().getId().equals(50L)), any());
     }
 
     @Test
@@ -758,7 +785,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("3", Set.of(100L))).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/3"))
                 .andExpect(status().isConflict());
@@ -777,7 +804,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 1L);
         when(actionUnitService.findAccessibleProjectByKey("4", Set.of(100L))).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/4"))
                 .andExpect(status().isConflict());
@@ -796,7 +823,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L))).thenReturn(row);
-        when(permissionService.hasWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/9"))
                 .andExpect(status().isNoContent());

@@ -11,9 +11,13 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -22,20 +26,23 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
+import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -68,12 +75,15 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonMapper personMapper;
     private final SpatialUnitRepository spatialUnitRepository;
     private final ConceptMapper conceptMapper;
-    private final TeamMemberRepository teamMemberRepository;
+    private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
+    private final ProfileRepository profileRepository;
     private final DocumentRepository documentRepository;
     private final PendingActionUnitRepository pendingActionUnitRepository;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
-
+    private final ProfileService profileService;
+    private final PersonProfileAssignmentService personProfileAssignmentService;
+    private final ProfileMapper profileMapper;
 
 
     /**
@@ -96,6 +106,13 @@ public class ActionUnitService implements ArkEntityService {
         }
     }
 
+    private Map<String, Profile> createProjectProfiles(ActionUnitDTO actionUnitDTO) {
+        Map<String, Profile> projectProfiles = new HashMap<>();
+        projectProfiles.put(ProfileConstants.PROJECT_MANAGER, profileService.createOrGetProjectManagerProfile(actionUnitDTO));
+        projectProfiles.put(ProfileConstants.PROJECT_MEMBER, profileService.createOrGetProjectMemberProfile(actionUnitDTO));
+        return projectProfiles;
+    }
+
     /**
      * Save an ActionUnit without a transaction.
      *
@@ -104,6 +121,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param typeConceptDTO The concept type of the ActionUnit
      * @return The saved ActionUnit
      */
+    @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnit saveNotTransactional(UserInfo info, ActionUnitDTO actionUnitDTO, ConceptDTO typeConceptDTO)
             throws ActionUnitAlreadyExistsException {
 
@@ -199,9 +217,32 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Transactional
+    @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
-        return actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
+        ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
+        assignRoles(info, savedDTO);
+        return savedDTO;
+    }
+
+    private void assignRoles(UserInfo info, ActionUnitDTO savedDTO) {
+        Map<String, Profile> profiles = createProjectProfiles(savedDTO);
+        assignAsOrganisationMember(info, savedDTO);
+        assignAsProjectMember(info, savedDTO, profiles);
+    }
+
+    private void assignAsProjectMember(UserInfo info, ActionUnitDTO actionUnit, Map<String, Profile> profiles) {
+        List<ProfileDTO> profileDTOS = new ArrayList<>();
+        profileDTOS.add(profileMapper.convert(profiles.get(ProfileConstants.PROJECT_MANAGER)));
+        profileDTOS.add(profileMapper.convert(profiles.get(ProfileConstants.PROJECT_MEMBER)));
+        personProfileAssignmentService.addToProjectMembers(actionUnit, info.getUser(), profileDTOS);
+    }
+
+    private void assignAsOrganisationMember(UserInfo info, ActionUnitDTO actionUnit) {
+        Profile institutionMember = profileService.createOrGetOrganizationMemberProfile(actionUnit.getCreatedByInstitution());
+        List<ProfileDTO> institutionMemberProfileDTOS = new ArrayList<>();
+        institutionMemberProfileDTOS.add(profileMapper.convert(institutionMember));
+        personProfileAssignmentService.addToInstitution(actionUnit.getCreatedByInstitution(), info.getUser(), institutionMemberProfileDTOS);
     }
 
     /**
@@ -242,10 +283,13 @@ public class ActionUnitService implements ArkEntityService {
      * @return The saved ActionUnit
      */
     @Override
-    @CacheEvict({
-            "InstitutionHasRootChildrenAU",
-            "InstitutionHasRootChildrenSU",
-            "ActionUnitHasChildrenInInstitution"
+    @Caching(evict = {
+            @CacheEvict({
+                    "InstitutionHasRootChildrenAU",
+                    "InstitutionHasRootChildrenSU",
+                    "ActionUnitHasChildrenInInstitution"
+            }),
+            @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         try {
@@ -438,8 +482,14 @@ public class ActionUnitService implements ArkEntityService {
     }
 
 
+    @Cacheable(value = "MyActionUnits", key = "#member.id + '-' + #institution.id + '-' + #limit")
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
-        List<ActionUnit> actionUnits = actionUnitRepository.findByTeamMemberOrCreatorAndInstitutionLimit(member.getId(), institution.getId(), limit);
+        Specification<ActionUnit> specs = prepareSpecs(institution, new FilterDTO());
+        Pageable pageLimit = PageRequest.of(0, Math.toIntExact(limit));
+
+        specs = specs.and(ActionUnitSpec.visibleToPerson(member.getId()));
+
+        Page<ActionUnit> actionUnits = actionUnitRepository.findAll(specs, pageLimit);
         return actionUnits.stream()
                 .map(this::convertWithCount)
                 .toList();
@@ -498,9 +548,6 @@ public class ActionUnitService implements ArkEntityService {
     public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-        if (filters.containsColumn("name")) {
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
-        }
         return res.map(this::convertWithCount);
     }
 
@@ -607,14 +654,17 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * Projects (action units) visible in the API: all units belonging to the given institutions.
-     * Aligné sur l'interface web (liste des opérations par institution), pas sur la seule équipe {@code team_member}.
+     * Projects (action units) visible in the API: units the person is allowed to display
+     * through the profile permission system ({@link ActionUnitSpec#visibleToPerson(Long)}),
+     * restricted to the given institutions.
      *
+     * @param personId       the person whose display permissions filter the results
      * @param organizationId when non-null, restrict to this institution (caller must ensure it is allowed for the person)
      */
     // TODO [ARCH] Définir avec Julien si on décide que les service n'expose que des DTOs domaine et si c'est le rôle des package ui de mapper vers le DTO API
     @Transactional(readOnly = true)
     public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
             Set<Long> accessibleInstitutionIds,
             Long organizationId,
             String search,
@@ -627,6 +677,7 @@ public class ActionUnitService implements ArkEntityService {
                 : accessibleInstitutionIds;
 
         Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
+                .and(ActionUnitSpec.visibleToPerson(personId))
                 .and(ActionUnitSpec.projectSearch(search));
 
         Page<ActionUnit> page = actionUnitRepository.findAll(spec, pageable);
@@ -688,10 +739,13 @@ public class ActionUnitService implements ArkEntityService {
      *
      * @throws IllegalStateException si le projet n'est pas supprimable
      */
-    @CacheEvict({
-            "InstitutionHasRootChildrenAU",
-            "InstitutionHasRootChildrenSU",
-            "ActionUnitHasChildrenInInstitution"
+    @Caching(evict = {
+            @CacheEvict({
+                    "InstitutionHasRootChildrenAU",
+                    "InstitutionHasRootChildrenSU",
+                    "ActionUnitHasChildrenInInstitution"
+            }),
+            @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
     public void deleteProjectWhenEmpty(long actionUnitId) {
         if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {
@@ -702,7 +756,8 @@ public class ActionUnitService implements ArkEntityService {
         if (childrenByProject.getOrDefault(actionUnitId, 0L) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des sous-projets");
         }
-        teamMemberRepository.deleteAll(teamMemberRepository.findAllByActionUnitId(actionUnitId));
+        personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
+        profileRepository.deleteAllByActionUnitId(actionUnitId);
         pendingActionUnitRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdCounterRepository.deleteAllByConfigActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);

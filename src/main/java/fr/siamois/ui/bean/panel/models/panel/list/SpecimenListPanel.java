@@ -2,7 +2,6 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -42,7 +41,6 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<SpecimenDTO> genericNewUnitDialogBean;
-    private final transient RecordingUnitWriteVerifier recordingUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
 
@@ -101,7 +99,6 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
-        this.recordingUnitWriteVerifier = context.getBean(RecordingUnitWriteVerifier.class);
         this.navBean = context.getBean(NavBean.class);
         this.formContextServices = context.getBean(FormContextServices.class);
     }

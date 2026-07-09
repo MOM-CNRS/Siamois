@@ -8,8 +8,8 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -35,13 +35,8 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DocumentWriteOpenApiServiceTest {
@@ -61,7 +56,7 @@ class DocumentWriteOpenApiServiceTest {
     @Mock
     private InstitutionService institutionService;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ArkService arkService;
     @Mock
@@ -80,7 +75,7 @@ class DocumentWriteOpenApiServiceTest {
                 documentService,
                 conceptService,
                 institutionService,
-                permissionService,
+                profilePermissionService,
                 arkService,
                 projectDocumentOpenApiMapper);
 
@@ -185,7 +180,7 @@ class DocumentWriteOpenApiServiceTest {
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setCreatedByInstitution(institutionDTO());
         when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(ru);
-        when(permissionService.hasWritePermission(any(UserInfo.class), same(ru))).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ru))).thenReturn(false);
 
         assertThatThrownBy(() -> service.createForRecordingUnit(
                 caller, "UE-1", "Title", null, null, null, null, file, "fr"))
@@ -200,7 +195,7 @@ class DocumentWriteOpenApiServiceTest {
         ru.setId(42L);
         ru.setCreatedByInstitution(institution);
         when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(ru);
-        when(permissionService.hasWritePermission(any(UserInfo.class), same(ru))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ru))).thenReturn(true);
 
         InstitutionSettings settings = mock(InstitutionSettings.class);
         when(settings.hasEnabledArkConfig()).thenReturn(true);

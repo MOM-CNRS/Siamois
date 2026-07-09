@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -29,8 +28,8 @@ import java.util.List;
 public class ProjectDetailsBean {
 
     private final ProjectUploadSettingsBean projectUploadSettingsBean;
+    private final ProjectMembersListBean projectMembersListBean;
     private final LangBean langBean;
-    private final PermissionService permissionService;
     private final SessionSettingsBean sessionSettingsBean;
     private final RedirectBean redirectBean;
 
@@ -50,7 +49,10 @@ public class ProjectDetailsBean {
         }));
 
         elements.add(new OptionElement("bi bi-people", langBean.msg("projectSettings.titles.members"),
-                "(A venir) Les membres du projet et leurs rôles", () -> null));
+                langBean.msg("projectSettings.descriptions.members", project.getName()), () -> {
+            projectMembersListBean.init(project);
+            return "/pages/settings/project/projectMembersSettings.xhtml?faces-redirect=true";
+        }));
 
         elements.add(new OptionElement("bi bi-ui-radios",
                 langBean.msg("projectSettings.titles.tables"),
@@ -66,6 +68,14 @@ public class ProjectDetailsBean {
     public void checkProjectOrRedirect() {
         if (project == null) {
             redirectBean.redirectTo("/settings/project");
+            return;
+        }
+        // projectUploadSettingsBean.project is only set via its own .init(project) call (wired to the
+        // upload tile's action in init() above) — if this page was reached any other way (direct URL,
+        // refresh, browser back/forward) while this bean's project survived, it can be desynced and
+        // stay null, silently breaking institution resolution during import. Re-sync it here.
+        if (projectUploadSettingsBean.getProject() == null) {
+            projectUploadSettingsBean.init(project);
         }
     }
 
@@ -86,6 +96,7 @@ public class ProjectDetailsBean {
         project = null;
         elements = null;
         projectUploadSettingsBean.reset();
+        projectMembersListBean.reset();
     }
 
     public StreamedContent getFile() {

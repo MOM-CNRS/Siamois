@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;

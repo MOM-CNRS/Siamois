@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.writeverifier.SpatialUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.ContainerDTO;
@@ -47,7 +46,6 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean;
-    private final transient SpatialUnitWriteVerifier spatialUnitWriteVerifier;
     private final transient NavBean navBean;
     private final transient InstitutionService institutionService;
     private final transient FormContextServices formContextServices;
@@ -111,7 +109,6 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
-        this.spatialUnitWriteVerifier = context.getBean(SpatialUnitWriteVerifier.class);
         this.navBean = context.getBean(NavBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.formContextServices = context.getBean(FormContextServices.class);

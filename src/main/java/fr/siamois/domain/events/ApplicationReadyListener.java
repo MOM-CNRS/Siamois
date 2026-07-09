@@ -35,7 +35,7 @@ public class ApplicationReadyListener {
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-
+        long begin = System.currentTimeMillis();
         UserInfo systemUser = systemUserLoader.loadSystemUser(); // system
         ExecutionContextHolder.set(systemUser);
 
@@ -55,6 +55,8 @@ public class ApplicationReadyListener {
                 System.exit(1);
             }
         }
+
+        log.info("Completed data initialization in {} ms", System.currentTimeMillis() - begin);
     }
 
 }
