@@ -18,6 +18,7 @@ public interface ProfileRepository extends CrudRepository<Profile, Integer> {
 
     void deleteAllByActionUnitId(Long actionUnitId);
 
+    @Query("SELECT p from Profile p WHERE p.institution.id = :institutionId AND p.actionUnit IS NULL")
     List<Profile> findProfilesByInstitutionId(Long institutionId);
 
     List<Profile> findProfilesByActionUnitId(Long actionUnitId);
