@@ -3,8 +3,10 @@ package fr.siamois.ui.bean.settings.project;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.dto.entity.ProjectMemberDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -23,7 +25,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 
@@ -39,22 +43,26 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
     private final LangBean langBean;
     private final transient PersonProfileAssignmentService personProfileAssignmentService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final transient PendingPersonService pendingPersonService;
 
     private ActionUnitDTO project;
 
     private transient List<ProjectMemberDTO> members;
     private transient List<ProjectMemberDTO> refMembers;
     private transient List<ProfileDTO> availableProfiles;
+    private transient Set<Long> pendingInvitationPersonIds;
     private String searchInput;
 
     public ProjectMembersListBean(ProjectMembersServiceInterface projectMembersService,
                                   NewProjectMemberDialogBean newProjectMemberDialogBean,
-                                  LangBean langBean, PersonProfileAssignmentService personProfileAssignmentService, SessionSettingsBean sessionSettingsBean) {
+                                  LangBean langBean, PersonProfileAssignmentService personProfileAssignmentService,
+                                  SessionSettingsBean sessionSettingsBean, PendingPersonService pendingPersonService) {
         this.projectMembersService = projectMembersService;
         this.newProjectMemberDialogBean = newProjectMemberDialogBean;
         this.langBean = langBean;
         this.personProfileAssignmentService = personProfileAssignmentService;
         this.sessionSettingsBean = sessionSettingsBean;
+        this.pendingPersonService = pendingPersonService;
     }
 
     /**
@@ -67,6 +75,15 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
         refMembers = new ArrayList<>(projectMembersService.findMembersOf(project));
         members = new ArrayList<>(refMembers);
         availableProfiles = projectMembersService.findAvailableProfiles(project);
+        pendingInvitationPersonIds = new HashSet<>(pendingPersonService.findPersonIdsWithPendingInvitation(
+                refMembers.stream().map(m -> m.getPerson().getId()).toList()));
+    }
+
+    /** @return true when the member's account is disabled and still waiting on its invitation. */
+    public boolean hasPendingInvitation(PersonDTO person) {
+        return !person.isEnabled()
+                && pendingInvitationPersonIds != null
+                && pendingInvitationPersonIds.contains(person.getId());
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -138,6 +155,9 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
             ProjectMemberDTO member = projectMembersService.addMemberToProject(
                     project, saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);
+            if (!saved.person().isEnabled() && pendingPersonService.hasPendingInvitation(saved.person().getId())) {
+                pendingInvitationPersonIds.add(saved.person().getId());
+            }
             filter();
             return true;
         } catch (Exception err) {
@@ -153,6 +173,7 @@ public class ProjectMembersListBean implements SettingsDatatableBean {
         members = null;
         refMembers = null;
         availableProfiles = null;
+        pendingInvitationPersonIds = null;
         searchInput = null;
     }
 

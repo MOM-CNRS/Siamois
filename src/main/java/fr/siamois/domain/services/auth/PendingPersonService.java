@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service for managing pending persons. Pending persons are users who have been invited to register but have not yet completed the registration process.
@@ -88,6 +90,30 @@ public class PendingPersonService {
                     pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(INVITATION_VALIDITY_DAYS));
                     return pendingPersonRepository.save(pendingPerson);
                 });
+    }
+
+    /**
+     * Check whether a person still has a pending invitation (i.e. was invited but has not completed
+     * their registration yet).
+     *
+     * @param personId the id of the person
+     * @return true if an invitation exists for this person
+     */
+    public boolean hasPendingInvitation(Long personId) {
+        return pendingPersonRepository.existsByDisabledPersonId(personId);
+    }
+
+    /**
+     * Among the given person ids, find the ones that still have a pending invitation.
+     *
+     * @param personIds the person ids to check
+     * @return the subset of ids having a pending invitation
+     */
+    public Set<Long> findPersonIdsWithPendingInvitation(Collection<Long> personIds) {
+        if (personIds.isEmpty()) {
+            return Set.of();
+        }
+        return pendingPersonRepository.findDisabledPersonIdsIn(personIds);
     }
 
     /**

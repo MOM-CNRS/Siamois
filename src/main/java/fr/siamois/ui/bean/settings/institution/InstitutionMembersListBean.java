@@ -10,6 +10,7 @@ import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -29,8 +30,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 
@@ -57,6 +60,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     private transient List<InstitutionMemberDTO> members;
     private transient List<InstitutionMemberDTO> refMembers;
     private transient List<ProfileDTO> availableProfiles;
+    private transient Set<Long> pendingInvitationPersonIds;
     private String searchInput;
 
     /**
@@ -70,6 +74,15 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         roles = new HashMap<>();
         members = new ArrayList<>(refMembers);
         availableProfiles = organizationMembersService.findAvailableProfiles(institution);
+        pendingInvitationPersonIds = new HashSet<>(pendingPersonService.findPersonIdsWithPendingInvitation(
+                refMembers.stream().map(m -> m.getPerson().getId()).toList()));
+    }
+
+    /** @return true when the member's account is disabled and still waiting on its invitation. */
+    public boolean hasPendingInvitation(PersonDTO person) {
+        return !person.isEnabled()
+                && pendingInvitationPersonIds != null
+                && pendingInvitationPersonIds.contains(person.getId());
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -153,6 +166,9 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
             InstitutionMemberDTO member = organizationMembersService.addMemberToInstitution(
                     institution, saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);
+            if (!saved.person().isEnabled() && pendingPersonService.hasPendingInvitation(saved.person().getId())) {
+                pendingInvitationPersonIds.add(saved.person().getId());
+            }
             filter();
             return true;
         } catch (Exception err) {
@@ -169,6 +185,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         refMembers = null;
         roles = null;
         availableProfiles = null;
+        pendingInvitationPersonIds = null;
         searchInput = null;
     }
 

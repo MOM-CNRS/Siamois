@@ -18,7 +18,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -133,6 +135,32 @@ class PendingPersonServiceTest {
         assertEquals(PendingPersonService.TOKEN_LENGTH, result.getRegisterToken().length());
         assertNotNull(result.getPendingInvitationExpirationDate());
         assertTrue(result.getPendingInvitationExpirationDate().isAfter(OffsetDateTime.now(ZoneOffset.UTC)));
+    }
+
+    @Test
+    void hasPendingInvitation_shouldDelegateToRepository() {
+        when(pendingPersonRepository.existsByDisabledPersonId(1L)).thenReturn(true);
+
+        assertTrue(pendingPersonService.hasPendingInvitation(1L));
+        verify(pendingPersonRepository).existsByDisabledPersonId(1L);
+    }
+
+    @Test
+    void findPersonIdsWithPendingInvitation_shouldReturnMatchingIds() {
+        List<Long> personIds = List.of(1L, 2L, 3L);
+        when(pendingPersonRepository.findDisabledPersonIdsIn(personIds)).thenReturn(Set.of(2L));
+
+        Set<Long> result = pendingPersonService.findPersonIdsWithPendingInvitation(personIds);
+
+        assertEquals(Set.of(2L), result);
+    }
+
+    @Test
+    void findPersonIdsWithPendingInvitation_shouldReturnEmptySetWithoutQueryOnEmptyInput() {
+        Set<Long> result = pendingPersonService.findPersonIdsWithPendingInvitation(List.of());
+
+        assertTrue(result.isEmpty());
+        verify(pendingPersonRepository, never()).findDisabledPersonIdsIn(any());
     }
 
     @Test

@@ -286,27 +286,41 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         Set<ProfileDTO> profiles = new HashSet<>(selectedProfiles);
 
         for (PersonDTO candidate : selectedMembers) {
-            boolean invitedWithoutPassword = isDraft(candidate) && draftPasswords.get(candidate.getId()) == null;
+            boolean invitedWithoutPassword = isInvitedWithoutPassword(candidate);
             PersonDTO person = isDraft(candidate) ? createInvitedPerson(candidate) : candidate;
             if (person == null) {
                 remaining.add(candidate);
                 continue;
             }
-            Boolean added = processPerson.process(new PersonRole(person, null, profiles));
-            if (Boolean.TRUE.equals(added)) {
-                affected++;
-                if (invitedWithoutPassword) {
-                    sendInvitation(person);
-                }
-            } else {
-                remaining.add(candidate);
-            }
+            affected = processCreatedPerson(candidate, invitedWithoutPassword, person, profiles, affected, remaining);
         }
 
         selectedMembers = remaining;
         if (affected > 0 && selectedMembers.isEmpty()) {
             exit();
         }
+    }
+
+    private int processCreatedPerson(PersonDTO candidate, boolean invitedWithoutPassword, PersonDTO person, Set<ProfileDTO> profiles, int affected, List<PersonDTO> remaining) {
+        if (invitedWithoutPassword) {
+            // Created before the callback so the caller sees the pending invitation when it
+            // refreshes its member list; the e-mail itself is only sent after the profiles are set.
+            pendingPersonService.createOrGetInvitation(person);
+        }
+        Boolean added = processPerson.process(new PersonRole(person, null, profiles));
+        if (Boolean.TRUE.equals(added)) {
+            affected++;
+            if (invitedWithoutPassword) {
+                sendInvitation(person);
+            }
+        } else {
+            remaining.add(candidate);
+        }
+        return affected;
+    }
+
+    private boolean isInvitedWithoutPassword(PersonDTO candidate) {
+        return isDraft(candidate) && draftPasswords.get(candidate.getId()) == null;
     }
 
     private PersonDTO createInvitedPerson(PersonDTO draft) {
