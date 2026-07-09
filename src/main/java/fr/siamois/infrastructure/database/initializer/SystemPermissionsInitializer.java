@@ -75,6 +75,12 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
         }
     }
 
+    private void initializeDefaultInstitutionPermissions(InstitutionDTO institution) {
+        profileService.createOrGetOrganizationManagerProfile(institution);
+        profileService.createOrGetOrganizationProjectManagerProfile(institution);
+        profileService.createOrGetOrganizationMemberProfile(institution);
+    }
+
     @Override
     public void initialize() throws DatabaseDataInitException {
         initializePermissions();
@@ -89,6 +95,7 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
                 .orElseThrow(() -> new DatabaseDataInitException("Default Institution not found"));
         InstitutionDTO institutionDTO = institutionMapper.convert(defaultInstitution);
         assert institutionDTO != null;
+        initializeDefaultInstitutionPermissions(institutionDTO);
         Profile organizationManager = profileService
                 .createOrGetOrganizationManagerProfile(institutionDTO);
 
