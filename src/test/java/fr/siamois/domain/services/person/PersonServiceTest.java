@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.person;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.PersonSettings;
