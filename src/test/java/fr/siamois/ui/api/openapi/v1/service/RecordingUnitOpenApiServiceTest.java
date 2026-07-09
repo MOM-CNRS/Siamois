@@ -298,6 +298,8 @@ class RecordingUnitOpenApiServiceTest {
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(same(answerVm))).thenReturn(42);
 
+        service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
+
         verify(formService).readAnswerValueForApi(same(answerVm));
     }
 
