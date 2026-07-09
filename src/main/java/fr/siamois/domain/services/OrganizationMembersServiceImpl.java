@@ -59,7 +59,7 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
     @Override
     public List<ProfileDTO> findAvailableProfiles(InstitutionDTO institution) {
         return profileRepository
-                .findProfilesByInstitutionId(institution.getId())
+                .findAllOfInstitutionScope(institution.getId())
                 .stream()
                 .map(profileMapper::convert)
                 .toList();

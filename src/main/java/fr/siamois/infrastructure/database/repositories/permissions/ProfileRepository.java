@@ -18,10 +18,12 @@ public interface ProfileRepository extends CrudRepository<Profile, Integer> {
 
     void deleteAllByActionUnitId(Long actionUnitId);
 
-    List<Profile> findProfilesByInstitutionId(Long institutionId);
+    @Query("SELECT p from Profile p WHERE p.institution.id = :institutionId AND p.actionUnit IS NULL")
+    List<Profile> findAllOfInstitutionScope(Long institutionId);
 
-    List<Profile> findProfilesByActionUnitId(Long actionUnitId);
+    @Query("SELECT p FROM Profile p WHERE p.actionUnit.id = :actionUnitId")
+    List<Profile> findAllOfActionUnitScope(Long actionUnitId);
 
     @Query("SELECT p FROM Profile p WHERE p.actionUnit IS NULL AND p.institution IS NULL")
-    List<Profile> findAllOfInstanceLevel();
+    List<Profile> findAllOfInstanceScope();
 }

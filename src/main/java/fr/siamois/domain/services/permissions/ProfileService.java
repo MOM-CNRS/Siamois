@@ -150,14 +150,14 @@ public class ProfileService {
     }
 
     public List<ProfileDTO> findAllProfilesByActionUnit(ActionUnitDTO project) {
-        return profileRepository.findProfilesByActionUnitId(project.getId())
+        return profileRepository.findAllOfActionUnitScope(project.getId())
                 .stream()
                 .map(profileMapper::convert)
                 .toList();
     }
 
     public List<ProfileDTO> findAllProfilesOfInstance() {
-        return profileRepository.findAllOfInstanceLevel()
+        return profileRepository.findAllOfInstanceScope()
                 .stream()
                 .map(profileMapper::convert)
                 .toList();
