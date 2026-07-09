@@ -89,6 +89,7 @@ spring:
       mail:
         smtp:
           auth: ${SMTP_AUTH_ENABLED:true}
+        sender: ${EMAIL_SENDER_ADDRESS}
     host: ${SMTP_HOST}
     port: ${SMTP_PORT}
     username: ${SMTP_USERNAME}

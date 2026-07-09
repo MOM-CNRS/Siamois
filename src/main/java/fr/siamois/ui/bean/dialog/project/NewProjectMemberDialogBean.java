@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
 import fr.siamois.ui.email.EmailManager;
+import fr.siamois.ui.email.InvitationEmailRenderer;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Scope;
@@ -38,9 +39,10 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
     public NewProjectMemberDialogBean(PersonService personService,
                                        PendingPersonService pendingPersonService,
                                        EmailManager emailManager,
+                                       InvitationEmailRenderer invitationEmailRenderer,
                                        ProjectMembersServiceInterface projectMembersService,
                                        LangBean langBean) {
-        super(personService, pendingPersonService, emailManager, langBean);
+        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, langBean);
         this.projectMembersService = projectMembersService;
     }
 
@@ -79,8 +81,8 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
     }
 
     @Override
-    protected String invitationMailBody(String invitationLink, String expirationDate) {
-        return langBean.msg("mail.invitation.project.body", project.getName(), invitationLink, expirationDate);
+    protected String invitationScopeName() {
+        return project.getName();
     }
 
     @Override

@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
 import fr.siamois.ui.email.EmailManager;
+import fr.siamois.ui.email.InvitationEmailRenderer;
 import fr.siamois.utils.DateUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -45,6 +46,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected final transient PersonService personService;
     protected final transient PendingPersonService pendingPersonService;
     protected final transient EmailManager emailManager;
+    protected final transient InvitationEmailRenderer invitationEmailRenderer;
     protected final LangBean langBean;
 
     protected transient ProcessPerson processPerson;
@@ -74,10 +76,12 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected AbstractNewMemberDialogBean(PersonService personService,
                                           PendingPersonService pendingPersonService,
                                           EmailManager emailManager,
+                                          InvitationEmailRenderer invitationEmailRenderer,
                                           LangBean langBean) {
         this.personService = personService;
         this.pendingPersonService = pendingPersonService;
         this.emailManager = emailManager;
+        this.invitationEmailRenderer = invitationEmailRenderer;
         this.langBean = langBean;
     }
 
@@ -95,12 +99,8 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     /** @return the subject of the invitation e-mail sent to a member created without password. */
     protected abstract String invitationMailSubject();
 
-    /**
-     * @param invitationLink the registration link the invitee must follow to activate their account
-     * @param expirationDate the formatted expiration date of the invitation
-     * @return the body of the invitation e-mail sent to a member created without password
-     */
-    protected abstract String invitationMailBody(String invitationLink, String expirationDate);
+    /** @return the organisation / project name shown in the invitation e-mail body for this scope. */
+    protected abstract String invitationScopeName();
 
     /**
      * Autocomplete source for the members field — excludes already-selected and already-member persons.
@@ -364,9 +364,11 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         PendingPerson pendingPerson = pendingPersonService.createOrGetInvitation(person);
         String invitationLink = pendingPersonService.invitationLink(pendingPerson);
         String expirationDate = DateUtils.formatOffsetDateTime(pendingPerson.getPendingInvitationExpirationDate());
+        String body = invitationEmailRenderer.render(invitationScopeName(), invitationLink, expirationDate);
         emailManager.sendEmail(person.getEmail(),
                 invitationMailSubject(),
-                invitationMailBody(invitationLink, expirationDate));
+                body,
+                EmailManager.TEXT_HTML);
     }
 
     private static String usernameFromEmail(String email) {

@@ -90,14 +90,12 @@ public class RegisterBean {
         try {
             personService.enableAndUpdatePerson(person, password);
             pendingPersonService.deleteByPerson(person);
-
+            redirectBean.redirectTo("/");
             reset();
-            redirectBean.redirectTo("/login");
-
         } catch (InvalidUserInformationException e) {
-            log.trace("Person could not be created");
+            log.error("Error while registering user", e);
         } catch (UserAlreadyExistException e) {
-            log.trace("User already exists");
+            log.error("User already exists");
         }
 
     }
