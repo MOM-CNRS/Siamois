@@ -5,6 +5,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.mail.MailPreparationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 @Service
 @Primary
 @RequiredArgsConstructor
+@Profile("!log-email")
 public class EmailManagerImpl implements EmailManager {
 
     @Value("${spring.mail.properties.mail.sender}")
