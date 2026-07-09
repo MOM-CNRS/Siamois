@@ -7,6 +7,7 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
