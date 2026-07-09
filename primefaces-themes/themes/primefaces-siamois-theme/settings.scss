@@ -292,6 +292,18 @@ a:hover {
     border-color: #ecd6a8;
 }
 
+.chip-status-pending {
+    background-color: #e8f1fb;
+    color: #2a6cb0;
+    border-color: #bcd7f1;
+}
+
+.chip-status-expired {
+    background-color: #fbeaea;
+    color: #b03434;
+    border-color: #efc2c2;
+}
+
 .profile-cell {
     display: flex;
     align-items: center;

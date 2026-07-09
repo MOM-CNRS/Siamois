@@ -2,6 +2,7 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
@@ -25,6 +26,7 @@ public class ApplicationMembersServiceInterfaceImpl implements ApplicationMember
     private final PersonMapper personMapper;
     private final ProfileMapper profileMapper;
     private final PersonProfileAssignmentService personProfileAssignmentService;
+    private final PendingPersonService pendingPersonService;
 
     @Override
     public List<ApplicationMemberDTO> findMembers() {
@@ -43,6 +45,7 @@ public class ApplicationMembersServiceInterfaceImpl implements ApplicationMember
                     ApplicationMemberDTO dto = new ApplicationMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
+                    dto.setAccountStatus(pendingPersonService.accountStatusOf(dto.getPerson()));
                     return dto;
                 })
                 .toList();

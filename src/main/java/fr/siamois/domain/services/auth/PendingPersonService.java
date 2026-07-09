@@ -1,24 +1,29 @@
 package fr.siamois.domain.services.auth;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.pending.PendingActionUnitAttribution;
+import fr.siamois.domain.models.auth.AccountStatus;
 import fr.siamois.domain.models.auth.pending.PendingInstitutionInvite;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.services.LangService;
-import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.ui.email.EmailManager;
-import fr.siamois.utils.DateUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Email;
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -27,6 +32,7 @@ import java.util.Set;
  * Service for managing pending persons. Pending persons are users who have been invited to register but have not yet completed the registration process.
  */
 @Service
+@RequiredArgsConstructor
 public class PendingPersonService {
 
     private final PendingPersonRepository pendingPersonRepository;
@@ -34,26 +40,16 @@ public class PendingPersonService {
 
     public static final int MAX_GENERATION = 3000;
     public static final int TOKEN_LENGTH = 20;
+    public static final int INVITATION_VALIDITY_DAYS = 3;
     private static final String ALLOWED_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final String INVITATION_TEMPLATE_PATH = "email-templates/invitation.html";
 
     private final HttpServletRequest httpServletRequest;
     private final PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
     private final EmailManager emailManager;
     private final LangService langService;
-    private final PendingActionUnitRepository pendingActionUnitRepository;
 
-    public PendingPersonService(PendingPersonRepository pendingPersonRepository,
-                                HttpServletRequest httpServletRequest,
-                                PendingInstitutionInviteRepository pendingInstitutionInviteRepository,
-                                EmailManager emailManager,
-                                LangService langService, PendingActionUnitRepository pendingActionUnitRepository) {
-        this.pendingPersonRepository = pendingPersonRepository;
-        this.httpServletRequest = httpServletRequest;
-        this.pendingInstitutionInviteRepository = pendingInstitutionInviteRepository;
-        this.emailManager = emailManager;
-        this.langService = langService;
-        this.pendingActionUnitRepository = pendingActionUnitRepository;
-    }
+    private String invitationTemplate;
 
     /**
      * Generate a random token for the pending person.
@@ -105,13 +101,19 @@ public class PendingPersonService {
     public PendingPerson createOrGetPendingPerson(@Email String email) {
         Optional<PendingPerson> pendingPerson = pendingPersonRepository.findByEmail(email);
         if (pendingPerson.isPresent()) {
-            return pendingPerson.get();
+            PendingPerson person = pendingPerson.get();
+            if (invitationIsExpired(person)) {
+                person.setRegisterToken(generateToken());
+                person.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(INVITATION_VALIDITY_DAYS));
+                person = pendingPersonRepository.save(person);
+            }
+            return person;
         } else {
             PendingPerson person = new PendingPerson();
             person.setEmail(email);
             person.setId(-1L);
             person.setRegisterToken(generateToken());
-            person.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(3));
+            person.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(INVITATION_VALIDITY_DAYS));
             person = pendingPersonRepository.save(person);
 
             return person;
@@ -119,99 +121,108 @@ public class PendingPersonService {
     }
 
     /**
-     * Send an invitation email to the pending person with the option to set them as a manager.
+     * Check whether the registration invitation of a pending person is expired.
      *
      * @param pendingPerson the pending person
-     * @param institution   the institution
-     * @param isManager     true if the pending person should be a manager, false otherwise
-     * @param mailLang      the language of the email
-     * @return true if the email was sent, false if the invitation already exists
+     * @return true if the invitation expiration date is in the past
      */
-    public boolean sendPendingManagerInstitutionInvite(PendingPerson pendingPerson, Institution institution, boolean isManager, String mailLang) {
-        Optional<PendingInstitutionInvite> pendingInstitutionInvite = pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson);
-        if (pendingInstitutionInvite.isPresent()) {
-            PendingInstitutionInvite invite = pendingInstitutionInvite.get();
-            invite.setManager(isManager);
+    public boolean invitationIsExpired(PendingPerson pendingPerson) {
+        return pendingPerson.getPendingInvitationExpirationDate() == null
+                || OffsetDateTime.now(ZoneOffset.UTC).isAfter(pendingPerson.getPendingInvitationExpirationDate());
+    }
+
+    /**
+     * Display status of an account in the member lists: an enabled account is active; a disabled
+     * account with a registration invitation shows the invitation state (pending or expired).
+     *
+     * @param person the person whose account status to compute
+     * @return the account status
+     */
+    public AccountStatus accountStatusOf(PersonDTO person) {
+        if (person.isEnabled()) {
+            return AccountStatus.ACTIVE;
+        }
+        Optional<PendingPerson> pending = pendingPersonRepository.findByEmail(person.getEmail());
+        if (pending.isEmpty()) {
+            return AccountStatus.DISABLED;
+        }
+        return invitationIsExpired(pending.get()) ? AccountStatus.INVITATION_EXPIRED : AccountStatus.INVITATION_PENDING;
+    }
+
+    /**
+     * Invite a person to create their account: create (or refresh) the pending person carrying the
+     * registration token and send them the invitation email built from the HTML template.
+     *
+     * @param email       the email address to invite
+     * @param contextName the name displayed in the email (organization, project or application name)
+     * @param mailLang    the language of the email subject
+     * @return the pending person carrying the registration token
+     */
+    public PendingPerson invitePersonByEmail(@Email String email, String contextName, String mailLang) {
+        PendingPerson pendingPerson = createOrGetPendingPerson(email);
+        sendInvitationEmail(pendingPerson, contextName, mailLang);
+        return pendingPerson;
+    }
+
+    /**
+     * Invite a pending person to an institution with the given profiles. The profiles are stored
+     * on the invite and assigned to the person when they complete their registration.
+     * <p>
+     * If an invite already exists for this person and institution, the profiles are merged into it
+     * and no new email is sent. Otherwise the invite is created and the invitation email is sent.
+     *
+     * @param pendingPerson the pending person to invite
+     * @param institution   the institution the person is invited to
+     * @param profiles      the profiles to assign upon registration; PROJECT-scoped profiles carry their own action unit
+     * @param mailLang      the language of the invitation email
+     * @return true if the email was sent, false if the invitation already existed
+     */
+    public boolean sendInvite(PendingPerson pendingPerson, Institution institution, Collection<Profile> profiles, String mailLang) {
+        Optional<PendingInstitutionInvite> existingInvite = pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson);
+        if (existingInvite.isPresent()) {
+            PendingInstitutionInvite invite = existingInvite.get();
+            invite.getProfiles().addAll(profiles);
             pendingInstitutionInviteRepository.save(invite);
             return false;
         }
-        sendEmail(pendingPerson, institution, mailLang, isManager, false);
-        return true;
-    }
 
-    /**
-     * Send an action manager invitation email to the pending person.
-     *
-     * @param pendingPerson the pending person
-     * @param institution   the institution
-     * @param mailLang      the language of the email
-     * @return true if the email was sent, false if the invitation already exists
-     */
-    public boolean sendPendingActionManagerInstitutionInvite(PendingPerson pendingPerson, Institution institution, String mailLang) {
-        Optional<PendingInstitutionInvite> optInvite = pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson);
-        if (optInvite.isPresent()) {
-            return false;
-        }
-        sendEmail(pendingPerson, institution, mailLang, false, true);
-        return true;
-    }
-
-    /**
-     * Add a pending person to an action unit and send an invitation email if they are not already invited in the institution.
-     *
-     * @param pendingPerson the pending person to invite
-     * @param actionUnit    the action unit to which the pending person is being invited
-     * @param role          the role of the pending person in the action unit
-     * @param mailLang      the language of the email to be sent
-     * @return true if the email was sent, false if the pending person is already invited in the institution
-     */
-    public boolean sendPendingActionMemberInvite(PendingPerson pendingPerson, ActionUnit actionUnit, Concept role, String mailLang) {
-        Optional<PendingInstitutionInvite> optInvite = pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(actionUnit.getCreatedByInstitution(), pendingPerson);
-        if (optInvite.isPresent()) {
-            PendingInstitutionInvite invite = optInvite.get();
-            createIfNotExistAttribution(actionUnit, role, invite);
-            return false;
-        }
-
-        PendingInstitutionInvite invite = new PendingInstitutionInvite();
-        invite.setPendingPerson(pendingPerson);
-        invite.setInstitution(actionUnit.getCreatedByInstitution());
-        invite.setManager(false);
-
-        invite = pendingInstitutionInviteRepository.save(invite);
-        createIfNotExistAttribution(actionUnit, role, invite);
-        sendEmail(pendingPerson, actionUnit.getCreatedByInstitution(), mailLang, false, false);
-        return true;
-    }
-
-    private void createIfNotExistAttribution(ActionUnit actionUnit, Concept role, PendingInstitutionInvite invite) {
-        Optional<PendingActionUnitAttribution> optAction = pendingActionUnitRepository.findByActionUnitAndInstitutionInvite(actionUnit, invite);
-        if (optAction.isPresent())
-            return;
-        PendingActionUnitAttribution actionAttribution = new PendingActionUnitAttribution(invite, actionUnit);
-        actionAttribution.setRole(role);
-
-        pendingActionUnitRepository.save(actionAttribution);
-    }
-
-    private void sendEmail(PendingPerson pendingPerson, Institution institution, String mailLang, boolean isManager, boolean isActionManager) {
         PendingInstitutionInvite invite = new PendingInstitutionInvite();
         invite.setPendingPerson(pendingPerson);
         invite.setInstitution(institution);
-        invite.setId(-1L);
-        invite.setManager(isManager);
-        invite.setActionManager(isActionManager);
+        invite.getProfiles().addAll(profiles);
         pendingInstitutionInviteRepository.save(invite);
 
-        Locale locale = new Locale(mailLang);
-        String institutionName = institution.getName();
-        String invitationLink = invitationLink(pendingPerson);
-        String expirationDate = DateUtils.formatOffsetDateTime(pendingPerson.getPendingInvitationExpirationDate());
+        sendInvitationEmail(pendingPerson, institution.getName(), mailLang);
+        return true;
+    }
 
-        emailManager.sendEmail(pendingPerson.getEmail(),
-                langService.msg("mail.invitation.subject", locale, institutionName),
-                langService.msg("mail.invitation.body", locale, institutionName, invitationLink, expirationDate, expirationDate)
+    private void sendInvitationEmail(PendingPerson pendingPerson, String contextName, String mailLang) {
+        Locale locale = new Locale(mailLang);
+        String invitationLink = invitationLink(pendingPerson);
+        String validity = langService.msg("mail.invitation.validity", locale, remainingValidityDays(pendingPerson));
+
+        String htmlBody = String.format(invitationTemplate(), contextName, invitationLink, invitationLink, validity);
+
+        emailManager.sendHtmlEmail(pendingPerson.getEmail(),
+                langService.msg("mail.invitation.subject", locale, contextName),
+                htmlBody
         );
+    }
+
+    private long remainingValidityDays(PendingPerson pendingPerson) {
+        Duration remaining = Duration.between(OffsetDateTime.now(ZoneOffset.UTC), pendingPerson.getPendingInvitationExpirationDate());
+        return Math.max(1, (long) Math.ceil(remaining.toMinutes() / (60.0 * 24)));
+    }
+
+    private String invitationTemplate() {
+        if (invitationTemplate == null) {
+            try (InputStream stream = new ClassPathResource(INVITATION_TEMPLATE_PATH).getInputStream()) {
+                invitationTemplate = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to load invitation email template " + INVITATION_TEMPLATE_PATH, e);
+            }
+        }
+        return invitationTemplate;
     }
 
 
@@ -234,15 +245,6 @@ public class PendingPersonService {
     }
 
     /**
-     * Delete a pending action unit attribution from the database.
-     *
-     * @param pendingActionUnitAttribution the pending action unit attribution to delete
-     */
-    public void delete(PendingActionUnitAttribution pendingActionUnitAttribution) {
-        pendingActionUnitRepository.delete(pendingActionUnitAttribution);
-    }
-
-    /**
      * Find a pending person by their registration token.
      *
      * @param token the registration token of the pending person
@@ -260,15 +262,5 @@ public class PendingPersonService {
      */
     public Set<PendingInstitutionInvite> findInstitutionsByPendingPerson(PendingPerson pendingPerson) {
         return pendingInstitutionInviteRepository.findAllByPendingPerson(pendingPerson);
-    }
-
-    /**
-     * Find all pending action unit attributions for a given pending institution invite.
-     *
-     * @param invite the pending institution invite for which to find action attributions
-     * @return a Set of PendingActionUnitAttribution associated with the pending institution invite
-     */
-    public Set<PendingActionUnitAttribution> findActionAttributionsByPendingInvite(PendingInstitutionInvite invite) {
-        return pendingActionUnitRepository.findByInstitutionInvite(invite);
     }
 }

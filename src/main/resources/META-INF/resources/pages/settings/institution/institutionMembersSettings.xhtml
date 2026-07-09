@@ -84,8 +84,8 @@
                         </p:overlayPanel>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">
-                        <span class="chip #{member.person.enabled ? 'chip-status-active' : 'chip-status-inactive'}">
-                            #{member.person.enabled ? langBean.msg('common.label.accountStatus.enabled') : langBean.msg('common.label.accountStatus.disabled')}
+                        <span class="chip #{member.accountStatus.styleClass}">
+                            #{langBean.msg(member.accountStatus.labelKey)}
                         </span>
                     </p:column>
                 </p:dataTable>

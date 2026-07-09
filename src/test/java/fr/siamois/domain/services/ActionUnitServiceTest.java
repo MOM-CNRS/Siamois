@@ -27,7 +27,7 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepo
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
-import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -74,7 +74,7 @@ class ActionUnitServiceTest {
     @Mock private PersonProfileAssignmentRepository personProfileAssignmentRepository;
     @Mock private ProfileRepository profileRepository;
     @Mock private DocumentRepository documentRepository;
-    @Mock private PendingActionUnitRepository pendingActionUnitRepository;
+    @Mock private PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
     @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     @Mock private RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
     @Mock private ProfileService profileService;

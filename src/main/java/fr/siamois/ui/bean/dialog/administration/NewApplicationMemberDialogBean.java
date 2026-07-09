@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.dialog.administration;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.services.ApplicationMembersServiceInterface;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -49,7 +50,11 @@ public class NewApplicationMemberDialogBean implements Serializable {
 
     private final transient PersonService personService;
     private final transient ApplicationMembersServiceInterface applicationMembersService;
+    private final transient PendingPersonService pendingPersonService;
     private final LangBean langBean;
+
+    /** Name displayed in the invitation email when inviting from the application-level user management. */
+    private static final String APPLICATION_CONTEXT_NAME = "SIAMOIS";
 
     private transient ProcessPerson processPerson;
     private String title;
@@ -76,9 +81,11 @@ public class NewApplicationMemberDialogBean implements Serializable {
 
     public NewApplicationMemberDialogBean(PersonService personService,
                                            ApplicationMembersServiceInterface applicationMembersService,
+                                           PendingPersonService pendingPersonService,
                                            LangBean langBean) {
         this.personService = personService;
         this.applicationMembersService = applicationMembersService;
+        this.pendingPersonService = pendingPersonService;
         this.langBean = langBean;
     }
 
@@ -235,8 +242,7 @@ public class NewApplicationMemberDialogBean implements Serializable {
 
     private boolean inviteFieldsAreValid() {
         if (StringUtils.isBlank(inviteEmail) || StringUtils.isBlank(inviteFirstName)
-                || StringUtils.isBlank(inviteLastName) || StringUtils.isBlank(inviteUsername)
-                || StringUtils.isBlank(invitePassword) || StringUtils.isBlank(invitePasswordConfirm)) {
+                || StringUtils.isBlank(inviteLastName) || StringUtils.isBlank(inviteUsername)) {
             displayErrorMessage(langBean, "userDialog.error.fields");
             return false;
         }
@@ -248,13 +254,16 @@ public class NewApplicationMemberDialogBean implements Serializable {
             displayErrorMessage(langBean, "userDialog.error.username");
             return false;
         }
-        if (invitePassword.length() < 8) {
-            displayErrorMessage(langBean, "userDialog.error.password");
-            return false;
-        }
-        if (!invitePassword.equals(invitePasswordConfirm)) {
-            displayErrorMessage(langBean, "userDialog.error.password.match");
-            return false;
+
+        if (StringUtils.isNotBlank(invitePassword) || StringUtils.isNotBlank(invitePasswordConfirm)) {
+            if (StringUtils.isBlank(invitePassword) || invitePassword.length() < 8) {
+                displayErrorMessage(langBean, "userDialog.error.password");
+                return false;
+            }
+            if (!invitePassword.equals(invitePasswordConfirm)) {
+                displayErrorMessage(langBean, "userDialog.error.password.match");
+                return false;
+            }
         }
         return true;
     }
@@ -314,10 +323,11 @@ public class NewApplicationMemberDialogBean implements Serializable {
         person.setLastname(draft.getLastname());
         person.setEmail(draft.getEmail());
         person.setUsername(draft.getUsername());
-        person.setPassToModify(true);
 
         try {
-            return personService.createPerson(person, password);
+            PersonDTO created = personService.createInvitedPerson(person, password);
+            pendingPersonService.invitePersonByEmail(created.getEmail(), APPLICATION_CONTEXT_NAME, langBean.getLanguageCode());
+            return created;
         } catch (InvalidUsernameException e) {
             displayErrorMessage(langBean, "userDialog.error.username");
         } catch (EmailAlreadyExistException e) {

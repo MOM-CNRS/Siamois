@@ -19,13 +19,15 @@
         </p:messages>
         <h:panelGroup>
             <h:outputLabel for="lastname" value="Nom"/>
-            <h:inputText id="lastname" value="#{registerBean.lastName}" required="true"/>
+            <h:inputText id="lastname" value="#{registerBean.lastName}" required="true"
+                         disabled="#{registerBean.existingAccount}"/>
             <h:message for="lastname"/>
         </h:panelGroup>
 
         <h:panelGroup>
             <h:outputLabel for="firstname" value="Prénom"/>
-            <h:inputText id="firstname" value="#{registerBean.firstName}" required="true"/>
+            <h:inputText id="firstname" value="#{registerBean.firstName}" required="true"
+                         disabled="#{registerBean.existingAccount}"/>
             <h:message for="firstname"/>
         </h:panelGroup>
 
@@ -36,7 +38,8 @@
 
         <h:panelGroup>
             <h:outputLabel for="username" value="Nom d'utilisateur"/>
-            <h:inputText id="username" value="#{registerBean.username}" required="true"/>
+            <h:inputText id="username" value="#{registerBean.username}" required="true"
+                         disabled="#{registerBean.existingAccount}"/>
         </h:panelGroup>
 
         <h:panelGroup>

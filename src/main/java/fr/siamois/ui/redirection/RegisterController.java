@@ -9,8 +9,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Optional;
 
 @Slf4j
@@ -35,19 +33,16 @@ public class RegisterController {
         }
 
         PendingPerson pendingPerson = opt.get();
-        if (invitationIsExpired(pendingPerson)) {
+        // The pending person is kept so the member lists still display "invitation expired"
+        // and a new invitation can be sent to the same email.
+        if (pendingPersonService.invitationIsExpired(pendingPerson)) {
             log.error("Invitation expired for token {}", token);
-            pendingPersonService.delete(pendingPerson);
             return "redirect:/error/404";
         }
 
-        registerBean.init(opt.get());
+        registerBean.init(pendingPerson);
 
         return "forward:/pages/login/register.xhtml";
-    }
-
-    private static boolean invitationIsExpired(PendingPerson pendingPerson) {
-        return OffsetDateTime.now(ZoneOffset.UTC).isAfter(pendingPerson.getPendingInvitationExpirationDate());
     }
 
 }

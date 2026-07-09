@@ -5,6 +5,7 @@ import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
@@ -39,6 +40,8 @@ class OrganizationMembersServiceImplTest {
     private ProfileRepository profileRepository;
     @Mock
     private PersonProfileAssignmentService personProfileAssignmentService;
+    @Mock
+    private PendingPersonService pendingPersonService;
 
     @InjectMocks
     private OrganizationMembersServiceImpl organizationMembersService;

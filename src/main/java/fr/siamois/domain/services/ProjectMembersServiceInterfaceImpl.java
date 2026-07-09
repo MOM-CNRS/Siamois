@@ -2,6 +2,7 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -27,6 +28,7 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
     private final PersonMapper personMapper;
     private final ProfileMapper profileMapper;
     private final PersonProfileAssignmentService personProfileAssignmentService;
+    private final PendingPersonService pendingPersonService;
 
     @Override
     public List<ProjectMemberDTO> findMembersOf(ActionUnitDTO project) {
@@ -45,6 +47,7 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
                     ProjectMemberDTO dto = new ProjectMemberDTO();
                     dto.setPerson(personMapper.convert(person));
                     dto.setProfiles(new ArrayList<>(profilesByPerson.get(person)));
+                    dto.setAccountStatus(pendingPersonService.accountStatusOf(dto.getPerson()));
                     return dto;
                 })
                 .toList();

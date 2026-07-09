@@ -1,36 +1,42 @@
 package fr.siamois.domain.services.person;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.auth.pending.PendingActionUnitAttribution;
 import fr.siamois.domain.models.auth.pending.PendingInstitutionInvite;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionScopeType;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.ProfileMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.*;
 
 /**
@@ -55,6 +61,10 @@ public class PersonService {
     private final InstitutionMapper institutionMapper;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
+    private final PersonProfileAssignmentService personProfileAssignmentService;
+    private final ProfileMapper profileMapper;
+
+    private final SecureRandom secureRandom = new SecureRandom();
 
     private void createAndDeletePendingRelations(PendingPerson pendingPerson, Person person) {
         Set<PendingInstitutionInvite> institutionInvites = pendingInstitutionInviteRepository.findAllByPendingPerson(pendingPerson);
@@ -62,19 +72,20 @@ public class PersonService {
         for (PendingInstitutionInvite invite : institutionInvites) {
             InstitutionDTO institution = institutionMapper.convert(invite.getInstitution());
 
-            if (invite.isManager()) {
-                institutionService.addToManagers(institution, personDTO);
-            }
-            if (invite.isActionManager()) {
-                institutionService.addPersonToActionManager(institution, personDTO);
+            List<ProfileDTO> institutionProfiles = new ArrayList<>();
+            Map<ActionUnit, List<ProfileDTO>> projectProfiles = new HashMap<>();
+            for (Profile profile : invite.getProfiles()) {
+                if (profile.getScope() == PermissionScopeType.PROJECT && profile.getActionUnit() != null) {
+                    projectProfiles.computeIfAbsent(profile.getActionUnit(), unit -> new ArrayList<>())
+                            .add(profileMapper.convert(profile));
+                } else {
+                    institutionProfiles.add(profileMapper.convert(profile));
+                }
             }
 
-            Set<PendingActionUnitAttribution> attributions = pendingPersonService.findActionAttributionsByPendingInvite(invite);
-            for (PendingActionUnitAttribution attribution : attributions) {
-                ActionUnitDTO actionUnitDTO = actionUnitMapper.convert(attribution.getActionUnit());
-                institutionService.addPersonAsMemberOfActionUnit(actionUnitDTO, personDTO);
-                pendingPersonService.delete(attribution);
-            }
+            personProfileAssignmentService.addToInstitution(institution, personDTO, institutionProfiles);
+            projectProfiles.forEach((actionUnit, profiles) ->
+                    personProfileAssignmentService.addToProjectMembers(actionUnitMapper.convert(actionUnit), personDTO, profiles));
 
             pendingPersonService.delete(invite);
         }
@@ -117,6 +128,77 @@ public class PersonService {
         managePendingInvites(person);
 
         return conversionService.convert(person, PersonDTO.class);
+    }
+
+    /**
+     * Create a new disabled Person invited to register: the account stays disabled until the person
+     * creates their own password through the registration link sent by email. The temporary
+     * password is optional; when blank, a random one is generated so the account cannot be used
+     * before the registration is completed, the account is also set as not enabled
+     *
+     * @param personDTO The Person to create.
+     * @param password  The optional temporary plain password; may be null or blank.
+     * @return The created Person with its ID set.
+     * @throws InvalidUsernameException  if the username is invalid or already exists.
+     * @throws InvalidEmailException     if the email is invalid or already exists.
+     * @throws UserAlreadyExistException if a user with the same username or email already exists.
+     * @throws InvalidPasswordException  if the given password does not meet the required criteria.
+     * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
+     */
+    public PersonDTO createInvitedPerson(PersonDTO personDTO, String password) throws InvalidUsernameException,
+            InvalidEmailException,
+            UserAlreadyExistException,
+            InvalidPasswordException,
+            InvalidNameException {
+        personDTO.setId(-1L);
+
+        checkPersonData(personDTO, true);
+
+        String effectivePassword = password;
+        if (password == null || password.isBlank()) {
+            effectivePassword = generateRandomPassword();
+        } else {
+            checkPassword(password);
+        }
+
+        Person person = conversionService.convert(personDTO, Person.class);
+        assert person != null;
+        person.setPassword(passwordEncoder.encode(effectivePassword));
+        person.setPassToModify(true);
+        person.setEnabled(!StringUtils.isBlank(password));
+
+        person = personRepository.save(person);
+
+        return conversionService.convert(person, PersonDTO.class);
+    }
+
+    private String generateRandomPassword() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /**
+     * Activate an invited person's account once they created their password through the
+     * registration link: sets the new password, enables the account and applies then removes
+     * any pending invitations for their email.
+     *
+     * @param personId    The ID of the person to activate.
+     * @param newPassword The plain password created by the person.
+     * @throws InvalidPasswordException if the password does not meet the required criteria.
+     */
+    @Transactional
+    public void activatePerson(Long personId, String newPassword) throws InvalidPasswordException {
+        checkPassword(newPassword);
+
+        Person person = personRepository.findById(personId)
+                .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+        person.setPassword(passwordEncoder.encode(newPassword));
+        person.setEnabled(true);
+        person.setPassToModify(false);
+        person = personRepository.save(person);
+
+        managePendingInvites(person);
     }
 
     private void checkPersonData(PersonDTO person, boolean isForCreation)

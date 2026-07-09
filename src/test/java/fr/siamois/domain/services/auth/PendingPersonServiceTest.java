@@ -1,13 +1,11 @@
 package fr.siamois.domain.services.auth;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.pending.PendingActionUnitAttribution;
 import fr.siamois.domain.models.auth.pending.PendingInstitutionInvite;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.permissions.PermissionScopeType;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.services.LangService;
-import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.ui.email.EmailManager;
@@ -15,12 +13,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -46,9 +46,6 @@ class PendingPersonServiceTest {
     private LangService langService;
 
     @Mock
-    private PendingActionUnitRepository pendingActionUnitRepository;
-
-    @Mock
     private PendingPersonRepository pendingPersonRepository;
 
     @InjectMocks
@@ -56,6 +53,7 @@ class PendingPersonServiceTest {
 
     private PendingPerson pendingPerson;
     private Institution institution;
+    private Profile managerProfile;
 
     @BeforeEach
     void setUp() {
@@ -67,6 +65,14 @@ class PendingPersonServiceTest {
         institution = new Institution();
         institution.setName("Test Institution");
         institution.setIdentifier("1212");
+
+        managerProfile = Profile.builder()
+                .id(1L)
+                .code("ORGANIZATION_MANAGER")
+                .name("Gestionnaire de l'organisation")
+                .scope(PermissionScopeType.ORGANISATION)
+                .institution(institution)
+                .build();
     }
 
     @Test
@@ -119,49 +125,55 @@ class PendingPersonServiceTest {
     }
 
     @Test
-    void sendPendingManagerInstitutionInvite_shouldReturnFalseIfInviteExists() {
-        when(pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson))
-                .thenReturn(Optional.of(new PendingInstitutionInvite()));
+    void sendInvite_shouldMergeProfilesAndReturnFalseIfInviteExists() {
+        PendingInstitutionInvite existingInvite = new PendingInstitutionInvite();
+        existingInvite.setInstitution(institution);
+        existingInvite.setPendingPerson(pendingPerson);
+        existingInvite.setProfiles(new HashSet<>());
 
-        boolean result = pendingPersonService.sendPendingManagerInstitutionInvite(pendingPerson, institution, true, "en");
+        when(pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson))
+                .thenReturn(Optional.of(existingInvite));
+
+        boolean result = pendingPersonService.sendInvite(pendingPerson, institution, Set.of(managerProfile), "en");
 
         assertFalse(result);
+        assertTrue(existingInvite.getProfiles().contains(managerProfile));
+        verify(pendingInstitutionInviteRepository).save(existingInvite);
+        verify(emailManager, never()).sendEmail(anyString(), anyString(), anyString());
     }
 
     @Test
-    void sendPendingManagerInstitutionInvite_shouldReturnTrueIfInviteDoesNotExist() {
+    void sendInvite_shouldCreateInviteWithProfilesAndSendEmail() {
         when(pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson))
                 .thenReturn(Optional.empty());
-
+        when(pendingInstitutionInviteRepository.save(any(PendingInstitutionInvite.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(langService.msg(anyString(), any(Locale.class), anyString())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(langService.msg(anyString(), any(Locale.class), anyString(), anyString(), anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(langService.msg(anyString(), any(Locale.class), anyString(), anyString(), anyString(), anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-
-        boolean result = pendingPersonService.sendPendingManagerInstitutionInvite(pendingPerson, institution, true, "en");
+        boolean result = pendingPersonService.sendInvite(pendingPerson, institution, Set.of(managerProfile), "en");
 
         assertTrue(result);
+        ArgumentCaptor<PendingInstitutionInvite> captor = ArgumentCaptor.forClass(PendingInstitutionInvite.class);
+        verify(pendingInstitutionInviteRepository).save(captor.capture());
+        assertEquals(institution, captor.getValue().getInstitution());
+        assertEquals(pendingPerson, captor.getValue().getPendingPerson());
+        assertTrue(captor.getValue().getProfiles().contains(managerProfile));
         verify(emailManager, times(1)).sendEmail(anyString(), anyString(), anyString());
     }
 
     @Test
-    void sendPendingActionManagerInstitutionInvite_shouldReturnFalseIfInviteExists() {
-        when(pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson))
-                .thenReturn(Optional.of(new PendingInstitutionInvite()));
-
-        boolean result = pendingPersonService.sendPendingActionManagerInstitutionInvite(pendingPerson, institution, "en");
-
-        assertFalse(result);
-    }
-
-    @Test
-    void sendPendingActionManagerInstitutionInvite_shouldReturnTrueIfInviteDoesNotExist() {
+    void sendInvite_shouldAcceptEmptyProfiles() {
         when(pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson))
                 .thenReturn(Optional.empty());
-
+        when(pendingInstitutionInviteRepository.save(any(PendingInstitutionInvite.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(langService.msg(anyString(), any(Locale.class), anyString())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(langService.msg(anyString(), any(Locale.class), anyString(), anyString(), anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(langService.msg(anyString(), any(Locale.class), anyString(), anyString(), anyString(), anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        boolean result = pendingPersonService.sendPendingActionManagerInstitutionInvite(pendingPerson, institution, "en");
+        boolean result = pendingPersonService.sendInvite(pendingPerson, institution, Set.of(), "en");
 
         assertTrue(result);
         verify(emailManager, times(1)).sendEmail(anyString(), anyString(), anyString());
@@ -195,62 +207,6 @@ class PendingPersonServiceTest {
     }
 
     @Test
-    void findActionAttributionsByPendingInvite_shouldReturnAttributions() {
-        PendingInstitutionInvite invite = new PendingInstitutionInvite();
-        Set<PendingActionUnitAttribution> attributions = Set.of(new PendingActionUnitAttribution());
-        when(pendingActionUnitRepository.findByInstitutionInvite(invite)).thenReturn(attributions);
-
-        Set<PendingActionUnitAttribution> result = pendingPersonService.findActionAttributionsByPendingInvite(invite);
-
-        assertEquals(attributions, result);
-    }
-
-    @Test
-    void sendPendingActionMemberInvite_shouldReturnFalseIfInviteExists() {
-        ActionUnit actionUnit = new ActionUnit();
-        actionUnit.setId(1L);
-        actionUnit.setCreatedByInstitution(institution);
-
-        Concept role = new Concept();
-        role.setId(1L);
-
-        PendingInstitutionInvite existingInvite = new PendingInstitutionInvite();
-        existingInvite.setInstitution(institution);
-
-        when(pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson))
-                .thenReturn(Optional.of(existingInvite));
-
-        boolean result = pendingPersonService.sendPendingActionMemberInvite(pendingPerson, actionUnit, role, "en");
-
-        assertFalse(result);
-        verify(emailManager, never()).sendEmail(anyString(), anyString(), anyString());
-    }
-
-    @Test
-    void sendPendingActionMemberInvite_shouldReturnTrueIfInviteDoesNotExist() {
-        ActionUnit actionUnit = new ActionUnit();
-        actionUnit.setId(1L);
-        actionUnit.setCreatedByInstitution(institution);
-
-        Concept role = new Concept();
-        role.setId(1L);
-
-        when(pendingInstitutionInviteRepository.findByInstitutionAndPendingPerson(institution, pendingPerson))
-                .thenReturn(Optional.empty());
-        when(pendingInstitutionInviteRepository.save(any(PendingInstitutionInvite.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(langService.msg(anyString(), any(Locale.class), anyString())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(langService.msg(anyString(), any(Locale.class), anyString(), anyString(), anyString(), anyString()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        boolean result = pendingPersonService.sendPendingActionMemberInvite(pendingPerson, actionUnit, role, "en");
-
-        assertTrue(result);
-        verify(pendingActionUnitRepository, times(1)).save(any(PendingActionUnitAttribution.class));
-        verify(emailManager, times(1)).sendEmail(anyString(), anyString(), anyString());
-    }
-
-    @Test
     void delete_shouldRemovePendingInstitutionInvite() {
         PendingInstitutionInvite invite = new PendingInstitutionInvite();
         invite.setId(1L);
@@ -258,18 +214,6 @@ class PendingPersonServiceTest {
         pendingPersonService.delete(invite);
 
         verify(pendingInstitutionInviteRepository, times(1)).delete(invite);
-    }
-
-    @Test
-    void delete_shouldRemovePendingActionUnitAttribution() {
-        PendingActionUnitAttribution attribution = new PendingActionUnitAttribution();
-        attribution.setId(new PendingActionUnitAttribution.PendingActionUnitId());
-        attribution.getId().setActionUnitId(1L);
-        attribution.getId().setPendingInstitutionInviteId(1L);
-
-        pendingPersonService.delete(attribution);
-
-        verify(pendingActionUnitRepository, times(1)).delete(attribution);
     }
 
 }

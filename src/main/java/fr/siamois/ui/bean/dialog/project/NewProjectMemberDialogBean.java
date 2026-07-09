@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.dialog.project;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -50,6 +51,7 @@ public class NewProjectMemberDialogBean implements Serializable {
 
     private final transient PersonService personService;
     private final transient ProjectMembersServiceInterface projectMembersService;
+    private final transient PendingPersonService pendingPersonService;
     private final LangBean langBean;
 
     private ActionUnitDTO project;
@@ -78,9 +80,11 @@ public class NewProjectMemberDialogBean implements Serializable {
 
     public NewProjectMemberDialogBean(PersonService personService,
                                        ProjectMembersServiceInterface projectMembersService,
+                                       PendingPersonService pendingPersonService,
                                        LangBean langBean) {
         this.personService = personService;
         this.projectMembersService = projectMembersService;
+        this.pendingPersonService = pendingPersonService;
         this.langBean = langBean;
     }
 
@@ -240,8 +244,7 @@ public class NewProjectMemberDialogBean implements Serializable {
 
     private boolean inviteFieldsAreValid() {
         if (StringUtils.isBlank(inviteEmail) || StringUtils.isBlank(inviteFirstName)
-                || StringUtils.isBlank(inviteLastName) || StringUtils.isBlank(inviteUsername)
-                || StringUtils.isBlank(invitePassword) || StringUtils.isBlank(invitePasswordConfirm)) {
+                || StringUtils.isBlank(inviteLastName) || StringUtils.isBlank(inviteUsername)) {
             displayErrorMessage(langBean, "userDialog.error.fields");
             return false;
         }
@@ -253,13 +256,16 @@ public class NewProjectMemberDialogBean implements Serializable {
             displayErrorMessage(langBean, "userDialog.error.username");
             return false;
         }
-        if (invitePassword.length() < 8) {
-            displayErrorMessage(langBean, "userDialog.error.password");
-            return false;
-        }
-        if (!invitePassword.equals(invitePasswordConfirm)) {
-            displayErrorMessage(langBean, "userDialog.error.password.match");
-            return false;
+        // The temporary password is optional; validate it only when one was typed
+        if (StringUtils.isNotBlank(invitePassword) || StringUtils.isNotBlank(invitePasswordConfirm)) {
+            if (StringUtils.isBlank(invitePassword) || invitePassword.length() < 8) {
+                displayErrorMessage(langBean, "userDialog.error.password");
+                return false;
+            }
+            if (!invitePassword.equals(invitePasswordConfirm)) {
+                displayErrorMessage(langBean, "userDialog.error.password.match");
+                return false;
+            }
         }
         return true;
     }
@@ -319,10 +325,11 @@ public class NewProjectMemberDialogBean implements Serializable {
         person.setLastname(draft.getLastname());
         person.setEmail(draft.getEmail());
         person.setUsername(draft.getUsername());
-        person.setPassToModify(true);
 
         try {
-            return personService.createPerson(person, password);
+            PersonDTO created = personService.createInvitedPerson(person, password);
+            pendingPersonService.invitePersonByEmail(created.getEmail(), project.getName(), langBean.getLanguageCode());
+            return created;
         } catch (InvalidUsernameException e) {
             displayErrorMessage(langBean, "userDialog.error.username");
         } catch (EmailAlreadyExistException e) {

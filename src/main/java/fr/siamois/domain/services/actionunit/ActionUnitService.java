@@ -28,7 +28,7 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepo
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
-import fr.siamois.infrastructure.database.repositories.person.PendingActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -78,7 +78,7 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
     private final ProfileRepository profileRepository;
     private final DocumentRepository documentRepository;
-    private final PendingActionUnitRepository pendingActionUnitRepository;
+    private final PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
     private final ProfileService profileService;
@@ -757,8 +757,8 @@ public class ActionUnitService implements ArkEntityService {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des sous-projets");
         }
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
+        pendingInstitutionInviteRepository.deleteProfileLinksByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
-        pendingActionUnitRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdCounterRepository.deleteAllByConfigActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
         actionUnitRepository.deleteFormMappingsForActionUnit(actionUnitId);

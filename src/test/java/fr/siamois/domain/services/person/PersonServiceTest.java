@@ -1,20 +1,26 @@
 package fr.siamois.domain.services.person;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.auth.pending.PendingActionUnitAttribution;
 import fr.siamois.domain.models.auth.pending.PendingInstitutionInvite;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionScopeType;
+import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.person.verifier.EmailVerifier;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
@@ -22,6 +28,7 @@ import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRe
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.ProfileMapper;
 import fr.siamois.ui.email.EmailManager;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +82,10 @@ class PersonServiceTest {
     private ActionUnitMapper actionUnitMapper;
     @Mock
     private PersonMapper personMapper;
+    @Mock
+    private PersonProfileAssignmentService personProfileAssignmentService;
+    @Mock
+    private ProfileMapper profileMapper;
 
 
 
@@ -115,7 +126,9 @@ class PersonServiceTest {
                 pendingInstitutionInviteRepository,
                 institutionMapper,
                 actionUnitMapper,
-                personMapper
+                personMapper,
+                personProfileAssignmentService,
+                profileMapper
         );
     }
 
@@ -289,7 +302,9 @@ class PersonServiceTest {
                 pendingInstitutionInviteRepository,
                 institutionMapper,
                 actionUnitMapper,
-                personMapper
+                personMapper,
+                personProfileAssignmentService,
+                profileMapper
         );
 
         // Act
@@ -378,17 +393,16 @@ class PersonServiceTest {
 
     // Pour createAndDeletePendingRelations, on teste via createPerson (chemins principaux)
     @Test
-    void createAndDeletePendingRelations_ShouldAddManagerAndActionManagerAndAttributions() throws Exception {
+    void createAndDeletePendingRelations_ShouldAssignInstitutionAndProjectProfiles() throws Exception {
         // Arrange
         Person newPerson = new Person();
         newPerson.setId(42L);
+        newPerson.setPassword("password");
         PersonDTO newPersonDto = new PersonDTO();
         newPersonDto.setId(42L);
         newPersonDto.setEmail("mail@localhost.com");
         PendingPerson pendingPerson = new PendingPerson();
         pendingPerson.setEmail("mail@localhost.com");
-        newPerson.setPassword("password");
-        newPersonDto.setEmail("mail@localhost.com");
 
         PersonDTO newPersonRequest = new PersonDTO();
         newPersonRequest.setId(42L);
@@ -399,46 +413,60 @@ class PersonServiceTest {
         InstitutionDTO institutionDTO = new InstitutionDTO();
         institutionDTO.setId(1L);
 
-        PendingInstitutionInvite invite = mock(PendingInstitutionInvite.class);
-        when(invite.getInstitution()).thenReturn(institution);
-        when(invite.isManager()).thenReturn(true);
-        when(invite.isActionManager()).thenReturn(true);
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(7L);
+        ActionUnitDTO actionUnitDTO = new ActionUnitDTO();
+        actionUnitDTO.setId(7L);
 
-        PendingActionUnitAttribution attribution = mock(PendingActionUnitAttribution.class);
-        when(attribution.getActionUnit()).thenReturn(null);
+        Profile managerProfile = Profile.builder()
+                .id(2L)
+                .code(ProfileConstants.ORGANIZATION_MANAGER)
+                .scope(PermissionScopeType.ORGANISATION)
+                .institution(institution)
+                .build();
+        Profile projectProfile = Profile.builder()
+                .id(3L)
+                .code(ProfileConstants.PROJECT_MEMBER)
+                .scope(PermissionScopeType.PROJECT)
+                .institution(institution)
+                .actionUnit(actionUnit)
+                .build();
+        ProfileDTO managerProfileDTO = new ProfileDTO();
+        managerProfileDTO.setId(2L);
+        ProfileDTO projectProfileDTO = new ProfileDTO();
+        projectProfileDTO.setId(3L);
 
-        Set<PendingInstitutionInvite> invites = Set.of(invite);
-        Set<PendingActionUnitAttribution> attributions = Set.of(attribution);
+        PendingInstitutionInvite invite = new PendingInstitutionInvite();
+        invite.setInstitution(institution);
+        invite.setPendingPerson(pendingPerson);
+        invite.setProfiles(Set.of(managerProfile, projectProfile));
 
-        when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(invites);
-        when(pendingPersonService.findActionAttributionsByPendingInvite(invite)).thenReturn(attributions);
+        when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(Set.of(invite));
 
         // On mock la création du PendingPerson
         when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
-
-
 
         // On mock le save du person
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
         when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(newPerson);
         when(institutionMapper.convert(any(Institution.class))).thenReturn(institutionDTO);
         when(personMapper.convert(any(Person.class))).thenReturn(newPersonDto);
-        // Act
+        when(profileMapper.convert(managerProfile)).thenReturn(managerProfileDTO);
+        when(profileMapper.convert(projectProfile)).thenReturn(projectProfileDTO);
+        when(actionUnitMapper.convert(actionUnit)).thenReturn(actionUnitDTO);
 
+        // Act
         personService.createPerson(newPersonRequest,"password");
 
         // Assert
-
-        verify(institutionService).addToManagers(institutionDTO, newPersonDto);
-        verify(institutionService).addPersonToActionManager(institutionDTO, newPersonDto);
-        verify(institutionService).addPersonAsMemberOfActionUnit(null, newPersonDto);
-        verify(pendingPersonService).delete(attribution);
+        verify(personProfileAssignmentService).addToInstitution(institutionDTO, newPersonDto, List.of(managerProfileDTO));
+        verify(personProfileAssignmentService).addToProjectMembers(actionUnitDTO, newPersonDto, List.of(projectProfileDTO));
         verify(pendingPersonService).delete(invite);
         verify(pendingPersonRepository).delete(pendingPerson);
     }
 
     @Test
-    void createAndDeletePendingRelations_ShouldNotAddManagerOrActionManager_WhenFlagsFalse() throws Exception {
+    void createAndDeletePendingRelations_ShouldOnlyAssignImplicitMember_WhenNoProfiles() throws Exception {
         // Arrange
         Person newPerson = new Person();
         newPerson.setId(42L);
@@ -449,20 +477,19 @@ class PersonServiceTest {
 
         Institution institution = new Institution();
         institution.setId(1L);
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(1L);
 
-        PendingInstitutionInvite invite = mock(PendingInstitutionInvite.class);
-        when(invite.getInstitution()).thenReturn(institution);
-        when(invite.isManager()).thenReturn(false);
-        when(invite.isActionManager()).thenReturn(false);
+        PendingInstitutionInvite invite = new PendingInstitutionInvite();
+        invite.setInstitution(institution);
+        invite.setPendingPerson(pendingPerson);
 
-        Set<PendingInstitutionInvite> invites = Set.of(invite);
-        when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(invites);
-        when(pendingPersonService.findActionAttributionsByPendingInvite(invite)).thenReturn(Set.of());
-
+        when(pendingInstitutionInviteRepository.findAllByPendingPerson(any())).thenReturn(Set.of(invite));
         when(pendingPersonService.createOrGetPendingPerson(any())).thenReturn(pendingPerson);
         when(personRepository.save(any(Person.class))).thenReturn(newPerson);
-
         when(conversionService.convert(any(PersonDTO.class),eq(Person.class))).thenReturn(newPerson);
+        when(institutionMapper.convert(any(Institution.class))).thenReturn(institutionDTO);
+        when(personMapper.convert(any(Person.class))).thenReturn(newPersonDto);
 
         // Act
         person.setPassword("password");
@@ -471,10 +498,8 @@ class PersonServiceTest {
         personService.createPerson(personDto, "password");
 
         // Assert
-        verify(institutionService, never()).addToManagers(any(), any());
-        verify(institutionService, never()).addPersonToActionManager(any(), any());
-        verify(institutionService, never()).addPersonAsMemberOfActionUnit(any(), any());
-        verify(pendingPersonService, never()).delete(any(PendingActionUnitAttribution.class));
+        verify(personProfileAssignmentService).addToInstitution(institutionDTO, newPersonDto, List.of());
+        verify(personProfileAssignmentService, never()).addToProjectMembers(any(), any(), any());
         verify(pendingPersonService).delete(invite);
         verify(pendingPersonRepository).delete(pendingPerson);
     }
@@ -501,10 +526,8 @@ class PersonServiceTest {
         personService.createPerson(personDto, "password");
 
         // Assert
-        verify(institutionService, never()).addToManagers(any(), any());
-        verify(institutionService, never()).addPersonToActionManager(any(), any());
-        verify(institutionService, never()).addPersonAsMemberOfActionUnit(any(), any());
-        verify(pendingPersonService, never()).delete(any(PendingActionUnitAttribution.class));
+        verify(personProfileAssignmentService, never()).addToInstitution(any(), any(), any());
+        verify(personProfileAssignmentService, never()).addToProjectMembers(any(), any(), any());
         verify(pendingPersonService, never()).delete(any(PendingInstitutionInvite.class));
         verify(pendingPersonRepository).delete(pendingPerson);
     }
@@ -630,7 +653,9 @@ class PersonServiceTest {
                 pendingInstitutionInviteRepository,
                 institutionMapper,
                 actionUnitMapper,
-                personMapper
+                personMapper,
+                personProfileAssignmentService,
+                profileMapper
         );
 
         assertThrows(IllegalStateException.class, () -> serviceWithoutVerifier.updatePassword(1L, "password"));

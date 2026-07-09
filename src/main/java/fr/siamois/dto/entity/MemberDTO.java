@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import fr.siamois.domain.models.auth.AccountStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -11,6 +12,7 @@ public abstract class MemberDTO extends AbstractEntityDTO {
 
     protected PersonDTO person;
     protected transient List<ProfileDTO> profiles;
+    protected AccountStatus accountStatus = AccountStatus.ACTIVE;
 
     public String displayName() {
         return person.displayName();
