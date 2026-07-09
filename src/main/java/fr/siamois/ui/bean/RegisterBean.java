@@ -9,7 +9,6 @@ import fr.siamois.domain.models.exceptions.auth.InvalidUsernameException;
 import fr.siamois.domain.models.exceptions.auth.UserAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.mapper.PersonMapper;
@@ -34,7 +33,6 @@ public class RegisterBean {
     private final InstitutionService institutionService;
     private final LangBean langBean;
     private final RedirectBean redirectBean;
-    private final PendingPersonService pendingPersonService;
     private final PersonMapper personMapper;
     private PersonDTO person;
     private String email;
@@ -48,12 +46,11 @@ public class RegisterBean {
     public RegisterBean(PersonService personService,
                         InstitutionService institutionService,
                         LangBean langBean,
-                        RedirectBean redirectBean, PendingPersonService pendingPersonService, PersonMapper personMapper) {
+                        RedirectBean redirectBean, PersonMapper personMapper) {
         this.personService = personService;
         this.institutionService = institutionService;
         this.langBean = langBean;
         this.redirectBean = redirectBean;
-        this.pendingPersonService = pendingPersonService;
         this.personMapper = personMapper;
     }
 
@@ -95,8 +92,7 @@ public class RegisterBean {
         person.setUsername(username);
 
         try {
-            personService.enableAndUpdatePerson(person, password);
-            pendingPersonService.deleteByPerson(person);
+            personService.registerInvitedPerson(person, password);
             reset();
             redirectBean.redirectTo("/login");
         } catch (EmailAlreadyExistException e) {

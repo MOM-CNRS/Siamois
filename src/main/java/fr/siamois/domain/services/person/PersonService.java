@@ -370,4 +370,24 @@ public class PersonService {
         savedPerson.setEnabled(true);
         personRepository.save(savedPerson);
     }
+
+    /**
+     * Completes the registration of an invited person in a single transaction: enables and updates
+     * their account, then removes the pending invitation that has just been consumed. If any step
+     * fails (validation error or delete failure), the whole operation is rolled back so the account
+     * is never left enabled with a lingering invitation.
+     *
+     * @param person   the invited person, whose account is being activated
+     * @param password the plain password chosen by the invitee
+     * @throws InvalidUsernameException  if the username is invalid or already exists.
+     * @throws InvalidEmailException     if the email is invalid.
+     * @throws UserAlreadyExistException if a user with the same username or email already exists.
+     * @throws InvalidPasswordException  if the password does not meet the required criteria.
+     * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
+     */
+    @Transactional
+    public void registerInvitedPerson(PersonDTO person, String password) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
+        enableAndUpdatePerson(person, password);
+        pendingPersonRepository.deleteByDisabledPersonId(person.getId());
+    }
 }
