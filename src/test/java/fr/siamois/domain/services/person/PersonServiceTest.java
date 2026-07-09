@@ -101,7 +101,8 @@ class PersonServiceTest {
                 institutionService,
                 langService,
                 conversionService,
-                personMapper
+                personMapper,
+                pendingPersonRepository
         );
     }
 
@@ -207,6 +208,30 @@ class PersonServiceTest {
     }
 
     @Test
+    void createDisabledPersonWithRandomPassword_Success() throws Exception {
+        when(personRepository.save(any(Person.class))).thenReturn(person);
+        when(conversionService.convert(any(PersonDTO.class), eq(Person.class))).thenReturn(person);
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedRandomPassword");
+
+        personService.createDisabledPersonWithRandomPassword(personDto);
+
+        ArgumentCaptor<String> plainPassword = ArgumentCaptor.forClass(String.class);
+        verify(passwordEncoder).encode(plainPassword.capture());
+        assertTrue(plainPassword.getValue().length() >= 8);
+
+        ArgumentCaptor<Person> savedPerson = ArgumentCaptor.forClass(Person.class);
+        verify(personRepository).save(savedPerson.capture());
+        assertFalse(savedPerson.getValue().isEnabled());
+        assertEquals("encodedRandomPassword", savedPerson.getValue().getPassword());
+    }
+
+    @Test
+    void createDisabledPersonWithRandomPassword_ThrowsInvalidEmailException() {
+        personDto.setEmail("invalid-email");
+        assertThrows(InvalidEmailException.class, () -> personService.createDisabledPersonWithRandomPassword(personDto));
+    }
+
+    @Test
     void findById_Success() {
         when(personRepository.findById(1L)).thenReturn(Optional.of(person));
 
@@ -270,7 +295,8 @@ class PersonServiceTest {
                 institutionService,
                 langService,
                 conversionService,
-                personMapper
+                personMapper,
+                pendingPersonRepository
         );
 
         // Act
@@ -476,7 +502,8 @@ class PersonServiceTest {
                 institutionService,
                 langService,
                 conversionService,
-                personMapper
+                personMapper,
+                pendingPersonRepository
         );
 
         assertThrows(IllegalStateException.class, () -> serviceWithoutVerifier.updatePassword(1L, "password"));

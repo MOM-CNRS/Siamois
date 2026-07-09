@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="2026.07.09-0" author="Julien Linget" failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="pending_person" columnName="email"/>
+        </preConditions>
+        <dropColumn tableName="pending_person" columnName="email"/>
+    </changeSet>
+
+</databaseChangeLog>

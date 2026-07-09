@@ -10,5 +10,7 @@ public interface PendingPersonRepository extends CrudRepository<PendingPerson, L
 
     Optional<PendingPerson> findByRegisterToken(String registerToken);
 
+    Optional<PendingPerson> findByDisabledPersonId(Long disabledPersonId);
+
     void deleteByDisabledPersonId(Long disabledPersonId);
 }

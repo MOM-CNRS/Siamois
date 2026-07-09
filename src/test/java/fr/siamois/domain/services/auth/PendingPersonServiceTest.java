@@ -4,7 +4,9 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.LangService;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.email.EmailManager;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,9 @@ class PendingPersonServiceTest {
 
     @Mock
     private PendingPersonRepository pendingPersonRepository;
+
+    @Mock
+    private PersonMapper personMapper;
 
     @InjectMocks
     private PendingPersonService pendingPersonService;
@@ -98,6 +103,36 @@ class PendingPersonServiceTest {
         pendingPersonService.delete(pendingPerson);
 
         verify(pendingPersonRepository, times(1)).delete(pendingPerson);
+    }
+
+    @Test
+    void createOrGetInvitation_shouldReturnExistingInvitation() {
+        PersonDTO personDTO = new PersonDTO();
+        personDTO.setId(1L);
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.of(pendingPerson));
+
+        PendingPerson result = pendingPersonService.createOrGetInvitation(personDTO);
+
+        assertEquals(pendingPerson, result);
+        verify(pendingPersonRepository, never()).save(any(PendingPerson.class));
+    }
+
+    @Test
+    void createOrGetInvitation_shouldCreateNewInvitation() {
+        PersonDTO personDTO = new PersonDTO();
+        personDTO.setId(1L);
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.empty());
+        when(pendingPersonRepository.existsByRegisterToken(anyString())).thenReturn(false);
+        when(personMapper.invertConvert(personDTO)).thenReturn(person);
+        when(pendingPersonRepository.save(any(PendingPerson.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PendingPerson result = pendingPersonService.createOrGetInvitation(personDTO);
+
+        assertEquals(person, result.getDisabledPerson());
+        assertNotNull(result.getRegisterToken());
+        assertEquals(PendingPersonService.TOKEN_LENGTH, result.getRegisterToken().length());
+        assertNotNull(result.getPendingInvitationExpirationDate());
+        assertTrue(result.getPendingInvitationExpirationDate().isAfter(OffsetDateTime.now(ZoneOffset.UTC)));
     }
 
     @Test

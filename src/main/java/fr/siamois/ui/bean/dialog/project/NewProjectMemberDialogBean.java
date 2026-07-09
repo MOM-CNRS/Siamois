@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.dialog.project;
 
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -9,6 +10,7 @@ import fr.siamois.dto.entity.ProjectMemberDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
+import fr.siamois.ui.email.EmailManager;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Scope;
@@ -34,9 +36,11 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
     private ActionUnitDTO project;
 
     public NewProjectMemberDialogBean(PersonService personService,
+                                       PendingPersonService pendingPersonService,
+                                       EmailManager emailManager,
                                        ProjectMembersServiceInterface projectMembersService,
                                        LangBean langBean) {
-        super(personService, langBean);
+        super(personService, pendingPersonService, emailManager, langBean);
         this.projectMembersService = projectMembersService;
     }
 
@@ -67,6 +71,16 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
     @Override
     protected List<ProfileDTO> loadAvailableProfiles() {
         return projectMembersService.findAvailableProfiles(project);
+    }
+
+    @Override
+    protected String invitationMailSubject() {
+        return langBean.msg("mail.invitation.project.subject", project.getName());
+    }
+
+    @Override
+    protected String invitationMailBody(String invitationLink, String expirationDate) {
+        return langBean.msg("mail.invitation.project.body", project.getName(), invitationLink, expirationDate);
     }
 
     @Override

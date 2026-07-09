@@ -3,11 +3,14 @@ package fr.siamois.domain.services.auth;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
+import fr.siamois.mapper.PersonMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 /**
@@ -22,9 +25,11 @@ public class PendingPersonService {
 
     public static final int MAX_GENERATION = 3000;
     public static final int TOKEN_LENGTH = 20;
+    public static final int INVITATION_VALIDITY_DAYS = 3;
     private static final String ALLOWED_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     private final HttpServletRequest httpServletRequest;
+    private final PersonMapper personMapper;
 
     /**
      * Generate a random token for the pending person.
@@ -57,7 +62,7 @@ public class PendingPersonService {
      * @param pendingPerson the pending person
      * @return the invitation link
      */
-    String invitationLink(PendingPerson pendingPerson) {
+    public String invitationLink(PendingPerson pendingPerson) {
         String domain = httpServletRequest.getScheme() + "://" + httpServletRequest.getServerName() +
                 (isNotCommonHttpPort() ? ":" + httpServletRequest.getServerPort() : "");
         return String.format("%s%s/register/%s", domain, httpServletRequest.getContextPath(), pendingPerson.getRegisterToken());
@@ -65,6 +70,24 @@ public class PendingPersonService {
 
     private boolean isNotCommonHttpPort() {
         return httpServletRequest.getServerPort() != 80 && httpServletRequest.getServerPort() != 443;
+    }
+
+    /**
+     * Create an invitation for the given disabled person, or return the existing one if the person
+     * has already been invited (the same token is then reused instead of invalidating the previous link).
+     *
+     * @param disabledPerson the disabled person to invite
+     * @return the pending person carrying the registration token
+     */
+    public PendingPerson createOrGetInvitation(PersonDTO disabledPerson) {
+        return pendingPersonRepository.findByDisabledPersonId(disabledPerson.getId())
+                .orElseGet(() -> {
+                    PendingPerson pendingPerson = new PendingPerson();
+                    pendingPerson.setDisabledPerson(personMapper.invertConvert(disabledPerson));
+                    pendingPerson.setRegisterToken(generateToken());
+                    pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(INVITATION_VALIDITY_DAYS));
+                    return pendingPersonRepository.save(pendingPerson);
+                });
     }
 
     /**

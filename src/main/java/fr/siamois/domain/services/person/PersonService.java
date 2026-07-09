@@ -24,6 +24,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.*;
 
 /**
@@ -34,6 +35,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PersonService {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private final PersonRepository personRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final List<PersonDataVerifier> verifiers;
@@ -84,6 +86,44 @@ public class PersonService {
         deletePendingInvitation(person);
 
         return conversionService.convert(person, PersonDTO.class);
+    }
+
+    /**
+     * Create a new disabled Person in the database with a random password. Used when inviting someone
+     * without setting a password: the person cannot log in until they complete the registration through
+     * their invitation link, which replaces the random password.
+     *
+     * @param personDTO The Person to create.
+     * @return The created Person with its ID set.
+     * @throws InvalidUsernameException  if the username is invalid or already exists.
+     * @throws InvalidEmailException     if the email is invalid or already exists.
+     * @throws UserAlreadyExistException if a user with the same username or email already exists.
+     * @throws InvalidPasswordException  never thrown, declared by the shared data verifiers.
+     * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
+     */
+    public PersonDTO createDisabledPersonWithRandomPassword(PersonDTO personDTO) throws InvalidUsernameException,
+            InvalidEmailException,
+            UserAlreadyExistException,
+            InvalidPasswordException,
+            InvalidNameException {
+        personDTO.setId(-1L);
+
+        checkPersonData(personDTO, true);
+
+        Person person = conversionService.convert(personDTO, Person.class);
+        assert person != null;
+        person.setPassword(passwordEncoder.encode(generateRandomPassword()));
+        person.setEnabled(false);
+
+        person = personRepository.save(person);
+
+        return conversionService.convert(person, PersonDTO.class);
+    }
+
+    private static String generateRandomPassword() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private void checkPersonData(PersonDTO person, boolean isForCreation)

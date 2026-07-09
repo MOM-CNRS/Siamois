@@ -1,13 +1,17 @@
 package fr.siamois.ui.bean.dialog;
 
+import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.*;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
+import fr.siamois.ui.email.EmailManager;
+import fr.siamois.utils.DateUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +43,8 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     protected final transient PersonService personService;
+    protected final transient PendingPersonService pendingPersonService;
+    protected final transient EmailManager emailManager;
     protected final LangBean langBean;
 
     protected transient ProcessPerson processPerson;
@@ -65,8 +71,13 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected String invitePassword;
     protected String invitePasswordConfirm;
 
-    protected AbstractNewMemberDialogBean(PersonService personService, LangBean langBean) {
+    protected AbstractNewMemberDialogBean(PersonService personService,
+                                          PendingPersonService pendingPersonService,
+                                          EmailManager emailManager,
+                                          LangBean langBean) {
         this.personService = personService;
+        this.pendingPersonService = pendingPersonService;
+        this.emailManager = emailManager;
         this.langBean = langBean;
     }
 
@@ -80,6 +91,16 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     /** @return the profiles that can be assigned to a new member in this bean's scope. */
     protected abstract List<ProfileDTO> loadAvailableProfiles();
+
+    /** @return the subject of the invitation e-mail sent to a member created without password. */
+    protected abstract String invitationMailSubject();
+
+    /**
+     * @param invitationLink the registration link the invitee must follow to activate their account
+     * @param expirationDate the formatted expiration date of the invitation
+     * @return the body of the invitation e-mail sent to a member created without password
+     */
+    protected abstract String invitationMailBody(String invitationLink, String expirationDate);
 
     /**
      * Autocomplete source for the members field — excludes already-selected and already-member persons.
@@ -200,7 +221,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         draft.setLastname(inviteLastName.trim());
         draft.setEmail(inviteEmail.trim());
         draft.setUsername(inviteUsername.trim());
-        draftPasswords.put(draft.getId(), invitePassword);
+        draftPasswords.put(draft.getId(), StringUtils.isBlank(invitePassword) ? null : invitePassword);
         selectedMembers.add(draft);
 
         searchQuery = null;
@@ -210,8 +231,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     private boolean inviteFieldsAreValid() {
         if (StringUtils.isBlank(inviteEmail) || StringUtils.isBlank(inviteFirstName)
-                || StringUtils.isBlank(inviteLastName) || StringUtils.isBlank(inviteUsername)
-                || StringUtils.isBlank(invitePassword) || StringUtils.isBlank(invitePasswordConfirm)) {
+                || StringUtils.isBlank(inviteLastName) || StringUtils.isBlank(inviteUsername)) {
             displayErrorMessage(langBean, "userDialog.error.fields");
             return false;
         }
@@ -223,13 +243,17 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
             displayErrorMessage(langBean, "userDialog.error.username");
             return false;
         }
-        if (invitePassword.length() < 8) {
-            displayErrorMessage(langBean, "userDialog.error.password");
-            return false;
-        }
-        if (!invitePassword.equals(invitePasswordConfirm)) {
-            displayErrorMessage(langBean, "userDialog.error.password.match");
-            return false;
+        // The password is optional: when left empty, the member is created disabled and receives
+        // an invitation e-mail to choose their own password.
+        if (StringUtils.isNotBlank(invitePassword) || StringUtils.isNotBlank(invitePasswordConfirm)) {
+            if (StringUtils.isBlank(invitePassword) || invitePassword.length() < 8) {
+                displayErrorMessage(langBean, "userDialog.error.password");
+                return false;
+            }
+            if (!invitePassword.equals(invitePasswordConfirm)) {
+                displayErrorMessage(langBean, "userDialog.error.password.match");
+                return false;
+            }
         }
         return true;
     }
@@ -262,6 +286,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         Set<ProfileDTO> profiles = new HashSet<>(selectedProfiles);
 
         for (PersonDTO candidate : selectedMembers) {
+            boolean invitedWithoutPassword = isDraft(candidate) && draftPasswords.get(candidate.getId()) == null;
             PersonDTO person = isDraft(candidate) ? createInvitedPerson(candidate) : candidate;
             if (person == null) {
                 remaining.add(candidate);
@@ -270,6 +295,9 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
             Boolean added = processPerson.process(new PersonRole(person, null, profiles));
             if (Boolean.TRUE.equals(added)) {
                 affected++;
+                if (invitedWithoutPassword) {
+                    sendInvitation(person);
+                }
             } else {
                 remaining.add(candidate);
             }
@@ -282,7 +310,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     }
 
     private PersonDTO createInvitedPerson(PersonDTO draft) {
-        String password = draftPasswords.remove(draft.getId());
+        String password = draftPasswords.get(draft.getId());
 
         PersonDTO person = new PersonDTO();
         person.setName(draft.getName());
@@ -292,7 +320,11 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         person.setPassToModify(true);
 
         try {
-            return personService.createPerson(person, password);
+            PersonDTO created = password == null
+                    ? personService.createDisabledPersonWithRandomPassword(person)
+                    : personService.createPerson(person, password);
+            draftPasswords.remove(draft.getId());
+            return created;
         } catch (InvalidUsernameException e) {
             displayErrorMessage(langBean, "userDialog.error.username");
         } catch (EmailAlreadyExistException e) {
@@ -307,6 +339,20 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
             displayErrorMessage(langBean, "userDialog.error.name");
         }
         return null;
+    }
+
+    /**
+     * Sends the invitation e-mail to a member created without password, once their profiles have been
+     * attributed by the {@link ProcessPerson} callback. The registration link lets them set their own
+     * password and enable their account.
+     */
+    private void sendInvitation(PersonDTO person) {
+        PendingPerson pendingPerson = pendingPersonService.createOrGetInvitation(person);
+        String invitationLink = pendingPersonService.invitationLink(pendingPerson);
+        String expirationDate = DateUtils.formatOffsetDateTime(pendingPerson.getPendingInvitationExpirationDate());
+        emailManager.sendEmail(person.getEmail(),
+                invitationMailSubject(),
+                invitationMailBody(invitationLink, expirationDate));
     }
 
     private static String usernameFromEmail(String email) {
