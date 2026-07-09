@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!-- Les invitations en attente portent désormais des profils (système de permissions) :
+         suppression de l'ancienne table d'attribution d'unité d'action et des drapeaux manager. -->
+    <changeSet id="2026.07.09-0" author="Julien Linget" failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="pending_action_unit_attribution"/>
+        </preConditions>
+        <dropTable tableName="pending_action_unit_attribution"/>
+    </changeSet>
+
+    <changeSet id="2026.07.09-1" author="Julien Linget" failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="pending_institution_invitation" columnName="is_manager"/>
+        </preConditions>
+        <dropColumn tableName="pending_institution_invitation" columnName="is_manager"/>
+    </changeSet>
+
+    <changeSet id="2026.07.09-2" author="Julien Linget" failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="pending_institution_invitation" columnName="is_action_manager"/>
+        </preConditions>
+        <dropColumn tableName="pending_institution_invitation" columnName="is_action_manager"/>
+    </changeSet>
+
+</databaseChangeLog>
