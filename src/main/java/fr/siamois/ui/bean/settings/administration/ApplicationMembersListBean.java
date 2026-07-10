@@ -8,12 +8,10 @@ import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.settings.AbstractMembersListBean;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.event.UnselectEvent;
 import org.springframework.context.annotation.Scope;
@@ -110,19 +108,6 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
         }
     }
 
-    private Boolean processPerson(PersonRole saved) {
-        try {
-            ApplicationMemberDTO member = applicationMembersService.addMember(
-                    saved.person(), new ArrayList<>(saved.profiles()));
-            refMembers.add(member);
-            trackPendingInvitation(saved.person());
-            filter();
-            return true;
-        } catch (Exception err) {
-            displayWarnMessage(langBean, "administrationSettings.error.member", saved.person().getEmail());
-            return false;
-        }
-    }
 
     /** Clears the bean's state between sessions/logins. */
     @EventListener(LoginEvent.class)
