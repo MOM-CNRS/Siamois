@@ -31,7 +31,7 @@
                     addAction="#{applicationMembersListBean.add()}"
                     searchInputTextValue="#{applicationMembersListBean.searchInput}"
                     description="#{langBean.msg('administrationSettings.userManagement.description')}"
-                    renderCreateButton="true"
+                    renderCreateButton="false"
                     createButtonLabel="#{langBean.msg('administrationSettings.userManagement.dialog.label')}"
             >
                 <p:dataTable
@@ -84,10 +84,6 @@
                     </p:column>
                 </p:dataTable>
             </settings:datatable>
-            <ui:include src="/dialog/shared/newMemberDialog.xhtml">
-                <ui:param name="dialogBean" value="#{newApplicationMemberDialogBean}"/>
-                <ui:param name="updateTarget" value=":applicationMembersDatatable:formCC:applicationMembersForm:membersDatatable"/>
-            </ui:include>
         </main>
     </ui:define>
 
