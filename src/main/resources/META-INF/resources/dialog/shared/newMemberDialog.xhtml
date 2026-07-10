@@ -46,6 +46,15 @@
                                             dropdown="false">
                                 <p:ajax event="itemSelect" process="@this" update="@form"/>
                                 <p:ajax event="itemUnselect" process="@this" update="@form"/>
+                                <f:facet name="footer">
+                                    <p:commandLink action="#{dialogBean.goToInvite()}"
+                                                   process="@this"
+                                                   update="@form"
+                                                   styleClass="invite-by-email-link">
+                                        <i class="bi bi-envelope"/>
+                                        #{langBean.msg('newOrganizationMember.action.inviteByEmail')}
+                                    </p:commandLink>
+                                </f:facet>
                             </p:autoComplete>
                             <p:commandLink action="#{dialogBean.goToInvite()}"
                                            process="@this"
@@ -111,27 +120,6 @@
                                              value="#{dialogBean.inviteUsername}"/>
                             </div>
                         </div>
-                        <div class="invite-form-row">
-                            <div class="invite-form-field">
-                                <p:outputLabel for="invitePassword">
-                                    #{langBean.msg('newOrganizationMember.label.password')}
-                                </p:outputLabel>
-                                <p:inputText type="password" id="invitePassword"
-                                             placeholder="••••••••"
-                                             value="#{dialogBean.invitePassword}"/>
-                            </div>
-                            <div class="invite-form-field">
-                                <p:outputLabel for="invitePasswordConfirm">
-                                    #{langBean.msg('newOrganizationMember.label.passwordConfirm')}
-                                </p:outputLabel>
-                                <p:inputText type="password" id="invitePasswordConfirm"
-                                             placeholder="••••••••"
-                                             value="#{dialogBean.invitePasswordConfirm}"/>
-                            </div>
-                        </div>
-                        <small class="invite-form-hint">
-                            #{langBean.msg('newOrganizationMember.hint.passwordOptional')}
-                        </small>
                     </h:panelGroup>
 
                 </div>

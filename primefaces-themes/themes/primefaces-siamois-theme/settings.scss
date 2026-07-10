@@ -122,6 +122,17 @@ main form:first-child .field-value-group {
     border-color: var(--siamois-green-active) !important;
 }
 
+.members-empty-state {
+    padding: 32px 16px;
+    color: var(--text-light);
+}
+
+.members-empty-state a {
+    color: var(--siamois-green-active) !important;
+    cursor: pointer;
+    font-weight: 600;
+}
+
 .addButton i {
     display: none;
 }
@@ -388,6 +399,16 @@ a:hover {
     font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
+}
+
+.ui-autocomplete-footer {
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+}
+
+.ui-autocomplete-footer .invite-by-email-link {
+    margin-top: 0;
 }
 
 .dialog-new-organization-member .dialog-buttons {
