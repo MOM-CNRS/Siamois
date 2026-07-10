@@ -33,8 +33,6 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 public class ApplicationMembersListBean extends AbstractMembersListBean {
 
     private final transient ApplicationMembersServiceInterface applicationMembersService;
-    private final LangBean langBean;
-    private final NewApplicationMemberDialogBean newApplicationMemberDialogBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient PersonProfileAssignmentService personProfileAssignmentService;
 
@@ -51,8 +49,6 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
                                       InvitationMailer invitationMailer) {
         super(pendingPersonService, invitationMailer, langBean);
         this.applicationMembersService = applicationMembersService;
-        this.langBean = langBean;
-        this.newApplicationMemberDialogBean = newApplicationMemberDialogBean;
         this.sessionSettingsBean = sessionSettingsBean;
         this.personProfileAssignmentService = personProfileAssignmentService;
     }
