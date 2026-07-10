@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.dialog.institution;
 
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.OrganizationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
@@ -8,6 +9,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
 import fr.siamois.ui.email.EmailManager;
 import fr.siamois.ui.email.InvitationEmailRenderer;
@@ -40,8 +42,9 @@ public class NewOrganizationMemberDialogBean extends AbstractNewMemberDialogBean
                                             InvitationEmailRenderer invitationEmailRenderer,
                                             InstitutionService institutionService,
                                             OrganizationMembersServiceInterface organizationMembersService,
+                                            SessionSettingsBean sessionSettingsBean,
                                             LangBean langBean) {
-        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, langBean);
+        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, sessionSettingsBean, langBean);
         this.institutionService = institutionService;
         this.organizationMembersService = organizationMembersService;
     }
@@ -82,9 +85,22 @@ public class NewOrganizationMemberDialogBean extends AbstractNewMemberDialogBean
 
     @Override
     protected String invitationScopeName() {
-        return institution.getName();
+        return langBean.msg("mail.invitation.scope.institution", institution.getName());
     }
 
+    @Override
+    protected String baseMemberProfileCode() {
+        return ProfileConstants.ORGANIZATION_MEMBER;
+    }
+
+    /**
+     * Autocomplete source for the members field in the institution scope: matches persons by username or
+     * e-mail, then drops those already members of the institution or already staged in the current batch.
+     * As a side effect, remembers the typed query so {@link #goToInvite()} can prefill the invite form.
+     *
+     * @param query the text currently typed in the members field
+     * @return the matching persons, excluding already-member and already-selected ones
+     */
     @Override
     public List<PersonDTO> completeMember(String query) {
         searchQuery = query;

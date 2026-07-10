@@ -8,6 +8,7 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
 import fr.siamois.ui.email.EmailManager;
@@ -22,6 +23,7 @@ import org.springframework.context.event.EventListener;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 import static fr.siamois.utils.MessageUtils.displayInfoMessage;
@@ -48,6 +50,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected final transient PendingPersonService pendingPersonService;
     protected final transient EmailManager emailManager;
     protected final transient InvitationEmailRenderer invitationEmailRenderer;
+    protected final SessionSettingsBean sessionSettingsBean;
     protected final LangBean langBean;
 
     protected transient ProcessPerson processPerson;
@@ -78,18 +81,24 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
                                           PendingPersonService pendingPersonService,
                                           EmailManager emailManager,
                                           InvitationEmailRenderer invitationEmailRenderer,
+                                          SessionSettingsBean sessionSettingsBean,
                                           LangBean langBean) {
         this.personService = personService;
         this.pendingPersonService = pendingPersonService;
         this.emailManager = emailManager;
         this.invitationEmailRenderer = invitationEmailRenderer;
+        this.sessionSettingsBean = sessionSettingsBean;
         this.langBean = langBean;
     }
 
     /** @return the PrimeFaces widget var of the dialog this bean backs, used to update/hide it. */
     protected abstract String getDialogWidgetVar();
 
-    /** @return the dialog's widget var/id, exposed for the shared dialog fragment to build its own ids from. */
+    /**
+     * Exposes the dialog's widget var/id so the shared dialog fragment can build its own component ids from it.
+     *
+     * @return the PrimeFaces widget var / id of the dialog this bean backs
+     */
     public final String getDialogId() {
         return getDialogWidgetVar();
     }
@@ -100,8 +109,20 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     /** @return the subject of the invitation e-mail sent to a member created without password. */
     protected abstract String invitationMailSubject();
 
-    /** @return the organisation / project name shown in the invitation e-mail body for this scope. */
+    /**
+     * @return the localised scope phrase shown in the invitation e-mail body, qualified by scope type so
+     * the invitee knows what they are joining (e.g. "the project X", "the institution X", or "SIAMOIS").
+     */
     protected abstract String invitationScopeName();
+
+    /**
+     * @return the code of the base "member" role implicitly granted to every invitee in this scope
+     * (so the invitation e-mail can list it even when the inviter selected no extra profile), or
+     * {@code null} when the scope grants no implicit membership role (application-wide management).
+     */
+    protected String baseMemberProfileCode() {
+        return null;
+    }
 
     /**
      * Autocomplete source for the members field — excludes already-selected and already-member persons.
@@ -126,7 +147,11 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         PrimeFaces.current().ajax().update(getDialogWidgetVar());
     }
 
-    /** Clears the whole wizard state: selections, invite fields, step, and the pending callback. */
+    /**
+     * Clears the whole wizard state — scope field, selected members and profiles, staged invite drafts,
+     * the current step and the pending {@link ProcessPerson} callback. Also invoked automatically on every
+     * {@link LoginEvent} so a fresh login never inherits a previous user's dialog state.
+     */
     @EventListener(LoginEvent.class)
     public final void reset() {
         resetScope();
@@ -152,18 +177,26 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         invitePasswordConfirm = null;
     }
 
-    /** Resets the wizard and closes the dialog without submitting anything. */
+    /** Resets the whole wizard state and closes the dialog client-side without submitting anything. */
     public void exit() {
         reset();
         PrimeFaces.current().executeScript("PF('" + getDialogWidgetVar() + "').hide();");
     }
 
-    /** @return true when the wizard is on the member/profile selection step */
+    /**
+     * Tells whether the wizard is currently on its first step, where existing members and profiles are selected.
+     *
+     * @return {@code true} when the wizard is on the member/profile selection step, {@code false} otherwise
+     */
     public boolean isStepMain() {
         return step == WizardStep.MAIN;
     }
 
-    /** @return true when the wizard is on the "invite a new user" sub-step */
+    /**
+     * Tells whether the wizard is currently on the sub-step used to invite a brand-new user by e-mail.
+     *
+     * @return {@code true} when the wizard is on the "invite a new user" sub-step, {@code false} otherwise
+     */
     public boolean isStepInvite() {
         return step == WizardStep.INVITE;
     }
@@ -312,7 +345,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         if (Boolean.TRUE.equals(added)) {
             affected++;
             if (invitedWithoutPassword) {
-                sendInvitation(person);
+                sendInvitation(person, profiles);
             }
         } else {
             remaining.add(candidate);
@@ -358,14 +391,16 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     /**
      * Sends the invitation e-mail to a member created without password, once their profiles have been
-     * attributed by the {@link ProcessPerson} callback. The registration link lets them set their own
-     * password and enable their account.
+     * attributed by the {@link ProcessPerson} callback. The e-mail states who invited them, on which
+     * scope (application / institution / project) and with which profiles; the registration link lets
+     * them set their own password and enable their account.
      */
-    private void sendInvitation(PersonDTO person) {
+    private void sendInvitation(PersonDTO person, Set<ProfileDTO> profiles) {
         PendingPerson pendingPerson = pendingPersonService.createOrGetInvitation(person);
         String invitationLink = pendingPersonService.invitationLink(pendingPerson);
         String expirationDate = DateUtils.formatOffsetDateTime(pendingPerson.getPendingInvitationExpirationDate());
-        String body = invitationEmailRenderer.render(invitationScopeName(), invitationLink, expirationDate);
+        String body = invitationEmailRenderer.render(inviterName(), invitationScopeName(),
+                profilesLabel(profiles), invitationLink, expirationDate);
         try {
             emailManager.sendEmail(person.getEmail(),
                     invitationMailSubject(),
@@ -380,13 +415,50 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         }
     }
 
+    /** @return the display name of the currently authenticated user who is sending the invitation. */
+    private String inviterName() {
+        PersonDTO inviter = sessionSettingsBean.getAuthenticatedUser();
+        if (inviter == null) {
+            return langBean.msg("mail.invitation.inviter.unknown");
+        }
+        String displayName = inviter.displayName();
+        return StringUtils.isBlank(displayName) ? inviter.getUsername() : displayName.trim();
+    }
+
+    /**
+     * @return a human-readable, comma-separated list of the roles granted to the invitee. Mirrors what
+     * the member services actually persist: the implicit base "member" role of the scope is prepended
+     * whenever the inviter did not already pick it (application-wide invitations have no such role).
+     */
+    private String profilesLabel(Set<ProfileDTO> profiles) {
+        Set<ProfileDTO> effective = new LinkedHashSet<>();
+        String memberCode = baseMemberProfileCode();
+        if (memberCode != null && profiles.stream().noneMatch(p -> memberCode.equals(p.getCode()))) {
+            availableProfiles.stream()
+                    .filter(p -> memberCode.equals(p.getCode()))
+                    .findFirst()
+                    .ifPresent(effective::add);
+        }
+        effective.addAll(profiles);
+        String label = effective.stream()
+                .map(ProfileDTO::getName)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.joining(", "));
+        return StringUtils.isBlank(label) ? langBean.msg("mail.invitation.profiles.none") : label;
+    }
+
     private static String usernameFromEmail(String email) {
         String local = email.contains("@") ? email.substring(0, email.indexOf('@')) : email;
         String sanitized = local.replaceAll("[^a-zA-Z0-9.]", ".");
         return sanitized.isBlank() ? "user" : sanitized;
     }
 
-    /** @return the label of the primary action button for the current step */
+    /**
+     * Builds the label shown on the wizard's primary action button, which depends on the current step
+     * and, on the main step, on how many members are currently staged for submission.
+     *
+     * @return the localised label of the primary action button for the current step
+     */
     public String getPrimaryActionLabel() {
         if (step == WizardStep.INVITE) {
             return langBean.msg("newOrganizationMember.action.invite");
@@ -396,7 +468,12 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
                 : langBean.msg("newOrganizationMember.action.addCount", selectedMembers.size());
     }
 
-    /** @return false when the primary action would have nothing to do (no member selected on the main step) */
+    /**
+     * Tells whether the primary action button should be enabled, i.e. whether it currently has work to do.
+     *
+     * @return {@code false} when the primary action would do nothing (no member selected on the main step),
+     * {@code true} otherwise
+     */
     public boolean isPrimaryActionEnabled() {
         return step == WizardStep.INVITE || !selectedMembers.isEmpty();
     }

@@ -10,9 +10,10 @@ import java.nio.charset.StandardCharsets;
 /**
  * Renders the HTML invitation e-mail body from the {@code email-templates/invitation.html} template.
  * <p>
- * The template is read once from the classpath at startup; its {@code %s} placeholders are filled, in
- * order, with the scope name, the invitation link (used both as the {@code href} and as the visible
- * link text) and the availability period.
+ * The template is read once from the classpath at startup; its indexed {@code %n$s} placeholders are
+ * filled with the inviter's name, the scope name (application / institution / project), the profiles
+ * granted to the invitee, the invitation link (used both as the {@code href} and as the visible link
+ * text) and the availability period.
  */
 @Component
 public class InvitationEmailRenderer {
@@ -21,6 +22,10 @@ public class InvitationEmailRenderer {
 
     private final String template;
 
+    /**
+     * Loads the invitation e-mail template from the classpath once, at bean construction time, so that
+     * subsequent {@link #render} calls only have to fill in its placeholders.
+     */
     public InvitationEmailRenderer() {
         this.template = loadTemplate();
     }
@@ -34,12 +39,14 @@ public class InvitationEmailRenderer {
     }
 
     /**
-     * @param scopeName      the organisation / project name the person is invited to
+     * @param inviterName    the name of the user who sent the invitation
+     * @param scopeName      the application / institution / project name the person is invited to
+     * @param profiles       the profiles granted to the invitee within that scope
      * @param invitationLink the registration link the invitee must follow to activate their account
      * @param availability   the period during which the link stays valid
      * @return the ready-to-send HTML body
      */
-    public String render(String scopeName, String invitationLink, String availability) {
-        return String.format(template, scopeName, invitationLink, invitationLink, availability);
+    public String render(String inviterName, String scopeName, String profiles, String invitationLink, String availability) {
+        return String.format(template, inviterName, scopeName, profiles, invitationLink, availability);
     }
 }
