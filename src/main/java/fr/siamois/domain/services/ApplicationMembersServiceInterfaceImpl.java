@@ -9,6 +9,7 @@ import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,20 +23,28 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ApplicationMembersServiceInterfaceImpl implements ApplicationMembersServiceInterface {
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
+    private final PersonRepository personRepository;
     private final ProfileService profileService;
     private final PersonMapper personMapper;
     private final ProfileMapper profileMapper;
     private final PersonProfileAssignmentService personProfileAssignmentService;
 
+    /**
+     * Seeds the result with every person in the database (so members without any instance-level
+     * profile still appear, with an empty profile list) before overlaying the actual assignments.
+     */
     @Override
     public List<ApplicationMemberDTO> findMembers() {
         Map<Person, Set<ProfileDTO>> profilesByPerson = new HashMap<>();
 
+        for (Person person : personRepository.findAll()) {
+            profilesByPerson.put(person, new HashSet<>());
+        }
+
         for (PersonProfileAssignment personProfileAssignment : personProfileAssignmentRepository.findAllInstanceAssignments()) {
-            if (!profilesByPerson.containsKey(personProfileAssignment.getPerson())) {
-                profilesByPerson.put(personProfileAssignment.getPerson(), new HashSet<>());
-            }
-            profilesByPerson.get(personProfileAssignment.getPerson()).add(profileMapper.convert(personProfileAssignment.getProfile()));
+            profilesByPerson
+                    .computeIfAbsent(personProfileAssignment.getPerson(), p -> new HashSet<>())
+                    .add(profileMapper.convert(personProfileAssignment.getProfile()));
         }
 
         return profilesByPerson.keySet()
