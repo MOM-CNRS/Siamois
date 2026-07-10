@@ -164,6 +164,71 @@ class PendingPersonServiceTest {
     }
 
     @Test
+    void findPersonIdsWithExpiredInvitation_shouldReturnMatchingIds() {
+        List<Long> personIds = List.of(1L, 2L, 3L);
+        when(pendingPersonRepository.findExpiredDisabledPersonIdsIn(eq(personIds), any(OffsetDateTime.class)))
+                .thenReturn(Set.of(3L));
+
+        Set<Long> result = pendingPersonService.findPersonIdsWithExpiredInvitation(personIds);
+
+        assertEquals(Set.of(3L), result);
+    }
+
+    @Test
+    void findPersonIdsWithExpiredInvitation_shouldReturnEmptySetWithoutQueryOnEmptyInput() {
+        Set<Long> result = pendingPersonService.findPersonIdsWithExpiredInvitation(List.of());
+
+        assertTrue(result.isEmpty());
+        verify(pendingPersonRepository, never()).findExpiredDisabledPersonIdsIn(any(), any());
+    }
+
+    @Test
+    void isExpired_shouldReturnTrueForPastExpirationDate() {
+        pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).minusDays(1));
+
+        assertTrue(pendingPersonService.isExpired(pendingPerson));
+    }
+
+    @Test
+    void isExpired_shouldReturnFalseForFutureExpirationDate() {
+        pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1));
+
+        assertFalse(pendingPersonService.isExpired(pendingPerson));
+    }
+
+    @Test
+    void resendInvitation_shouldReplaceTokenAndExpirationOfExistingInvitation() {
+        PersonDTO personDTO = new PersonDTO();
+        personDTO.setId(1L);
+        String previousToken = pendingPerson.getRegisterToken();
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.of(pendingPerson));
+        when(pendingPersonRepository.existsByRegisterToken(anyString())).thenReturn(false);
+        when(pendingPersonRepository.save(any(PendingPerson.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PendingPerson result = pendingPersonService.resendInvitation(personDTO);
+
+        assertNotEquals(previousToken, result.getRegisterToken());
+        assertTrue(result.getPendingInvitationExpirationDate().isAfter(OffsetDateTime.now(ZoneOffset.UTC)));
+        verify(personMapper, never()).invertConvert(any());
+    }
+
+    @Test
+    void resendInvitation_shouldCreateInvitationWhenNoneExists() {
+        PersonDTO personDTO = new PersonDTO();
+        personDTO.setId(1L);
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.empty());
+        when(pendingPersonRepository.existsByRegisterToken(anyString())).thenReturn(false);
+        when(personMapper.invertConvert(personDTO)).thenReturn(person);
+        when(pendingPersonRepository.save(any(PendingPerson.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PendingPerson result = pendingPersonService.resendInvitation(personDTO);
+
+        assertEquals(person, result.getDisabledPerson());
+        assertNotNull(result.getRegisterToken());
+        assertTrue(result.getPendingInvitationExpirationDate().isAfter(OffsetDateTime.now(ZoneOffset.UTC)));
+    }
+
+    @Test
     void deleteByPerson_shouldDeleteByDisabledPersonId() {
         PersonDTO personDTO = new PersonDTO();
         personDTO.setId(1L);

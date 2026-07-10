@@ -9,6 +9,8 @@ import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.AbstractMembersListBean;
+import fr.siamois.ui.email.InvitationMailer;
+import fr.siamois.ui.email.InvitationMessages;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +33,6 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 public class ApplicationMembersListBean extends AbstractMembersListBean {
 
     private final transient ApplicationMembersServiceInterface applicationMembersService;
-    private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient PersonProfileAssignmentService personProfileAssignmentService;
 
@@ -44,10 +45,10 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
                                       LangBean langBean,
                                       SessionSettingsBean sessionSettingsBean,
                                       PersonProfileAssignmentService personProfileAssignmentService,
-                                      PendingPersonService pendingPersonService) {
-        super(pendingPersonService);
+                                      PendingPersonService pendingPersonService,
+                                      InvitationMailer invitationMailer) {
+        super(pendingPersonService, invitationMailer, langBean);
         this.applicationMembersService = applicationMembersService;
-        this.langBean = langBean;
         this.sessionSettingsBean = sessionSettingsBean;
         this.personProfileAssignmentService = personProfileAssignmentService;
     }
@@ -82,6 +83,26 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
         }
     }
 
+
+    /**
+     * Renews and re-sends the invitation of a user whose invitation has expired, replacing the old link.
+     *
+     * @param member the application user whose invitation must be renewed
+     */
+    public void resendInvitation(ApplicationMemberDTO member) {
+        log.trace("Resending invitation to application member {}", member.displayName());
+        resendInvitationTo(member.getPerson(), member.getProfiles());
+    }
+
+    @Override
+    protected String invitationScopeName() {
+        return InvitationMessages.applicationScope(langBean);
+    }
+
+    @Override
+    protected String invitationMailSubject() {
+        return InvitationMessages.applicationSubject(langBean);
+    }
 
     /** Assigns the newly checked profile to the given member. */
     public void onProfileSelect(SelectEvent<ProfileDTO> event) {

@@ -298,6 +298,16 @@ a:hover {
     border-color: #b9d8f3;
 }
 
+.chip-status-expired {
+    background-color: #fdecea;
+    color: #b3261e;
+    border-color: #f5c2bd;
+}
+
+.resend-invitation-button {
+    margin-left: 8px;
+}
+
 .profile-cell {
     display: flex;
     align-items: center;

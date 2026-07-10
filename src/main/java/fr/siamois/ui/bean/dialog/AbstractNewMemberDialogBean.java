@@ -11,19 +11,18 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
-import fr.siamois.ui.email.EmailManager;
-import fr.siamois.ui.email.InvitationEmailRenderer;
-import fr.siamois.utils.DateUtils;
+import fr.siamois.ui.email.InvitationMailer;
+import fr.siamois.ui.email.InvitationMessages;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.primefaces.PrimeFaces;
 import org.springframework.context.event.EventListener;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 import static fr.siamois.utils.MessageUtils.displayInfoMessage;
@@ -41,15 +40,14 @@ import static fr.siamois.utils.MessageUtils.displayInfoMessage;
  * Subclasses only supply what differs by scope (institution / project / application-wide): the
  * dialog's widget var, the assignable profiles, and the already-member exclusion query.
  */
-@Slf4j
 @Getter
 @Setter
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     protected final transient PersonService personService;
     protected final transient PendingPersonService pendingPersonService;
-    protected final transient EmailManager emailManager;
-    protected final transient InvitationEmailRenderer invitationEmailRenderer;
+    protected final transient InvitationMailer invitationMailer;
     protected final SessionSettingsBean sessionSettingsBean;
     protected final LangBean langBean;
 
@@ -76,20 +74,6 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected String inviteUsername;
     protected String invitePassword;
     protected String invitePasswordConfirm;
-
-    protected AbstractNewMemberDialogBean(PersonService personService,
-                                          PendingPersonService pendingPersonService,
-                                          EmailManager emailManager,
-                                          InvitationEmailRenderer invitationEmailRenderer,
-                                          SessionSettingsBean sessionSettingsBean,
-                                          LangBean langBean) {
-        this.personService = personService;
-        this.pendingPersonService = pendingPersonService;
-        this.emailManager = emailManager;
-        this.invitationEmailRenderer = invitationEmailRenderer;
-        this.sessionSettingsBean = sessionSettingsBean;
-        this.langBean = langBean;
-    }
 
     /** @return the PrimeFaces widget var of the dialog this bean backs, used to update/hide it. */
     protected abstract String getDialogWidgetVar();
@@ -397,35 +381,19 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
      */
     private void sendInvitation(PersonDTO person, Set<ProfileDTO> profiles) {
         PendingPerson pendingPerson = pendingPersonService.createOrGetInvitation(person);
-        String invitationLink = pendingPersonService.invitationLink(pendingPerson);
-        String expirationDate = DateUtils.formatOffsetDateTime(pendingPerson.getPendingInvitationExpirationDate());
-        String body = invitationEmailRenderer.render(inviterName(), invitationScopeName(),
-                profilesLabel(profiles), invitationLink, expirationDate);
-        try {
-            emailManager.sendEmail(person.getEmail(),
-                    invitationMailSubject(),
-                    body,
-                    EmailManager.TEXT_HTML);
+        boolean sent = invitationMailer.send(pendingPerson, person, invitationScopeName(),
+                invitationMailSubject(), profilesLabel(profiles));
+        if (sent) {
             displayInfoMessage(langBean, "newMember.invitation.sent", person.getEmail());
-        } catch (RuntimeException e) {
+        } else {
             // The member and their profiles are already persisted; only the e-mail delivery failed,
             // so keep going and let the manager know they may need to resend the invitation.
-            log.error("Failed to send invitation e-mail to {}", person.getEmail(), e);
             displayErrorMessage(langBean, "newMember.invitation.failed", person.getEmail());
         }
     }
 
-    /** @return the display name of the currently authenticated user who is sending the invitation. */
-    private String inviterName() {
-        PersonDTO inviter = sessionSettingsBean.getAuthenticatedUser();
-        if (inviter == null) {
-            return langBean.msg("mail.invitation.inviter.unknown");
-        }
-        String displayName = inviter.displayName();
-        return StringUtils.isBlank(displayName) ? inviter.getUsername() : displayName.trim();
-    }
-
     /**
+     * @param profiles the profiles explicitly selected for the invitee in the wizard
      * @return a human-readable, comma-separated list of the roles granted to the invitee. Mirrors what
      * the member services actually persist: the implicit base "member" role of the scope is prepended
      * whenever the inviter did not already pick it (application-wide invitations have no such role).
@@ -440,11 +408,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
                     .ifPresent(effective::add);
         }
         effective.addAll(profiles);
-        String label = effective.stream()
-                .map(ProfileDTO::getName)
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.joining(", "));
-        return StringUtils.isBlank(label) ? langBean.msg("mail.invitation.profiles.none") : label;
+        return InvitationMessages.profilesLabel(langBean, effective);
     }
 
     private static String usernameFromEmail(String email) {

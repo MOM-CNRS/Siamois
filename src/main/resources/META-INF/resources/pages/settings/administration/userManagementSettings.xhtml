@@ -72,9 +72,15 @@
                         </p:selectCheckboxMenu>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">
-                        <span class="chip #{member.person.enabled ? 'chip-status-active' : (applicationMembersListBean.hasPendingInvitation(member.person) ? 'chip-status-invited' : 'chip-status-inactive')}">
-                            #{member.person.enabled ? langBean.msg('common.label.accountStatus.enabled') : (applicationMembersListBean.hasPendingInvitation(member.person) ? langBean.msg('common.label.accountStatus.invited') : langBean.msg('common.label.accountStatus.disabled'))}
+                        <span class="chip #{applicationMembersListBean.accountStatusChipClass(member.person)}">
+                            #{applicationMembersListBean.accountStatusLabel(member.person)}
                         </span>
+                        <p:commandButton value="#{langBean.msg('common.action.resendInvitation')}"
+                                         icon="pi pi-refresh"
+                                         rendered="#{applicationMembersListBean.isInvitationExpired(member.person)}"
+                                         actionListener="#{applicationMembersListBean.resendInvitation(member)}"
+                                         update="membersDatatable"
+                                         styleClass="ui-button-flat ui-button-sm resend-invitation-button"/>
                     </p:column>
                 </p:dataTable>
             </settings:datatable>

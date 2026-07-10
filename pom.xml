@@ -80,6 +80,7 @@
             **/dto/**,
             **/ui/form/**,
             **/ui/custom/**,
+            **/ui/email/**,
             **/*ViewModel.*,
             **/*Converter.*,
             **/*Builder.*,
