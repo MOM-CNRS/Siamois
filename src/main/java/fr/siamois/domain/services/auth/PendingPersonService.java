@@ -118,6 +118,52 @@ public class PendingPersonService {
     }
 
     /**
+     * Among the given person ids, find the ones whose pending invitation has passed its expiration date.
+     * Expired invitations are kept in database (never auto-deleted); they can be renewed with
+     * {@link #resendInvitation(PersonDTO)}.
+     *
+     * @param personIds the person ids to check
+     * @return the subset of ids whose invitation is expired
+     */
+    public Set<Long> findPersonIdsWithExpiredInvitation(Collection<Long> personIds) {
+        if (personIds.isEmpty()) {
+            return Set.of();
+        }
+        return pendingPersonRepository.findExpiredDisabledPersonIdsIn(personIds, OffsetDateTime.now(ZoneOffset.UTC));
+    }
+
+    /**
+     * Tells whether the given invitation has passed its expiration date.
+     *
+     * @param pendingPerson the invitation to check
+     * @return {@code true} when the invitation link is no longer valid
+     */
+    public boolean isExpired(PendingPerson pendingPerson) {
+        return OffsetDateTime.now(ZoneOffset.UTC).isAfter(pendingPerson.getPendingInvitationExpirationDate());
+    }
+
+    /**
+     * Renews the invitation of the given person, replacing any previous one: a fresh registration token
+     * and a new expiration date are generated on the existing pending person (invalidating the old link),
+     * or a new invitation is created if none existed yet.
+     *
+     * @param person the invited (still disabled) person whose invitation must be renewed
+     * @return the refreshed pending person carrying the new token and expiration date
+     */
+    @Transactional
+    public PendingPerson resendInvitation(PersonDTO person) {
+        PendingPerson pendingPerson = pendingPersonRepository.findByDisabledPersonId(person.getId())
+                .orElseGet(() -> {
+                    PendingPerson created = new PendingPerson();
+                    created.setDisabledPerson(personMapper.invertConvert(person));
+                    return created;
+                });
+        pendingPerson.setRegisterToken(generateToken());
+        pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(INVITATION_VALIDITY_DAYS));
+        return pendingPersonRepository.save(pendingPerson);
+    }
+
+    /**
      * Delete a pending person from the database.
      *
      * @param pendingPerson the pending person to delete

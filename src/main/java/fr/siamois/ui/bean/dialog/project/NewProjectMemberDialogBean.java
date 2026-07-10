@@ -9,11 +9,10 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
-import fr.siamois.ui.email.EmailManager;
-import fr.siamois.ui.email.InvitationEmailRenderer;
+import fr.siamois.ui.email.InvitationMailer;
+import fr.siamois.ui.email.InvitationMessages;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
@@ -38,12 +37,11 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
 
     public NewProjectMemberDialogBean(PersonService personService,
                                        PendingPersonService pendingPersonService,
-                                       EmailManager emailManager,
-                                       InvitationEmailRenderer invitationEmailRenderer,
+                                       InvitationMailer invitationMailer,
                                        ProjectMembersServiceInterface projectMembersService,
                                        SessionSettingsBean sessionSettingsBean,
                                        LangBean langBean) {
-        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, sessionSettingsBean, langBean);
+        super(personService, pendingPersonService, invitationMailer, sessionSettingsBean, langBean);
         this.projectMembersService = projectMembersService;
     }
 
@@ -78,17 +76,14 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
 
     @Override
     protected String invitationMailSubject() {
-        return langBean.msg("mail.invitation.project.subject", project.getName());
+        return InvitationMessages.projectSubject(langBean, project.getName());
     }
 
     @Override
     protected String invitationScopeName() {
         InstitutionDTO organisation = sessionSettingsBean.getSelectedInstitution();
-        if (organisation == null || StringUtils.isBlank(organisation.getName())) {
-            return langBean.msg("mail.invitation.scope.project", project.getName());
-        }
-        return langBean.msg("mail.invitation.scope.project.withOrganisation",
-                project.getName(), organisation.getName());
+        String organisationName = organisation == null ? null : organisation.getName();
+        return InvitationMessages.projectScope(langBean, project.getName(), organisationName);
     }
 
     @Override

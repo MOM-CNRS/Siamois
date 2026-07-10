@@ -16,6 +16,8 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.NewOrganizationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.settings.AbstractMembersListBean;
+import fr.siamois.ui.email.InvitationMailer;
+import fr.siamois.ui.email.InvitationMessages;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +47,6 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
     private final transient PersonService personService;
     private final transient OrganizationMembersServiceInterface organizationMembersService;
     private final NewOrganizationMemberDialogBean newOrganizationMemberDialogBean;
-    private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient PersonProfileAssignmentService personProfileAssignmentService;
     private InstitutionDTO institution;
@@ -62,14 +63,14 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
                                       NewOrganizationMemberDialogBean newOrganizationMemberDialogBean,
                                       LangBean langBean,
                                       PendingPersonService pendingPersonService,
+                                      InvitationMailer invitationMailer,
                                       SessionSettingsBean sessionSettingsBean,
                                       PersonProfileAssignmentService personProfileAssignmentService) {
-        super(pendingPersonService);
+        super(pendingPersonService, invitationMailer, langBean);
         this.institutionService = institutionService;
         this.personService = personService;
         this.organizationMembersService = organizationMembersService;
         this.newOrganizationMemberDialogBean = newOrganizationMemberDialogBean;
-        this.langBean = langBean;
         this.sessionSettingsBean = sessionSettingsBean;
         this.personProfileAssignmentService = personProfileAssignmentService;
     }
@@ -127,6 +128,26 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
         organizationMembersService.removeMemberFromInstitution(institution, member);
         refMembers.remove(member);
         filter();
+    }
+
+    /**
+     * Renews and re-sends the invitation of a member whose invitation has expired, replacing the old link.
+     *
+     * @param member the institution member whose invitation must be renewed
+     */
+    public void resendInvitation(InstitutionMemberDTO member) {
+        log.trace("Resending invitation to institution member {}", member.displayName());
+        resendInvitationTo(member.getPerson(), member.getProfiles());
+    }
+
+    @Override
+    protected String invitationScopeName() {
+        return InvitationMessages.institutionScope(langBean, institution.getName());
+    }
+
+    @Override
+    protected String invitationMailSubject() {
+        return InvitationMessages.institutionSubject(langBean, institution.getName());
     }
 
     /** Assigns the newly checked profile to the given member. */

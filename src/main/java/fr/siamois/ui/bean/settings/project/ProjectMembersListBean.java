@@ -6,6 +6,7 @@ import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.dto.entity.ProjectMemberDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -13,6 +14,8 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.project.NewProjectMemberDialogBean;
 import fr.siamois.ui.bean.settings.AbstractMembersListBean;
+import fr.siamois.ui.email.InvitationMailer;
+import fr.siamois.ui.email.InvitationMessages;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +40,6 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
 
     private final transient ProjectMembersServiceInterface projectMembersService;
     private final NewProjectMemberDialogBean newProjectMemberDialogBean;
-    private final LangBean langBean;
     private final transient PersonProfileAssignmentService personProfileAssignmentService;
     private final SessionSettingsBean sessionSettingsBean;
 
@@ -51,11 +53,11 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
     public ProjectMembersListBean(ProjectMembersServiceInterface projectMembersService,
                                   NewProjectMemberDialogBean newProjectMemberDialogBean,
                                   LangBean langBean, PersonProfileAssignmentService personProfileAssignmentService,
-                                  SessionSettingsBean sessionSettingsBean, PendingPersonService pendingPersonService) {
-        super(pendingPersonService);
+                                  SessionSettingsBean sessionSettingsBean, PendingPersonService pendingPersonService,
+                                  InvitationMailer invitationMailer) {
+        super(pendingPersonService, invitationMailer, langBean);
         this.projectMembersService = projectMembersService;
         this.newProjectMemberDialogBean = newProjectMemberDialogBean;
-        this.langBean = langBean;
         this.personProfileAssignmentService = personProfileAssignmentService;
         this.sessionSettingsBean = sessionSettingsBean;
     }
@@ -108,6 +110,28 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
         projectMembersService.removeMemberFromProject(project, member);
         refMembers.remove(member);
         filter();
+    }
+
+    /**
+     * Renews and re-sends the invitation of a member whose invitation has expired, replacing the old link.
+     *
+     * @param member the project member whose invitation must be renewed
+     */
+    public void resendInvitation(ProjectMemberDTO member) {
+        log.trace("Resending invitation to project member {}", member.displayName());
+        resendInvitationTo(member.getPerson(), member.getProfiles());
+    }
+
+    @Override
+    protected String invitationScopeName() {
+        InstitutionDTO organisation = sessionSettingsBean.getSelectedInstitution();
+        String organisationName = organisation == null ? null : organisation.getName();
+        return InvitationMessages.projectScope(langBean, project.getName(), organisationName);
+    }
+
+    @Override
+    protected String invitationMailSubject() {
+        return InvitationMessages.projectSubject(langBean, project.getName());
     }
 
     /** Assigns the newly checked profile to the given member. */

@@ -10,8 +10,8 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
-import fr.siamois.ui.email.EmailManager;
-import fr.siamois.ui.email.InvitationEmailRenderer;
+import fr.siamois.ui.email.InvitationMailer;
+import fr.siamois.ui.email.InvitationMessages;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Scope;
@@ -36,12 +36,11 @@ public class NewApplicationMemberDialogBean extends AbstractNewMemberDialogBean 
 
     public NewApplicationMemberDialogBean(PersonService personService,
                                            PendingPersonService pendingPersonService,
-                                           EmailManager emailManager,
-                                           InvitationEmailRenderer invitationEmailRenderer,
+                                           InvitationMailer invitationMailer,
                                            ApplicationMembersServiceInterface applicationMembersService,
                                            SessionSettingsBean sessionSettingsBean,
                                            LangBean langBean) {
-        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, sessionSettingsBean, langBean);
+        super(personService, pendingPersonService, invitationMailer, sessionSettingsBean, langBean);
         this.applicationMembersService = applicationMembersService;
     }
 
@@ -69,12 +68,12 @@ public class NewApplicationMemberDialogBean extends AbstractNewMemberDialogBean 
 
     @Override
     protected String invitationMailSubject() {
-        return langBean.msg("mail.invitation.application.subject");
+        return InvitationMessages.applicationSubject(langBean);
     }
 
     @Override
     protected String invitationScopeName() {
-        return langBean.msg("mail.invitation.application.scopeName");
+        return InvitationMessages.applicationScope(langBean);
     }
 
     /**

@@ -11,8 +11,8 @@ import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
-import fr.siamois.ui.email.EmailManager;
-import fr.siamois.ui.email.InvitationEmailRenderer;
+import fr.siamois.ui.email.InvitationMailer;
+import fr.siamois.ui.email.InvitationMessages;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Scope;
@@ -38,13 +38,12 @@ public class NewOrganizationMemberDialogBean extends AbstractNewMemberDialogBean
 
     public NewOrganizationMemberDialogBean(PersonService personService,
                                             PendingPersonService pendingPersonService,
-                                            EmailManager emailManager,
-                                            InvitationEmailRenderer invitationEmailRenderer,
+                                            InvitationMailer invitationMailer,
                                             InstitutionService institutionService,
                                             OrganizationMembersServiceInterface organizationMembersService,
                                             SessionSettingsBean sessionSettingsBean,
                                             LangBean langBean) {
-        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, sessionSettingsBean, langBean);
+        super(personService, pendingPersonService, invitationMailer, sessionSettingsBean, langBean);
         this.institutionService = institutionService;
         this.organizationMembersService = organizationMembersService;
     }
@@ -80,12 +79,12 @@ public class NewOrganizationMemberDialogBean extends AbstractNewMemberDialogBean
 
     @Override
     protected String invitationMailSubject() {
-        return langBean.msg("mail.invitation.subject", institution.getName());
+        return InvitationMessages.institutionSubject(langBean, institution.getName());
     }
 
     @Override
     protected String invitationScopeName() {
-        return langBean.msg("mail.invitation.scope.institution", institution.getName());
+        return InvitationMessages.institutionScope(langBean, institution.getName());
     }
 
     @Override
