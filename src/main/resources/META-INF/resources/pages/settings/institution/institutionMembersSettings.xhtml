@@ -21,13 +21,13 @@
             <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
                 <p:breadCrumb homeDisplay="false">
                     <p:menuitem value="Organisations" action="#{institutionDetailsBean.goToInstitutionList()}"/>
-                    <p:menuitem value="#{institutionManagerListBean.institution.name}" action="#{institutionDetailsBean.backToInstitutionSettings()}"/>
+                    <p:menuitem value="#{institutionDetailsBean.institution.name}" action="#{institutionDetailsBean.backToInstitutionSettings()}"/>
                     <p:menuitem value="#{langBean.msg('organisationSettings.titles.members')}"/>
                 </p:breadCrumb>
             </form:csrfform>
             <settings:datatable
                     id="orgMembersDatatable"
-                    title="#{langBean.msg('organisationSettings.managers.title', institutionManagerListBean.institution.name)}"
+                    title="#{langBean.msg('organisationSettings.managers.title', institutionDetailsBean.institution.name)}"
                     filterAction="#{institutionManagerListBean.filter()}"
                     formId="institutionMembersForm"
                     addAction="#{institutionMembersListBean.add()}"
