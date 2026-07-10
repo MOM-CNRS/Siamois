@@ -401,6 +401,16 @@ a:hover {
     cursor: pointer;
 }
 
+.ui-autocomplete-footer {
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+}
+
+.ui-autocomplete-footer .invite-by-email-link {
+    margin-top: 0;
+}
+
 .dialog-new-organization-member .dialog-buttons {
     display: flex;
     justify-content: space-between;
