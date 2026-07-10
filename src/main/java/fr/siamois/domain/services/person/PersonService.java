@@ -390,4 +390,9 @@ public class PersonService {
         enableAndUpdatePerson(person, password);
         pendingPersonRepository.deleteByDisabledPersonId(person.getId());
     }
+
+    public Optional<PersonDTO> findByUsername(String username) {
+        return personRepository.findByUsernameIgnoreCase(username)
+                .map(personMapper::convert);
+    }
 }

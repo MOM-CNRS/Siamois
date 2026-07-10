@@ -339,4 +339,9 @@ public class InstitutionService {
                 .map(personMapper::convert)
                 .collect(Collectors.toSet());
     }
+
+    public Optional<InstitutionDTO> findByIdentifier(String identifier) {
+        return institutionRepository.findByIdentifierIgnoreCase(identifier)
+                .map(institutionMapper::convert);
+    }
 }

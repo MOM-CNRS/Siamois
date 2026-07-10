@@ -574,4 +574,28 @@ class InstitutionServiceTest {
         InstitutionDTO institution = institutionService.findById(1L);
         assertThat(institution).isNull();
     }
+
+    @Test
+    void findByIdentifier_returnsMappedInstitution_whenFound() {
+        Institution institution = new Institution();
+        institution.setIdentifier("siamois");
+        InstitutionDTO dto = new InstitutionDTO();
+        dto.setIdentifier("siamois");
+        when(institutionRepository.findByIdentifierIgnoreCase("siamois")).thenReturn(Optional.of(institution));
+        when(institutionMapper.convert(institution)).thenReturn(dto);
+
+        Optional<InstitutionDTO> result = institutionService.findByIdentifier("siamois");
+
+        assertThat(result).contains(dto);
+    }
+
+    @Test
+    void findByIdentifier_returnsEmpty_whenNotFound() {
+        when(institutionRepository.findByIdentifierIgnoreCase("unknown")).thenReturn(Optional.empty());
+
+        Optional<InstitutionDTO> result = institutionService.findByIdentifier("unknown");
+
+        assertThat(result).isEmpty();
+        verify(institutionMapper, never()).convert(any(Institution.class));
+    }
 }
