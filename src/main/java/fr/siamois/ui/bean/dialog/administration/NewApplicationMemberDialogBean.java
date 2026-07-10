@@ -10,6 +10,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
 import fr.siamois.ui.email.EmailManager;
+import fr.siamois.ui.email.InvitationEmailRenderer;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Scope;
@@ -35,9 +36,10 @@ public class NewApplicationMemberDialogBean extends AbstractNewMemberDialogBean 
     public NewApplicationMemberDialogBean(PersonService personService,
                                            PendingPersonService pendingPersonService,
                                            EmailManager emailManager,
+                                           InvitationEmailRenderer invitationEmailRenderer,
                                            ApplicationMembersServiceInterface applicationMembersService,
                                            LangBean langBean) {
-        super(personService, pendingPersonService, emailManager, langBean);
+        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, langBean);
         this.applicationMembersService = applicationMembersService;
     }
 
@@ -69,8 +71,8 @@ public class NewApplicationMemberDialogBean extends AbstractNewMemberDialogBean 
     }
 
     @Override
-    protected String invitationMailBody(String invitationLink, String expirationDate) {
-        return langBean.msg("mail.invitation.application.body", invitationLink, expirationDate);
+    protected String invitationScopeName() {
+        return langBean.msg("mail.invitation.application.scopeName");
     }
 
     @Override

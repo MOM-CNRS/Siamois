@@ -7,6 +7,7 @@ import fr.siamois.mapper.PersonMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
@@ -135,6 +136,7 @@ public class PendingPersonService {
         return pendingPersonRepository.findByRegisterToken(token);
     }
 
+    @Transactional
     public void deleteByPerson(PersonDTO person) {
         pendingPersonRepository.deleteByDisabledPersonId(person.getId());
     }

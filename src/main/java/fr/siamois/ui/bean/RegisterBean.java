@@ -1,17 +1,23 @@
 package fr.siamois.ui.bean;
 
 import fr.siamois.domain.models.auth.pending.PendingPerson;
-import fr.siamois.domain.models.exceptions.auth.InvalidUserInformationException;
+import fr.siamois.domain.models.exceptions.auth.EmailAlreadyExistException;
+import fr.siamois.domain.models.exceptions.auth.InvalidEmailException;
+import fr.siamois.domain.models.exceptions.auth.InvalidNameException;
+import fr.siamois.domain.models.exceptions.auth.InvalidPasswordException;
+import fr.siamois.domain.models.exceptions.auth.InvalidUsernameException;
 import fr.siamois.domain.models.exceptions.auth.UserAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.mapper.PersonMapper;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
@@ -27,7 +33,6 @@ public class RegisterBean {
     private final InstitutionService institutionService;
     private final LangBean langBean;
     private final RedirectBean redirectBean;
-    private final PendingPersonService pendingPersonService;
     private final PersonMapper personMapper;
     private PersonDTO person;
     private String email;
@@ -41,12 +46,11 @@ public class RegisterBean {
     public RegisterBean(PersonService personService,
                         InstitutionService institutionService,
                         LangBean langBean,
-                        RedirectBean redirectBean, PendingPersonService pendingPersonService, PersonMapper personMapper) {
+                        RedirectBean redirectBean, PersonMapper personMapper) {
         this.personService = personService;
         this.institutionService = institutionService;
         this.langBean = langBean;
         this.redirectBean = redirectBean;
-        this.pendingPersonService = pendingPersonService;
         this.personMapper = personMapper;
     }
 
@@ -72,13 +76,13 @@ public class RegisterBean {
 
     public void register() {
 
-        if (email == null || password == null || confirmPassword == null) {
-            log.trace("Email and password are not set");
+        if (StringUtils.isBlank(email) || StringUtils.isBlank(password) || StringUtils.isBlank(confirmPassword)) {
+            addError("register.error.fields");
             return;
         }
 
         if (!password.equals(confirmPassword)) {
-            log.trace("Password and confirm password are not the same");
+            addError("register.error.password.match");
             return;
         }
 
@@ -88,18 +92,29 @@ public class RegisterBean {
         person.setUsername(username);
 
         try {
-            personService.enableAndUpdatePerson(person, password);
-            pendingPersonService.deleteByPerson(person);
-
+            personService.registerInvitedPerson(person, password);
             reset();
             redirectBean.redirectTo("/login");
-
-        } catch (InvalidUserInformationException e) {
-            log.trace("Person could not be created");
+        } catch (EmailAlreadyExistException e) {
+            addError("register.error.email.alreadyexists", email);
+        } catch (InvalidEmailException e) {
+            addError("register.error.email");
+        } catch (InvalidUsernameException e) {
+            addError("register.error.username");
+        } catch (InvalidNameException e) {
+            addError("register.error.name");
+        } catch (InvalidPasswordException e) {
+            addError("register.error.password");
         } catch (UserAlreadyExistException e) {
-            log.trace("User already exists");
+            addError("register.error.username.alreadyexists", username);
         }
 
+    }
+
+    /** Adds a page-level error message shown by the {@code <p:messages>} component of the register form. */
+    private void addError(String messageCode, Object... args) {
+        FacesContext.getCurrentInstance().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_ERROR, langBean.msg(messageCode, args), null));
     }
 
 }

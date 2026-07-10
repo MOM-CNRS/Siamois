@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
 import fr.siamois.ui.email.EmailManager;
+import fr.siamois.ui.email.InvitationEmailRenderer;
 import fr.siamois.utils.DateUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,6 +24,7 @@ import java.io.Serializable;
 import java.util.*;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
+import static fr.siamois.utils.MessageUtils.displayInfoMessage;
 
 /**
  * Backs the "Ajouter des membres/utilisateurs" wizard dialog shared by the institution, project and
@@ -45,6 +47,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected final transient PersonService personService;
     protected final transient PendingPersonService pendingPersonService;
     protected final transient EmailManager emailManager;
+    protected final transient InvitationEmailRenderer invitationEmailRenderer;
     protected final LangBean langBean;
 
     protected transient ProcessPerson processPerson;
@@ -74,10 +77,12 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected AbstractNewMemberDialogBean(PersonService personService,
                                           PendingPersonService pendingPersonService,
                                           EmailManager emailManager,
+                                          InvitationEmailRenderer invitationEmailRenderer,
                                           LangBean langBean) {
         this.personService = personService;
         this.pendingPersonService = pendingPersonService;
         this.emailManager = emailManager;
+        this.invitationEmailRenderer = invitationEmailRenderer;
         this.langBean = langBean;
     }
 
@@ -95,12 +100,8 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     /** @return the subject of the invitation e-mail sent to a member created without password. */
     protected abstract String invitationMailSubject();
 
-    /**
-     * @param invitationLink the registration link the invitee must follow to activate their account
-     * @param expirationDate the formatted expiration date of the invitation
-     * @return the body of the invitation e-mail sent to a member created without password
-     */
-    protected abstract String invitationMailBody(String invitationLink, String expirationDate);
+    /** @return the organisation / project name shown in the invitation e-mail body for this scope. */
+    protected abstract String invitationScopeName();
 
     /**
      * Autocomplete source for the members field — excludes already-selected and already-member persons.
@@ -364,9 +365,19 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         PendingPerson pendingPerson = pendingPersonService.createOrGetInvitation(person);
         String invitationLink = pendingPersonService.invitationLink(pendingPerson);
         String expirationDate = DateUtils.formatOffsetDateTime(pendingPerson.getPendingInvitationExpirationDate());
-        emailManager.sendEmail(person.getEmail(),
-                invitationMailSubject(),
-                invitationMailBody(invitationLink, expirationDate));
+        String body = invitationEmailRenderer.render(invitationScopeName(), invitationLink, expirationDate);
+        try {
+            emailManager.sendEmail(person.getEmail(),
+                    invitationMailSubject(),
+                    body,
+                    EmailManager.TEXT_HTML);
+            displayInfoMessage(langBean, "newMember.invitation.sent", person.getEmail());
+        } catch (RuntimeException e) {
+            // The member and their profiles are already persisted; only the e-mail delivery failed,
+            // so keep going and let the manager know they may need to resend the invitation.
+            log.error("Failed to send invitation e-mail to {}", person.getEmail(), e);
+            displayErrorMessage(langBean, "newMember.invitation.failed", person.getEmail());
+        }
     }
 
     private static String usernameFromEmail(String email) {
