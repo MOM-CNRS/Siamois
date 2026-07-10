@@ -1,19 +1,19 @@
 package fr.siamois.ui.bean.dialog.project;
 
+import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.ProfileDTO;
-import fr.siamois.dto.entity.ProjectMemberDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
 import fr.siamois.ui.email.EmailManager;
 import fr.siamois.ui.email.InvitationEmailRenderer;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
@@ -41,8 +41,9 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
                                        EmailManager emailManager,
                                        InvitationEmailRenderer invitationEmailRenderer,
                                        ProjectMembersServiceInterface projectMembersService,
+                                       SessionSettingsBean sessionSettingsBean,
                                        LangBean langBean) {
-        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, langBean);
+        super(personService, pendingPersonService, emailManager, invitationEmailRenderer, sessionSettingsBean, langBean);
         this.projectMembersService = projectMembersService;
     }
 
@@ -82,9 +83,27 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
 
     @Override
     protected String invitationScopeName() {
-        return project.getName();
+        InstitutionDTO organisation = sessionSettingsBean.getSelectedInstitution();
+        if (organisation == null || StringUtils.isBlank(organisation.getName())) {
+            return langBean.msg("mail.invitation.scope.project", project.getName());
+        }
+        return langBean.msg("mail.invitation.scope.project.withOrganisation",
+                project.getName(), organisation.getName());
     }
 
+    @Override
+    protected String baseMemberProfileCode() {
+        return ProfileConstants.PROJECT_MEMBER;
+    }
+
+    /**
+     * Autocomplete source for the members field in the project scope: matches persons by username or
+     * e-mail, then drops those already members of the project or already staged in the current batch.
+     * As a side effect, remembers the typed query so {@link #goToInvite()} can prefill the invite form.
+     *
+     * @param query the text currently typed in the members field
+     * @return the matching persons, excluding already-member and already-selected ones
+     */
     @Override
     public List<PersonDTO> completeMember(String query) {
         searchQuery = query;
