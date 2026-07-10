@@ -8,6 +8,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.mapper.PersonMapper;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,8 @@ public class RegisterBean {
     private final LangBean langBean;
     private final RedirectBean redirectBean;
     private final PendingPersonService pendingPersonService;
+    private final PersonMapper personMapper;
+    private PersonDTO person;
     private String email;
     private String password;
     private String confirmPassword;
@@ -38,12 +41,13 @@ public class RegisterBean {
     public RegisterBean(PersonService personService,
                         InstitutionService institutionService,
                         LangBean langBean,
-                        RedirectBean redirectBean, PendingPersonService pendingPersonService) {
+                        RedirectBean redirectBean, PendingPersonService pendingPersonService, PersonMapper personMapper) {
         this.personService = personService;
         this.institutionService = institutionService;
         this.langBean = langBean;
         this.redirectBean = redirectBean;
         this.pendingPersonService = pendingPersonService;
+        this.personMapper = personMapper;
     }
 
     public void reset() {
@@ -58,7 +62,12 @@ public class RegisterBean {
 
     public void init(PendingPerson pendingPerson) {
         reset();
-        this.email = pendingPerson.getEmail();
+        this.person = personMapper.convert(pendingPerson.getDisabledPerson());
+        assert person != null;
+        this.email = person.getEmail();
+        this.firstName = person.getName();
+        this.lastName = person.getName();
+        this.username = person.getUsername();
     }
 
     public void register() {
@@ -73,15 +82,14 @@ public class RegisterBean {
             return;
         }
 
-        PersonDTO person = new PersonDTO();
         person.setEmail(email);
         person.setName(firstName);
         person.setLastname(lastName);
         person.setUsername(username);
 
         try {
-            personService.createPerson(person, password);
-            log.trace("Person created");
+            personService.enableAndUpdatePerson(person, password);
+            pendingPersonService.deleteByPerson(person);
 
             reset();
             redirectBean.redirectTo("/login");

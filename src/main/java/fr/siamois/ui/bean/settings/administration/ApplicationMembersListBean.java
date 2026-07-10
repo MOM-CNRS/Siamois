@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.settings.administration;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.ApplicationMembersServiceInterface;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.ProfileDTO;
@@ -9,9 +10,8 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.administration.NewApplicationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
-import fr.siamois.ui.bean.settings.SettingsDatatableBean;
+import fr.siamois.ui.bean.settings.AbstractMembersListBean;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
@@ -31,8 +31,7 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Scope(value = "session")
 @Getter
 @Setter
-@RequiredArgsConstructor
-public class ApplicationMembersListBean implements SettingsDatatableBean {
+public class ApplicationMembersListBean extends AbstractMembersListBean {
 
     private final transient ApplicationMembersServiceInterface applicationMembersService;
     private final NewApplicationMemberDialogBean newApplicationMemberDialogBean;
@@ -45,12 +44,26 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
     private transient List<ProfileDTO> availableProfiles;
     private String searchInput;
 
+    public ApplicationMembersListBean(ApplicationMembersServiceInterface applicationMembersService,
+                                      NewApplicationMemberDialogBean newApplicationMemberDialogBean,
+                                      LangBean langBean,
+                                      SessionSettingsBean sessionSettingsBean,
+                                      PersonProfileAssignmentService personProfileAssignmentService,
+                                      PendingPersonService pendingPersonService) {
+        super(pendingPersonService);
+        this.applicationMembersService = applicationMembersService;
+        this.newApplicationMemberDialogBean = newApplicationMemberDialogBean;
+        this.langBean = langBean;
+        this.sessionSettingsBean = sessionSettingsBean;
+        this.personProfileAssignmentService = personProfileAssignmentService;
+    }
 
     /** Loads the application's user accounts and resets the search filter. */
     public void init() {
         refMembers = new ArrayList<>(applicationMembersService.findMembers());
         members = new ArrayList<>(refMembers);
         availableProfiles = applicationMembersService.findAvailableProfiles();
+        loadPendingInvitations(refMembers.stream().map(m -> m.getPerson().getId()).toList());
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -111,6 +124,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
             ApplicationMemberDTO member = applicationMembersService.addMember(
                     saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);
+            trackPendingInvitation(saved.person());
             filter();
             return true;
         } catch (Exception err) {
@@ -125,6 +139,7 @@ public class ApplicationMembersListBean implements SettingsDatatableBean {
         members = null;
         refMembers = null;
         availableProfiles = null;
+        resetPendingInvitations();
         searchInput = null;
     }
 

@@ -15,9 +15,8 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.NewOrganizationMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.PersonRole;
-import fr.siamois.ui.bean.settings.SettingsDatatableBean;
+import fr.siamois.ui.bean.settings.AbstractMembersListBean;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
@@ -39,8 +38,7 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Scope(value = "session")
 @Getter
 @Setter
-@RequiredArgsConstructor
-public class InstitutionMembersListBean implements SettingsDatatableBean {
+public class InstitutionMembersListBean extends AbstractMembersListBean {
 
     public static final String SETTINGS_ERROR_NOT_MANAGER = "organisationSettings.error.notManager";
     private final transient InstitutionService institutionService;
@@ -48,7 +46,6 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     private final transient OrganizationMembersServiceInterface organizationMembersService;
     private final NewOrganizationMemberDialogBean newOrganizationMemberDialogBean;
     private final LangBean langBean;
-    private final transient PendingPersonService pendingPersonService;
     private final SessionSettingsBean sessionSettingsBean;
     private final transient PersonProfileAssignmentService personProfileAssignmentService;
     private InstitutionDTO institution;
@@ -58,6 +55,24 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
     private transient List<InstitutionMemberDTO> refMembers;
     private transient List<ProfileDTO> availableProfiles;
     private String searchInput;
+
+    public InstitutionMembersListBean(InstitutionService institutionService,
+                                      PersonService personService,
+                                      OrganizationMembersServiceInterface organizationMembersService,
+                                      NewOrganizationMemberDialogBean newOrganizationMemberDialogBean,
+                                      LangBean langBean,
+                                      PendingPersonService pendingPersonService,
+                                      SessionSettingsBean sessionSettingsBean,
+                                      PersonProfileAssignmentService personProfileAssignmentService) {
+        super(pendingPersonService);
+        this.institutionService = institutionService;
+        this.personService = personService;
+        this.organizationMembersService = organizationMembersService;
+        this.newOrganizationMemberDialogBean = newOrganizationMemberDialogBean;
+        this.langBean = langBean;
+        this.sessionSettingsBean = sessionSettingsBean;
+        this.personProfileAssignmentService = personProfileAssignmentService;
+    }
 
     /**
      * Loads the members of the given institution and resets the search filter.
@@ -70,6 +85,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         roles = new HashMap<>();
         members = new ArrayList<>(refMembers);
         availableProfiles = organizationMembersService.findAvailableProfiles(institution);
+        loadPendingInvitations(refMembers.stream().map(m -> m.getPerson().getId()).toList());
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -153,6 +169,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
             InstitutionMemberDTO member = organizationMembersService.addMemberToInstitution(
                     institution, saved.person(), new ArrayList<>(saved.profiles()));
             refMembers.add(member);
+            trackPendingInvitation(saved.person());
             filter();
             return true;
         } catch (Exception err) {
@@ -169,6 +186,7 @@ public class InstitutionMembersListBean implements SettingsDatatableBean {
         refMembers = null;
         roles = null;
         availableProfiles = null;
+        resetPendingInvitations();
         searchInput = null;
     }
 

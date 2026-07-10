@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.dialog.administration;
 
 import fr.siamois.domain.services.ApplicationMembersServiceInterface;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -8,6 +9,7 @@ import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
 import fr.siamois.ui.bean.dialog.institution.ProcessPerson;
+import fr.siamois.ui.email.EmailManager;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Scope;
@@ -31,9 +33,11 @@ public class NewApplicationMemberDialogBean extends AbstractNewMemberDialogBean 
     private final transient ApplicationMembersServiceInterface applicationMembersService;
 
     public NewApplicationMemberDialogBean(PersonService personService,
+                                           PendingPersonService pendingPersonService,
+                                           EmailManager emailManager,
                                            ApplicationMembersServiceInterface applicationMembersService,
                                            LangBean langBean) {
-        super(personService, langBean);
+        super(personService, pendingPersonService, emailManager, langBean);
         this.applicationMembersService = applicationMembersService;
     }
 
@@ -57,6 +61,16 @@ public class NewApplicationMemberDialogBean extends AbstractNewMemberDialogBean 
     @Override
     protected List<ProfileDTO> loadAvailableProfiles() {
         return applicationMembersService.findAvailableProfiles();
+    }
+
+    @Override
+    protected String invitationMailSubject() {
+        return langBean.msg("mail.invitation.application.subject");
+    }
+
+    @Override
+    protected String invitationMailBody(String invitationLink, String expirationDate) {
+        return langBean.msg("mail.invitation.application.body", invitationLink, expirationDate);
     }
 
     @Override

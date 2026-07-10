@@ -2,12 +2,14 @@ package fr.siamois.ui.bean.dialog.institution;
 
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.OrganizationMembersServiceInterface;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.dialog.AbstractNewMemberDialogBean;
+import fr.siamois.ui.email.EmailManager;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Scope;
@@ -32,10 +34,12 @@ public class NewOrganizationMemberDialogBean extends AbstractNewMemberDialogBean
     private InstitutionDTO institution;
 
     public NewOrganizationMemberDialogBean(PersonService personService,
+                                            PendingPersonService pendingPersonService,
+                                            EmailManager emailManager,
                                             InstitutionService institutionService,
                                             OrganizationMembersServiceInterface organizationMembersService,
                                             LangBean langBean) {
-        super(personService, langBean);
+        super(personService, pendingPersonService, emailManager, langBean);
         this.institutionService = institutionService;
         this.organizationMembersService = organizationMembersService;
     }
@@ -67,6 +71,16 @@ public class NewOrganizationMemberDialogBean extends AbstractNewMemberDialogBean
     @Override
     protected List<ProfileDTO> loadAvailableProfiles() {
         return organizationMembersService.findAvailableProfiles(institution);
+    }
+
+    @Override
+    protected String invitationMailSubject() {
+        return langBean.msg("mail.invitation.subject", institution.getName());
+    }
+
+    @Override
+    protected String invitationMailBody(String invitationLink, String expirationDate) {
+        return langBean.msg("mail.invitation.body", institution.getName(), invitationLink, expirationDate);
     }
 
     @Override

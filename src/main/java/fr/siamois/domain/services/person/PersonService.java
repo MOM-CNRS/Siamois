@@ -1,25 +1,18 @@
 package fr.siamois.domain.services.person;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.auth.pending.PendingActionUnitAttribution;
-import fr.siamois.domain.models.auth.pending.PendingInstitutionInvite;
-import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
-import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.person.PendingPersonRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.settings.PersonSettingsRepository;
-import fr.siamois.mapper.ActionUnitMapper;
-import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
@@ -31,6 +24,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.*;
 
 /**
@@ -41,6 +35,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PersonService {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private final PersonRepository personRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final List<PersonDataVerifier> verifiers;
@@ -48,42 +43,16 @@ public class PersonService {
     private final PersonSettingsRepository personSettingsRepository;
     private final InstitutionService institutionService;
     private final LangService langService;
-    private final PendingPersonRepository pendingPersonRepository;
-    private final PendingPersonService pendingPersonService;
     private final ConversionService conversionService;
-    private final fr.siamois.infrastructure.database.repositories.person.PendingInstitutionInviteRepository pendingInstitutionInviteRepository;
-    private final InstitutionMapper institutionMapper;
-    private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
+    private final PendingPersonRepository pendingPersonRepository;
 
-    private void createAndDeletePendingRelations(PendingPerson pendingPerson, Person person) {
-        Set<PendingInstitutionInvite> institutionInvites = pendingInstitutionInviteRepository.findAllByPendingPerson(pendingPerson);
-        PersonDTO personDTO = personMapper.convert(person);
-        for (PendingInstitutionInvite invite : institutionInvites) {
-            InstitutionDTO institution = institutionMapper.convert(invite.getInstitution());
-
-            if (invite.isManager()) {
-                institutionService.addToManagers(institution, personDTO);
-            }
-            if (invite.isActionManager()) {
-                institutionService.addPersonToActionManager(institution, personDTO);
-            }
-
-            Set<PendingActionUnitAttribution> attributions = pendingPersonService.findActionAttributionsByPendingInvite(invite);
-            for (PendingActionUnitAttribution attribution : attributions) {
-                ActionUnitDTO actionUnitDTO = actionUnitMapper.convert(attribution.getActionUnit());
-                institutionService.addPersonAsMemberOfActionUnit(actionUnitDTO, personDTO);
-                pendingPersonService.delete(attribution);
-            }
-
-            pendingPersonService.delete(invite);
-        }
-    }
-
-    private void managePendingInvites(Person savedPerson) {
-        PendingPerson p = pendingPersonService.createOrGetPendingPerson(savedPerson.getEmail());
-        createAndDeletePendingRelations(p, savedPerson);
-        pendingPersonRepository.delete(p);
+    /**
+     * Creates real relations and delete pending relations. Then delete the pending person
+     * @param savedPerson The person but saved
+     */
+    private void deletePendingInvitation(Person savedPerson) {
+        pendingPersonRepository.deleteById(savedPerson.getId());
     }
 
     /**
@@ -114,9 +83,47 @@ public class PersonService {
 
         person = personRepository.save(person);
 
-        managePendingInvites(person);
+        deletePendingInvitation(person);
 
         return conversionService.convert(person, PersonDTO.class);
+    }
+
+    /**
+     * Create a new disabled Person in the database with a random password. Used when inviting someone
+     * without setting a password: the person cannot log in until they complete the registration through
+     * their invitation link, which replaces the random password.
+     *
+     * @param personDTO The Person to create.
+     * @return The created Person with its ID set.
+     * @throws InvalidUsernameException  if the username is invalid or already exists.
+     * @throws InvalidEmailException     if the email is invalid or already exists.
+     * @throws UserAlreadyExistException if a user with the same username or email already exists.
+     * @throws InvalidPasswordException  never thrown, declared by the shared data verifiers.
+     * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
+     */
+    public PersonDTO createDisabledPersonWithRandomPassword(PersonDTO personDTO) throws InvalidUsernameException,
+            InvalidEmailException,
+            UserAlreadyExistException,
+            InvalidPasswordException,
+            InvalidNameException {
+        personDTO.setId(-1L);
+
+        checkPersonData(personDTO, true);
+
+        Person person = conversionService.convert(personDTO, Person.class);
+        assert person != null;
+        person.setPassword(passwordEncoder.encode(generateRandomPassword()));
+        person.setEnabled(false);
+
+        person = personRepository.save(person);
+
+        return conversionService.convert(person, PersonDTO.class);
+    }
+
+    private static String generateRandomPassword() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private void checkPersonData(PersonDTO person, boolean isForCreation)
@@ -347,5 +354,19 @@ public class PersonService {
         return result.stream()
                 .map(personMapper::convert)
                 .toList();
+    }
+
+    public void enableAndUpdatePerson(PersonDTO person, String password) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
+        Person savedPerson = personRepository.findById(person.getId()).orElseThrow(() -> new EntityNotFoundException("Person not found"));
+
+        checkPersonData(person, true);
+        checkPassword(password);
+
+        savedPerson.setUsername(person.getUsername());
+        savedPerson.setName(person.getName());
+        savedPerson.setLastname(person.getLastname());
+        savedPerson.setPassword(passwordEncoder.encode(password));
+        savedPerson.setEnabled(true);
+        personRepository.save(savedPerson);
     }
 }
