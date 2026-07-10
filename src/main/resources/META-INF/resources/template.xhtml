@@ -230,9 +230,11 @@
                         </li>
                     </ul>
                     <div class="sidebar-footer-bottom-section">
-                        <p:outputPanel class="version-number">
+                        <h:outputLink value="https://github.com/MOM-CNRS/Siamois/releases" styleClass="version-number"
+                                      target="_blank" id="versionLink">
                             #{appVersionBean.getVersion()}
-                        </p:outputPanel>
+                        </h:outputLink>
+                        <p:tooltip for="versionLink" value="#{appVersionBean.getVersion()}"/>
                         <hr class="sidebar-divider"/>
                         <form:csrfform formId="logoutForm">
                             <div style="
