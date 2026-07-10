@@ -43,6 +43,16 @@
                         rowKey="#{member.id}"
                 >
                     <p:autoUpdate/>
+                    <f:facet name="emptyMessage">
+                        <p class="members-empty-state">
+                            #{langBean.msg('administrationSettings.userManagement.empty.description')}
+                            <p:commandLink value="#{langBean.msg('administrationSettings.userManagement.empty.organizationsLink')}"
+                                           action="#{navBean.goToOrganisationSettings()}"/>
+                            #{langBean.msg('administrationSettings.userManagement.empty.or')}
+                            <p:commandLink value="#{langBean.msg('administrationSettings.userManagement.empty.projectsLink')}"
+                                           action="#{navBean.goToProjectsSettings()}"/>
+                        </p>
+                    </f:facet>
                     <p:column headerText="#{langBean.msg('common.label.user')}">
                         <div style="display: flex; align-items: center; gap: 11px">
                             <span class="member-avatar">#{member.person.initials()}</span>
