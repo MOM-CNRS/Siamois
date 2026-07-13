@@ -26,6 +26,7 @@ public final class ImportSchema {
     public static final String PHASE = "phase";
     public static final String RECORDING_REL = "recordingRel";
     public static final String STRATI_REL = "stratiRel";
+    public static final String SPATIAL_UNIT_REL = "spatialUnitRel";
     /**
      * Maps technical table ID → default French sheet name for workbooks without a _meta sheet
      * (or for tables not covered by an explicit _meta sheet entry).
@@ -43,7 +44,8 @@ public final class ImportSchema {
             Map.entry(SPECIMEN,       "Prelev"),
             Map.entry(PHASE,          "Phase"),
             Map.entry(RECORDING_REL,   "UE_rel"),
-            Map.entry(STRATI_REL,      "Strati_Rel")
+            Map.entry(STRATI_REL,      "Strati_Rel"),
+            Map.entry(SPATIAL_UNIT_REL, "Lieu_rel")
     );
 
     /**
@@ -60,7 +62,8 @@ public final class ImportSchema {
             Map.entry(SPECIMEN,       "Mobilier"),
             Map.entry(PHASE,          "Phase"),
             Map.entry(RECORDING_REL,   "Relations UE"),
-            Map.entry(STRATI_REL,      "Stratigraphie")
+            Map.entry(STRATI_REL,      "Stratigraphie"),
+            Map.entry(SPATIAL_UNIT_REL, "Relations Lieu")
     );
 
     /** Maps technical table ID → canonical column names expected for that entity. */
@@ -85,6 +88,7 @@ public final class ImportSchema {
                                                 "ordre", "borne inferieure", "borne superieure",
                                                 "auteur", "projet", INSTITUTION)),
             Map.entry(RECORDING_REL,   List.of("parent", "enfant")),
-            Map.entry(STRATI_REL,      List.of("us1", "us2", "relation", "relation label", "direction vocabulaire", "asynchrone", "incertain"))
+            Map.entry(STRATI_REL,      List.of("us1", "us2", "relation", "relation label", "direction vocabulaire", "asynchrone", "incertain")),
+            Map.entry(SPATIAL_UNIT_REL, List.of("parent", "enfant"))
     );
 }

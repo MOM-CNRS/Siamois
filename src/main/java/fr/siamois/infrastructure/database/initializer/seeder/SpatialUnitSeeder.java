@@ -26,9 +26,7 @@ public class SpatialUnitSeeder {
 
 
     public record SpatialUnitSpecs(String name, String typeVocabularyExtId, String typeConceptExtId, String authorEmail,
-                                   String institutionIdentifier, Set<SpatialUnitKey> childrenKey) {
-
-
+                                   String institutionIdentifier) {
 
     }
 
@@ -115,8 +113,6 @@ public class SpatialUnitSeeder {
                                      Set<String> queuedNames, List<SpatialUnit> toInsert, Map<String, SpatialUnit> result) {
         try {
             SpatialUnit built = builtByName.get(s.name());
-            Set<SpatialUnit> children = SeederUtils.field("childrenKey", () -> resolveChildren(builtByName, s.childrenKey()));
-            built.setChildren(children);
 
             SpatialUnit existing = findExistingSpatialUnit(s, institutionsByIdentifier, existingByKey);
             if (existing != null) {
@@ -139,18 +135,6 @@ public class SpatialUnitSeeder {
                                                  Map<String, SpatialUnit> existingByKey) {
         Institution institution = institutionsByIdentifier.get(s.institutionIdentifier());
         return institution != null ? existingByKey.get(existingDedupKey(institution.getId(), s.name())) : null;
-    }
-
-    private Set<SpatialUnit> resolveChildren(Map<String, SpatialUnit> builtByName, Set<SpatialUnitKey> childrenKeys) {
-        Set<SpatialUnit> children = new HashSet<>();
-        if (childrenKeys != null) {
-            for (var childKey : childrenKeys) {
-                SpatialUnit child = builtByName.get(childKey.unitName());
-                if (child == null) throw new IllegalStateException("Enfant introuvable");
-                children.add(child);
-            }
-        }
-        return children;
     }
 
     private Map<String, Institution> fetchInstitutions(List<SpatialUnitSpecs> specs) {

@@ -433,6 +433,41 @@
                                             </h:panelGroup>
                                         </p:tab>
 
+                                        <!-- ── Relations Lieu ── -->
+                                        <p:tab>
+                                            <f:facet name="title">
+                                                <span style="display:flex;align-items:center;gap:7px;padding:2px 0;">
+                                                    <span>Relations Lieu</span>
+                                                    <span style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">#{projectUploadSettingsBean.lieuRelTab.totalCount}</span>
+                                                    <h:panelGroup
+                                                            rendered="#{projectUploadSettingsBean.lieuRelTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 8px;font-weight:700;color:#fff;background:#c2554c;">#{projectUploadSettingsBean.lieuRelTab.errorCount}</span></h:panelGroup>
+                                                    <h:panelGroup
+                                                            rendered="#{!projectUploadSettingsBean.lieuRelTab.hasErrors()}"><span
+                                                            style="font-size:11px;border-radius:20px;padding:1px 7px;font-weight:600;color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">✓</span></h:panelGroup>
+                                                </span>
+                                            </f:facet>
+                                            <h:panelGroup rendered="#{projectUploadSettingsBean.lieuRelTab.hasErrors()}">
+                                                <div class="err-table-head">
+                                                    <span>Feuille</span><span>Ligne</span><span>Colonne</span><span>Description</span>
+                                                </div>
+                                                <ui:repeat value="#{projectUploadSettingsBean.lieuRelTab.errors}" var="e">
+                                                    <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
+                                                            style="color:#666;">#{e.row()}</span><span
+                                                            style="color:#666;">#{e.column()}</span><span
+                                                            style="color:#555;">#{e.message()}</span></div>
+                                                </ui:repeat>
+                                                <h:panelGroup rendered="#{projectUploadSettingsBean.lieuRelTab.errorsCapped}">
+                                                    <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
+                                                </h:panelGroup>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{!projectUploadSettingsBean.lieuRelTab.hasErrors()}">
+                                                <div class="success-row"><span
+                                                        style="font-size:18px;">✓</span> Aucune erreur sur cette feuille.
+                                                </div>
+                                            </h:panelGroup>
+                                        </p:tab>
+
                                         <!-- ── UE ── -->
                                         <p:tab>
                                             <f:facet name="title">

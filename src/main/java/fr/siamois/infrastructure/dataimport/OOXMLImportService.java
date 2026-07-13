@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static fr.siamois.infrastructure.dataimport.ExcelCellHelper.*;
 import static fr.siamois.infrastructure.dataimport.ImportSchema.*;
@@ -178,6 +177,7 @@ public class OOXMLImportService {
             List<Sheet> phaseSheets        = getSheetsForTable(workbook, meta, "phase");
             List<Sheet> recordingRelSheets = getSheetsForTable(workbook, meta, "recordingRel");
             List<Sheet> stratiRelSheets    = getSheetsForTable(workbook, meta, "stratiRel");
+            List<Sheet> spatialUnitRelSheets = getSheetsForTable(workbook, meta, SPATIAL_UNIT_REL);
 
             int institutionRows = sumDataRows(institutionSheets);
             int personRows = sumDataRows(personSheets);
@@ -189,8 +189,10 @@ public class OOXMLImportService {
             int phaseRows = sumDataRows(phaseSheets);
             int recordingRelRows = sumDataRows(recordingRelSheets);
             int stratiRelRows = sumDataRows(stratiRelSheets);
+            int spatialUnitRelRows = sumDataRows(spatialUnitRelSheets);
             progress.start(ImportProgress.Phase.PARSING, institutionRows + personRows + actionCodeRows + actionUnitRows
-                    + spatialUnitRows + recordingUnitRows + specimenRows + phaseRows + recordingRelRows + stratiRelRows);
+                    + spatialUnitRows + recordingUnitRows + specimenRows + phaseRows + recordingRelRows + stratiRelRows
+                    + spatialUnitRelRows);
 
             List<InstitutionSeeder.InstitutionSpec>             institutions  = new ArrayList<>();
             List<PersonSeeder.PersonSpec>                       persons       = new ArrayList<>();
@@ -204,15 +206,18 @@ public class OOXMLImportService {
                 actionUnits  = parseActionUnits(actionUnitSheets, meta, errors, progress);
             }
 
-            List<SpatialUnitSeeder.SpatialUnitSpecs>                          spatialUnits   = parseSpatialUnits(spatialUnitSheets, actionUnitDTO, meta, errors, progress);
+            List<SpatialUnitRelSeeder.SpatialUnitRelDTO>                      spatialUnitChildRels = new ArrayList<>();
+            List<SpatialUnitSeeder.SpatialUnitSpecs>                          spatialUnits   = parseSpatialUnits(spatialUnitSheets, actionUnitDTO, meta, errors, progress, spatialUnitChildRels);
             List<RecordingUnitSeeder.RecordingUnitSpecs>                      recordingUnits = parseRecordingUnits(recordingUnitSheets, scope, actionUnitDTO, meta, errors, progress);
             List<SpecimenSeeder.SpecimenSpecs>                                specimenSpecs  = parseSpecimens(specimenSheets, actionUnitDTO, meta, errors, progress);
             List<PhaseSeeder.PhaseSpecs>                                      phaseSpecs     = parsePhases(phaseSheets, actionUnitDTO, meta, errors, progress);
             List<RecordingUnitRelSeeder.RecordingUnitRelDTO>                  recordingRels  = parseRecordingRels(recordingRelSheets, meta, errors, progress);
             List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO>      stratiRels     = parseStratiRels(stratiRelSheets, actionUnitDTO, meta, errors, progress);
+            List<SpatialUnitRelSeeder.SpatialUnitRelDTO>                      spatialUnitRels = parseSpatialUnitRels(spatialUnitRelSheets, meta, errors, progress);
+            spatialUnitRels.addAll(0, spatialUnitChildRels);
 
             ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
-                    recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels);
+                    recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels, spatialUnitRels);
 
             Map<String, List<String>> allSheetColumns = collectAllSheetColumns(workbook);
 
@@ -335,28 +340,28 @@ public class OOXMLImportService {
 
     public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(Sheet sheet, ActionUnitDTO actionUnit) {
         List<ImportError> errors = new ArrayList<>();
-        return parseSpatialUnits(List.of(sheet), actionUnit, SheetMetadata.empty(), errors, new ImportProgress());
+        return parseSpatialUnits(List.of(sheet), actionUnit, SheetMetadata.empty(), errors, new ImportProgress(), new ArrayList<>());
     }
 
-    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
+    public List<SpatialUnitSeeder.SpatialUnitSpecs> parseSpatialUnits(List<Sheet> sheets, ActionUnitDTO actionUnit, SheetMetadata meta,
+                                                                       List<ImportError> errors, ImportProgress progress,
+                                                                       List<SpatialUnitRelSeeder.SpatialUnitRelDTO> childRelsOut) {
         Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName = new LinkedHashMap<>();
-        Map<String, String> childrenStringByName = new HashMap<>();
 
         for (Sheet sheet : sheets) {
             try {
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, progress, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childrenStringByName));
+                forEachDataRow(sheet, errors, progress, row -> parseSpatialRow(row, cols, actionUnit, specsByName, childRelsOut));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
-        resolveChildrenKeys(specsByName, childrenStringByName);
         return new ArrayList<>(specsByName.values());
     }
 
     private void parseSpatialRow(Row row, Map<String, Integer> cols, ActionUnitDTO actionUnit,
                                   Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName,
-                                  Map<String, String> childrenStringByName) {
+                                  List<SpatialUnitRelSeeder.SpatialUnitRelDTO> childRelsOut) {
         String name = getStringCellOrNull(row, cols, "nom");
         if (name == null || name.isBlank()) return;
 
@@ -372,32 +377,38 @@ public class OOXMLImportService {
                 typeKey != null ? typeKey.vocabularyExtId() : null,
                 typeKey != null ? typeKey.conceptExtId() : null,
                 SIAMOIS_SYSTEM,
-                institution,
-                new HashSet<>()
+                institution
         );
         specsByName.put(name, spec);
 
         if (enfantsRaw != null && !enfantsRaw.isBlank()) {
-            childrenStringByName.put(name, enfantsRaw);
+            Arrays.stream(enfantsRaw.split("&&"))
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .forEach(child -> childRelsOut.add(new SpatialUnitRelSeeder.SpatialUnitRelDTO(name, child)));
         }
     }
 
-    private void resolveChildrenKeys(Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName,
-                                      Map<String, String> childrenStringByName) {
-        for (Map.Entry<String, String> entry : childrenStringByName.entrySet()) {
-            Set<SpatialUnitSeeder.SpatialUnitKey> childrenKeys = Arrays.stream(entry.getValue().split("&&"))
-                    .map(String::trim)
-                    .filter(s -> !s.isBlank())
-                    .map(specsByName::get)
-                    .filter(Objects::nonNull)
-                    .map(child -> new SpatialUnitSeeder.SpatialUnitKey(child.name()))
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-
-            SpatialUnitSeeder.SpatialUnitSpecs parentSpec = specsByName.get(entry.getKey());
-            if (parentSpec != null && !childrenKeys.isEmpty()) {
-                parentSpec.childrenKey().addAll(childrenKeys);
+    public List<SpatialUnitRelSeeder.SpatialUnitRelDTO> parseSpatialUnitRels(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
+        List<SpatialUnitRelSeeder.SpatialUnitRelDTO> specs = new ArrayList<>();
+        for (Sheet sheet : sheets) {
+            try {
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "parent", "enfant");
+                if (cols == null) continue;
+                forEachDataRow(sheet, errors, progress, row -> parseRowToSpatialUnitRel(row, cols).ifPresent(specs::add));
+            } catch (Exception e) {
+                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
         }
+        return specs;
+    }
+
+    private Optional<SpatialUnitRelSeeder.SpatialUnitRelDTO> parseRowToSpatialUnitRel(Row row, Map<String, Integer> cols) {
+        String parent = getStringCellOrNull(row, cols, "parent");
+        String child  = getStringCellOrNull(row, cols, "enfant");
+        if (parent == null || parent.isBlank()) return Optional.empty();
+        if (child  == null || child.isBlank())  return Optional.empty();
+        return Optional.of(new SpatialUnitRelSeeder.SpatialUnitRelDTO(parent, child));
     }
 
     public List<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRecordingRels(Sheet sheet) {

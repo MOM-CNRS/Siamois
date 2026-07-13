@@ -16,22 +16,27 @@ public class ProjectDataSeeder {
     private final RecordingUnitRelSeeder recordingUnitRelSeeder;
     private final RecordingUnitStratiRelSeeder recordingUnitStratiRelSeeder;
     private final SpatialUnitSeeder spatialUnitSeeder;
+    private final SpatialUnitRelSeeder spatialUnitRelSeeder;
     private final PhaseSeeder phaseSeeder;
 
 
     @Transactional
     public void seedAll(ImportSpecs spec, ActionUnitDTO project, ImportProgress progress) {
         int total = spec.spatialUnits().size() + spec.phaseSpecs().size() + spec.recordingUnits().size()
-                + spec.specimenSpecs().size() + spec.recordingUnitStratiRelSpecs().size() + spec.recordingUnitRelSpecs().size();
+                + spec.specimenSpecs().size() + spec.recordingUnitStratiRelSpecs().size() + spec.recordingUnitRelSpecs().size()
+                + spec.spatialUnitRelSpecs().size();
         progress.start(ImportProgress.Phase.PERSISTING, total);
 
         // RecordingUnitSeeder, SpecimenSeeder, PhaseSeeder, and RecordingUnitStratiRelSeeder all
         // self-report progress per 100-row flush/clear chunk internally — don't also advance after
-        // those steps, that would double-count. SpatialUnitSeeder and RecordingUnitRelSeeder use a
-        // single non-chunked saveAll (self-referencing children/hierarchy), so there's no finer
-        // signal to report for those two and they still advance in one lump after the step.
+        // those steps, that would double-count. SpatialUnitSeeder, RecordingUnitRelSeeder and
+        // SpatialUnitRelSeeder use a single non-chunked saveAll (self-referencing children/hierarchy),
+        // so there's no finer signal to report for those and they still advance in one lump after the step.
         seedStep(ImportSchema.SPATIAL_UNIT, () -> spatialUnitSeeder.seed(spec.spatialUnits()));
         progress.advance(spec.spatialUnits().size());
+        seedStep(ImportSchema.SPATIAL_UNIT_REL, () -> spatialUnitRelSeeder.seed(spec.spatialUnitRelSpecs(),
+                project.getCreatedByInstitution().getId()));
+        progress.advance(spec.spatialUnitRelSpecs().size());
         seedStep(ImportSchema.PHASE, () -> phaseSeeder.seed(spec.phaseSpecs(), progress));
         seedStep(ImportSchema.RECORDING_UNIT, () -> recordingUnitSeeder.seed(spec.recordingUnits(), progress));
         seedStep(ImportSchema.SPECIMEN, () -> specimenSeeder.seed(spec.specimenSpecs(), project.getCreatedByInstitution().getId(), progress));

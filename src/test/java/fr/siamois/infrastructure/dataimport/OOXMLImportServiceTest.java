@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -129,18 +130,19 @@ class OOXMLImportServiceTest {
         row(s, 3, "US 2", "uri?idt=th1&idc=3", "a@b.fr", "INST", null);
 
         List<ImportError> errs = errors();
-        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress());
+        List<SpatialUnitRelSeeder.SpatialUnitRelDTO> childRels = new ArrayList<>();
+        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = service.parseSpatialUnits(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress(), childRels);
 
         assertThat(errs).isEmpty();
-        SpatialUnitSeeder.SpatialUnitSpecs parent =
-                specs.stream()
-                        .filter(sp -> sp.name().equals("Parcelle A"))
-                        .findFirst()
-                        .orElseThrow();
+        assertThat(specs).extracting(SpatialUnitSeeder.SpatialUnitSpecs::name)
+                .contains("Parcelle A", "US 1", "US 2");
 
-        assertThat(parent.childrenKey())
-                .extracting(SpatialUnitSeeder.SpatialUnitKey::unitName)
-                .containsExactlyInAnyOrder("US 1", "US 2");
+        assertThat(childRels)
+                .extracting(SpatialUnitRelSeeder.SpatialUnitRelDTO::parent, SpatialUnitRelSeeder.SpatialUnitRelDTO::child)
+                .containsExactlyInAnyOrder(
+                        tuple("Parcelle A", "US 1"),
+                        tuple("Parcelle A", "US 2")
+                );
     }
 
     // -------------------------------------------------------------------------
@@ -188,6 +190,29 @@ class OOXMLImportServiceTest {
         assertThat(errs).isEmpty();
         assertThat(rels.get(0).parent()).isEqualTo("100");
         assertThat(rels.get(0).child()).isEqualTo("101");
+    }
+
+    // -------------------------------------------------------------------------
+    // Spatial unit relations
+    // -------------------------------------------------------------------------
+
+    @Test
+    void parseSpatialUnitRels_basic() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Lieu_rel",
+                "Parent",
+                "Enfant"
+        );
+
+        row(s, 1, "Parcelle A", "US 1");
+
+        List<ImportError> errs = errors();
+        List<SpatialUnitRelSeeder.SpatialUnitRelDTO> rels = service.parseSpatialUnitRels(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
+
+        assertThat(rels).hasSize(1);
+        assertThat(errs).isEmpty();
+        assertThat(rels.get(0).parent()).isEqualTo("Parcelle A");
+        assertThat(rels.get(0).child()).isEqualTo("US 1");
     }
 
     // -------------------------------------------------------------------------
@@ -256,6 +281,10 @@ class OOXMLImportServiceTest {
         sheet(wb, "UE_rel", "Parent", "Enfant");
         row(wb.getSheet("UE_rel"), 1, "100", "101");
 
+        row(spatial, 2, "US 1");
+        sheet(wb, "Lieu_rel", "Parent", "Enfant");
+        row(wb.getSheet("Lieu_rel"), 1, "Parcelle A", "US 1");
+
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         wb.write(out);
 
@@ -266,11 +295,14 @@ class OOXMLImportServiceTest {
         assertThat(result.errors()).isEmpty();
         assertThat(result.specs().institutions()).hasSize(1);
         assertThat(result.specs().persons()).hasSize(1);
-        assertThat(result.specs().spatialUnits()).hasSize(1);
+        assertThat(result.specs().spatialUnits()).hasSize(2);
         assertThat(result.specs().actionCodes()).hasSize(1);
         assertThat(result.specs().actionUnits()).hasSize(1);
         assertThat(result.specs().specimenSpecs()).hasSize(1);
         assertThat(result.specs().recordingUnitRelSpecs()).hasSize(1);
+        assertThat(result.specs().spatialUnitRelSpecs()).hasSize(1);
+        assertThat(result.specs().spatialUnitRelSpecs().get(0).parent()).isEqualTo("Parcelle A");
+        assertThat(result.specs().spatialUnitRelSpecs().get(0).child()).isEqualTo("US 1");
     }
 
     @Test
@@ -943,7 +975,7 @@ class OOXMLImportServiceTest {
         row(s, 2, "Site Bad", BAD_URI, "sys", "INST", null);
 
         List<ImportError> errs = errors();
-        List<SpatialUnitSeeder.SpatialUnitSpecs> result = service.parseSpatialUnits(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress());
+        List<SpatialUnitSeeder.SpatialUnitSpecs> result = service.parseSpatialUnits(List.of(s), null, SheetMetadata.empty(), errs, new ImportProgress(), new ArrayList<>());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).isEqualTo("Site OK");
