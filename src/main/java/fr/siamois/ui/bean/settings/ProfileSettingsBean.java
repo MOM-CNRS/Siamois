@@ -5,9 +5,6 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
-import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
-import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.auth.InvalidNameException;
 import fr.siamois.domain.models.exceptions.auth.InvalidUserInformationException;
 import fr.siamois.domain.models.exceptions.auth.UserAlreadyExistException;
@@ -17,7 +14,6 @@ import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.person.PersonService;
@@ -44,8 +40,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-
-import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
 @Slf4j
 @Getter
@@ -158,34 +152,7 @@ public class ProfileSettingsBean implements Serializable {
     }
 
     public void saveThesaurusUserConfig() {
-        if (fThesaurusUrl == null || fThesaurusUrl.isEmpty()) {
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "myProfile.thesaurus.message.missing");
-            return;
-        }
-
-        if (refConfigConcept != null && refConfigConcept.getVocabulary().getUri().equals(fThesaurusUrl)) {
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "myProfile.thesaurus.message.unchanged");
-            return;
-        }
-
-        UserInfo info = sessionSettingsBean.getUserInfo();
-        try {
-            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(fThesaurusUrl);
-            fieldConfigurationService.setupFieldConfigurationForUser(info, vocabulary, progressWrapper);
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.thesaurus.message.success");
-            refConfigConcept = fieldConfigurationService.findParentConceptForFieldcode(info, SpatialUnit.CATEGORY_FIELD_CODE);
-        } catch (InvalidEndpointException e) {
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.uri.invalid");
-        } catch (NotSiamoisThesaurusException e) {
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.siamois.invalid");
-        } catch (ErrorProcessingExpansionException e) {
-            displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
-        } catch (NoConfigForFieldException e) {
-            log.error("Unexpected error after setting up thesaurus for user", e);
-            displayErrorMessage(langBean, "common.error.internal");
-        } finally {
-            progressWrapper.reset();
-        }
+        MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "common.warn.notImplemented");
     }
 
     public List<Locale> getRefLangs() {
