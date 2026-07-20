@@ -68,14 +68,14 @@ public class FieldConfigurationService {
      *
      * @param info       the user information containing institution details
      * @param vocabulary the vocabulary to use for configuration
-     * @return an Optional containing GlobalFieldConfig if the configuration is wrong, otherwise empty
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(UserInfo info,
-                                                                               Vocabulary vocabulary,
-                                                                               ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, progressWrapper);
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
+    public void setupFieldConfigurationForInstitution(UserInfo info,
+                                                      Vocabulary vocabulary,
+                                                      ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, progressWrapper);
     }
 
     /**
@@ -101,6 +101,7 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     @NonNull
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull UserInfo info, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, new ProgressWrapper());
     }
@@ -161,13 +162,11 @@ public class FieldConfigurationService {
      * @param info            the user information containing institution and user details
      * @param vocabulary      the vocabulary to use for configuration
      * @param progressWrapper the progress wrapper to track progress
-     * @return an Optional containing GlobalFieldConfig if the configuration is wrong, otherwise empty
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    @NonNull
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForUser(@NonNull UserInfo info, @NonNull Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, progressWrapper);
+    public void setupFieldConfigurationForUser(@NonNull UserInfo info, @NonNull Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, progressWrapper);
     }
 
 

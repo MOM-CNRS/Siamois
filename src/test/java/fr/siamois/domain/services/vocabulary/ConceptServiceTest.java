@@ -12,7 +12,6 @@ import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatedLinkRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
@@ -47,9 +46,6 @@ class ConceptServiceTest {
 
     @Mock
     private LocalizedConceptDataRepository localizedConceptDataRepository;
-
-    @Mock
-    private ConceptRelatedLinkRepository conceptRelatedLinkRepository;
 
     @Mock
     private ConceptChangeEventPublisher conceptChangeEventPublisher;
@@ -411,7 +407,6 @@ class ConceptServiceTest {
         verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
         verify(conceptRepository, atLeast(2)).save(any(Concept.class));
         verify(localizedConceptDataRepository, atLeast(2)).save(any(LocalizedConceptData.class));
-        verify(conceptRelatedLinkRepository, atLeast(1)).save(any());
     }
 
     @Test
