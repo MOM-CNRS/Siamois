@@ -95,7 +95,8 @@
             **/events/**/*.*,
             **/files/**/*.*,
             **/resources/**/*.*,
-            **/*Spec.*
+            **/*Spec.*,
+            **/initializer/*Seeder.*
         </sonar.coverage.exclusions>
     </properties>
 
