@@ -314,8 +314,8 @@ class FieldConfigurationServiceTest {
     @Test
     void fetchAllConfiguredVocabularies_returnsMapPerFieldCode()  {
         String fieldCode = "TESTFIELD";
-        when(conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
-                userInfo.getInstitution().getId(), userInfo.getUser().getId()))
+        when(conceptFieldConfigRepository.findDistinctFieldCodesForInstitution(
+                userInfo.getInstitution().getId()))
                 .thenReturn(List.of(fieldCode));
 
         ConceptFieldConfig cfc = new ConceptFieldConfig();

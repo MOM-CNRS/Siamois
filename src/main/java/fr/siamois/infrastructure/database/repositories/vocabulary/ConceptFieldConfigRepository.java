@@ -11,21 +11,17 @@ import java.util.Optional;
 @Repository
 public interface ConceptFieldConfigRepository extends CrudRepository<ConceptFieldConfig, Long> {
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT cfc.* FROM concept_field_config cfc " +
-                    "WHERE cfc.fk_institution_id = :institutionId AND cfc.field_code = :fieldCode AND cfc.fk_user_id IS NULL " +
-                    "LIMIT 1"
-    )
+    @Query("SELECT cfc FROM ConceptFieldConfig cfc " +
+            "WHERE cfc.institution.id = :institutionId " +
+            "AND cfc.fieldCode = :fieldCode " +
+            "AND cfc.actionUnit IS NULL")
     Optional<ConceptFieldConfig> findOneByFieldCodeForInstitution(Long institutionId, String fieldCode);
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT cfc.field_code FROM concept_field_config cfc "
-                    + "WHERE cfc.fk_institution_id = :institutionId "
-                    + "AND (cfc.fk_user_id IS NULL OR cfc.fk_user_id = :personId) "
-                    + "ORDER BY cfc.field_code"
-    )
-    List<String> findDistinctFieldCodesForInstitutionAndUser(Long institutionId, Long personId);
+
+    @Query("SELECT DISTINCT cfc " +
+            "FROM ConceptFieldConfig cfc " +
+            "WHERE cfc.institution.id = :institutionId " +
+            "ORDER BY cfc.fieldCode")
+    List<String> findDistinctFieldCodesForInstitution(Long institutionId);
 
 }
