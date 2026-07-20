@@ -339,6 +339,26 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
+    void fetchAutocompleteRelated_shouldReturnRelatedConceptsOfBaseValue() {
+        String query = "test query";
+
+        Concept baseValue = new Concept();
+        baseValue.setVocabulary(vocabulary);
+        baseValue.setExternalId("12");
+
+        List<ConceptAutocompleteDTO> expectedResults = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"),
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 101", "101")
+        );
+        when(autocompleteRepository.findMatchingConceptsFromRelatedFor(baseValue, "fr", query, FieldConfigurationService.LIMIT_RESULTS))
+                .thenReturn(expectedResults);
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocompleteRelated(userInfo, baseValue, query);
+
+        assertThat(results).isEqualTo(expectedResults);
+    }
+
+    @Test
     void resultLimit_shoudReturnCurrentResultLimit() {
         assertThat(service.resultLimit()).isEqualTo(FieldConfigurationService.LIMIT_RESULTS);
     }
