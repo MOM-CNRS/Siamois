@@ -216,22 +216,13 @@ public class ConceptService {
     }
 
     /**
-     * Wrapper method to use {@link #saveAllSubConceptOfIfUpdated(ConceptFieldConfig, ProgressWrapper)} without progress tracking.
-     *
-     * @param config the concept field configuration
-     * @throws ErrorProcessingExpansionException if an error occurs during processing
-     */
-    public void saveAllSubConceptOfIfUpdated(@NonNull ConceptFieldConfig config) throws ErrorProcessingExpansionException {
-        saveAllSubConceptOfIfUpdated(config, new ProgressWrapper());
-    }
-
-    /**
      * Saves all sub-concepts data and relations if there are updates in the down expansion of the concept field config.
      *
      * @param config          the concept field configuration
      * @param progressWrapper the progress wrapper to track progress
      * @throws ErrorProcessingExpansionException if an error occurs during processing
      */
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public void saveAllSubConceptOfIfUpdated(@NonNull ConceptFieldConfig config, @NonNull ProgressWrapper progressWrapper) throws ErrorProcessingExpansionException {
         log.trace("API call to fetch down expansion for concept FieldCode : {}", config.getFieldCode());
         try {
@@ -296,14 +287,10 @@ public class ConceptService {
                 createRelationBetweenConcepts(entry, urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
             }
 
-            createRelatedLinkAndSetRelatedConcepts(vocabulary, urlToSavedConceptMap.get(entry.getKey()), entry.getValue().getUrlOfRelated(), urlToSavedConceptMap);
+            if (Objects.nonNull(entry.getValue().getRelated())) {
+                saveRelatedConcepts(vocabulary, entry.getValue().getRelated(), urlToSavedConceptMap.get(entry.getKey()), urlToSavedConceptMap);
+            }
         }
-    }
-
-    @Deprecated(forRemoval = true)
-    private void createRelatedLinkAndSetRelatedConcepts(Vocabulary vocabulary, Concept concept,
-                                                        List<String> relatedUrl, Map<String, Concept> urlToSavedConceptMap) {
-
     }
 
     private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, Map<String, Concept> concepts, Map<Concept, Concept> childToParentMap, Concept parentSavedConcept) {
@@ -335,17 +322,19 @@ public class ConceptService {
         }
     }
 
-    private void saveRelatedConcepts(ConceptFieldConfig config, Vocabulary vocabulary, Map.Entry<String, FullInfoDTO> entry, Concept savedConcept) {
-        if (entry.getValue().getRelated() != null) {
-            for (PurlInfoDTO related : entry.getValue().getRelated()) {
-                FullInfoDTO relatedInfos = conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
-                Concept savedRelatedConcept = saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, config.getConcept());
-                if (savedRelatedConcept.getRelatedConcepts() == null) {
-                    savedConcept.setRelatedConcepts(new HashSet<>());
-                }
-                savedRelatedConcept.getRelatedConcepts().add(savedRelatedConcept);
-            }
+    protected void saveRelatedConcepts(Vocabulary vocabulary, @NonNull PurlInfoDTO[] relatedConceptsInfos, Concept savedConcept, Map<String, Concept> urlToSavedConceptMap) {
+        Set<Concept> proxySavedConcepts = savedConcept.getRelatedConcepts();
+        Set<Concept> relatedConcepts = new HashSet<>();
+        if (Objects.nonNull(proxySavedConcepts) && relatedConceptsInfos.length > 0) {
+            relatedConcepts.addAll(proxySavedConcepts);
         }
+        for (PurlInfoDTO related : relatedConceptsInfos) {
+            FullInfoDTO relatedInfos = conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
+            Concept savedRelatedConcept = saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
+            relatedConcepts.add(savedRelatedConcept);
+        }
+        savedConcept.setRelatedConcepts(relatedConcepts);
+        urlToSavedConceptMap.put(savedConcept.getExternalId(), conceptRepository.save(savedConcept));
     }
 
     private static FullInfoDTO findAndSetParentConceptDTO(ConceptBranchDTO branchDTO, Concept concept) {
