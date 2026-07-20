@@ -5,6 +5,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -125,6 +126,80 @@ class AutocompleteRepositoryTest {
         ConceptAutocompleteDTO dto = results.get(0);
         assertEquals("", dto.getDefinition(), "Null definition should be converted to empty string");
         assertEquals(0, dto.getAltLabels().size(), "Alt labels list should be empty");
+    }
+
+    @Test
+    void shouldQueryRelatedFunctionAndBindBaseConcept() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+
+        when(resultSet.next()).thenReturn(true, false);
+        when(resultSet.getLong("vocabulary_type_id")).thenReturn(1L);
+        when(resultSet.getString("vocabulary_type_label")).thenReturn("Type");
+        when(resultSet.getLong("vocabulary_id")).thenReturn(2L);
+        when(resultSet.getString("vocabulary_base_uri")).thenReturn("base");
+        when(resultSet.getString("vocabulary_external_id")).thenReturn("ext");
+        when(resultSet.getLong("concept_id")).thenReturn(3L);
+        when(resultSet.getString("concept_external_id")).thenReturn("extC");
+        // related concepts are imported without field context: the parent concept can be absent
+        when(resultSet.getLong("parent_concept_id")).thenReturn(0L);
+        when(resultSet.getString("parent_concept_external_id")).thenReturn(null);
+        when(resultSet.getLong("concept_label_id")).thenReturn(5L);
+        when(resultSet.getString("concept_label_label")).thenReturn("relatedLabel");
+        when(resultSet.getString("data_aggregated_alt_labels")).thenReturn(null);
+        when(resultSet.getString("data_definition")).thenReturn("def");
+        when(resultSet.getString("data_hierarchy_str")).thenReturn(null);
+
+        Concept baseValue = new Concept();
+        baseValue.setId(155L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsFromRelatedFor(baseValue, "fr", "blo", 10);
+
+        assertEquals(1, results.size());
+        assertEquals("relatedLabel", results.get(0).getOriginalPrefLabel());
+
+        // the related search must hit the dedicated DB function, not the field-based one
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(connection).prepareStatement(queryCaptor.capture());
+        assertTrue(queryCaptor.getValue().contains("concept_autocomplete_related("),
+                "Expected the query to call concept_autocomplete_related, but was: " + queryCaptor.getValue());
+
+        verify(statement).setLong(1, 155L);
+        verify(statement).setString(2, "fr");
+        verify(statement).setString(3, "blo");
+        verify(statement).setInt(4, 10);
+    }
+
+    @Test
+    void shouldBindEmptyStringWhenRelatedInputIsNull() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+
+        Concept baseValue = new Concept();
+        baseValue.setId(155L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsFromRelatedFor(baseValue, "fr", null, 10);
+
+        assertEquals(0, results.size());
+        verify(statement).setString(3, "");
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenRelatedStatementThrows() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenThrow(new SQLException("boom"));
+
+        Concept baseValue = new Concept();
+        baseValue.setId(155L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsFromRelatedFor(baseValue, "fr", "in", 10);
+
+        assertNotNull(results);
+        assertEquals(0, results.size());
     }
 
     @Test
