@@ -2,7 +2,6 @@ package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
@@ -14,7 +13,6 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -88,7 +86,7 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(InstitutionDTO institution, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(institution, null, vocabulary, progressWrapper);
+        return setupFieldConfiguration(institution, vocabulary, progressWrapper);
     }
 
     /**
@@ -117,7 +115,7 @@ public class FieldConfigurationService {
      */
     @NonNull
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(institution, null, vocabulary, new ProgressWrapper());
+        return setupFieldConfiguration(institution, vocabulary, new ProgressWrapper());
     }
 
     private FeedbackFieldConfig createConfigOfThesaurus(ConceptBranchDTO conceptBranchDTO) {
@@ -142,36 +140,7 @@ public class FieldConfigurationService {
         return new FeedbackFieldConfig(missingFieldCode, validConcept);
     }
 
-    /**
-     * Sets up the field configuration for a user based on the vocabulary.
-     *
-     * @param info       the user information containing institution and user details
-     * @param vocabulary the vocabulary to use for configuration
-     * @return an Optional containing GlobalFieldConfig if the configuration is wrong, otherwise empty
-     * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
-     * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
-     */
-    @NonNull
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForUser(@NonNull UserInfo info, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, new ProgressWrapper());
-    }
-
-    /**
-     * Sets up the field configuration for a user based on the vocabulary.
-     *
-     * @param info            the user information containing institution and user details
-     * @param vocabulary      the vocabulary to use for configuration
-     * @param progressWrapper the progress wrapper to track progress
-     * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
-     * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
-     */
-    public void setupFieldConfigurationForUser(@NonNull UserInfo info, @NonNull Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, progressWrapper);
-    }
-
-
     private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull InstitutionDTO institutionDTO,
-                                                                  @Nullable PersonDTO userDTO,
                                                                   @NonNull Vocabulary vocabulary,
                                                                   @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
@@ -187,18 +156,12 @@ public class FieldConfigurationService {
             ConceptFieldConfig fieldConfig;
             Optional<ConceptFieldConfig> optConfig;
 
-            if (userDTO == null) {
-                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institutionDTO.getId(), fieldCode);
-            } else {
-                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(userDTO.getId(), institutionDTO.getId(), fieldCode);
-            }
+            optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institutionDTO.getId(), fieldCode);
 
             if (optConfig.isEmpty()) {
                 Institution institution = institutionMapper.invertConvert(institutionDTO);
-                Person user = personMapper.invertConvert(userDTO);
                 fieldConfig = new ConceptFieldConfig();
                 fieldConfig.setInstitution(institution);
-                fieldConfig.setUser(user);
                 fieldConfig.setFieldCode(fieldCode);
                 fieldConfig.setConcept(concept);
                 fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
