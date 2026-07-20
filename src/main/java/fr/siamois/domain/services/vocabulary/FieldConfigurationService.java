@@ -323,8 +323,9 @@ public class FieldConfigurationService {
      * @param baseValue the concept as the value of the field from which the current field is dependant of
      * @param input     the input string to match against concept labels. Can be null or empty.
      */
-    public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull Concept baseValue, @Nullable String input) {
-        return autocompleteRepository.findMatchingConceptsFromRelatedFor(baseValue, info.getLang(), input, LIMIT_RESULTS);
+    public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull String fieldCode,@NonNull Concept baseValue, @Nullable String input) throws NoConfigForFieldException {
+        ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
+        return autocompleteRepository.findMatchingConceptsFromRelatedFor(baseValue, config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
     }
 
     public int resultLimit() {
