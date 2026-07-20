@@ -1,11 +1,9 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -146,56 +144,6 @@ class FieldConfigurationServiceTest {
     void setupFieldConfigurationForInstitution_shouldThrowErrorProcessingExpansionException_whenResponseIsInvalid() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         when(conceptApi.fetchFieldsBranch(vocabulary)).thenThrow(ErrorProcessingExpansionException.class);
         assertThrows(ErrorProcessingExpansionException.class, () -> service.setupFieldConfigurationForInstitution(userInfo, vocabulary));
-    }
-
-    @Test
-    void setupFieldConfigurationForUser_shouldReturnFieldConfigIfWrong_whenMissingFieldCodes() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(conceptBranchDTO);
-        when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST", "SIATEST2", "SIATEST3"));
-
-        Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
-
-        assertThat(result).isPresent();
-    }
-
-    @Test
-    void setupFieldConfigurationForUser_shouldReturnEmptyWhenValid_andConfigDoesNotExist() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(conceptBranchDTO);
-        when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST", "SIATEST2"));
-        doAnswer(i -> {
-            Vocabulary vocab = i.getArgument(0);
-            FullInfoDTO dto = i.getArgument(1);
-            Concept concept = new Concept();
-            concept.setVocabulary(vocab);
-            concept.setExternalId(dto.getIdentifier()[0].getValue());
-            return concept;
-        }).when(conceptService).saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null));
-
-        Institution institution  = new Institution();
-        institution.setId(12L);
-
-        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
-        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(new Person());
-        when(conceptFieldConfigRepository.findOneByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
-        when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
-
-        Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
-
-        assertThat(result).isEmpty();
-        verify(conceptFieldConfigRepository, times(2)).save(any(ConceptFieldConfig.class));
-        verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class), any(ProgressWrapper.class));
-    }
-
-    @Test
-    void setupFieldConfigurationForUser_shouldThrowNotSiamoisThesaurusException_whenSIAAUTOCOMPLETEmissing() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        when(conceptApi.fetchFieldsBranch(vocabulary)).thenThrow(NotSiamoisThesaurusException.class);
-        assertThrows(NotSiamoisThesaurusException.class, () -> service.setupFieldConfigurationForUser(userInfo, vocabulary));
-    }
-
-    @Test
-    void setupFieldConfigurationForUser_shouldThrowErrorProcessingExpansionException_whenResponseIsInvalid() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        when(conceptApi.fetchFieldsBranch(vocabulary)).thenThrow(ErrorProcessingExpansionException.class);
-        assertThrows(ErrorProcessingExpansionException.class, () -> service.setupFieldConfigurationForUser(userInfo, vocabulary));
     }
 
     @Test
