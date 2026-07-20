@@ -304,7 +304,7 @@ public class FieldConfigurationService {
      * @param info      the user information containing institution and user details
      * @param fieldCode the field code for which to fetch autocomplete suggestions
      * @param input     the input string to match against concept labels. Can be null or empty.
-     * @return a list of matching ConceptLabel objects
+     * @return a list of matching ConceptAutocompleteDTO objects
      * @throws NoConfigForFieldException if no configuration is found for the field code
      */
     @NonNull
@@ -312,6 +312,19 @@ public class FieldConfigurationService {
     public List<ConceptAutocompleteDTO> fetchAutocomplete(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable String input) throws NoConfigForFieldException {
         ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
         return autocompleteRepository.findMatchingConceptsFor(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
+    }
+
+    /**
+     * Fetches autocomplete suggestions depending on the base value.
+     * This autocompletion is used when the field is dependant of the value of another field.
+     * In that case, the autocompletion values are the related concepts of the selected previous value.
+     *
+     * @param info      the user information containing institution and user details
+     * @param baseValue the concept as the value of the field from which the current field is dependant of
+     * @param input     the input string to match against concept labels. Can be null or empty.
+     */
+    public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull Concept baseValue, @Nullable String input) {
+        return autocompleteRepository.findMatchingConceptsFromRelatedFor(baseValue, info.getLang(), input, LIMIT_RESULTS);
     }
 
     public int resultLimit() {

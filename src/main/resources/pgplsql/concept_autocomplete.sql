@@ -1,4 +1,6 @@
 DROP FUNCTION IF EXISTS concept_autocomplete;
+DROP FUNCTION IF EXISTS concept_autocomplete_related;
+DROP FUNCTION IF EXISTS concept_autocomplete_search;
 DROP FUNCTION IF EXISTS concept_autocomplete_get_definition;
 DROP FUNCTION IF EXISTS concept_autocomplete_get_hierarchy;
 DROP FUNCTION IF EXISTS concept_autocomplete_get_alt_labels;
@@ -45,7 +47,7 @@ BEGIN
     INTO v_pref_label
     FROM concept_label cl
     WHERE cl.fk_concept_id = p_concept_id
-      AND cl.fk_field_parent_concept_id = p_field_concept_id
+      AND cl.fk_field_parent_concept_id IS NOT DISTINCT FROM p_field_concept_id
       AND cl.lang_code = p_langcode
       AND cl.label_type = 0
     LIMIT 1;
@@ -55,7 +57,7 @@ BEGIN
         INTO v_pref_label
         FROM concept_label cl
         WHERE cl.fk_concept_id = p_concept_id
-          AND cl.fk_field_parent_concept_id = p_field_concept_id
+          AND cl.fk_field_parent_concept_id IS NOT DISTINCT FROM p_field_concept_id
           AND cl.label_type = 0
         LIMIT 1;
     END IF;
@@ -65,7 +67,7 @@ BEGIN
         INTO v_pref_label
         FROM concept_label cl
         WHERE cl.fk_concept_id = p_concept_id
-          AND cl.fk_field_parent_concept_id = p_field_concept_id
+          AND cl.fk_field_parent_concept_id IS NOT DISTINCT FROM p_field_concept_id
         LIMIT 1;
     END IF;
 
@@ -93,7 +95,7 @@ BEGIN
     INTO v_alt_labels
     FROM concept_label cl
     WHERE cl.fk_concept_id = p_concept_id
-      AND cl.fk_field_parent_concept_id = p_field_concept_id
+      AND cl.fk_field_parent_concept_id IS NOT DISTINCT FROM p_field_concept_id
       AND cl.lang_code = p_langcode
       AND cl.label_type = 1;
 
@@ -158,7 +160,72 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Main autocomplete function
+-- Core autocomplete query, shared by every autocomplete entry point.
+-- Exactly one of p_field_concept_id / p_related_of_concept_id is expected to be filled:
+--   * p_field_concept_id      : restrict to the concepts imported in the context of that field concept
+--   * p_related_of_concept_id : restrict to the concepts related (concept_related) to that concept
+-- p_input NULL or blank means "no text filter", the results are then only ordered alphabetically.
+CREATE OR REPLACE FUNCTION concept_autocomplete_search(
+    p_field_concept_id BIGINT,
+    p_related_of_concept_id BIGINT,
+    p_langcode VARCHAR(3),
+    p_input TEXT,
+    p_limit INT
+)
+    RETURNS SETOF concept_autocomplete_record AS
+$$
+BEGIN
+    -- The matching labels are selected and limited first so the aggregation functions below
+    -- (alt labels, definition, hierarchy) are only evaluated for the rows actually returned.
+    RETURN QUERY
+        WITH matching_labels AS (SELECT cl.concept_label_id,
+                                        cl.label,
+                                        cl.fk_concept_id,
+                                        cl.fk_field_parent_concept_id
+                                 FROM concept_label cl
+                                          JOIN concept c ON cl.fk_concept_id = c.concept_id
+                                 WHERE cl.lang_code = p_langcode
+                                   AND cl.label_type = 0
+                                   AND NOT c.is_deleted
+                                   AND (p_field_concept_id IS NULL OR
+                                        cl.fk_field_parent_concept_id = p_field_concept_id)
+                                   AND (p_related_of_concept_id IS NULL OR EXISTS (SELECT 1
+                                                                                   FROM concept_related cr
+                                                                                   WHERE cr.fk_concept_id = p_related_of_concept_id
+                                                                                     AND cr.fk_related_concept_id = c.concept_id))
+                                   AND (p_input IS NULL OR trim(p_input) = '' OR
+                                        unaccent(cl.label) ILIKE unaccent('%' || p_input || '%'))
+                                 ORDER BY cl.label -- Sort by label in alphabetical order
+                                 LIMIT p_limit)
+        SELECT c.concept_id,
+               c.external_id,
+
+               c2.concept_id,
+               c2.external_id,
+
+               v.vocabulary_id,
+               v.base_uri,
+               v.external_id,
+
+               vt.vocabulary_type_id,
+               vt.label,
+
+               ml.concept_label_id,
+               ml.label,
+
+               concept_autocomplete_get_alt_labels(c.concept_id, ml.fk_field_parent_concept_id, p_langcode),
+               concept_autocomplete_get_definition(c.concept_id, p_langcode),
+               concept_autocomplete_get_hierarchy(c.concept_id, ml.fk_field_parent_concept_id, p_langcode)
+        FROM matching_labels ml
+                 JOIN concept c ON ml.fk_concept_id = c.concept_id
+                 LEFT JOIN concept c2 ON c2.concept_id = ml.fk_field_parent_concept_id
+                 JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
+                 JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
+        ORDER BY ml.label;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Autocomplete on every concept configured for the given field concept
 CREATE OR REPLACE FUNCTION concept_autocomplete(
     p_field_concept_id BIGINT,
     p_langcode VARCHAR(3),
@@ -167,79 +234,22 @@ CREATE OR REPLACE FUNCTION concept_autocomplete(
 )
     RETURNS SETOF concept_autocomplete_record AS
 $$
-DECLARE
 BEGIN
+    RETURN QUERY SELECT * FROM concept_autocomplete_search(p_field_concept_id, NULL, p_langcode, p_input, p_limit);
+END;
+$$ LANGUAGE plpgsql;
 
-    if p_input IS NULL OR trim(p_input) = '' THEN
-        -- Cas quand input est NULL ou vide
-        RETURN QUERY
-            SELECT c.concept_id,
-                   c.external_id,
-
-                   c2.concept_id,
-                   c2.external_id,
-
-                   v.vocabulary_id,
-                   v.base_uri,
-                   v.external_id,
-
-                   vt.vocabulary_type_id,
-                   vt.label,
-
-                   cl.concept_label_id,
-                   cl.label,
-
-                   concept_autocomplete_get_alt_labels(c.concept_id, p_field_concept_id, p_langcode),
-                   concept_autocomplete_get_definition(c.concept_id, p_langcode),
-                   concept_autocomplete_get_hierarchy(c.concept_id, p_field_concept_id, p_langcode)
-            FROM concept_label cl
-                     JOIN concept c ON cl.fk_concept_id = c.concept_id
-                     JOIN concept c2 ON c2.concept_id = p_field_concept_id
-                     JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
-                     JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
-            WHERE cl.fk_field_parent_concept_id = p_field_concept_id
-              AND cl.lang_code = p_langcode
-              AND NOT c.is_deleted
-              AND cl.label_type = 0
-            ORDER BY cl.label  -- Sort by label in alphabetical order
-            LIMIT p_limit;
-    ELSE
-
-        -- Cas quand input n'est pas vide
-        RETURN QUERY
-            SELECT c.concept_id,
-                   c.external_id,
-
-                   c2.concept_id,
-                   c2.external_id,
-
-                   v.vocabulary_id,
-                   v.base_uri,
-                   v.external_id,
-
-                   vt.vocabulary_type_id,
-                   vt.label,
-
-                   cl.concept_label_id,
-                   cl.label,
-
-                   concept_autocomplete_get_alt_labels(c.concept_id, p_field_concept_id, p_langcode),
-                   concept_autocomplete_get_definition(c.concept_id, p_langcode),
-                   concept_autocomplete_get_hierarchy(c.concept_id, p_field_concept_id, p_langcode)
-            FROM concept_label cl
-                     JOIN concept c ON cl.fk_concept_id = c.concept_id
-                     JOIN concept c2 ON c2.concept_id = p_field_concept_id
-                     JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
-                     JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
-            WHERE cl.fk_field_parent_concept_id = p_field_concept_id
-              AND cl.lang_code = p_langcode
-              AND NOT c.is_deleted
-              AND unaccent(cl.label) ILIKE unaccent('%' || p_input || '%')
-              AND cl.label_type = 0
-            ORDER BY cl.label  -- Sort by label in alphabetical order
-            LIMIT p_limit;
-
-    END IF;
-
+-- Autocomplete restricted to the concepts related to p_base_concept_id.
+-- Used when a field value depends on the value selected in another field.
+CREATE OR REPLACE FUNCTION concept_autocomplete_related(
+    p_base_concept_id BIGINT,
+    p_langcode VARCHAR(3),
+    p_input TEXT,
+    p_limit INT
+)
+    RETURNS SETOF concept_autocomplete_record AS
+$$
+BEGIN
+    RETURN QUERY SELECT * FROM concept_autocomplete_search(NULL, p_base_concept_id, p_langcode, p_input, p_limit);
 END;
 $$ LANGUAGE plpgsql;
