@@ -37,7 +37,6 @@ public class ConceptService {
     private final ConceptRepository conceptRepository;
     private final ConceptApi conceptApi;
     private final LabelService labelService;
-    private final ConceptRelatedLinkRepository conceptRelatedLinkRepository;
     private final LocalizedConceptDataRepository localizedConceptDataRepository;
     private final ConceptChangeEventPublisher conceptChangeEventPublisher;
     private final ConceptLabelRepository conceptLabelRepository;
@@ -301,20 +300,10 @@ public class ConceptService {
         }
     }
 
+    @Deprecated(forRemoval = true)
     private void createRelatedLinkAndSetRelatedConcepts(Vocabulary vocabulary, Concept concept,
                                                         List<String> relatedUrl, Map<String, Concept> urlToSavedConceptMap) {
-        for (String url : relatedUrl) {
-            try {
-                FullInfoDTO fetchedConceptDTO = conceptApi.fetchConceptInfoByUri(vocabulary, url);
-                if (fetchedConceptDTO != null) {
-                    Concept relatedConcept = urlToSavedConceptMap.computeIfAbsent(url, currentUrl -> saveOrGetConceptFromFullDTO(vocabulary, fetchedConceptDTO, null));
-                    conceptRelatedLinkRepository.save(new ConceptRelatedLink(concept, relatedConcept));
-                }
-            }
-            catch(Exception e) {
-                log.error(url);
-            }
-        }
+
     }
 
     private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, Map<String, Concept> concepts, Map<Concept, Concept> childToParentMap, Concept parentSavedConcept) {
@@ -343,6 +332,19 @@ public class ConceptService {
     private void saveOrGetAllConceptsFromBranchAndStoreInMap(ConceptFieldConfig config, ConceptBranchDTO branchDTO, Map<String, Concept> concepts, Vocabulary vocabulary) {
         for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
             concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
+        }
+    }
+
+    private void saveRelatedConcepts(ConceptFieldConfig config, Vocabulary vocabulary, Map.Entry<String, FullInfoDTO> entry, Concept savedConcept) {
+        if (entry.getValue().getRelated() != null) {
+            for (PurlInfoDTO related : entry.getValue().getRelated()) {
+                FullInfoDTO relatedInfos = conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
+                Concept savedRelatedConcept = saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, config.getConcept());
+                if (savedRelatedConcept.getRelatedConcepts() == null) {
+                    savedConcept.setRelatedConcepts(new HashSet<>());
+                }
+                savedRelatedConcept.getRelatedConcepts().add(savedRelatedConcept);
+            }
         }
     }
 

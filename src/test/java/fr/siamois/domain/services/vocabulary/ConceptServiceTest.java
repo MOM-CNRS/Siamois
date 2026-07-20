@@ -12,7 +12,6 @@ import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatedLinkRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
