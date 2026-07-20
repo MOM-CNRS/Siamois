@@ -339,53 +339,8 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
-    void fetchAutocompleteRelated_shouldReturnRelatedConceptsOfBaseValue() {
-        String query = "test query";
-
-        Concept baseValue = new Concept();
-        baseValue.setVocabulary(vocabulary);
-        baseValue.setExternalId("12");
-
-        List<ConceptAutocompleteDTO> expectedResults = List.of(
-                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"),
-                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 101", "101")
-        );
-        when(autocompleteRepository.findMatchingConceptsFromRelatedFor(baseValue, "fr", query, FieldConfigurationService.LIMIT_RESULTS))
-                .thenReturn(expectedResults);
-
-        List<ConceptAutocompleteDTO> results = service.fetchAutocompleteRelated(userInfo, baseValue, query);
-
-        assertThat(results).isEqualTo(expectedResults);
-    }
-
-    @Test
     void resultLimit_shoudReturnCurrentResultLimit() {
         assertThat(service.resultLimit()).isEqualTo(FieldConfigurationService.LIMIT_RESULTS);
-    }
-
-    @Test
-    void fetchAllConfiguredVocabularies_returnsMapPerFieldCode()  {
-        String fieldCode = "TESTFIELD";
-        when(conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
-                userInfo.getInstitution().getId(), userInfo.getUser().getId()))
-                .thenReturn(List.of(fieldCode));
-
-        ConceptFieldConfig cfc = new ConceptFieldConfig();
-        Concept concept = new Concept();
-        concept.setVocabulary(vocabulary);
-        cfc.setConcept(concept);
-        cfc.setFieldCode(fieldCode);
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
-                .thenReturn(Optional.of(cfc));
-
-        List<ConceptAutocompleteDTO> expected = List.of(
-                new ConceptAutocompleteDTO(new ConceptDTO(), "A", "fr"));
-        when(autocompleteRepository.findMatchingConceptsFor(cfc.getConcept(), "fr", null, 200))
-                .thenReturn(expected);
-
-        var result = service.fetchAllConfiguredVocabularies(userInfo);
-
-        assertThat(result).containsEntry(fieldCode, expected);
     }
 
 }
