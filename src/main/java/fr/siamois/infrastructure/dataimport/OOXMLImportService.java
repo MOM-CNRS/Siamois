@@ -29,6 +29,8 @@ import static fr.siamois.infrastructure.dataimport.ImportSchema.*;
 public class OOXMLImportService {
 
     private static final String HEADER_READ_ERROR_PREFIX = "Erreur lecture en-tête: ";
+    public static final String PARENT = "parent";
+    public static final String ENFANT = "enfant";
 
     private final ConceptService conceptService;
 
@@ -393,7 +395,7 @@ public class OOXMLImportService {
         List<SpatialUnitRelSeeder.SpatialUnitRelDTO> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
-                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "parent", "enfant");
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, PARENT, ENFANT);
                 if (cols == null) continue;
                 forEachDataRow(sheet, errors, progress, row -> parseRowToSpatialUnitRel(row, cols).ifPresent(specs::add));
             } catch (Exception e) {
@@ -404,8 +406,8 @@ public class OOXMLImportService {
     }
 
     private Optional<SpatialUnitRelSeeder.SpatialUnitRelDTO> parseRowToSpatialUnitRel(Row row, Map<String, Integer> cols) {
-        String parent = getStringCellOrNull(row, cols, "parent");
-        String child  = getStringCellOrNull(row, cols, "enfant");
+        String parent = getStringCellOrNull(row, cols, PARENT);
+        String child  = getStringCellOrNull(row, cols, ENFANT);
         if (parent == null || parent.isBlank()) return Optional.empty();
         if (child  == null || child.isBlank())  return Optional.empty();
         return Optional.of(new SpatialUnitRelSeeder.SpatialUnitRelDTO(parent, child));
@@ -421,7 +423,7 @@ public class OOXMLImportService {
         List<RecordingUnitRelSeeder.RecordingUnitRelDTO> specs = new ArrayList<>();
         for (Sheet sheet : sheets) {
             try {
-                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "parent", "enfant");
+                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, PARENT, ENFANT);
                 if (cols == null) continue;
                 forEachDataRow(sheet, errors, progress, row -> parseRowToRecordingRel(row, cols).ifPresent(specs::add));
             } catch (Exception e) {
@@ -432,8 +434,8 @@ public class OOXMLImportService {
     }
 
     private Optional<RecordingUnitRelSeeder.RecordingUnitRelDTO> parseRowToRecordingRel(Row row, Map<String, Integer> cols) {
-        String parent = getStringCellOrNull(row, cols, "parent");
-        String child  = getStringCellOrNull(row, cols, "enfant");
+        String parent = getStringCellOrNull(row, cols, PARENT);
+        String child  = getStringCellOrNull(row, cols, ENFANT);
         if (parent == null || parent.isBlank()) return Optional.empty();
         if (child  == null || child.isBlank())  return Optional.empty();
         return Optional.of(new RecordingUnitRelSeeder.RecordingUnitRelDTO(parent, child));

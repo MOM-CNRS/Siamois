@@ -2,6 +2,8 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
+import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
@@ -9,7 +11,9 @@ import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.ProfileMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,9 +32,13 @@ class ApplicationMembersServiceInterfaceImplTest {
     @Mock
     private PersonProfileAssignmentRepository personProfileAssignmentRepository;
     @Mock
+    private PersonRepository personRepository;
+    @Mock
     private ProfileService profileService;
     @Mock
     private PersonMapper personMapper;
+    @Mock
+    private ProfileMapper profileMapper;
     @Mock
     private PersonProfileAssignmentService personProfileAssignmentService;
 
@@ -55,6 +63,62 @@ class ApplicationMembersServiceInterfaceImplTest {
         superAdminProfileDTO.setId(100L);
         superAdminProfileDTO.setCode(ProfileConstants.SUPERADMIN);
         superAdminProfileDTO.setScope(PermissionScopeType.INSTANCE);
+    }
+
+    @Test
+    void findMembers_shouldReturnEveryPerson_evenWithoutAnyProfile() {
+        when(personRepository.findAll()).thenReturn(List.of(member));
+        when(personProfileAssignmentRepository.findAllInstanceAssignments()).thenReturn(List.of());
+        when(personMapper.convert(member)).thenReturn(memberDTO);
+
+        List<ApplicationMemberDTO> result = applicationMembersService.findMembers();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getPerson()).isEqualTo(memberDTO);
+        assertThat(result.get(0).getProfiles()).isEmpty();
+        verify(personProfileAssignmentRepository, times(1)).findAllInstanceAssignments();
+    }
+
+    @Test
+    void findMembers_shouldOverlayAssignedProfilesOnMembers() {
+        Profile superAdminProfile = new Profile();
+        superAdminProfile.setId(100L);
+        superAdminProfile.setCode(ProfileConstants.SUPERADMIN);
+
+        PersonProfileAssignment assignment = new PersonProfileAssignment();
+        assignment.setProfile(superAdminProfile);
+        assignment.setPerson(member);
+
+        when(personRepository.findAll()).thenReturn(List.of(member));
+        when(personProfileAssignmentRepository.findAllInstanceAssignments()).thenReturn(List.of(assignment));
+        when(personMapper.convert(member)).thenReturn(memberDTO);
+        when(profileMapper.convert(superAdminProfile)).thenReturn(superAdminProfileDTO);
+
+        List<ApplicationMemberDTO> result = applicationMembersService.findMembers();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getPerson()).isEqualTo(memberDTO);
+        assertThat(result.get(0).getProfiles()).containsExactly(superAdminProfileDTO);
+    }
+
+    @Test
+    void findMembers_shouldReturnEmptyList_whenNoPersonExists() {
+        when(personRepository.findAll()).thenReturn(List.of());
+        when(personProfileAssignmentRepository.findAllInstanceAssignments()).thenReturn(List.of());
+
+        List<ApplicationMemberDTO> result = applicationMembersService.findMembers();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void addProfileToMember_shouldDelegateToAssignmentService() {
+        ApplicationMemberDTO membertest = new ApplicationMemberDTO();
+        membertest.setPerson(memberDTO);
+
+        applicationMembersService.addProfileToMember(membertest, superAdminProfileDTO);
+
+        verify(personProfileAssignmentService, times(1)).assign(memberDTO, superAdminProfileDTO);
     }
 
     @Test
