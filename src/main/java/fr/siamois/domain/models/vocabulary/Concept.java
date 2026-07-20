@@ -8,6 +8,7 @@ import org.hibernate.envers.Audited;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.Set;
 
 @Data
 @Entity
@@ -31,6 +32,14 @@ public class Concept implements Serializable {
 
     @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
     private boolean isDeleted = false;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "related_concepts",
+            joinColumns = {@JoinColumn(name = "fk_concept_id")},
+            inverseJoinColumns = {@JoinColumn(name = "fk_related_concept_id")},
+            indexes = {@Index(name = "idx_related_concepts", columnList = "fk_concept_id")}
+    )
+    private Set<Concept> relatedConcepts;
 
     @Override
     public boolean equals(Object o) {
