@@ -84,6 +84,7 @@ public class ConceptService {
     @Transactional
     public Concept saveOrGetConcept(@NonNull ConceptDTO conceptDTO) {
         Concept concept = conversionService.convert(conceptDTO, Concept.class);
+        assert concept != null;
         Vocabulary vocabulary = concept.getVocabulary();
         Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(
                 vocabulary.getExternalVocabularyId(), concept.getExternalId());
@@ -177,7 +178,7 @@ public class ConceptService {
 
     private void updateDefinition(Concept savedConcept, String lang, String definition) {
         Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(savedConcept.getId(), lang);
-        LocalizedConceptData localizedConceptData = null;
+        LocalizedConceptData localizedConceptData;
         if (optData.isPresent()) {
             localizedConceptData = optData.get();
         } else {
@@ -215,14 +216,18 @@ public class ConceptService {
         }
     }
 
-    /**
-     * Saves all sub-concepts data and relations if there are updates in the down expansion of the concept field config.
-     *
-     * @param config          the concept field configuration
-     * @param progressWrapper the progress wrapper to track progress
-     * @throws ErrorProcessingExpansionException if an error occurs during processing
-     */
-    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
+    public void saveAllSubConceptOfIfUpdated(@NonNull ConceptFieldConfig config) throws ErrorProcessingExpansionException {
+        saveAllSubConceptOfIfUpdated(config, new ProgressWrapper());
+    }
+
+
+        /**
+         * Saves all sub-concepts data and relations if there are updates in the down expansion of the concept field config.
+         *
+         * @param config          the concept field configuration
+         * @param progressWrapper the progress wrapper to track progress
+         * @throws ErrorProcessingExpansionException if an error occurs during processing
+         */
     public void saveAllSubConceptOfIfUpdated(@NonNull ConceptFieldConfig config, @NonNull ProgressWrapper progressWrapper) throws ErrorProcessingExpansionException {
         log.trace("API call to fetch down expansion for concept FieldCode : {}", config.getFieldCode());
         try {

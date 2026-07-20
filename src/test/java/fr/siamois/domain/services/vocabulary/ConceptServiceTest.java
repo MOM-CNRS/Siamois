@@ -48,9 +48,6 @@ class ConceptServiceTest {
     private LocalizedConceptDataRepository localizedConceptDataRepository;
 
     @Mock
-    private ConceptRelatedLinkRepository conceptRelatedLinkRepository;
-
-    @Mock
     private ConceptChangeEventPublisher conceptChangeEventPublisher;
 
     @Mock
@@ -410,7 +407,6 @@ class ConceptServiceTest {
         verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
         verify(conceptRepository, atLeast(2)).save(any(Concept.class));
         verify(localizedConceptDataRepository, atLeast(2)).save(any(LocalizedConceptData.class));
-        verify(conceptRelatedLinkRepository, atLeast(1)).save(any());
     }
 
     @Test
