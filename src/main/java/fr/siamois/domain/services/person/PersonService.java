@@ -47,12 +47,8 @@ public class PersonService {
     private final PersonMapper personMapper;
     private final PendingPersonRepository pendingPersonRepository;
 
-    /**
-     * Creates real relations and delete pending relations. Then delete the pending person
-     * @param savedPerson The person but saved
-     */
     private void deletePendingInvitation(Person savedPerson) {
-        pendingPersonRepository.deleteById(savedPerson.getId());
+        pendingPersonRepository.deleteByDisabledPersonId(savedPerson.getId());
     }
 
     /**
@@ -266,7 +262,7 @@ public class PersonService {
      * @param newPassword The new plain password to set for the person.
      * @throws InvalidPasswordException if the new password does not meet the required criteria.
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updatePassword(Long id, String newPassword) throws InvalidPasswordException {
         PasswordVerifier verifier = findPasswordVerifier()
                 .orElseThrow(() -> new IllegalStateException("Password verifier is not defined"));
@@ -385,7 +381,7 @@ public class PersonService {
      * @throws InvalidPasswordException  if the password does not meet the required criteria.
      * @throws InvalidNameException      if the name is invalid or does not meet the required criteria.
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void registerInvitedPerson(PersonDTO person, String password) throws UserAlreadyExistException, InvalidNameException, InvalidPasswordException, InvalidUsernameException, InvalidEmailException {
         enableAndUpdatePerson(person, password);
         pendingPersonRepository.deleteByDisabledPersonId(person.getId());
