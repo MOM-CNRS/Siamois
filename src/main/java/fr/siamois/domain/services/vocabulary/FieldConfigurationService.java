@@ -305,9 +305,7 @@ public class FieldConfigurationService {
     @Transactional(readOnly = true)
     public Map<String, List<ConceptAutocompleteDTO>> fetchAllConfiguredVocabularies(@NonNull UserInfo info) {
         Long institutionId = info.getInstitution().getId();
-        Long personId = info.getUser().getId();
-        List<String> fieldCodes = conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
-                institutionId, personId);
+        List<String> fieldCodes = conceptFieldConfigRepository.findDistinctFieldCodesForInstitution(institutionId);
         Map<String, List<ConceptAutocompleteDTO>> out = new LinkedHashMap<>();
         for (String fieldCode : fieldCodes) {
             try {
