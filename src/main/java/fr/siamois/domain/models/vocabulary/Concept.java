@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -33,8 +34,9 @@ public class Concept implements Serializable {
     @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
     private boolean isDeleted = false;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "related_concepts",
+    @NotAudited
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "concept_related",
             joinColumns = {@JoinColumn(name = "fk_concept_id")},
             inverseJoinColumns = {@JoinColumn(name = "fk_related_concept_id")},
             indexes = {@Index(name = "idx_related_concepts", columnList = "fk_concept_id")}
