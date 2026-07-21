@@ -329,7 +329,7 @@ public class FieldConfigurationService {
      */
     @NonNull
     @ExecutionTimeLogger
-    public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull String fieldCode, @NonNull Concept baseValue, @Nullable String input) throws NoConfigForFieldException {
+    public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Concept baseValue, @Nullable String input) throws NoConfigForFieldException {
         ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
         return autocompleteRepository.findMatchingConceptsFromRelatedFor(config.getConcept(), baseValue, info.getLang(), input, LIMIT_RESULTS);
     }

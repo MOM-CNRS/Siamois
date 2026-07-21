@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Repository for fetching autocomplete suggestions for concepts.
@@ -128,7 +129,7 @@ public class AutocompleteRepository {
     @NonNull
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> findMatchingConceptsFromRelatedFor(@NonNull Concept field,
-                                                                           @NonNull Concept baseValue,
+                                                                           @Nullable Concept baseValue,
                                                                            @NonNull String lang,
                                                                            @Nullable String input,
                                                                            int limitResults) {
@@ -136,7 +137,7 @@ public class AutocompleteRepository {
              PreparedStatement statement = connection.prepareStatement("SELECT ca.* FROM concept_autocomplete_related(?, ?, ?, ?, ?) ca")) {
             log.trace("Executing findMatchingConceptsFromRelatedFor with field id {}, lang {}, input '{}', limit {}", field.getId(), lang, input, limitResults);
             statement.setLong(1, field.getId());
-            statement.setLong(2, baseValue.getId());
+            statement.setObject(2, Objects.isNull(baseValue) ? null : baseValue.getId());
             statement.setString(3, lang);
             statement.setString(4, input);
             statement.setInt(5, limitResults);
