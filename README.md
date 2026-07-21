@@ -13,18 +13,25 @@ SIAMOIS est une base de données dédiée à la gestion de la documentation asso
 3. Copier le fichier src/main/resources/application.yml dans le même dossier que le fichier JAR
 4. Modifier les valeurs du fichier, soit par des variables d'environnement, soit en dur.
 ## Variables d'environnement
-| Variable d'environnement | Description                                                                                                                     |
-|--------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| SIAMOIS_PORT             | Port sur lequel l'application sera exposée. Par défaut, le port est le `8099`.                                                    |
+| Variable d'environnement | Description                                                                                                                          |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| SIAMOIS_PORT             | Port sur lequel l'application sera exposée. Par défaut, le port est le `8099`.                                                       |
 | CONTEXT_PATH             | Contexte web dans lequel l'application sera accessible. ex: `http://monDomaine.net/contexte`. Par défaut, le contexte est `/siamois` |
-| DEFAULT_LANG             | Langue par défaut de l'application. Sans modification, elle est définie sur français (fr). La valeur peut être fr ou en         |
-| SIAMOIS_ADMIN_LOGIN      | Nom d'utilisateur du superadministrateur de l'instance.                                                                         |
-| SIAMOIS_ADMIN_EMAIL      | Adresse email du superadministrateur de l'instance.                                                                             |
-| SIAMOIS_DOCUMENTS_PATH   | Indique le dossier où les documents seront stockés.                                                                             |
-| SIAMOIS_JWT_SECRET       | Valeur secrète du Json Web Token. **À remplacer par une clé d'au moins 256 bits**.                                                  |
-| DB_URL                   | Adresse JDBC permettant de se connecter à la base de données.                                                                   |
-| DB_USERNAME              | Nom d'utilisateur pour l'instance sur la base de données.                                                                       |
-| DB_PASSWORD              | Mot de passe de l'utilisateur de l'instance sur la base de données.                                                             |
+| DEFAULT_LANG             | Langue par défaut de l'application. Sans modification, elle est définie sur français (`fr`). La valeur peut être `fr` ou `en`        |
+| SIAMOIS_ADMIN_LOGIN      | Nom d'utilisateur du superadministrateur de l'instance.                                                                              |
+| SIAMOIS_ADMIN_EMAIL      | Adresse email du superadministrateur de l'instance.                                                                                  |
+| SIAMOIS_DOCUMENTS_PATH   | Indique le dossier où les documents seront stockés.                                                                                  |
+| SIAMOIS_JWT_SECRET       | Valeur secrète du Json Web Token. **À remplacer par une clé d'au moins 256 bits**.                                                   |
+| DB_URL                   | Adresse JDBC permettant de se connecter à la base de données.                                                                        |
+| DB_USERNAME              | Nom d'utilisateur pour l'instance sur la base de données.                                                                            |
+| DB_PASSWORD              | Mot de passe de l'utilisateur de l'instance sur la base de données.                                                                  |
+| SMTP_AUTH_ENABLED        | Booleen définissant si l'authentification est activée sur le serveur SMTP. Par défaut à `true`                                       |
+| EMAIL_SENDER_ADDRESS     | Adresse mail qui sera l'adresse expéditrice des mails.                                                                               |
+| SMTP_HOST                | Adresse du serveur SMTP                                                                                                              |
+| SMTP_PORT                | Port du serveur SMTP                                                                                                                 |
+| SMTP_USERNAME            | Nom d'utilisateur pour se connecter au serveur SMTP                                                                                  |
+| SMTP_PASSWORD            | Mot de passe du serveur SMTP                                                                                                         |
+
 
 # Démarrage de l'application
 Une fois les variables renseignées, et que le jar et le fichier application.yaml se trouvent dans le même dossier, il faut exécuter :
