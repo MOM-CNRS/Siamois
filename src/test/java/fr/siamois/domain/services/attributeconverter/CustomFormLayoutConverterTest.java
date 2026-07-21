@@ -11,6 +11,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
@@ -35,13 +36,13 @@ class CustomFormLayoutConverterTest {
     @Mock
     private EntityManager entityManager;
 
+    @InjectMocks
     private CustomFormLayoutConverter converter;
 
     @BeforeEach
     void setUp() {
         lenient().when(applicationContext.getBean(CustomFieldRepository.class)).thenReturn(customFieldRepository);
         lenient().when(applicationContext.getBean(EntityManager.class)).thenReturn(entityManager);
-        converter = new CustomFormLayoutConverter(applicationContext);
     }
 
     @Test
