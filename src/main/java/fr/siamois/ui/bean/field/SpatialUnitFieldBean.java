@@ -111,6 +111,16 @@ public class SpatialUnitFieldBean implements Serializable {
     }
 
     /**
+     * Same as {@link #getUrlForFieldCode(String)} but checks for a project-level (Action Unit)
+     * thesaurus override first, falling back to the institution configuration.
+     *
+     * @param actionUnitId the current project's id, or null if the field isn't project-scoped
+     */
+    public String getUrlForFieldCode(String fieldCode, Long actionUnitId) {
+        return fieldConfigurationService.getUrlForFieldCode(sessionSettingsBean.getUserInfo(), fieldCode, actionUnitId);
+    }
+
+    /**
      * Fetch the autocomplete results on API for the selected field and add them to the list of concepts.
      * Optionally sorts the results by root group if the "sortByParent" component attribute is true.
      *
@@ -134,11 +144,16 @@ public class SpatialUnitFieldBean implements Serializable {
             Concept dependsOnBaseConcept = (Concept) UIComponent.getCurrentComponent(context)
                     .getAttributes().get("dependsOnBaseConcept");
 
+            // Project (Action Unit) scope, if the field belongs to a project-scoped entity's form;
+            // null for institution-level entities, which keeps the institution-only lookup.
+            Long actionUnitId = (Long) UIComponent.getCurrentComponent(context)
+                    .getAttributes().get("actionUnitId");
+
             List<ConceptAutocompleteDTO> results = dependsOnBaseConcept != null
                     ? fieldConfigurationService.fetchAutocompleteRelated(
-                            sessionSettingsBean.getUserInfo(), fieldCode, dependsOnBaseConcept, input)
+                            sessionSettingsBean.getUserInfo(), fieldCode, dependsOnBaseConcept, input, actionUnitId)
                     : fieldConfigurationService.fetchAutocomplete(
-                            sessionSettingsBean.getUserInfo(), fieldCode, input);
+                            sessionSettingsBean.getUserInfo(), fieldCode, input, actionUnitId);
 
             if (sortByParent != null && sortByParent) {
                 // Sort the results by root group (using the getRootGroup method)

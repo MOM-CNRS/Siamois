@@ -274,6 +274,33 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
+    void findVocabularyUrlOfActionUnit_shouldReturnString_whenConfigExists() {
+        Concept c = new Concept();
+        c.setVocabulary(vocabulary);
+        c.setExternalId("12");
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        cfc.setConcept(c);
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.of(cfc));
+
+        Optional<String> result = service.findVocabularyUrlOfActionUnitId(42L);
+
+        assertThat(result).isPresent()
+                .get()
+                .isEqualTo("http://exemple.org/?idt=th2");
+    }
+
+    @Test
+    void findVocabularyUrlOfActionUnit_shouldReturnEmpty_whenConfigDoesNotExist() {
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.empty());
+
+        Optional<String> result = service.findVocabularyUrlOfActionUnitId(42L);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void findParentConceptForFieldcode_shouldReturnConcept_whenConfigExists() throws NoConfigForFieldException {
         ConceptFieldConfig cfc = new ConceptFieldConfig();
         Concept concept = new Concept();
@@ -410,6 +437,139 @@ class FieldConfigurationServiceTest {
 
         assertThrows(NoConfigForFieldException.class,
                 () -> service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, actionUnit));
+    }
+
+    @Test
+    void findConfigurationForFieldCodeWithActionUnitId_shouldReturnInstitutionConfig_whenActionUnitIdIsNull() throws NoConfigForFieldException {
+        ConceptFieldConfig institutionConfig = new ConceptFieldConfig();
+        institutionConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+                .thenReturn(Optional.of(institutionConfig));
+
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, (Long) null);
+
+        assertThat(result).isEqualTo(institutionConfig);
+        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeAndActionUnitId(anyString(), anyLong());
+    }
+
+    @Test
+    void findConfigurationForFieldCodeWithActionUnitId_shouldReturnActionUnitConfig_whenExists() throws NoConfigForFieldException {
+        ConceptFieldConfig actionUnitConfig = new ConceptFieldConfig();
+        actionUnitConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.of(actionUnitConfig));
+
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, 42L);
+
+        assertThat(result).isEqualTo(actionUnitConfig);
+        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
+    }
+
+    @Test
+    void findConfigurationForFieldCodeWithActionUnitId_shouldFallbackOnInstitutionConfig_whenNoActionUnitConfig() throws NoConfigForFieldException {
+        ConceptFieldConfig institutionConfig = new ConceptFieldConfig();
+        institutionConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+                .thenReturn(Optional.of(institutionConfig));
+
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, 42L);
+
+        assertThat(result).isEqualTo(institutionConfig);
+    }
+
+    @Test
+    void fetchAutocomplete_withActionUnitId_shouldUseActionUnitConfig_whenExists() throws NoConfigForFieldException {
+        String fieldCode = "TESTFIELD";
+        String query = "test query";
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId("12");
+        cfc.setConcept(concept);
+        cfc.setFieldCode(fieldCode);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, 42L))
+                .thenReturn(Optional.of(cfc));
+
+        List<ConceptAutocompleteDTO> expectedResults = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"));
+        when(autocompleteRepository.findMatchingConceptsFor(cfc.getConcept(), "fr", query, 200)).thenReturn(expectedResults);
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(userInfo, fieldCode, query, 42L);
+
+        assertThat(results).isEqualTo(expectedResults);
+        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
+    }
+
+    @Test
+    void fetchAutocompleteRelated_withActionUnitId_shouldUseActionUnitConfig_whenExists() throws NoConfigForFieldException {
+        String fieldCode = "TESTFIELD";
+        String query = "test query";
+
+        Concept fieldConcept = new Concept();
+        fieldConcept.setVocabulary(vocabulary);
+        fieldConcept.setExternalId("field-concept");
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        cfc.setConcept(fieldConcept);
+        cfc.setFieldCode(fieldCode);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, 42L))
+                .thenReturn(Optional.of(cfc));
+
+        Concept baseValue = new Concept();
+        baseValue.setVocabulary(vocabulary);
+        baseValue.setExternalId("base-value");
+
+        List<ConceptAutocompleteDTO> expectedResults = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"));
+        when(autocompleteRepository.findMatchingConceptsFromRelatedFor(fieldConcept, baseValue, "fr", query, FieldConfigurationService.LIMIT_RESULTS))
+                .thenReturn(expectedResults);
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocompleteRelated(userInfo, fieldCode, baseValue, query, 42L);
+
+        assertThat(results).isEqualTo(expectedResults);
+        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
+    }
+
+    @Test
+    void getUrlForFieldCode_withActionUnitId_shouldReturnUrl_whenActionUnitConfigExists() {
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId("12");
+        cfc.setConcept(concept);
+        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.of(cfc));
+
+        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, 42L);
+
+        assertThat(result).isEqualTo("http://exemple.org/?idc=12&idt=th2");
+    }
+
+    @Test
+    void getUrlForFieldCode_withNullActionUnitId_shouldFallBackToInstitutionConfig() {
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId("12");
+        cfc.setConcept(concept);
+        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+                .thenReturn(Optional.of(cfc));
+
+        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, null);
+
+        assertThat(result).isEqualTo("http://exemple.org/?idc=12&idt=th2");
     }
 
     @Test

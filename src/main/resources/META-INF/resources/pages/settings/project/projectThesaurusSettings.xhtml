@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:settingscomp="http://xmlns.jcp.org/jsf/composite/pages/settings/components"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form" xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    <f:event type="preRenderView" listener="#{projectDetailsBean.checkProjectOrRedirect}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+
+        <script>
+            function startProgressBar() {
+                const bars = document.getElementsByClassName('thesaurus-progress-bar');
+                for (const bar of bars) {
+                    bar.style.visibility = 'visible';
+                }
+                PF('pbAjaxThesaurusLoadWidget').start();
+            }
+
+            function endProgressBar() {
+                const bars = document.getElementsByClassName('thesaurus-progress-bar');
+                for (const bar of bars) {
+                    bar.style.visibility = 'collapse';
+                }
+                PF('pbAjaxThesaurusLoadWidget').cancel();
+            }
+        </script>
+
+        <main class="container-lg">
+            <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
+                <p:breadCrumb homeDisplay="false">
+                    <p:menuitem value="Projets" action="#{projectDetailsBean.goToProjectList()}"/>
+                    <p:menuitem value="#{projectThesaurusSettingsBean.project.name}" action="#{projectDetailsBean.backToProjectSettings()}"/>
+                    <p:menuitem value="#{langBean.msg('common.label.thesaurus')}"/>
+                </p:breadCrumb>
+            </form:csrfform>
+
+            <settingscomp:fieldValue
+                    title="#{langBean.msg('projectSettings.thesaurus.title', projectThesaurusSettingsBean.project.name)}"
+                    formId="thesaurusForm"
+                    saveMethod="#{projectThesaurusSettingsBean.saveConfig()}"
+                    cancelMethod="#{projectDetailsBean.backToProjectSettings()}"
+                    update="pbAjaxThesaurusLoad"
+                    onstart="startProgressBar()"
+                    oncomplete="endProgressBar()"
+            >
+                <p:messages showDetail="true" autoUpdate="true" closable="true" id="messages"/>
+
+                <div>
+                    <p style="font-style: italic">
+                        #{langBean.msg('thesaurusConfig.hint')}
+                    </p>
+                    <h:graphicImage styleClass="config-example" library="img" name="opentheso_config_example.png" alt="Example configuration on OpenTheso"/>
+                </div>
+                <hr/>
+
+                <settingscomp:fieldValueRow label="#{langBean.msg('myThesaurus.url')}" inputId="project-thesaurus" >
+                    <p:inputText id="project-thesaurus" value="#{projectThesaurusSettingsBean.thesaurusUrl}"/>
+                </settingscomp:fieldValueRow>
+
+                <p:progressBar widgetVar="pbAjaxThesaurusLoadWidget"
+                               id="pbAjaxThesaurusLoad"
+                               ajax="true"
+                               value="#{projectThesaurusSettingsBean.progressWrapper.progressPercentage}"
+                               labelTemplate="{value}%"
+                               styleClass="mt-3 thesaurus-progress-bar"
+                               global="true"
+                               interval="500"
+                               style="visibility: collapse"
+                />
+
+            </settingscomp:fieldValue>
+        </main>
+    </ui:define>
+
+</ui:composition>

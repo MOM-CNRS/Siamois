@@ -244,6 +244,23 @@ public class FieldConfigurationService {
     }
 
     /**
+     * Finds the vocabulary URL for a given action unit (project).
+     *
+     * @param actionUnitId the action unit for which to find the vocabulary URL
+     * @return an Optional containing the vocabulary URL if found, otherwise empty
+     */
+    @NonNull
+    public Optional<String> findVocabularyUrlOfActionUnitId(@NonNull Long actionUnitId) {
+        Optional<ConceptFieldConfig> optConfig = conceptFieldConfigRepository
+                .findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, actionUnitId);
+        if (optConfig.isEmpty()) return Optional.empty();
+        Concept concept = optConfig.get().getConcept();
+        Hibernate.initialize(concept.getVocabulary());
+        Vocabulary vocabulary = concept.getVocabulary();
+        return Optional.of(vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId());
+    }
+
+    /**
      * Finds the configuration for a specific field code for a user.
      *
      * @param info      the user information containing institution and user details
@@ -253,7 +270,22 @@ public class FieldConfigurationService {
      */
     @NonNull
     public Concept findParentConceptForFieldcode(@NonNull UserInfo info, @NonNull String fieldCode) throws NoConfigForFieldException {
-        Concept concept = findConfigurationForFieldCode(info, fieldCode).getConcept();
+        return findParentConceptForFieldcode(info, fieldCode, null);
+    }
+
+    /**
+     * Finds the configuration for a specific field code, scoped to a project (Action Unit) if one is given.
+     * Falls back to the institution configuration when no action unit is given, or it has no override.
+     *
+     * @param info         the user information containing institution and user details
+     * @param fieldCode    the field code for which to find the configuration
+     * @param actionUnitId the action unit (project) to check for an override, or null for institution-only
+     * @return the Concept associated with the field code
+     * @throws NoConfigForFieldException if no configuration is found for the field code
+     */
+    @NonNull
+    public Concept findParentConceptForFieldcode(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Long actionUnitId) throws NoConfigForFieldException {
+        Concept concept = findConfigurationForFieldCode(info, fieldCode, actionUnitId).getConcept();
         Hibernate.initialize(concept.getVocabulary());
         return concept;
     }
@@ -278,8 +310,21 @@ public class FieldConfigurationService {
      */
     @Nullable
     public String getUrlForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode) {
+        return getUrlForFieldCode(info, fieldCode, null);
+    }
+
+    /**
+     * Gets the URL for a specific field code, scoped to a project (Action Unit) if one is given.
+     *
+     * @param info         the user information containing institution and user details
+     * @param fieldCode    the field code for which to get the URL
+     * @param actionUnitId the action unit (project) to check for an override, or null for institution-only
+     * @return the URL of the concept associated with the field code, or null if no configuration is found
+     */
+    @Nullable
+    public String getUrlForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Long actionUnitId) {
         try {
-            return getUrlOfConcept(findParentConceptForFieldcode(info, fieldCode));
+            return getUrlOfConcept(findParentConceptForFieldcode(info, fieldCode, actionUnitId));
         } catch (NoConfigForFieldException e) {
             return null;
         }
@@ -313,7 +358,24 @@ public class FieldConfigurationService {
      */
     @NonNull
     public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode, @NonNull ActionUnitDTO actionUnitDTO) throws NoConfigForFieldException {
-        Optional<ConceptFieldConfig> projectConfig = conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitDTO.getId());
+        return findConfigurationForFieldCode(info, fieldCode, actionUnitDTO.getId());
+    }
+
+    /**
+     * Searchs the configuration for a specific field for a project. If none set, falls back to the institution configuration.
+     *
+     * @param info         the user information containing institution and user details
+     * @param fieldCode    the field code for which to find the configuration
+     * @param actionUnitId the action unit (project) to check for an override, or null for institution-only
+     * @return The project configuration if it exists, otherwise the institution configuration
+     * @throws NoConfigForFieldException if no configuration is found for the field code
+     */
+    @NonNull
+    public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Long actionUnitId) throws NoConfigForFieldException {
+        if (actionUnitId == null) {
+            return findConfigurationForFieldCode(info, fieldCode);
+        }
+        Optional<ConceptFieldConfig> projectConfig = conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitId);
         if (projectConfig.isEmpty()) {
             return findConfigurationForFieldCode(info, fieldCode);
         }
@@ -332,7 +394,24 @@ public class FieldConfigurationService {
     @NonNull
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocomplete(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable String input) throws NoConfigForFieldException {
-        ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
+        return fetchAutocomplete(info, fieldCode, input, null);
+    }
+
+    /**
+     * Fetches autocomplete suggestions for a given field code and input string, scoped to a project
+     * (Action Unit) if one is given.
+     *
+     * @param info         the user information containing institution and user details
+     * @param fieldCode    the field code for which to fetch autocomplete suggestions
+     * @param input        the input string to match against concept labels. Can be null or empty.
+     * @param actionUnitId the action unit (project) to check for an override, or null for institution-only
+     * @return a list of matching ConceptAutocompleteDTO objects
+     * @throws NoConfigForFieldException if no configuration is found for the field code
+     */
+    @NonNull
+    @ExecutionTimeLogger
+    public List<ConceptAutocompleteDTO> fetchAutocomplete(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
+        ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode, actionUnitId);
         return autocompleteRepository.findMatchingConceptsFor(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
     }
 
@@ -352,7 +431,19 @@ public class FieldConfigurationService {
     @NonNull
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Concept baseValue, @Nullable String input) throws NoConfigForFieldException {
-        ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode);
+        return fetchAutocompleteRelated(info, fieldCode, baseValue, input, null);
+    }
+
+    /**
+     * Fetches autocomplete suggestions depending on the base value, scoped to a project (Action Unit)
+     * if one is given. See {@link #fetchAutocompleteRelated(UserInfo, String, Concept, String)}.
+     *
+     * @param actionUnitId the action unit (project) to check for an override, or null for institution-only
+     */
+    @NonNull
+    @ExecutionTimeLogger
+    public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Concept baseValue, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
+        ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode, actionUnitId);
         return autocompleteRepository.findMatchingConceptsFromRelatedFor(config.getConcept(), baseValue, info.getLang(), input, LIMIT_RESULTS);
     }
 

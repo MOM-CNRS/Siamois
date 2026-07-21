@@ -29,6 +29,7 @@ public class ProjectDetailsBean {
 
     private final ProjectUploadSettingsBean projectUploadSettingsBean;
     private final ProjectMembersListBean projectMembersListBean;
+    private final ProjectThesaurusSettingsBean projectThesaurusSettingsBean;
     private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final RedirectBean redirectBean;
@@ -58,9 +59,11 @@ public class ProjectDetailsBean {
                 langBean.msg("projectSettings.titles.tables"),
                 "(A venir) Gérer les tables, types, formulaires et identifiants du projet", () -> null));
 
-        elements.add(new OptionElement("bi bi-table",
-                "\uD83D\uDEA7 Thésaurus",
-                "(A venir) Gestion du thésaurus du projet", () -> null));
+        elements.add(new OptionElement("bi bi-table", langBean.msg("common.label.thesaurus"),
+                langBean.msg("projectSettings.descriptions.thesaurus"), () -> {
+            projectThesaurusSettingsBean.init(project);
+            return "/pages/settings/project/projectThesaurusSettings.xhtml?faces-redirect=true";
+        }));
 
 
     }
@@ -97,6 +100,7 @@ public class ProjectDetailsBean {
         elements = null;
         projectUploadSettingsBean.reset();
         projectMembersListBean.reset();
+        projectThesaurusSettingsBean.reset();
     }
 
     public StreamedContent getFile() {
