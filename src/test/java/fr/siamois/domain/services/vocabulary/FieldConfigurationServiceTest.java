@@ -339,8 +339,105 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
+    void fetchAutocompleteRelated_shouldThrowNoConfigException_whenConfigDoesNotExist() {
+        Concept baseValue = new Concept();
+        baseValue.setVocabulary(vocabulary);
+        baseValue.setExternalId("base");
+
+        assertThrows(NoConfigForFieldException.class,
+                () -> service.fetchAutocompleteRelated(userInfo, "TESTFIELD", baseValue, "test query"));
+
+        verifyNoInteractions(autocompleteRepository);
+    }
+
+    @Test
+    void fetchAutocompleteRelated_shouldReturnRelatedConceptsOfBaseValue_restrictedToTheFieldConfig() throws NoConfigForFieldException {
+        String fieldCode = "TESTFIELD";
+        String query = "test query";
+
+        Concept fieldConcept = new Concept();
+        fieldConcept.setVocabulary(vocabulary);
+        fieldConcept.setExternalId("field-concept");
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        cfc.setConcept(fieldConcept);
+        cfc.setFieldCode(fieldCode);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
+                .thenReturn(Optional.of(cfc));
+
+        Concept baseValue = new Concept();
+        baseValue.setVocabulary(vocabulary);
+        baseValue.setExternalId("base-value");
+
+        List<ConceptAutocompleteDTO> expectedResults = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"),
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 101", "101")
+        );
+        when(autocompleteRepository.findMatchingConceptsFromRelatedFor(fieldConcept, baseValue, "fr", query, FieldConfigurationService.LIMIT_RESULTS))
+                .thenReturn(expectedResults);
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocompleteRelated(userInfo, fieldCode, baseValue, query);
+
+        assertThat(results).isEqualTo(expectedResults);
+        // the field concept comes from the config, the base value from the caller: the order must not be swapped
+        verify(autocompleteRepository).findMatchingConceptsFromRelatedFor(fieldConcept, baseValue, "fr", query, FieldConfigurationService.LIMIT_RESULTS);
+    }
+
+    @Test
+    void fetchAutocompleteRelated_shouldPreferUserConfigOverInstitutionConfig() throws NoConfigForFieldException {
+        String fieldCode = "TESTFIELD";
+
+        Concept userFieldConcept = new Concept();
+        userFieldConcept.setVocabulary(vocabulary);
+        userFieldConcept.setExternalId("user-field-concept");
+
+        ConceptFieldConfig userConfig = new ConceptFieldConfig();
+        userConfig.setConcept(userFieldConcept);
+        userConfig.setFieldCode(fieldCode);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeForUser(userInfo.getUser().getId(), userInfo.getInstitution().getId(), fieldCode))
+                .thenReturn(Optional.of(userConfig));
+
+        Concept baseValue = new Concept();
+        baseValue.setVocabulary(vocabulary);
+        baseValue.setExternalId("base-value");
+
+        service.fetchAutocompleteRelated(userInfo, fieldCode, baseValue, null);
+
+        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
+        // a null input is forwarded as-is, the SQL function treats it as "no text filter"
+        verify(autocompleteRepository).findMatchingConceptsFromRelatedFor(userFieldConcept, baseValue, "fr", null, FieldConfigurationService.LIMIT_RESULTS);
+    }
+
+    @Test
     void resultLimit_shoudReturnCurrentResultLimit() {
         assertThat(service.resultLimit()).isEqualTo(FieldConfigurationService.LIMIT_RESULTS);
+    }
+
+    @Test
+    void fetchAllConfiguredVocabularies_returnsMapPerFieldCode() {
+        String fieldCode = "TESTFIELD";
+        when(conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
+                userInfo.getInstitution().getId(), userInfo.getUser().getId()))
+                .thenReturn(List.of(fieldCode));
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        cfc.setConcept(concept);
+        cfc.setFieldCode(fieldCode);
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
+                .thenReturn(Optional.of(cfc));
+
+        List<ConceptAutocompleteDTO> expected = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "A", "fr"));
+        when(autocompleteRepository.findMatchingConceptsFor(cfc.getConcept(), "fr", null, FieldConfigurationService.LIMIT_RESULTS))
+                .thenReturn(expected);
+
+        var result = service.fetchAllConfiguredVocabularies(userInfo);
+
+        assertThat(result).containsEntry(fieldCode, expected);
     }
 
 }

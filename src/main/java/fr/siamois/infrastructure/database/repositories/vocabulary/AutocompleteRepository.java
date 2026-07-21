@@ -85,10 +85,10 @@ public class AutocompleteRepository {
      * Find matching concepts for the given concept in the specified language, input string, and limit.
      * This method calls the database function concept_autocomplete.
      *
-     * @param concept The field concept to find matches for
-     * @param lang    The language code to filter results
-     * @param input   The input string to match against concept labels
-     * @param limit   The maximum number of results to return
+     * @param field The field concept to find matches for
+     * @param lang  The language code to filter results
+     * @param input The input string to match against concept labels. Can be null, then treated as no text filter
+     * @param limit The maximum number of results to return
      * @return A list of ConceptAutocompleteDTO containing matching concepts
      */
     @NonNull
@@ -115,11 +115,13 @@ public class AutocompleteRepository {
     /**
      * Find matching concepts among the concepts related to the given concept, in the specified language,
      * input string and limit. This method calls the database function concept_autocomplete_related.
+     * The candidates are restricted to the concepts imported in the context of the given field concept
+     * <em>and</em> related to the given base value.
      *
+     * @param field        The field concept the candidates must be configured for
      * @param baseValue    The concept whose related concepts are the autocomplete candidates
-     *
      * @param lang         The language code to filter results
-     * @param input        The input string to match against concept labels
+     * @param input        The input string to match against concept labels. Can be null, then treated as no text filter
      * @param limitResults The maximum number of results to return
      * @return A list of ConceptAutocompleteDTO containing matching related concepts
      */
