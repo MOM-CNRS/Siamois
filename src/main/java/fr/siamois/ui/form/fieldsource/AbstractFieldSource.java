@@ -33,14 +33,22 @@ abstract class AbstractFieldSource implements FieldSource {
         }
         for (CustomFormPanelUiDto panel : form.getLayout()) {
             if (panel.getRows() == null) continue;
-            for (CustomRowUiDto row : panel.getRows()) {
-                if (row.getColumns() == null) continue;
-                for (CustomColUiDto column : row.getColumns()) {
-                    CustomField field = column.getField();
-                    if (field != null) {
-                        onColumn.accept(field, column);
-                    }
-                }
+            processRows(onColumn, panel);
+        }
+    }
+
+    private static void processRows(BiConsumer<CustomField, CustomColUiDto> onColumn, CustomFormPanelUiDto panel) {
+        for (CustomRowUiDto row : panel.getRows()) {
+            if (row.getColumns() == null) continue;
+            processColumns(onColumn, row);
+        }
+    }
+
+    private static void processColumns(BiConsumer<CustomField, CustomColUiDto> onColumn, CustomRowUiDto row) {
+        for (CustomColUiDto column : row.getColumns()) {
+            CustomField field = column.getField();
+            if (field != null) {
+                onColumn.accept(field, column);
             }
         }
     }
