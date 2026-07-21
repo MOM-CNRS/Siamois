@@ -5,6 +5,7 @@ import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
@@ -22,8 +23,8 @@ import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.FieldAnswerMaps;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -45,7 +46,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Création et mise à jour OpenAPI des mobiliers (spécimens) : formulaire custom par type + institution.
+ * Création et mise à jour OpenAPI des mobiliers :
+ * création via {@link Specimen#NEW_UNIT_FORM}, édition via {@link Specimen#DETAILS_FORM} (comme le web).
  */
 @Slf4j
 @Service
@@ -100,17 +102,8 @@ public class FindOpenApiService {
         shell.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
         shell.setValidated(ValidationStatus.INCOMPLETE);
 
-        Map<String, AnswerInput> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
-
-        if (customForm == null) {
-            if (!fieldAnswers.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Aucun formulaire personnalisé pour ce type de mobilier : impossible d'appliquer fieldAnswers");
-            }
-            SpecimenDTO created = specimenService.save(shell);
-            return findOpenApiMapper.toResource(created);
-        }
+        Map<String, Object> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        CustomForm customForm = Specimen.NEW_UNIT_FORM;
 
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
@@ -147,20 +140,12 @@ public class FindOpenApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
 
-        Map<String, AnswerInput> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
         if (answers.isEmpty()) {
             return findOpenApiMapper.toResource(dto);
         }
 
-        ConceptDTO specimenType = dto.getType();
-        if (specimenType == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans type");
-        }
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(specimenType, institution);
-        if (customForm == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Aucun formulaire personnalisé pour ce type de mobilier : impossible d'appliquer fieldAnswers");
-        }
+        CustomForm customForm = Specimen.DETAILS_FORM;
 
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
@@ -209,11 +194,11 @@ public class FindOpenApiService {
 
     private void mergeFieldAnswers(CustomFormResponseViewModel response,
                                    FieldSource fieldSource,
-                                   Map<String, AnswerInput> fieldAnswers) {
+                                   Map<String, Object> fieldAnswers) {
         if (fieldAnswers == null || fieldAnswers.isEmpty() || response.getAnswers() == null) {
             return;
         }
-        for (Map.Entry<String, AnswerInput> e : fieldAnswers.entrySet()) {
+        for (Map.Entry<String, Object> e : fieldAnswers.entrySet()) {
             mergeOneFieldAnswer(response, fieldSource, e.getKey(), e.getValue());
         }
     }
@@ -238,7 +223,7 @@ public class FindOpenApiService {
         if (vm == null) {
             return;
         }
-        Object rawValue = value instanceof AnswerInput ai ? ai.value() : value;
+        Object rawValue = FieldAnswerMaps.unwrap(value);
         Object typed;
         try {
             typed = coerceAnswerValue(field, rawValue);

@@ -1,19 +1,24 @@
 package fr.siamois.domain.services.specimen;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
@@ -42,6 +47,9 @@ public class SpecimenService implements ArkEntityService {
     private final SpecimenSummaryMapper specimenSummaryMapper;
     private final DocumentRepository documentRepository;
     private final RecordingUnitRepository recordingUnitRepository;
+    private final PersonRepository personRepository;
+    private final ConceptRepository conceptRepository;
+    private final InstitutionRepository institutionRepository;
     private final ArkRepository arkRepository;
 
 
@@ -187,8 +195,9 @@ public class SpecimenService implements ArkEntityService {
         setupParents(specimen, managedSpecimen);
         setupChilds(specimen, managedSpecimen);
         setupOtherFields(specimen, managedSpecimen);
-        synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
-        synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());
+        attachManagedAssociations(specimen, managedSpecimen);
+        synchronizeCollection(managedSpecimen.getMaterialClass(), resolveConcepts(specimen.getMaterialClass()));
+        synchronizeCollection(managedSpecimen.getMaterial(), resolveConcepts(specimen.getMaterial()));
         synchronizeCollection(managedSpecimen.getContainers(), specimen.getContainers());
         synchronizeCollection(managedSpecimen.getPhases(), specimen.getPhases());
 
@@ -197,6 +206,71 @@ public class SpecimenService implements ArkEntityService {
 
         // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
         return specimenMapper.convert(savedSpecimen);
+    }
+
+    /**
+     * Remplace les associations mappées (instances transientes) par des références JPA managées.
+     */
+    private void attachManagedAssociations(Specimen source, Specimen managed) {
+        if (source.getRecordingUnit() != null && source.getRecordingUnit().getId() != null) {
+            Long ruId = source.getRecordingUnit().getId();
+            managed.setRecordingUnit(recordingUnitRepository.findById(ruId)
+                    .orElseThrow(() -> new IllegalArgumentException("Recording unit not found: " + ruId)));
+        }
+        if (source.getAuthors() != null) {
+            managed.setAuthors(resolvePersons(source.getAuthors()));
+        }
+        if (source.getCollectors() != null) {
+            managed.setCollectors(resolvePersons(source.getCollectors()));
+        }
+        if (source.getCreatedBy() != null && source.getCreatedBy().getId() != null) {
+            personRepository.findById(source.getCreatedBy().getId()).ifPresent(managed::setCreatedBy);
+        }
+        if (source.getValidatedBy() != null && source.getValidatedBy().getId() != null) {
+            personRepository.findById(source.getValidatedBy().getId()).ifPresent(managed::setValidatedBy);
+        }
+        if (source.getCreatedByInstitution() != null && source.getCreatedByInstitution().getId() != null) {
+            Long institutionId = source.getCreatedByInstitution().getId();
+            institutionRepository.findById(institutionId).ifPresent(managed::setCreatedByInstitution);
+        }
+        if (source.getCategory() != null && source.getCategory().getId() != null) {
+            managed.setCategory(resolveConcept(source.getCategory()));
+        }
+        if (source.getNormalizedInterpretation() != null && source.getNormalizedInterpretation().getId() != null) {
+            managed.setNormalizedInterpretation(resolveConcept(source.getNormalizedInterpretation()));
+        }
+        if (source.getChronologicalAttribution() != null && source.getChronologicalAttribution().getId() != null) {
+            managed.setChronologicalAttribution(resolveConcept(source.getChronologicalAttribution()));
+        }
+    }
+
+    private List<Person> resolvePersons(List<Person> refs) {
+        List<Long> ids = refs.stream()
+                .filter(Objects::nonNull)
+                .map(Person::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(personRepository.findAllById(ids));
+    }
+
+    private Concept resolveConcept(Concept ref) {
+        return conceptRepository.findById(ref.getId()).orElse(ref);
+    }
+
+    private Set<Concept> resolveConcepts(Set<Concept> refs) {
+        if (refs == null || refs.isEmpty()) {
+            return new HashSet<>();
+        }
+        Map<Long, Concept> byId = new LinkedHashMap<>();
+        for (Concept ref : refs) {
+            if (ref != null && ref.getId() != null) {
+                byId.putIfAbsent(ref.getId(), resolveConcept(ref));
+            }
+        }
+        return new HashSet<>(byId.values());
     }
 
     @Override

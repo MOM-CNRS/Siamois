@@ -159,15 +159,26 @@ public class ActionUnitService implements ArkEntityService {
         Person user = personMapper.invertConvert(info.getUser());
         actionUnit.setCreatedBy(user);
 
-        if (actionUnitDTO.getMainLocation() != null && actionUnitDTO.getMainLocation().getId() == null) {
-            SpatialUnit toSave = new SpatialUnit();
-            toSave.setCategory(actionUnit.getMainLocation().getCategory());
-            toSave.setName(actionUnitDTO.getMainLocation().getName());
-            toSave.setCreatedBy(actionUnit.getCreatedBy());
-            toSave.setCode(actionUnitDTO.getMainLocation().getCode());
-            toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
-            toSave = spatialUnitRepository.save(toSave);
-            actionUnit.setMainLocation(toSave);
+        if (actionUnitDTO.getMainLocation() != null) {
+            if (actionUnitDTO.getMainLocation().getId() == null) {
+                SpatialUnit toSave = new SpatialUnit();
+                toSave.setCategory(actionUnit.getMainLocation().getCategory());
+                toSave.setName(actionUnitDTO.getMainLocation().getName());
+                toSave.setCreatedBy(actionUnit.getCreatedBy());
+                toSave.setCode(actionUnitDTO.getMainLocation().getCode());
+                toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+                toSave = spatialUnitRepository.save(toSave);
+                actionUnit.setMainLocation(toSave);
+            } else {
+                spatialUnitRepository.findById(actionUnitDTO.getMainLocation().getId())
+                        .ifPresentOrElse(actionUnit::setMainLocation,
+                                () -> {
+                                    throw new FailedActionUnitSaveException(
+                                            "Lieu introuvable: " + actionUnitDTO.getMainLocation().getId());
+                                });
+            }
+        } else {
+            actionUnit.setMainLocation(null);
         }
         if (actionUnitDTO.getSpatialContext() != null) {
             Set<SpatialUnit> persistentContext = new HashSet<>();

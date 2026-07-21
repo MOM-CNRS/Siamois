@@ -8,6 +8,8 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
@@ -30,6 +32,7 @@ import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -42,6 +45,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -112,6 +116,8 @@ class RecordingUnitServiceTest {
     private PhaseRepository phaseRepository;
     @Mock
     private PhaseMapper phaseMapper;
+    @Mock
+    private UnitDefinitionRepository unitDefinitionRepository;
 
 
     @InjectMocks
@@ -324,6 +330,44 @@ class RecordingUnitServiceTest {
         }));
         verify(recordingUnitRepository).findById(2L);
         verify(recordingUnitRepository).findById(3L);
+    }
+
+    @Test
+    void save_measurementFieldsWithSameUnit_reusesManagedUnitReference() {
+        long existingId = 42L;
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(existingId);
+
+        UnitDefinition detachedUnit1 = UnitDefinition.builder().id(1L).symbol("m").build();
+        UnitDefinition detachedUnit2 = UnitDefinition.builder().id(1L).symbol("m").build();
+        MeasurementAnswer zInf = MeasurementAnswer.builder().numericValue(1.0).unit(detachedUnit1).build();
+        MeasurementAnswer zSup = MeasurementAnswer.builder().numericValue(2.0).unit(detachedUnit2).build();
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setZInf(zInf);
+        incoming.setZSup(zSup);
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+
+        UnitDefinition managedUnit = UnitDefinition.builder().id(1L).symbol("m").build();
+
+        when(recordingUnitMapper.invertConvert(dto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(unitDefinitionRepository.findById(1L)).thenReturn(Optional.of(managedUnit));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(dto);
+
+        recordingUnitService.save(dto);
+
+        ArgumentCaptor<RecordingUnit> savedCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
+        verify(recordingUnitRepository).save(savedCaptor.capture());
+        RecordingUnit saved = savedCaptor.getValue();
+        assertNotNull(saved.getZInf());
+        assertNotNull(saved.getZSup());
+        assertSame(saved.getZInf().getUnit(), saved.getZSup().getUnit());
+        verify(unitDefinitionRepository).findById(1L);
     }
 
 

@@ -12,6 +12,9 @@ public record MeasurementRef(
         @Nullable String symbol,
 
         @Schema(description = "Valeur normalisée dans l'unité SI de référence")
-        @Nullable Double normalizedValue
+        @Nullable Double normalizedValue,
+
+        @Schema(description = "Commentaire associé à la mesure")
+        @Nullable String comment
 ) {
 }

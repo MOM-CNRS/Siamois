@@ -42,7 +42,7 @@ spring:
       connection-timeout: 20000
       connection-test-query: SELECT 1
   jpa:
-    show-sql: true
+    show-sql: false
     generate-ddl: true
     hibernate:
       ddl-auto: update
@@ -62,6 +62,17 @@ spring:
   messages:
     basename: language/messages
     encoding: UTF-8
+
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH_ENABLED:false}
+        sender: ${EMAIL_SENDER_ADDRESS:test@gmail.com}
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:200}
+    username: ${SMTP_USERNAME:admin}
+    password: ${SMTP_PASSWORD:admin}
 
 jsf:
   primefaces:

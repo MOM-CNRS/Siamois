@@ -13,9 +13,12 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
@@ -62,6 +65,15 @@ class SpecimenServiceTest {
     private RecordingUnitRepository recordingUnitRepository;
 
     @Mock
+    private PersonRepository personRepository;
+
+    @Mock
+    private ConceptRepository conceptRepository;
+
+    @Mock
+    private InstitutionRepository institutionRepository;
+
+    @Mock
     private SpecimenSummaryMapper specimenSummaryMapper;
 
     @Mock
@@ -69,6 +81,43 @@ class SpecimenServiceTest {
 
     @Mock
     private ArkRepository arkRepository;
+
+    @BeforeEach
+    void stubManagedAssociationLookups() {
+        lenient().when(recordingUnitRepository.findById(anyLong())).thenAnswer(inv -> {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(inv.getArgument(0));
+            return Optional.of(ru);
+        });
+        lenient().when(personRepository.findById(anyLong())).thenAnswer(inv -> {
+            Person p = new Person();
+            p.setId(inv.getArgument(0));
+            return Optional.of(p);
+        });
+        lenient().when(personRepository.findAllById(any())).thenAnswer(inv -> {
+            Iterable<Long> ids = inv.getArgument(0);
+            List<Person> people = new ArrayList<>();
+            for (Long id : ids) {
+                Person p = new Person();
+                p.setId(id);
+                people.add(p);
+            }
+            return people;
+        });
+        lenient().when(conceptRepository.findById(anyLong())).thenAnswer(inv -> {
+            Long id = inv.getArgument(0);
+            Concept c = new Concept();
+            c.setId(id);
+            // Concept.equals is based on externalId + vocabulary; keep stubs distinct by id
+            c.setExternalId(String.valueOf(id));
+            return Optional.of(c);
+        });
+        lenient().when(institutionRepository.findById(anyLong())).thenAnswer(inv -> {
+            Institution i = new Institution();
+            i.setId(inv.getArgument(0));
+            return Optional.of(i);
+        });
+    }
 
     @Test
     void findWithoutArk() {
@@ -662,11 +711,11 @@ class SpecimenServiceTest {
         specimenService.save(dto);
 
         // Assert
-        // Silver is retained, Bronze pruned out, Gold merged in cleanly
+        // Silver is retained, Bronze pruned out, Gold merged in (resolved as managed refs)
         Set<Concept> results = managedSpecimen.getMaterial();
-        assertTrue(results.contains(silver));
-        assertTrue(results.contains(gold));
-        assertFalse(results.contains(bronze));
+        assertTrue(results.stream().anyMatch(c -> Objects.equals(c.getId(), 102L)));
+        assertTrue(results.stream().anyMatch(c -> Objects.equals(c.getId(), 101L)));
+        assertFalse(results.stream().anyMatch(c -> Objects.equals(c.getId(), 103L)));
         assertEquals(2, results.size());
     }
 
@@ -1116,7 +1165,8 @@ class SpecimenServiceTest {
 
         specimenService.save(dto);
 
-        assertSame(author, managed.getCreatedBy());
+        assertNotNull(managed.getCreatedBy());
+        assertEquals(3L, managed.getCreatedBy().getId());
     }
 
     @Test
@@ -1157,7 +1207,7 @@ class SpecimenServiceTest {
 
         specimenService.save(dto);
 
-        assertTrue(managed.getMaterialClass().contains(matClass));
+        assertTrue(managed.getMaterialClass().stream().anyMatch(c -> Objects.equals(c.getId(), 50L)));
 
     }
     // =====================================================================

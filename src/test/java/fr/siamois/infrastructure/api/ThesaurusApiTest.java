@@ -71,6 +71,25 @@ class ThesaurusApiTest {
     }
 
     @Test
+    void fetchThesaurusInfo_parsesIdtAfterOtherQueryParams() throws InvalidEndpointException {
+        String uri = "https://thesaurus.mom.fr/?idc=4282369&idt=th223";
+        ThesaurusDTO expectedThesaurus = new ThesaurusDTO("th223", List.of(new LabelDTO("fr", "SIAMOIS")), "THESAURUS");
+        when(restTemplate.getForObject("https://thesaurus.mom.fr/openapi/v1/thesaurus", ThesaurusDTO[].class))
+                .thenReturn(new ThesaurusDTO[]{expectedThesaurus});
+
+        ThesaurusDTO result = thesaurusApi.fetchThesaurusInfo(uri);
+
+        assertEquals("th223", result.getIdTheso());
+        assertEquals("https://thesaurus.mom.fr", result.getBaseUri());
+    }
+
+    @Test
+    void fetchThesaurusInfo_missingIdt_throwsInvalidEndpoint() {
+        assertThrows(InvalidEndpointException.class,
+                () -> thesaurusApi.fetchThesaurusInfo("https://thesaurus.mom.fr/?idc=4282369"));
+    }
+
+    @Test
     void fetchThesaurusInfoByServerAndId_success() throws InvalidEndpointException {
         String server = "http://example.com";
         String idThesaurus = "123";

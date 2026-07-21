@@ -6,6 +6,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -70,6 +71,8 @@ class ProjectApiServiceMutationTest {
     private ConceptMapper conceptMapper;
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
+    @Mock
+    private PhaseService phaseService;
 
     private ProjectApiService service;
     private ProjectApiCaller caller;
@@ -92,7 +95,7 @@ class ProjectApiServiceMutationTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService);
+                recordingUnitOpenApiService, phaseService);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
