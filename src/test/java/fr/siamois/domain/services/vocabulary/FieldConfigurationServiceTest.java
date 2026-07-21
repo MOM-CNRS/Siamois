@@ -204,12 +204,14 @@ class FieldConfigurationServiceTest {
                 .thenReturn(savedConcept);
         when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId("SIATEST", 42L))
                 .thenReturn(Optional.of(existing));
+        when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
 
         Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForActionUnit(actionUnitDTO, vocabulary, new ProgressWrapper());
 
         assertThat(result).isEmpty();
         assertThat(existing.getConcept()).isEqualTo(savedConcept);
-        verify(conceptFieldConfigRepository, never()).save(any(ConceptFieldConfig.class));
+        // the existing config is updated in place, no new one is created
+        verify(conceptFieldConfigRepository).save(existing);
         verifyNoInteractions(actionUnitMapper);
         verify(conceptService).saveAllSubConceptOfIfUpdated(eq(existing), any(ProgressWrapper.class));
     }
@@ -491,19 +493,19 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
-    void fetchAutocompleteRelated_shouldPreferUserConfigOverInstitutionConfig() throws NoConfigForFieldException {
+    void fetchAutocompleteRelated_shouldForwardNullInput_asIs() throws NoConfigForFieldException {
         String fieldCode = "TESTFIELD";
 
-        Concept userFieldConcept = new Concept();
-        userFieldConcept.setVocabulary(vocabulary);
-        userFieldConcept.setExternalId("user-field-concept");
+        Concept fieldConcept = new Concept();
+        fieldConcept.setVocabulary(vocabulary);
+        fieldConcept.setExternalId("field-concept");
 
-        ConceptFieldConfig userConfig = new ConceptFieldConfig();
-        userConfig.setConcept(userFieldConcept);
-        userConfig.setFieldCode(fieldCode);
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        cfc.setConcept(fieldConcept);
+        cfc.setFieldCode(fieldCode);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeForUser(userInfo.getUser().getId(), userInfo.getInstitution().getId(), fieldCode))
-                .thenReturn(Optional.of(userConfig));
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
+                .thenReturn(Optional.of(cfc));
 
         Concept baseValue = new Concept();
         baseValue.setVocabulary(vocabulary);
@@ -511,9 +513,8 @@ class FieldConfigurationServiceTest {
 
         service.fetchAutocompleteRelated(userInfo, fieldCode, baseValue, null);
 
-        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
         // a null input is forwarded as-is, the SQL function treats it as "no text filter"
-        verify(autocompleteRepository).findMatchingConceptsFromRelatedFor(userFieldConcept, baseValue, "fr", null, FieldConfigurationService.LIMIT_RESULTS);
+        verify(autocompleteRepository).findMatchingConceptsFromRelatedFor(fieldConcept, baseValue, "fr", null, FieldConfigurationService.LIMIT_RESULTS);
     }
 
     @Test
