@@ -1,6 +1,7 @@
 package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customform.DependsOnJson;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
@@ -34,6 +35,11 @@ public class TableRowFieldSource implements FieldSource {
      * Map des règles enabledWhen par field (optionnel).
      */
     private final Map<CustomField, EnabledWhenJson> enabledByField = new HashMap<>();
+
+    /**
+     * Map des règles dependsOn par field (optionnel).
+     */
+    private final Map<CustomField, DependsOnJson> dependsOnByField = new HashMap<>();
 
     public TableRowFieldSource(TableDefinition tableDefinition) {
         this(tableDefinition, null);
@@ -102,6 +108,9 @@ public class TableRowFieldSource implements FieldSource {
         if (column.getEnabledWhenSpec() != null) {
             enabledByField.put(field, column.getEnabledWhenSpec());
         }
+        if (column.getDependsOnSpec() != null) {
+            dependsOnByField.put(field, column.getDependsOnSpec());
+        }
     }
 
 
@@ -118,5 +127,10 @@ public class TableRowFieldSource implements FieldSource {
     @Override
     public EnabledWhenJson getEnabledSpec(CustomField field) {
         return enabledByField.get(field);
+    }
+
+    @Override
+    public DependsOnJson getDependsOnSpec(CustomField field) {
+        return dependsOnByField.get(field);
     }
 }

@@ -1,6 +1,7 @@
 package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customform.DependsOnJson;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
@@ -16,6 +17,7 @@ public class PanelFieldSource implements FieldSource {
 
     private final Map<Long, CustomField> byId = new HashMap<>();
     private final Map<CustomField, EnabledWhenJson> enabledByField = new HashMap<>();
+    private final Map<CustomField, DependsOnJson> dependsOnByField = new HashMap<>();
 
     public PanelFieldSource(FormUiDto detailsForm) {
         index(detailsForm);
@@ -58,6 +60,9 @@ public class PanelFieldSource implements FieldSource {
         if (column.getEnabledWhenSpec() != null) {
             enabledByField.put(field, column.getEnabledWhenSpec());
         }
+        if (column.getDependsOnSpec() != null) {
+            dependsOnByField.put(field, column.getDependsOnSpec());
+        }
     }
 
 
@@ -74,5 +79,10 @@ public class PanelFieldSource implements FieldSource {
     @Override
     public EnabledWhenJson getEnabledSpec(CustomField field) {
         return enabledByField.get(field);
+    }
+
+    @Override
+    public DependsOnJson getDependsOnSpec(CustomField field) {
+        return dependsOnByField.get(field);
     }
 }

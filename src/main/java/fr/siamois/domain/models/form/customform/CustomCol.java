@@ -14,6 +14,7 @@ public class CustomCol implements Serializable {
     private CustomField field;
     private String className;
     private EnabledWhenJson enabledWhenSpec;
+    private DependsOnJson dependsOnSpec;
 
     public static class Builder {
 
@@ -41,6 +42,11 @@ public class CustomCol implements Serializable {
 
         public Builder enabledWhenSpec(EnabledWhenJson enabledWhenSpec) {
             col.setEnabledWhenSpec(enabledWhenSpec);
+            return this;
+        }
+
+        public Builder dependsOnSpec(DependsOnJson dependsOnSpec) {
+            col.setDependsOnSpec(dependsOnSpec);
             return this;
         }
 

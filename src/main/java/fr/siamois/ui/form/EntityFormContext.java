@@ -7,6 +7,8 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customform.DependsOnJson;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -220,6 +222,24 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     public boolean isColumnEnabled(CustomField field) {
         return colEnabledByFieldId.getOrDefault(field.getId(), true) ||
                 (formResponse.getAnswers().get(field) != null);
+    }
+
+    /**
+     * Resolves the concept currently answered on the field this one depends on
+     * ({@link DependsOnJson}), to be used as the "base value" for a related-concept autocomplete.
+     * Returns null if the field has no dependency, or the base field has no (single) concept answer yet.
+     */
+    public Concept getDependsOnBaseConcept(CustomField field) {
+        DependsOnJson spec = fieldSource.getDependsOnSpec(field);
+        if (spec == null) return null;
+        CustomField baseField = fieldSource.findFieldById(spec.getFieldId());
+        if (baseField == null) return null;
+        CustomFieldAnswerViewModel baseAnswer = getFieldAnswer(baseField);
+        if (baseAnswer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel single
+                && single.getValue() != null) {
+            return conceptMapper.invertConvert(single.getValue().concept());
+        }
+        return null;
     }
 
     /**
