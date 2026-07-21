@@ -161,10 +161,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Core autocomplete query, shared by every autocomplete entry point.
--- Exactly one of p_field_concept_id / p_related_of_concept_id is expected to be filled:
---   * p_field_concept_id      : restrict to the concepts imported in the context of that field concept
---   * p_related_of_concept_id : restrict to the concepts related (concept_related) to that concept
--- p_input NULL or blank means "no text filter", the results are then only ordered alphabetically.
 CREATE OR REPLACE FUNCTION concept_autocomplete_search(
     p_field_concept_id BIGINT,
     p_related_of_concept_id BIGINT,
@@ -187,12 +183,15 @@ BEGIN
                                  WHERE cl.lang_code = p_langcode
                                    AND cl.label_type = 0
                                    AND NOT c.is_deleted
-                                   AND (p_field_concept_id IS NULL OR
-                                        cl.fk_field_parent_concept_id = p_field_concept_id)
-                                   AND (p_related_of_concept_id IS NULL OR EXISTS (SELECT 1
-                                                                                   FROM concept_related cr
-                                                                                   WHERE cr.fk_concept_id = p_related_of_concept_id
-                                                                                     AND cr.fk_related_concept_id = c.concept_id))
+                                   AND cl.fk_field_parent_concept_id = p_field_concept_id
+                                   AND (p_related_of_concept_id IS NULL
+                                            OR
+                                        (p_related_of_concept_id IS NOT NULL AND EXISTS (SELECT 1
+                                                                                         FROM concept_related cr
+                                                                                         WHERE cr.fk_concept_id = p_related_of_concept_id
+                                                                                           AND cr.fk_related_concept_id = c.concept_id)
+                                                                                        )
+                                       )
                                    AND (p_input IS NULL OR trim(p_input) = '' OR
                                         unaccent(cl.label) ILIKE unaccent('%' || p_input || '%'))
                                  ORDER BY cl.label -- Sort by label in alphabetical order
@@ -242,6 +241,7 @@ $$ LANGUAGE plpgsql;
 -- Autocomplete restricted to the concepts related to p_base_concept_id.
 -- Used when a field value depends on the value selected in another field.
 CREATE OR REPLACE FUNCTION concept_autocomplete_related(
+    p_field_concept_id BIGINT,
     p_base_concept_id BIGINT,
     p_langcode VARCHAR(3),
     p_input TEXT,
@@ -250,6 +250,6 @@ CREATE OR REPLACE FUNCTION concept_autocomplete_related(
     RETURNS SETOF concept_autocomplete_record AS
 $$
 BEGIN
-    RETURN QUERY SELECT * FROM concept_autocomplete_search(NULL, p_base_concept_id, p_langcode, p_input, p_limit);
+    RETURN QUERY SELECT * FROM concept_autocomplete_search(p_field_concept_id, p_base_concept_id, p_langcode, p_input, p_limit);
 END;
 $$ LANGUAGE plpgsql;

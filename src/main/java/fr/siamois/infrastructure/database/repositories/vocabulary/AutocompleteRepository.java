@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Repository for fetching autocomplete suggestions for concepts.
@@ -85,64 +86,71 @@ public class AutocompleteRepository {
      * Find matching concepts for the given concept in the specified language, input string, and limit.
      * This method calls the database function concept_autocomplete.
      *
-     * @param concept The field concept to find matches for
-     * @param lang    The language code to filter results
-     * @param input   The input string to match against concept labels
-     * @param limit   The maximum number of results to return
+     * @param field The field concept to find matches for
+     * @param lang  The language code to filter results
+     * @param input The input string to match against concept labels. Can be null, then treated as no text filter
+     * @param limit The maximum number of results to return
      * @return A list of ConceptAutocompleteDTO containing matching concepts
      */
     @NonNull
     @ExecutionTimeLogger
-    public List<ConceptAutocompleteDTO> findMatchingConceptsFor(@NonNull Concept concept,
+    public List<ConceptAutocompleteDTO> findMatchingConceptsFor(@NonNull Concept field,
                                                                 @NonNull String lang,
                                                                 @Nullable String input,
                                                                 int limit) {
-        return executeAutocomplete("SELECT ca.* FROM concept_autocomplete(?, ?, ?, ?) ca", concept, lang, input, limit);
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT ca.* FROM concept_autocomplete(?, ?, ?, ?) ca")) {
+            log.trace("Executing findMatchingConceptsFor with field id {}, lang {}, input '{}', limit {}", field.getId(), lang, input, limit);
+            statement.setLong(1, field.getId());
+            statement.setString(2, lang);
+            statement.setString(3, input != null ? input : "");
+            statement.setInt(4, limit);
+
+            return processResultSet(field, lang, statement);
+        } catch (SQLException e) {
+            log.error("Error while fetching autocomplete results for field id {}: {}", field.getId(), e.getMessage(), e);
+            return List.of();
+        }
     }
 
     /**
      * Find matching concepts among the concepts related to the given concept, in the specified language,
      * input string and limit. This method calls the database function concept_autocomplete_related.
+     * The candidates are restricted to the concepts imported in the context of the given field concept
+     * <em>and</em> related to the given base value.
      *
+     * @param field        The field concept the candidates must be configured for
      * @param baseValue    The concept whose related concepts are the autocomplete candidates
      * @param lang         The language code to filter results
-     * @param input        The input string to match against concept labels
+     * @param input        The input string to match against concept labels. Can be null, then treated as no text filter
      * @param limitResults The maximum number of results to return
      * @return A list of ConceptAutocompleteDTO containing matching related concepts
      */
     @NonNull
     @ExecutionTimeLogger
-    public List<ConceptAutocompleteDTO> findMatchingConceptsFromRelatedFor(@NonNull Concept baseValue,
+    public List<ConceptAutocompleteDTO> findMatchingConceptsFromRelatedFor(@NonNull Concept field,
+                                                                           @Nullable Concept baseValue,
                                                                            @NonNull String lang,
                                                                            @Nullable String input,
                                                                            int limitResults) {
-        return executeAutocomplete("SELECT ca.* FROM concept_autocomplete_related(?, ?, ?, ?) ca", baseValue, lang, input, limitResults);
-    }
-
-    @NonNull
-    private List<ConceptAutocompleteDTO> executeAutocomplete(@NonNull String query,
-                                                             @NonNull Concept concept,
-                                                             @NonNull String lang,
-                                                             @Nullable String input,
-                                                             int limit) {
-        List<ConceptAutocompleteDTO> results = new ArrayList<>();
-
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
-            log.trace("Executing '{}' with concept id {}, lang {}, input '{}', limit {}", query, concept.getId(), lang, input, limit);
-            statement.setLong(1, concept.getId());
-            statement.setString(2, lang);
-            statement.setString(3, input != null ? input : "");
-            statement.setInt(4, limit);
+             PreparedStatement statement = connection.prepareStatement("SELECT ca.* FROM concept_autocomplete_related(?, ?, ?, ?, ?) ca")) {
+            log.trace("Executing findMatchingConceptsFromRelatedFor with field id {}, lang {}, input '{}', limit {}", field.getId(), lang, input, limitResults);
+            statement.setLong(1, field.getId());
+            statement.setObject(2, Objects.isNull(baseValue) ? null : baseValue.getId());
+            statement.setString(3, lang);
+            statement.setString(4, input);
+            statement.setInt(5, limitResults);
 
-            return processResultSet(concept, lang, statement, results);
+            return processResultSet(field, lang, statement);
         } catch (SQLException e) {
-            log.error("Error while fetching autocomplete results for concept id {}: {}", concept.getId(), e.getMessage(), e);
+            log.error("Error while fetching autocomplete results for field id {} and related of {} : {}", field.getId(), baseValue.getId(), e.getMessage(), e);
             return List.of();
         }
     }
 
-    private List<ConceptAutocompleteDTO> processResultSet(@NonNull Concept concept, @NonNull String lang, PreparedStatement statement, List<ConceptAutocompleteDTO> results) {
+    private List<ConceptAutocompleteDTO> processResultSet(@NonNull Concept concept, @NonNull String lang, PreparedStatement statement) {
+        List<ConceptAutocompleteDTO> results = new ArrayList<>();
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 ConceptAutocompleteDTO dto = rowToDTO(resultSet, lang);
