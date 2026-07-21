@@ -581,4 +581,49 @@ class EntityFormContextTest {
         address.setLabel(label);
         return address;
     }
+
+    @Test
+    void getActionUnitIdForThesaurus_returnsOwnId_whenUnitIsActionUnit() {
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                actionUnitDTO, fieldSource, formContextServices, conversionService,
+                scopeCallback, "scopeBinding"
+        );
+        when(actionUnitDTO.getId()).thenReturn(42L);
+
+        assertEquals(42L, ctx.getActionUnitIdForThesaurus());
+    }
+
+    @Test
+    void getActionUnitIdForThesaurus_returnsParentActionUnitId_whenUnitIsRecordingUnit() {
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                recordingUnitDTO, fieldSource, formContextServices, conversionService,
+                scopeCallback, "scopeBinding"
+        );
+        ActionUnitSummaryDTO actionUnit = mock(ActionUnitSummaryDTO.class);
+        when(actionUnit.getId()).thenReturn(7L);
+        when(recordingUnitDTO.getActionUnit()).thenReturn(actionUnit);
+
+        assertEquals(7L, ctx.getActionUnitIdForThesaurus());
+    }
+
+    @Test
+    void getActionUnitIdForThesaurus_returnsNull_whenRecordingUnitHasNoActionUnit() {
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                recordingUnitDTO, fieldSource, formContextServices, conversionService,
+                scopeCallback, "scopeBinding"
+        );
+        when(recordingUnitDTO.getActionUnit()).thenReturn(null);
+
+        assertNull(ctx.getActionUnitIdForThesaurus());
+    }
+
+    @Test
+    void getActionUnitIdForThesaurus_returnsNull_whenUnitHasNoProjectScope() {
+        EntityFormContext<AbstractEntityDTO> ctx = new EntityFormContext<>(
+                unit, fieldSource, formContextServices, conversionService,
+                scopeCallback, "scopeBinding"
+        );
+
+        assertNull(ctx.getActionUnitIdForThesaurus());
+    }
 }

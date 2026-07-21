@@ -21,6 +21,7 @@
         <cc:attribute name="multiple" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="dependsOnBaseConcept" type="fr.siamois.domain.models.vocabulary.Concept" required="false"/>
+        <cc:attribute name="actionUnitId" type="java.lang.Long" required="false"/>
 
 
     </cc:interface>
@@ -53,6 +54,7 @@
             <f:attribute name="field" value="#{cc.attrs.field}" />
             <f:attribute name="selected" value="#{cc.attrs.selectedConcept}"/>
             <f:attribute name="dependsOnBaseConcept" value="#{cc.attrs.dependsOnBaseConcept}"/>
+            <f:attribute name="actionUnitId" value="#{cc.attrs.actionUnitId}"/>
 
 
 

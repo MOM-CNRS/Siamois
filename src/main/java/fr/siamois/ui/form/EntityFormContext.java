@@ -423,6 +423,17 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 && formScopeValueBinding.equals(field.getValueBinding());
     }
 
+    /**
+     * Resolves the project (Action Unit) id to check for a thesaurus override when resolving
+     * concept-autocomplete fields on this entity; null for entities with no project scope
+     * (SpatialUnit, Specimen, Container, Phase), which keeps the institution-only lookup.
+     */
+    public Long getActionUnitIdForThesaurus() {
+        if (unit instanceof ActionUnitDTO au) return au.getId();
+        if (unit instanceof RecordingUnitDTO ru) return ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
+        return null;
+    }
+
     public String getAutocompleteClass() {
         if (unit instanceof RecordingUnitDTO) return "recording-unit-autocomplete";
         if (unit instanceof SpatialUnitDTO) return "spatial-unit-autocomplete";
