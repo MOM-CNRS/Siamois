@@ -12,6 +12,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
@@ -257,15 +258,23 @@ public class FieldConfigurationService {
         return institutionConfig.get();
     }
 
-    /**
-     * Fetches autocomplete suggestions for a given field code and input string.
-     *
-     * @param info      the user information containing institution and user details
-     * @param fieldCode the field code for which to fetch autocomplete suggestions
-     * @param input     the input string to match against concept labels. Can be null or empty.
-     * @return a list of matching ConceptAutocompleteDTO objects
-     * @throws NoConfigForFieldException if no configuration is found for the field code
-     */
+    public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode, @NonNull ActionUnitDTO actionUnitDTO) throws NoConfigForFieldException {
+        Optional<ConceptFieldConfig> projectConfig = conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitDTO.getId());
+        if (projectConfig.isEmpty()) {
+            return findConfigurationForFieldCode(info, fieldCode);
+        }
+        return projectConfig.get();
+    }
+
+        /**
+         * Fetches autocomplete suggestions for a given field code and input string.
+         *
+         * @param info      the user information containing institution and user details
+         * @param fieldCode the field code for which to fetch autocomplete suggestions
+         * @param input     the input string to match against concept labels. Can be null or empty.
+         * @return a list of matching ConceptAutocompleteDTO objects
+         * @throws NoConfigForFieldException if no configuration is found for the field code
+         */
     @NonNull
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocomplete(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable String input) throws NoConfigForFieldException {
