@@ -274,6 +274,33 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
+    void findVocabularyUrlOfActionUnit_shouldReturnString_whenConfigExists() {
+        Concept c = new Concept();
+        c.setVocabulary(vocabulary);
+        c.setExternalId("12");
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        cfc.setConcept(c);
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.of(cfc));
+
+        Optional<String> result = service.findVocabularyUrlOfActionUnitId(42L);
+
+        assertThat(result).isPresent()
+                .get()
+                .isEqualTo("http://exemple.org/?idt=th2");
+    }
+
+    @Test
+    void findVocabularyUrlOfActionUnit_shouldReturnEmpty_whenConfigDoesNotExist() {
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.empty());
+
+        Optional<String> result = service.findVocabularyUrlOfActionUnitId(42L);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void findParentConceptForFieldcode_shouldReturnConcept_whenConfigExists() throws NoConfigForFieldException {
         ConceptFieldConfig cfc = new ConceptFieldConfig();
         Concept concept = new Concept();

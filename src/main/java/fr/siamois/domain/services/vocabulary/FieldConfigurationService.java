@@ -244,6 +244,23 @@ public class FieldConfigurationService {
     }
 
     /**
+     * Finds the vocabulary URL for a given action unit (project).
+     *
+     * @param actionUnitId the action unit for which to find the vocabulary URL
+     * @return an Optional containing the vocabulary URL if found, otherwise empty
+     */
+    @NonNull
+    public Optional<String> findVocabularyUrlOfActionUnitId(@NonNull Long actionUnitId) {
+        Optional<ConceptFieldConfig> optConfig = conceptFieldConfigRepository
+                .findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, actionUnitId);
+        if (optConfig.isEmpty()) return Optional.empty();
+        Concept concept = optConfig.get().getConcept();
+        Hibernate.initialize(concept.getVocabulary());
+        Vocabulary vocabulary = concept.getVocabulary();
+        return Optional.of(vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId());
+    }
+
+    /**
      * Finds the configuration for a specific field code for a user.
      *
      * @param info      the user information containing institution and user details
