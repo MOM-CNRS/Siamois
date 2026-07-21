@@ -214,7 +214,7 @@ class AutocompleteRepositoryTest {
 
         // the field concept is bound first, the base value second, as declared by concept_autocomplete_related
         verify(statement).setLong(1, 77L);
-        verify(statement).setLong(2, 155L);
+        verify(statement).setObject(2, 155L);
         verify(statement).setString(3, "fr");
         verify(statement).setString(4, "blo");
         verify(statement).setInt(5, 10);
