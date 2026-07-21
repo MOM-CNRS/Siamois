@@ -8,14 +8,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ThesaurusApiTest {
@@ -113,6 +119,72 @@ class ThesaurusApiTest {
         Optional<ThesaurusDTO> result = thesaurusApi.fetchThesaurusInfo(server, idThesaurus);
 
         assertFalse(result.isPresent());
+    }
+
+    @Test
+    void fetchThesaurusInfo_arkUri_followsLocationHeaderThenResolvesIdt() throws InvalidEndpointException {
+        URI ark = URI.create("https://ark.example/ark:/12345/th1");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(URI.create("https://thesaurus.example/?idt=th223"));
+        when(restTemplate.getForEntity(ark, String.class)).thenReturn(new ResponseEntity<>(headers, HttpStatus.FOUND));
+
+        ThesaurusDTO expected = new ThesaurusDTO("th223", List.of(new LabelDTO("fr", "SIAMOIS")), "THESAURUS");
+        when(restTemplate.getForObject("https://thesaurus.example/openapi/v1/thesaurus", ThesaurusDTO[].class))
+                .thenReturn(new ThesaurusDTO[]{expected});
+
+        ThesaurusDTO result = thesaurusApi.fetchThesaurusInfo(ark.toString());
+
+        assertEquals("th223", result.getIdTheso());
+        assertEquals("https://thesaurus.example", result.getBaseUri());
+        verify(restTemplate).getForEntity(ark, String.class);
+    }
+
+    @Test
+    void fetchThesaurusInfo_uriWithQuery_skipsRedirectLookup() throws InvalidEndpointException {
+        String uri = "https://thesaurus.example/?idt=th223";
+        ThesaurusDTO expected = new ThesaurusDTO("th223", List.of(new LabelDTO("fr", "Label")), "THESAURUS");
+        when(restTemplate.getForObject("https://thesaurus.example/openapi/v1/thesaurus", ThesaurusDTO[].class))
+                .thenReturn(new ThesaurusDTO[]{expected});
+
+        ThesaurusDTO result = thesaurusApi.fetchThesaurusInfo(uri);
+
+        assertEquals("th223", result.getIdTheso());
+        verify(restTemplate, never()).getForEntity(any(URI.class), eq(String.class));
+    }
+
+    @Test
+    void fetchThesaurusInfo_arkUri_noLocation_throwsMissingIdt() {
+        URI ark = URI.create("https://ark.example/ark:/12345/th1");
+        when(restTemplate.getForEntity(ark, String.class)).thenReturn(ResponseEntity.ok("body"));
+
+        assertThrows(InvalidEndpointException.class, () -> thesaurusApi.fetchThesaurusInfo(ark.toString()));
+    }
+
+    @Test
+    void fetchThesaurusInfo_blankIdt_throws() {
+        assertThrows(InvalidEndpointException.class,
+                () -> thesaurusApi.fetchThesaurusInfo("https://thesaurus.example/?idt="));
+    }
+
+    @Test
+    void fetchAllPublicThesaurus_illegalArgument_throwsInvalidEndpoint() {
+        when(restTemplate.getForObject("http://example.com/openapi/v1/thesaurus", ThesaurusDTO[].class))
+                .thenThrow(new IllegalArgumentException("bad uri"));
+
+        assertThrows(InvalidEndpointException.class,
+                () -> thesaurusApi.fetchAllPublicThesaurus("http://example.com"));
+    }
+
+    @Test
+    void fetchThesaurusInfo_byServerAndId_caseInsensitiveMatch_setsBaseUri() throws InvalidEndpointException {
+        ThesaurusDTO listed = new ThesaurusDTO("TH223", List.of(new LabelDTO("fr", "L")), "THESAURUS");
+        when(restTemplate.getForObject("http://example.com/openapi/v1/thesaurus", ThesaurusDTO[].class))
+                .thenReturn(new ThesaurusDTO[]{listed});
+
+        Optional<ThesaurusDTO> result = thesaurusApi.fetchThesaurusInfo("http://example.com", "th223");
+
+        assertTrue(result.isPresent());
+        assertEquals("http://example.com", result.get().getBaseUri());
     }
 
 }

@@ -29,9 +29,7 @@ public class VocabularyOpenApiMapper {
             resource.setTypeLabel(vocabulary.getType().getLabel());
         }
         VocabularyLabel label = labelService.findLabelOf(vocabulary, lang);
-        if (label != null) {
-            resource.setLabel(label.getValue());
-        }
+        resource.setLabel(label.getValue());
         return resource;
     }
 }

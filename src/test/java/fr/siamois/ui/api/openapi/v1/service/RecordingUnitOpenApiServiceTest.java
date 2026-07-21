@@ -12,7 +12,9 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
@@ -2675,6 +2677,212 @@ class RecordingUnitOpenApiServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
 
         verify(formService, never()).applyTypedValueToAnswer(same(suVm), any());
+    }
+
+    @Test
+    void patchRecordingUnit_coercesMeasurementFromNumber_appliesFieldUnit() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        type.setId(3L);
+        ruDto.setType(type);
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldMeasurement measurementField = new CustomFieldMeasurement();
+        measurementField.setId(70L);
+        UnitDefinition fieldUnit = UnitDefinition.builder().id(5L).symbol("m").build();
+        measurementField.setUnit(fieldUnit);
+
+        CustomFieldAnswerMeasurementViewModel measurementVm = new CustomFieldAnswerMeasurementViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(measurementField, measurementVm));
+
+        UnitDefinitionDTO unitDto = UnitDefinitionDTO.builder().id(5L).symbol("m").build();
+        when(unitDefinitionMapper.convert(fieldUnit)).thenReturn(unitDto);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(measurementField));
+        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(formService.readAnswerValueForApi(any())).thenReturn(null);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setAnswers(Map.of("70", new AnswerInput(3.5, null)));
+
+        service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
+
+        ArgumentCaptor<Object> valueCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(formService).applyTypedValueToAnswer(same(measurementVm), valueCaptor.capture());
+        MeasurementAnswerDTO coerced = (MeasurementAnswerDTO) valueCaptor.getValue();
+        assertThat(coerced.getNumericValue()).isEqualTo(3.5);
+        assertThat(coerced.getUnit()).isSameAs(unitDto);
+    }
+
+    @Test
+    void patchRecordingUnit_coercesMeasurementFromMap_stringNumericAndComment() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        ruDto.setType(type);
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldMeasurement measurementField = new CustomFieldMeasurement();
+        measurementField.setId(71L);
+
+        CustomFieldAnswerMeasurementViewModel measurementVm = new CustomFieldAnswerMeasurementViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(measurementField, measurementVm));
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(measurementField));
+        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(formService.readAnswerValueForApi(any())).thenReturn(null);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setAnswers(Map.of("71", new AnswerInput(
+                Map.of("numericValue", "1,25", "comment", " ok "), null)));
+
+        service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
+
+        ArgumentCaptor<Object> valueCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(formService).applyTypedValueToAnswer(same(measurementVm), valueCaptor.capture());
+        MeasurementAnswerDTO coerced = (MeasurementAnswerDTO) valueCaptor.getValue();
+        assertThat(coerced.getNumericValue()).isEqualTo(1.25);
+        assertThat(coerced.getComment()).isEqualTo("ok");
+    }
+
+    @Test
+    void patchRecordingUnit_measurementInvalidPayload_throws400() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        ruDto.setType(type);
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldMeasurement measurementField = new CustomFieldMeasurement();
+        measurementField.setId(72L);
+
+        CustomFieldAnswerMeasurementViewModel measurementVm = new CustomFieldAnswerMeasurementViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(measurementField, measurementVm));
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(measurementField));
+        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setAnswers(Map.of("72", new AnswerInput("not-a-measure", null)));
+
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchRecordingUnit_coercesPhaseList_loadsAndMapsPhases() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        ruDto.setType(type);
+        ActionUnitSummaryDTO actionUnit = new ActionUnitSummaryDTO();
+        actionUnit.setId(5L);
+        ruDto.setActionUnit(actionUnit);
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectMultiplePhase phaseField = new CustomFieldSelectMultiplePhase();
+        phaseField.setId(80L);
+
+        CustomFieldAnswerSelectMultiplePhaseViewModel phaseVm = new CustomFieldAnswerSelectMultiplePhaseViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(phaseField, phaseVm));
+
+        ActionUnit au = new ActionUnit();
+        au.setId(5L);
+        Phase phase = new Phase();
+        phase.setId(11L);
+        phase.setActionUnit(au);
+        PhaseDTO phaseDto = new PhaseDTO();
+        phaseDto.setId(11L);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(phaseField));
+        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(phaseRepository.findById(11L)).thenReturn(Optional.of(phase));
+        when(phaseMapper.convert(phase)).thenReturn(phaseDto);
+        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(formService.readAnswerValueForApi(any())).thenReturn(null);
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setAnswers(Map.of("80", new AnswerInput(List.of(Map.of("id", 11)), null)));
+
+        service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
+
+        ArgumentCaptor<Object> valueCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(formService).applyTypedValueToAnswer(same(phaseVm), valueCaptor.capture());
+        @SuppressWarnings("unchecked")
+        Set<PhaseDTO> coerced = (Set<PhaseDTO>) valueCaptor.getValue();
+        assertThat(coerced).containsExactly(phaseDto);
+    }
+
+    @Test
+    void patchRecordingUnit_phaseOutsideProject_throws400() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ConceptDTO type = new ConceptDTO();
+        ruDto.setType(type);
+        ActionUnitSummaryDTO actionUnit = new ActionUnitSummaryDTO();
+        actionUnit.setId(5L);
+        ruDto.setActionUnit(actionUnit);
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectMultiplePhase phaseField = new CustomFieldSelectMultiplePhase();
+        phaseField.setId(81L);
+
+        CustomFieldAnswerSelectMultiplePhaseViewModel phaseVm = new CustomFieldAnswerSelectMultiplePhaseViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(phaseField, phaseVm));
+
+        ActionUnit otherAu = new ActionUnit();
+        otherAu.setId(99L);
+        Phase phase = new Phase();
+        phase.setId(12L);
+        phase.setActionUnit(otherAu);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(phaseField));
+        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
+        when(phaseRepository.findById(12L)).thenReturn(Optional.of(phase));
+
+        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
+        request.setAnswers(Map.of("81", new AnswerInput(List.of(12), null)));
+
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
 }

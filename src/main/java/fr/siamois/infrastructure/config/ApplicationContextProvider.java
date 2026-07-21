@@ -16,6 +16,10 @@ public class ApplicationContextProvider implements ApplicationContextAware {
 
     @Override
     public void setApplicationContext(@NonNull ApplicationContext applicationContext) {
+        setContext(applicationContext);
+    }
+
+    private static void setContext(ApplicationContext applicationContext) {
         ApplicationContextProvider.applicationContext = applicationContext;
     }
 

@@ -97,7 +97,7 @@ public class ThesaurusApi {
             return uriObj;
         }
         HttpEntity<String> entity = restTemplate.getForEntity(uriObj, String.class);
-        if (entity != null && entity.getHeaders().getLocation() != null) {
+        if (entity.getHeaders().getLocation() != null) {
             return entity.getHeaders().getLocation();
         }
         return uriObj;

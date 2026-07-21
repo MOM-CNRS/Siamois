@@ -10,6 +10,7 @@ import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
+import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
@@ -44,6 +45,9 @@ class FormServiceTest {
 
     @Mock
     private FormRepository formRepository;
+
+    @Mock
+    private FormScopeRepository formScopeRepository;
 
     @Mock
     private LabelBean labelBean;
@@ -1133,9 +1137,82 @@ class FormServiceTest {
         }
     }
 
+    @Test
+    void readAnswerValueForApi_null_returnsNull() {
+        assertNull(formService.readAnswerValueForApi(null));
+    }
 
+    @Test
+    void readAnswerValueForApi_stratigraphy_returnsThreeLists() {
+        CustomFieldAnswerStratigraphyViewModel strat = new CustomFieldAnswerStratigraphyViewModel();
+        StratigraphicRelationshipDTO rel = new StratigraphicRelationshipDTO();
+        strat.setAnteriorRelationships(Set.of(rel));
+        strat.setPosteriorRelationships(null);
+        strat.setSynchronousRelationships(Set.of());
 
+        @SuppressWarnings("unchecked")
+        Map<String, Object> result = (Map<String, Object>) formService.readAnswerValueForApi(strat);
 
+        assertEquals(1, ((List<?>) result.get("anterior")).size());
+        assertTrue(((List<?>) result.get("posterior")).isEmpty());
+        assertTrue(((List<?>) result.get("synchronous")).isEmpty());
+    }
 
+    @Test
+    void readAnswerValueForApi_phaseAnswer_returnsHashSet() {
+        CustomFieldAnswerSelectMultiplePhaseViewModel phaseAnswer =
+                new CustomFieldAnswerSelectMultiplePhaseViewModel();
+        PhaseDTO phase = new PhaseDTO();
+        phase.setId(3L);
+        phaseAnswer.setValue(List.of(phase));
+
+        Object result = formService.readAnswerValueForApi(phaseAnswer);
+
+        assertInstanceOf(Set.class, result);
+        assertTrue(((Set<?>) result).contains(phase));
+    }
+
+    @Test
+    void readAnswerValueForApi_measurementWithoutNumeric_returnsNull() {
+        CustomFieldAnswerMeasurementViewModel measurementAnswer = new CustomFieldAnswerMeasurementViewModel();
+        MeasurementAnswerDTO value = new MeasurementAnswerDTO();
+        value.setNumericValue(null);
+        measurementAnswer.setValue(value);
+
+        assertNull(formService.readAnswerValueForApi(measurementAnswer));
+    }
+
+    @Test
+    void applyTypedValueToAnswer_measurementNull_setsEmptyDto() {
+        CustomFieldAnswerMeasurementViewModel answer = new CustomFieldAnswerMeasurementViewModel();
+        formService.applyTypedValueToAnswer(answer, null);
+        assertNotNull(answer.getValue());
+        assertNull(answer.getValue().getNumericValue());
+    }
+
+    @Test
+    void applyTypedValueToAnswer_phaseSet_setsValue() {
+        CustomFieldAnswerSelectMultiplePhaseViewModel answer =
+                new CustomFieldAnswerSelectMultiplePhaseViewModel();
+        PhaseDTO phase = new PhaseDTO();
+        phase.setId(8L);
+
+        formService.applyTypedValueToAnswer(answer, Set.of(phase));
+
+        assertEquals(1, answer.getValue().size());
+        assertEquals(8L, answer.getValue().get(0).getId());
+    }
+
+    @Test
+    void findConfiguredRecordingUnitTypesByInstitution_delegatesToRepo() {
+        Concept concept = new Concept();
+        when(formScopeRepository.findConfiguredTypesByInstitution()).thenReturn(List.of(concept));
+
+        List<Concept> result = formService.findConfiguredRecordingUnitTypesByInstitution(new InstitutionDTO());
+
+        assertEquals(1, result.size());
+        assertSame(concept, result.get(0));
+        verify(formScopeRepository).findConfiguredTypesByInstitution();
+    }
 
 }

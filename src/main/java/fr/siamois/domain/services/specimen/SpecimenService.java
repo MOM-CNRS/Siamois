@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static fr.siamois.domain.models.ValidationStatus.*;
@@ -212,35 +213,45 @@ public class SpecimenService implements ArkEntityService {
      * Remplace les associations mappées (instances transientes) par des références JPA managées.
      */
     private void attachManagedAssociations(Specimen source, Specimen managed) {
-        if (source.getRecordingUnit() != null && source.getRecordingUnit().getId() != null) {
-            Long ruId = source.getRecordingUnit().getId();
-            managed.setRecordingUnit(recordingUnitRepository.findById(ruId)
-                    .orElseThrow(() -> new IllegalArgumentException("Recording unit not found: " + ruId)));
-        }
+        attachRecordingUnit(source, managed);
         if (source.getAuthors() != null) {
             managed.setAuthors(resolvePersons(source.getAuthors()));
         }
         if (source.getCollectors() != null) {
             managed.setCollectors(resolvePersons(source.getCollectors()));
         }
-        if (source.getCreatedBy() != null && source.getCreatedBy().getId() != null) {
-            personRepository.findById(source.getCreatedBy().getId()).ifPresent(managed::setCreatedBy);
+        attachPersonIfPresent(source.getCreatedBy(), managed::setCreatedBy);
+        attachPersonIfPresent(source.getValidatedBy(), managed::setValidatedBy);
+        attachInstitutionIfPresent(source.getCreatedByInstitution(), managed::setCreatedByInstitution);
+        attachConceptIfPresent(source.getCategory(), managed::setCategory);
+        attachConceptIfPresent(source.getNormalizedInterpretation(), managed::setNormalizedInterpretation);
+        attachConceptIfPresent(source.getChronologicalAttribution(), managed::setChronologicalAttribution);
+    }
+
+    private void attachRecordingUnit(Specimen source, Specimen managed) {
+        if (source.getRecordingUnit() == null || source.getRecordingUnit().getId() == null) {
+            return;
         }
-        if (source.getValidatedBy() != null && source.getValidatedBy().getId() != null) {
-            personRepository.findById(source.getValidatedBy().getId()).ifPresent(managed::setValidatedBy);
+        Long ruId = source.getRecordingUnit().getId();
+        managed.setRecordingUnit(recordingUnitRepository.findById(ruId)
+                .orElseThrow(() -> new IllegalArgumentException("Recording unit not found: " + ruId)));
+    }
+
+    private void attachPersonIfPresent(Person ref, Consumer<Person> setter) {
+        if (ref != null && ref.getId() != null) {
+            personRepository.findById(ref.getId()).ifPresent(setter);
         }
-        if (source.getCreatedByInstitution() != null && source.getCreatedByInstitution().getId() != null) {
-            Long institutionId = source.getCreatedByInstitution().getId();
-            institutionRepository.findById(institutionId).ifPresent(managed::setCreatedByInstitution);
+    }
+
+    private void attachInstitutionIfPresent(Institution ref, Consumer<Institution> setter) {
+        if (ref != null && ref.getId() != null) {
+            institutionRepository.findById(ref.getId()).ifPresent(setter);
         }
-        if (source.getCategory() != null && source.getCategory().getId() != null) {
-            managed.setCategory(resolveConcept(source.getCategory()));
-        }
-        if (source.getNormalizedInterpretation() != null && source.getNormalizedInterpretation().getId() != null) {
-            managed.setNormalizedInterpretation(resolveConcept(source.getNormalizedInterpretation()));
-        }
-        if (source.getChronologicalAttribution() != null && source.getChronologicalAttribution().getId() != null) {
-            managed.setChronologicalAttribution(resolveConcept(source.getChronologicalAttribution()));
+    }
+
+    private void attachConceptIfPresent(Concept ref, Consumer<Concept> setter) {
+        if (ref != null && ref.getId() != null) {
+            setter.accept(resolveConcept(ref));
         }
     }
 

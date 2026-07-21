@@ -14,6 +14,7 @@ import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -46,19 +47,14 @@ class VocabularyOpenApiServiceTest {
     @Mock
     private VocabularyOpenApiMapper vocabularyOpenApiMapper;
 
+    @InjectMocks
     private VocabularyOpenApiService service;
+
     private ProjectApiCaller caller;
     private InstitutionDTO institution;
 
     @BeforeEach
     void setUp() {
-        service = new VocabularyOpenApiService(
-                projectApiService,
-                institutionService,
-                fieldConfigurationService,
-                vocabularyService,
-                vocabularyOpenApiMapper);
-
         PersonDTO person = new PersonDTO();
         person.setId(1L);
         institution = new InstitutionDTO();

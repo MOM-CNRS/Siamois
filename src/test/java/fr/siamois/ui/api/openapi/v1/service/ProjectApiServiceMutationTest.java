@@ -17,12 +17,15 @@ import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
+import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -247,6 +250,95 @@ class ProjectApiServiceMutationTest {
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void listPhasesForAccessibleProject_mapsPhaseServiceResults() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+
+        PhaseDTO withTitle = new PhaseDTO();
+        withTitle.setId(1L);
+        withTitle.setIdentifier("P1");
+        withTitle.setTitle("Phase titre");
+
+        PhaseDTO blankTitle = new PhaseDTO();
+        blankTitle.setId(2L);
+        blankTitle.setIdentifier("P2");
+        blankTitle.setTitle("  ");
+
+        PhaseDTO nullId = new PhaseDTO();
+        nullId.setIdentifier("P3");
+        nullId.setTitle("Sans id");
+
+        when(phaseService.findAllByActionUnitId(7L)).thenReturn(List.of(withTitle, blankTitle, nullId));
+
+        List<PhaseResource> result = service.listPhasesForAccessibleProject(caller, "7");
+
+        assertThat(result).hasSize(3);
+        assertThat(result.get(0).getId()).isEqualTo("1");
+        assertThat(result.get(0).getLabel()).isEqualTo("Phase titre");
+        assertThat(result.get(1).getLabel()).isEqualTo("P2");
+        assertThat(result.get(2).getId()).isNull();
+    }
+
+    @Test
+    void deleteRecordingUnit_withoutInstitution_throws400() {
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(5L);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
+
+        assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void deleteRecordingUnit_withoutWritePermission_throws403() {
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(5L);
+        dto.setCreatedByInstitution(institution);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void deleteRecordingUnit_domainIllegalState_throws409() {
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(5L);
+        dto.setCreatedByInstitution(institution);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(true);
+        doThrow(new IllegalStateException("has children")).when(recordingUnitService).deleteRecordingUnitById(5L);
+
+        assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void validatePagedListRequest_invalidOffsetOrLimit_throws400() {
+        assertThatThrownBy(() -> service.validatePagedListRequest(-1, 10))
+                .isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> service.validatePagedListRequest(0, 0))
+                .isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> service.validatePagedListRequest(5, 10))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getReason())
+                .isEqualTo("offset doit être un multiple de limit");
+    }
+
+    @Test
+    void primaryAcceptLanguage_parsesQualityAndRegion() {
+        assertThat(ProjectApiService.primaryAcceptLanguage(null)).isEqualTo("fr");
+        assertThat(ProjectApiService.primaryAcceptLanguage("en-US,fr;q=0.8")).isEqualTo("en");
+        assertThat(ProjectApiService.primaryAcceptLanguage("fr;q=0.9")).isEqualTo("fr");
     }
 
     private ProjectCreateRequest validCreateRequest() {

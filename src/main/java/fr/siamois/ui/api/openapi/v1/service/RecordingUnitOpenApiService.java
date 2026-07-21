@@ -1146,35 +1146,46 @@ public class RecordingUnitOpenApiService {
     }
 
     private MeasurementAnswerDTO ruCoerceMeasurement(Object raw, CustomFieldMeasurement field) {
-        MeasurementAnswerDTO dto;
-        if (raw instanceof MeasurementAnswerDTO existing) {
-            dto = existing;
-        } else {
-            dto = new MeasurementAnswerDTO();
-            if (raw instanceof Number n) {
-                dto.setNumericValue(n.doubleValue());
-            } else if (raw instanceof Map<?, ?> map) {
-                Object numeric = map.get("numericValue");
-                if (numeric instanceof Number n) {
-                    dto.setNumericValue(n.doubleValue());
-                } else if (numeric != null && !String.valueOf(numeric).isBlank()) {
-                    dto.setNumericValue(Double.parseDouble(String.valueOf(numeric).trim().replace(',', '.')));
-                }
-
-                Object comment = map.get("comment");
-                if (comment != null) {
-                    String c = String.valueOf(comment).trim();
-                    if (!c.isEmpty()) {
-                        dto.setComment(c);
-                    }
-                }
-            } else {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Mesure invalide : objet { numericValue, unit?, comment? } attendu");
-            }
-        }
-
+        MeasurementAnswerDTO dto = raw instanceof MeasurementAnswerDTO existing
+                ? existing
+                : buildMeasurementFromRaw(raw);
         return applyMeasurementFieldUnit(dto, field);
+    }
+
+    private MeasurementAnswerDTO buildMeasurementFromRaw(Object raw) {
+        MeasurementAnswerDTO dto = new MeasurementAnswerDTO();
+        if (raw instanceof Number n) {
+            dto.setNumericValue(n.doubleValue());
+            return dto;
+        }
+        if (raw instanceof Map<?, ?> map) {
+            applyMeasurementMap(dto, map);
+            return dto;
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Mesure invalide : objet { numericValue, unit?, comment? } attendu");
+    }
+
+    private static void applyMeasurementMap(MeasurementAnswerDTO dto, Map<?, ?> map) {
+        applyMeasurementNumericValue(dto, map.get("numericValue"));
+        Object comment = map.get("comment");
+        if (comment == null) {
+            return;
+        }
+        String c = String.valueOf(comment).trim();
+        if (!c.isEmpty()) {
+            dto.setComment(c);
+        }
+    }
+
+    private static void applyMeasurementNumericValue(MeasurementAnswerDTO dto, Object numeric) {
+        if (numeric instanceof Number n) {
+            dto.setNumericValue(n.doubleValue());
+            return;
+        }
+        if (numeric != null && !String.valueOf(numeric).isBlank()) {
+            dto.setNumericValue(Double.parseDouble(String.valueOf(numeric).trim().replace(',', '.')));
+        }
     }
 
     /**

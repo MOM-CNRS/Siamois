@@ -11,6 +11,7 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
@@ -335,8 +336,8 @@ class RecordingUnitServiceTest {
     @Test
     void save_measurementFieldsWithSameUnit_reusesManagedUnitReference() {
         long existingId = 42L;
-        RecordingUnitDTO dto = new RecordingUnitDTO();
-        dto.setId(existingId);
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
 
         UnitDefinition detachedUnit1 = UnitDefinition.builder().id(1L).symbol("m").build();
         UnitDefinition detachedUnit2 = UnitDefinition.builder().id(1L).symbol("m").build();
@@ -353,13 +354,13 @@ class RecordingUnitServiceTest {
 
         UnitDefinition managedUnit = UnitDefinition.builder().id(1L).symbol("m").build();
 
-        when(recordingUnitMapper.invertConvert(dto)).thenReturn(incoming);
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
         when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
         when(unitDefinitionRepository.findById(1L)).thenReturn(Optional.of(managedUnit));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(dto);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
 
-        recordingUnitService.save(dto);
+        recordingUnitService.save(unitDto);
 
         ArgumentCaptor<RecordingUnit> savedCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
         verify(recordingUnitRepository).save(savedCaptor.capture());
@@ -368,6 +369,145 @@ class RecordingUnitServiceTest {
         assertNotNull(saved.getZSup());
         assertSame(saved.getZInf().getUnit(), saved.getZSup().getUnit());
         verify(unitDefinitionRepository).findById(1L);
+    }
+
+    @Test
+    void save_nullZInfAndZSup_clearsManagedMeasurements() {
+        long existingId = 43L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setZInf(null);
+        incoming.setZSup(null);
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+        managed.setZInf(MeasurementAnswer.builder().numericValue(9.0).build());
+        managed.setZSup(MeasurementAnswer.builder().numericValue(10.0).build());
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+
+        recordingUnitService.save(unitDto);
+
+        ArgumentCaptor<RecordingUnit> savedCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
+        verify(recordingUnitRepository).save(savedCaptor.capture());
+        assertNull(savedCaptor.getValue().getZInf());
+        assertNull(savedCaptor.getValue().getZSup());
+        verify(unitDefinitionRepository, never()).findById(any());
+    }
+
+    @Test
+    void save_measurementWithoutUnitId_setsUnitDirectly() {
+        long existingId = 44L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        UnitDefinition unitWithoutId = UnitDefinition.builder().symbol("m").build();
+        MeasurementAnswer zInf = MeasurementAnswer.builder().numericValue(1.0).unit(unitWithoutId).build();
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setZInf(zInf);
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+
+        recordingUnitService.save(unitDto);
+
+        ArgumentCaptor<RecordingUnit> savedCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
+        verify(recordingUnitRepository).save(savedCaptor.capture());
+        assertSame(unitWithoutId, savedCaptor.getValue().getZInf().getUnit());
+        verify(unitDefinitionRepository, never()).findById(any());
+    }
+
+    @Test
+    void save_measurementUnitNotFound_throwsFailedSave() {
+        long existingId = 45L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        UnitDefinition detached = UnitDefinition.builder().id(99L).symbol("m").build();
+        MeasurementAnswer zInf = MeasurementAnswer.builder().numericValue(1.0).unit(detached).build();
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setZInf(zInf);
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(unitDefinitionRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(FailedRecordingUnitSaveException.class, () -> recordingUnitService.save(unitDto));
+    }
+
+    @Test
+    void save_synchronizesPhasesCollection() {
+        long existingId = 46L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        Phase kept = new Phase();
+        kept.setId(1L);
+        Phase removed = new Phase();
+        removed.setId(2L);
+        Phase added = new Phase();
+        added.setId(3L);
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setPhases(new HashSet<>(Set.of(kept, added)));
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+        managed.setPhases(new HashSet<>(Set.of(kept, removed)));
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+
+        recordingUnitService.save(unitDto);
+
+        assertTrue(managed.getPhases().contains(kept));
+        assertTrue(managed.getPhases().contains(added));
+        assertFalse(managed.getPhases().contains(removed));
+    }
+
+    @Test
+    void searchRecordingUnit_enrichesPhasesFromRepository() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+
+        Phase phase = new Phase();
+        phase.setId(9L);
+        PhaseDTO phaseDto = new PhaseDTO();
+        phaseDto.setId(9L);
+
+        when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(recordingUnitMapper.toLightDto(recordingUnit1)).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.toLightDto(recordingUnit2)).thenReturn(recordingUnit2DTO);
+        when(phaseRepository.findByRecordingUnitId(any())).thenReturn(Set.of(phase));
+        when(phaseMapper.convert(phase)).thenReturn(phaseDto);
+
+        Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
+
+        assertFalse(result.getContent().isEmpty());
+        assertTrue(result.getContent().get(0).getPhases().contains(phaseDto));
+        verify(phaseRepository, atLeastOnce()).findByRecordingUnitId(any());
     }
 
 
