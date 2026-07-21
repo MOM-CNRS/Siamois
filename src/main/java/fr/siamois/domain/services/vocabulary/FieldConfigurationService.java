@@ -56,7 +56,6 @@ public class FieldConfigurationService {
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
     private final AutocompleteRepository autocompleteRepository;
     private final InstitutionMapper institutionMapper;
-    private final PersonMapper personMapper;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();
