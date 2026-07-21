@@ -39,6 +39,19 @@ Une fois les variables renseignées, et que le jar et le fichier application.yam
 java -jar siamois.jar
 ```
 
+# Profils
+
+Voici les profils existants :
+
+| Profil    | Description                                                                                                        |
+|-----------|--------------------------------------------------------------------------------------------------------------------|
+| log-email | Lorsque ce profil est spécifié, les emails ne sont plus envoyés par le serveur SMTP mais sont passés dans les logs |
+
+Pour spécifier les profils lors de l'exécution du JAR, il faut utiliser le paramètre `Dspring.profiles.active`
+```shell
+java -jar -Dspring.profiles.active=log-email siamois.jar
+```
+
 # Qualité de code
 [![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=MOM-CNRS_Siamois)](https://sonarcloud.io/summary/new_code?id=MOM-CNRS_Siamois)
 
