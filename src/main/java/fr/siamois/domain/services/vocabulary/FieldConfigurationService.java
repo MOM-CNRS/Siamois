@@ -2,7 +2,6 @@ package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
@@ -13,8 +12,8 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
@@ -22,6 +21,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRe
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +32,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service for managing field configurations of the vocabulary.
@@ -57,7 +54,7 @@ public class FieldConfigurationService {
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
     private final AutocompleteRepository autocompleteRepository;
     private final InstitutionMapper institutionMapper;
-    private final PersonMapper personMapper;
+    private final ActionUnitMapper actionUnitMapper;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();
@@ -88,7 +85,7 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(InstitutionDTO institution, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(institution, null, vocabulary, progressWrapper);
+        return setupFieldConfiguration(institution, vocabulary, progressWrapper);
     }
 
     /**
@@ -117,7 +114,42 @@ public class FieldConfigurationService {
      */
     @NonNull
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(institution, null, vocabulary, new ProgressWrapper());
+        return setupFieldConfiguration(institution, vocabulary, new ProgressWrapper());
+    }
+
+    /**
+     * Sets up the field configuration for a project (action unit) based on the vocabulary.
+     * The created configurations override the institution ones for this action unit only.
+     *
+     * @param actionUnit      the action unit to configure
+     * @param vocabulary      the vocabulary to use for configuration
+     * @param progressWrapper the progress tracker
+     * @return an Optional containing GlobalFieldConfig if the configuration is wrong, otherwise empty
+     * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
+     * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
+     */
+    @NonNull
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForActionUnit(@NonNull ActionUnitDTO actionUnit,
+                                                                             @NonNull Vocabulary vocabulary,
+                                                                             @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        return setupFieldConfiguration(actionUnit.getCreatedByInstitution(), actionUnit, vocabulary, progressWrapper);
+    }
+
+    /**
+     * Wrapper to call setupFieldConfigurationForActionUnit without progress tracking.
+     *
+     * @param actionUnit the action unit to configure
+     * @param vocabulary the vocabulary to use for configuration
+     * @return an Optional containing GlobalFieldConfig if the configuration is wrong, otherwise empty
+     * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
+     * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
+     */
+    @NonNull
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
+    public Optional<FeedbackFieldConfig> setupFieldConfigurationForActionUnit(@NonNull ActionUnitDTO actionUnit,
+                                                                             @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        return setupFieldConfiguration(actionUnit.getCreatedByInstitution(), actionUnit, vocabulary, new ProgressWrapper());
     }
 
     private FeedbackFieldConfig createConfigOfThesaurus(ConceptBranchDTO conceptBranchDTO) {
@@ -142,36 +174,14 @@ public class FieldConfigurationService {
         return new FeedbackFieldConfig(missingFieldCode, validConcept);
     }
 
-    /**
-     * Sets up the field configuration for a user based on the vocabulary.
-     *
-     * @param info       the user information containing institution and user details
-     * @param vocabulary the vocabulary to use for configuration
-     * @return an Optional containing GlobalFieldConfig if the configuration is wrong, otherwise empty
-     * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
-     * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
-     */
-    @NonNull
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForUser(@NonNull UserInfo info, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, new ProgressWrapper());
+    private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull InstitutionDTO institutionDTO,
+                                                                  @NonNull Vocabulary vocabulary,
+                                                                  @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        return setupFieldConfiguration(institutionDTO, null, vocabulary, progressWrapper);
     }
-
-    /**
-     * Sets up the field configuration for a user based on the vocabulary.
-     *
-     * @param info            the user information containing institution and user details
-     * @param vocabulary      the vocabulary to use for configuration
-     * @param progressWrapper the progress wrapper to track progress
-     * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
-     * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
-     */
-    public void setupFieldConfigurationForUser(@NonNull UserInfo info, @NonNull Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        setupFieldConfiguration(info.getInstitution(), info.getUser(), vocabulary, progressWrapper);
-    }
-
 
     private Optional<FeedbackFieldConfig> setupFieldConfiguration(@NonNull InstitutionDTO institutionDTO,
-                                                                  @Nullable PersonDTO userDTO,
+                                                                  @Nullable ActionUnitDTO actionUnitDTO,
                                                                   @NonNull Vocabulary vocabulary,
                                                                   @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
@@ -187,25 +197,24 @@ public class FieldConfigurationService {
             ConceptFieldConfig fieldConfig;
             Optional<ConceptFieldConfig> optConfig;
 
-            if (userDTO == null) {
+            if (Objects.isNull(actionUnitDTO)) {
                 optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institutionDTO.getId(), fieldCode);
             } else {
-                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(userDTO.getId(), institutionDTO.getId(), fieldCode);
+                optConfig = conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitDTO.getId());
             }
 
             if (optConfig.isEmpty()) {
                 Institution institution = institutionMapper.invertConvert(institutionDTO);
-                Person user = personMapper.invertConvert(userDTO);
                 fieldConfig = new ConceptFieldConfig();
                 fieldConfig.setInstitution(institution);
-                fieldConfig.setUser(user);
+                if (actionUnitDTO != null) fieldConfig.setActionUnit(actionUnitMapper.invertConvert(actionUnitDTO));
                 fieldConfig.setFieldCode(fieldCode);
                 fieldConfig.setConcept(concept);
-                fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
             } else {
                 fieldConfig = optConfig.get();
                 fieldConfig.setConcept(concept); // update concept also if there is already a field config
             }
+            fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
 
 
 
@@ -277,36 +286,49 @@ public class FieldConfigurationService {
     }
 
     /**
-     * Finds the configuration for a specific field code for a user.
+     * Finds the configuration for a specific field code for an institution.
      *
      * @param info      the user information containing institution and user details
      * @param fieldCode the field code for which to find the configuration
-     * @return The user configuration if exists, otherwise the institution configuration
+     * @return The institution configuration
      * @throws NoConfigForFieldException if no configuration is found for the field code
      */
     @NonNull
     @ExecutionTimeLogger
     public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode) throws NoConfigForFieldException {
-        Optional<ConceptFieldConfig> personConfig = conceptFieldConfigRepository.findOneByFieldCodeForUser(info.getUser().getId(), info.getInstitution().getId(), fieldCode);
-        if (personConfig.isEmpty()) {
-            Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
-            if (institutionConfig.isEmpty()) {
-                throw new NoConfigForFieldException(fieldCode);
-            }
-            return institutionConfig.get();
+        Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
+        if (institutionConfig.isEmpty()) {
+            throw new NoConfigForFieldException(fieldCode);
         }
-        return personConfig.get();
+        return institutionConfig.get();
     }
 
     /**
-     * Fetches autocomplete suggestions for a given field code and input string.
-     *
-     * @param info      the user information containing institution and user details
-     * @param fieldCode the field code for which to fetch autocomplete suggestions
-     * @param input     the input string to match against concept labels. Can be null or empty.
-     * @return a list of matching ConceptAutocompleteDTO objects
+     * Searchs the configuration for a specific field for a project. If none set, falls back to the institution configuration
+     * @param info the user information containing institution and user details
+     * @param fieldCode the field code for which to find the configuration
+     * @param actionUnitDTO The project to find the config for
+     * @return The project configuration if exists, otherwise the institution configuration
      * @throws NoConfigForFieldException if no configuration is found for the field code
      */
+    @NonNull
+    public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode, @NonNull ActionUnitDTO actionUnitDTO) throws NoConfigForFieldException {
+        Optional<ConceptFieldConfig> projectConfig = conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitDTO.getId());
+        if (projectConfig.isEmpty()) {
+            return findConfigurationForFieldCode(info, fieldCode);
+        }
+        return projectConfig.get();
+    }
+
+        /**
+         * Fetches autocomplete suggestions for a given field code and input string.
+         *
+         * @param info      the user information containing institution and user details
+         * @param fieldCode the field code for which to fetch autocomplete suggestions
+         * @param input     the input string to match against concept labels. Can be null or empty.
+         * @return a list of matching ConceptAutocompleteDTO objects
+         * @throws NoConfigForFieldException if no configuration is found for the field code
+         */
     @NonNull
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocomplete(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable String input) throws NoConfigForFieldException {
@@ -346,9 +368,7 @@ public class FieldConfigurationService {
     @Transactional(readOnly = true)
     public Map<String, List<ConceptAutocompleteDTO>> fetchAllConfiguredVocabularies(@NonNull UserInfo info) {
         Long institutionId = info.getInstitution().getId();
-        Long personId = info.getUser().getId();
-        List<String> fieldCodes = conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
-                institutionId, personId);
+        List<String> fieldCodes = conceptFieldConfigRepository.findDistinctFieldCodesForInstitution(institutionId);
         Map<String, List<ConceptAutocompleteDTO>> out = new LinkedHashMap<>();
         for (String fieldCode : fieldCodes) {
             try {

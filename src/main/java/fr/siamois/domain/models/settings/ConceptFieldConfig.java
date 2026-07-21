@@ -1,12 +1,14 @@
 package fr.siamois.domain.models.settings;
 
-import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 import java.util.Objects;
 
@@ -14,6 +16,7 @@ import java.util.Objects;
 @Setter
 @Entity
 @Table(name = "concept_field_config")
+@Data
 public class ConceptFieldConfig {
 
     @Id
@@ -26,9 +29,10 @@ public class ConceptFieldConfig {
     @JoinColumn(name = "fk_institution_id", nullable = false)
     private Institution institution;
 
+    @Nullable
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_user_id")
-    private Person user;
+    @JoinColumn(name = "fk_action_unit_id")
+    private ActionUnit actionUnit;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -46,13 +50,13 @@ public class ConceptFieldConfig {
     public boolean equals(Object o) {
         if (!(o instanceof ConceptFieldConfig that)) return false;
         return Objects.equals(institution, that.institution)
-                && Objects.equals(user, that.user)
                 && Objects.equals(concept, that.concept)
-                && Objects.equals(fieldCode, that.fieldCode);
+                && Objects.equals(fieldCode, that.fieldCode)
+                && Objects.equals(actionUnit, that.actionUnit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(institution, user, concept, fieldCode);
+        return Objects.hash(institution, concept, fieldCode, actionUnit);
     }
 }

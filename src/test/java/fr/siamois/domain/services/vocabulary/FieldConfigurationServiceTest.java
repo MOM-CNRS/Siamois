@@ -1,11 +1,9 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -13,6 +11,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -23,11 +22,14 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRe
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -63,6 +65,9 @@ class FieldConfigurationServiceTest {
 
     @Mock
     private InstitutionMapper institutionMapper;
+
+    @Mock
+    private ActionUnitMapper actionUnitMapper;
 
     @Mock
     private PersonMapper personMapper;
@@ -149,53 +154,99 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
-    void setupFieldConfigurationForUser_shouldReturnFieldConfigIfWrong_whenMissingFieldCodes() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(conceptBranchDTO);
-        when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST", "SIATEST2", "SIATEST3"));
+    void setupFieldConfigurationForActionUnit_shouldCreateConfigLinkedToActionUnit_whenNoneExists() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        ActionUnitDTO actionUnitDTO = actionUnitDTO(42L);
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(42L);
 
-        Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
-
-        assertThat(result).isPresent();
-    }
-
-    @Test
-    void setupFieldConfigurationForUser_shouldReturnEmptyWhenValid_andConfigDoesNotExist() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(conceptBranchDTO);
         when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST", "SIATEST2"));
-        doAnswer(i -> {
-            Vocabulary vocab = i.getArgument(0);
-            FullInfoDTO dto = i.getArgument(1);
-            Concept concept = new Concept();
-            concept.setVocabulary(vocab);
-            concept.setExternalId(dto.getIdentifier()[0].getValue());
-            return concept;
-        }).when(conceptService).saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null));
-
-        Institution institution  = new Institution();
-        institution.setId(12L);
-
-        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
-        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(new Person());
-        when(conceptFieldConfigRepository.findOneByFieldCodeForUser(eq(userInfo.getUser().getId()), eq(userInfo.getInstitution().getId()),anyString())).thenReturn(Optional.empty());
+        when(conceptService.saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null)))
+                .thenAnswer(i -> {
+                    Concept concept = new Concept();
+                    concept.setVocabulary(i.getArgument(0));
+                    concept.setExternalId(((FullInfoDTO) i.getArgument(1)).getIdentifier()[0].getValue());
+                    return concept;
+                });
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(anyString(), eq(42L)))
+                .thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(actionUnitDTO)).thenReturn(actionUnit);
         when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
 
-        Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForUser(userInfo, vocabulary);
+        Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForActionUnit(actionUnitDTO, vocabulary);
 
         assertThat(result).isEmpty();
-        verify(conceptFieldConfigRepository, times(2)).save(any(ConceptFieldConfig.class));
+
+        ArgumentCaptor<ConceptFieldConfig> captor = ArgumentCaptor.forClass(ConceptFieldConfig.class);
+        verify(conceptFieldConfigRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues())
+                .allSatisfy(saved -> assertThat(saved.getActionUnit()).isEqualTo(actionUnit))
+                .extracting(ConceptFieldConfig::getFieldCode)
+                .containsExactlyInAnyOrder("SIATEST", "SIATEST2");
+        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
         verify(conceptService, times(2)).saveAllSubConceptOfIfUpdated(any(ConceptFieldConfig.class), any(ProgressWrapper.class));
     }
 
     @Test
-    void setupFieldConfigurationForUser_shouldThrowNotSiamoisThesaurusException_whenSIAAUTOCOMPLETEmissing() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        when(conceptApi.fetchFieldsBranch(vocabulary)).thenThrow(NotSiamoisThesaurusException.class);
-        assertThrows(NotSiamoisThesaurusException.class, () -> service.setupFieldConfigurationForUser(userInfo, vocabulary));
+    void setupFieldConfigurationForActionUnit_shouldUpdateExistingConfig_whenAlreadyExists() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        ActionUnitDTO actionUnitDTO = actionUnitDTO(42L);
+
+        ConceptFieldConfig existing = new ConceptFieldConfig();
+        existing.setFieldCode("SIATEST");
+
+        Concept savedConcept = new Concept();
+        savedConcept.setVocabulary(vocabulary);
+        savedConcept.setExternalId("12");
+
+        when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(conceptBranchDTO);
+        when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST"));
+        when(conceptService.saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null)))
+                .thenReturn(savedConcept);
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId("SIATEST", 42L))
+                .thenReturn(Optional.of(existing));
+        when(conceptFieldConfigRepository.save(any(ConceptFieldConfig.class))).thenAnswer(i -> i.getArgument(0));
+
+        Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForActionUnit(actionUnitDTO, vocabulary, new ProgressWrapper());
+
+        assertThat(result).isEmpty();
+        assertThat(existing.getConcept()).isEqualTo(savedConcept);
+        // the existing config is updated in place, no new one is created
+        verify(conceptFieldConfigRepository).save(existing);
+        verifyNoInteractions(actionUnitMapper);
+        verify(conceptService).saveAllSubConceptOfIfUpdated(eq(existing), any(ProgressWrapper.class));
     }
 
     @Test
-    void setupFieldConfigurationForUser_shouldThrowErrorProcessingExpansionException_whenResponseIsInvalid() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        when(conceptApi.fetchFieldsBranch(vocabulary)).thenThrow(ErrorProcessingExpansionException.class);
-        assertThrows(ErrorProcessingExpansionException.class, () -> service.setupFieldConfigurationForUser(userInfo, vocabulary));
+    void setupFieldConfigurationForActionUnit_shouldReturnFeedback_whenMissingFieldCodes() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        ActionUnitDTO actionUnitDTO = actionUnitDTO(42L);
+
+        when(conceptApi.fetchFieldsBranch(vocabulary)).thenReturn(conceptBranchDTO);
+        when(fieldService.searchAllFieldCodes()).thenReturn(List.of("SIATEST", "SIATEST2", "SIATEST3"));
+        when(conceptService.saveOrGetConceptFromFullDTO(any(Vocabulary.class), any(FullInfoDTO.class), eq(null)))
+                .thenReturn(new Concept());
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(anyString(), eq(42L)))
+                .thenReturn(Optional.of(new ConceptFieldConfig()));
+
+        Optional<FeedbackFieldConfig> result = service.setupFieldConfigurationForActionUnit(actionUnitDTO, vocabulary);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().missingFieldCode()).containsExactly("SIATEST3");
+    }
+
+    @Test
+    void setupFieldConfigurationForActionUnit_shouldThrowNotSiamoisThesaurusException_whenVocabularyIsNotSiamois() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        ActionUnitDTO actionUnitDTO = actionUnitDTO(42L);
+        when(conceptApi.fetchFieldsBranch(vocabulary)).thenThrow(NotSiamoisThesaurusException.class);
+
+        assertThrows(NotSiamoisThesaurusException.class,
+                () -> service.setupFieldConfigurationForActionUnit(actionUnitDTO, vocabulary));
+    }
+
+    private ActionUnitDTO actionUnitDTO(Long id) {
+        ActionUnitDTO actionUnitDTO = new ActionUnitDTO();
+        actionUnitDTO.setId(id);
+        actionUnitDTO.setCreatedByInstitution(userInfo.getInstitution());
+        return actionUnitDTO;
     }
 
     @Test
@@ -305,6 +356,63 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
+    void findConfigurationForFieldCodeWithActionUnit_shouldReturnActionUnitConfig_whenExists() throws NoConfigForFieldException {
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(42L);
+
+        ConceptFieldConfig actionUnitConfig = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId("12");
+        actionUnitConfig.setConcept(concept);
+        actionUnitConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.of(actionUnitConfig));
+
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, actionUnit);
+
+        assertThat(result).isEqualTo(actionUnitConfig);
+        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
+    }
+
+    @Test
+    void findConfigurationForFieldCodeWithActionUnit_shouldFallbackOnInstitutionConfig_whenNoActionUnitConfig() throws NoConfigForFieldException {
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(42L);
+
+        ConceptFieldConfig institutionConfig = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId("12");
+        institutionConfig.setConcept(concept);
+        institutionConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+                .thenReturn(Optional.of(institutionConfig));
+
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, actionUnit);
+
+        assertThat(result).isEqualTo(institutionConfig);
+    }
+
+    @Test
+    void findConfigurationForFieldCodeWithActionUnit_shouldThrowNoConfigException_whenNoConfigAtAll() {
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(42L);
+
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NoConfigForFieldException.class,
+                () -> service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, actionUnit));
+    }
+
+    @Test
     void fetchAutocomplete_shouldThrowNoConfigException_whenConfigDoesNotExist() {
         String fieldCode = "TESTFIELD";
         String query = "test query";
@@ -385,19 +493,19 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
-    void fetchAutocompleteRelated_shouldPreferUserConfigOverInstitutionConfig() throws NoConfigForFieldException {
+    void fetchAutocompleteRelated_shouldForwardNullInput_asIs() throws NoConfigForFieldException {
         String fieldCode = "TESTFIELD";
 
-        Concept userFieldConcept = new Concept();
-        userFieldConcept.setVocabulary(vocabulary);
-        userFieldConcept.setExternalId("user-field-concept");
+        Concept fieldConcept = new Concept();
+        fieldConcept.setVocabulary(vocabulary);
+        fieldConcept.setExternalId("field-concept");
 
-        ConceptFieldConfig userConfig = new ConceptFieldConfig();
-        userConfig.setConcept(userFieldConcept);
-        userConfig.setFieldCode(fieldCode);
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        cfc.setConcept(fieldConcept);
+        cfc.setFieldCode(fieldCode);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeForUser(userInfo.getUser().getId(), userInfo.getInstitution().getId(), fieldCode))
-                .thenReturn(Optional.of(userConfig));
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), fieldCode))
+                .thenReturn(Optional.of(cfc));
 
         Concept baseValue = new Concept();
         baseValue.setVocabulary(vocabulary);
@@ -405,9 +513,8 @@ class FieldConfigurationServiceTest {
 
         service.fetchAutocompleteRelated(userInfo, fieldCode, baseValue, null);
 
-        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
         // a null input is forwarded as-is, the SQL function treats it as "no text filter"
-        verify(autocompleteRepository).findMatchingConceptsFromRelatedFor(userFieldConcept, baseValue, "fr", null, FieldConfigurationService.LIMIT_RESULTS);
+        verify(autocompleteRepository).findMatchingConceptsFromRelatedFor(fieldConcept, baseValue, "fr", null, FieldConfigurationService.LIMIT_RESULTS);
     }
 
     @Test
@@ -418,8 +525,8 @@ class FieldConfigurationServiceTest {
     @Test
     void fetchAllConfiguredVocabularies_returnsMapPerFieldCode() {
         String fieldCode = "TESTFIELD";
-        when(conceptFieldConfigRepository.findDistinctFieldCodesForInstitutionAndUser(
-                userInfo.getInstitution().getId(), userInfo.getUser().getId()))
+        when(conceptFieldConfigRepository.findDistinctFieldCodesForInstitution(
+                userInfo.getInstitution().getId()))
                 .thenReturn(List.of(fieldCode));
 
         ConceptFieldConfig cfc = new ConceptFieldConfig();
