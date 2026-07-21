@@ -186,7 +186,12 @@ BEGIN
                                    AND cl.fk_field_parent_concept_id = p_field_concept_id
                                    AND (p_related_of_concept_id IS NULL
                                             OR
-                                        (p_related_of_concept_id IS NOT NULL AND EXISTS (SELECT 1 FROM concept_related cr WHERE cr.fk_concept_id = p_related_of_concept_id AND cr.fk_related_concept_id = c.concept_id)))
+                                        (p_related_of_concept_id IS NOT NULL AND EXISTS (SELECT 1
+                                                                                         FROM concept_related cr
+                                                                                         WHERE cr.fk_concept_id = p_related_of_concept_id
+                                                                                           AND cr.fk_related_concept_id = c.concept_id)
+                                                                                        )
+                                       )
                                    AND (p_input IS NULL OR trim(p_input) = '' OR
                                         unaccent(cl.label) ILIKE unaccent('%' || p_input || '%'))
                                  ORDER BY cl.label -- Sort by label in alphabetical order
