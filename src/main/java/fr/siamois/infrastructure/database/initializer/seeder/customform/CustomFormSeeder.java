@@ -82,6 +82,14 @@ public class CustomFormSeeder {
         return field.getId();
     }
 
+    private DependsOnJson toDependsOnJson(DependsOnSpecSeedDTO dto) {
+        if (dto == null) throw new IllegalArgumentException("dependsOn must not be null");
+        if (dto.field() == null) throw new IllegalArgumentException("dependsOn.field is required");
+        DependsOnJson dep = new DependsOnJson();
+        dep.setFieldId(extractFieldId(dto.field()));
+        return dep;
+    }
+
     private EnabledWhenJson.ValueJson toValueJson(CustomFieldAnswerDTO dto) {
         EnabledWhenJson.ValueJson v = new EnabledWhenJson.ValueJson();
         v.setAnswerClass(dto.answerClass().getName());
@@ -157,7 +165,11 @@ public class CustomFormSeeder {
             col.setEnabledWhenSpec(toEnabledWhenJson(colDto.enabledWhen()));
         }
 
-        // Resolve/create field by natural key 
+        if(colDto.dependsOn() != null) {
+            col.setDependsOnSpec(toDependsOnJson(colDto.dependsOn()));
+        }
+
+        // Resolve/create field by natural key
         CustomField field = fieldSeeder.findFieldOrThrow(colDto.field());
         col.setField(field);
 

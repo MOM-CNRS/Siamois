@@ -130,13 +130,13 @@ public class SpatialUnitFieldBean implements Serializable {
             );
 
             // If the field depends on another field's value, restrict the search to the concepts
-            // related to that base value instead of the plain field-code search.
+            // matching this field's code AND related to that base value.
             Concept dependsOnBaseConcept = (Concept) UIComponent.getCurrentComponent(context)
                     .getAttributes().get("dependsOnBaseConcept");
 
             List<ConceptAutocompleteDTO> results = dependsOnBaseConcept != null
                     ? fieldConfigurationService.fetchAutocompleteRelated(
-                            sessionSettingsBean.getUserInfo(), dependsOnBaseConcept, input)
+                            sessionSettingsBean.getUserInfo(), fieldCode, dependsOnBaseConcept, input)
                     : fieldConfigurationService.fetchAutocomplete(
                             sessionSettingsBean.getUserInfo(), fieldCode, input);
 

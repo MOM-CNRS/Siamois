@@ -9,7 +9,8 @@ public record CustomColDTO(
         boolean isRequired,
         CustomFieldSeederSpec field,
         String className,
-        EnabledWhenSpecSeedDTO enabledWhen
+        EnabledWhenSpecSeedDTO enabledWhen,
+        DependsOnSpecSeedDTO dependsOn
 ) implements Serializable {
 
     public CustomColDTO(
@@ -18,6 +19,16 @@ public record CustomColDTO(
             CustomFieldSeederSpec field,
             String className
     ) {
-        this(readOnly, isRequired, field, className, null);
+        this(readOnly, isRequired, field, className, null, null);
+    }
+
+    public CustomColDTO(
+            boolean readOnly,
+            boolean isRequired,
+            CustomFieldSeederSpec field,
+            String className,
+            EnabledWhenSpecSeedDTO enabledWhen
+    ) {
+        this(readOnly, isRequired, field, className, enabledWhen, null);
     }
 }
