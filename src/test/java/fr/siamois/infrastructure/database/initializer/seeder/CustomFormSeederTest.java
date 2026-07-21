@@ -62,7 +62,7 @@ class CustomFormSeederTest {
     }
 
     private CustomColDTO colDTO(CustomFieldSeederSpec spec) {
-        return colDTO(spec, null);
+        return colDTO(spec, (EnabledWhenSpecSeedDTO) null);
     }
 
     private CustomColDTO colDTO(CustomFieldSeederSpec spec, EnabledWhenSpecSeedDTO enabled) {
@@ -72,6 +72,17 @@ class CustomFormSeederTest {
                 /* field      */ spec,
                 /* className  */ "col-6",
                 /* enabledWhen*/ enabled
+        );
+    }
+
+    private CustomColDTO colDTO(CustomFieldSeederSpec spec, DependsOnSpecSeedDTO dependsOn) {
+        return new CustomColDTO(
+                /* readOnly   */ true,
+                /* isRequired */ true,
+                /* field      */ spec,
+                /* className  */ "col-6",
+                /* enabledWhen*/ null,
+                /* dependsOn  */ dependsOn
         );
     }
 
@@ -290,6 +301,68 @@ class CustomFormSeederTest {
         // vérifie que les deux champs ont été résolus via le seeder
         verify(fieldSeeder).findFieldOrThrow(colSpec);
         verify(fieldSeeder).findFieldOrThrow(condSpec);
+    }
+
+    @Test
+    void seed_mapsDependsOnSpec_intoModel() {
+
+        // Arrange
+        // Champ de la colonne (affiché) = ex: "interprétation"
+        CustomField columnField = new CustomFieldText();
+        columnField.setId(100L);
+
+        // Champ base (dont la réponse sert de "base value") = ex: "nature"
+        CustomField baseField = new CustomFieldText();
+        baseField.setId(200L);
+
+        CustomFieldSeederSpec colSpec = fieldSpec(new ConceptSeeder.ConceptKey("extid", "1"));
+        CustomFieldSeederSpec baseSpec = fieldSpec(new ConceptSeeder.ConceptKey("extid", "2"));
+
+        DependsOnSpecSeedDTO dependsOn = new DependsOnSpecSeedDTO(baseSpec);
+
+        CustomColDTO col = colDTO(colSpec, dependsOn);
+        CustomRowDTO row = rowDTO(col);
+        CustomFormPanelDTO panel = panelDTO(row);
+        CustomFormDTO dto = formDTO(List.of(panel));
+
+        when(customFormRepository.findByNameAndDescription("My Form", "A sample form"))
+                .thenReturn(Optional.empty());
+        when(fieldSeeder.findFieldOrThrow(colSpec)).thenReturn(columnField);
+        when(fieldSeeder.findFieldOrThrow(baseSpec)).thenReturn(baseField);
+
+        ArgumentCaptor<CustomForm> formCaptor = ArgumentCaptor.forClass(CustomForm.class);
+
+        // Act
+        seeder.seed(List.of(dto));
+
+        // Assert
+        verify(customFormRepository).save(formCaptor.capture());
+        CustomForm saved = formCaptor.getValue();
+
+        CustomCol savedCol = saved.getLayout().get(0).getRows().get(0).getColumns().get(0);
+
+        assertSame(columnField, savedCol.getField());
+        assertNotNull(savedCol.getDependsOnSpec(), "dependsOn should be set");
+        assertEquals(200L, savedCol.getDependsOnSpec().getFieldId());
+
+        verify(fieldSeeder).findFieldOrThrow(colSpec);
+        verify(fieldSeeder).findFieldOrThrow(baseSpec);
+    }
+
+    @Test
+    void seed_fails_whenDependsOn_field_isNull() {
+        // Arrange
+        CustomFieldSeederSpec colSpec = fieldSpec(new ConceptSeeder.ConceptKey("ext", "CF"));
+        CustomColDTO col = colDTO(colSpec, new DependsOnSpecSeedDTO(null));
+        CustomFormDTO dto = formDTO(List.of(panelDTO(rowDTO(col))));
+
+        when(customFormRepository.findByNameAndDescription("My Form", "A sample form"))
+                .thenReturn(Optional.empty());
+
+        // Act + Assert
+        List<CustomFormDTO> list = List.of(dto);
+        assertThrows(IllegalStateException.class, () -> seeder.seed(list));
+        verify(customFormRepository, never()).save(any());
     }
 
     // Build a form DTO with a single panel/row/col

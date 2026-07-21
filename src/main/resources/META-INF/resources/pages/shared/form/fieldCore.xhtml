@@ -97,6 +97,7 @@
                     answer="#{answer}"
                     panelStyleClass="#{panelStyleClass}"
                     onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
+                    dependsOnBaseConcept="#{formCtx.getDependsOnBaseConcept(col.field)}"
             />
         </c:if>
 
@@ -115,6 +116,7 @@
                     answer="#{answer}"
                     panelStyleClass="#{panelStyleClass}"
                     onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
+                    dependsOnBaseConcept="#{formCtx.getDependsOnBaseConcept(col.field)}"
             />
         </c:if>
 

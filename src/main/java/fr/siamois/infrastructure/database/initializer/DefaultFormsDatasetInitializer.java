@@ -459,6 +459,11 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
             )
     );
 
+    // Règle de dépendance : le champ "interprétation" utilise la nature (fields.get(1),
+    // recordingunit.property.geomorpho, libellé "Nature") comme base value pour restreindre
+    // son autocomplete aux concepts liés à la nature choisie.
+    DependsOnSpecSeedDTO interpretationDependsOnNatureDTO = new DependsOnSpecSeedDTO(fields.get(1));
+
     CustomColDTO matrixColorColDTO = new CustomColDTO(
             false,
             false,
@@ -575,7 +580,9 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                             false,
                                                             false,
                                                             fields.get(2),
-                                                            UI_G_12_UI_MD_6_UI_LG_3
+                                                            UI_G_12_UI_MD_6_UI_LG_3,
+                                                            null,
+                                                            interpretationDependsOnNatureDTO
                                                     ),
                                                     new CustomColDTO(
                                                             false,
@@ -644,7 +651,9 @@ public class DefaultFormsDatasetInitializer implements DatabaseInitializer {
                                                                     false,
                                                                     false,
                                                                     fields.get(2),
-                                                                    UI_G_12_UI_MD_6_UI_LG_3
+                                                                    UI_G_12_UI_MD_6_UI_LG_3,
+                                                                    null,
+                                                                    interpretationDependsOnNatureDTO
                                                             )
                                                     )
                                             ),

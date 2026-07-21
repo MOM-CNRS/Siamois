@@ -129,9 +129,16 @@ public class SpatialUnitFieldBean implements Serializable {
                     (String) UIComponent.getCurrentComponent(context).getAttributes().get("sortByParent")
             );
 
-            List<ConceptAutocompleteDTO> results = fieldConfigurationService.fetchAutocomplete(
-                    sessionSettingsBean.getUserInfo(), fieldCode, input
-            );
+            // If the field depends on another field's value, restrict the search to the concepts
+            // matching this field's code AND related to that base value.
+            Concept dependsOnBaseConcept = (Concept) UIComponent.getCurrentComponent(context)
+                    .getAttributes().get("dependsOnBaseConcept");
+
+            List<ConceptAutocompleteDTO> results = dependsOnBaseConcept != null
+                    ? fieldConfigurationService.fetchAutocompleteRelated(
+                            sessionSettingsBean.getUserInfo(), fieldCode, dependsOnBaseConcept, input)
+                    : fieldConfigurationService.fetchAutocomplete(
+                            sessionSettingsBean.getUserInfo(), fieldCode, input);
 
             if (sortByParent != null && sortByParent) {
                 // Sort the results by root group (using the getRootGroup method)
