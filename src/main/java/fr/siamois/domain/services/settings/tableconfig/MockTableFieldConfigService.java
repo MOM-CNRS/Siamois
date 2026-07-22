@@ -53,16 +53,7 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
                 .toList();
     }
 
-    @Override
-    public TypeFormConfig getFormConfig(Long projectId, ConfigurableTable table, String typeName) {
-        return copyOf(internalFormConfig(projectId, table, typeName));
-    }
 
-    @Override
-    public void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config) {
-        requireType(table, config.getTypeName());
-        formConfigsOf(projectId, table).put(config.getTypeName(), copyOf(config));
-    }
 
     @Override
     public TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, String typeName) {

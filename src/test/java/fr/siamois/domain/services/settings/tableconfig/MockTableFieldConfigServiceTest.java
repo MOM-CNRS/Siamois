@@ -148,23 +148,4 @@ class MockTableFieldConfigServiceTest {
         assertThat(active).isTrue();
     }
 
-    @Test
-    void saveFormConfig_shouldPersistChanges() {
-        TypeFormConfig config = service.getFormConfig(1L, ConfigurableTable.UE, "Creusement");
-        config.setDescription("Une fosse de creusement");
-
-        service.saveFormConfig(1L, ConfigurableTable.UE, config);
-
-        TypeFormConfig reloaded = service.getFormConfig(1L, ConfigurableTable.UE, "Creusement");
-        assertThat(reloaded.getDescription()).isEqualTo("Une fosse de creusement");
-    }
-
-    @Test
-    void getFormConfig_shouldExposeValueConceptLabelAsTypeNameExceptForDefault() {
-        TypeFormConfig ceramique = service.getFormConfig(1L, ConfigurableTable.MOBILIER, "Céramique");
-        TypeFormConfig defaultType = service.getFormConfig(1L, ConfigurableTable.MOBILIER, "_default");
-
-        assertThat(ceramique.getValueConceptLabel()).isEqualTo("Céramique");
-        assertThat(defaultType.getValueConceptLabel()).isEmpty();
-    }
 }

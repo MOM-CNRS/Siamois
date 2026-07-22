@@ -29,25 +29,7 @@ public interface TableFieldConfigService {
      */
     List<TypeSummary> listTypes(Long projectId, ConfigurableTable table);
 
-    /**
-     * Reads the general (non-field) configuration of a type.
-     *
-     * @param projectId the project (action unit) this configuration is scoped to
-     * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
-     * @return a copy of the type's general configuration
-     */
-    TypeFormConfig getFormConfig(Long projectId, ConfigurableTable table, String typeName);
 
-    /**
-     * Persists changes to a type's general configuration.
-     *
-     * @param projectId the project (action unit) this configuration is scoped to
-     * @param table     the table the type belongs to
-     * @param config    the configuration to save; {@link TypeFormConfig#getTypeName()} identifies
-     *                  which type it applies to
-     */
-    void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config);
 
     /**
      * Reads the system and additional fields configured for a type.
