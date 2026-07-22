@@ -1,11 +1,10 @@
 package fr.siamois.ui.bean.settings.project;
 
-import fr.siamois.domain.models.settings.tableconfig.AdditionalFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.FieldType;
-import fr.siamois.domain.models.settings.tableconfig.SystemFieldConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeGeneralConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -21,6 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,8 +47,8 @@ class ProjectTableFieldSettingsBeanTest {
                 List.of(ConfigurableTable.UE, ConfigurableTable.MOBILIER));
         when(tableFieldConfigService.listTypes(eq(42L), any())).thenReturn(
                 List.of(new TypeSummary("_default", true), new TypeSummary("Céramique", false)));
-        when(tableFieldConfigService.getGeneralConfig(eq(42L), any(), any())).thenReturn(
-                TypeGeneralConfig.builder().typeName("Céramique").build());
+        when(tableFieldConfigService.getFormConfig(eq(42L), any(), any())).thenReturn(
+                TypeFormConfig.builder().typeName("Céramique").build());
         when(tableFieldConfigService.getFieldsConfig(eq(42L), any(), any())).thenReturn(
                 new TypeFieldsConfig());
     }
@@ -59,7 +59,7 @@ class ProjectTableFieldSettingsBeanTest {
 
         assertThat(bean.getSelectedTable()).isEqualTo(ConfigurableTable.UE);
         assertThat(bean.getSelectedTypeName()).isEqualTo("Céramique");
-        assertThat(bean.getGeneralConfig()).isNotNull();
+        assertThat(bean.getFormConfig()).isNotNull();
         assertThat(bean.getFieldsConfig()).isNotNull();
     }
 
@@ -74,34 +74,47 @@ class ProjectTableFieldSettingsBeanTest {
     }
 
     @Test
-    void selectType_shouldReloadGeneralAndFieldsConfig() {
+    void selectType_shouldReloadFormAndFieldsConfig() {
         bean.init(project);
 
         bean.selectType("_default");
 
         assertThat(bean.getSelectedTypeName()).isEqualTo("_default");
-        verify(tableFieldConfigService).getGeneralConfig(42L, ConfigurableTable.UE, "_default");
+        verify(tableFieldConfigService).getFormConfig(42L, ConfigurableTable.UE, "_default");
         verify(tableFieldConfigService).getFieldsConfig(42L, ConfigurableTable.UE, "_default");
     }
 
     @Test
-    void toggleSystemFieldVisibility_shouldForwardTheFieldsAlreadyUpdatedValue() {
+    void toggleFieldActive_shouldForwardTheFieldsAlreadyUpdatedValue() {
         bean.init(project);
-        SystemFieldConfig field = SystemFieldConfig.builder().name("Localisation").type(FieldType.TEXTE).visible(false).build();
+        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Localisation").type(FieldType.TEXTE).systemField(true).active(false).build();
 
-        bean.toggleSystemFieldVisibility(field);
+        bean.toggleFieldActive(field);
 
-        verify(tableFieldConfigService).setSystemFieldVisible(42L, ConfigurableTable.UE, "Céramique", "Localisation", false);
+        verify(tableFieldConfigService).setFieldActive(42L, ConfigurableTable.UE, "Céramique", "Localisation", false);
     }
 
     @Test
-    void toggleAdditionalFieldRequired_shouldForwardTheFieldsAlreadyUpdatedValue() {
+    void toggleFieldMandatory_shouldForwardTheFieldsAlreadyUpdatedValueForAdditionalField() {
         bean.init(project);
-        AdditionalFieldConfig field = AdditionalFieldConfig.builder().name("Remontage").type(FieldType.PARENTS).required(true).build();
+        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Remontage").type(FieldType.PARENTS).systemField(false).mandatory(true).build();
 
-        bean.toggleAdditionalFieldRequired(field);
+        bean.toggleFieldMandatory(field);
 
-        verify(tableFieldConfigService).setFieldRequired(42L, ConfigurableTable.UE, "Céramique", "Remontage", false, true);
+        verify(tableFieldConfigService).setFieldMandatory(42L, ConfigurableTable.UE, "Céramique", "Remontage", true);
+    }
+
+    @Test
+    void getSystemFields_and_getAdditionalFields_shouldPartitionByIsSystemField() {
+        bean.init(project);
+        TypeFieldFormConfig sys = TypeFieldFormConfig.builder().name("Identifiant").systemField(true).build();
+        TypeFieldFormConfig custom = TypeFieldFormConfig.builder().name("Remontage").systemField(false).build();
+        TypeFieldsConfig config = new TypeFieldsConfig();
+        config.setFields(List.of(sys, custom));
+        bean.setFieldsConfig(config);
+
+        assertThat(bean.getSystemFields()).containsExactly(sys);
+        assertThat(bean.getAdditionalFields()).containsExactly(custom);
     }
 
     @Test
@@ -111,7 +124,7 @@ class ProjectTableFieldSettingsBeanTest {
         bean.deleteAdditionalField("Remontage");
 
         verify(tableFieldConfigService).deleteAdditionalField(42L, ConfigurableTable.UE, "Céramique", "Remontage");
-        verify(tableFieldConfigService, org.mockito.Mockito.atLeastOnce()).getFieldsConfig(42L, ConfigurableTable.UE, "Céramique");
+        verify(tableFieldConfigService, atLeastOnce()).getFieldsConfig(42L, ConfigurableTable.UE, "Céramique");
     }
 
     @Test
@@ -133,7 +146,7 @@ class ProjectTableFieldSettingsBeanTest {
         assertThat(bean.getTables()).isEmpty();
         assertThat(bean.getSelectedTable()).isNull();
         assertThat(bean.getSelectedTypeName()).isNull();
-        assertThat(bean.getGeneralConfig()).isNull();
+        assertThat(bean.getFormConfig()).isNull();
         assertThat(bean.getFieldsConfig()).isNull();
     }
 }

@@ -127,21 +127,23 @@
 
                             <!-- Général -->
                             <p:tab title="#{langBean.msg('projectTables.tab.general')}">
-                                <h:panelGroup rendered="#{not empty projectTableFieldSettingsBean.generalConfig}">
+                                <h:panelGroup rendered="#{not empty projectTableFieldSettingsBean.formConfig}">
                                     <div class="ptc-general">
                                         <p class="ptc-hint">#{langBean.msg('projectTables.general.hint', projectTableFieldSettingsBean.selectedTypeName, projectTableFieldSettingsBean.selectedTable.label)}</p>
 
                                         <settingscomp:fieldValueRow label="#{langBean.msg('projectTables.general.label')}" inputId="ptcLabel">
-                                            <div id="ptcLabel" class="ptc-readonly-value">#{projectTableFieldSettingsBean.generalConfig.typeName}</div>
+                                            <div id="ptcLabel" class="ptc-readonly-value">#{projectTableFieldSettingsBean.formConfig.typeName}</div>
                                         </settingscomp:fieldValueRow>
 
                                         <settingscomp:fieldValueRow label="#{langBean.msg('projectTables.general.concept')}" inputId="ptcConcept">
-                                            <div id="ptcConcept" class="ptc-static-placeholder">#{langBean.msg('projectTables.general.conceptPlaceholder')}</div>
+                                            <div id="ptcConcept" class="ptc-static-placeholder">
+                                                #{empty projectTableFieldSettingsBean.formConfig.valueConceptLabel ? langBean.msg('projectTables.general.conceptPlaceholder') : projectTableFieldSettingsBean.formConfig.valueConceptLabel}
+                                            </div>
                                             <div class="ptc-field-hint">#{langBean.msg('projectTables.general.conceptHint')}</div>
                                         </settingscomp:fieldValueRow>
 
                                         <settingscomp:fieldValueRow label="#{langBean.msg('projectTables.general.description')} #{langBean.msg('projectTables.general.descriptionOptional')}" inputId="ptcDescription">
-                                            <p:inputTextarea id="ptcDescription" value="#{projectTableFieldSettingsBean.generalConfig.description}"
+                                            <p:inputTextarea id="ptcDescription" value="#{projectTableFieldSettingsBean.formConfig.description}"
                                                              placeholder="#{langBean.msg('projectTables.general.descriptionPlaceholder')}"
                                                              style="width:100%" rows="3" autoResize="false"/>
                                         </settingscomp:fieldValueRow>
@@ -153,18 +155,18 @@
                                                 <div class="ptc-switch-row-label">#{langBean.msg('projectTables.general.inherit')}</div>
                                                 <div class="ptc-switch-row-hint">#{langBean.msg('projectTables.general.inheritHint')}</div>
                                             </div>
-                                            <p:toggleSwitch value="#{projectTableFieldSettingsBean.generalConfig.inheritsDefaultFields}"/>
+                                            <p:toggleSwitch value="#{projectTableFieldSettingsBean.formConfig.inheritsDefaultFields}"/>
                                         </div>
                                         <div class="ptc-switch-row">
                                             <div>
                                                 <div class="ptc-switch-row-label">#{langBean.msg('projectTables.general.visible')}</div>
                                                 <div class="ptc-switch-row-hint">#{langBean.msg('projectTables.general.visibleHint')}</div>
                                             </div>
-                                            <p:toggleSwitch value="#{projectTableFieldSettingsBean.generalConfig.visibleInApp}"/>
+                                            <p:toggleSwitch value="#{projectTableFieldSettingsBean.formConfig.visibleInApp}"/>
                                         </div>
 
                                         <p:outputPanel layout="block" style="display:flex;justify-content:flex-end;">
-                                            <p:commandButton value="#{langBean.msg('common.action.save')}" actionListener="#{projectTableFieldSettingsBean.saveGeneralConfig()}" update="@form"/>
+                                            <p:commandButton value="#{langBean.msg('common.action.save')}" actionListener="#{projectTableFieldSettingsBean.saveFormConfig()}" update="@form"/>
                                         </p:outputPanel>
                                     </div>
                                 </h:panelGroup>
@@ -176,25 +178,28 @@
 
                                     <div class="ptc-section-head">
                                         <span class="ptc-section-title">#{langBean.msg('projectTables.champs.systemTitle')}</span>
-                                        <span class="ptc-section-meta">#{projectTableFieldSettingsBean.fieldsConfig.systemFields.size()} #{langBean.msg('projectTables.champs.countFields')} · #{projectTableFieldSettingsBean.hiddenSystemFieldCount} #{langBean.msg('projectTables.champs.countHidden')}</span>
+                                        <span class="ptc-section-meta">#{projectTableFieldSettingsBean.systemFields.size()} #{langBean.msg('projectTables.champs.countFields')} · #{projectTableFieldSettingsBean.hiddenSystemFieldCount} #{langBean.msg('projectTables.champs.countHidden')}</span>
                                     </div>
 
-                                    <p:dataTable value="#{projectTableFieldSettingsBean.fieldsConfig.systemFields}" var="f" rowKey="#{f.name}">
+                                    <p:dataTable value="#{projectTableFieldSettingsBean.systemFields}" var="f" rowKey="#{f.name}">
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnActive')}" style="width:80px">
-                                            <p:toggleSwitch value="#{f.visible}">
-                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleSystemFieldVisibility(f)}" update="@form"/>
+                                            <p:toggleSwitch value="#{f.active}" disabled="#{f.institutionLocked}">
+                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldActive(f)}" update="@form"/>
                                             </p:toggleSwitch>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
-                                            <span class="#{not f.visible ? 'ptc-hidden-name' : ''}">#{f.name}</span>
+                                            <span class="#{not f.active ? 'ptc-hidden-name' : ''}">#{f.name}</span>
+                                            <h:panelGroup rendered="#{f.institutionLocked}">
+                                                <span class="bi bi-lock-fill" style="font-size:12px;color:#a3a3a0;margin-left:6px;" title="#{langBean.msg('projectTables.champs.institutionLocked')}"/>
+                                            </h:panelGroup>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:190px">
                                             <span class="ptc-chip">#{f.type.label}</span>
                                             <p:commandButton icon="bi bi-gear" styleClass="ui-button-flat ui-button-sm ptc-disabled-icon" disabled="true" title="#{langBean.msg('projectTables.champs.configureSoon')}" rendered="#{f.configurable}"/>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnRequired')}" style="width:130px">
-                                            <p:toggleSwitch value="#{f.required}">
-                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleSystemFieldRequired(f)}" update="@form"/>
+                                            <p:toggleSwitch value="#{f.mandatory}" disabled="#{f.institutionLocked}">
+                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldMandatory(f)}" update="@form"/>
                                             </p:toggleSwitch>
                                         </p:column>
                                     </p:dataTable>
@@ -207,7 +212,7 @@
                                         <p:commandButton value="#{langBean.msg('projectTables.champs.addField')}" actionListener="#{projectTableFieldSettingsBean.addField()}" update="@form"/>
                                     </div>
 
-                                    <p:dataTable value="#{projectTableFieldSettingsBean.fieldsConfig.additionalFields}" var="a" rowKey="#{a.name}"
+                                    <p:dataTable value="#{projectTableFieldSettingsBean.additionalFields}" var="a" rowKey="#{a.name}"
                                                  emptyMessage="#{langBean.msg('projectTables.champs.emptyAdditional')}">
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
                                             <h:outputText value="#{a.name}"/>
@@ -216,8 +221,8 @@
                                             <span class="ptc-chip">#{a.type.label}</span>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnRequired')}" style="width:130px">
-                                            <p:toggleSwitch value="#{a.required}">
-                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleAdditionalFieldRequired(a)}" update="@form"/>
+                                            <p:toggleSwitch value="#{a.mandatory}" disabled="#{a.institutionLocked}">
+                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldMandatory(a)}" update="@form"/>
                                             </p:toggleSwitch>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnSource')}">

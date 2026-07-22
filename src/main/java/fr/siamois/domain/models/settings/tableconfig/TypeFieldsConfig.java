@@ -14,6 +14,5 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TypeFieldsConfig implements Serializable {
-    private List<SystemFieldConfig> systemFields = new ArrayList<>();
-    private List<AdditionalFieldConfig> additionalFields = new ArrayList<>();
+    private List<TypeFieldFormConfig> fields = new ArrayList<>();
 }

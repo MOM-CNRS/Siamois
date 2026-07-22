@@ -8,14 +8,19 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
+/**
+ * Mirrors {@code fr.siamois.domain.models.form.config.FormConfig}: {@code valueConceptLabel}
+ * stands in for {@code valueConcept} (empty/null meaning the {@code _default} type). The other
+ * fields are UI-only and have no equivalent on the real entity.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class TypeGeneralConfig implements Serializable {
+public class TypeFormConfig implements Serializable {
     private String typeName;
-    private String linkedConceptLabel;
+    private String valueConceptLabel;
     private String description;
     private boolean inheritsDefaultFields;
     private boolean visibleInApp;

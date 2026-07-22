@@ -1,9 +1,9 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
-import fr.siamois.domain.models.settings.tableconfig.AdditionalFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeGeneralConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,43 +40,70 @@ class MockTableFieldConfigServiceTest {
     void getFieldsConfig_shouldSeedCeramiqueWithAdditionalFields() {
         TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Céramique");
 
-        assertThat(config.getSystemFields()).isNotEmpty();
-        assertThat(config.getAdditionalFields()).extracting(AdditionalFieldConfig::getName)
+        assertThat(config.getFields()).anyMatch(TypeFieldFormConfig::isSystemField);
+        assertThat(config.getFields()).filteredOn(f -> !f.isSystemField())
+                .extracting(TypeFieldFormConfig::getName)
                 .contains("Technique de fabrication", "Nombre de tessons");
     }
 
     @Test
     void getFieldsConfig_shouldReturnDefensiveCopiesNotSharedInstances() {
         TypeFieldsConfig first = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Lithique");
-        first.getSystemFields().get(0).setVisible(false);
+        first.getFields().get(0).setActive(false);
 
         TypeFieldsConfig second = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Lithique");
 
-        assertThat(second.getSystemFields().get(0).isVisible()).isTrue();
+        assertThat(second.getFields().get(0).isActive()).isTrue();
     }
 
     @Test
-    void setSystemFieldVisible_shouldPersistAcrossCalls() {
-        service.setSystemFieldVisible(1L, ConfigurableTable.MOBILIER, "Lithique", "Localisation", false);
+    void setFieldActive_shouldPersistAcrossCalls() {
+        service.setFieldActive(1L, ConfigurableTable.MOBILIER, "Lithique", "Localisation", false);
 
         TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Lithique");
-        boolean visible = config.getSystemFields().stream()
+        boolean active = config.getFields().stream()
                 .filter(f -> f.getName().equals("Localisation"))
-                .findFirst().orElseThrow().isVisible();
+                .findFirst().orElseThrow().isActive();
 
-        assertThat(visible).isFalse();
+        assertThat(active).isFalse();
     }
 
     @Test
-    void setFieldRequired_shouldUpdateAdditionalFieldWhenNotSystem() {
-        service.setFieldRequired(1L, ConfigurableTable.MOBILIER, "Céramique", "Technique de fabrication", false, true);
+    void setFieldActive_shouldBeNoOpOnInstitutionLockedField() {
+        // "Identifiant" is seeded institutionLocked=true
+        service.setFieldActive(1L, ConfigurableTable.MOBILIER, "Lithique", "Identifiant", false);
+
+        TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Lithique");
+        boolean active = config.getFields().stream()
+                .filter(f -> f.getName().equals("Identifiant"))
+                .findFirst().orElseThrow().isActive();
+
+        assertThat(active).isTrue();
+    }
+
+    @Test
+    void setFieldMandatory_shouldBeNoOpOnInstitutionLockedField() {
+        // "Projet" is seeded institutionLocked=true
+        service.setFieldMandatory(1L, ConfigurableTable.MOBILIER, "Lithique", "Projet", false);
+
+        TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Lithique");
+        boolean mandatory = config.getFields().stream()
+                .filter(f -> f.getName().equals("Projet"))
+                .findFirst().orElseThrow().isMandatory();
+
+        assertThat(mandatory).isTrue();
+    }
+
+    @Test
+    void setFieldMandatory_shouldUpdateAdditionalFieldWhenNotLocked() {
+        service.setFieldMandatory(1L, ConfigurableTable.MOBILIER, "Céramique", "Technique de fabrication", true);
 
         TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Céramique");
-        boolean required = config.getAdditionalFields().stream()
+        boolean mandatory = config.getFields().stream()
                 .filter(f -> f.getName().equals("Technique de fabrication"))
-                .findFirst().orElseThrow().isRequired();
+                .findFirst().orElseThrow().isMandatory();
 
-        assertThat(required).isTrue();
+        assertThat(mandatory).isTrue();
     }
 
     @Test
@@ -86,7 +113,8 @@ class MockTableFieldConfigServiceTest {
 
         TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.PHASE, "Occupation");
 
-        assertThat(config.getAdditionalFields()).extracting(AdditionalFieldConfig::getName)
+        assertThat(config.getFields()).filteredOn(f -> !f.isSystemField())
+                .extracting(TypeFieldFormConfig::getName)
                 .containsExactly("Nouveau champ", "Nouveau champ 2");
     }
 
@@ -97,29 +125,46 @@ class MockTableFieldConfigServiceTest {
         service.deleteAdditionalField(1L, ConfigurableTable.PHASE, "Occupation", "Nouveau champ");
 
         TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.PHASE, "Occupation");
-        assertThat(config.getAdditionalFields()).isEmpty();
+        assertThat(config.getFields()).noneMatch(f -> !f.isSystemField());
+    }
+
+    @Test
+    void deleteAdditionalField_shouldNotRemoveSystemFields() {
+        service.deleteAdditionalField(1L, ConfigurableTable.PHASE, "Occupation", "Identifiant");
+
+        TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.PHASE, "Occupation");
+        assertThat(config.getFields()).anyMatch(f -> f.getName().equals("Identifiant"));
     }
 
     @Test
     void projectStatesAreIsolatedFromEachOther() {
-        service.setSystemFieldVisible(1L, ConfigurableTable.MOBILIER, "Lithique", "Localisation", false);
+        service.setFieldActive(1L, ConfigurableTable.MOBILIER, "Lithique", "Localisation", false);
 
         TypeFieldsConfig otherProjectConfig = service.getFieldsConfig(2L, ConfigurableTable.MOBILIER, "Lithique");
-        boolean visible = otherProjectConfig.getSystemFields().stream()
+        boolean active = otherProjectConfig.getFields().stream()
                 .filter(f -> f.getName().equals("Localisation"))
-                .findFirst().orElseThrow().isVisible();
+                .findFirst().orElseThrow().isActive();
 
-        assertThat(visible).isTrue();
+        assertThat(active).isTrue();
     }
 
     @Test
-    void saveGeneralConfig_shouldPersistChanges() {
-        TypeGeneralConfig config = service.getGeneralConfig(1L, ConfigurableTable.UE, "Creusement");
+    void saveFormConfig_shouldPersistChanges() {
+        TypeFormConfig config = service.getFormConfig(1L, ConfigurableTable.UE, "Creusement");
         config.setDescription("Une fosse de creusement");
 
-        service.saveGeneralConfig(1L, ConfigurableTable.UE, config);
+        service.saveFormConfig(1L, ConfigurableTable.UE, config);
 
-        TypeGeneralConfig reloaded = service.getGeneralConfig(1L, ConfigurableTable.UE, "Creusement");
+        TypeFormConfig reloaded = service.getFormConfig(1L, ConfigurableTable.UE, "Creusement");
         assertThat(reloaded.getDescription()).isEqualTo("Une fosse de creusement");
+    }
+
+    @Test
+    void getFormConfig_shouldExposeValueConceptLabelAsTypeNameExceptForDefault() {
+        TypeFormConfig ceramique = service.getFormConfig(1L, ConfigurableTable.MOBILIER, "Céramique");
+        TypeFormConfig defaultType = service.getFormConfig(1L, ConfigurableTable.MOBILIER, "_default");
+
+        assertThat(ceramique.getValueConceptLabel()).isEqualTo("Céramique");
+        assertThat(defaultType.getValueConceptLabel()).isEmpty();
     }
 }
