@@ -24,11 +24,6 @@ public class FormConfig {
     @Column(name = "config_id")
     private Long id;
 
-    @NonNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_field_concept_id", nullable = false)
-    private Concept fieldConcept;
-
     @Nullable
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_value_concept_id")
