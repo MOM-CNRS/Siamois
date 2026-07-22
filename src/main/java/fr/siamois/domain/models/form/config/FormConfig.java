@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.util.Set;
+
 @Data
 @Entity
 @Table(name = "form_config")
@@ -36,5 +38,8 @@ public class FormConfig {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_action_unit_id")
     private ActionUnit actionUnit;
+
+    @OneToMany(mappedBy = "formConfig", fetch = FetchType.LAZY)
+    private Set<FieldFormConfig> fieldConfigs;
 
 }
