@@ -4,11 +4,8 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
-
-import java.util.Objects;
 
 @Data
 @Entity
@@ -53,20 +50,8 @@ public class FieldFormConfig {
         this.id.formsConfigId = formConfig.getId();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof FieldFormConfig that)) return false;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id);
-    }
-
     @Data
     @Embeddable
-    @EqualsAndHashCode
     public static class FieldFormConfigId {
         private Long customFieldId;
         private Long formsConfigId;
