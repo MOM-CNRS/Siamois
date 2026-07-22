@@ -45,7 +45,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private boolean treeOpen = true;
     private int activeTabIndex = TAB_CHAMPS;
 
-    private TypeFormConfig formConfig;
     private TypeFieldsConfig fieldsConfig;
 
     public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
@@ -62,7 +61,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         selectedTypeName = null;
         treeOpen = true;
         activeTabIndex = TAB_CHAMPS;
-        formConfig = null;
         fieldsConfig = null;
     }
 
@@ -89,7 +87,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public void selectType(String typeName) {
         selectedTypeName = typeName;
         if (typeName == null) {
-            formConfig = null;
             fieldsConfig = null;
             return;
         }
@@ -97,7 +94,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void loadConfigs() {
-        formConfig = tableFieldConfigService.getFormConfig(project.getId(), selectedTable, selectedTypeName);
         fieldsConfig = tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName);
     }
 
@@ -155,9 +151,5 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         loadConfigs();
     }
 
-    public void saveFormConfig() {
-        tableFieldConfigService.saveFormConfig(project.getId(), selectedTable, formConfig);
-        MessageUtils.displayInfoMessage(langBean, "projectTables.general.saveSuccess");
-    }
 
 }
