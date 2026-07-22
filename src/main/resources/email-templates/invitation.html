@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
+</head>
+<style>
+    body {
+        background-color: #F4F1EA;
+        --c-red: rgb(169, 73, 78);
+        --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font-family: var(--font-sans), serif;
+    }
+    body > * {
+        margin-bottom: 2vh;
+    }
+    main {
+        background-color: var(--c-red);
+        border-radius: 10px;
+        padding: 1vh;
+        color: rgba(255,255,255,0.78)
+    }
+    footer {
+        color: var(--c-red);
+    }
+</style>
+<body>
+<header>
+    <a href="https://siamois.eu/">
+        <img width="158" height="60"
+             src="https://siamois.eu/wp-content/uploads/2026/04/cropped-LOGO_CMJN-baseline-e1776594664453.png"
+             alt="Logo SIAMOIS" decoding="async">
+    </a>
+</header>
+<main>
+    <p>Bonjour,</p>
+    <p>%1$s vous a invité à rejoindre %2$s avec le(s) profil(s) suivant(s) : %3$s.</p>
+    <p>Voici le lien pour créer votre compte et votre mot de passe :</p>
+    <a href="%4$s">%4$s</a>
+    <p>Ce lien est valable jusqu'au %5$s.</p>
+</main>
+<footer>
+    SIAMOIS - Un écosystème numérique libre, ouvert et interopérable, construit pour l'enregistrement, la gestion et le partage des données archéologiques.
+</footer>
+</body>
+</html>

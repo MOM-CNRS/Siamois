@@ -1,6 +1,7 @@
 package fr.siamois.ui.form.dto;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customform.DependsOnJson;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import lombok.Data;
 
@@ -15,5 +16,6 @@ public class CustomColUiDto implements Serializable {
     private CustomField field;
     private String className;
     private EnabledWhenJson enabledWhenSpec;
+    private DependsOnJson dependsOnSpec;
 
 }

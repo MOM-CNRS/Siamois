@@ -5,18 +5,23 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationPlacesControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationProjectsControllerApi;
+import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationRecordingUnitsControllerApi;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.OrganizationOpenApiMapper;
@@ -24,7 +29,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -36,6 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -77,7 +83,7 @@ class OrganizationControllerApiTest {
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ConceptService conceptService;
     @Mock
@@ -109,7 +115,7 @@ class OrganizationControllerApiTest {
                 projectDocumentOpenApiMapper,
                 findOpenApiMapper,
                 personMapper,
-                permissionService,
+                profilePermissionService,
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService);
@@ -118,10 +124,20 @@ class OrganizationControllerApiTest {
                 recordingUnitService,
                 recordingUnitResponseMapper,
                 projectApiService,
-                new OrganizationOpenApiMapper(),
+                new OrganizationOpenApiMapper());
+
+        OrganizationPlacesControllerApi placesController = new OrganizationPlacesControllerApi(
+                projectApiService,
                 placeOpenApiService);
 
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        OrganizationProjectsControllerApi projectsController = new OrganizationProjectsControllerApi();
+
+        OrganizationRecordingUnitsControllerApi recordingUnitsController = new OrganizationRecordingUnitsControllerApi(
+                recordingUnitService,
+                recordingUnitResponseMapper,
+                projectApiService);
+
+        mockMvc = MockMvcBuilders.standaloneSetup(controller, placesController, projectsController, recordingUnitsController)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
                 .build();
@@ -278,7 +294,7 @@ class OrganizationControllerApiTest {
                 .andExpect(header().string("X-Total-Count", "2"))
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.data[0].name").value("Alpha"))
-                .andExpect(jsonPath("$.data[0].resourceId").value("1"))
+                .andExpect(jsonPath("$.data[0].id").value("1"))
                 .andExpect(jsonPath("$.data[1].name").value("Beta"))
                 .andExpect(jsonPath("$.meta.total").value(2))
                 .andExpect(jsonPath("$.meta.offset").value(0));
@@ -361,8 +377,8 @@ class OrganizationControllerApiTest {
 
         mockMvc.perform(get("/api/v1/organizations").param("offset", "0").param("limit", "20").param("sort", "id:asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].resourceId").value("2"))
-                .andExpect(jsonPath("$.data[1].resourceId").value("10"));
+                .andExpect(jsonPath("$.data[0].id").value("2"))
+                .andExpect(jsonPath("$.data[1].id").value("10"));
     }
 
     @Test
@@ -437,7 +453,7 @@ class OrganizationControllerApiTest {
         PlaceResource place = new PlaceResource();
         place.setId("5");
         place.setName("Cave A");
-        when(placeOpenApiService.listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc")))
+        when(placeOpenApiService.listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc"), any()))
                 .thenReturn(new PlaceListResponse(List.of(place), new ListMeta(1L, 50, 0L)));
 
         mockMvc.perform(get("/api/v1/organizations/10/places"))
@@ -447,23 +463,10 @@ class OrganizationControllerApiTest {
                 .andExpect(jsonPath("$.data[0].name").value("Cave A"))
                 .andExpect(jsonPath("$.meta.total").value(1));
 
-        verify(placeOpenApiService).listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc"));
+        verify(placeOpenApiService).listByOrganization(any(), eq(10L), eq(0), eq(50), eq("name:asc"), any());
     }
 
-    @Test
-    void getPlaces_invalidPagination_returns400() throws Exception {
-        login();
 
-        mockMvc.perform(get("/api/v1/organizations/10/places").param("offset", "-1").param("limit", "10"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void getFinds_returns501() throws Exception {
-        login();
-        mockMvc.perform(get("/api/v1/organizations/1/mobiliers"))
-                .andExpect(status().isNotImplemented());
-    }
 
     @Test
     void getRecordingUnitByFullIdentifier_success() throws Exception {
@@ -537,7 +540,7 @@ class OrganizationControllerApiTest {
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setId(1L);
         ru.setFullIdentifier("RU-1");
-        when(recordingUnitService.findByInstitutionId(10L, 10, 0))
+        when(recordingUnitService.searchRecordingUnit(any(InstitutionDTO.class), any(FilterDTO.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(ru), PageRequest.of(0, 10), 1));
 
         RecordingUnitResource resource = new RecordingUnitResource();

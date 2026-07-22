@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -42,6 +43,8 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionId(String identifier, Long institutionId);
 
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionIdentifier(String identifier, String institutionId);
+
+    List<ActionUnit> findAllByIdentifierInAndCreatedByInstitutionIdentifier(Collection<String> identifiers, String institutionId);
 
     @Query(value = """
     SELECT su.*
@@ -105,43 +108,6 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     ORDER BY su.creation_time DESC, su.action_unit_id DESC
     """, nativeQuery = true)
     List<ActionUnit> findBySpatialContext(@Param("spatialId") Long spatialId);
-
-    @Query(
-            nativeQuery = true,
-            value = """
-                        SELECT DISTINCT au.*
-                        FROM action_unit au
-                        JOIN team_member tm ON au.action_unit_id = tm.fk_action_unit_id
-                        WHERE tm.fk_person_id = :personId AND au.fk_institution_id = :institutionId
-                        UNION
-                        SELECT au.*
-                        FROM action_unit au
-                        WHERE au.fk_created_by = :personId AND au.fk_institution_id = :institutionId
-                    """
-    )
-    List<ActionUnit> findByTeamMemberOrCreatorAndInstitution(@Param("personId") Long personId, @Param("institutionId") Long institutionId);
-
-    @Query(
-            nativeQuery = true,
-            value = """
-                        SELECT au.*
-                        FROM action_unit au
-                        WHERE au.fk_institution_id = :institutionId
-                        AND (
-                            au.fk_created_by = :personId
-                            OR EXISTS (
-                                SELECT 1 
-                                FROM team_member tm 
-                                WHERE tm.fk_action_unit_id = au.action_unit_id 
-                                AND tm.fk_person_id = :personId
-                            )
-                        )
-                        LIMIT :limit
-                    """
-    )
-    List<ActionUnit> findByTeamMemberOrCreatorAndInstitutionLimit(@Param("personId") Long personId,
-                                                                  @Param("institutionId") Long institutionId,
-                                                                  @Param("limit") long limit);
 
     @Query(value = """
             SELECT COUNT(1) > 0

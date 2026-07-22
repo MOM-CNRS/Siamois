@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.document.DocumentPatchRequest;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentFormResponse;
-import fr.siamois.ui.api.openapi.v1.response.document.DocumentResourceResponse;
+import fr.siamois.ui.api.openapi.v1.response.document.DocumentResponse;
 import fr.siamois.ui.api.openapi.v1.service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -111,7 +111,7 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "404", description = "Document ou concept introuvable"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
-    public ResponseEntity<DocumentResourceResponse> patchDocument(@PathVariable("id") long id, @RequestBody DocumentPatchRequest body) {
+    public ResponseEntity<DocumentResponse> patchDocument(@PathVariable("id") long id, @RequestBody DocumentPatchRequest body) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
         var resource = documentWriteOpenApiService.updateDocument(
@@ -122,7 +122,7 @@ public class DocumentsControllerApi {
                 body.getNatureConceptId(),
                 body.getScaleConceptId(),
                 body.getFormatConceptId());
-        return ResponseEntity.ok(new DocumentResourceResponse(resource));
+        return ResponseEntity.ok(new DocumentResponse(resource));
     }
 
     @DeleteMapping("/{id}")

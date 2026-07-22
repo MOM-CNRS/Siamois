@@ -6,10 +6,12 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.mapper.PersonMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,6 +44,12 @@ class InstitutionSeederTest {
 
     @Mock
     FieldConfigurationService fieldConfigurationService;
+
+    @Mock
+    PersonMapper personMapper;
+
+    @Mock
+    PersonProfileAssignmentService personProfileAssignmentService;
 
     @InjectMocks
     InstitutionSeeder institutionSeeder;
@@ -133,6 +141,7 @@ class InstitutionSeederTest {
 
         verify(institutionRepository, times(1)).save(any(Institution.class));
         verify(fieldConfigurationService, times(1)).setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class));
+        verify(personProfileAssignmentService, times(1)).addToManagers(any(InstitutionDTO.class), any());
 
     }
 }

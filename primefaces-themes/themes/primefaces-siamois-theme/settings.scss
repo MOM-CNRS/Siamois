@@ -122,6 +122,17 @@ main form:first-child .field-value-group {
     border-color: var(--siamois-green-active) !important;
 }
 
+.members-empty-state {
+    padding: 32px 16px;
+    color: var(--text-light);
+}
+
+.members-empty-state a {
+    color: var(--siamois-green-active) !important;
+    cursor: pointer;
+    font-weight: 600;
+}
+
 .addButton i {
     display: none;
 }
@@ -255,4 +266,155 @@ a:hover {
     display: flex;
     flex-direction: column;
     gap: 1em;
+}
+
+.member-avatar {
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: 9px;
+    background-color: var(--siamois-green-light-100);
+    color: var(--siamois-green-active);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.chip {
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 20px;
+    padding: 2px 10px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.chip-profile, .chip-status-active {
+    background-color: var(--siamois-green-light-100);
+    color: var(--siamois-green-active);
+    border-color: var(--siamois-green-light-350);
+}
+
+.chip-status-inactive {
+    background-color: #fdf3e2;
+    color: #b07a1e;
+    border-color: #ecd6a8;
+}
+
+.chip-status-invited {
+    background-color: #e5f1fc;
+    color: #1c6dbb;
+    border-color: #b9d8f3;
+}
+
+.chip-status-expired {
+    background-color: #fdecea;
+    color: #b3261e;
+    border-color: #f5c2bd;
+}
+
+.resend-invitation-button {
+    margin-left: 8px;
+}
+
+.profile-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-cell .edit-pencil {
+    opacity: 0;
+    cursor: pointer;
+    color: var(--siamois-green-active);
+    transition: opacity .15s ease;
+}
+
+.profile-cell:hover .edit-pencil {
+    opacity: 1;
+}
+
+.newOrganizationMemberDialog .ui-dialog-content {
+    padding: 0 !important;
+}
+
+.dialog-new-organization-member {
+    display: flex;
+    flex-direction: column;
+}
+
+.dialog-new-organization-member-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--siamois-green-light-350);
+}
+
+.dialog-new-organization-member-header h3 {
+    margin: 0;
+}
+
+.dialog-new-organization-member-body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px 22px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: .3em;
+}
+
+.invite-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+
+.invite-form-row {
+    display: flex;
+    gap: 1em;
+}
+
+.invite-form-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .3em;
+}
+
+.invite-form-field input {
+    width: 100%;
+}
+
+.invite-by-email-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    color: var(--siamois-green-active);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ui-autocomplete-footer {
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+}
+
+.ui-autocomplete-footer .invite-by-email-link {
+    margin-top: 0;
+}
+
+.dialog-new-organization-member .dialog-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 15px 22px;
+    border-top: 1px solid var(--siamois-green-light-350);
 }

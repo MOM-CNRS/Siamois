@@ -6,7 +6,6 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.response.find.FindMobilierFormData;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -17,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,7 +30,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -39,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FindControllerApiTest {
 
     @Mock
@@ -92,20 +93,21 @@ class FindControllerApiTest {
     }
 
     @Test
-    void getById_success_returnsFormAndFieldsOnly() throws Exception {
+    void getById_success_returnsResourceData() throws Exception {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
-        FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
+        FindResource payload = new FindResource();
+        payload.setResourceType("finds");
+        payload.setId("5");
         when(recordingUnitOpenApiService.buildFindMobilierForm("5", personDto, Set.of(10L), "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/finds/5")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fields").isEmpty())
-                .andExpect(jsonPath("$.data.specimenType").doesNotExist())
-                .andExpect(jsonPath("$.data.vocabulariesByFieldCode").doesNotExist());
+                .andExpect(jsonPath("$.data.id").value("5"))
+                .andExpect(jsonPath("$.data.specimenType").doesNotExist());
 
         verify(recordingUnitOpenApiService).buildFindMobilierForm("5", personDto, Set.of(10L), "fr");
     }
@@ -133,9 +135,9 @@ class FindControllerApiTest {
 
         mockMvc.perform(post("/api/v1/finds")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recordingUnitId\":\"1\",\"specimenTypeConceptId\":\"2\"}"))
+                        .content("{\"recordingUnitId\":\"1\",\"typeId\":\"2\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.resourceId").value("55"));
+                .andExpect(jsonPath("$.data.id").value("55"));
     }
 
     @Test
@@ -152,7 +154,7 @@ class FindControllerApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.resourceId").value("3"));
+                .andExpect(jsonPath("$.data.id").value("3"));
     }
 
     @Test
@@ -164,25 +166,6 @@ class FindControllerApiTest {
                 .andExpect(status().isNoContent());
 
         verify(findOpenApiService).deleteFind(7L, personDto, Set.of(10L), "fr");
-    }
-
-    @Test
-    void getForm_returnsUiShell() throws Exception {
-        when(projectApiService.requireCaller())
-                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-
-        FindMobilierFormData payload = new FindMobilierFormData(null, Map.of());
-        when(recordingUnitOpenApiService.buildFindUiForm(10L, personDto, "fr"))
-                .thenReturn(payload);
-
-        mockMvc.perform(get("/api/v1/finds/form")
-                        .param("organizationId", "10")
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fields").isEmpty());
-
-        verify(projectApiService).assertOrganizationInCallerScope(10L, Set.of(10L));
-        verify(recordingUnitOpenApiService).buildFindUiForm(10L, personDto, "fr");
     }
 
     @Test

@@ -9,6 +9,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.domain.models.form.customform.DependsOnJson;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import jakarta.persistence.AttributeConverter;
@@ -98,6 +99,10 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
             Map<String, Object> ew = objectMapper.convertValue(col.getEnabledWhenSpec(), Map.class);
             colMap.put("enabledWhen", ew);
         }
+        if (col.getDependsOnSpec() != null) {
+            Map<String, Object> dep = objectMapper.convertValue(col.getDependsOnSpec(), Map.class);
+            colMap.put("dependsOn", dep);
+        }
         return colMap;
     }
 
@@ -166,6 +171,12 @@ public class CustomFormLayoutConverter implements AttributeConverter<List<Custom
         if (ewObj instanceof Map<?, ?> ewMap) {
             EnabledWhenJson ew = objectMapper.convertValue(ewMap, EnabledWhenJson.class);
             col.setEnabledWhenSpec(ew);
+        }
+
+        Object depObj = colMap.get("dependsOn");
+        if (depObj instanceof Map<?, ?> depMap) {
+            DependsOnJson dep = objectMapper.convertValue(depMap, DependsOnJson.class);
+            col.setDependsOnSpec(dep);
         }
 
         return col;

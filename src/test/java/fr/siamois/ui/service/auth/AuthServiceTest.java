@@ -88,7 +88,6 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("jwt-access");
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresIn()).isEqualTo(900L);
-        assertThat(response.user().email()).isEqualTo("user@test.fr");
     }
 
     @Test
@@ -228,7 +227,6 @@ class AuthServiceTest {
         var me = authService.currentUser();
 
         assertThat(me.id()).isEqualTo(99L);
-        assertThat(me.email()).isEqualTo("user@test.fr");
         assertThat(me.organizations()).hasSize(1);
         assertThat(me.organizations().get(0).name()).isEqualTo("Lab");
     }

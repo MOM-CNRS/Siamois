@@ -14,7 +14,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
 @Data
@@ -71,10 +70,6 @@ public class Person implements UserDetails {
     @Column(name = "alert_mail")
     private boolean alertMail = false;
 
-    @ColumnDefault("false")
-    @Column(name = "is_super_admin")
-    private boolean isSuperAdmin = false;
-
     @Column(name = "api_key", length = Integer.MAX_VALUE)
     private String apiKey;
 
@@ -107,10 +102,7 @@ public class Person implements UserDetails {
     @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<SystemRole> roles = new ArrayList<>();
-        if (this.isSuperAdmin)
-            roles.add(new SystemRole("SUPER_ADMIN"));
-        return roles;
+        return new ArrayList<>();
     }
 
     @JsonIgnore

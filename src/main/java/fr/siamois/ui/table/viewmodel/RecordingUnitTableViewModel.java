@@ -5,8 +5,8 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.services.authorization.writeverifier.RecordingUnitWriteVerifier;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -64,7 +64,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     private final FlowBean flowBean;
     private final RecordingUnitService recordingUnitService;
 
-    private final RecordingUnitWriteVerifier recordingUnitWriteVerifier;
+    private final ProfilePermissionService profilePermissionService;
 
     private final SessionSettingsBean sessionSettingsBean;
 
@@ -77,7 +77,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        SpatialUnitService spatialUnitService,
                                        NavBean navBean,
                                        FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnitDTO> genericNewUnitDialogBean,
-                                       RecordingUnitWriteVerifier recordingUnitWriteVerifier,
+                                       ProfilePermissionService profilePermissionService,
                                        RecordingUnitService recordingUnitService,
                                       LangBean langBean, FormContextServices formContextServices) {
 
@@ -97,7 +97,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
         this.recordingUnitService = recordingUnitService;
-        this.recordingUnitWriteVerifier = recordingUnitWriteVerifier;
+        this.profilePermissionService = profilePermissionService;
     }
 
     @Override
@@ -216,8 +216,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public boolean isRendered(TableColumn column, String key, RecordingUnitDTO ru) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "recordingUnitCreateAllowed" -> recordingUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
-            case "specimenCreateAllowed" -> recordingUnitWriteVerifier.hasSpecificWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
+            case "recordingUnitCreateAllowed" -> profilePermissionService.hasRecordingUnitWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
+            case "specimenCreateAllowed" -> profilePermissionService.hasRecordingUnitWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
             default -> false;
         };
     }

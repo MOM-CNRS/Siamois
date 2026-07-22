@@ -9,15 +9,15 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -44,12 +44,12 @@ public class DocumentWriteOpenApiService {
     private final DocumentService documentService;
     private final ConceptService conceptService;
     private final InstitutionService institutionService;
-    private final PermissionService permissionService;
+    private final ProfilePermissionService profilePermissionService;
     private final ArkService arkService;
     private final ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
 
     @Transactional
-    public ProjectDocumentResource createForProject(
+    public DocumentResource createForProject(
             ProjectApiCaller caller,
             String projectIdOrKey,
             String title,
@@ -82,7 +82,7 @@ public class DocumentWriteOpenApiService {
     }
 
     @Transactional
-    public ProjectDocumentResource createForRecordingUnit(
+    public DocumentResource createForRecordingUnit(
             ProjectApiCaller caller,
             String recordingUnitKey,
             String title,
@@ -101,7 +101,7 @@ public class DocumentWriteOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!permissionService.hasWritePermission(userInfo, ru)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de document non autorisée sur cette UE");
         }
 
@@ -120,7 +120,7 @@ public class DocumentWriteOpenApiService {
     }
 
     @Transactional
-    public ProjectDocumentResource updateDocument(
+    public DocumentResource updateDocument(
             ProjectApiCaller caller,
             long documentId,
             String title,

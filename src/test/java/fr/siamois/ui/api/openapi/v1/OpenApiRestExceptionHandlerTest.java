@@ -1,7 +1,6 @@
 package fr.siamois.ui.api.openapi.v1;
 
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitMobileDetailData;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -40,7 +39,7 @@ class OpenApiRestExceptionHandlerTest {
     @Test
     void syncRevisionConflict_returns409WithPayload() {
         SyncConflictData data = new SyncConflictData(
-                "recording_unit", "42", 1L, 2L, mock(RecordingUnitMobileDetailData.class));
+                "recording_unit", "42", 1L, 2L, new Object());
         SyncRevisionConflictException ex = new SyncRevisionConflictException(data);
 
         ResponseEntity<?> response = handler.syncRevisionConflict(ex);

@@ -20,6 +20,8 @@
         <cc:attribute name="multiple" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="onConceptChanged" method-signature="void listener(org.primefaces.event.SelectEvent)" required="false"/>
         <cc:attribute name="panelStyleClass" type="String" required="false" default=""/>
+        <cc:attribute name="dependsOnBaseConcept" type="fr.siamois.domain.models.vocabulary.Concept" required="false"/>
+        <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -42,7 +44,9 @@
                                                           ajaxUpdateTargets="#{cc.attrs.updateTargetsOnBlur}"
                                                           required="#{cc.attrs.required}"
                                                           itemSelectListener="#{cc.attrs.onConceptChanged}"
-                                                          editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.field.fieldCode)}"/>
+                                                          editConceptUrl="#{spatialUnitFieldBean.getUrlForFieldCode(cc.attrs.field.fieldCode, cc.attrs.formCtx eq null ? null : cc.attrs.formCtx.actionUnitIdForThesaurus)}"
+                                                          dependsOnBaseConcept="#{cc.attrs.dependsOnBaseConcept}"
+                                                          actionUnitId="#{cc.attrs.formCtx eq null ? null : cc.attrs.formCtx.actionUnitIdForThesaurus}"/>
             </h:panelGroup>
         </p:outputPanel>
     </cc:implementation>

@@ -10,6 +10,7 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
@@ -18,6 +19,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
 import fr.siamois.dto.FilterDTO;
@@ -33,7 +35,6 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
-import fr.siamois.infrastructure.database.repositories.team.TeamMemberRepository;
 import fr.siamois.mapper.*;
 import fr.siamois.utils.CodeUtils;
 import jakarta.validation.constraints.NotNull;
@@ -74,7 +75,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final PersonRepository personRepository;
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
-    private final TeamMemberRepository teamMemberRepository;
+    private final ProfilePermissionService profilePermissionService;
     private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
     private final RecordingUnitMapper recordingUnitMapper;
@@ -734,7 +735,7 @@ public class RecordingUnitService implements ArkEntityService {
         ActionUnitSummaryDTO action = ru.getActionUnit();
         return institutionService.isManagerOf(action.getCreatedByInstitution(), user.getUser()) ||
                 actionUnitService.isManagerOf(action, user.getUser()) ||
-                (teamMemberRepository.existsByActionUnitIdAndPerson(action.getId(), user.getUser())
+                (profilePermissionService.hasProjectPermission(user, action.getId(), PermissionConstants.PROJECT_EDIT_FINDS)
                         && actionUnitService.isActionUnitStillOngoing(action));
     }
 
@@ -908,14 +909,6 @@ public class RecordingUnitService implements ArkEntityService {
         return dto;
     }
 
-    public Page<RecordingUnitDTO> findByInstitutionId(Long institutionId,
-                                                      int limit,
-                                                      int offset) {
-        int pageNumber = limit > 0 ? offset / limit : 0;
-        Pageable pageable = PageRequest.of(pageNumber, limit);
-        Page<RecordingUnit> page = recordingUnitRepository.findByCreatedByInstitutionId(institutionId, pageable);
-        return page.map(recordingUnitMapper::convert);
-    }
 
     public Page<RecordingUnitDTO> findByActionUnitId(Long actionUnitId, int limit, int offset, Sort sort) {
         int pageNumber = offset / limit;

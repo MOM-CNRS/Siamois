@@ -3,9 +3,10 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.PermissionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.ConceptDTO;
@@ -16,8 +17,8 @@ import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
-import fr.siamois.ui.api.openapi.v1.response.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -35,7 +36,7 @@ public class PlaceOpenApiService {
     private final SpatialUnitService spatialUnitService;
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
-    private final PermissionService permissionService;
+    private final ProfilePermissionService profilePermissionService;
     private final PlaceOpenApiMapper placeOpenApiMapper;
 
     @Transactional(readOnly = true)
@@ -43,7 +44,8 @@ public class PlaceOpenApiService {
                                               long organizationId,
                                               int offset,
                                               int limit,
-                                              String sortParam) {
+                                              String sortParam,
+                                              String lang) {
         projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
 
         InstitutionDTO institution = institutionService.findById(organizationId);
@@ -55,7 +57,7 @@ public class PlaceOpenApiService {
         Page<SpatialUnitDTO> page = spatialUnitService.findByInstitutionId(organizationId, limit, offset, sort);
 
         var resources = page.getContent().stream()
-                .map(placeOpenApiMapper::toResource)
+                .map(dto -> placeOpenApiMapper.toResource(dto, lang))
                 .toList();
 
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
@@ -78,7 +80,7 @@ public class PlaceOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!permissionService.isInstitutionManager(userInfo) && !permissionService.isActionManager(userInfo)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de lieu non autorisée");
         }
 
@@ -177,7 +179,7 @@ public class PlaceOpenApiService {
                                              String forbiddenMessage) {
         InstitutionDTO institution = dto.getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!permissionService.isInstitutionManager(userInfo) && !permissionService.isActionManager(userInfo)) {
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, forbiddenMessage);
         }
     }

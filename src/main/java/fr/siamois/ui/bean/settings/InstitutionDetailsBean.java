@@ -2,15 +2,13 @@ package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.components.OptionElement;
 import fr.siamois.ui.bean.settings.institution.InstitutionInfoSettingsBean;
-import fr.siamois.ui.bean.settings.institution.InstitutionManagerListBean;
+import fr.siamois.ui.bean.settings.institution.InstitutionMembersListBean;
 import fr.siamois.ui.bean.settings.institution.InstitutionThesaurusSettingsBean;
-import fr.siamois.ui.bean.settings.team.TeamListBean;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,34 +29,27 @@ import java.util.List;
 public class InstitutionDetailsBean implements Serializable {
 
     private final InstitutionInfoSettingsBean institutionInfoSettingsBean;
-    private final InstitutionManagerListBean institutionManagerListBean;
     private final InstitutionThesaurusSettingsBean institutionThesaurusSettingsBean;
     private final LangBean langBean;
-    private final InstitutionActionManagerListBean institutionActionManagerListBean;
-    private final transient PermissionService permissionService;
     private final SessionSettingsBean sessionSettingsBean;
-    private final TeamListBean teamListBean;
     private InstitutionDTO institution;
     private transient List<OptionElement> elements;
     private final transient InstitutionService institutionService;
+    private final transient InstitutionMembersListBean institutionMembersListBean;
 
     public InstitutionDetailsBean(InstitutionInfoSettingsBean institutionInfoSettingsBean,
-                                  InstitutionManagerListBean institutionManagerListBean,
                                   InstitutionThesaurusSettingsBean institutionThesaurusSettingsBean,
                                   LangBean langBean,
-                                  InstitutionActionManagerListBean institutionActionManagerListBean,
-                                  PermissionService permissionService,
-                                  SessionSettingsBean sessionSettingsBean, TeamListBean teamListBean, InstitutionService institutionService) {
+                                  SessionSettingsBean sessionSettingsBean,
+                                  InstitutionService institutionService,
+                                  InstitutionMembersListBean institutionMembersListBean) {
 
         this.institutionInfoSettingsBean = institutionInfoSettingsBean;
-        this.institutionManagerListBean = institutionManagerListBean;
         this.institutionThesaurusSettingsBean = institutionThesaurusSettingsBean;
         this.langBean = langBean;
-        this.institutionActionManagerListBean = institutionActionManagerListBean;
-        this.permissionService = permissionService;
         this.sessionSettingsBean = sessionSettingsBean;
-        this.teamListBean = teamListBean;
         this.institutionService = institutionService;
+        this.institutionMembersListBean = institutionMembersListBean;
     }
 
     public void init() {
@@ -78,28 +69,12 @@ public class InstitutionDetailsBean implements Serializable {
                 return "/pages/settings/institution/thesaurusSettings.xhtml?faces-redirect=true";
             }));
 
-            elements.add(new OptionElement("bi bi-person-circle", langBean.msg("organisationSettings.titles.managers"),
-                    langBean.msg("organisationSettings.descriptions.managers", institution.getName()), () -> {
-                institutionManagerListBean.init(institution);
-                return "/pages/settings/institution/institutionManagerSettings.xhtml?faces-redirect=true";
-            }));
-
-            elements.add(new OptionElement("bi bi-person-circle",
-                    langBean.msg("organisationSettings.titles.actionManagers"),
-                    langBean.msg("organisationSettings.descriptions.actionManagers"), () -> {
-                institutionActionManagerListBean.init(institution);
-                return "/pages/settings/institution/institutionActionManagerSettings.xhtml?faces-redirect=true";
+            elements.add(new OptionElement("bi bi-people", langBean.msg("organisationSettings.titles.members"),
+                    langBean.msg("organisationSettings.descriptions.members", institution.getName()), () -> {
+                institutionMembersListBean.init(institution);
+                return "/pages/settings/institution/institutionMembersSettings.xhtml?faces-redirect=true";
             }));
         }
-
-
-        elements.add(new OptionElement("bi bi-people", langBean.msg("organisationSettings.titles.teams"),
-                langBean.msg("organisationSettings.descriptions.teams", institution.getName()), () -> {
-            teamListBean.init(institution);
-            return "/pages/settings/team/teamList.xhtml?faces-redirect=true";
-        }));
-
-
     }
 
     public String goToInstitutionList() {
@@ -119,9 +94,7 @@ public class InstitutionDetailsBean implements Serializable {
         institution = null;
         elements = null;
         institutionInfoSettingsBean.reset();
-        institutionManagerListBean.reset();
         institutionThesaurusSettingsBean.reset();
-        institutionActionManagerListBean.reset();
     }
 
 }

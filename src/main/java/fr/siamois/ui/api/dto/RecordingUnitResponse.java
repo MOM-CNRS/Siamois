@@ -14,7 +14,6 @@ import java.time.OffsetDateTime;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL) // Ignore les champs null dans le JSON
 public class RecordingUnitResponse {
-
     private Long id;                       // recording_unit_id
     private Integer identifier;            // identifier
     private String fullIdentifier;         // full_identifier

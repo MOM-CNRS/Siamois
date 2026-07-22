@@ -1,6 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.resource.document;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.ResourceIdentifier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -15,6 +14,5 @@ public class DocumentResourceIdentifier implements ResourceIdentifier {
             allowableValues = {"documents"})
     private String resourceType;
 
-    @JsonProperty("resourceId")
     private String id;
 }

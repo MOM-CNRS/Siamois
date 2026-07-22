@@ -5,14 +5,12 @@ import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
-import fr.siamois.ui.api.openapi.v1.response.FindListResponse;
-import fr.siamois.ui.api.openapi.v1.response.FindResponse;
 import fr.siamois.ui.api.openapi.v1.response.find.FindFormResponse;
+import fr.siamois.ui.api.openapi.v1.response.find.FindResponse;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,7 +23,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 
 @RestController
@@ -39,44 +36,10 @@ public class FindControllerApi {
     private final FindOpenApiService findOpenApiService;
 
 
-    @Hidden
-    @GetMapping
-    public ResponseEntity<FindListResponse> getAll() {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
-    }
-
-    @GetMapping("/form")
-    @Operation(
-            summary = "Gabarit UI du formulaire mobilier",
-            description = "Retourne uniquement le layout et la définition des champs pour construire l'interface (sans valeurs saisies, "
-                    + "sans contexte de création ni d'édition). "
-                    + "Formulaire personnalisé par défaut de l'organisation. "
-                    + "Vocabulaires : GET /api/v1/vocabularies. "
-                    + "Valeurs d'un mobilier déjà enregistré : GET /api/v1/mobiliers/{id}."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
-            @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    public ResponseEntity<FindFormResponse> getForm(
-            @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
-            @RequestParam("organizationId") long organizationId,
-            @Parameter(description = "Langue des libellés de champs (première entrée utilisée).")
-            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
-        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        return ResponseEntity.ok(new FindFormResponse(
-                recordingUnitOpenApiService.buildFindUiForm(organizationId, caller.person(), lang)));
-    }
 
     @GetMapping("/{id}")
     @Operation(
-            summary = "Formulaire d'un mobilier avec ses valeurs",
+            summary = "Un mobilier avec ces valeurs",
             description = "Layout, champs et valeurs persistées pour le spécimen (specimen_id ou full_identifier). "
                     + "Pour le gabarit UI seul : GET /api/v1/mobiliers/form. Vocabulaires : GET /api/v1/vocabularies."
     )
@@ -89,7 +52,7 @@ public class FindControllerApi {
     })
     public ResponseEntity<FindFormResponse> getById(
             @Parameter(
-                    description = "Clé du mobilier : identifiant numérique (specimen_id) ou full_identifier.",
+                    description = "Clé du mobilier : identifiant numérique",
                     schema = @Schema(type = "string", example = "INST-PROJ-UE42-M1")
             )
             @PathVariable("id") String id,

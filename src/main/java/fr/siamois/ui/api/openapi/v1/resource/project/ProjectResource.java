@@ -1,11 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.resource.project;
 
 
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipCountOnly;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToMany;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
-import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceLightResource;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,41 +15,33 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 public class ProjectResource extends ProjectResourceIdentifier {
 
+    @Schema(description = "Nom du projet")
     private String name;
 
-    private String identifier;
-    private String recordingUnitIdentifierFormat;
+    @Schema(description = "Identifiant complet du projet")
     private String fullIdentifier;
-    private Integer maxRecordingUnitCode;
-    private Integer minRecordingUnitCode;
-    private String recordingUnitIdentifierLang;
+
+    @Schema(description = "Identifiant du projet")
+    private String identifier;
+
+    @Schema(description = "Date de début d'un projet")
     private OffsetDateTime beginDate;
+
+    @Schema(description = "Date de fin d'un projet")
     private OffsetDateTime endDate;
 
-    private RelationshipToOne<ConceptResourceIdentifier> type;
+    private ResolvedConceptResource type;
 
-    @Schema(description = "Code opération archéologique (Code OA), chaîne métier du code d'action principal")
-    private String codeOperationArcheologique;
+    @Schema(description = "Localisation ptincipale d'un projet")
+    private PlaceLightResource mainLocation ;
 
-    @Schema(description = "Type d'opération : vocabulaire + concept + libellé courant (langue Accept-Language)")
-    private ConceptFieldValue typeConcept;
+    @Schema(description = "Organisation d'appartenance du projet")
+    private OrganizationResourceIdentifier organization;
 
-    @Schema(description = "Type du code d'action (concept rattaché au Code OA), si présent")
-    private ConceptFieldValue actionCodeTypeConcept;
+    @JsonProperty("_counts")
+    private ProjectResourceCounts count;
 
-    @Schema(description = "Catégorie du lieu principal (concept), si lieu principal renseigné")
-    private ConceptFieldValue mainLocationCategoryConcept;
-
-    private RelationshipToOne<fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier> mainLocation ;
-    private RelationshipToMany<fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier> spatialContext ;
-    private RelationshipToOne<OrganizationResourceIdentifier> organization;
-    private RelationshipCountOnly children;
-    private RelationshipCountOnly recordingUnitList;
-
-    @Schema(description = "Libellé du type d'opération (thésaurus), selon la langue demandée")
-    private String categorie;
-
-    @Schema(description = "Commune / lieu principal et lieux de contexte spatial précis")
-    private ProjectLocalisation localisation;
+    @JsonProperty("_links")
+    private ProjectResourceLinks links;
 
 }

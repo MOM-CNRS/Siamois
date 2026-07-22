@@ -23,7 +23,7 @@
                     addAction="#{institutionListSettingsBean.displayCreateDialog()}"
                     searchInputTextValue="#{institutionListSettingsBean.filterText}"
                     searchInputPlaceholder="#{langBean.msg('organisationManagement.search')}"
-                    renderCreateButton="#{institutionListSettingsBean.userIsSuperadmin()}"
+                    renderCreateButton="#{institutionListSettingsBean.userCanCreateInstitution()}"
                     createButtonLabel="#{langBean.msg('organisationManagement.create')}"
             >
                 <p:dataTable

@@ -2,6 +2,7 @@ package fr.siamois.ui.redirection;
 
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
+import fr.siamois.ui.bean.settings.administration.ApplicationMembersListBean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,12 +15,14 @@ public class SettingsController {
 
     private final NavBean navBean;
     private final InstitutionListSettingsBean institutionListSettingsBean;
+    private final ApplicationMembersListBean applicationMembersListBean;
 
 
 
-    public SettingsController(NavBean navBean, InstitutionListSettingsBean institutionListSettingsBean) {
+    public SettingsController(NavBean navBean, InstitutionListSettingsBean institutionListSettingsBean, ApplicationMembersListBean applicationMembersListBean) {
         this.navBean = navBean;
         this.institutionListSettingsBean = institutionListSettingsBean;
+        this.applicationMembersListBean = applicationMembersListBean;
     }
 
     @GetMapping("/settings")
@@ -51,6 +54,13 @@ public class SettingsController {
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         institutionListSettingsBean.init();
         return "forward:/pages/settings/project/projectList.xhtml";
+    }
+
+    @GetMapping("/settings/administration")
+    public String goToUserManagementSettings() {
+        navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        applicationMembersListBean.init();
+        return "forward:/pages/settings/administration/userManagementSettings.xhtml";
     }
 
     @GetMapping("/dashboard")

@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -14,39 +16,31 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
 
     Optional<Institution> findInstitutionByIdentifier(@NotNull String identifier);
 
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT i.* FROM institution i " +
-                    "JOIN action_unit au ON i.institution_id = au.fk_institution_id " +
-                    "JOIN team_member tm ON tm.fk_action_unit_id = au.action_unit_id " +
-                    "WHERE tm.fk_person_id = :personId"
-    )
-    Set<Institution> findAllAsMember(Long personId);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT i.* FROM institution i " +
-                    "JOIN institution_manager im ON im.fk_institution_id = i.institution_id " +
-                    "WHERE im.fk_person_id = :personId"
-    )
-    Set<Institution> findAllAsInstitutionManager(Long personId);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT i.* FROM institution i " +
-                    "JOIN action_manager am ON i.institution_id = am.fk_institution_id " +
-                    "WHERE am.fk_person_id = :personId"
-    )
-    Set<Institution> findAllAsActionManager(Long personId);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT COUNT(*) >= 1 " +
-                    "FROM institution_manager im " +
-                    "WHERE im.fk_person_id = :personId AND im.fk_institution_id = :institutionId"
-    )
+    @Query("""
+            SELECT COUNT(a) > 0
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE a.person.id = :personId
+              AND prof.institution.id = :institutionId
+              AND prof.code = fr.siamois.domain.models.permissions.ProfileConstants.ORGANIZATION_MANAGER
+            """)
     boolean personIsInstitutionManagerOf(Long institutionId, Long personId);
 
+    /**
+     * Institutions the person is allowed to display, based on the profile permission system:
+     * an INSTANCE-scoped profile holding one of {@code instancePermissionCodes} grants every institution,
+     * an ORGANISATION-scoped profile holding {@code organizationAccessCode} grants its institution,
+     * and a PROJECT-scoped profile grants the institution owning its action unit.
+     */
+    @Query("""
+            SELECT DISTINCT i FROM PersonProfileAssignment a
+                        JOIN a.profile prof
+                        JOIN prof.institution i
+                        WHERE a.person.id = :personId
+            """)
+    Set<Institution> findAllVisibleToPerson(Long personId);
 
+    List<Institution> findAllByIdentifierIn(Collection<String> identifiers);
 
+    Optional<Institution> findByIdentifierIgnoreCase(String identifier);
 }

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:settings="http://java.sun.com/jsf/composite/pages/settings/components"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form" xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+    <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main>
+            <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
+                <p:breadCrumb homeDisplay="false">
+                    <p:menuitem value="Organisations" action="#{institutionDetailsBean.goToInstitutionList()}"/>
+                    <p:menuitem value="#{institutionDetailsBean.institution.name}" action="#{institutionDetailsBean.backToInstitutionSettings()}"/>
+                    <p:menuitem value="#{langBean.msg('organisationSettings.titles.members')}"/>
+                </p:breadCrumb>
+            </form:csrfform>
+            <settings:datatable
+                    id="orgMembersDatatable"
+                    title="#{langBean.msg('organisationSettings.managers.title', institutionDetailsBean.institution.name)}"
+                    filterAction="#{institutionMembersListBean.filter()}"
+                    formId="institutionMembersForm"
+                    addAction="#{institutionMembersListBean.add()}"
+                    searchInputTextValue="#{institutionMembersListBean.searchInput}"
+                    description="#{langBean.msg('organisationSettings.members.description')}"
+                    renderCreateButton="true"
+                    createButtonLabel="#{langBean.msg('organisationSettings.managers.dialog.label')}"
+            >
+                <p:dataTable
+                        id="membersDatatable"
+                        value="#{institutionMembersListBean.members}"
+                        var="member"
+                        sortMode="single"
+                        widgetVar="institutionMembersDatatable"
+                        rowKey="#{member.id}"
+                >
+                    <p:autoUpdate/>
+                    <f:facet name="emptyMessage">
+                        <p class="members-empty-state">
+                            <p:commandLink value="#{langBean.msg('organisationSettings.members.empty')}"
+                                           action="#{institutionMembersListBean.add()}"
+                                           immediate="true"/>
+                        </p>
+                    </f:facet>
+                    <p:column headerText="#{langBean.msg('common.label.user')}">
+                        <div style="display: flex; align-items: center; gap: 11px">
+                            <span class="member-avatar">#{member.person.initials()}</span>
+                            <div style="display: flex; flex-direction: column">
+                                <strong>#{member.displayName()}</strong>
+                                <p style="margin-bottom: 0; font-style: italic">#{member.person.email}</p>
+                                <p>#{member.person.username}</p>
+                            </div>
+                        </div>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('common.label.profile')}">
+                        <p:selectCheckboxMenu value="#{member.profiles}"
+                                               id="profileSelect"
+                                               converter="#{profileDTOConverter}"
+                                               panelStyleClass="profile-select-panel"
+                                               label="#{langBean.msg('common.label.profile')}"
+                                               updateLabel="true"
+                                               multiple="true"
+                                               filter="true"
+                                               filterMatchMode="contains"
+                                               scrollHeight="200">
+                            <f:selectItems value="#{institutionMembersListBean.availableProfiles}" var="p" itemLabel="#{p.name}" itemValue="#{p}"/>
+                            <f:attribute name="member" value="#{member}"/>
+                            <p:ajax event="itemSelect" listener="#{institutionMembersListBean.onProfileSelect}" process="@this"/>
+                            <p:ajax event="itemUnselect" listener="#{institutionMembersListBean.onProfileUnselect}" process="@this" update="profileSelect"/>
+                        </p:selectCheckboxMenu>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('common.label.accountStatus')}">
+                        <span class="chip #{institutionMembersListBean.accountStatusChipClass(member.person)}">
+                            #{institutionMembersListBean.accountStatusLabel(member.person)}
+                        </span>
+                        <p:commandButton value="#{langBean.msg('common.action.resendInvitation')}"
+                                         icon="pi pi-refresh"
+                                         rendered="#{institutionMembersListBean.isInvitationExpired(member.person)}"
+                                         actionListener="#{institutionMembersListBean.resendInvitation(member)}"
+                                         update="membersDatatable"
+                                         styleClass="ui-button-flat ui-button-sm resend-invitation-button"/>
+                    </p:column>
+                    <p:column>
+                        <p:commandButton value="#{langBean.msg('common.action.remove')}"
+                                         actionListener="#{institutionMembersListBean.removeMember(member)}"
+                                         update="membersDatatable"
+                                         styleClass="ui-button-danger ui-button-flat"/>
+                    </p:column>
+                </p:dataTable>
+            </settings:datatable>
+            <ui:include src="/dialog/shared/newMemberDialog.xhtml">
+                <ui:param name="dialogBean" value="#{newOrganizationMemberDialogBean}"/>
+                <ui:param name="updateTarget" value=":orgMembersDatatable:formCC:institutionMembersForm:membersDatatable"/>
+            </ui:include>
+        </main>
+    </ui:define>
+
+</ui:composition>

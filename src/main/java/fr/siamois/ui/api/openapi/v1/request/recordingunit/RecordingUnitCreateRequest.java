@@ -1,15 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 
+import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Création d'une UE : projet (unité d'action), type (concept) et valeurs par id de champ de formulaire.
- * Les clés de {@code fieldAnswers} sont les identifiants numériques de champs (comme dans GET /creation-form).
- */
 @Data
 @Schema(description = "Création d'une unité d'enregistrement")
 public class RecordingUnitCreateRequest {
@@ -20,11 +17,19 @@ public class RecordingUnitCreateRequest {
             example = "INST-PROJ-2024",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
-    private String actionUnitId;
+    private String projectId;
 
     @Schema(description = "Identifiant du concept de type d'UE (concept_id)", example = "42", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Long recordingUnitTypeConceptId;
+    private String typeId;
 
-    @Schema(description = "Valeurs par id de champ (string numérique) ; types alignés sur currentValue du formulaire")
-    private Map<String, Object> fieldAnswers = new HashMap<>();
+    @Schema(description = "Valeurs par fieldId")
+    private Map<String, AnswerInput> answers = new HashMap<>();
+
+    public Map<String, Object> getFieldAnswers() {
+        Map<String, Object> legacy = new HashMap<>();
+        if (answers != null) {
+            answers.forEach((k, v) -> legacy.put(k, v != null ? v.value() : null));
+        }
+        return legacy;
+    }
 }

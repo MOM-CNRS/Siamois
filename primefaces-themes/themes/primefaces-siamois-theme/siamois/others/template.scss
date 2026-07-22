@@ -198,7 +198,18 @@ hr.sidebar-divider {
 }
 
 .version-number {
+    display: block;
     text-align: center;
-    font-size: 14;
     color: var(--text-light);
+    text-decoration: none;
+    padding: 4px;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.version-number:hover {
+    color: var(--text-light);
+    text-decoration: underline;
 }

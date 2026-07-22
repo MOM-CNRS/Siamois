@@ -44,6 +44,8 @@ spring:
       minimum-idle: 1
       idle-timeout: 30000
       connection-test-query: SELECT 1
+      data-source-properties:
+        reWriteBatchedInserts: true
   jpa:
     generate-ddl: true
     hibernate:
@@ -51,6 +53,10 @@ spring:
     properties:
       hibernate:
         show_sql: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
         envers:
           audit_table_suffix: _AUD
           store_data_at_delete: true
@@ -72,12 +78,22 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 300MB
-      max-request-size: 300MB
-
+      max-file-size: 8MB
+      max-request-size: 8MB
   cache:
     caffeine:
       spec: expireAfterAccess=1h,maximumSize=500
+
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH_ENABLED:true}
+        sender: ${EMAIL_SENDER_ADDRESS}
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
 
 joinfaces:
   faces:
@@ -100,3 +116,4 @@ springdoc:
     doc-expansion: none
     display-request-duration: true
   default-produces-media-type: application/json
+

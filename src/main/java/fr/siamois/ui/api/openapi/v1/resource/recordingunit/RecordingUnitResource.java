@@ -1,52 +1,43 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipCountOnly;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToMany;
-import fr.siamois.ui.api.openapi.v1.generic.response.RelationshipToOne;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
-import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.person.PersonResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.project.PlaceResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.springframework.lang.Nullable;
 
-import java.time.OffsetDateTime;
-
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-public class RecordingUnitResource
-        extends RecordingUnitResourceIdentifier {
+public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
 
     @Schema(description = "Révision de synchronisation (optimistic locking)")
     private Long syncRevision;
 
     private String identifier;
     private String fullIdentifier;
+    private String projectId;
 
-    private OffsetDateTime openingDate;
-    private OffsetDateTime closingDate;
+    private ResolvedConceptResource type;
 
-    private String description;
+    @Schema(description = "Géométrie de l'UE.")
+    @Nullable
     private GeometryDTO geom;
 
+    @Schema(description = "Valeurs de tous les champs formulaire (système et custom), indexées par fieldId. "
+            + "Chaque entrée embarque sa définition (label, answerType, hint, etc.).")
+    private Map<String, FieldAnswer> answers;
 
-    private RelationshipToOne<ConceptResourceIdentifier> type;
-    private RelationshipToOne<PersonResourceIdentifier> author;
-    private RelationshipToMany<PersonResourceIdentifier> contributors;
-    private RelationshipCountOnly specimen;
-    private RelationshipCountOnly stratigraphicRelationships;
-    private RelationshipToOne<PlaceResourceIdentifier> place;
+    @JsonProperty("_counts")
+    private RecordingUnitResourceCounts count;
 
-    @Schema(description = "Couleur de la matrice (libellé ou code selon saisie)")
-    private String matrixColor;
-
-    private RelationshipToOne<OrganizationResourceIdentifier> organization;
-    private RelationshipToOne<ProjectResourceIdentifier> project;
+    @JsonProperty("_links")
+    private RecordingUnitResourceLinks links;
 
 }

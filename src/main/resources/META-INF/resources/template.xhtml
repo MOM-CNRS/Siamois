@@ -230,9 +230,11 @@
                         </li>
                     </ul>
                     <div class="sidebar-footer-bottom-section">
-                        <p:outputPanel class="version-number">
+                        <h:outputLink value="https://github.com/MOM-CNRS/Siamois/releases" styleClass="version-number"
+                                      target="_blank" id="versionLink">
                             #{appVersionBean.getVersion()}
-                        </p:outputPanel>
+                        </h:outputLink>
+                        <p:tooltip for="versionLink" value="#{appVersionBean.getVersion()}"/>
                         <hr class="sidebar-divider"/>
                         <form:csrfform formId="logoutForm">
                             <div style="
@@ -288,14 +290,6 @@
                                 <p:tooltip for="myProfileLink" value="#{langBean.msg('nav.myProfile.hint')}"/>
                             </h:commandLink>
                         </li>
-                        <li class="nav-item">
-                            <h:commandLink action="#{redirectBean.redirectTo('/settings/profile/thesaurus')}"
-                                           styleClass="nav-link" id="myThesaurusLink">
-                                <i class="bi bi-table"/>
-                                <span class="menu-text">#{langBean.msg('nav.myThesaurus')}</span>
-                                <p:tooltip for="myThesaurusLink" value="#{langBean.msg('nav.myThesaurus.hint')}"/>
-                            </h:commandLink>
-                        </li>
                     </ul>
 
                     <ul class="nav flex-column">
@@ -320,6 +314,19 @@
                                 <span class="menu-text">#{langBean.msg('nav.projectsManagement')}</span>
                                 <p:tooltip for="projectsManagementLink"
                                            value="#{langBean.msg('nav.projectsManagement.hint')}"/>
+                            </h:commandLink>
+                        </li>
+                    </ul>
+
+                    <ul class="nav flex-column">
+                        <li class="nav-header">#{langBean.msg("nav.header.administration")}</li>
+                        <li class="nav-item">
+                            <h:commandLink action="#{navBean.goToUserManagementSettings()}" styleClass="nav-link"
+                                           id="userManagementLink">
+                                <i class="bi bi-shield-lock"/>
+                                <span class="menu-text">#{langBean.msg('nav.userManagement')}</span>
+                                <p:tooltip for="userManagementLink"
+                                           value="#{langBean.msg('nav.userManagement.hint')}"/>
                             </h:commandLink>
                         </li>
                     </ul>

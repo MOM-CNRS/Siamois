@@ -3,28 +3,23 @@ package fr.siamois.ui.redirection;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.ui.bean.RegisterBean;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Optional;
 
 @Slf4j
 @Controller
 @Scope(value = "session")
+@RequiredArgsConstructor
 public class RegisterController {
 
     private final RegisterBean registerBean;
     private final PendingPersonService pendingPersonService;
-
-    public RegisterController(RegisterBean registerBean, PendingPersonService pendingPersonService) {
-        this.registerBean = registerBean;
-        this.pendingPersonService = pendingPersonService;
-    }
 
     @GetMapping("/register/{token}")
     public String goToRegister(@PathVariable String token) {
@@ -35,19 +30,16 @@ public class RegisterController {
         }
 
         PendingPerson pendingPerson = opt.get();
-        if (invitationIsExpired(pendingPerson)) {
-            log.error("Invitation expired for token {}", token);
-            pendingPersonService.delete(pendingPerson);
+        if (pendingPersonService.isExpired(pendingPerson)) {
+            // The invitation is kept in database (never auto-deleted): a manager can renew it from the
+            // members page, which replaces this expired link with a fresh one.
+            log.warn("Invitation expired for token {}", token);
             return "redirect:/error/404";
         }
 
         registerBean.init(opt.get());
 
         return "forward:/pages/login/register.xhtml";
-    }
-
-    private static boolean invitationIsExpired(PendingPerson pendingPerson) {
-        return OffsetDateTime.now(ZoneOffset.UTC).isAfter(pendingPerson.getPendingInvitationExpirationDate());
     }
 
 }

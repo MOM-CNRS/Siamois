@@ -54,7 +54,6 @@ class SystemUserLoaderTest {
         mockSystemPerson.setLastname("SYSTEM");
         mockSystemPerson.setEmail("system@siamois.fr");
         mockSystemPerson.setPassword("SIAMOIS_UNHASHED");
-        mockSystemPerson.setSuperAdmin(false);
 
         mockSystemPersonDTO = new PersonDTO();
         mockSystemPersonDTO.setUsername("system");

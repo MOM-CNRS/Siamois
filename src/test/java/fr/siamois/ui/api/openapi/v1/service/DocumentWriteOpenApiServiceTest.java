@@ -8,8 +8,8 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
-import fr.siamois.domain.services.authorization.PermissionService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -18,7 +18,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.resource.document.ProjectDocumentResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,7 +56,7 @@ class DocumentWriteOpenApiServiceTest {
     @Mock
     private InstitutionService institutionService;
     @Mock
-    private PermissionService permissionService;
+    private ProfilePermissionService profilePermissionService;
     @Mock
     private ArkService arkService;
     @Mock
@@ -75,7 +75,7 @@ class DocumentWriteOpenApiServiceTest {
                 documentService,
                 conceptService,
                 institutionService,
-                permissionService,
+                profilePermissionService,
                 arkService,
                 projectDocumentOpenApiMapper);
 
@@ -103,10 +103,10 @@ class DocumentWriteOpenApiServiceTest {
         when(documentService.saveFile(any(UserInfo.class), any(Document.class), any(InputStream.class), eq("/siamois")))
                 .thenReturn(saved);
 
-        ProjectDocumentResource resource = new ProjectDocumentResource();
+        DocumentResource resource = new DocumentResource();
         when(projectDocumentOpenApiMapper.toResource(saved)).thenReturn(resource);
 
-        ProjectDocumentResource result = service.createForProject(
+        DocumentResource result = service.createForProject(
                 caller, "5", "Title", "Desc", null, null, null, file, "fr");
 
         assertThat(result).isSameAs(resource);
@@ -180,7 +180,7 @@ class DocumentWriteOpenApiServiceTest {
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setCreatedByInstitution(institutionDTO());
         when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(ru);
-        when(permissionService.hasWritePermission(any(UserInfo.class), same(ru))).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ru))).thenReturn(false);
 
         assertThatThrownBy(() -> service.createForRecordingUnit(
                 caller, "UE-1", "Title", null, null, null, null, file, "fr"))
@@ -195,7 +195,7 @@ class DocumentWriteOpenApiServiceTest {
         ru.setId(42L);
         ru.setCreatedByInstitution(institution);
         when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(ru);
-        when(permissionService.hasWritePermission(any(UserInfo.class), same(ru))).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ru))).thenReturn(true);
 
         InstitutionSettings settings = mock(InstitutionSettings.class);
         when(settings.hasEnabledArkConfig()).thenReturn(true);
@@ -204,10 +204,10 @@ class DocumentWriteOpenApiServiceTest {
 
         Document saved = new Document();
         when(documentService.saveFile(any(), any(), any(), any())).thenReturn(saved);
-        ProjectDocumentResource resource = new ProjectDocumentResource();
+        DocumentResource resource = new DocumentResource();
         when(projectDocumentOpenApiMapper.toResource(saved)).thenReturn(resource);
 
-        ProjectDocumentResource result = service.createForRecordingUnit(
+        DocumentResource result = service.createForRecordingUnit(
                 caller, "UE-1", "Title", null, null, null, null, file, "fr");
 
         assertThat(result).isSameAs(resource);
@@ -225,10 +225,10 @@ class DocumentWriteOpenApiServiceTest {
 
         Document saved = new Document();
         when(documentService.save(doc)).thenReturn(saved);
-        ProjectDocumentResource resource = new ProjectDocumentResource();
+        DocumentResource resource = new DocumentResource();
         when(projectDocumentOpenApiMapper.toResource(saved)).thenReturn(resource);
 
-        ProjectDocumentResource result = service.updateDocument(
+        DocumentResource result = service.updateDocument(
                 caller, 8L, "New title", "New desc", 3L, null, null);
 
         assertThat(result).isSameAs(resource);

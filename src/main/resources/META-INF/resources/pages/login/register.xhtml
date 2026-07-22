@@ -2,57 +2,97 @@
 <HTML xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="http://xmlns.jcp.org/jsf/html"
       xmlns:p="http://primefaces.org/ui"
-      xml:lang="#{langBean.languageCode}"
       xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+      xml:lang="#{langBean.languageCode}"
 >
 
 <h:head>
-    <title>Inscription</title>
+    <h:outputStylesheet library="css" name="bootstrap.min.css"/>
+    <title>#{langBean.msg('register.title')}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0"/>
+    <h:outputStylesheet library="css" name="login.css"/>
 </h:head>
 
 <h:body>
-    <h1>Inscription</h1>
-    <h:outputText value="Invitation à rejoindre #{registerBean.institution.name}"/>
-    <form:csrfform formId="registerForm">
-        <p:messages id="messages" closable="true" showDetail="true">
-            <p:autoUpdate/>
-        </p:messages>
-        <h:panelGroup>
-            <h:outputLabel for="lastname" value="Nom"/>
-            <h:inputText id="lastname" value="#{registerBean.lastName}" required="true"/>
-            <h:message for="lastname"/>
-        </h:panelGroup>
+    <section class="h-100 gradient-form">
+        <div class="container py-5 h-100">
+            <div class="row d-flex justify-content-center align-items-center h-100">
+                <div class="col-xl-11">
+                    <div class="card rounded-3">
+                        <div class="row g-0">
+                            <div class="col-lg-6 hide-small-screen" id="left-image">
+                                <div class="card-body p-md-5 mx-md-4">
+                                    <h:graphicImage library="img" name="overview_siamois.png"/>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 d-flex align-items-center">
+                                <div class="px-3 py-4 p-md-5 mx-md-4">
+                                    <h1>#{langBean.msg('register.title')}</h1>
+                                    <p class="description">#{langBean.msg('register.description')}</p>
+                                    <hr/>
+                                    <form:csrfform formId="registerForm" styleClass="register-form">
+                                        <p:messages id="messages" globalOnly="true" closable="true" showDetail="true">
+                                            <p:autoUpdate/>
+                                        </p:messages>
 
-        <h:panelGroup>
-            <h:outputLabel for="firstname" value="Prénom"/>
-            <h:inputText id="firstname" value="#{registerBean.firstName}" required="true"/>
-            <h:message for="firstname"/>
-        </h:panelGroup>
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="lastname" value="#{langBean.msg('register.label.lastname')}"/>
+                                            <h:inputText id="lastname" styleClass="form-control"
+                                                         value="#{registerBean.lastName}" required="true"
+                                                         requiredMessage="#{langBean.msg('register.error.name')}"/>
+                                            <h:message for="lastname" styleClass="text-danger d-block mt-1"/>
+                                        </div>
 
-        <h:panelGroup>
-            <h:outputLabel for="email" value="Email"/>
-            <h:inputText id="email" value="#{registerBean.email}" disabled="true" required="true"/>
-        </h:panelGroup>
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="firstname" value="#{langBean.msg('register.label.firstname')}"/>
+                                            <h:inputText id="firstname" styleClass="form-control"
+                                                         value="#{registerBean.firstName}" required="true"
+                                                         requiredMessage="#{langBean.msg('register.error.name')}"/>
+                                            <h:message for="firstname" styleClass="text-danger d-block mt-1"/>
+                                        </div>
 
-        <h:panelGroup>
-            <h:outputLabel for="username" value="Nom d'utilisateur"/>
-            <h:inputText id="username" value="#{registerBean.username}" required="true"/>
-        </h:panelGroup>
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="email" value="#{langBean.msg('register.label.email')}"/>
+                                            <h:inputText id="email" styleClass="form-control"
+                                                         value="#{registerBean.email}" disabled="true"/>
+                                        </div>
 
-        <h:panelGroup>
-            <h:outputLabel for="password" value="Mot de passe"/>
-            <h:inputSecret id="password" value="#{registerBean.password}" required="true"/>
-            <h:message for="password"/>
-        </h:panelGroup>
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="username" value="#{langBean.msg('register.label.username')}"/>
+                                            <h:inputText id="username" styleClass="form-control"
+                                                         value="#{registerBean.username}" required="true"
+                                                         requiredMessage="#{langBean.msg('register.error.username')}"/>
+                                            <h:message for="username" styleClass="text-danger d-block mt-1"/>
+                                        </div>
 
-        <h:panelGroup>
-            <h:outputLabel for="password-confirm" value="Confirmation du mot de passe"/>
-            <h:inputSecret id="password-confirm" value="#{registerBean.confirmPassword}" required="true"/>
-            <h:message for="password-confirm"/>
-        </h:panelGroup>
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="password" value="#{langBean.msg('register.label.password')}"/>
+                                            <h:inputSecret id="password" styleClass="form-control"
+                                                           value="#{registerBean.password}" required="true"
+                                                           requiredMessage="#{langBean.msg('register.error.password')}"/>
+                                            <h:message for="password" styleClass="text-danger d-block mt-1"/>
+                                        </div>
 
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="password-confirm" value="#{langBean.msg('register.label.passwordConfirm')}"/>
+                                            <h:inputSecret id="password-confirm" styleClass="form-control"
+                                                           value="#{registerBean.confirmPassword}" required="true"
+                                                           requiredMessage="#{langBean.msg('register.error.password')}"/>
+                                            <h:message for="password-confirm" styleClass="text-danger d-block mt-1"/>
+                                        </div>
 
-        <h:commandButton value="S'inscrire" action="#{registerBean.register}"/>
-    </form:csrfform>
+                                        <h:commandButton styleClass="btn btn-success"
+                                                         value="#{langBean.msg('register.action.submit')}"
+                                                         action="#{registerBean.register}"/>
+                                    </form:csrfform>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </h:body>
+
 </HTML>

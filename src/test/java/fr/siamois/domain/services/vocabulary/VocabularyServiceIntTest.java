@@ -54,7 +54,6 @@ class VocabularyServiceIntTest {
 
         UserInfo info = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
         info.getInstitution().setId(1L);
-        info.getInstitution().getManagers().add(info.getUser());
         info.getInstitution().setName("SiaDev");
 
         info.getUser().setId(1L);
@@ -85,7 +84,6 @@ class VocabularyServiceIntTest {
 
         UserInfo info = new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr");
         info.getInstitution().setId(1L);
-        info.getInstitution().getManagers().add(info.getUser());
         info.getInstitution().setName("SiaDev");
 
         info.getUser().setId(1L);

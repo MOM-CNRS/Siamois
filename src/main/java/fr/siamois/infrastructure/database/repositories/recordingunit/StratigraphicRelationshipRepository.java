@@ -10,6 +10,7 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,4 +29,7 @@ public interface StratigraphicRelationshipRepository extends
 
     @Query("SELECT r FROM StratigraphicRelationship r WHERE r.unit1.id = :recordingUnitId OR r.unit2.id = :recordingUnitId")
     List<StratigraphicRelationship> findAllInvolvingRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
+
+    /** Broad prefetch by unit1 id — callers narrow to the exact (unit1, unit2) pair themselves (see {@link #findByUnit1AndUnit2}). */
+    List<StratigraphicRelationship> findAllByUnit1IdIn(Collection<Long> unit1Ids);
 }

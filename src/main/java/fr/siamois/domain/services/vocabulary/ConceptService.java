@@ -12,10 +12,7 @@ import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRelatedLinkRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,12 +37,42 @@ public class ConceptService {
     private final ConceptRepository conceptRepository;
     private final ConceptApi conceptApi;
     private final LabelService labelService;
-    private final ConceptRelatedLinkRepository conceptRelatedLinkRepository;
     private final LocalizedConceptDataRepository localizedConceptDataRepository;
     private final ConceptChangeEventPublisher conceptChangeEventPublisher;
     private final ConceptLabelRepository conceptLabelRepository;
     private final ConceptHierarchyRepository conceptHierarchyRepository;
     private final ConversionService conversionService;
+    private final ConceptFieldConfigRepository conceptFieldConfigRepository;
+
+    private static final String DEFAULT_LABEL_RESOLUTION_LANG = "fr";
+
+    /**
+     * Resolves a concept by exact label (case/accent-insensitive) within the institution's
+     * configured thesaurus subtree for the given field code. Used as a fallback when an import
+     * column provides a label instead of a concept URI.
+     *
+     * @param institutionId the institution whose field configuration to use
+     * @param fieldCode     the field code (e.g. RecordingUnit.TYPE_FIELD_CODE) identifying which configured thesaurus subtree to search
+     * @param label         the label to match exactly
+     * @return the matching concept
+     * @throws IllegalStateException if no thesaurus is configured for the field, or if the label matches zero or more than one concept
+     */
+    @NonNull
+    public Concept resolveConceptByLabel(@NonNull Long institutionId, @NonNull String fieldCode, @NonNull String label) {
+        ConceptFieldConfig config = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institutionId, fieldCode)
+                .orElseThrow(() -> new IllegalStateException("Aucun thésaurus configuré pour ce champ"));
+
+        List<Concept> matches = conceptRepository.findAllByFieldContextAndExactLabel(
+                config.getConcept().getId(), DEFAULT_LABEL_RESOLUTION_LANG, label);
+
+        if (matches.isEmpty()) {
+            throw new IllegalStateException("Concept '" + label + "' introuvable dans le thésaurus configuré");
+        }
+        if (matches.size() > 1) {
+            throw new IllegalStateException("Label '" + label + "' ambigu (" + matches.size() + " concepts correspondants)");
+        }
+        return matches.get(0);
+    }
 
     /**
      * Saves a concept if it does not already exist in the repository.
@@ -57,6 +84,7 @@ public class ConceptService {
     @Transactional
     public Concept saveOrGetConcept(@NonNull ConceptDTO conceptDTO) {
         Concept concept = conversionService.convert(conceptDTO, Concept.class);
+        assert concept != null;
         Vocabulary vocabulary = concept.getVocabulary();
         Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(
                 vocabulary.getExternalVocabularyId(), concept.getExternalId());
@@ -150,7 +178,7 @@ public class ConceptService {
 
     private void updateDefinition(Concept savedConcept, String lang, String definition) {
         Optional<LocalizedConceptData> optData = localizedConceptDataRepository.findByConceptAndLangCode(savedConcept.getId(), lang);
-        LocalizedConceptData localizedConceptData = null;
+        LocalizedConceptData localizedConceptData;
         if (optData.isPresent()) {
             localizedConceptData = optData.get();
         } else {
@@ -188,23 +216,18 @@ public class ConceptService {
         }
     }
 
-    /**
-     * Wrapper method to use {@link #saveAllSubConceptOfIfUpdated(ConceptFieldConfig, ProgressWrapper)} without progress tracking.
-     *
-     * @param config the concept field configuration
-     * @throws ErrorProcessingExpansionException if an error occurs during processing
-     */
     public void saveAllSubConceptOfIfUpdated(@NonNull ConceptFieldConfig config) throws ErrorProcessingExpansionException {
         saveAllSubConceptOfIfUpdated(config, new ProgressWrapper());
     }
 
-    /**
-     * Saves all sub-concepts data and relations if there are updates in the down expansion of the concept field config.
-     *
-     * @param config          the concept field configuration
-     * @param progressWrapper the progress wrapper to track progress
-     * @throws ErrorProcessingExpansionException if an error occurs during processing
-     */
+
+        /**
+         * Saves all sub-concepts data and relations if there are updates in the down expansion of the concept field config.
+         *
+         * @param config          the concept field configuration
+         * @param progressWrapper the progress wrapper to track progress
+         * @throws ErrorProcessingExpansionException if an error occurs during processing
+         */
     public void saveAllSubConceptOfIfUpdated(@NonNull ConceptFieldConfig config, @NonNull ProgressWrapper progressWrapper) throws ErrorProcessingExpansionException {
         log.trace("API call to fetch down expansion for concept FieldCode : {}", config.getFieldCode());
         try {
@@ -269,22 +292,8 @@ public class ConceptService {
                 createRelationBetweenConcepts(entry, urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
             }
 
-            createRelatedLinkAndSetRelatedConcepts(vocabulary, urlToSavedConceptMap.get(entry.getKey()), entry.getValue().getUrlOfRelated(), urlToSavedConceptMap);
-        }
-    }
-
-    private void createRelatedLinkAndSetRelatedConcepts(Vocabulary vocabulary, Concept concept,
-                                                        List<String> relatedUrl, Map<String, Concept> urlToSavedConceptMap) {
-        for (String url : relatedUrl) {
-            try {
-                FullInfoDTO fetchedConceptDTO = conceptApi.fetchConceptInfoByUri(vocabulary, url);
-                if (fetchedConceptDTO != null) {
-                    Concept relatedConcept = urlToSavedConceptMap.computeIfAbsent(url, currentUrl -> saveOrGetConceptFromFullDTO(vocabulary, fetchedConceptDTO, null));
-                    conceptRelatedLinkRepository.save(new ConceptRelatedLink(concept, relatedConcept));
-                }
-            }
-            catch(Exception e) {
-                log.error(url);
+            if (Objects.nonNull(entry.getValue().getRelated())) {
+                saveRelatedConcepts(vocabulary, entry.getValue().getRelated(), urlToSavedConceptMap.get(entry.getKey()), urlToSavedConceptMap);
             }
         }
     }
@@ -316,6 +325,21 @@ public class ConceptService {
         for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
             concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
         }
+    }
+
+    protected void saveRelatedConcepts(Vocabulary vocabulary, @NonNull PurlInfoDTO[] relatedConceptsInfos, Concept savedConcept, Map<String, Concept> urlToSavedConceptMap) {
+        Set<Concept> proxySavedConcepts = savedConcept.getRelatedConcepts();
+        Set<Concept> relatedConcepts = new HashSet<>();
+        if (Objects.nonNull(proxySavedConcepts) && relatedConceptsInfos.length > 0) {
+            relatedConcepts.addAll(proxySavedConcepts);
+        }
+        for (PurlInfoDTO related : relatedConceptsInfos) {
+            FullInfoDTO relatedInfos = conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
+            Concept savedRelatedConcept = saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
+            relatedConcepts.add(savedRelatedConcept);
+        }
+        savedConcept.setRelatedConcepts(relatedConcepts);
+        urlToSavedConceptMap.put(savedConcept.getExternalId(), conceptRepository.save(savedConcept));
     }
 
     private static FullInfoDTO findAndSetParentConceptDTO(ConceptBranchDTO branchDTO, Concept concept) {

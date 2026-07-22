@@ -1,6 +1,7 @@
 package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customform.DependsOnJson;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 
 import java.util.Collection;
@@ -28,4 +29,10 @@ public interface FieldSource {
      * @return the EnabledWhenJson spec for this field, or null if none.
      */
     EnabledWhenJson getEnabledSpec(CustomField field);
+
+    /**
+     * @return the DependsOnJson spec for this field (the field whose current answer acts as the
+     * "base value" for this field's related-concept autocomplete), or null if none.
+     */
+    DependsOnJson getDependsOnSpec(CustomField field);
 }

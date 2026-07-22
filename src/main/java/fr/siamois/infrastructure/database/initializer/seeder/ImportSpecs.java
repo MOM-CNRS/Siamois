@@ -10,7 +10,8 @@ public record ImportSpecs(List<InstitutionSeeder.InstitutionSpec> institutions, 
                           List<SpecimenSeeder.SpecimenSpecs> specimenSpecs,
                           List<PhaseSeeder.PhaseSpecs> phaseSpecs,
                           List<RecordingUnitRelSeeder.RecordingUnitRelDTO> recordingUnitRelSpecs,
-                          List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> recordingUnitStratiRelSpecs) {
+                          List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> recordingUnitStratiRelSpecs,
+                          List<SpatialUnitRelSeeder.SpatialUnitRelDTO> spatialUnitRelSpecs) {
 
 }
 

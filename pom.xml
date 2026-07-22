@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.siamois</groupId>
     <artifactId>siamois</artifactId>
-    <version>0.13.0</version>
+    <version>0.13.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>siamois</name>
 
@@ -80,10 +80,12 @@
             **/dto/**,
             **/ui/form/**,
             **/ui/custom/**,
+            **/ui/email/**,
             **/*ViewModel.*,
             **/*Converter.*,
             **/*Builder.*,
             **/*Controller.*,
+            **/ui/api/openapi/v1/controller/**/*Controller*.*,
             **/*Settings.*,
             **/**Factory.*,
             **/SiamoisApplication.*,
@@ -93,7 +95,8 @@
             **/events/**/*.*,
             **/files/**/*.*,
             **/resources/**/*.*,
-            **/*Spec.*
+            **/*Spec.*,
+            **/initializer/*Seeder.*
         </sonar.coverage.exclusions>
     </properties>
 
@@ -448,6 +451,10 @@
             <artifactId>caffeine</artifactId>
             <version>3.2.3</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
     </dependencies>

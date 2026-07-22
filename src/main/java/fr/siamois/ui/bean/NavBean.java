@@ -11,6 +11,7 @@ import fr.siamois.ui.bean.converter.InstitutionConverter;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
+import fr.siamois.ui.bean.settings.administration.ApplicationMembersListBean;
 import fr.siamois.ui.bean.settings.project.ProjectDetailsBean;
 import fr.siamois.ui.bean.settings.project.ProjectListBean;
 import fr.siamois.utils.MessageUtils;
@@ -57,6 +58,7 @@ public class NavBean implements Serializable {
     private final FlowBean flowBean;
     private final LangBean langBean;
     private final transient ProjectDetailsBean projectDetailsBean;
+    private final ApplicationMembersListBean applicationMembersListBean;
 
     private String urlToGoBack; // URL to go back from settings
 
@@ -78,7 +80,7 @@ public class NavBean implements Serializable {
                    InstitutionConverter converter,
                    InstitutionService institutionService,
                    RedirectBean redirectBean,
-                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean, ProjectDetailsBean projectDetailsBean) {
+                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean, ProjectDetailsBean projectDetailsBean, ApplicationMembersListBean applicationMembersListBean) {
         this.sessionSettingsBean = sessionSettingsBean;
         this.institutionChangeEventPublisher = institutionChangeEventPublisher;
         this.converter = converter;
@@ -90,6 +92,7 @@ public class NavBean implements Serializable {
         this.flowBean = flowBean;
         this.langBean = langBean;
         this.projectDetailsBean = projectDetailsBean;
+        this.applicationMembersListBean = applicationMembersListBean;
     }
 
     public InstitutionDTO getSelectedInstitution() {
@@ -118,6 +121,11 @@ public class NavBean implements Serializable {
     public void goToOrganisationSettings() {
         institutionListSettingsBean.init();
         redirectBean.redirectTo("/settings/organisation");
+    }
+
+    public void goToUserManagementSettings() {
+        applicationMembersListBean.init();
+        redirectBean.redirectTo("/settings/administration");
     }
 
     public void addToBookmarkedPanels(AbstractPanel panel) {

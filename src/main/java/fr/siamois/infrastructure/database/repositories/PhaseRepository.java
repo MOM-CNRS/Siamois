@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -13,6 +15,8 @@ import java.util.Set;
 public interface PhaseRepository extends CrudRepository<Phase, Long>, JpaSpecificationExecutor<Phase> {
     Optional<Phase> findByIdentifierAndActionUnitId(String identifier, Long actionUnitId);
 
+    List<Phase> findAllByIdentifierInAndActionUnitId(Collection<String> identifiers, Long actionUnitId);
+  
     @Query(nativeQuery = true, value = "SELECT p.* " +
             "FROM phase p " +
             "JOIN recording_unit_phase rup ON p.phase_id = rup.fk_phase_id " +
