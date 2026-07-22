@@ -1,8 +1,10 @@
 package fr.siamois.ui.config;
 
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.config.handler.LoginSuccessHandler;
 import fr.siamois.ui.config.security.ApiUnauthorizedJsonWriter;
+import fr.siamois.ui.config.security.UserInfoContextFilter;
 import fr.siamois.ui.config.security.jwt.JwtAuthenticationFilter;
 import fr.siamois.ui.config.security.jwt.JwtService;
 import lombok.extern.slf4j.Slf4j;
@@ -98,11 +100,30 @@ public class WebSecurityConfig {
     }
 
     /**
+     * Lie le {@code UserInfo} de session au thread de la requête JSF. Comme le filtre JWT, il ne doit pas
+     * être enregistré comme filtre Servlet global : il n'a de sens que dans la chaîne web.
+     */
+    @Bean
+    public UserInfoContextFilter userInfoContextFilter(SessionSettingsBean sessionSettingsBean) {
+        return new UserInfoContextFilter(sessionSettingsBean);
+    }
+
+    @Bean
+    public FilterRegistrationBean<UserInfoContextFilter> userInfoContextFilterRegistration(
+            UserInfoContextFilter userInfoContextFilter) {
+        FilterRegistrationBean<UserInfoContextFilter> registration = new FilterRegistrationBean<>(userInfoContextFilter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    /**
      * Application web (JSF), formulaire de connexion et sessions HTTP.
      */
     @Bean
     @Order(2)
-    public SecurityFilterChain webSecurityFilterChain(HttpSecurity http, LoginSuccessHandler loginSuccessHandler) throws Exception {
+    public SecurityFilterChain webSecurityFilterChain(HttpSecurity http,
+                                                      LoginSuccessHandler loginSuccessHandler,
+                                                      UserInfoContextFilter userInfoContextFilter) throws Exception {
         http.authorizeHttpRequests(requests -> requests
                 .requestMatchers("/", "/index.xhtml").permitAll()
                 .requestMatchers(LOGIN, "/pages/login/login.xhtml", "/pages/login/register.xhtml").permitAll()
@@ -130,6 +151,10 @@ public class WebSecurityConfig {
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/")
         );
+
+        // Placé avant l'authentification (et donc avant le LoginSuccessHandler et le LogoutFilter) pour
+        // que son finally nettoie aussi le contexte lié par la connexion et la déconnexion.
+        http.addFilterBefore(userInfoContextFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

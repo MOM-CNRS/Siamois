@@ -12,6 +12,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.utils.AuthenticatedUserUtils;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import jakarta.faces.context.FacesContext;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -73,6 +74,10 @@ public class SessionSettingsBean implements Serializable {
         loadLanguageSettings();
         loadInstitutionsSettings();
         userInfo = null;
+        // Le login est traité avant que UserInfoContextFilter n'ait pu lire la session : on lie le
+        // contexte ici pour que la suite de cette requête (publication du LoginEvent, écritures auditées)
+        // soit attribuée au bon utilisateur. Le finally du filtre s'occupe du nettoyage.
+        ExecutionContextHolder.set(getUserInfo());
     }
 
     private void loadLanguageSettings() {
@@ -120,6 +125,19 @@ public class SessionSettingsBean implements Serializable {
     @Order(Integer.MIN_VALUE)
     public void markUserInfoAsChanged() {
         userInfo = null;
+    }
+
+    /**
+     * Rebinds the freshly changed institution/language to the current thread, so the rest of this request
+     * no longer acts on the previous institution.
+     * <p>
+     * Runs last on purpose: {@link LangBean#loadUserLang()} reloads the locale on the same events without
+     * declaring an order, so rebuilding the {@link UserInfo} any earlier would capture the old language.
+     */
+    @EventListener({InstitutionChangeEvent.class, LangageChangeEvent.class})
+    @Order(Integer.MAX_VALUE)
+    public void refreshExecutionContext() {
+        ExecutionContextHolder.set(getUserInfo());
     }
 
     public List<PersonDTO> completePerson(String query) {
