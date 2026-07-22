@@ -30,6 +30,7 @@ public class ProjectDetailsBean {
     private final ProjectUploadSettingsBean projectUploadSettingsBean;
     private final ProjectMembersListBean projectMembersListBean;
     private final ProjectThesaurusSettingsBean projectThesaurusSettingsBean;
+    private final ProjectTableFieldSettingsBean projectTableFieldSettingsBean;
     private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final RedirectBean redirectBean;
@@ -57,7 +58,10 @@ public class ProjectDetailsBean {
 
         elements.add(new OptionElement("bi bi-ui-radios",
                 langBean.msg("projectSettings.titles.tables"),
-                "(A venir) Gérer les tables, types, formulaires et identifiants du projet", () -> null));
+                langBean.msg("projectSettings.descriptions.tables"), () -> {
+            projectTableFieldSettingsBean.init(project);
+            return "/pages/settings/project/projectTablesSettings.xhtml?faces-redirect=true";
+        }));
 
         elements.add(new OptionElement("bi bi-table", langBean.msg("common.label.thesaurus"),
                 langBean.msg("projectSettings.descriptions.thesaurus"), () -> {
@@ -101,6 +105,7 @@ public class ProjectDetailsBean {
         projectUploadSettingsBean.reset();
         projectMembersListBean.reset();
         projectThesaurusSettingsBean.reset();
+        projectTableFieldSettingsBean.reset();
     }
 
     public StreamedContent getFile() {
