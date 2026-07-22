@@ -185,6 +185,10 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     }
 
     private List<TypeFieldFormConfig> seedSystemFields(ConfigurableTable table, String typeName) {
+        if (table == ConfigurableTable.UE) {
+            return seedRecordingUnitSystemFields();
+        }
+
         boolean hideLocalisationAndInventeur = table == ConfigurableTable.MOBILIER && "Céramique".equals(typeName);
         List<TypeFieldFormConfig> fields = new ArrayList<>();
         fields.add(sysField("Identifiant", FieldType.TEXTE, true, true, true, null));
@@ -208,7 +212,45 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
         return fields;
     }
 
+    /**
+     * Matches {@code RecordingUnitForm}'s real fields (name + valueBinding), so that deactivating a
+     * field here actually hides it via {@code CustomFormComposer.withoutFields} on the real
+     * {@code RecordingUnit.DETAILS_FORM}.
+     */
+    private List<TypeFieldFormConfig> seedRecordingUnitSystemFields() {
+        List<TypeFieldFormConfig> fields = new ArrayList<>();
+        fields.add(sysField("Type", FieldType.VOCABULAIRE_CONTROLE, true, true, true, null, "type"));
+        fields.add(sysField("Nature", FieldType.VOCABULAIRE_CONTROLE, true, false, false, null, "geomorphologicalCycle"));
+        fields.add(sysField("Interprétation", FieldType.VOCABULAIRE_CONTROLE, true, false, false, null, "normalizedInterpretation"));
+        fields.add(sysField("Identifiant complet", FieldType.TEXTE, true, true, true, null, "fullIdentifier"));
+        fields.add(sysField("Unité spatiale", FieldType.LIEU, true, false, false, null, "spatialUnit"));
+        fields.add(sysField("Unité d'action", FieldType.PROJET, true, true, true, null, "actionUnit"));
+        fields.add(sysField("Auteur", FieldType.TEXTE, true, true, false, null, "author"));
+        fields.add(sysField("Contributeurs", FieldType.TEXTE, true, false, false, null, "contributors"));
+        fields.add(sysField("Agent géomorphologique", FieldType.VOCABULAIRE_CONTROLE, true, false, false, null, "geomorphologicalAgent"));
+        fields.add(sysField("Forme de l'érosion", FieldType.VOCABULAIRE_CONTROLE, false, false, false, null, "erosionShape"));
+        fields.add(sysField("Profil de l'érosion", FieldType.VOCABULAIRE_CONTROLE, true, false, false, null, "erosionProfile"));
+        fields.add(sysField("Orientation de l'érosion", FieldType.VOCABULAIRE_CONTROLE, true, false, false, null, "erosionOrientation"));
+        fields.add(sysField("Phase chronologique", FieldType.VOCABULAIRE_CONTROLE, true, false, false, null, "chronologicalPhase"));
+        fields.add(sysField("TAQ", FieldType.NUMERIQUE, true, false, false, null, "taq"));
+        fields.add(sysField("TPQ", FieldType.NUMERIQUE, true, false, false, null, "tpq"));
+        fields.add(sysField("Description", FieldType.TEXTE, false, false, false, null, "description"));
+        fields.add(sysField("Date d'ouverture", FieldType.TEXTE, true, true, false, null, "openingDate"));
+        fields.add(sysField("Date de fermeture", FieldType.TEXTE, true, false, false, null, "closingDate"));
+        fields.add(sysField("Parents", FieldType.PARENTS, true, false, false, null, "parents"));
+        fields.add(sysField("Enfants", FieldType.PARENTS, true, false, false, null, "children"));
+        fields.add(sysField("Commentaires", FieldType.TEXTE, true, false, false, null, "comments"));
+        fields.add(sysField("Z inf", FieldType.MESURE, true, false, false, null, "zInf"));
+        fields.add(sysField("Z sup", FieldType.MESURE, true, false, false, null, "zSup"));
+        fields.add(sysField("Phases", FieldType.PARENTS, true, false, false, null, "phases"));
+        return fields;
+    }
+
     private TypeFieldFormConfig sysField(String name, FieldType type, boolean active, boolean mandatory, boolean institutionLocked, String sourceLabel) {
+        return sysField(name, type, active, mandatory, institutionLocked, sourceLabel, null);
+    }
+
+    private TypeFieldFormConfig sysField(String name, FieldType type, boolean active, boolean mandatory, boolean institutionLocked, String sourceLabel, String valueBinding) {
         return TypeFieldFormConfig.builder()
                 .name(name)
                 .type(type)
@@ -218,6 +260,7 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
                 .institutionLocked(institutionLocked)
                 .configurable(type.isConfigurable())
                 .sourceLabel(sourceLabel)
+                .valueBinding(valueBinding)
                 .build();
     }
 

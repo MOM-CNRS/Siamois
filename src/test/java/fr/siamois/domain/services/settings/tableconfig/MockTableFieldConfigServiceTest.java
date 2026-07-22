@@ -160,6 +160,28 @@ class MockTableFieldConfigServiceTest {
     }
 
     @Test
+    void getFieldsConfig_shouldSeedUeSystemFieldsMatchingRecordingUnitFormValueBindings() {
+        TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.UE, "_default");
+
+        assertThat(config.getFields()).extracting(TypeFieldFormConfig::getValueBinding)
+                .contains("type", "geomorphologicalCycle", "normalizedInterpretation", "fullIdentifier",
+                        "description", "openingDate", "closingDate", "zInf", "zSup", "phases");
+        assertThat(config.getFields()).noneMatch(f -> "Identifiant".equals(f.getName()));
+    }
+
+    @Test
+    void setFieldActive_shouldBeReflectedInUeValueBindingLookup() {
+        service.setFieldActive(1L, ConfigurableTable.UE, "_default", "Description", false);
+
+        TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.UE, "_default");
+        boolean active = config.getFields().stream()
+                .filter(f -> "description".equals(f.getValueBinding()))
+                .findFirst().orElseThrow().isActive();
+
+        assertThat(active).isFalse();
+    }
+
+    @Test
     void getFormConfig_shouldExposeValueConceptLabelAsTypeNameExceptForDefault() {
         TypeFormConfig ceramique = service.getFormConfig(1L, ConfigurableTable.MOBILIER, "Céramique");
         TypeFormConfig defaultType = service.getFormConfig(1L, ConfigurableTable.MOBILIER, "_default");
