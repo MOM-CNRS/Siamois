@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,10 +34,10 @@ public class ProjectPhasesControllerApi {
             description = "Returns the phases of a project accessible to the authenticated user."
     )
     public PhaseListResponse listPhases(
-            @AuthenticationPrincipal ProjectApiCaller caller,
             @Parameter(description = "Project id or key", required = true)
             @PathVariable("id") String id
     ) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
         List<PhaseResource> resources = projectApiService.listPhasesForAccessibleProject(caller, id);
         ListMeta meta = new ListMeta((long) resources.size(), resources.size(), 0L);
         return new PhaseListResponse(resources, meta);

@@ -32,6 +32,7 @@ import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -2189,6 +2190,329 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
+    void buildMobileDetail_conceptResourceRef_usesConceptAutocompleteDisplayLabel() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectOneFromFieldCode conceptField = new CustomFieldSelectOneFromFieldCode();
+        conceptField.setId(90L);
+        conceptField.setLabel("Concept");
+        conceptField.setIsSystemField(false);
+
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel conceptVm = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(conceptField, conceptVm));
+
+        ConceptDTO concept = new ConceptDTO();
+        concept.setId(901L);
+        ConceptPrefLabelDTO displayLabel = new ConceptPrefLabelDTO();
+        displayLabel.setConcept(concept);
+        displayLabel.setLabel("Label affiché");
+        ConceptAutocompleteDTO autocomplete = new ConceptAutocompleteDTO(
+                displayLabel, "Original pref", List.of(), null, null);
+
+        stubMobileDetailForm(customForm, formUiDtoWithOneField(conceptField), responseVm);
+        when(formService.readAnswerValueForApi(same(conceptVm))).thenReturn(autocomplete);
+
+        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
+
+        SelectOneFieldAnswer answer = (SelectOneFieldAnswer) data.getAnswers().get("90");
+        assertThat(answer.value().resourceId()).isEqualTo("901");
+        assertThat(answer.value().resourceType()).isEqualTo("concepts");
+        assertThat(answer.value().label()).isEqualTo("Label affiché");
+        verify(labelService, never()).findLabelOf(any(ConceptDTO.class), any());
+    }
+
+    @Test
+    void buildMobileDetail_conceptResourceRef_fallsBackToOriginalPrefLabelWhenDisplayBlank() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectOneFromFieldCode conceptField = new CustomFieldSelectOneFromFieldCode();
+        conceptField.setId(91L);
+        conceptField.setIsSystemField(false);
+
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel conceptVm = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(conceptField, conceptVm));
+
+        ConceptDTO concept = new ConceptDTO();
+        concept.setId(902L);
+        ConceptPrefLabelDTO displayLabel = new ConceptPrefLabelDTO();
+        displayLabel.setConcept(concept);
+        displayLabel.setLabel("  ");
+        ConceptAutocompleteDTO autocomplete = new ConceptAutocompleteDTO(
+                displayLabel, "Original pref", List.of(), null, null);
+
+        stubMobileDetailForm(customForm, formUiDtoWithOneField(conceptField), responseVm);
+        when(formService.readAnswerValueForApi(same(conceptVm))).thenReturn(autocomplete);
+
+        SelectOneFieldAnswer answer = (SelectOneFieldAnswer) service.buildMobileDetail("1026", personDto, SCOPE, null, "fr")
+                .getAnswers().get("91");
+
+        assertThat(answer.value().label()).isEqualTo("Original pref");
+    }
+
+    @Test
+    void buildMobileDetail_conceptResourceRef_fallsBackToExternalIdWhenLabelServiceFails() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectOneFromFieldCode conceptField = new CustomFieldSelectOneFromFieldCode();
+        conceptField.setId(92L);
+        conceptField.setIsSystemField(false);
+
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel conceptVm = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(conceptField, conceptVm));
+
+        ConceptDTO concept = new ConceptDTO();
+        concept.setId(903L);
+        concept.setExternalId("EXT-903");
+
+        stubMobileDetailForm(customForm, formUiDtoWithOneField(conceptField), responseVm);
+        when(formService.readAnswerValueForApi(same(conceptVm))).thenReturn(concept);
+        when(labelService.findLabelOf(concept, "fr")).thenThrow(new RuntimeException("label lookup failed"));
+
+        SelectOneFieldAnswer answer = (SelectOneFieldAnswer) service.buildMobileDetail("1026", personDto, SCOPE, null, "fr")
+                .getAnswers().get("92");
+
+        assertThat(answer.value().label()).isEqualTo("EXT-903");
+    }
+
+    @Test
+    void buildMobileDetail_conceptResourceRef_fallsBackToExternalIdWhenLabelBlank() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectOneFromFieldCode conceptField = new CustomFieldSelectOneFromFieldCode();
+        conceptField.setId(93L);
+        conceptField.setIsSystemField(false);
+
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel conceptVm = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(conceptField, conceptVm));
+
+        ConceptDTO concept = new ConceptDTO();
+        concept.setId(904L);
+        concept.setExternalId("EXT-904");
+        ConceptPrefLabelDTO blankLabel = new ConceptPrefLabelDTO();
+        blankLabel.setLabel(" ");
+
+        stubMobileDetailForm(customForm, formUiDtoWithOneField(conceptField), responseVm);
+        when(formService.readAnswerValueForApi(same(conceptVm))).thenReturn(concept);
+        when(labelService.findLabelOf(concept, "fr")).thenReturn(blankLabel);
+
+        SelectOneFieldAnswer answer = (SelectOneFieldAnswer) service.buildMobileDetail("1026", personDto, SCOPE, null, "fr")
+                .getAnswers().get("93");
+
+        assertThat(answer.value().label()).isEqualTo("EXT-904");
+    }
+
+    @Test
+    void buildMobileDetail_selectOneWrongTypes_returnNullResourceRef() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+
+        CustomFieldSelectOnePerson personField = new CustomFieldSelectOnePerson();
+        personField.setId(94L);
+        personField.setIsSystemField(false);
+
+        CustomFieldSelectOneActionUnit actionUnitField = new CustomFieldSelectOneActionUnit();
+        actionUnitField.setId(95L);
+        actionUnitField.setIsSystemField(false);
+
+        CustomFieldAnswerSelectOnePersonViewModel personVm = new CustomFieldAnswerSelectOnePersonViewModel();
+        CustomFieldAnswerSelectOneActionUnitViewModel actionUnitVm = new CustomFieldAnswerSelectOneActionUnitViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(personField, personVm, actionUnitField, actionUnitVm));
+
+        stubMobileDetailForm(customForm, formUiDtoWithFields(personField, actionUnitField), responseVm);
+        when(formService.readAnswerValueForApi(same(personVm))).thenReturn("not-a-person");
+        when(formService.readAnswerValueForApi(same(actionUnitVm))).thenReturn(Map.of("id", 1));
+
+        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
+
+        assertThat(((SelectOneFieldAnswer) data.getAnswers().get("94")).value()).isNull();
+        assertThat(((SelectOneFieldAnswer) data.getAnswers().get("95")).value()).isNull();
+    }
+
+    @Test
+    void buildMobileDetail_resolvesSelectManyPhaseRefs_withTitleAndIdentifierFallback() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldSelectMultiplePhase phaseField = new CustomFieldSelectMultiplePhase();
+        phaseField.setId(96L);
+        phaseField.setIsSystemField(false);
+
+        CustomFieldAnswerSelectMultiplePhaseViewModel phaseVm = new CustomFieldAnswerSelectMultiplePhaseViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(phaseField, phaseVm));
+
+        PhaseDTO withTitle = new PhaseDTO();
+        withTitle.setId(801L);
+        withTitle.setTitle("Titre phase");
+
+        PhaseDTO withIdentifier = new PhaseDTO();
+        withIdentifier.setId(802L);
+        withIdentifier.setTitle("  ");
+        withIdentifier.setIdentifier("PH-802");
+
+        stubMobileDetailForm(customForm, formUiDtoWithOneField(phaseField), responseVm);
+        when(formService.readAnswerValueForApi(same(phaseVm))).thenReturn(List.of(withTitle, withIdentifier));
+
+        fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer answer =
+                (fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer) service
+                        .buildMobileDetail("1026", personDto, SCOPE, null, "fr")
+                        .getAnswers().get("96");
+
+        assertThat(answer.values()).hasSize(2);
+        assertThat(answer.values().get(0).resourceType()).isEqualTo("phases");
+        assertThat(answer.values().get(0).label()).isEqualTo("Titre phase");
+        assertThat(answer.values().get(1).label()).isEqualTo("PH-802");
+    }
+
+    @Test
+    void buildMobileDetail_selectManyConceptAutocomplete_singleItemAndNullRaw() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+
+        CustomFieldSelectMultipleFromFieldCode conceptField = new CustomFieldSelectMultipleFromFieldCode();
+        conceptField.setId(97L);
+        conceptField.setIsSystemField(false);
+
+        CustomFieldSelectMultiplePerson nullField = new CustomFieldSelectMultiplePerson();
+        nullField.setId(98L);
+        nullField.setIsSystemField(false);
+
+        CustomFieldAnswerSelectMultipleFromFieldCodeViewModel conceptVm =
+                new CustomFieldAnswerSelectMultipleFromFieldCodeViewModel();
+        CustomFieldAnswerSelectMultiplePersonViewModel nullVm = new CustomFieldAnswerSelectMultiplePersonViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(conceptField, conceptVm, nullField, nullVm));
+
+        ConceptDTO concept = new ConceptDTO();
+        concept.setId(905L);
+        ConceptPrefLabelDTO displayLabel = new ConceptPrefLabelDTO();
+        displayLabel.setConcept(concept);
+        displayLabel.setLabel("Concept multiple");
+        ConceptAutocompleteDTO autocomplete = new ConceptAutocompleteDTO(
+                displayLabel, "Alt", List.of(), null, null);
+
+        stubMobileDetailForm(customForm, formUiDtoWithFields(conceptField, nullField), responseVm);
+        when(formService.readAnswerValueForApi(same(conceptVm))).thenReturn(autocomplete);
+        when(formService.readAnswerValueForApi(same(nullVm))).thenReturn(null);
+
+        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
+
+        fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer conceptAnswer =
+                (fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer) data.getAnswers().get("97");
+        assertThat(conceptAnswer.values()).hasSize(1);
+        assertThat(conceptAnswer.values().get(0).resourceId()).isEqualTo("905");
+        assertThat(conceptAnswer.values().get(0).label()).isEqualTo("Concept multiple");
+
+        fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer nullAnswer =
+                (fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer) data.getAnswers().get("98");
+        assertThat(nullAnswer.values()).isNull();
+    }
+
+    @Test
+    void buildMobileDetail_measurementWithoutUnit_includesCommentAndNullSymbol() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldMeasurement measurementField = new CustomFieldMeasurement();
+        measurementField.setId(71L);
+        measurementField.setIsSystemField(false);
+
+        CustomFieldAnswerMeasurementViewModel measurementVm = new CustomFieldAnswerMeasurementViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(measurementField, measurementVm));
+
+        MeasurementAnswerDTO withoutUnit = MeasurementAnswerDTO.builder()
+                .numericValue(2.0)
+                .normalizedValue(0.02)
+                .comment("note")
+                .build();
+
+        stubMobileDetailForm(customForm, formUiDtoWithOneField(measurementField), responseVm);
+        when(formService.readAnswerValueForApi(same(measurementVm))).thenReturn(withoutUnit);
+
+        fr.siamois.ui.api.openapi.v1.resource.form.MeasurementFieldAnswer answer =
+                (fr.siamois.ui.api.openapi.v1.resource.form.MeasurementFieldAnswer) service
+                        .buildMobileDetail("1026", personDto, SCOPE, null, "fr")
+                        .getAnswers().get("71");
+
+        assertThat(answer.value().numericValue()).isEqualTo(2.0);
+        assertThat(answer.value().symbol()).isNull();
+        assertThat(answer.value().comment()).isEqualTo("note");
+    }
+
+    @Test
+    void buildMobileDetail_measurementInvalidRaw_returnsNullValue() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        ruDto.setType(new ConceptDTO());
+
+        CustomForm customForm = mock(CustomForm.class);
+        CustomFieldMeasurement measurementField = new CustomFieldMeasurement();
+        measurementField.setId(72L);
+        measurementField.setIsSystemField(false);
+
+        CustomFieldAnswerMeasurementViewModel measurementVm = new CustomFieldAnswerMeasurementViewModel();
+        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
+        responseVm.setAnswers(Map.of(measurementField, measurementVm));
+
+        stubMobileDetailForm(customForm, formUiDtoWithOneField(measurementField), responseVm);
+        when(formService.readAnswerValueForApi(same(measurementVm))).thenReturn("not-a-measurement");
+
+        fr.siamois.ui.api.openapi.v1.resource.form.MeasurementFieldAnswer answer =
+                (fr.siamois.ui.api.openapi.v1.resource.form.MeasurementFieldAnswer) service
+                        .buildMobileDetail("1026", personDto, SCOPE, null, "fr")
+                        .getAnswers().get("72");
+
+        assertThat(answer.value()).isNull();
+    }
+
+    private void stubMobileDetailForm(CustomForm customForm, FormUiDto formUiDto, CustomFormResponseViewModel responseVm) {
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(any(), any())).thenReturn(customForm);
+        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDto);
+        when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true)))
+                .thenReturn(responseVm);
+    }
+
+    @Test
     void buildMobileDetail_whenFormInitThrows_fallsBackToNullAnswersWithFieldMetadata() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
@@ -2883,6 +3207,83 @@ class RecordingUnitOpenApiServiceTest {
         assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void addExistingChild_illegalState_mapsTo409() {
+        RecordingUnit parentEntity = new RecordingUnit();
+        parentEntity.setId(5L);
+        RecordingUnitDTO parentDto = new RecordingUnitDTO();
+        parentDto.setId(5L);
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(10L);
+        parentDto.setCreatedByInstitution(institution);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("5"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(true);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(99L, SCOPE)).thenReturn(new RecordingUnitDTO());
+        doThrow(new IllegalStateException("cycle")).when(recordingUnitService).addHierarchyChild(5L, 99L);
+
+        assertThatThrownBy(() -> service.addExistingChild("5", 99L, personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void addExistingChild_illegalArgument_mapsTo400() {
+        RecordingUnit parentEntity = new RecordingUnit();
+        parentEntity.setId(5L);
+        RecordingUnitDTO parentDto = new RecordingUnitDTO();
+        parentDto.setId(5L);
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(10L);
+        parentDto.setCreatedByInstitution(institution);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("5"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), eq(parentDto))).thenReturn(true);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(99L, SCOPE)).thenReturn(new RecordingUnitDTO());
+        doThrow(new IllegalArgumentException("same project")).when(recordingUnitService).addHierarchyChild(5L, 99L);
+
+        assertThatThrownBy(() -> service.addExistingChild("5", 99L, personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void addExistingParent_illegalState_mapsTo409() {
+        RecordingUnit childEntity = new RecordingUnit();
+        childEntity.setId(6L);
+        RecordingUnitDTO childDto = new RecordingUnitDTO();
+        childDto.setId(6L);
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(10L);
+        childDto.setCreatedByInstitution(institution);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("6"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(childEntity, childDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), eq(childDto))).thenReturn(true);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(88L, SCOPE)).thenReturn(new RecordingUnitDTO());
+        doThrow(new IllegalStateException("already")).when(recordingUnitService).addHierarchyChild(88L, 6L);
+
+        assertThatThrownBy(() -> service.addExistingParent("6", 88L, personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void addExistingChild_withoutOrganization_throws400() {
+        RecordingUnit parentEntity = new RecordingUnit();
+        parentEntity.setId(5L);
+        RecordingUnitDTO parentDto = new RecordingUnitDTO();
+        parentDto.setId(5L);
+        parentDto.setCreatedByInstitution(null);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("5"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(parentEntity, parentDto));
+
+        assertThatThrownBy(() -> service.addExistingChild("5", 99L, personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+
+        verify(recordingUnitService, never()).addHierarchyChild(anyLong(), anyLong());
     }
 
 }

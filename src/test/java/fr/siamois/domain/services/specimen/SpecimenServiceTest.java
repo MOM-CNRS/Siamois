@@ -1428,4 +1428,72 @@ class SpecimenServiceTest {
         }
     }
 
+    @Test
+    void generateNextIdentifier_whenMaxPresent_returnsMaxPlusOne() {
+        SpecimenDTO dto = new SpecimenDTO();
+        RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
+        ru.setId(5L);
+        dto.setRecordingUnit(ru);
+        when(specimenRepository.findMaxUsedIdentifierByRecordingUnit(5L)).thenReturn(7);
+
+        assertEquals(8, specimenService.generateNextIdentifier(dto));
+    }
+
+    @Test
+    void searchSpecimenInActionUnit_delegatesAndMapsPage() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(3L);
+        FilterDTO filters = new FilterDTO(false);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Specimen specimen = new Specimen();
+        SpecimenDTO dto = new SpecimenDTO();
+        when(specimenRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(specimen)));
+        when(specimenMapper.convert(specimen)).thenReturn(dto);
+
+        Page<SpecimenDTO> result = specimenService.searchSpecimenInActionUnit(
+                institution, actionUnit, filters, pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertSame(dto, result.getContent().get(0));
+        verify(specimenRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void countSearchResults_delegatesToRepositoryCount() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        when(specimenRepository.count(any(Specification.class))).thenReturn(17L);
+
+        assertEquals(17, specimenService.countSearchResults(institution, filters));
+    }
+
+    @Test
+    void countSearchResultsInActionUnit_delegatesToRepositoryCount() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(3L);
+        FilterDTO filters = new FilterDTO(false);
+        when(specimenRepository.count(any(Specification.class))).thenReturn(4L);
+
+        assertEquals(4, specimenService.countSearchResultsInActionUnit(institution, actionUnit, filters));
+    }
+
+    @Test
+    void countSearchResultsInRecordingUnit_delegatesToRepositoryCount() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
+        recordingUnit.setId(9L);
+        FilterDTO filters = new FilterDTO(false);
+        when(specimenRepository.count(any(Specification.class))).thenReturn(2L);
+
+        assertEquals(2, specimenService.countSearchResultsInRecordingUnit(institution, recordingUnit, filters));
+    }
+
 }

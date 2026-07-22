@@ -6,10 +6,12 @@ import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -2078,6 +2080,43 @@ class RecordingUnitServiceTest {
         }
 
         @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_emptyScope_throws() {
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of()));
+            verify(recordingUnitRepository, never()).findById(anyLong());
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_nullScope_throws() {
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, null));
+            verify(recordingUnitRepository, never()).findById(anyLong());
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_notFound_throws() {
+            when(recordingUnitRepository.findById(404L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(404L, Set.of(5L)));
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_nullInstitution_throws() {
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(3L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(3L);
+            dto1.setCreatedByInstitution(null);
+
+            when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(5L)));
+        }
+
+        @Test
         void findRelationsForAccessibleRecordingUnit_mapsStratigraphyAndHierarchy() {
             RecordingUnit entity = new RecordingUnit();
             entity.setId(1L);
@@ -2243,6 +2282,217 @@ class RecordingUnitServiceTest {
 
             assertThrows(IllegalStateException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(20L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_notFound_throws() {
+            when(recordingUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(99L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_unlinksParentChildRelations() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(19L);
+            parent.setChildren(new HashSet<>(Set.of(ru)));
+            ru.setParents(new HashSet<>(Set.of(parent)));
+            ru.setChildren(new HashSet<>());
+            ru.setRelationshipsAsUnit1(new HashSet<>());
+            ru.setRelationshipsAsUnit2(new HashSet<>());
+
+            stubDeletableRecordingUnit(ru);
+
+            recordingUnitService.deleteRecordingUnitById(20L);
+
+            assertTrue(parent.getChildren().isEmpty());
+            assertTrue(ru.getParents().isEmpty());
+            verify(recordingUnitRepository).save(ru);
+            verify(recordingUnitRepository).delete(ru);
+        }
+
+        @Test
+        void deleteRecordingUnitById_clearsStratigraphicRelationships() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+            ru.setParents(new HashSet<>());
+            ru.setChildren(new HashSet<>());
+            StratigraphicRelationship rel = new StratigraphicRelationship();
+            ru.setRelationshipsAsUnit1(new HashSet<>(Set.of(rel)));
+            ru.setRelationshipsAsUnit2(new HashSet<>());
+
+            stubDeletableRecordingUnit(ru);
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(20L))
+                    .thenReturn(List.of(rel));
+
+            recordingUnitService.deleteRecordingUnitById(20L);
+
+            verify(stratigraphicRelationshipRepository).deleteAll(List.of(rel));
+            assertTrue(ru.getRelationshipsAsUnit1().isEmpty());
+            assertTrue(ru.getRelationshipsAsUnit2().isEmpty());
+        }
+
+        @Test
+        void deleteRecordingUnitById_deletesLinkedDataFormResponseAndArk() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+            ru.setParents(new HashSet<>());
+            ru.setChildren(new HashSet<>());
+            ru.setRelationshipsAsUnit1(new HashSet<>());
+            ru.setRelationshipsAsUnit2(new HashSet<>());
+            ru.setContributors(new ArrayList<>(List.of(new Person())));
+            ru.setDocuments(new HashSet<>(Set.of(new Document())));
+
+            CustomFormResponse formResponse = new CustomFormResponse();
+            formResponse.setId(55L);
+            ru.setFormResponse(formResponse);
+
+            Ark ark = new Ark();
+            ark.setInternalId(888L);
+            ru.setArk(ark);
+
+            stubDeletableRecordingUnit(ru);
+            when(recordingUnitIdInfoRepository.existsById(20L)).thenReturn(true);
+
+            recordingUnitService.deleteRecordingUnitById(20L);
+
+            verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(20L);
+            verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(20L);
+            verify(recordingUnitIdCounterRepository).deleteAllByRecordingUnitId(20L);
+            verify(recordingUnitIdInfoRepository).deleteById(20L);
+            assertTrue(ru.getContributors().isEmpty());
+            assertTrue(ru.getDocuments().isEmpty());
+            assertNull(ru.getFormResponse());
+            verify(customFormResponseRepository).deleteById(55L);
+            verify(arkRepository).deleteById(888L);
+            verify(recordingUnitRepository).delete(ru);
+        }
+
+        private void stubDeletableRecordingUnit(RecordingUnit ru) {
+            when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(0L);
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(20L)).thenReturn(List.of());
+            when(recordingUnitIdInfoRepository.existsById(20L)).thenReturn(false);
+            when(recordingUnitRepository.save(ru)).thenReturn(ru);
+        }
+    }
+
+    @Nested
+    @DisplayName("Hierarchy add/remove")
+    class HierarchyMutationTests {
+
+        private ActionUnit sharedActionUnit;
+
+        @BeforeEach
+        void initActionUnit() {
+            sharedActionUnit = new ActionUnit();
+            sharedActionUnit.setId(100L);
+        }
+
+        private RecordingUnit unit(long id) {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(id);
+            ru.setActionUnit(sharedActionUnit);
+            ru.setChildren(new HashSet<>());
+            ru.setParents(new HashSet<>());
+            return ru;
+        }
+
+        @Test
+        void addHierarchyChild_sameId_throwsIllegalArgument() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> recordingUnitService.addHierarchyChild(5L, 5L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void addHierarchyChild_differentActionUnit_throwsIllegalArgument() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            ActionUnit other = new ActionUnit();
+            other.setId(200L);
+            child.setActionUnit(other);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void addHierarchyChild_alreadyLinked_throwsIllegalState() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            parent.getChildren().add(child);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void addHierarchyChild_cycleDetected_throwsIllegalState() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{1L})).thenReturn(List.of(2L));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void addHierarchyChild_success_linksBothSidesAndSaves() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{1L})).thenReturn(List.of());
+            when(recordingUnitRepository.save(parent)).thenReturn(parent);
+
+            recordingUnitService.addHierarchyChild(1L, 2L);
+
+            assertTrue(parent.getChildren().contains(child));
+            assertTrue(child.getParents().contains(parent));
+            verify(recordingUnitRepository).save(parent);
+        }
+
+        @Test
+        void removeHierarchyChild_missingLink_throwsIllegalState() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.removeHierarchyChild(1L, 2L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void removeHierarchyChild_success_unlinksAndSaves() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            parent.getChildren().add(child);
+            child.getParents().add(parent);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.save(parent)).thenReturn(parent);
+
+            recordingUnitService.removeHierarchyChild(1L, 2L);
+
+            assertFalse(parent.getChildren().contains(child));
+            assertFalse(child.getParents().contains(parent));
+            verify(recordingUnitRepository).save(parent);
         }
     }
 
