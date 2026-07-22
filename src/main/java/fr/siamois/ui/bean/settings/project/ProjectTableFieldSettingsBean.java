@@ -1,11 +1,10 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.settings.tableconfig.AdditionalFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.settings.tableconfig.SystemFieldConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeGeneralConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -46,7 +45,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private boolean treeOpen = true;
     private int activeTabIndex = TAB_CHAMPS;
 
-    private TypeGeneralConfig generalConfig;
+    private TypeFormConfig formConfig;
     private TypeFieldsConfig fieldsConfig;
 
     public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
@@ -63,7 +62,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         selectedTypeName = null;
         treeOpen = true;
         activeTabIndex = TAB_CHAMPS;
-        generalConfig = null;
+        formConfig = null;
         fieldsConfig = null;
     }
 
@@ -90,7 +89,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public void selectType(String typeName) {
         selectedTypeName = typeName;
         if (typeName == null) {
-            generalConfig = null;
+            formConfig = null;
             fieldsConfig = null;
             return;
         }
@@ -98,7 +97,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void loadConfigs() {
-        generalConfig = tableFieldConfigService.getGeneralConfig(project.getId(), selectedTable, selectedTypeName);
+        formConfig = tableFieldConfigService.getFormConfig(project.getId(), selectedTable, selectedTypeName);
         fieldsConfig = tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName);
     }
 
@@ -112,7 +111,17 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public long getHiddenSystemFieldCount() {
         if (fieldsConfig == null) return 0;
-        return fieldsConfig.getSystemFields().stream().filter(f -> !f.isVisible()).count();
+        return fieldsConfig.getFields().stream().filter(f -> f.isSystemField() && !f.isActive()).count();
+    }
+
+    public List<TypeFieldFormConfig> getSystemFields() {
+        if (fieldsConfig == null) return List.of();
+        return fieldsConfig.getFields().stream().filter(TypeFieldFormConfig::isSystemField).toList();
+    }
+
+    public List<TypeFieldFormConfig> getAdditionalFields() {
+        if (fieldsConfig == null) return List.of();
+        return fieldsConfig.getFields().stream().filter(f -> !f.isSystemField()).toList();
     }
 
     public int getTypeCountFor(ConfigurableTable table) {
@@ -125,18 +134,15 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     /**
      * The p:toggleSwitch controls bind directly (two-way) to the row's boolean property, so by the
-     * time these listeners fire, the row already carries its new value — we just persist it.
+     * time these listeners fire, the row already carries its new value — we just persist it. A
+     * field marked institutionLocked ignores the write (enforced server-side by the service too).
      */
-    public void toggleSystemFieldVisibility(SystemFieldConfig field) {
-        tableFieldConfigService.setSystemFieldVisible(project.getId(), selectedTable, selectedTypeName, field.getName(), field.isVisible());
+    public void toggleFieldActive(TypeFieldFormConfig field) {
+        tableFieldConfigService.setFieldActive(project.getId(), selectedTable, selectedTypeName, field.getName(), field.isActive());
     }
 
-    public void toggleSystemFieldRequired(SystemFieldConfig field) {
-        tableFieldConfigService.setFieldRequired(project.getId(), selectedTable, selectedTypeName, field.getName(), true, field.isRequired());
-    }
-
-    public void toggleAdditionalFieldRequired(AdditionalFieldConfig field) {
-        tableFieldConfigService.setFieldRequired(project.getId(), selectedTable, selectedTypeName, field.getName(), false, field.isRequired());
+    public void toggleFieldMandatory(TypeFieldFormConfig field) {
+        tableFieldConfigService.setFieldMandatory(project.getId(), selectedTable, selectedTypeName, field.getName(), field.isMandatory());
     }
 
     public void deleteAdditionalField(String fieldName) {
@@ -149,8 +155,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         loadConfigs();
     }
 
-    public void saveGeneralConfig() {
-        tableFieldConfigService.saveGeneralConfig(project.getId(), selectedTable, generalConfig);
+    public void saveFormConfig() {
+        tableFieldConfigService.saveFormConfig(project.getId(), selectedTable, formConfig);
         MessageUtils.displayInfoMessage(langBean, "projectTables.general.saveSuccess");
     }
 

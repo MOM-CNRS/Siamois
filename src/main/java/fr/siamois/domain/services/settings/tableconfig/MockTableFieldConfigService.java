@@ -1,11 +1,10 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
-import fr.siamois.domain.models.settings.tableconfig.AdditionalFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.FieldType;
-import fr.siamois.domain.models.settings.tableconfig.SystemFieldConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeGeneralConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -29,7 +29,7 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
 
     private static final Map<ConfigurableTable, List<String>> TABLE_TYPES = buildTableTypes();
 
-    private final Map<Long, Map<ConfigurableTable, Map<String, TypeGeneralConfig>>> generalConfigsByProject = new ConcurrentHashMap<>();
+    private final Map<Long, Map<ConfigurableTable, Map<String, TypeFormConfig>>> formConfigsByProject = new ConcurrentHashMap<>();
     private final Map<Long, Map<ConfigurableTable, Map<String, TypeFieldsConfig>>> fieldsConfigsByProject = new ConcurrentHashMap<>();
 
     private static Map<ConfigurableTable, List<String>> buildTableTypes() {
@@ -54,14 +54,14 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     }
 
     @Override
-    public TypeGeneralConfig getGeneralConfig(Long projectId, ConfigurableTable table, String typeName) {
-        return copyOf(internalGeneralConfig(projectId, table, typeName));
+    public TypeFormConfig getFormConfig(Long projectId, ConfigurableTable table, String typeName) {
+        return copyOf(internalFormConfig(projectId, table, typeName));
     }
 
     @Override
-    public void saveGeneralConfig(Long projectId, ConfigurableTable table, TypeGeneralConfig config) {
+    public void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config) {
         requireType(table, config.getTypeName());
-        generalConfigsOf(projectId, table).put(config.getTypeName(), copyOf(config));
+        formConfigsOf(projectId, table).put(config.getTypeName(), copyOf(config));
     }
 
     @Override
@@ -70,80 +70,48 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     }
 
     @Override
-    public void setSystemFieldVisible(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean visible) {
-        internalFieldsConfig(projectId, table, typeName).getSystemFields().stream()
-                .filter(f -> f.getName().equals(fieldName))
-                .findFirst()
-                .ifPresent(f -> f.setVisible(visible));
+    public void setFieldActive(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean active) {
+        findField(internalFieldsConfig(projectId, table, typeName), fieldName)
+                .filter(f -> !f.isInstitutionLocked())
+                .ifPresent(f -> f.setActive(active));
     }
 
     @Override
-    public void setFieldRequired(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean isSystemField, boolean required) {
-        TypeFieldsConfig config = internalFieldsConfig(projectId, table, typeName);
-        if (isSystemField) {
-            config.getSystemFields().stream()
-                    .filter(f -> f.getName().equals(fieldName))
-                    .findFirst()
-                    .ifPresent(f -> f.setRequired(required));
-        } else {
-            config.getAdditionalFields().stream()
-                    .filter(f -> f.getName().equals(fieldName))
-                    .findFirst()
-                    .ifPresent(f -> f.setRequired(required));
-        }
+    public void setFieldMandatory(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean mandatory) {
+        findField(internalFieldsConfig(projectId, table, typeName), fieldName)
+                .filter(f -> !f.isInstitutionLocked())
+                .ifPresent(f -> f.setMandatory(mandatory));
     }
 
     @Override
-    public AdditionalFieldConfig addAdditionalField(Long projectId, ConfigurableTable table, String typeName) {
+    public TypeFieldFormConfig addAdditionalField(Long projectId, ConfigurableTable table, String typeName) {
         TypeFieldsConfig config = internalFieldsConfig(projectId, table, typeName);
-        AdditionalFieldConfig field = AdditionalFieldConfig.builder()
+        TypeFieldFormConfig field = TypeFieldFormConfig.builder()
                 .name(nextNewFieldName(config))
                 .type(FieldType.TEXTE)
-                .required(false)
+                .systemField(false)
+                .active(true)
+                .mandatory(false)
+                .institutionLocked(false)
                 .sourceLabel("—")
                 .build();
-        config.getAdditionalFields().add(field);
+        config.getFields().add(field);
         return copyOf(field);
     }
 
     @Override
     public void deleteAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
-        internalFieldsConfig(projectId, table, typeName).getAdditionalFields()
-                .removeIf(f -> f.getName().equals(fieldName));
+        internalFieldsConfig(projectId, table, typeName).getFields()
+                .removeIf(f -> !f.isSystemField() && f.getName().equals(fieldName));
     }
 
-    private TypeGeneralConfig internalGeneralConfig(Long projectId, ConfigurableTable table, String typeName) {
-        requireType(table, typeName);
-        return generalConfigsOf(projectId, table).computeIfAbsent(typeName, name -> seedGeneralConfig(table, name));
-    }
-
-    private TypeFieldsConfig internalFieldsConfig(Long projectId, ConfigurableTable table, String typeName) {
-        requireType(table, typeName);
-        return fieldsConfigsOf(projectId, table).computeIfAbsent(typeName, name -> seedFieldsConfig(table, name));
-    }
-
-    private TypeGeneralConfig copyOf(TypeGeneralConfig source) {
-        return source.toBuilder().build();
-    }
-
-    private SystemFieldConfig copyOf(SystemFieldConfig source) {
-        return source.toBuilder().build();
-    }
-
-    private AdditionalFieldConfig copyOf(AdditionalFieldConfig source) {
-        return source.toBuilder().build();
-    }
-
-    private TypeFieldsConfig copyOf(TypeFieldsConfig source) {
-        TypeFieldsConfig copy = new TypeFieldsConfig();
-        copy.setSystemFields(source.getSystemFields().stream().map(this::copyOf).collect(Collectors.toCollection(ArrayList::new)));
-        copy.setAdditionalFields(source.getAdditionalFields().stream().map(this::copyOf).collect(Collectors.toCollection(ArrayList::new)));
-        return copy;
+    private Optional<TypeFieldFormConfig> findField(TypeFieldsConfig config, String fieldName) {
+        return config.getFields().stream().filter(f -> f.getName().equals(fieldName)).findFirst();
     }
 
     private String nextNewFieldName(TypeFieldsConfig config) {
         String base = "Nouveau champ";
-        List<String> existing = config.getAdditionalFields().stream().map(AdditionalFieldConfig::getName).toList();
+        List<String> existing = config.getFields().stream().map(TypeFieldFormConfig::getName).toList();
         if (!existing.contains(base)) return base;
         int suffix = 2;
         while (existing.contains(base + " " + suffix)) suffix++;
@@ -162,8 +130,8 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
         }
     }
 
-    private Map<String, TypeGeneralConfig> generalConfigsOf(Long projectId, ConfigurableTable table) {
-        return generalConfigsByProject
+    private Map<String, TypeFormConfig> formConfigsOf(Long projectId, ConfigurableTable table) {
+        return formConfigsByProject
                 .computeIfAbsent(projectId, id -> new ConcurrentHashMap<>())
                 .computeIfAbsent(table, t -> new ConcurrentHashMap<>());
     }
@@ -174,10 +142,34 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
                 .computeIfAbsent(table, t -> new ConcurrentHashMap<>());
     }
 
-    private TypeGeneralConfig seedGeneralConfig(ConfigurableTable table, String typeName) {
-        return TypeGeneralConfig.builder()
+    private TypeFormConfig internalFormConfig(Long projectId, ConfigurableTable table, String typeName) {
+        requireType(table, typeName);
+        return formConfigsOf(projectId, table).computeIfAbsent(typeName, name -> seedFormConfig(table, name));
+    }
+
+    private TypeFieldsConfig internalFieldsConfig(Long projectId, ConfigurableTable table, String typeName) {
+        requireType(table, typeName);
+        return fieldsConfigsOf(projectId, table).computeIfAbsent(typeName, name -> seedFieldsConfig(table, name));
+    }
+
+    private TypeFormConfig copyOf(TypeFormConfig source) {
+        return source.toBuilder().build();
+    }
+
+    private TypeFieldFormConfig copyOf(TypeFieldFormConfig source) {
+        return source.toBuilder().build();
+    }
+
+    private TypeFieldsConfig copyOf(TypeFieldsConfig source) {
+        TypeFieldsConfig copy = new TypeFieldsConfig();
+        copy.setFields(source.getFields().stream().map(this::copyOf).collect(Collectors.toCollection(ArrayList::new)));
+        return copy;
+    }
+
+    private TypeFormConfig seedFormConfig(ConfigurableTable table, String typeName) {
+        return TypeFormConfig.builder()
                 .typeName(typeName)
-                .linkedConceptLabel("")
+                .valueConceptLabel(DEFAULT_TYPE.equals(typeName) ? "" : typeName)
                 .description("")
                 .inheritsDefaultFields(!DEFAULT_TYPE.equals(typeName))
                 .visibleInApp(true)
@@ -186,63 +178,71 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
 
     private TypeFieldsConfig seedFieldsConfig(ConfigurableTable table, String typeName) {
         TypeFieldsConfig config = new TypeFieldsConfig();
-        config.setSystemFields(seedSystemFields(table, typeName));
-        config.setAdditionalFields(seedAdditionalFields(table, typeName));
+        List<TypeFieldFormConfig> fields = new ArrayList<>(seedSystemFields(table, typeName));
+        fields.addAll(seedAdditionalFields(table, typeName));
+        config.setFields(fields);
         return config;
     }
 
-    private List<SystemFieldConfig> seedSystemFields(ConfigurableTable table, String typeName) {
+    private List<TypeFieldFormConfig> seedSystemFields(ConfigurableTable table, String typeName) {
         boolean hideLocalisationAndInventeur = table == ConfigurableTable.MOBILIER && "Céramique".equals(typeName);
-        List<SystemFieldConfig> fields = new ArrayList<>();
-        fields.add(sysField("Identifiant", FieldType.TEXTE, true, true, null));
-        fields.add(sysField("Code inventaire", FieldType.TEXTE, true, true, null));
-        fields.add(sysField("Désignation", FieldType.TEXTE, true, true, null));
-        fields.add(sysField("Description", FieldType.TEXTE, true, false, null));
-        fields.add(sysField("Catégorie", FieldType.VOCABULAIRE_CONTROLE, true, false, "Thésaurus des catégories"));
-        fields.add(sysField("Matériau", FieldType.VOCABULAIRE_CONTROLE, true, false, "Thésaurus des matériaux"));
-        fields.add(sysField("Datation", FieldType.TEXTE, true, false, null));
-        fields.add(sysField("Dimensions", FieldType.MESURE, true, false, null));
-        fields.add(sysField("Poids", FieldType.MESURE, true, false, null));
-        fields.add(sysField("Quantité", FieldType.NUMERIQUE, true, true, null));
-        fields.add(sysField("État de conservation", FieldType.TYPOLOGIE, true, false, "Typologie état de conservation"));
-        fields.add(sysField("Localisation", FieldType.TEXTE, !hideLocalisationAndInventeur, false, null));
-        fields.add(sysField("Inventeur", FieldType.TEXTE, !hideLocalisationAndInventeur, false, null));
-        fields.add(sysField("Date de découverte", FieldType.TEXTE, true, false, null));
-        fields.add(sysField("Unité d'enregistrement", FieldType.UNITE_ENREGISTREMENT, true, true, null));
-        fields.add(sysField("Lieu", FieldType.LIEU, true, false, null));
-        fields.add(sysField("Projet", FieldType.PROJET, true, true, null));
-        fields.add(sysField("Remarques", FieldType.TEXTE, true, false, null));
+        List<TypeFieldFormConfig> fields = new ArrayList<>();
+        fields.add(sysField("Identifiant", FieldType.TEXTE, true, true, true, null));
+        fields.add(sysField("Code inventaire", FieldType.TEXTE, true, true, false, null));
+        fields.add(sysField("Désignation", FieldType.TEXTE, true, true, false, null));
+        fields.add(sysField("Description", FieldType.TEXTE, true, false, false, null));
+        fields.add(sysField("Catégorie", FieldType.VOCABULAIRE_CONTROLE, true, false, false, "Thésaurus des catégories"));
+        fields.add(sysField("Matériau", FieldType.VOCABULAIRE_CONTROLE, true, false, false, "Thésaurus des matériaux"));
+        fields.add(sysField("Datation", FieldType.TEXTE, true, false, false, null));
+        fields.add(sysField("Dimensions", FieldType.MESURE, true, false, false, null));
+        fields.add(sysField("Poids", FieldType.MESURE, true, false, false, null));
+        fields.add(sysField("Quantité", FieldType.NUMERIQUE, true, true, false, null));
+        fields.add(sysField("État de conservation", FieldType.TYPOLOGIE, true, false, false, "Typologie état de conservation"));
+        fields.add(sysField("Localisation", FieldType.TEXTE, !hideLocalisationAndInventeur, false, false, null));
+        fields.add(sysField("Inventeur", FieldType.TEXTE, !hideLocalisationAndInventeur, false, false, null));
+        fields.add(sysField("Date de découverte", FieldType.TEXTE, true, false, false, null));
+        fields.add(sysField("Unité d'enregistrement", FieldType.UNITE_ENREGISTREMENT, true, true, false, null));
+        fields.add(sysField("Lieu", FieldType.LIEU, true, false, false, null));
+        fields.add(sysField("Projet", FieldType.PROJET, true, true, true, null));
+        fields.add(sysField("Remarques", FieldType.TEXTE, true, false, false, null));
         return fields;
     }
 
-    private SystemFieldConfig sysField(String name, FieldType type, boolean visible, boolean required, String sourceLabel) {
-        return SystemFieldConfig.builder()
+    private TypeFieldFormConfig sysField(String name, FieldType type, boolean active, boolean mandatory, boolean institutionLocked, String sourceLabel) {
+        return TypeFieldFormConfig.builder()
                 .name(name)
                 .type(type)
-                .visible(visible)
-                .required(required)
+                .systemField(true)
+                .active(active)
+                .mandatory(mandatory)
+                .institutionLocked(institutionLocked)
                 .configurable(type.isConfigurable())
                 .sourceLabel(sourceLabel)
                 .build();
     }
 
-    private List<AdditionalFieldConfig> seedAdditionalFields(ConfigurableTable table, String typeName) {
+    private List<TypeFieldFormConfig> seedAdditionalFields(ConfigurableTable table, String typeName) {
         if (table != ConfigurableTable.MOBILIER || !"Céramique".equals(typeName)) {
             return new ArrayList<>();
         }
-        List<AdditionalFieldConfig> fields = new ArrayList<>();
-        fields.add(AdditionalFieldConfig.builder()
-                .name("Technique de fabrication").type(FieldType.VOCABULAIRE_CONTROLE).required(false)
-                .sourceLabel("Thésaurus des techniques").build());
-        fields.add(AdditionalFieldConfig.builder()
-                .name("Type de décor").type(FieldType.TYPOLOGIE).required(false)
-                .sourceLabel("Typologie des décors céramiques").build());
-        fields.add(AdditionalFieldConfig.builder()
-                .name("Nombre de tessons").type(FieldType.NUMERIQUE).required(true)
-                .sourceLabel("—").build());
-        fields.add(AdditionalFieldConfig.builder()
-                .name("Remontage").type(FieldType.PARENTS).required(false)
-                .sourceLabel("Céramique").build());
+        List<TypeFieldFormConfig> fields = new ArrayList<>();
+        fields.add(additionalField("Technique de fabrication", FieldType.VOCABULAIRE_CONTROLE, false, "Thésaurus des techniques"));
+        fields.add(additionalField("Type de décor", FieldType.TYPOLOGIE, false, "Typologie des décors céramiques"));
+        fields.add(additionalField("Nombre de tessons", FieldType.NUMERIQUE, true, "—"));
+        fields.add(additionalField("Remontage", FieldType.PARENTS, false, "Céramique"));
         return fields;
+    }
+
+    private TypeFieldFormConfig additionalField(String name, FieldType type, boolean mandatory, String sourceLabel) {
+        return TypeFieldFormConfig.builder()
+                .name(name)
+                .type(type)
+                .systemField(false)
+                .active(true)
+                .mandatory(mandatory)
+                .institutionLocked(false)
+                .configurable(type.isConfigurable())
+                .sourceLabel(sourceLabel)
+                .build();
     }
 }
