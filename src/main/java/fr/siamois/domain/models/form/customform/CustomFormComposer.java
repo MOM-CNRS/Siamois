@@ -2,6 +2,7 @@ package fr.siamois.domain.models.form.customform;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Rebuilds a {@link CustomForm} as a base form plus a trailing panel of additional fields.
@@ -45,5 +46,54 @@ public final class CustomFormComposer {
                 .isSystemPanel(false)
                 .addRow(new CustomRow.Builder().addColumns(additionalColumns).build())
                 .build();
+    }
+
+    /**
+     * @param baseForm              the form to start from, left untouched
+     * @param valueBindingsToRemove {@link CustomCol#getField()}'s {@code valueBinding}s to drop;
+     *                              if empty, {@code baseForm} is returned as-is
+     * @return a new {@link CustomForm} with any column whose field's valueBinding is in
+     * {@code valueBindingsToRemove} removed (rows left empty by the removal are dropped too), or
+     * {@code baseForm} itself when there is nothing to remove
+     */
+    public static CustomForm withoutFields(CustomForm baseForm, Set<String> valueBindingsToRemove) {
+        if (valueBindingsToRemove == null || valueBindingsToRemove.isEmpty()) {
+            return baseForm;
+        }
+
+        List<CustomFormPanel> panels = baseForm.getLayout().stream()
+                .map(panel -> withoutFields(panel, valueBindingsToRemove))
+                .toList();
+
+        return new CustomForm.Builder()
+                .name(baseForm.getName())
+                .description(baseForm.getDescription())
+                .addPanels(panels)
+                .build();
+    }
+
+    private static CustomFormPanel withoutFields(CustomFormPanel panel, Set<String> valueBindingsToRemove) {
+        List<CustomRow> rows = panel.getRows().stream()
+                .map(row -> withoutFields(row, valueBindingsToRemove))
+                .filter(row -> !row.getColumns().isEmpty())
+                .toList();
+
+        CustomFormPanel copy = new CustomFormPanel();
+        copy.setName(panel.getName());
+        copy.setClassName(panel.getClassName());
+        copy.setIsSystemPanel(panel.getIsSystemPanel());
+        copy.setCanUserAddFields(panel.getCanUserAddFields());
+        copy.setRows(rows);
+        return copy;
+    }
+
+    private static CustomRow withoutFields(CustomRow row, Set<String> valueBindingsToRemove) {
+        List<CustomCol> columns = row.getColumns().stream()
+                .filter(col -> !valueBindingsToRemove.contains(col.getField().getValueBinding()))
+                .toList();
+
+        CustomRow copy = new CustomRow();
+        copy.setColumns(columns);
+        return copy;
     }
 }

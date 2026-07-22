@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,6 +21,30 @@ class CustomFormComposerTest {
                         .addRow(new CustomRow.Builder()
                                 .addColumn(new CustomCol.Builder()
                                         .field(CustomFieldText.builder().id(1L).label("name").valueBinding("name").build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+    }
+
+    private CustomForm baseFormWithTwoRows() {
+        return new CustomForm.Builder()
+                .name("Base form")
+                .description("A base form")
+                .addPanel(new CustomFormPanel.Builder()
+                        .name("General")
+                        .isSystemPanel(true)
+                        .addRow(new CustomRow.Builder()
+                                .addColumn(new CustomCol.Builder()
+                                        .field(CustomFieldText.builder().id(1L).label("name").valueBinding("name").build())
+                                        .build())
+                                .addColumn(new CustomCol.Builder()
+                                        .field(CustomFieldText.builder().id(2L).label("description").valueBinding("description").build())
+                                        .build())
+                                .build())
+                        .addRow(new CustomRow.Builder()
+                                .addColumn(new CustomCol.Builder()
+                                        .field(CustomFieldText.builder().id(3L).label("extra").valueBinding("extra").build())
                                         .build())
                                 .build())
                         .build())
@@ -86,5 +111,47 @@ class CustomFormComposerTest {
         CustomFormComposer.withAdditionalFields(base, "Additional", List.of(additionalColumn("x")));
 
         assertThat(base.getLayout()).isEqualTo(layoutSnapshot);
+    }
+
+    @Test
+    void withoutFields_shouldReturnBaseFormUnchangedWhenNothingToRemove() {
+        CustomForm base = baseForm();
+
+        assertThat(CustomFormComposer.withoutFields(base, Set.of())).isSameAs(base);
+        assertThat(CustomFormComposer.withoutFields(base, null)).isSameAs(base);
+    }
+
+    @Test
+    void withoutFields_shouldRemoveMatchingColumnAndKeepOthersInTheSameRow() {
+        CustomForm base = baseFormWithTwoRows();
+
+        CustomForm result = CustomFormComposer.withoutFields(base, Set.of("description"));
+
+        List<CustomCol> firstRowColumns = result.getLayout().get(0).getRows().get(0).getColumns();
+        assertThat(firstRowColumns).extracting(c -> c.getField().getValueBinding()).containsExactly("name");
+        assertThat(result.getLayout().get(0).getRows()).hasSize(2);
+    }
+
+    @Test
+    void withoutFields_shouldDropRowsLeftEmptyByRemoval() {
+        CustomForm base = baseFormWithTwoRows();
+
+        CustomForm result = CustomFormComposer.withoutFields(base, Set.of("extra"));
+
+        assertThat(result.getLayout().get(0).getRows()).hasSize(1);
+        assertThat(result.getLayout().get(0).getRows().get(0).getColumns())
+                .extracting(c -> c.getField().getValueBinding())
+                .containsExactly("name", "description");
+    }
+
+    @Test
+    void withoutFields_shouldNotMutateTheBaseForm() {
+        CustomForm base = baseFormWithTwoRows();
+        int originalRowCount = base.getLayout().get(0).getRows().size();
+
+        CustomFormComposer.withoutFields(base, Set.of("extra", "description"));
+
+        assertThat(base.getLayout().get(0).getRows()).hasSize(originalRowCount);
+        assertThat(base.getLayout().get(0).getRows().get(0).getColumns()).hasSize(2);
     }
 }

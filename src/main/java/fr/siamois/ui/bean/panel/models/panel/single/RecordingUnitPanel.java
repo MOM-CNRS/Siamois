@@ -12,10 +12,14 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
@@ -60,6 +64,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
@@ -77,6 +84,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient ProfilePermissionService profilePermissionService;
+    private final transient TableFieldConfigService tableFieldConfigService;
 
 
     // lazy model for children
@@ -105,6 +113,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
+        this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
 
     }
 
@@ -385,11 +394,26 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        CustomForm form = CustomFormComposer.withAdditionalFields(RecordingUnit.DETAILS_FORM, "Champs additionnels", temporaryAdditionalFields());
+        CustomForm base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings());
+        CustomForm form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", temporaryAdditionalFields());
         detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);
+    }
+
+    /**
+     * TODO: resolves against table UE / type "_default" only — there's no real mapping yet from a
+     * RecordingUnit's actual thesaurus type concept to a configured type, so every RecordingUnit
+     * currently shares the same "_default" field configuration regardless of its real type.
+     */
+    private Set<String> inactiveSystemFieldBindings() {
+        TypeFieldsConfig fieldsConfig = tableFieldConfigService.getFieldsConfig(unit.getActionUnit().getId(), ConfigurableTable.UE, "_default");
+        return fieldsConfig.getFields().stream()
+                .filter(f -> !f.isActive())
+                .map(TypeFieldFormConfig::getValueBinding)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     /**
