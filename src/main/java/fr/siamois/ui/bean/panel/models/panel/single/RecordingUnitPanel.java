@@ -6,8 +6,13 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -380,11 +385,39 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
+        CustomForm form = CustomFormComposer.withAdditionalFields(RecordingUnit.DETAILS_FORM, "Champs additionnels", temporaryAdditionalFields());
         detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);
+    }
+
+    /**
+     * TODO: replace with the real per-type additional fields once FieldFormConfig exists (currently
+     * mocked by TableFieldConfigService). These two are placeholders to exercise CustomFormComposer
+     * end to end. IDs are well outside RecordingUnitForm's 1-28 range to avoid any collision.
+     */
+    private List<CustomCol> temporaryAdditionalFields() {
+        return List.of(
+                new CustomCol.Builder()
+                        .field(CustomFieldText.builder()
+                                .id(900L)
+                                .label("Champ additionnel test 1")
+                                .isSystemField(false)
+                                .valueBinding("additionalTest1")
+                                .concept(new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("TEST-ADDITIONAL-1").build())
+                                .build())
+                        .build(),
+                new CustomCol.Builder()
+                        .field(CustomFieldText.builder()
+                                .id(901L)
+                                .label("Champ additionnel test 2")
+                                .isSystemField(false)
+                                .valueBinding("additionalTest2")
+                                .concept(new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("TEST-ADDITIONAL-2").build())
+                                .build())
+                        .build()
+        );
     }
 
 
