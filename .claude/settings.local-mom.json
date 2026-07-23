@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java -version)",
+      "mcp__ide__getDiagnostics"
+    ]
+  },
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN":"ollama",
+    "ANTHROPIC_API_KEY":"",
+    "ANTHROPIC_BASE_URL":"http://gpto.mom.fr:8080",
+    "ANTHROPIC_MODEL": "Qwen3.6-27B"
+  }
+}
