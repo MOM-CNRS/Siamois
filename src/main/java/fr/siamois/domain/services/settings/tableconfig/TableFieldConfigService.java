@@ -21,13 +21,42 @@ public interface TableFieldConfigService {
     List<ConfigurableTable> listTables();
 
     /**
-     * Lists the types defined for a table, including the {@code _default} type.
+     * Lists the types a table is configured for: {@code _default}, plus every type somebody
+     * explicitly created a configuration for through
+     * {@link #addConfiguration(Long, ConfigurableTable, String)}.
+     * <p>
+     * A type the project never configured is deliberately absent: every value of the type field
+     * would otherwise need a configuration of its own in every project of every institution, for
+     * nothing — such a value is served by the {@code _default} configuration.
      *
      * @param projectId the project (action unit) these types are scoped to
      * @param table     the table whose types are listed
-     * @return the table's types, {@code _default} first
+     * @return the table's configured types, {@code _default} first
      */
     List<TypeSummary> listTypes(Long projectId, ConfigurableTable table);
+
+    /**
+     * Lists the values of the table's type field that could still be given a configuration, i.e.
+     * the values of its vocabulary minus the ones already configured. Meant to back the type picker
+     * of the "add a configuration" action.
+     *
+     * @param projectId the project (action unit) the configuration would be scoped to
+     * @param table     the table whose type field is read
+     * @param input     what the user typed, to narrow the vocabulary down; null or blank lists all
+     * @return the names of the values that have no configuration yet
+     */
+    List<String> listConfigurableTypes(Long projectId, ConfigurableTable table, String input);
+
+    /**
+     * Creates the configuration of a type, so it can diverge from the default one. Does nothing
+     * beyond returning the existing type when it is already configured.
+     *
+     * @param projectId the project (action unit) this configuration is scoped to
+     * @param table     the table the type belongs to
+     * @param typeName  the name of the type field value to configure
+     * @return the newly configured type
+     */
+    TypeSummary addConfiguration(Long projectId, ConfigurableTable table, String typeName);
 
     /**
      * Reads the general (non-field) configuration of a type.

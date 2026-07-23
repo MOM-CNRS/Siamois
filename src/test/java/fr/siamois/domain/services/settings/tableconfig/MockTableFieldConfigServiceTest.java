@@ -9,8 +9,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MockTableFieldConfigServiceTest {
 
@@ -28,12 +30,47 @@ class MockTableFieldConfigServiceTest {
     }
 
     @Test
-    void listTypes_shouldReturnDefaultTypeFirst() {
+    void listTypes_shouldStartWithTheDefaultTypeAlone() {
         List<TypeSummary> types = service.listTypes(1L, ConfigurableTable.MOBILIER);
 
-        assertThat(types.get(0).getName()).isEqualTo("_default");
+        assertThat(types).extracting(TypeSummary::getName).containsExactly("_default");
         assertThat(types.get(0).isDefault()).isTrue();
-        assertThat(types).extracting(TypeSummary::getName).contains("Céramique", "Lithique");
+    }
+
+    @Test
+    void listTypes_shouldReturnTheConfiguredTypesAfterTheDefaultOne() {
+        service.addConfiguration(1L, ConfigurableTable.MOBILIER, "Lithique");
+        service.addConfiguration(1L, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(service.listTypes(1L, ConfigurableTable.MOBILIER))
+                .extracting(TypeSummary::getName).containsExactly("_default", "Céramique", "Lithique");
+    }
+
+    @Test
+    void listTypes_shouldBeScopedToTheProject() {
+        service.addConfiguration(1L, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(service.listTypes(2L, ConfigurableTable.MOBILIER))
+                .extracting(TypeSummary::getName).containsExactly("_default");
+    }
+
+    @Test
+    void listConfigurableTypes_shouldDropTheAlreadyConfiguredValuesAndFilterOnInput() {
+        service.addConfiguration(1L, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(service.listConfigurableTypes(1L, ConfigurableTable.MOBILIER, null))
+                .doesNotContain("Céramique", "_default")
+                .contains("Lithique", "Métal");
+        assertThat(service.listConfigurableTypes(1L, ConfigurableTable.MOBILIER, "lith"))
+                .containsExactly("Lithique");
+    }
+
+    @Test
+    void addConfiguration_shouldRejectTheDefaultTypeAndUnknownValues() {
+        assertThatThrownBy(() -> service.addConfiguration(1L, ConfigurableTable.MOBILIER, "_default"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.addConfiguration(1L, ConfigurableTable.MOBILIER, "Inexistant"))
+                .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test

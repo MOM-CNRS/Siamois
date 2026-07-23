@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,9 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     private static final String DEFAULT_TYPE = "_default";
 
     private static final Map<ConfigurableTable, List<String>> TABLE_TYPES = buildTableTypes();
+
+    /** Types a project explicitly asked a configuration for; every other value uses {@code _default}. */
+    private final Map<Long, Map<ConfigurableTable, Set<String>>> configuredTypesByProject = new ConcurrentHashMap<>();
 
     private final Map<Long, Map<ConfigurableTable, Map<String, TypeFormConfig>>> formConfigsByProject = new ConcurrentHashMap<>();
     private final Map<Long, Map<ConfigurableTable, Map<String, TypeFieldsConfig>>> fieldsConfigsByProject = new ConcurrentHashMap<>();
@@ -48,9 +52,40 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
 
     @Override
     public List<TypeSummary> listTypes(Long projectId, ConfigurableTable table) {
+        List<TypeSummary> types = new ArrayList<>();
+        types.add(new TypeSummary(DEFAULT_TYPE, true));
+        configuredTypesOf(projectId, table).stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .map(name -> new TypeSummary(name, false))
+                .forEach(types::add);
+        return types;
+    }
+
+    @Override
+    public List<String> listConfigurableTypes(Long projectId, ConfigurableTable table, String input) {
+        Set<String> configured = configuredTypesOf(projectId, table);
+        String needle = input == null ? "" : input.trim().toLowerCase();
         return typeNamesOf(table).stream()
-                .map(name -> new TypeSummary(name, DEFAULT_TYPE.equals(name)))
+                .filter(name -> !DEFAULT_TYPE.equals(name))
+                .filter(name -> !configured.contains(name))
+                .filter(name -> name.toLowerCase().contains(needle))
                 .toList();
+    }
+
+    @Override
+    public TypeSummary addConfiguration(Long projectId, ConfigurableTable table, String typeName) {
+        if (DEFAULT_TYPE.equals(typeName)) {
+            throw new IllegalArgumentException("The default configuration always exists and cannot be added");
+        }
+        requireType(table, typeName);
+        configuredTypesOf(projectId, table).add(typeName);
+        return new TypeSummary(typeName, false);
+    }
+
+    private Set<String> configuredTypesOf(Long projectId, ConfigurableTable table) {
+        return configuredTypesByProject
+                .computeIfAbsent(projectId, id -> new ConcurrentHashMap<>())
+                .computeIfAbsent(table, t -> ConcurrentHashMap.newKeySet());
     }
 
     @Override
