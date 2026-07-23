@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -57,7 +58,6 @@ class TableFieldConfigServiceImplTest {
     private static final Long PROJECT_ID = 7L;
     private static final Long FIELD_CONCEPT_ID = 100L;
     private static final Long CERAMIQUE_CONCEPT_ID = 200L;
-    // Typed as Long so stubs bind to findById(Long) and not to the findById(long) overload of PersonRepository.
     private static final Long PERSON_ID = 2L;
     private static final Long FORM_ID = 500L;
 
@@ -71,6 +71,7 @@ class TableFieldConfigServiceImplTest {
     @Mock private CustomFieldRepository customFieldRepository;
     @Mock private PersonRepository personRepository;
 
+    @InjectMocks
     private TableFieldConfigServiceImpl service;
 
     private Concept fieldConcept;
@@ -80,9 +81,6 @@ class TableFieldConfigServiceImplTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        service = new TableFieldConfigServiceImpl(fieldConfigurationService, labelService, actionUnitRepository,
-                conceptRepository, formRepository, formConfigRepository, fieldFormConfigRepository,
-                customFieldRepository, personRepository);
 
         InstitutionDTO institution = new InstitutionDTO();
         institution.setId(1L);
@@ -192,7 +190,6 @@ class TableFieldConfigServiceImplTest {
         assertThat(fields).extracting(TypeFieldFormConfig::getName).containsExactly("Identifiant", "Description");
         assertThat(fields).allMatch(TypeFieldFormConfig::isSystemField);
         assertThat(fields).allMatch(TypeFieldFormConfig::isActive);
-        // Requiredness falls back on what the form declares while nothing is configured.
         assertThat(fields.get(0).isMandatory()).isTrue();
         assertThat(fields.get(1).isMandatory()).isFalse();
     }
@@ -240,7 +237,6 @@ class TableFieldConfigServiceImplTest {
         assertThat(saved.getValue().getField()).isEqualTo(identifier);
         assertThat(saved.getValue().getFormConfig()).isEqualTo(defaultConfig);
         assertThat(saved.getValue().isActive()).isFalse();
-        // The requiredness the form declared is carried over rather than reset.
         assertThat(saved.getValue().isMandatory()).isTrue();
     }
 
@@ -462,8 +458,6 @@ class TableFieldConfigServiceImplTest {
 
         verify(formConfigRepository, never()).save(any(FormConfig.class));
     }
-
-    // ── fixtures ────────────────────────────────────────────────────────────────────────────────
 
     private Concept concept(Long id, String externalId) {
         Concept concept = new Concept();

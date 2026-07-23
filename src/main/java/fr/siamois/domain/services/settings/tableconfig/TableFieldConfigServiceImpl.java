@@ -91,8 +91,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional(readOnly = true)
     public List<String> listConfigurableTypes(Long projectId, ConfigurableTable table, String input) {
         Set<String> configured = configuredTypeNames(projectId, table);
-        // A concept can match through both its pref label and its alt labels; the picker offers each
-        // value once, in the order the vocabulary returns them.
         Set<String> candidates = new LinkedHashSet<>();
         for (ConceptAutocompleteDTO value : fieldValues(projectId, table, input)) {
             candidates.add(value.getConceptLabelToDisplay().getLabel());
@@ -139,8 +137,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return TypeFormConfig.builder()
                 .typeName(typeName)
                 .valueConceptLabel(isDefault ? "" : valueConceptLabel)
-                // The three fields below have no column on FormConfig, so they are reported at the
-                // value the entity model implies and cannot be stored back.
                 .description("")
                 .inheritsDefaultFields(!isDefault)
                 .visibleInApp(true)
@@ -233,8 +229,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                     }
                 });
     }
-
-    // ── reading ─────────────────────────────────────────────────────────────────────────────────
 
     /**
      * A field as it applies to a type: the custom field itself, the configuration stored for it if
@@ -330,7 +324,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private List<FormField> layoutFieldsOf(Long formId) {
         Map<Long, Boolean> requiredByFieldId = new LinkedHashMap<>();
         for (Object[] layoutField : formRepository.findLayoutFieldsByFormId(formId)) {
-            // Native row: [fieldId, isRequired]. A field laid out twice keeps its first appearance.
             requiredByFieldId.putIfAbsent(((Number) layoutField[0]).longValue(), Boolean.TRUE.equals(layoutField[1]));
         }
 
@@ -340,7 +333,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         List<FormField> formFields = new ArrayList<>();
         requiredByFieldId.forEach((fieldId, required) -> {
             CustomField field = fields.get(fieldId);
-            // A layout entry pointing at a field that no longer exists has nothing to configure.
             if (field != null) {
                 formFields.add(new FormField(field, required));
             }
@@ -359,8 +351,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .flatMap(value -> formConfigRepository.findByActionUnitAndFieldAndValue(
                         projectId, fieldConcept.get().getId(), value.getId()));
     }
-
-    // ── writing ─────────────────────────────────────────────────────────────────────────────────
 
     /**
      * Applies a change to the type's configuration of a field. The row is created when the field is
@@ -448,8 +438,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return NEW_FIELD_BASE_NAME + " " + suffix;
     }
 
-    // ── vocabulary ──────────────────────────────────────────────────────────────────────────────
-
     /**
      * The concept the table's type field is configured on, i.e. the root of the vocabulary its
      * values are taken from. Empty when the project has no configuration for that field, which is
@@ -495,14 +483,10 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return concept == null ? "" : labelService.findLabelOf(concept, currentUser().getLang()).getLabel();
     }
 
-    // ── display model ───────────────────────────────────────────────────────────────────────────
-
     private TypeFieldFormConfig toDto(EffectiveField effective) {
         CustomField field = effective.field();
         FieldType type = typeOf(field);
         return TypeFieldFormConfig.builder()
-                // The label of a system field is a message key rather than a caption; it is kept as
-                // is because it is also the handle the screen edits the field by.
                 .name(field.getLabel())
                 .type(type)
                 .systemField(isSystemField(field))
@@ -556,8 +540,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private boolean isSystemField(CustomField field) {
         return Boolean.TRUE.equals(field.getIsSystemField());
     }
-
-    // ── context ─────────────────────────────────────────────────────────────────────────────────
 
     private @NonNull UserInfo currentUser() {
         UserInfo info = ExecutionContextHolder.get();

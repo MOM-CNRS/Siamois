@@ -152,8 +152,6 @@ public class WebSecurityConfig {
                 .logoutSuccessUrl("/")
         );
 
-        // Placé avant l'authentification (et donc avant le LoginSuccessHandler et le LogoutFilter) pour
-        // que son finally nettoie aussi le contexte lié par la connexion et la déconnexion.
         http.addFilterBefore(userInfoContextFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

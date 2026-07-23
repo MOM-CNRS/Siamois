@@ -74,8 +74,6 @@ public final class ExecutionContextHolder {
         try {
             return AuthenticatedUserUtils.getAuthenticatedUser().map(Person::getId).orElse(null);
         } catch (RuntimeException e) {
-            // A principal that is not a Person leaves nothing to compare against; reading the context
-            // must degrade to "cannot tell", never blow up.
             log.debug("Could not read the authenticated user to validate the execution context", e);
             return null;
         }

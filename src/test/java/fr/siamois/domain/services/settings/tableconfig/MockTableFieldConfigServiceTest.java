@@ -107,7 +107,6 @@ class MockTableFieldConfigServiceTest {
 
     @Test
     void setFieldActive_shouldBeNoOpOnInstitutionLockedField() {
-        // "Identifiant" is seeded institutionLocked=true
         service.setFieldActive(1L, ConfigurableTable.MOBILIER, "Lithique", "Identifiant", false);
 
         TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Lithique");
@@ -120,7 +119,6 @@ class MockTableFieldConfigServiceTest {
 
     @Test
     void setFieldMandatory_shouldBeNoOpOnInstitutionLockedField() {
-        // "Projet" is seeded institutionLocked=true
         service.setFieldMandatory(1L, ConfigurableTable.MOBILIER, "Lithique", "Projet", false);
 
         TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.MOBILIER, "Lithique");

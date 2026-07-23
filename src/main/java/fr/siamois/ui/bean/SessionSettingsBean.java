@@ -74,9 +74,6 @@ public class SessionSettingsBean implements Serializable {
         loadLanguageSettings();
         loadInstitutionsSettings();
         userInfo = null;
-        // Le login est traité avant que UserInfoContextFilter n'ait pu lire la session : on lie le
-        // contexte ici pour que la suite de cette requête (publication du LoginEvent, écritures auditées)
-        // soit attribuée au bon utilisateur. Le finally du filtre s'occupe du nettoyage.
         ExecutionContextHolder.set(getUserInfo());
     }
 

@@ -12,6 +12,7 @@ import fr.siamois.ui.bean.LangBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProjectTableFieldSettingsBeanTest {
 
+    @InjectMocks
     private ProjectTableFieldSettingsBean bean;
 
     @Mock
@@ -39,7 +41,6 @@ class ProjectTableFieldSettingsBeanTest {
 
     @BeforeEach
     void setUp() {
-        bean = new ProjectTableFieldSettingsBean(tableFieldConfigService, langBean);
         project = new ActionUnitDTO();
         project.setId(42L);
 
@@ -148,7 +149,6 @@ class ProjectTableFieldSettingsBeanTest {
 
         assertThat(bean.resolveFieldLabel(systemField)).isEqualTo("Type");
         assertThat(bean.resolveFieldLabel(additionalField)).isEqualTo("Nombre de tessons");
-        // The untranslated name stays the identity the service is called back with.
         assertThat(systemField.getName()).isEqualTo("recordingunit.property.type");
     }
 

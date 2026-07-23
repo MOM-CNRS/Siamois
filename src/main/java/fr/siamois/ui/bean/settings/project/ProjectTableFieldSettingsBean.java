@@ -173,7 +173,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public void onTabChange(TabChangeEvent<?> event) {
-        // activeTabIndex is bound directly via p:tabView activeIndex, nothing else to do here
     }
 
     /**
