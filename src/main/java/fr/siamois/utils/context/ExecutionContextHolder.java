@@ -9,21 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Utility class for holding the execution context in a ThreadLocal.
  * This class is not intended to be instantiated.
- * <p>
- * Servlet containers and {@code @Async} executors hand threads back to a pool once a task ends, so a
- * value left behind by one request stays visible to the <em>next</em> request served by that same
- * thread. Every writer must therefore pair its {@link #set(UserInfo)} with a {@link #clear()} in a
- * {@code finally} block; for web requests this is the job of
- * {@code fr.siamois.ui.config.security.UserInfoContextFilter}.
- * <p>
- * {@link #get()} additionally cross-checks the stored context against the authenticated user of the
- * current request, so that a context which somehow outlived its request is dropped rather than served
- * to somebody else. That is a safety net, not a substitute for clearing.
- * <p>
- * The backing {@link ThreadLocal} is deliberately <strong>not</strong> an {@link InheritableThreadLocal}:
- * a pooled worker would inherit the value present when the thread was <em>created</em> and then keep
- * serving it forever. Threads must be given the context explicitly.
- */
+ * */
 @Slf4j
 public final class ExecutionContextHolder {
 
