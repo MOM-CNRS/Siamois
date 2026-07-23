@@ -122,99 +122,109 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnit saveNotTransactional(UserInfo info, ActionUnitDTO actionUnitDTO, ConceptDTO typeConceptDTO)
             throws ActionUnitAlreadyExistsException {
+        ensureUniqueNameAndIdentifier(info, actionUnitDTO);
+        prepareActionUnitDtoForSave(info, actionUnitDTO);
 
-
-        Optional<ActionUnit> existingName = actionUnitRepository.findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), info.getInstitution().getId());
-        if (existingName.isPresent() && (actionUnitDTO.getId() == null || !existingName.get().getId().equals(actionUnitDTO.getId()))) {
-            throw new ActionUnitAlreadyExistsException(
-                    "name",
-                    String.format("Action unit with name %s already exist", actionUnitDTO.getName()));
-        }
-
-        Optional<ActionUnit> existingId = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(actionUnitDTO.getIdentifier(), info.getInstitution().getId());
-        if (existingId.isPresent() && (actionUnitDTO.getId() == null || !existingId.get().getId().equals(actionUnitDTO.getId()))) {
-            throw new ActionUnitAlreadyExistsException(
-                    "identifier",
-                    String.format("Action unit with identifier %s already exist", actionUnitDTO.getIdentifier()));
-        }
-
-
-        actionUnitDTO.setCreatedByInstitution(info.getInstitution());
-        if (actionUnitDTO.getCreationTime() == null) {
-            actionUnitDTO.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
-        }
-
-        // Generate unique identifier if not presents
-        if (actionUnitDTO.getFullIdentifier() == null) {
-            if (actionUnitDTO.getIdentifier() == null) {
-                throw new NullActionUnitIdentifierException("ActionUnit identifier must be set");
-            }
-            actionUnitDTO.setFullIdentifier(actionUnitDTO.getIdentifier());
-        }
-
-        // Add concept
         ActionUnit actionUnit = actionUnitMapper.invertConvert(actionUnitDTO);
-        Concept type = conceptService.saveOrGetConcept(typeConceptDTO);
-        actionUnit.setType(type);
-        Person user = personMapper.invertConvert(info.getUser());
-        actionUnit.setCreatedBy(user);
-
-        if (actionUnitDTO.getMainLocation() != null) {
-            if (actionUnitDTO.getMainLocation().getId() == null) {
-                SpatialUnit toSave = new SpatialUnit();
-                toSave.setCategory(actionUnit.getMainLocation().getCategory());
-                toSave.setName(actionUnitDTO.getMainLocation().getName());
-                toSave.setCreatedBy(actionUnit.getCreatedBy());
-                toSave.setCode(actionUnitDTO.getMainLocation().getCode());
-                toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
-                toSave = spatialUnitRepository.save(toSave);
-                actionUnit.setMainLocation(toSave);
-            } else {
-                spatialUnitRepository.findById(actionUnitDTO.getMainLocation().getId())
-                        .ifPresentOrElse(actionUnit::setMainLocation,
-                                () -> {
-                                    throw new FailedActionUnitSaveException(
-                                            "Lieu introuvable: " + actionUnitDTO.getMainLocation().getId());
-                                });
-            }
-        } else {
-            actionUnit.setMainLocation(null);
-        }
-        if (actionUnitDTO.getSpatialContext() != null) {
-            Set<SpatialUnit> persistentContext = new HashSet<>();
-
-            for (SpatialUnitSummaryDTO summary : actionUnitDTO.getSpatialContext()) {
-                if (summary.getId() == null) {
-                    // CAS : Nouveau lieu (ex: issu de l'API INSEE)
-                    SpatialUnit toSave = new SpatialUnit();
-                    toSave.setName(summary.getName());
-                    toSave.setCode(summary.getCode());
-                    toSave.setCategory(conceptMapper.invertConvert(summary.getCategory()));
-
-                    // On réutilise les métadonnées de l'unité parente
-                    toSave.setCreatedBy(actionUnit.getCreatedBy());
-                    toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
-
-                    // Sauvegarde immédiate pour obtenir un ID
-                    toSave = spatialUnitRepository.save(toSave);
-                    persistentContext.add(toSave);
-                } else {
-                    // CAS : Lieu existant en base
-                    spatialUnitRepository.findById(summary.getId())
-                            .ifPresent(persistentContext::add);
-                }
-            }
-
-            // Mise à jour de la relation ManyToMany ou OneToMany
-            actionUnit.setSpatialContext(persistentContext);
-        }
-
+        actionUnit.setType(conceptService.saveOrGetConcept(typeConceptDTO));
+        actionUnit.setCreatedBy(personMapper.invertConvert(info.getUser()));
+        applyMainLocation(actionUnitDTO, actionUnit);
+        applySpatialContext(actionUnitDTO, actionUnit);
 
         try {
             return actionUnitRepository.save(actionUnit);
         } catch (RuntimeException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }
+    }
+
+    private void ensureUniqueNameAndIdentifier(UserInfo info, ActionUnitDTO actionUnitDTO)
+            throws ActionUnitAlreadyExistsException {
+        Long institutionId = info.getInstitution().getId();
+        Optional<ActionUnit> existingName = actionUnitRepository
+                .findByNameAndCreatedByInstitutionId(actionUnitDTO.getName(), institutionId);
+        if (conflictsWithExisting(actionUnitDTO, existingName)) {
+            throw new ActionUnitAlreadyExistsException(
+                    "name",
+                    String.format("Action unit with name %s already exist", actionUnitDTO.getName()));
+        }
+
+        Optional<ActionUnit> existingId = actionUnitRepository
+                .findByIdentifierAndCreatedByInstitutionId(actionUnitDTO.getIdentifier(), institutionId);
+        if (conflictsWithExisting(actionUnitDTO, existingId)) {
+            throw new ActionUnitAlreadyExistsException(
+                    "identifier",
+                    String.format("Action unit with identifier %s already exist", actionUnitDTO.getIdentifier()));
+        }
+    }
+
+    private static boolean conflictsWithExisting(ActionUnitDTO actionUnitDTO, Optional<ActionUnit> existing) {
+        return existing.isPresent()
+                && (actionUnitDTO.getId() == null || !existing.get().getId().equals(actionUnitDTO.getId()));
+    }
+
+    private void prepareActionUnitDtoForSave(UserInfo info, ActionUnitDTO actionUnitDTO) {
+        actionUnitDTO.setCreatedByInstitution(info.getInstitution());
+        if (actionUnitDTO.getCreationTime() == null) {
+            actionUnitDTO.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
+        }
+        if (actionUnitDTO.getFullIdentifier() == null) {
+            if (actionUnitDTO.getIdentifier() == null) {
+                throw new NullActionUnitIdentifierException("ActionUnit identifier must be set");
+            }
+            actionUnitDTO.setFullIdentifier(actionUnitDTO.getIdentifier());
+        }
+    }
+
+    private void applyMainLocation(ActionUnitDTO actionUnitDTO, ActionUnit actionUnit) {
+        if (actionUnitDTO.getMainLocation() == null) {
+            actionUnit.setMainLocation(null);
+            return;
+        }
+        SpatialUnitSummaryDTO mainLocation = actionUnitDTO.getMainLocation();
+        if (mainLocation.getId() == null) {
+            actionUnit.setMainLocation(saveNewMainLocation(actionUnit, mainLocation));
+            return;
+        }
+        spatialUnitRepository.findById(mainLocation.getId())
+                .ifPresentOrElse(actionUnit::setMainLocation,
+                        () -> {
+                            throw new FailedActionUnitSaveException("Lieu introuvable: " + mainLocation.getId());
+                        });
+    }
+
+    private SpatialUnit saveNewMainLocation(ActionUnit actionUnit, SpatialUnitSummaryDTO mainLocation) {
+        SpatialUnit toSave = new SpatialUnit();
+        toSave.setCategory(actionUnit.getMainLocation().getCategory());
+        toSave.setName(mainLocation.getName());
+        toSave.setCreatedBy(actionUnit.getCreatedBy());
+        toSave.setCode(mainLocation.getCode());
+        toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+        return spatialUnitRepository.save(toSave);
+    }
+
+    private void applySpatialContext(ActionUnitDTO actionUnitDTO, ActionUnit actionUnit) {
+        if (actionUnitDTO.getSpatialContext() == null) {
+            return;
+        }
+        Set<SpatialUnit> persistentContext = new HashSet<>();
+        for (SpatialUnitSummaryDTO summary : actionUnitDTO.getSpatialContext()) {
+            resolveSpatialContextEntry(actionUnit, summary).ifPresent(persistentContext::add);
+        }
+        actionUnit.setSpatialContext(persistentContext);
+    }
+
+    private Optional<SpatialUnit> resolveSpatialContextEntry(ActionUnit actionUnit, SpatialUnitSummaryDTO summary) {
+        if (summary.getId() == null) {
+            SpatialUnit toSave = new SpatialUnit();
+            toSave.setName(summary.getName());
+            toSave.setCode(summary.getCode());
+            toSave.setCategory(conceptMapper.invertConvert(summary.getCategory()));
+            toSave.setCreatedBy(actionUnit.getCreatedBy());
+            toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
+            return Optional.of(spatialUnitRepository.save(toSave));
+        }
+        return spatialUnitRepository.findById(summary.getId());
     }
 
     /**

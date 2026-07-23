@@ -2081,8 +2081,9 @@ class RecordingUnitServiceTest {
 
         @Test
         void requireAccessibleRecordingUnitByPrimaryKey_emptyScope_throws() {
+            Set<Long> emptyScope = Set.of();
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of()));
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, emptyScope));
             verify(recordingUnitRepository, never()).findById(anyLong());
         }
 
@@ -2097,8 +2098,9 @@ class RecordingUnitServiceTest {
         void requireAccessibleRecordingUnitByPrimaryKey_notFound_throws() {
             when(recordingUnitRepository.findById(404L)).thenReturn(Optional.empty());
 
+            Set<Long> institutionIds = Set.of(5L);
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(404L, Set.of(5L)));
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(404L, institutionIds));
         }
 
         @Test
@@ -2112,8 +2114,9 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(entity));
             when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
 
+            Set<Long> institutionIds = Set.of(5L);
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(5L)));
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, institutionIds));
         }
 
         @Test
