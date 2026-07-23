@@ -194,7 +194,7 @@
                                             </p:toggleSwitch>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
-                                            <span class="#{not f.active ? 'ptc-hidden-name' : ''}">#{f.name}</span>
+                                            <span class="#{not f.active ? 'ptc-hidden-name' : ''}">#{projectTableFieldSettingsBean.resolveFieldLabel(f)}</span>
                                             <h:panelGroup rendered="#{f.institutionLocked}">
                                                 <span class="bi bi-lock-fill" style="font-size:12px;color:#a3a3a0;margin-left:6px;" title="#{langBean.msg('projectTables.champs.institutionLocked')}"/>
                                             </h:panelGroup>
@@ -221,7 +221,7 @@
                                     <p:dataTable value="#{projectTableFieldSettingsBean.additionalFields}" var="a" rowKey="#{a.name}"
                                                  emptyMessage="#{langBean.msg('projectTables.champs.emptyAdditional')}">
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
-                                            <h:outputText value="#{a.name}"/>
+                                            <h:outputText value="#{projectTableFieldSettingsBean.resolveFieldLabel(a)}"/>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:190px">
                                             <span class="ptc-chip">#{a.type.label}</span>

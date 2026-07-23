@@ -137,6 +137,22 @@ class ProjectTableFieldSettingsBeanTest {
     }
 
     @Test
+    void resolveFieldLabel_shouldTranslateSystemFieldsAndLeaveTheOthersAsIs() {
+        bean.init(project);
+        when(langBean.msg("recordingunit.property.type")).thenReturn("Type");
+
+        TypeFieldFormConfig systemField = TypeFieldFormConfig.builder()
+                .name("recordingunit.property.type").systemField(true).build();
+        TypeFieldFormConfig additionalField = TypeFieldFormConfig.builder()
+                .name("Nombre de tessons").systemField(false).build();
+
+        assertThat(bean.resolveFieldLabel(systemField)).isEqualTo("Type");
+        assertThat(bean.resolveFieldLabel(additionalField)).isEqualTo("Nombre de tessons");
+        // The untranslated name stays the identity the service is called back with.
+        assertThat(systemField.getName()).isEqualTo("recordingunit.property.type");
+    }
+
+    @Test
     void reset_shouldClearAllState() {
         bean.init(project);
 

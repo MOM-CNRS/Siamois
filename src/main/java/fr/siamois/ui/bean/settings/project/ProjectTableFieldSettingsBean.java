@@ -143,6 +143,21 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         return fieldsConfig.getFields().stream().filter(f -> f.isSystemField() && !f.isActive()).count();
     }
 
+    /**
+     * Caption to display for a field. A system field carries a message key rather than a caption,
+     * whereas a field added from this screen carries what the user typed — same convention as
+     * {@code SpatialUnitFieldBean#resolveCustomFieldLabel}.
+     * <p>
+     * The untranslated name stays the field's identity: it is what the service is called back with
+     * to activate, require or delete it.
+     */
+    public String resolveFieldLabel(TypeFieldFormConfig field) {
+        if (field.isSystemField()) {
+            return langBean.msg(field.getName());
+        }
+        return field.getName();
+    }
+
     public List<TypeFieldFormConfig> getSystemFields() {
         if (fieldsConfig == null) return List.of();
         return fieldsConfig.getFields().stream().filter(TypeFieldFormConfig::isSystemField).toList();
