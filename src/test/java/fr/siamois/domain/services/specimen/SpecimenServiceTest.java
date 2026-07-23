@@ -1678,7 +1678,7 @@ class SpecimenServiceTest {
         Specimen entity = new Specimen();
         SpecimenDTO dto = new SpecimenDTO();
         Set<Long> scope = Set.of(10L);
-        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(eq(overflowKey), eq(scope)))
+        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(overflowKey, scope))
                 .thenReturn(Optional.of(entity));
         when(specimenMapper.convert(entity)).thenReturn(dto);
 
@@ -1686,7 +1686,7 @@ class SpecimenServiceTest {
 
         assertTrue(result.isPresent());
         assertSame(dto, result.get());
-        verify(specimenRepository).findFirstByFullIdentifierAndInstitutionIdIn(eq(overflowKey), eq(scope));
+        verify(specimenRepository).findFirstByFullIdentifierAndInstitutionIdIn(overflowKey, scope);
     }
 
     @Test
