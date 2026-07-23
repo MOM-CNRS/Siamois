@@ -20,14 +20,6 @@ public final class ExecutionContextHolder {
 
     private static final ThreadLocal<UserInfo> CONTEXT = new ThreadLocal<>();
 
-    /**
-     * Sets the execution context for the current thread.
-     * <p>
-     * The caller owns the lifetime of what it binds and must clear it before the thread is released.
-     *
-     * @param info The user information to store in the context. A null value unbinds the context
-     *             rather than storing an empty entry.
-     */
     public static void set(UserInfo info) {
         if (info == null) {
             CONTEXT.remove();
@@ -42,17 +34,6 @@ public final class ExecutionContextHolder {
         CONTEXT.set(info);
     }
 
-    /**
-     * Gets the execution context for the current thread.
-     * <p>
-     * When the current request is authenticated, the stored context must describe that same person. A
-     * mismatch means the value was left behind by an earlier request on this pooled thread, so it is
-     * discarded and reported instead of being handed to the wrong user. When there is no authentication
-     * at all (startup initializers, background imports) the context is taken at face value, since there
-     * is nothing to cross-check it against.
-     *
-     * @return The user information stored in the context, or null if not set or not trustworthy.
-     */
     public static UserInfo get() {
         UserInfo current = CONTEXT.get();
         if (current == null) {
