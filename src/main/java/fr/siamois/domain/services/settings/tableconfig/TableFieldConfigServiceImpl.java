@@ -7,10 +7,6 @@ import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
@@ -271,9 +267,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         Map<Long, FieldFormConfig> stored = storedFields(projectId, table, typeName);
         Map<Long, EffectiveField> fields = new LinkedHashMap<>();
 
-        for (CustomCol column : formColumns(projectId, table, typeName)) {
-            CustomField field = column.getField();
-            fields.put(field.getId(), new EffectiveField(field, stored.get(field.getId()), column.isRequired()));
+        for (FormField formField : formFields(projectId, table, typeName)) {
+            CustomField field = formField.field();
+            fields.put(field.getId(), new EffectiveField(field, stored.get(field.getId()), formField.required()));
         }
         stored.forEach((fieldId, config) ->
                 fields.computeIfAbsent(fieldId, id -> new EffectiveField(config.getField(), config, false)));
@@ -298,47 +294,58 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .forEach(field -> into.put(field.getField().getId(), field)));
     }
 
+    /** A field the form lays out, with the requiredness the form declares for it. */
+    private record FormField(CustomField field, boolean required) {
+    }
+
     /**
-     * The columns of the form that applies to a type, flattened in layout order. The form is the one
-     * the application would display for that type — resolved by the same institution/type cascade
-     * the data entry screens use — so the configuration screen lists exactly the fields the user
-     * fills in.
+     * The fields of the form that applies to a type, in layout order. The form is the one the
+     * application would display for that type — resolved by the same institution/type cascade the
+     * data entry screens use — so the configuration screen lists exactly the fields the user fills
+     * in.
      */
-    private List<CustomCol> formColumns(Long projectId, ConfigurableTable table, String typeName) {
+    private List<FormField> formFields(Long projectId, ConfigurableTable table, String typeName) {
         Long valueConceptId = DEFAULT_TYPE.equals(typeName) ? null
                 : findFieldConcept(projectId, table)
                 .flatMap(fieldConcept -> findValueConcept(projectId, fieldConcept, typeName))
                 .map(Concept::getId)
                 .orElse(null);
 
-        Optional<CustomForm> form = formRepository.findEffectiveFormByTypeAndInstitution(
+        Optional<Long> formId = formRepository.findEffectiveFormIdByTypeAndInstitution(
                 valueConceptId, currentUser().getInstitution().getId());
-        if (form.isEmpty()) {
+        if (formId.isEmpty()) {
             log.warn("No form applies to type '{}' of table {}; the screen has no system field to show",
                     typeName, table);
             return List.of();
         }
-        return columnsOf(form.get());
+        return layoutFieldsOf(formId.get());
     }
 
-    private List<CustomCol> columnsOf(CustomForm form) {
-        List<CustomCol> columns = new ArrayList<>();
-        for (CustomFormPanel panel : orEmpty(form.getLayout())) {
-            for (CustomRow row : orEmpty(panel.getRows())) {
-                for (CustomCol column : orEmpty(row.getColumns())) {
-                    // A column whose field could not be reloaded from its id is a dangling layout
-                    // entry; it has nothing to configure.
-                    if (column.getField() != null && column.getField().getId() != null) {
-                        columns.add(column);
-                    }
-                }
-            }
+    /**
+     * Loads the fields a form lays out from the layout's raw ids rather than from the
+     * {@link fr.siamois.domain.models.form.customform.CustomForm} entity, whose layout converter
+     * hands out <em>detached</em> fields — attaching one of those to a configuration, or merely
+     * leaving it behind in a read-write transaction, breaks the next flush.
+     */
+    private List<FormField> layoutFieldsOf(Long formId) {
+        Map<Long, Boolean> requiredByFieldId = new LinkedHashMap<>();
+        for (Object[] layoutField : formRepository.findLayoutFieldsByFormId(formId)) {
+            // Native row: [fieldId, isRequired]. A field laid out twice keeps its first appearance.
+            requiredByFieldId.putIfAbsent(((Number) layoutField[0]).longValue(), Boolean.TRUE.equals(layoutField[1]));
         }
-        return columns;
-    }
 
-    private <T> List<T> orEmpty(@Nullable List<T> values) {
-        return values == null ? List.of() : values;
+        Map<Long, CustomField> fields = new HashMap<>();
+        customFieldRepository.findAllById(requiredByFieldId.keySet()).forEach(field -> fields.put(field.getId(), field));
+
+        List<FormField> formFields = new ArrayList<>();
+        requiredByFieldId.forEach((fieldId, required) -> {
+            CustomField field = fields.get(fieldId);
+            // A layout entry pointing at a field that no longer exists has nothing to configure.
+            if (field != null) {
+                formFields.add(new FormField(field, required));
+            }
+        });
+        return formFields;
     }
 
     private Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName) {

@@ -8,10 +8,6 @@ import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.CustomFieldText;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -44,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,6 +59,7 @@ class TableFieldConfigServiceImplTest {
     private static final Long CERAMIQUE_CONCEPT_ID = 200L;
     // Typed as Long so stubs bind to findById(Long) and not to the findById(long) overload of PersonRepository.
     private static final Long PERSON_ID = 2L;
+    private static final Long FORM_ID = 500L;
 
     @Mock private FieldConfigurationService fieldConfigurationService;
     @Mock private LabelService labelService;
@@ -502,22 +500,27 @@ class TableFieldConfigServiceImplTest {
         return prefLabel;
     }
 
-    /** Publishes a form holding the given columns as the one that applies to a type. */
-    private void givenFormOf(Long valueConceptId, CustomCol... columns) {
-        CustomRow row = new CustomRow();
-        row.setColumns(List.of(columns));
-        CustomFormPanel panel = new CustomFormPanel();
-        panel.setRows(List.of(row));
-        CustomForm form = new CustomForm();
-        form.setLayout(List.of(panel));
-        when(formRepository.findEffectiveFormByTypeAndInstitution(valueConceptId, 1L)).thenReturn(Optional.of(form));
+    /**
+     * Publishes a form laying out the given fields as the one that applies to a type, the way the
+     * repository serves it: raw {@code [fieldId, isRequired]} rows plus the fields themselves.
+     */
+    private void givenFormOf(Long valueConceptId, Object[]... layoutFields) {
+        when(formRepository.findEffectiveFormIdByTypeAndInstitution(valueConceptId, 1L))
+                .thenReturn(Optional.of(FORM_ID));
+
+        List<Object[]> rows = new ArrayList<>();
+        List<CustomField> fields = new ArrayList<>();
+        for (Object[] layoutField : layoutFields) {
+            CustomField field = (CustomField) layoutField[0];
+            rows.add(new Object[]{field.getId(), layoutField[1]});
+            fields.add(field);
+        }
+        when(formRepository.findLayoutFieldsByFormId(FORM_ID)).thenReturn(rows);
+        when(customFieldRepository.findAllById(any())).thenReturn(fields);
     }
 
-    private CustomCol column(CustomField field, boolean required) {
-        CustomCol column = new CustomCol();
-        column.setField(field);
-        column.setRequired(required);
-        return column;
+    private Object[] column(CustomField field, boolean required) {
+        return new Object[]{field, required};
     }
 
     private ConceptAutocompleteDTO autocomplete(String label) {
