@@ -57,6 +57,9 @@
             .ptc-hidden-name { text-decoration: line-through; color: #a3a3a0; }
             .ptc-disabled-icon { color: #cfcfca !important; cursor: not-allowed !important; }
 
+            .ptc-dialog-hint { font-size: 13px; color: #8c8c8c; margin: 0 0 14px; }
+            .ptc-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
             .ptc-ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: #8a7d4a; font-size: 15px; }
         </style>
     </ui:define>
@@ -113,7 +116,10 @@
                                                 </h:panelGroup>
                                             </p:commandLink>
                                         </ui:repeat>
-                                        <p:commandButton value="#{langBean.msg('projectTables.tree.newType')}" disabled="true" styleClass="ptc-new-type-btn"/>
+                                        <p:commandButton id="openNewConfig" type="button"
+                                                         value="#{langBean.msg('projectTables.tree.newConfig')}"
+                                                         styleClass="ptc-new-type-btn"
+                                                         onclick="PF('newConfigDialogWidget').show()"/>
                                     </div>
                                 </h:panelGroup>
                             </ui:repeat>
@@ -245,6 +251,26 @@
                     </div>
 
                 </div>
+
+                <p:dialog id="newConfigDialog" widgetVar="newConfigDialogWidget" modal="true" resizable="false"
+                          header="#{langBean.msg('projectTables.tree.newConfig')}" width="460">
+                    <p class="ptc-dialog-hint">#{langBean.msg('projectTables.tree.newConfigHint')}</p>
+                    <p:outputLabel for="newTypeName" value="#{langBean.msg('projectTables.tree.newConfigValue')}"/>
+                    <p:autoComplete id="newTypeName" value="#{projectTableFieldSettingsBean.newTypeName}"
+                                    completeMethod="#{projectTableFieldSettingsBean.completeConfigurableTypes}"
+                                    dropdown="true" forceSelection="true" scrollHeight="220" style="width:100%"
+                                    placeholder="#{langBean.msg('projectTables.tree.newConfigPlaceholder')}"/>
+                    <p:message for="newTypeName"/>
+                    <div class="ptc-dialog-actions">
+                        <p:commandButton value="#{langBean.msg('common.action.cancel')}" type="button"
+                                         styleClass="ui-button-flat"
+                                         onclick="PF('newConfigDialogWidget').hide()"/>
+                        <p:commandButton id="addConfiguration" value="#{langBean.msg('common.action.create')}"
+                                         actionListener="#{projectTableFieldSettingsBean.addConfiguration()}"
+                                         process="@this newTypeName" update="@form"
+                                         oncomplete="PF('newConfigDialogWidget').hide()"/>
+                    </div>
+                </p:dialog>
             </form:csrfform>
         </main>
     </ui:define>

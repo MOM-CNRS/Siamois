@@ -48,6 +48,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private TypeFormConfig formConfig;
     private TypeFieldsConfig fieldsConfig;
 
+    /** Value picked in the "add a configuration" dialog. */
+    private String newTypeName;
+
     public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.langBean = langBean;
@@ -64,6 +67,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         activeTabIndex = TAB_CHAMPS;
         formConfig = null;
         fieldsConfig = null;
+        newTypeName = null;
     }
 
     public void init(ActionUnitDTO project) {
@@ -99,6 +103,31 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private void loadConfigs() {
         formConfig = tableFieldConfigService.getFormConfig(project.getId(), selectedTable, selectedTypeName);
         fieldsConfig = tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName);
+    }
+
+    /**
+     * Values of the table's type field that can still be configured. Called by the picker of the
+     * "add a configuration" dialog on every keystroke, hence the query parameter.
+     */
+    public List<String> completeConfigurableTypes(String query) {
+        if (selectedTable == null) return List.of();
+        return tableFieldConfigService.listConfigurableTypes(project.getId(), selectedTable, query);
+    }
+
+    /**
+     * Creates the configuration of the picked type and opens it, so the user lands on what they
+     * just created rather than on the type they were reading.
+     */
+    public void addConfiguration() {
+        if (newTypeName == null || newTypeName.isBlank()) {
+            MessageUtils.displayErrorMessage(langBean, "projectTables.tree.newConfigRequired");
+            return;
+        }
+        TypeSummary created = tableFieldConfigService.addConfiguration(project.getId(), selectedTable, newTypeName);
+        typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), selectedTable);
+        selectType(created.getName());
+        newTypeName = null;
+        MessageUtils.displayInfoMessage(langBean, "projectTables.tree.newConfigSuccess", created.getName());
     }
 
     public void toggleTree() {
