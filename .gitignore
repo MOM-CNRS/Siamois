@@ -21,4 +21,4 @@ siamois-e2e/playwright/.cache/
 siamois-e2e/playwright/.auth/
 siamois-e2e/siamois-e2e.iml
 siamois-e2e/.idea
-/.claude/
+/.claude/*
