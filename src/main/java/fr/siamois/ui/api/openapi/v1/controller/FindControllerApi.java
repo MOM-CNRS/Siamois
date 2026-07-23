@@ -5,6 +5,7 @@ import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.response.find.FindCreateFormResponse;
 import fr.siamois.ui.api.openapi.v1.response.find.FindFormResponse;
 import fr.siamois.ui.api.openapi.v1.response.find.FindResponse;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
@@ -36,12 +37,11 @@ public class FindControllerApi {
     private final FindOpenApiService findOpenApiService;
 
 
-
     @GetMapping("/{id}")
     @Operation(
             summary = "Un mobilier avec ces valeurs",
             description = "Layout, champs et valeurs persistées pour le spécimen (specimen_id ou full_identifier). "
-                    + "Pour le gabarit UI seul : GET /api/v1/mobiliers/form. Vocabulaires : GET /api/v1/vocabularies."
+                    + "Pour le gabarit UI seul : GET /api/v1/finds/form?organizationId=…&typeConceptId=…"
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
@@ -146,5 +146,36 @@ public class FindControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         findOpenApiService.deleteFind(id, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/form")
+    @Operation(
+            summary = "Formulaire de création/modification d'un mobilier",
+            description = "Retourne le layout et la définition des champs pour un type de mobilier (concept) "
+                    + "dans le contexte de l'organisation. Métadonnées UI seules (sans valeurs persistées) ; "
+                    + "pour un mobilier existant avec ses réponses, utiliser GET /api/v1/finds/{id}."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
+            @ApiResponse(responseCode = "404", description = "Organisation ou type de mobilier introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<FindCreateFormResponse> getFindForm(
+            @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
+            @RequestParam long organizationId,
+            @Parameter(description = "Identifiant du concept de type de mobilier (concept_id).", example = "42", required = true)
+            @RequestParam long typeConceptId,
+            @Parameter(description = "Langue des libellés de champs (première entrée utilisée).")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return ResponseEntity.ok(new FindCreateFormResponse(
+                recordingUnitOpenApiService.buildFindCreateForm(
+                        organizationId, typeConceptId, caller.person(), lang)));
     }
 }

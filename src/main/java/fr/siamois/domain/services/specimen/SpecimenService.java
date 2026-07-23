@@ -1,19 +1,25 @@
 package fr.siamois.domain.services.specimen;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
@@ -28,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static fr.siamois.domain.models.ValidationStatus.*;
@@ -42,6 +49,9 @@ public class SpecimenService implements ArkEntityService {
     private final SpecimenSummaryMapper specimenSummaryMapper;
     private final DocumentRepository documentRepository;
     private final RecordingUnitRepository recordingUnitRepository;
+    private final PersonRepository personRepository;
+    private final ConceptRepository conceptRepository;
+    private final InstitutionRepository institutionRepository;
     private final ArkRepository arkRepository;
 
 
@@ -187,8 +197,9 @@ public class SpecimenService implements ArkEntityService {
         setupParents(specimen, managedSpecimen);
         setupChilds(specimen, managedSpecimen);
         setupOtherFields(specimen, managedSpecimen);
-        synchronizeCollection(managedSpecimen.getMaterialClass(), specimen.getMaterialClass());
-        synchronizeCollection(managedSpecimen.getMaterial(), specimen.getMaterial());
+        attachManagedAssociations(specimen, managedSpecimen);
+        synchronizeCollection(managedSpecimen.getMaterialClass(), resolveConcepts(specimen.getMaterialClass()));
+        synchronizeCollection(managedSpecimen.getMaterial(), resolveConcepts(specimen.getMaterial()));
         synchronizeCollection(managedSpecimen.getContainers(), specimen.getContainers());
         synchronizeCollection(managedSpecimen.getPhases(), specimen.getPhases());
 
@@ -197,6 +208,81 @@ public class SpecimenService implements ArkEntityService {
 
         // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
         return specimenMapper.convert(savedSpecimen);
+    }
+
+    /**
+     * Remplace les associations mappées (instances transientes) par des références JPA managées.
+     */
+    private void attachManagedAssociations(Specimen source, Specimen managed) {
+        attachRecordingUnit(source, managed);
+        if (source.getAuthors() != null) {
+            managed.setAuthors(resolvePersons(source.getAuthors()));
+        }
+        if (source.getCollectors() != null) {
+            managed.setCollectors(resolvePersons(source.getCollectors()));
+        }
+        attachPersonIfPresent(source.getCreatedBy(), managed::setCreatedBy);
+        attachPersonIfPresent(source.getValidatedBy(), managed::setValidatedBy);
+        attachInstitutionIfPresent(source.getCreatedByInstitution(), managed::setCreatedByInstitution);
+        attachConceptIfPresent(source.getCategory(), managed::setCategory);
+        attachConceptIfPresent(source.getNormalizedInterpretation(), managed::setNormalizedInterpretation);
+        attachConceptIfPresent(source.getChronologicalAttribution(), managed::setChronologicalAttribution);
+    }
+
+    private void attachRecordingUnit(Specimen source, Specimen managed) {
+        if (source.getRecordingUnit() == null || source.getRecordingUnit().getId() == null) {
+            return;
+        }
+        Long ruId = source.getRecordingUnit().getId();
+        managed.setRecordingUnit(recordingUnitRepository.findById(ruId)
+                .orElseThrow(() -> new IllegalArgumentException("Recording unit not found: " + ruId)));
+    }
+
+    private void attachPersonIfPresent(Person ref, Consumer<Person> setter) {
+        if (ref != null && ref.getId() != null) {
+            personRepository.findById(ref.getId()).ifPresent(setter);
+        }
+    }
+
+    private void attachInstitutionIfPresent(Institution ref, Consumer<Institution> setter) {
+        if (ref != null && ref.getId() != null) {
+            institutionRepository.findById(ref.getId()).ifPresent(setter);
+        }
+    }
+
+    private void attachConceptIfPresent(Concept ref, Consumer<Concept> setter) {
+        if (ref != null && ref.getId() != null) {
+            setter.accept(resolveConcept(ref));
+        }
+    }
+
+    private List<Person> resolvePersons(List<Person> refs) {
+        List<Long> ids = refs.stream()
+                .filter(Objects::nonNull)
+                .map(Person::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(personRepository.findAllById(ids));
+    }
+
+    private Concept resolveConcept(Concept ref) {
+        return conceptRepository.findById(ref.getId()).orElse(ref);
+    }
+
+    private Set<Concept> resolveConcepts(Set<Concept> refs) {
+        if (refs == null || refs.isEmpty()) {
+            return new HashSet<>();
+        }
+        Map<Long, Concept> byId = new LinkedHashMap<>();
+        for (Concept ref : refs) {
+            if (ref != null && ref.getId() != null) {
+                byId.putIfAbsent(ref.getId(), resolveConcept(ref));
+            }
+        }
+        return new HashSet<>(byId.values());
     }
 
     @Override
@@ -481,19 +567,15 @@ public class SpecimenService implements ArkEntityService {
         Specimen unit = specimenRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
 
-        // Cycle through the enum values
-        switch (unit.getValidated()) {
-            case INCOMPLETE:
-                unit.setValidated(COMPLETE);
-                break;
-            case COMPLETE:
-                unit.setValidated(VALIDATED);
-                break;
-            case VALIDATED:
-                unit.setValidated(INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + unit.getValidated());
+        ValidationStatus status = unit.getValidated();
+        if (status == INCOMPLETE) {
+            unit.setValidated(COMPLETE);
+        } else if (status == COMPLETE) {
+            unit.setValidated(VALIDATED);
+        } else if (status == VALIDATED) {
+            unit.setValidated(INCOMPLETE);
+        } else {
+            throw new IllegalStateException("Unknown status: " + status);
         }
 
         return specimenMapper.convert(specimenRepository.save(unit));

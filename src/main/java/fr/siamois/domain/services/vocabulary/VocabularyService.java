@@ -50,6 +50,20 @@ public class VocabularyService {
     }
 
     /**
+     * Tous les vocabulaires enregistrés en base.
+     */
+    public List<Vocabulary> findAll() {
+        return vocabularyRepository.findAllOrderById();
+    }
+
+    /**
+     * Vocabulaires liés à une organisation via {@code concept_field_config}.
+     */
+    public List<Vocabulary> findAllByInstitutionId(long institutionId) {
+        return vocabularyRepository.findDistinctByInstitutionId(institutionId);
+    }
+
+    /**
      * Save a vocabulary if it does not exist, or return the existing one.
      *
      * @param vocabulary The vocabulary to save or retrieve

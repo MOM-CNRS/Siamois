@@ -11,6 +11,8 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
@@ -29,6 +31,7 @@ import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -37,6 +40,8 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.Stratigraph
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.*;
 import fr.siamois.utils.CodeUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +95,14 @@ public class RecordingUnitService implements ArkEntityService {
     private final ArkRepository arkRepository;
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
+    private final UnitDefinitionRepository unitDefinitionRepository;
+
+    /**
+     * Utilisé pour maîtriser le flush avant les appels native {@code ru_nextval_*},
+     * qui sinon forcent un flush Hibernate sur des instances transient issues d'{@code invertConvert}.
+     */
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -261,7 +274,8 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
 
-    private static void setupOtherFields(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+    private void setupOtherFields(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
+        Map<Long, UnitDefinition> resolvedUnits = new HashMap<>();
 
         managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
         managedRecordingUnit.setArk(recordingUnit.getArk());
@@ -287,8 +301,10 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setComments(recordingUnit.getComments());
 
         // altimetry
-        managedRecordingUnit.setZInf(recordingUnit.getZInf());
-        managedRecordingUnit.setZSup(recordingUnit.getZSup());
+        managedRecordingUnit.setZInf(mergeMeasurementAnswer(
+                recordingUnit.getZInf(), managedRecordingUnit.getZInf(), resolvedUnits));
+        managedRecordingUnit.setZSup(mergeMeasurementAnswer(
+                recordingUnit.getZSup(), managedRecordingUnit.getZSup(), resolvedUnits));
 
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
@@ -298,6 +314,32 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setChronologicalAttribution(recordingUnit.getChronologicalAttribution());
         managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
+    }
+
+    /**
+     * Réutilise la réponse mesure managée et résout l'unité via la PK pour éviter
+     * « Multiple representations of the same entity UnitDefinition#id » (ex. zInf + zSup).
+     */
+    @Nullable
+    private MeasurementAnswer mergeMeasurementAnswer(@Nullable MeasurementAnswer incoming,
+                                                     @Nullable MeasurementAnswer managed,
+                                                     Map<Long, UnitDefinition> resolvedUnits) {
+        if (incoming == null) {
+            return null;
+        }
+        MeasurementAnswer target = managed != null ? managed : new MeasurementAnswer();
+        target.setNumericValue(incoming.getNumericValue());
+        target.setComment(incoming.getComment());
+        target.setNormalizedValue(incoming.getNormalizedValue());
+        UnitDefinition unit = incoming.getUnit();
+        if (unit != null && unit.getId() != null) {
+            target.setUnit(resolvedUnits.computeIfAbsent(unit.getId(), id ->
+                    unitDefinitionRepository.findById(id)
+                            .orElseThrow(() -> new IllegalStateException("UnitDefinition not found: " + id))));
+        } else {
+            target.setUnit(unit);
+        }
+        return target;
     }
 
     private void setupStratigraphicRelationships(RecordingUnit source, RecordingUnit target) {
@@ -956,21 +998,62 @@ public class RecordingUnitService implements ArkEntityService {
      * @return The generated identifier.
      */
     public String generateFullIdentifier(@NonNull ActionUnitSummaryDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
-        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
-        ActionUnit actionUnit = actionUnitSummaryMapper.invertConvert(actionUnitDTO);
-        return generateFullIdentifier(actionUnit, recordingUnit);
+        Long ruId = recordingUnitDTO.getId();
+        if (ruId == null) {
+            // Création non encore persistée (cas UI rares) : mapping DTO → entité.
+            RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+            ActionUnit actionUnit = actionUnitSummaryMapper.invertConvert(actionUnitDTO);
+            return generateFullIdentifier(actionUnit, recordingUnit);
+        }
+
+        // Ne pas passer par invertConvert : cela crée une RecordingUnit transient
+        // (même id) qui fait échouer le flush auto déclenché par ru_nextval_*.
+        jakarta.persistence.FlushModeType previousFlushMode = null;
+        if (entityManager != null) {
+            previousFlushMode = entityManager.getFlushMode();
+            entityManager.setFlushMode(jakarta.persistence.FlushModeType.COMMIT);
+        }
+        try {
+            RecordingUnit recordingUnit = recordingUnitRepository.findById(ruId)
+                    .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + ruId));
+            ActionUnit actionUnit = recordingUnit.getActionUnit();
+            if (actionUnit == null && actionUnitDTO.getId() != null) {
+                actionUnit = actionUnitSummaryMapper.invertConvert(actionUnitDTO);
+            }
+            if (actionUnit == null) {
+                throw new ActionUnitNotFoundException(
+                        "Action unit missing for recording unit " + ruId);
+            }
+            return generateFullIdentifier(actionUnit, recordingUnit);
+        } finally {
+            if (entityManager != null && previousFlushMode != null) {
+                entityManager.setFlushMode(previousFlushMode);
+            }
+        }
     }
 
     public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
         log.trace("Generating full identifier for recording unit");
         String format = actionUnit.getRecordingUnitIdentifierFormat();
-        RecordingUnit parent = recordingUnit
-                .getParents()
-                .stream()
-                .findFirst()
-                .orElse(null);
+        RecordingUnit parent = recordingUnit.getParents() == null
+                ? null
+                : recordingUnit.getParents().stream().findFirst().orElse(null);
 
-        int numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType(), parent);
+        // Les nextval native ne doivent pas forcer un flush du contexte (instances transient).
+        jakarta.persistence.FlushModeType previousFlushMode = null;
+        if (entityManager != null) {
+            previousFlushMode = entityManager.getFlushMode();
+            entityManager.setFlushMode(jakarta.persistence.FlushModeType.COMMIT);
+        }
+        int numericalId;
+        try {
+            numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType(), parent);
+        } finally {
+            if (entityManager != null && previousFlushMode != null) {
+                entityManager.setFlushMode(previousFlushMode);
+            }
+        }
+
         RecordingUnitIdInfo info = createOrGetInfoOf(recordingUnit, parent);
 
         info.setRuNumber(numericalId);

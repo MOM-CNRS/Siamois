@@ -6,9 +6,14 @@ import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
@@ -30,6 +35,7 @@ import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -37,11 +43,13 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -112,6 +120,8 @@ class RecordingUnitServiceTest {
     private PhaseRepository phaseRepository;
     @Mock
     private PhaseMapper phaseMapper;
+    @Mock
+    private UnitDefinitionRepository unitDefinitionRepository;
 
 
     @InjectMocks
@@ -324,6 +334,183 @@ class RecordingUnitServiceTest {
         }));
         verify(recordingUnitRepository).findById(2L);
         verify(recordingUnitRepository).findById(3L);
+    }
+
+    @Test
+    void save_measurementFieldsWithSameUnit_reusesManagedUnitReference() {
+        long existingId = 42L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        UnitDefinition detachedUnit1 = UnitDefinition.builder().id(1L).symbol("m").build();
+        UnitDefinition detachedUnit2 = UnitDefinition.builder().id(1L).symbol("m").build();
+        MeasurementAnswer zInf = MeasurementAnswer.builder().numericValue(1.0).unit(detachedUnit1).build();
+        MeasurementAnswer zSup = MeasurementAnswer.builder().numericValue(2.0).unit(detachedUnit2).build();
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setZInf(zInf);
+        incoming.setZSup(zSup);
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+
+        UnitDefinition managedUnit = UnitDefinition.builder().id(1L).symbol("m").build();
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(unitDefinitionRepository.findById(1L)).thenReturn(Optional.of(managedUnit));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+
+        recordingUnitService.save(unitDto);
+
+        ArgumentCaptor<RecordingUnit> savedCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
+        verify(recordingUnitRepository).save(savedCaptor.capture());
+        RecordingUnit saved = savedCaptor.getValue();
+        assertNotNull(saved.getZInf());
+        assertNotNull(saved.getZSup());
+        assertSame(saved.getZInf().getUnit(), saved.getZSup().getUnit());
+        verify(unitDefinitionRepository).findById(1L);
+    }
+
+    @Test
+    void save_nullZInfAndZSup_clearsManagedMeasurements() {
+        long existingId = 43L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setZInf(null);
+        incoming.setZSup(null);
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+        managed.setZInf(MeasurementAnswer.builder().numericValue(9.0).build());
+        managed.setZSup(MeasurementAnswer.builder().numericValue(10.0).build());
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+
+        recordingUnitService.save(unitDto);
+
+        ArgumentCaptor<RecordingUnit> savedCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
+        verify(recordingUnitRepository).save(savedCaptor.capture());
+        assertNull(savedCaptor.getValue().getZInf());
+        assertNull(savedCaptor.getValue().getZSup());
+        verify(unitDefinitionRepository, never()).findById(any());
+    }
+
+    @Test
+    void save_measurementWithoutUnitId_setsUnitDirectly() {
+        long existingId = 44L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        UnitDefinition unitWithoutId = UnitDefinition.builder().symbol("m").build();
+        MeasurementAnswer zInf = MeasurementAnswer.builder().numericValue(1.0).unit(unitWithoutId).build();
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setZInf(zInf);
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+
+        recordingUnitService.save(unitDto);
+
+        ArgumentCaptor<RecordingUnit> savedCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
+        verify(recordingUnitRepository).save(savedCaptor.capture());
+        assertSame(unitWithoutId, savedCaptor.getValue().getZInf().getUnit());
+        verify(unitDefinitionRepository, never()).findById(any());
+    }
+
+    @Test
+    void save_measurementUnitNotFound_throwsFailedSave() {
+        long existingId = 45L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        UnitDefinition detached = UnitDefinition.builder().id(99L).symbol("m").build();
+        MeasurementAnswer zInf = MeasurementAnswer.builder().numericValue(1.0).unit(detached).build();
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setZInf(zInf);
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(unitDefinitionRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(FailedRecordingUnitSaveException.class, () -> recordingUnitService.save(unitDto));
+    }
+
+    @Test
+    void save_synchronizesPhasesCollection() {
+        long existingId = 46L;
+        RecordingUnitDTO unitDto = new RecordingUnitDTO();
+        unitDto.setId(existingId);
+
+        Phase kept = new Phase();
+        kept.setId(1L);
+        Phase removed = new Phase();
+        removed.setId(2L);
+        Phase added = new Phase();
+        added.setId(3L);
+
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setId(existingId);
+        incoming.setPhases(new HashSet<>(Set.of(kept, added)));
+
+        RecordingUnit managed = new RecordingUnit();
+        managed.setId(existingId);
+        managed.setPhases(new HashSet<>(Set.of(kept, removed)));
+
+        when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+        when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+
+        recordingUnitService.save(unitDto);
+
+        assertTrue(managed.getPhases().contains(kept));
+        assertTrue(managed.getPhases().contains(added));
+        assertFalse(managed.getPhases().contains(removed));
+    }
+
+    @Test
+    void searchRecordingUnit_enrichesPhasesFromRepository() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+
+        Phase phase = new Phase();
+        phase.setId(9L);
+        PhaseDTO phaseDto = new PhaseDTO();
+        phaseDto.setId(9L);
+
+        when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(recordingUnitMapper.toLightDto(recordingUnit1)).thenReturn(recordingUnit1DTO);
+        when(recordingUnitMapper.toLightDto(recordingUnit2)).thenReturn(recordingUnit2DTO);
+        when(phaseRepository.findByRecordingUnitId(any())).thenReturn(Set.of(phase));
+        when(phaseMapper.convert(phase)).thenReturn(phaseDto);
+
+        Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(inst, filters, pageable);
+
+        assertFalse(result.getContent().isEmpty());
+        assertTrue(result.getContent().get(0).getPhases().contains(phaseDto));
+        verify(phaseRepository, atLeastOnce()).findByRecordingUnitId(any());
     }
 
 
@@ -1826,8 +2013,9 @@ class RecordingUnitServiceTest {
 
         @Test
         void findAccessibleRecordingUnitByKey_emptyScope_throwsNotFound() {
+            Set<Long> emptyScope = Set.of();
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", Set.of(), null));
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", emptyScope, null));
         }
 
         @Test
@@ -1884,6 +2072,46 @@ class RecordingUnitServiceTest {
             InstitutionDTO instDto = new InstitutionDTO();
             instDto.setId(99L);
             dto1.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(entity));
+            when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
+
+            Set<Long> institutionIds = Set.of(5L);
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, institutionIds));
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_emptyScope_throws() {
+            Set<Long> emptyScope = Set.of();
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, emptyScope));
+            verify(recordingUnitRepository, never()).findById(anyLong());
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_nullScope_throws() {
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, null));
+            verify(recordingUnitRepository, never()).findById(anyLong());
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_notFound_throws() {
+            when(recordingUnitRepository.findById(404L)).thenReturn(Optional.empty());
+
+            Set<Long> institutionIds = Set.of(5L);
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(404L, institutionIds));
+        }
+
+        @Test
+        void requireAccessibleRecordingUnitByPrimaryKey_nullInstitution_throws() {
+            RecordingUnit entity = new RecordingUnit();
+            entity.setId(3L);
+            RecordingUnitDTO dto1 = new RecordingUnitDTO();
+            dto1.setId(3L);
+            dto1.setCreatedByInstitution(null);
 
             when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(entity));
             when(recordingUnitMapper.convert(entity)).thenReturn(dto1);
@@ -2059,6 +2287,490 @@ class RecordingUnitServiceTest {
 
             assertThrows(IllegalStateException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(20L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_notFound_throws() {
+            when(recordingUnitRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(99L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_unlinksParentChildRelations() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(19L);
+            parent.setChildren(new HashSet<>(Set.of(ru)));
+            ru.setParents(new HashSet<>(Set.of(parent)));
+            ru.setChildren(new HashSet<>());
+            ru.setRelationshipsAsUnit1(new HashSet<>());
+            ru.setRelationshipsAsUnit2(new HashSet<>());
+
+            stubDeletableRecordingUnit(ru);
+
+            recordingUnitService.deleteRecordingUnitById(20L);
+
+            assertTrue(parent.getChildren().isEmpty());
+            assertTrue(ru.getParents().isEmpty());
+            verify(recordingUnitRepository).save(ru);
+            verify(recordingUnitRepository).delete(ru);
+        }
+
+        @Test
+        void deleteRecordingUnitById_clearsStratigraphicRelationships() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+            ru.setParents(new HashSet<>());
+            ru.setChildren(new HashSet<>());
+            StratigraphicRelationship rel = new StratigraphicRelationship();
+            ru.setRelationshipsAsUnit1(new HashSet<>(Set.of(rel)));
+            ru.setRelationshipsAsUnit2(new HashSet<>());
+
+            stubDeletableRecordingUnit(ru);
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(20L))
+                    .thenReturn(List.of(rel));
+
+            recordingUnitService.deleteRecordingUnitById(20L);
+
+            verify(stratigraphicRelationshipRepository).deleteAll(List.of(rel));
+            assertTrue(ru.getRelationshipsAsUnit1().isEmpty());
+            assertTrue(ru.getRelationshipsAsUnit2().isEmpty());
+        }
+
+        @Test
+        void deleteRecordingUnitById_deletesLinkedDataFormResponseAndArk() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(20L);
+            ru.setParents(new HashSet<>());
+            ru.setChildren(new HashSet<>());
+            ru.setRelationshipsAsUnit1(new HashSet<>());
+            ru.setRelationshipsAsUnit2(new HashSet<>());
+            ru.setContributors(new ArrayList<>(List.of(new Person())));
+            ru.setDocuments(new HashSet<>(Set.of(new Document())));
+
+            CustomFormResponse formResponse = new CustomFormResponse();
+            formResponse.setId(55L);
+            ru.setFormResponse(formResponse);
+
+            Ark ark = new Ark();
+            ark.setInternalId(888L);
+            ru.setArk(ark);
+
+            stubDeletableRecordingUnit(ru);
+            when(recordingUnitIdInfoRepository.existsById(20L)).thenReturn(true);
+
+            recordingUnitService.deleteRecordingUnitById(20L);
+
+            verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(20L);
+            verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(20L);
+            verify(recordingUnitIdCounterRepository).deleteAllByRecordingUnitId(20L);
+            verify(recordingUnitIdInfoRepository).deleteById(20L);
+            assertTrue(ru.getContributors().isEmpty());
+            assertTrue(ru.getDocuments().isEmpty());
+            assertNull(ru.getFormResponse());
+            verify(customFormResponseRepository).deleteById(55L);
+            verify(arkRepository).deleteById(888L);
+            verify(recordingUnitRepository).delete(ru);
+        }
+
+        private void stubDeletableRecordingUnit(RecordingUnit ru) {
+            when(recordingUnitRepository.findById(20L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(20L)).thenReturn(0L);
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(20L)).thenReturn(List.of());
+            when(recordingUnitIdInfoRepository.existsById(20L)).thenReturn(false);
+            when(recordingUnitRepository.save(ru)).thenReturn(ru);
+        }
+    }
+
+    @Nested
+    @DisplayName("Hierarchy add/remove")
+    class HierarchyMutationTests {
+
+        private ActionUnit sharedActionUnit;
+
+        @BeforeEach
+        void initActionUnit() {
+            sharedActionUnit = new ActionUnit();
+            sharedActionUnit.setId(100L);
+        }
+
+        private RecordingUnit unit(long id) {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(id);
+            ru.setActionUnit(sharedActionUnit);
+            ru.setChildren(new HashSet<>());
+            ru.setParents(new HashSet<>());
+            return ru;
+        }
+
+        @Test
+        void addHierarchyChild_sameId_throwsIllegalArgument() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> recordingUnitService.addHierarchyChild(5L, 5L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void addHierarchyChild_differentActionUnit_throwsIllegalArgument() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            ActionUnit other = new ActionUnit();
+            other.setId(200L);
+            child.setActionUnit(other);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void addHierarchyChild_alreadyLinked_throwsIllegalState() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            parent.getChildren().add(child);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void addHierarchyChild_cycleDetected_throwsIllegalState() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{1L})).thenReturn(List.of(2L));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void addHierarchyChild_success_linksBothSidesAndSaves() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{1L})).thenReturn(List.of());
+            when(recordingUnitRepository.save(parent)).thenReturn(parent);
+
+            recordingUnitService.addHierarchyChild(1L, 2L);
+
+            assertTrue(parent.getChildren().contains(child));
+            assertTrue(child.getParents().contains(parent));
+            verify(recordingUnitRepository).save(parent);
+        }
+
+        @Test
+        void removeHierarchyChild_missingLink_throwsIllegalState() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.removeHierarchyChild(1L, 2L));
+            verify(recordingUnitRepository, never()).save(any());
+        }
+
+        @Test
+        void removeHierarchyChild_success_unlinksAndSaves() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            parent.getChildren().add(child);
+            child.getParents().add(parent);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.save(parent)).thenReturn(parent);
+
+            recordingUnitService.removeHierarchyChild(1L, 2L);
+
+            assertFalse(parent.getChildren().contains(child));
+            assertFalse(child.getParents().contains(parent));
+            verify(recordingUnitRepository).save(parent);
+        }
+
+        @Test
+        void addHierarchyChild_nullActionUnit_throwsIllegalArgument() {
+            RecordingUnit parent = unit(1L);
+            RecordingUnit child = unit(2L);
+            parent.setActionUnit(null);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+            assertEquals("Les unités d'enregistrement doivent appartenir au même projet", ex.getMessage());
+            verify(recordingUnitRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Coverage: parents filter, stratigraphy unit2, enrich, generateFullIdentifier flush, BeansException")
+    class CoverageBranchesTests {
+
+        @Mock
+        private jakarta.persistence.EntityManager entityManager;
+
+        @BeforeEach
+        void injectEntityManager() {
+            org.springframework.test.util.ReflectionTestUtils.setField(
+                    recordingUnitService, "entityManager", entityManager);
+        }
+
+        @AfterEach
+        void clearEntityManagerAndResolverCache() {
+            org.springframework.test.util.ReflectionTestUtils.setField(
+                    recordingUnitService, "entityManager", null);
+            @SuppressWarnings("unchecked")
+            Map<String, RuIdentifierResolver> cache = (Map<String, RuIdentifierResolver>)
+                    org.springframework.test.util.ReflectionTestUtils.getField(
+                            RecordingUnitService.class, "IDENTIFIER_RESOLVERS");
+            if (cache != null) {
+                cache.clear();
+            }
+        }
+
+        @Test
+        void updateStratigraphicRel_withMappedEntity_passesNullAssert() {
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            RecordingUnitDTO unitDto = new RecordingUnitDTO();
+            unitDto.setId(1L);
+
+            when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+
+            assertDoesNotThrow(() -> recordingUnitService.updateStratigraphicRel(unitDto));
+        }
+
+        @Test
+        void save_filtersNullParentsAndParentsWithoutId_andRemovesObsoleteParent() {
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(50L);
+            managed.setFullIdentifier("RU-50");
+            managed.setParents(new HashSet<>());
+            managed.setChildren(new HashSet<>());
+            managed.setRelationshipsAsUnit1(new HashSet<>());
+            managed.setRelationshipsAsUnit2(new HashSet<>());
+            managed.setContributors(new ArrayList<>());
+
+            RecordingUnit obsoleteParent = new RecordingUnit();
+            obsoleteParent.setId(10L);
+            obsoleteParent.setFullIdentifier("RU-10");
+            obsoleteParent.setChildren(new HashSet<>(Set.of(managed)));
+            managed.getParents().add(obsoleteParent);
+
+            RecordingUnit keptParent = new RecordingUnit();
+            keptParent.setId(20L);
+            keptParent.setFullIdentifier("RU-20");
+            keptParent.setChildren(new HashSet<>());
+
+            RecordingUnit parentWithoutId = new RecordingUnit();
+            parentWithoutId.setFullIdentifier("RU-NO-ID");
+            Set<RecordingUnit> incomingParents = new HashSet<>();
+            incomingParents.add(null);
+            incomingParents.add(parentWithoutId);
+            incomingParents.add(keptParent);
+
+            RecordingUnit incoming = new RecordingUnit();
+            incoming.setId(50L);
+            incoming.setFullIdentifier("RU-50");
+            incoming.setParents(incomingParents);
+            incoming.setChildren(new HashSet<>());
+            incoming.setRelationshipsAsUnit1(new HashSet<>());
+            incoming.setRelationshipsAsUnit2(new HashSet<>());
+            incoming.setContributors(new ArrayList<>());
+
+            RecordingUnitDTO unitDto = new RecordingUnitDTO();
+            unitDto.setId(50L);
+
+            when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
+            when(recordingUnitRepository.findById(50L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.findAllById(argThat(ids -> {
+                List<Long> list = new ArrayList<>();
+                ids.forEach(list::add);
+                return list.equals(List.of(20L));
+            }))).thenReturn(List.of(keptParent));
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+            when(personRepository.findAllById(anyList())).thenReturn(List.of());
+            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+
+            recordingUnitService.save(unitDto);
+
+            assertFalse(obsoleteParent.getChildren().contains(managed));
+            assertTrue(keptParent.getChildren().contains(managed));
+            assertTrue(managed.getParents().contains(keptParent));
+            assertFalse(managed.getParents().contains(obsoleteParent));
+            verify(recordingUnitRepository).saveAll(anyList());
+        }
+
+        @Test
+        void updateStratigraphicRel_removesStaleRelationshipAsUnit2() {
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            RecordingUnit unit1 = new RecordingUnit();
+            unit1.setId(2L);
+
+            StratigraphicRelationship relToRemove = new StratigraphicRelationship();
+            relToRemove.setUnit1(unit1);
+            relToRemove.setUnit2(managed);
+            managed.addRelationshipAsUnit2(relToRemove);
+
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+
+            RecordingUnitDTO unitDto = new RecordingUnitDTO();
+            unitDto.setId(1L);
+            when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+
+            recordingUnitService.updateStratigraphicRel(unitDto);
+
+            assertTrue(managed.getRelationshipsAsUnit2().isEmpty());
+        }
+
+        @Test
+        void findByActionUnitId_skipsEnrichmentWhenDtoIdIsNull() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(8L);
+            Page<RecordingUnit> entityPage = new PageImpl<>(List.of(ru), PageRequest.of(0, 10), 1);
+            RecordingUnitDTO dtoWithoutId = new RecordingUnitDTO();
+
+            when(recordingUnitRepository.findAllByActionUnitId(eq(2L), any(Pageable.class))).thenReturn(entityPage);
+            when(recordingUnitMapper.convert(ru)).thenReturn(dtoWithoutId);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findByActionUnitId(2L, 10, 0,
+                    org.springframework.data.domain.Sort.by("id"));
+
+            assertEquals(1, result.getTotalElements());
+            assertNull(result.getContent().get(0).getSpecimenCount());
+            verify(recordingUnitRepository, never()).countSpecimensByRecordingUnitId(anyLong());
+            verify(recordingUnitRepository, never()).countStratigraphicRelationshipsByRecordingUnitId(anyLong());
+        }
+
+        @Test
+        void generateFullIdentifier_persistedRu_loadsEntityAndRestoresFlushMode() {
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(99L);
+            ActionUnitSummaryDTO auDto = new ActionUnitSummaryDTO();
+            auDto.setId(1L);
+
+            ActionUnit actionUnitJpa = new ActionUnit();
+            actionUnitJpa.setId(1L);
+            actionUnitJpa.setRecordingUnitIdentifierFormat(null);
+
+            RecordingUnit ruJpa = new RecordingUnit();
+            ruJpa.setId(99L);
+            ruJpa.setActionUnit(actionUnitJpa);
+            ruJpa.setParents(new HashSet<>());
+
+            when(entityManager.getFlushMode()).thenReturn(jakarta.persistence.FlushModeType.AUTO);
+            when(recordingUnitRepository.findById(99L)).thenReturn(Optional.of(ruJpa));
+            when(recordingUnitIdInfoRepository.findById(99L)).thenReturn(Optional.empty());
+            when(recordingUnitIdInfoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitIdCounterRepository.ruNextValUnique(1L)).thenReturn(7);
+
+            String identifier = recordingUnitService.generateFullIdentifier(auDto, ruDto);
+
+            assertEquals("7", identifier);
+            verify(entityManager, atLeastOnce()).setFlushMode(jakarta.persistence.FlushModeType.COMMIT);
+            verify(entityManager, atLeastOnce()).setFlushMode(jakarta.persistence.FlushModeType.AUTO);
+        }
+
+        @Test
+        void generateFullIdentifier_persistedRuWithoutActionUnit_usesDtoActionUnit() {
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(99L);
+            ActionUnitSummaryDTO auDto = new ActionUnitSummaryDTO();
+            auDto.setId(5L);
+
+            ActionUnit actionUnitJpa = new ActionUnit();
+            actionUnitJpa.setId(5L);
+            actionUnitJpa.setRecordingUnitIdentifierFormat(null);
+
+            RecordingUnit ruJpa = new RecordingUnit();
+            ruJpa.setId(99L);
+            ruJpa.setActionUnit(null);
+            ruJpa.setParents(new HashSet<>());
+
+            when(entityManager.getFlushMode()).thenReturn(jakarta.persistence.FlushModeType.AUTO);
+            when(recordingUnitRepository.findById(99L)).thenReturn(Optional.of(ruJpa));
+            when(actionUnitSummaryMapper.invertConvert(auDto)).thenReturn(actionUnitJpa);
+            when(recordingUnitIdInfoRepository.findById(99L)).thenReturn(Optional.empty());
+            when(recordingUnitIdInfoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitIdCounterRepository.ruNextValUnique(5L)).thenReturn(3);
+
+            assertEquals("3", recordingUnitService.generateFullIdentifier(auDto, ruDto));
+            verify(actionUnitSummaryMapper).invertConvert(auDto);
+        }
+
+        @Test
+        void generateFullIdentifier_persistedRuWithoutActionUnitAnywhere_throws() {
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(99L);
+            ActionUnitSummaryDTO auDto = new ActionUnitSummaryDTO();
+
+            RecordingUnit ruJpa = new RecordingUnit();
+            ruJpa.setId(99L);
+            ruJpa.setActionUnit(null);
+
+            when(entityManager.getFlushMode()).thenReturn(jakarta.persistence.FlushModeType.AUTO);
+            when(recordingUnitRepository.findById(99L)).thenReturn(Optional.of(ruJpa));
+
+            assertThrows(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class,
+                    () -> recordingUnitService.generateFullIdentifier(auDto, ruDto));
+            verify(entityManager).setFlushMode(jakarta.persistence.FlushModeType.AUTO);
+        }
+
+        @Test
+        void generateFullIdentifier_entityOverload_restoresFlushModeAroundNextVal() {
+            ActionUnit actionUnitJpa = new ActionUnit();
+            actionUnitJpa.setId(1L);
+            actionUnitJpa.setRecordingUnitIdentifierFormat(null);
+
+            RecordingUnit ruJpa = new RecordingUnit();
+            ruJpa.setId(99L);
+            ruJpa.setParents(new HashSet<>());
+
+            when(entityManager.getFlushMode()).thenReturn(jakarta.persistence.FlushModeType.AUTO);
+            when(recordingUnitIdInfoRepository.findById(99L)).thenReturn(Optional.empty());
+            when(recordingUnitIdInfoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitIdCounterRepository.ruNextValUnique(1L)).thenReturn(11);
+
+            assertEquals("11", recordingUnitService.generateFullIdentifier(actionUnitJpa, ruJpa));
+            verify(entityManager).setFlushMode(jakarta.persistence.FlushModeType.COMMIT);
+            verify(entityManager).setFlushMode(jakarta.persistence.FlushModeType.AUTO);
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void findAllIdentifierResolver_beansException_isLoggedAndSkipped() {
+            Map<String, RuIdentifierResolver> cache = (Map<String, RuIdentifierResolver>)
+                    org.springframework.test.util.ReflectionTestUtils.getField(
+                            RecordingUnitService.class, "IDENTIFIER_RESOLVERS");
+            cache.clear();
+
+            when(applicationContext.getBean(any(Class.class)))
+                    .thenThrow(new org.springframework.beans.factory.NoSuchBeanDefinitionException("missing"));
+
+            Map<String, RuIdentifierResolver> resolvers = recordingUnitService.findAllIdentifierResolver();
+
+            assertTrue(resolvers.isEmpty());
+            verify(applicationContext, atLeastOnce()).getBean(any(Class.class));
         }
     }
 

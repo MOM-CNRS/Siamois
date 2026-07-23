@@ -53,6 +53,13 @@ public class ProjectResponseMapper {
             r.setMainLocation(toPlaceLight(dto.getMainLocation()));
         }
 
+        if (dto.getSpatialContext() != null && !dto.getSpatialContext().isEmpty()) {
+            r.setSpatialContext(
+                    dto.getSpatialContext().stream()
+                            .map(ProjectResponseMapper::toPlaceLight)
+                            .toList());
+        }
+
         if (dto.getCreatedByInstitution() != null) {
             OrganizationResourceIdentifier org = new OrganizationResourceIdentifier();
             org.setResourceType("organizations");

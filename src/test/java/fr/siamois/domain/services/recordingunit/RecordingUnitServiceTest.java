@@ -1,9 +1,15 @@
 package fr.siamois.domain.services.recordingunit;
 
 import fr.siamois.domain.models.ArkEntity;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.ark.Ark;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
+import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -12,13 +18,26 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.infrastructure.database.repositories.ArkRepository;
+import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.PhaseRepository;
+import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
+import fr.siamois.mapper.RecordingUnitSummaryMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -67,6 +86,33 @@ class RecordingUnitServiceTest {
 
     @Mock
     private ConversionService conversionService;
+
+    @Mock
+    private StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+
+    @Mock
+    private RecordingUnitSummaryMapper recordingUnitSummaryMapper;
+
+    @Mock
+    private DocumentRepository documentRepository;
+
+    @Mock
+    private CustomFormResponseRepository customFormResponseRepository;
+
+    @Mock
+    private ArkRepository arkRepository;
+
+    @Mock
+    private PhaseRepository phaseRepository;
+
+    @Mock
+    private PhaseMapper phaseMapper;
+
+    @Mock
+    private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
+
+    @Mock
+    private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
 
     @InjectMocks
     private RecordingUnitService recordingUnitService;
@@ -955,6 +1001,1270 @@ class RecordingUnitServiceTest {
 
             verify(recordingUnitRepository, never()).findAll(any(Specification.class));
             verify(recordingUnitRepository, never()).findAncestorClosure(any());
+        }
+    }
+
+    // =====================================================================
+    // synchronizeCollection (phases) via save(RecordingUnit)
+    // =====================================================================
+
+    @Nested
+    class SynchronizeCollectionTests {
+
+        @Test
+        void save_synchronizesPhases_addsNewAndRemovesStale() {
+            Phase p1 = new Phase();
+            p1.setId(1L);
+            Phase p2 = new Phase();
+            p2.setId(2L);
+            Phase p3 = new Phase();
+            p3.setId(3L);
+
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            source.setFullIdentifier("SRC-1");
+            source.setPhases(new HashSet<>(Set.of(p2, p3)));
+            source.setParents(null);
+            source.setChildren(null);
+
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            managed.setFullIdentifier("MANAGED-1");
+            managed.setPhases(new HashSet<>(Set.of(p1, p2)));
+
+            when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.save(new RecordingUnitDTO());
+
+            assertEquals(Set.of(p2, p3), managed.getPhases());
+        }
+
+        @Test
+        void save_synchronizesPhases_nullIncomingClearsManaged() {
+            Phase p1 = new Phase();
+            p1.setId(1L);
+
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            source.setFullIdentifier("SRC-1");
+            source.setPhases(null);
+            source.setParents(null);
+            source.setChildren(null);
+
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            managed.setFullIdentifier("MANAGED-1");
+            managed.setPhases(new HashSet<>(Set.of(p1)));
+
+            when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.save(new RecordingUnitDTO());
+
+            assertTrue(managed.getPhases().isEmpty());
+        }
+    }
+
+    // =====================================================================
+    // setupChilds / setupParents via save(RecordingUnit)
+    // =====================================================================
+
+    @Nested
+    class SetupChildsAndParentsTests {
+
+        @Test
+        void save_setupChilds_addsNewChildAndRemovesStaleChild() {
+            RecordingUnit child5 = new RecordingUnit();
+            child5.setId(5L);
+            child5.setFullIdentifier("CHILD-5");
+            RecordingUnit child6 = new RecordingUnit();
+            child6.setId(6L);
+            child6.setFullIdentifier("CHILD-6");
+
+            RecordingUnit incomingChild5 = new RecordingUnit();
+            incomingChild5.setId(5L);
+
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            source.setFullIdentifier("SRC-1");
+            source.setChildren(new HashSet<>(Set.of(incomingChild5)));
+            source.setParents(null);
+
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            managed.setFullIdentifier("MANAGED-1");
+            managed.setChildren(new HashSet<>(Set.of(child6)));
+
+            when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.findAllById(argThat(ids -> {
+                List<Long> collected = new ArrayList<>();
+                ids.forEach(collected::add);
+                return collected.equals(List.of(5L));
+            }))).thenReturn(List.of(child5));
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.save(new RecordingUnitDTO());
+
+            assertEquals(Set.of(child5), managed.getChildren());
+        }
+
+        @Test
+        void save_setupChilds_nullChildren_isNoop() {
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            source.setFullIdentifier("SRC-1");
+            source.setChildren(null);
+            source.setParents(null);
+
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            managed.setFullIdentifier("MANAGED-1");
+            RecordingUnit existingChild = new RecordingUnit();
+            existingChild.setId(6L);
+            existingChild.setFullIdentifier("CHILD-6");
+            managed.setChildren(new HashSet<>(Set.of(existingChild)));
+
+            when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.save(new RecordingUnitDTO());
+
+            assertEquals(Set.of(existingChild), managed.getChildren());
+        }
+
+        @Test
+        void save_setupChilds_missingChildThrows_wrappedAsFailedRecordingUnitSaveException() {
+            RecordingUnit missingChild = new RecordingUnit();
+            missingChild.setId(99L);
+
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            source.setFullIdentifier("SRC-1");
+            source.setChildren(new HashSet<>(Set.of(missingChild)));
+            source.setParents(null);
+
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            managed.setFullIdentifier("MANAGED-1");
+            managed.setChildren(new HashSet<>());
+
+            when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.findAllById(any())).thenReturn(List.of());
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            RecordingUnitDTO toSave = new RecordingUnitDTO();
+            assertThrows(FailedRecordingUnitSaveException.class,
+                    () -> recordingUnitService.save(toSave));
+        }
+
+        @Test
+        void save_setupParents_addsNewParentAndRemovesStaleParent() {
+            RecordingUnit newParent = new RecordingUnit();
+            newParent.setId(2L);
+            newParent.setFullIdentifier("NEW-PARENT");
+            newParent.setChildren(new HashSet<>());
+
+            RecordingUnit staleParent = new RecordingUnit();
+            staleParent.setId(3L);
+            staleParent.setFullIdentifier("STALE-PARENT");
+            staleParent.setChildren(new HashSet<>());
+
+            RecordingUnit incomingParent = new RecordingUnit();
+            incomingParent.setId(2L);
+
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            source.setFullIdentifier("SRC-1");
+            source.setParents(new HashSet<>(Set.of(incomingParent)));
+            source.setChildren(null);
+
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            managed.setFullIdentifier("MANAGED-1");
+            managed.setParents(new HashSet<>(Set.of(staleParent)));
+
+            staleParent.getChildren().add(managed);
+
+            when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.findAllById(argThat(ids -> {
+                List<Long> collected = new ArrayList<>();
+                ids.forEach(collected::add);
+                return collected.equals(List.of(2L));
+            }))).thenReturn(List.of(newParent));
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.save(new RecordingUnitDTO());
+
+            assertEquals(Set.of(newParent), managed.getParents());
+            assertTrue(newParent.getChildren().contains(managed));
+            assertFalse(staleParent.getChildren().contains(managed));
+        }
+
+        @Test
+        void save_setupParents_nullParents_isNoop() {
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            source.setFullIdentifier("SRC-1");
+            source.setParents(null);
+            source.setChildren(null);
+
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            managed.setFullIdentifier("MANAGED-1");
+
+            when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.save(new RecordingUnitDTO());
+
+            verify(recordingUnitRepository, never()).saveAll(anyList());
+        }
+
+        @Test
+        void save_setupParents_missingParentThrows_wrappedAsFailedRecordingUnitSaveException() {
+            RecordingUnit missingParent = new RecordingUnit();
+            missingParent.setId(77L);
+
+            RecordingUnit source = new RecordingUnit();
+            source.setId(1L);
+            source.setFullIdentifier("SRC-1");
+            source.setParents(new HashSet<>(Set.of(missingParent)));
+            source.setChildren(null);
+
+            RecordingUnit managed = new RecordingUnit();
+            managed.setId(1L);
+            managed.setFullIdentifier("MANAGED-1");
+
+            when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(source);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
+            when(recordingUnitRepository.findAllById(any())).thenReturn(List.of());
+            when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            RecordingUnitDTO toSave = new RecordingUnitDTO();
+            assertThrows(FailedRecordingUnitSaveException.class,
+                    () -> recordingUnitService.save(toSave));
+        }
+    }
+
+    // =====================================================================
+    // deleteRecordingUnitById and its helpers
+    // =====================================================================
+
+    @Nested
+    class DeleteRecordingUnitByIdTests {
+
+        @Test
+        void deleteRecordingUnitById_notFound_throwsRecordingUnitNotFoundException() {
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(1L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_hasSpecimens_throwsIllegalState() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            ru.setFullIdentifier("RU-1");
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(3L);
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(1L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_hasChildren_throwsIllegalState() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            ru.setFullIdentifier("RU-1");
+            RecordingUnit child = new RecordingUnit();
+            child.setId(2L);
+            child.setFullIdentifier("RU-2");
+            ru.setChildren(new HashSet<>(Set.of(child)));
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(1L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_happyPath_deletesAllLinkedDataAndTheUnit() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            ru.setFullIdentifier("RU-1");
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(2L);
+            parent.setFullIdentifier("RU-2");
+            parent.setChildren(new HashSet<>(Set.of(ru)));
+            ru.setParents(new HashSet<>(Set.of(parent)));
+
+            StratigraphicRelationship rel = new StratigraphicRelationship();
+            ru.setRelationshipsAsUnit1(new HashSet<>(Set.of(rel)));
+
+            CustomFormResponse formResponse = new CustomFormResponse();
+            formResponse.setId(50L);
+            ru.setFormResponse(formResponse);
+
+            Ark ark = new Ark();
+            ark.setInternalId(99L);
+            ru.setArk(ark);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(rel));
+            when(recordingUnitIdInfoRepository.existsById(1L)).thenReturn(true);
+            when(recordingUnitRepository.save(ru)).thenReturn(ru);
+
+            recordingUnitService.deleteRecordingUnitById(1L);
+
+            assertFalse(parent.getChildren().contains(ru));
+            assertTrue(ru.getParents().isEmpty());
+            assertTrue(ru.getRelationshipsAsUnit1().isEmpty());
+            verify(stratigraphicRelationshipRepository).deleteAll(List.of(rel));
+            verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(1L);
+            verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(1L);
+            verify(recordingUnitIdCounterRepository).deleteAllByRecordingUnitId(1L);
+            verify(recordingUnitIdInfoRepository).deleteById(1L);
+            verify(customFormResponseRepository).deleteById(50L);
+            verify(recordingUnitRepository).delete(ru);
+            verify(arkRepository).deleteById(99L);
+        }
+
+        @Test
+        void deleteRecordingUnitById_noFormResponseNoArkNoIdInfo_skipsOptionalDeletes() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(5L);
+            ru.setFullIdentifier("RU-5");
+
+            when(recordingUnitRepository.findById(5L)).thenReturn(Optional.of(ru));
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(5L)).thenReturn(0L);
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(5L)).thenReturn(List.of());
+            when(recordingUnitIdInfoRepository.existsById(5L)).thenReturn(false);
+            when(recordingUnitRepository.save(ru)).thenReturn(ru);
+
+            recordingUnitService.deleteRecordingUnitById(5L);
+
+            verify(stratigraphicRelationshipRepository, never()).deleteAll(anyList());
+            verify(recordingUnitIdInfoRepository, never()).deleteById(any());
+            verify(customFormResponseRepository, never()).deleteById(any());
+            verify(arkRepository, never()).deleteById(any());
+            verify(recordingUnitRepository).delete(ru);
+        }
+    }
+
+    // =====================================================================
+    // addHierarchyChild / removeHierarchyChild / assertSameActionUnit /
+    // wouldCreateHierarchyCycle
+    // =====================================================================
+
+    @Nested
+    class HierarchyChildTests {
+
+        @Test
+        void addHierarchyChild_sameId_throwsIllegalArgument() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 1L));
+        }
+
+        @Test
+        void addHierarchyChild_parentNotFound_throws() {
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+        }
+
+        @Test
+        void addHierarchyChild_childNotFound_throws() {
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(1L);
+            parent.setFullIdentifier("P");
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+        }
+
+        @Test
+        void addHierarchyChild_differentActionUnits_throwsIllegalArgument() {
+            ActionUnit a1 = new ActionUnit();
+            a1.setId(10L);
+            ActionUnit a2 = new ActionUnit();
+            a2.setId(20L);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(1L);
+            parent.setFullIdentifier("P");
+            parent.setActionUnit(a1);
+            RecordingUnit child = new RecordingUnit();
+            child.setId(2L);
+            child.setFullIdentifier("C");
+            child.setActionUnit(a2);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+        }
+
+        @Test
+        void addHierarchyChild_relationAlreadyExists_throwsIllegalState() {
+            ActionUnit a1 = new ActionUnit();
+            a1.setId(10L);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(1L);
+            parent.setFullIdentifier("P");
+            parent.setActionUnit(a1);
+            RecordingUnit child = new RecordingUnit();
+            child.setId(2L);
+            child.setFullIdentifier("C");
+            child.setActionUnit(a1);
+            parent.setChildren(new HashSet<>(Set.of(child)));
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+        }
+
+        @Test
+        void addHierarchyChild_wouldCreateCycle_throwsIllegalState() {
+            ActionUnit a1 = new ActionUnit();
+            a1.setId(10L);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(1L);
+            parent.setFullIdentifier("P");
+            parent.setActionUnit(a1);
+            parent.setChildren(new HashSet<>());
+            RecordingUnit child = new RecordingUnit();
+            child.setId(2L);
+            child.setFullIdentifier("C");
+            child.setActionUnit(a1);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{1L})).thenReturn(List.of(1L, 2L));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.addHierarchyChild(1L, 2L));
+        }
+
+        @Test
+        void addHierarchyChild_success_addsRelationAndSavesParent() {
+            ActionUnit a1 = new ActionUnit();
+            a1.setId(10L);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(1L);
+            parent.setFullIdentifier("P");
+            parent.setActionUnit(a1);
+            parent.setChildren(new HashSet<>());
+            RecordingUnit child = new RecordingUnit();
+            child.setId(2L);
+            child.setFullIdentifier("C");
+            child.setActionUnit(a1);
+            child.setParents(new HashSet<>());
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{1L})).thenReturn(List.of(1L));
+            when(recordingUnitRepository.save(parent)).thenReturn(parent);
+
+            recordingUnitService.addHierarchyChild(1L, 2L);
+
+            assertTrue(parent.getChildren().contains(child));
+            assertTrue(child.getParents().contains(parent));
+            verify(recordingUnitRepository).save(parent);
+        }
+
+        @Test
+        void removeHierarchyChild_parentNotFound_throws() {
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.removeHierarchyChild(1L, 2L));
+        }
+
+        @Test
+        void removeHierarchyChild_childNotFound_throws() {
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(1L);
+            parent.setFullIdentifier("P");
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.removeHierarchyChild(1L, 2L));
+        }
+
+        @Test
+        void removeHierarchyChild_noExistingRelation_throwsIllegalState() {
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(1L);
+            parent.setFullIdentifier("P");
+            parent.setChildren(new HashSet<>());
+            RecordingUnit child = new RecordingUnit();
+            child.setId(2L);
+            child.setFullIdentifier("C");
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+
+            assertThrows(IllegalStateException.class,
+                    () -> recordingUnitService.removeHierarchyChild(1L, 2L));
+        }
+
+        @Test
+        void removeHierarchyChild_success_removesRelationAndSavesParent() {
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(1L);
+            parent.setFullIdentifier("P");
+            RecordingUnit child = new RecordingUnit();
+            child.setId(2L);
+            child.setFullIdentifier("C");
+            parent.setChildren(new HashSet<>(Set.of(child)));
+            child.setParents(new HashSet<>(Set.of(parent)));
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(parent));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(child));
+            when(recordingUnitRepository.save(parent)).thenReturn(parent);
+
+            recordingUnitService.removeHierarchyChild(1L, 2L);
+
+            assertFalse(parent.getChildren().contains(child));
+            assertFalse(child.getParents().contains(parent));
+            verify(recordingUnitRepository).save(parent);
+        }
+    }
+
+    // =====================================================================
+    // toAdjacentUnitSummaries / resolveRecordingUnitEntityByKey /
+    // resolveByNumericKey / resolveRecordingUnitEntityByFullIdentifier
+    // =====================================================================
+
+    @Nested
+    class ResolveKeyAndAdjacentUnitsTests {
+
+        @Test
+        void findChildrenForAccessibleRecordingUnit_noChildren_returnsEmptyList() {
+            RecordingUnit unit = new RecordingUnit();
+            unit.setId(1L);
+            unit.setFullIdentifier("RU-1");
+            unit.setChildren(new HashSet<>());
+
+            Set<Long> accessible = Set.of(100L);
+            RecordingUnitDTO convertedDto = new RecordingUnitDTO();
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(100L);
+            convertedDto.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
+            when(recordingUnitMapper.convert(unit)).thenReturn(convertedDto);
+
+            List<RecordingUnitSummaryDTO> result =
+                    recordingUnitService.findChildrenForAccessibleRecordingUnit("1", accessible);
+
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        void findChildrenForAccessibleRecordingUnit_withChildren_returnsSortedSummaries() {
+            RecordingUnit child1 = new RecordingUnit();
+            child1.setId(5L);
+            child1.setFullIdentifier("C5");
+            RecordingUnit child2 = new RecordingUnit();
+            child2.setId(3L);
+            child2.setFullIdentifier("C3");
+
+            RecordingUnit unit = new RecordingUnit();
+            unit.setId(1L);
+            unit.setFullIdentifier("RU-1");
+            unit.setChildren(new HashSet<>(Set.of(child1, child2)));
+
+            Set<Long> accessible = Set.of(100L);
+            RecordingUnitDTO convertedDto = new RecordingUnitDTO();
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(100L);
+            convertedDto.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
+            when(recordingUnitMapper.convert(unit)).thenReturn(convertedDto);
+
+            RecordingUnitSummaryDTO summary1 = new RecordingUnitSummaryDTO();
+            summary1.setId(5L);
+            RecordingUnitSummaryDTO summary2 = new RecordingUnitSummaryDTO();
+            summary2.setId(3L);
+            when(recordingUnitSummaryMapper.convert(child1)).thenReturn(summary1);
+            when(recordingUnitSummaryMapper.convert(child2)).thenReturn(summary2);
+
+            List<RecordingUnitSummaryDTO> result =
+                    recordingUnitService.findChildrenForAccessibleRecordingUnit("1", accessible);
+
+            assertEquals(List.of(summary2, summary1), result);
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_emptyAccessibleInstitutions_throws() {
+            Set<Long> emptyScope = Set.of();
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", emptyScope, null));
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_blankKey_throws() {
+            Set<Long> institutionIds = Set.of(100L);
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("   ", institutionIds, null));
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_numericKey_notAccessible_throws() {
+            RecordingUnit unit = new RecordingUnit();
+            unit.setId(1L);
+            unit.setFullIdentifier("RU-1");
+            RecordingUnitDTO convertedDto = new RecordingUnitDTO();
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(999L);
+            convertedDto.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
+            when(recordingUnitMapper.convert(unit)).thenReturn(convertedDto);
+
+            Set<Long> institutionIds = Set.of(100L);
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", institutionIds, null));
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_numericKey_notFoundById_fallsBackToFullIdentifier() {
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.empty());
+
+            RecordingUnit found = new RecordingUnit();
+            found.setId(2L);
+            found.setFullIdentifier("1");
+            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("1", Set.of(100L)))
+                    .thenReturn(Optional.of(found));
+            when(recordingUnitMapper.convert(found)).thenReturn(new RecordingUnitDTO());
+
+            RecordingUnitDTO result =
+                    recordingUnitService.findAccessibleRecordingUnitByKey("1", Set.of(100L), null);
+
+            assertNotNull(result);
+            verify(recordingUnitRepository).findFirstByFullIdentifierAndInstitutionIdIn("1", Set.of(100L));
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_numericOverflow_fallsBackToFullIdentifier() {
+            String hugeKey = "99999999999999999999";
+            RecordingUnit found = new RecordingUnit();
+            found.setId(3L);
+            found.setFullIdentifier(hugeKey);
+            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn(hugeKey, Set.of(100L)))
+                    .thenReturn(Optional.of(found));
+            when(recordingUnitMapper.convert(found)).thenReturn(new RecordingUnitDTO());
+
+            RecordingUnitDTO result =
+                    recordingUnitService.findAccessibleRecordingUnitByKey(hugeKey, Set.of(100L), null);
+
+            assertNotNull(result);
+            verify(recordingUnitRepository, never()).findById(anyLong());
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_nonNumericKey_usesFullIdentifierLookup() {
+            RecordingUnit found = new RecordingUnit();
+            found.setId(4L);
+            found.setFullIdentifier("ABC-1");
+            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("ABC-1", Set.of(100L)))
+                    .thenReturn(Optional.of(found));
+            when(recordingUnitMapper.convert(found)).thenReturn(new RecordingUnitDTO());
+
+            RecordingUnitDTO result =
+                    recordingUnitService.findAccessibleRecordingUnitByKey("ABC-1", Set.of(100L), null);
+
+            assertNotNull(result);
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_fullIdentifierNotFound_throws() {
+            Set<Long> institutionIds = Set.of(100L);
+            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("ABC-1", institutionIds))
+                    .thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("ABC-1", institutionIds, null));
+        }
+
+        @Test
+        void findAccessibleRecordingUnitByKey_numericKey_withSpecimenCount() {
+            RecordingUnit unit = new RecordingUnit();
+            unit.setId(1L);
+            unit.setFullIdentifier("RU-1");
+            RecordingUnitDTO convertedDto = new RecordingUnitDTO();
+            convertedDto.setId(1L);
+            InstitutionDTO instDto = new InstitutionDTO();
+            instDto.setId(100L);
+            convertedDto.setCreatedByInstitution(instDto);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
+            when(recordingUnitMapper.convert(unit)).thenReturn(convertedDto);
+            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(7L);
+
+            RecordingUnitDTO result = recordingUnitService.findAccessibleRecordingUnitByKey(
+                    "1", Set.of(100L), List.of("specimen"));
+
+            assertEquals(7L, result.getSpecimenCount());
+        }
+    }
+
+    // =====================================================================
+    // findNextByActionUnit / findPreviousByActionUnit
+    // =====================================================================
+
+    @Nested
+    class NextAndPreviousByActionUnitTests {
+
+        @Test
+        void findNextByActionUnit_hasNext_returnsConvertedNext() {
+            ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+            action.setId(10L);
+            RecordingUnitDTO current = new RecordingUnitDTO();
+            java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+            current.setCreationTime(now);
+
+            RecordingUnit next = new RecordingUnit();
+            next.setId(2L);
+            next.setFullIdentifier("NEXT");
+            RecordingUnitDTO nextDto = new RecordingUnitDTO();
+
+            when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(10L, now))
+                    .thenReturn(Optional.of(next));
+            when(recordingUnitMapper.convert(next)).thenReturn(nextDto);
+
+            RecordingUnitDTO result = recordingUnitService.findNextByActionUnit(action, current);
+
+            assertSame(nextDto, result);
+            verify(recordingUnitRepository, never()).findFirstByActionUnitIdOrderByCreationTimeAsc(anyLong());
+        }
+
+        @Test
+        void findNextByActionUnit_noNext_wrapsToOldest() {
+            ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+            action.setId(10L);
+            RecordingUnitDTO current = new RecordingUnitDTO();
+            java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+            current.setCreationTime(now);
+
+            RecordingUnit oldest = new RecordingUnit();
+            oldest.setId(3L);
+            oldest.setFullIdentifier("OLDEST");
+            RecordingUnitDTO oldestDto = new RecordingUnitDTO();
+
+            when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(10L, now))
+                    .thenReturn(Optional.empty());
+            when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L))
+                    .thenReturn(Optional.of(oldest));
+            when(recordingUnitMapper.convert(oldest)).thenReturn(oldestDto);
+
+            RecordingUnitDTO result = recordingUnitService.findNextByActionUnit(action, current);
+
+            assertSame(oldestDto, result);
+        }
+
+        @Test
+        void findNextByActionUnit_noNextNoOldest_throwsActionUnitNotFound() {
+            ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+            action.setId(10L);
+            RecordingUnitDTO current = new RecordingUnitDTO();
+            java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+            current.setCreationTime(now);
+
+            when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(10L, now))
+                    .thenReturn(Optional.empty());
+            when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L))
+                    .thenReturn(Optional.empty());
+
+            assertThrows(ActionUnitNotFoundException.class,
+                    () -> recordingUnitService.findNextByActionUnit(action, current));
+        }
+
+        @Test
+        void findPreviousByActionUnit_hasPrevious_returnsConvertedPrevious() {
+            ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+            action.setId(10L);
+            RecordingUnitDTO current = new RecordingUnitDTO();
+            java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+            current.setCreationTime(now);
+
+            RecordingUnit previous = new RecordingUnit();
+            previous.setId(2L);
+            previous.setFullIdentifier("PREVIOUS");
+            RecordingUnitDTO previousDto = new RecordingUnitDTO();
+
+            when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(10L, now))
+                    .thenReturn(Optional.of(previous));
+            when(recordingUnitMapper.convert(previous)).thenReturn(previousDto);
+
+            RecordingUnitDTO result = recordingUnitService.findPreviousByActionUnit(action, current);
+
+            assertSame(previousDto, result);
+            verify(recordingUnitRepository, never()).findFirstByActionUnitIdOrderByCreationTimeDesc(anyLong());
+        }
+
+        @Test
+        void findPreviousByActionUnit_noPrevious_wrapsToNewest() {
+            ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+            action.setId(10L);
+            RecordingUnitDTO current = new RecordingUnitDTO();
+            java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+            current.setCreationTime(now);
+
+            RecordingUnit newest = new RecordingUnit();
+            newest.setId(3L);
+            newest.setFullIdentifier("NEWEST");
+            RecordingUnitDTO newestDto = new RecordingUnitDTO();
+
+            when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(10L, now))
+                    .thenReturn(Optional.empty());
+            when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L))
+                    .thenReturn(Optional.of(newest));
+            when(recordingUnitMapper.convert(newest)).thenReturn(newestDto);
+
+            RecordingUnitDTO result = recordingUnitService.findPreviousByActionUnit(action, current);
+
+            assertSame(newestDto, result);
+        }
+
+        @Test
+        void findPreviousByActionUnit_noPreviousNoNewest_throwsActionUnitNotFound() {
+            ActionUnitSummaryDTO action = new ActionUnitSummaryDTO();
+            action.setId(10L);
+            RecordingUnitDTO current = new RecordingUnitDTO();
+            java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+            current.setCreationTime(now);
+
+            when(recordingUnitRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(10L, now))
+                    .thenReturn(Optional.empty());
+            when(recordingUnitRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L))
+                    .thenReturn(Optional.empty());
+
+            assertThrows(ActionUnitNotFoundException.class,
+                    () -> recordingUnitService.findPreviousByActionUnit(action, current));
+        }
+    }
+
+    // =====================================================================
+    // toggleValidated / findAllByParentRecordingUnit
+    // =====================================================================
+
+    @Nested
+    class ToggleValidatedAndParentChildrenTests {
+
+        @Test
+        void toggleValidated_incompleteBecomesComplete() {
+            RecordingUnit unit = new RecordingUnit();
+            unit.setId(1L);
+            unit.setFullIdentifier("RU-1");
+            unit.setValidated(ValidationStatus.INCOMPLETE);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
+            when(recordingUnitRepository.save(unit)).thenReturn(unit);
+            when(recordingUnitMapper.convert(unit)).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.toggleValidated(1L);
+
+            assertEquals(ValidationStatus.COMPLETE, unit.getValidated());
+        }
+
+        @Test
+        void toggleValidated_completeBecomesValidated() {
+            RecordingUnit unit = new RecordingUnit();
+            unit.setId(1L);
+            unit.setFullIdentifier("RU-1");
+            unit.setValidated(ValidationStatus.COMPLETE);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
+            when(recordingUnitRepository.save(unit)).thenReturn(unit);
+            when(recordingUnitMapper.convert(unit)).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.toggleValidated(1L);
+
+            assertEquals(ValidationStatus.VALIDATED, unit.getValidated());
+        }
+
+        @Test
+        void toggleValidated_validatedBecomesIncomplete() {
+            RecordingUnit unit = new RecordingUnit();
+            unit.setId(1L);
+            unit.setFullIdentifier("RU-1");
+            unit.setValidated(ValidationStatus.VALIDATED);
+
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
+            when(recordingUnitRepository.save(unit)).thenReturn(unit);
+            when(recordingUnitMapper.convert(unit)).thenReturn(new RecordingUnitDTO());
+
+            recordingUnitService.toggleValidated(1L);
+
+            assertEquals(ValidationStatus.INCOMPLETE, unit.getValidated());
+        }
+
+        @Test
+        void toggleValidated_notFound_throws() {
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.toggleValidated(1L));
+        }
+
+        @Test
+        void findAllByParentRecordingUnit_returnsMappedChildren() {
+            RecordingUnit child = new RecordingUnit();
+            child.setId(2L);
+            child.setFullIdentifier("C");
+            RecordingUnitDTO childDto = new RecordingUnitDTO();
+
+            when(recordingUnitRepository.findChildrensOf(1L)).thenReturn(List.of(child));
+            when(recordingUnitMapper.convert(child)).thenReturn(childDto);
+
+            List<RecordingUnitDTO> result = recordingUnitService.findAllByParentRecordingUnit(1L);
+
+            assertEquals(List.of(childDto), result);
+        }
+    }
+
+    // =====================================================================
+    // searchRecordingUnit / searchRecordingUnitInActionUnit /
+    // searchRecordingUnitInSpatialUnit / countSearchResults family
+    // =====================================================================
+
+    @Nested
+    class SearchAndCountFamilyTests {
+
+        @Test
+        void searchRecordingUnit_populatesParentsChildrenAndPhases() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable pageable = PageRequest.of(0, 10);
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            ru.setFullIdentifier("RU-7");
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(8L);
+            parent.setFullIdentifier("P8");
+            RecordingUnit child = new RecordingUnit();
+            child.setId(9L);
+            child.setFullIdentifier("C9");
+            Phase phase = new Phase();
+            phase.setId(11L);
+            PhaseDTO phaseDto = new PhaseDTO();
+
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+            when(recordingUnitRepository.findParentsOf(7L)).thenReturn(Set.of(parent));
+            when(recordingUnitRepository.findChildrensOf(7L)).thenReturn(List.of(child));
+            when(phaseRepository.findByRecordingUnitId(7L)).thenReturn(Set.of(phase));
+
+            RecordingUnitSummaryDTO parentSummary = new RecordingUnitSummaryDTO();
+            parentSummary.setId(8L);
+            RecordingUnitSummaryDTO childSummary = new RecordingUnitSummaryDTO();
+            childSummary.setId(9L);
+            when(recordingUnitSummaryMapper.convert(parent)).thenReturn(parentSummary);
+            when(recordingUnitSummaryMapper.convert(child)).thenReturn(childSummary);
+            when(phaseMapper.convert(phase)).thenReturn(phaseDto);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable);
+
+            assertEquals(1, result.getTotalElements());
+            RecordingUnitDTO dto = result.getContent().get(0);
+            assertEquals(Set.of(parentSummary), dto.getParents());
+            assertEquals(Set.of(childSummary), dto.getChildren());
+            assertEquals(Set.of(phaseDto), dto.getPhases());
+        }
+
+        @Test
+        void searchRecordingUnitInActionUnit_delegatesToRepositoryAndMaps() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            ActionUnitDTO actionUnit = new ActionUnitDTO();
+            actionUnit.setId(20L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable pageable = PageRequest.of(0, 10);
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            ru.setFullIdentifier("RU-7");
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.convert(ru)).thenReturn(ruDto);
+
+            Page<RecordingUnitDTO> result =
+                    recordingUnitService.searchRecordingUnitInActionUnit(institution, actionUnit, filters, pageable);
+
+            assertEquals(1, result.getTotalElements());
+            assertSame(ruDto, result.getContent().get(0));
+        }
+
+        @Test
+        void searchRecordingUnitInSpatialUnit_delegatesToRepositoryAndMaps() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            SpatialUnitDTO spatialUnit = new SpatialUnitDTO();
+            spatialUnit.setId(30L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable pageable = PageRequest.of(0, 10);
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            ru.setFullIdentifier("RU-7");
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.convert(ru)).thenReturn(ruDto);
+
+            Page<RecordingUnitDTO> result =
+                    recordingUnitService.searchRecordingUnitInSpatialUnit(institution, spatialUnit, filters, pageable);
+
+            assertEquals(1, result.getTotalElements());
+            assertSame(ruDto, result.getContent().get(0));
+        }
+
+        @Test
+        void countSearchResultsInActionUnit_returnsRepositoryCount() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            ActionUnitDTO actionUnit = new ActionUnitDTO();
+            actionUnit.setId(20L);
+            FilterDTO filters = new FilterDTO(false);
+
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(4L);
+
+            int result = recordingUnitService.countSearchResultsInActionUnit(institution, actionUnit, filters);
+
+            assertEquals(4, result);
+        }
+
+        @Test
+        void countSearchResultsInSpatialUnit_returnsRepositoryCount() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            SpatialUnitDTO spatialUnit = new SpatialUnitDTO();
+            spatialUnit.setId(30L);
+            FilterDTO filters = new FilterDTO(false);
+
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(6L);
+
+            int result = recordingUnitService.countSearchResultsInSpatialUnit(institution, spatialUnit, filters);
+
+            assertEquals(6, result);
+        }
+
+        @Test
+        void countSearchResults_returnsRepositoryCount() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(9L);
+
+            int result = recordingUnitService.countSearchResults(institution, filters);
+
+            assertEquals(9, result);
+        }
+    }
+
+    // =====================================================================
+    // prepareSpecs / userFilterSpecs / resolveAncestorClosure /
+    // computeAncestorClosure / initializeHierarchy
+    // =====================================================================
+
+    @Nested
+    class SpecsAndClosureAndHierarchyTests {
+
+        @Test
+        void userFilterSpecs_allColumnsSet_buildsSpecificationWithoutError() {
+            FilterDTO filters = new FilterDTO(false);
+            filters.add(RecordingUnitSpec.FULL_IDENTIFIER, "abc", FilterDTO.FilterType.CONTAINS);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(1L), FilterDTO.FilterType.EQUAL);
+            filters.add(RecordingUnitSpec.MATRIX_FILTER, "clay", FilterDTO.FilterType.CONTAINS);
+            filters.add(RecordingUnitSpec.SPATIAL_UNIT_FILTER, List.of(2L), FilterDTO.FilterType.EQUAL);
+            filters.add(RecordingUnitSpec.ACTION_UNIT_FILTER, List.of(3L), FilterDTO.FilterType.EQUAL);
+            filters.add(RecordingUnitSpec.CONTRIBUTORS_FILTER, List.of(4L), FilterDTO.FilterType.EQUAL);
+            filters.add(RecordingUnitSpec.TYPE_FILTER, List.of(5L), FilterDTO.FilterType.EQUAL);
+            filters.add(RecordingUnitSpec.OPENING_DATE_FILTER,
+                    List.of(java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now()),
+                    FilterDTO.FilterType.EQUAL);
+            filters.add(RecordingUnitSpec.CLOSING_DATE_FILTER,
+                    List.of(java.time.OffsetDateTime.now()), FilterDTO.FilterType.EQUAL);
+            filters.add(RecordingUnitSpec.PARENTS_FILTER, List.of(6L), FilterDTO.FilterType.EQUAL);
+
+            Specification<RecordingUnit> spec = RecordingUnitService.userFilterSpecs(filters);
+
+            assertNotNull(spec);
+        }
+
+        @Test
+        void prepareSpecs_rootOnlyNoUserFilters_returnsRootSpecWithoutRepositoryCall() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+
+            Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(institution, filters);
+
+            assertNotNull(spec);
+            verifyNoInteractions(recordingUnitRepository);
+        }
+
+        @Test
+        void prepareSpecs_rootOnlyWithUserFilters_emptyClosure_returnsDisjunctionSpec() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+            Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(institution, filters);
+
+            assertNotNull(spec);
+            verify(recordingUnitRepository).findAll(any(Specification.class));
+            verify(recordingUnitRepository, never()).findAncestorClosure(any());
+        }
+
+        @Test
+        void prepareSpecs_rootOnlyWithUserFilters_nonEmptyClosure_returnsRootAndClosureSpec() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+
+            RecordingUnit match = new RecordingUnit();
+            match.setId(42L);
+            match.setFullIdentifier("M42");
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{42L})).thenReturn(List.of(42L, 1L));
+
+            Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(institution, filters);
+
+            assertNotNull(spec);
+        }
+
+        @Test
+        void prepareSpecs_notRootOnly_returnsUserFilterSpecWithoutRepositoryCall() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+
+            Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(institution, filters);
+
+            assertNotNull(spec);
+            verifyNoInteractions(recordingUnitRepository);
+        }
+
+        @Test
+        void computeAncestorClosure_notRootOnly_returnsEmptySet() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+
+            Set<Long> result = recordingUnitService.computeAncestorClosure(institution, filters);
+
+            assertTrue(result.isEmpty());
+            verifyNoInteractions(recordingUnitRepository);
+        }
+
+        @Test
+        void computeAncestorClosure_rootOnlyNoUserFilters_returnsEmptySet() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+
+            Set<Long> result = recordingUnitService.computeAncestorClosure(institution, filters);
+
+            assertTrue(result.isEmpty());
+            verifyNoInteractions(recordingUnitRepository);
+        }
+
+        @Test
+        void computeAncestorClosure_rootOnlyWithUserFilters_returnsResolvedClosure() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+
+            RecordingUnit match = new RecordingUnit();
+            match.setId(42L);
+            match.setFullIdentifier("M42");
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{42L})).thenReturn(List.of(42L, 1L));
+
+            Set<Long> result = recordingUnitService.computeAncestorClosure(institution, filters);
+
+            assertEquals(Set.of(42L, 1L), result);
+        }
+
+        @Test
+        void initializeHierarchy_setsParentsAndChildrenFromRepository() {
+            RecordingUnitDTO dto = new RecordingUnitDTO();
+            dto.setId(7L);
+
+            RecordingUnit parent = new RecordingUnit();
+            parent.setId(8L);
+            parent.setFullIdentifier("P8");
+            RecordingUnit child = new RecordingUnit();
+            child.setId(9L);
+            child.setFullIdentifier("C9");
+
+            RecordingUnitSummaryDTO parentSummary = new RecordingUnitSummaryDTO();
+            parentSummary.setId(8L);
+            RecordingUnitSummaryDTO childSummary = new RecordingUnitSummaryDTO();
+            childSummary.setId(9L);
+
+            when(recordingUnitRepository.findParentsOf(7L)).thenReturn(Set.of(parent));
+            when(recordingUnitRepository.findChildrensOf(7L)).thenReturn(List.of(child));
+            when(recordingUnitSummaryMapper.convert(parent)).thenReturn(parentSummary);
+            when(recordingUnitSummaryMapper.convert(child)).thenReturn(childSummary);
+
+            recordingUnitService.initializeHierarchy(dto);
+
+            assertEquals(Set.of(parentSummary), dto.getParents());
+            assertEquals(Set.of(childSummary), dto.getChildren());
         }
     }
 }
