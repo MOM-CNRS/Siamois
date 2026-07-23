@@ -1496,4 +1496,226 @@ class SpecimenServiceTest {
         assertEquals(2, specimenService.countSearchResultsInRecordingUnit(institution, recordingUnit, filters));
     }
 
+    // =====================================================================
+    // Missing branches: authors/collectors, attach institution/concept,
+    // synchronize null, overflow key, unknown status, recording-unit filter
+    // =====================================================================
+
+    private SpecimenDTO saveDtoWithFullId(String fullId) {
+        SpecimenDTO dto = new SpecimenDTO();
+        dto.setFullIdentifier(fullId);
+        return dto;
+    }
+
+    @Test
+    void save_resolvesAuthorsAndCollectors_viaPersonRepository() {
+        SpecimenDTO dto = saveDtoWithFullId("AU-COL");
+        Person authorRef = new Person();
+        authorRef.setId(11L);
+        Person collectorRef = new Person();
+        collectorRef.setId(22L);
+        Person nullIdPerson = new Person();
+
+        Specimen incoming = new Specimen();
+        incoming.setId(1L);
+        incoming.setAuthors(Arrays.asList(authorRef, null, nullIdPerson));
+        incoming.setCollectors(List.of(collectorRef));
+
+        Specimen managed = new Specimen();
+        managed.setId(1L);
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incoming);
+        when(specimenRepository.findById(1L)).thenReturn(Optional.of(managed));
+        when(specimenRepository.save(managed)).thenReturn(managed);
+        when(specimenMapper.convert(managed)).thenReturn(dto);
+
+        specimenService.save(dto);
+
+        assertEquals(1, managed.getAuthors().size());
+        assertEquals(11L, managed.getAuthors().get(0).getId());
+        assertEquals(1, managed.getCollectors().size());
+        assertEquals(22L, managed.getCollectors().get(0).getId());
+        verify(personRepository).findAllById(List.of(11L));
+        verify(personRepository).findAllById(List.of(22L));
+    }
+
+    @Test
+    void save_authorsWithOnlyNullEntries_setsEmptyAuthorsList() {
+        SpecimenDTO dto = saveDtoWithFullId("EMPTY-AUTH");
+        Specimen incoming = new Specimen();
+        incoming.setId(1L);
+        incoming.setAuthors(Arrays.asList(null, new Person()));
+        Specimen managed = new Specimen();
+        managed.setId(1L);
+        managed.setAuthors(new ArrayList<>(List.of(new Person())));
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incoming);
+        when(specimenRepository.findById(1L)).thenReturn(Optional.of(managed));
+        when(specimenRepository.save(managed)).thenReturn(managed);
+        when(specimenMapper.convert(managed)).thenReturn(dto);
+
+        specimenService.save(dto);
+
+        assertNotNull(managed.getAuthors());
+        assertTrue(managed.getAuthors().isEmpty());
+    }
+
+    @Test
+    void save_attachesInstitutionAndConceptsWhenIdsPresent() {
+        SpecimenDTO dto = saveDtoWithFullId("INST-CONCEPT");
+        Institution instRef = new Institution();
+        instRef.setId(77L);
+        Concept category = new Concept();
+        category.setId(8L);
+        category.setExternalId("8");
+        Concept chrono = new Concept();
+        chrono.setId(9L);
+        chrono.setExternalId("9");
+        Concept interpretation = new Concept();
+        interpretation.setId(10L);
+        interpretation.setExternalId("10");
+
+        Specimen incoming = new Specimen();
+        incoming.setId(1L);
+        incoming.setCreatedByInstitution(instRef);
+        incoming.setCategory(category);
+        incoming.setChronologicalAttribution(chrono);
+        incoming.setNormalizedInterpretation(interpretation);
+
+        Specimen managed = new Specimen();
+        managed.setId(1L);
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incoming);
+        when(specimenRepository.findById(1L)).thenReturn(Optional.of(managed));
+        when(specimenRepository.save(managed)).thenReturn(managed);
+        when(specimenMapper.convert(managed)).thenReturn(dto);
+
+        specimenService.save(dto);
+
+        assertNotNull(managed.getCreatedByInstitution());
+        assertEquals(77L, managed.getCreatedByInstitution().getId());
+        assertEquals(8L, managed.getCategory().getId());
+        assertEquals(9L, managed.getChronologicalAttribution().getId());
+        assertEquals(10L, managed.getNormalizedInterpretation().getId());
+        verify(institutionRepository).findById(77L);
+        verify(conceptRepository).findById(8L);
+        verify(conceptRepository).findById(9L);
+        verify(conceptRepository).findById(10L);
+    }
+
+    @Test
+    void save_clearsPhasesWhenIncomingNull() {
+        SpecimenDTO dto = saveDtoWithFullId("NULL-PHASES");
+        Specimen incoming = new Specimen();
+        incoming.setId(1L);
+        incoming.setPhases(null);
+        Specimen managed = new Specimen();
+        managed.setId(1L);
+        fr.siamois.domain.models.phase.Phase phase = new fr.siamois.domain.models.phase.Phase();
+        phase.setId(1L);
+        managed.setPhases(new HashSet<>(Set.of(phase)));
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incoming);
+        when(specimenRepository.findById(1L)).thenReturn(Optional.of(managed));
+        when(specimenRepository.save(managed)).thenReturn(managed);
+        when(specimenMapper.convert(managed)).thenReturn(dto);
+
+        specimenService.save(dto);
+
+        assertTrue(managed.getPhases().isEmpty());
+    }
+
+    @Test
+    void save_childrenEmptyIncoming_removesAllManagedChildren() {
+        SpecimenDTO dto = saveDtoWithFullId("CLEAR-CHILDREN");
+        Specimen obsolete = new Specimen();
+        obsolete.setId(501L);
+        obsolete.setFullIdentifier("C-501");
+
+        Specimen managed = new Specimen();
+        managed.setId(50L);
+        managed.setChildren(new HashSet<>(Set.of(obsolete)));
+
+        Specimen incoming = new Specimen();
+        incoming.setId(50L);
+        incoming.setChildren(new HashSet<>());
+
+        when(specimenMapper.invertConvert(dto)).thenReturn(incoming);
+        when(specimenRepository.findById(50L)).thenReturn(Optional.of(managed));
+        when(specimenRepository.save(managed)).thenReturn(managed);
+        when(specimenMapper.convert(managed)).thenReturn(dto);
+
+        specimenService.save(dto);
+
+        assertTrue(managed.getChildren().isEmpty());
+    }
+
+    @Test
+    void save_generatesIdentifierWhenFullIdentifierAndIdentifierAreNull() {
+        SpecimenDTO dto = new SpecimenDTO();
+        RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
+        ru.setId(3L);
+        ru.setFullIdentifier("RU-3");
+        dto.setRecordingUnit(ru);
+        dto.setIdentifier(null);
+        dto.setFullIdentifier(null);
+
+        Specimen specimen = new Specimen();
+        when(specimenRepository.findMaxUsedIdentifierByRecordingUnit(3L)).thenReturn(4);
+        when(specimenMapper.invertConvert(dto)).thenReturn(specimen);
+        when(specimenRepository.save(specimen)).thenReturn(specimen);
+        when(specimenMapper.convert(specimen)).thenReturn(dto);
+
+        specimenService.save(dto);
+
+        assertEquals(5, dto.getIdentifier());
+        assertEquals("RU-3_5", dto.getFullIdentifier());
+    }
+
+    @Test
+    void findAccessibleByKey_digitOverflow_fallsBackToFullIdentifier() {
+        String overflowKey = "9223372036854775808";
+        Specimen entity = new Specimen();
+        SpecimenDTO dto = new SpecimenDTO();
+        Set<Long> scope = Set.of(10L);
+        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(eq(overflowKey), eq(scope)))
+                .thenReturn(Optional.of(entity));
+        when(specimenMapper.convert(entity)).thenReturn(dto);
+
+        Optional<SpecimenDTO> result = specimenService.findAccessibleByKey(overflowKey, scope);
+
+        assertTrue(result.isPresent());
+        assertSame(dto, result.get());
+        verify(specimenRepository).findFirstByFullIdentifierAndInstitutionIdIn(eq(overflowKey), eq(scope));
+    }
+
+    @Test
+    void toggleValidated_unknownStatus_throwsIllegalStateException() {
+        Specimen specimen = new Specimen();
+        specimen.setValidated(null);
+        when(specimenRepository.findById(1L)).thenReturn(Optional.of(specimen));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> specimenService.toggleValidated(1L));
+        assertTrue(ex.getMessage().startsWith("Unknown status:"));
+        verify(specimenRepository, never()).save(any());
+    }
+
+    @Test
+    void userFilterSpecs_withRecordingUnitFilter_isAppliedInSearch() {
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(SpecimenSpec.RECORDING_UNIT_FILTER, List.of(5L, 6L), FilterDTO.FilterType.EQUAL);
+
+        assertNotNull(SpecimenService.userFilterSpecs(filters));
+
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        when(specimenRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        specimenService.searchSpecimen(institution, filters, PageRequest.of(0, 10));
+
+        verify(specimenRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
 }

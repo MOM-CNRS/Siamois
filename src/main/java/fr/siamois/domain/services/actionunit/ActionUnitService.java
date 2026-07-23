@@ -62,7 +62,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@Transactional
+@Transactional(rollbackFor = ActionUnitAlreadyExistsException.class)
 @RequiredArgsConstructor
 public class ActionUnitService implements ArkEntityService {
 
@@ -235,7 +235,7 @@ public class ActionUnitService implements ArkEntityService {
      * @param typeConcept The concept type of the ActionUnit
      * @return The saved ActionUnit
      */
-    @Transactional
+    @Transactional(rollbackFor = ActionUnitAlreadyExistsException.class)
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {

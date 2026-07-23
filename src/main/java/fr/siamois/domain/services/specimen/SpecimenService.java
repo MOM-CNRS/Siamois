@@ -2,6 +2,7 @@ package fr.siamois.domain.services.specimen;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -566,19 +567,15 @@ public class SpecimenService implements ArkEntityService {
         Specimen unit = specimenRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
 
-        // Cycle through the enum values
-        switch (unit.getValidated()) {
-            case INCOMPLETE:
-                unit.setValidated(COMPLETE);
-                break;
-            case COMPLETE:
-                unit.setValidated(VALIDATED);
-                break;
-            case VALIDATED:
-                unit.setValidated(INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + unit.getValidated());
+        ValidationStatus status = unit.getValidated();
+        if (status == INCOMPLETE) {
+            unit.setValidated(COMPLETE);
+        } else if (status == COMPLETE) {
+            unit.setValidated(VALIDATED);
+        } else if (status == VALIDATED) {
+            unit.setValidated(INCOMPLETE);
+        } else {
+            throw new IllegalStateException("Unknown status: " + status);
         }
 
         return specimenMapper.convert(specimenRepository.save(unit));

@@ -1162,8 +1162,9 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findAllById(any())).thenReturn(List.of());
             when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
 
+            RecordingUnitDTO toSave = new RecordingUnitDTO();
             assertThrows(FailedRecordingUnitSaveException.class,
-                    () -> recordingUnitService.save(new RecordingUnitDTO()));
+                    () -> recordingUnitService.save(toSave));
         }
 
         @Test
@@ -1254,8 +1255,9 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findAllById(any())).thenReturn(List.of());
             when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
 
+            RecordingUnitDTO toSave = new RecordingUnitDTO();
             assertThrows(FailedRecordingUnitSaveException.class,
-                    () -> recordingUnitService.save(new RecordingUnitDTO()));
+                    () -> recordingUnitService.save(toSave));
         }
     }
 
@@ -1630,14 +1632,16 @@ class RecordingUnitServiceTest {
 
         @Test
         void findAccessibleRecordingUnitByKey_emptyAccessibleInstitutions_throws() {
+            Set<Long> emptyScope = Set.of();
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", Set.of(), null));
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", emptyScope, null));
         }
 
         @Test
         void findAccessibleRecordingUnitByKey_blankKey_throws() {
+            Set<Long> institutionIds = Set.of(100L);
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("   ", Set.of(100L), null));
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("   ", institutionIds, null));
         }
 
         @Test
@@ -1653,8 +1657,9 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
             when(recordingUnitMapper.convert(unit)).thenReturn(convertedDto);
 
+            Set<Long> institutionIds = Set.of(100L);
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", Set.of(100L), null));
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", institutionIds, null));
         }
 
         @Test
@@ -1709,11 +1714,12 @@ class RecordingUnitServiceTest {
 
         @Test
         void findAccessibleRecordingUnitByKey_fullIdentifierNotFound_throws() {
-            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("ABC-1", Set.of(100L)))
+            Set<Long> institutionIds = Set.of(100L);
+            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("ABC-1", institutionIds))
                     .thenReturn(Optional.empty());
 
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("ABC-1", Set.of(100L), null));
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("ABC-1", institutionIds, null));
         }
 
         @Test

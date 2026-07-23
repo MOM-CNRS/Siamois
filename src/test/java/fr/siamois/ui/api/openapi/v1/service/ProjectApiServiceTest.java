@@ -32,6 +32,7 @@ import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -87,6 +88,7 @@ class ProjectApiServiceTest {
     @Mock
     private PhaseService phaseService;
 
+    @InjectMocks
     private ProjectApiService service;
     private ProjectApiCaller caller;
     private PersonDTO personDto;
@@ -94,22 +96,6 @@ class ProjectApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectApiService(
-                institutionService,
-                actionUnitService,
-                recordingUnitService,
-                spatialUnitService,
-                documentService,
-                specimenService,
-                projectDocumentOpenApiMapper,
-                findOpenApiMapper,
-                personMapper,
-                profilePermissionService,
-                conceptService,
-                conceptMapper,
-                recordingUnitOpenApiService,
-                phaseService);
-
         personDto = new PersonDTO();
         personDto.setId(1L);
         caller = new ProjectApiCaller(personDto, SCOPE, List.of());

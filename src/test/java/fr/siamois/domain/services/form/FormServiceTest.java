@@ -1382,7 +1382,7 @@ class FormServiceTest {
         }
 
         @Test
-        void setFieldValue_doesNothingForNullObject() throws Exception {
+        void setFieldValue_doesNothingForNullObject() {
             assertDoesNotThrow(() -> invokeStatic(
                     "setFieldValue", new Class[]{Object.class, String.class, Object.class}, null, "title", "x"));
         }
@@ -1576,11 +1576,11 @@ class FormServiceTest {
         @Test
         void readAnswerValueForApi_dateTimeWithValue_returnsUtcOffset() {
             CustomFieldAnswerDateTimeViewModel answer = new CustomFieldAnswerDateTimeViewModel();
-            answer.setValue(LocalDateTime.of(2024, 6, 15, 10, 30, 0));
+            answer.setValue(LocalDateTime.of(2024, Month.JUNE, 15, 10, 30, 0));
 
             Object result = formService.readAnswerValueForApi(answer);
 
-            assertEquals(OffsetDateTime.of(2024, 6, 15, 10, 30, 0, 0, ZoneOffset.UTC), result);
+            assertEquals(OffsetDateTime.of(2024, Month.JUNE, 15, 10, 30, 0, 0, ZoneOffset.UTC), result);
         }
 
         @Test

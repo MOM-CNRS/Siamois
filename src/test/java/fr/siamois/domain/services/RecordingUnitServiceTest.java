@@ -2013,8 +2013,9 @@ class RecordingUnitServiceTest {
 
         @Test
         void findAccessibleRecordingUnitByKey_emptyScope_throwsNotFound() {
+            Set<Long> emptyScope = Set.of();
             assertThrows(RecordingUnitNotFoundException.class,
-                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", Set.of(), null));
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", emptyScope, null));
         }
 
         @Test
@@ -2546,13 +2547,13 @@ class RecordingUnitServiceTest {
             managed.setId(1L);
             RecordingUnit source = new RecordingUnit();
             source.setId(1L);
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(1L);
+            RecordingUnitDTO unitDto = new RecordingUnitDTO();
+            unitDto.setId(1L);
 
-            when(recordingUnitMapper.invertConvert(dto)).thenReturn(source);
+            when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(source);
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
 
-            assertDoesNotThrow(() -> recordingUnitService.updateStratigraphicRel(dto));
+            assertDoesNotThrow(() -> recordingUnitService.updateStratigraphicRel(unitDto));
         }
 
         @Test
@@ -2593,10 +2594,10 @@ class RecordingUnitServiceTest {
             incoming.setRelationshipsAsUnit2(new HashSet<>());
             incoming.setContributors(new ArrayList<>());
 
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(50L);
+            RecordingUnitDTO unitDto = new RecordingUnitDTO();
+            unitDto.setId(50L);
 
-            when(recordingUnitMapper.invertConvert(dto)).thenReturn(incoming);
+            when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
             when(recordingUnitRepository.findById(50L)).thenReturn(Optional.of(managed));
             when(recordingUnitRepository.findAllById(argThat(ids -> {
                 List<Long> list = new ArrayList<>();
@@ -2606,9 +2607,9 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
             when(recordingUnitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
             when(personRepository.findAllById(anyList())).thenReturn(List.of());
-            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(dto);
+            when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
 
-            recordingUnitService.save(dto);
+            recordingUnitService.save(unitDto);
 
             assertFalse(obsoleteParent.getChildren().contains(managed));
             assertTrue(keptParent.getChildren().contains(managed));
@@ -2632,12 +2633,12 @@ class RecordingUnitServiceTest {
             RecordingUnit source = new RecordingUnit();
             source.setId(1L);
 
-            RecordingUnitDTO dto = new RecordingUnitDTO();
-            dto.setId(1L);
-            when(recordingUnitMapper.invertConvert(dto)).thenReturn(source);
+            RecordingUnitDTO unitDto = new RecordingUnitDTO();
+            unitDto.setId(1L);
+            when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(source);
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
 
-            recordingUnitService.updateStratigraphicRel(dto);
+            recordingUnitService.updateStratigraphicRel(unitDto);
 
             assertTrue(managed.getRelationshipsAsUnit2().isEmpty());
         }
