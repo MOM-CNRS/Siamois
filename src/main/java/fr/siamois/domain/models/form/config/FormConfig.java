@@ -12,6 +12,12 @@ import org.springframework.lang.Nullable;
 
 import java.util.Set;
 
+/**
+ * Un "FormConfig" est un ensemble de configuration de champs (FieldFormConfig) associé à une valeur d'un champ.
+ * Le champ est défini par fieldConcept (Type, Catégorie), la valeur est définie par valueConcept (Céramique, Dépôt, ...).
+ *      valueConcept peut être null si la configuration est la configuration par défaut appliquée dès qu'il n'y a pas de configuration.
+ * L'idée est de pouvoir configurer les champs d'un formulaire selon le concept type choisi
+ */
 @Data
 @Entity
 @Table(name = "form_config")
@@ -28,6 +34,11 @@ public class FormConfig {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_value_concept_id")
     private Concept valueConcept;
+
+    @NonNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fk_field_concept_id", nullable = false)
+    private Concept fieldConcept;
 
     @NonNull
     @ManyToOne(fetch = FetchType.LAZY)

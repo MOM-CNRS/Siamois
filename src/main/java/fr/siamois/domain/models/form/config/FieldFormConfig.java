@@ -10,6 +10,10 @@ import org.springframework.lang.NonNull;
 
 import java.util.Objects;
 
+/**
+ * Un FieldFormConfig est la configuration d'un champ d'une fiche par rapport à un type donnée.
+ * Un FieldFormConfig est rattaché à un FormConfig qui indiqué à quelle configuration il est rattaché
+ */
 @Data
 @Entity
 @Table(name = "field_form_config", indexes = {
