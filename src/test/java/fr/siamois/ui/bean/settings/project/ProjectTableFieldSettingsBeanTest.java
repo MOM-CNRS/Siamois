@@ -47,6 +47,8 @@ class ProjectTableFieldSettingsBeanTest {
                 List.of(ConfigurableTable.UE, ConfigurableTable.MOBILIER));
         when(tableFieldConfigService.listTypes(eq(42L), any())).thenReturn(
                 List.of(new TypeSummary("_default", true), new TypeSummary("Céramique", false)));
+        when(tableFieldConfigService.getFormConfig(eq(42L), any(), any())).thenReturn(
+                TypeFormConfig.builder().typeName("Céramique").build());
         when(tableFieldConfigService.getFieldsConfig(eq(42L), any(), any())).thenReturn(
                 new TypeFieldsConfig());
     }
@@ -57,6 +59,7 @@ class ProjectTableFieldSettingsBeanTest {
 
         assertThat(bean.getSelectedTable()).isEqualTo(ConfigurableTable.UE);
         assertThat(bean.getSelectedTypeName()).isEqualTo("Céramique");
+        assertThat(bean.getFormConfig()).isNotNull();
         assertThat(bean.getFieldsConfig()).isNotNull();
     }
 
@@ -77,6 +80,7 @@ class ProjectTableFieldSettingsBeanTest {
         bean.selectType("_default");
 
         assertThat(bean.getSelectedTypeName()).isEqualTo("_default");
+        verify(tableFieldConfigService).getFormConfig(42L, ConfigurableTable.UE, "_default");
         verify(tableFieldConfigService).getFieldsConfig(42L, ConfigurableTable.UE, "_default");
     }
 
@@ -142,6 +146,7 @@ class ProjectTableFieldSettingsBeanTest {
         assertThat(bean.getTables()).isEmpty();
         assertThat(bean.getSelectedTable()).isNull();
         assertThat(bean.getSelectedTypeName()).isNull();
+        assertThat(bean.getFormConfig()).isNull();
         assertThat(bean.getFieldsConfig()).isNull();
     }
 }
