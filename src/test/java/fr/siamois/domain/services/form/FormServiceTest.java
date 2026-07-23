@@ -1519,9 +1519,126 @@ class FormServiceTest {
         }
     }
 
+    // =====================================================================
+    // Missing branches: null field skip, isBindable, DateTime extract,
+    // recording-unit null, stratigraphy null lists, specimen Collection
+    // =====================================================================
 
+    @Test
+    void initOrReuseResponse_skipsNullFieldsInFieldSource() {
+        FieldSource fieldSource = mock(FieldSource.class);
+        CustomField titleField = mockSystemField(true, "title");
+        when(fieldSource.getAllFields()).thenReturn(Arrays.asList(null, titleField));
 
+        DummyEntity entity = new DummyEntity();
+        entity.setTitle("ok");
 
+        try (MockedStatic<CustomFieldAnswerFactory> mocked = mockStatic(CustomFieldAnswerFactory.class)) {
+            mocked.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(titleField))
+                    .thenReturn(new CustomFieldAnswerTextViewModel());
 
+            CustomFormResponseViewModel result = formService.initOrReuseResponse(null, entity, fieldSource, false);
+
+            assertEquals(1, result.getAnswers().size());
+            assertTrue(result.getAnswers().containsKey(titleField));
+            mocked.verify(() -> CustomFieldAnswerFactory.instantiateAnswerForField(titleField));
+            mocked.verify(() -> CustomFieldAnswerFactory.instantiateAnswerForField(isNull()), never());
+        }
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_skipsWhenFieldOrAnswerOrBindingIsNull() {
+        DummyEntity entity = new DummyEntity();
+        entity.setTitle("keep");
+
+        CustomField nullBindingField = mock(CustomField.class);
+        when(nullBindingField.getIsSystemField()).thenReturn(true);
+        when(nullBindingField.getValueBinding()).thenReturn(null);
+        CustomFieldAnswerTextViewModel nullBindingAnswer = new CustomFieldAnswerTextViewModel();
+        nullBindingAnswer.setValue("ignored");
+
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(null, new CustomFieldAnswerTextViewModel());
+        answers.put(mock(CustomField.class), null);
+        answers.put(nullBindingField, nullBindingAnswer);
+
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
+        response.setAnswers(answers);
+
+        formService.updateJpaEntityFromResponse(response, entity);
+
+        assertEquals("keep", entity.getTitle());
+    }
+
+    @Nested
+    class MissingExtractAndApiBranchesTests {
+
+        @Test
+        void readAnswerValueForApi_dateTimeWithValue_returnsUtcOffset() {
+            CustomFieldAnswerDateTimeViewModel answer = new CustomFieldAnswerDateTimeViewModel();
+            answer.setValue(LocalDateTime.of(2024, 6, 15, 10, 30, 0));
+
+            Object result = formService.readAnswerValueForApi(answer);
+
+            assertEquals(OffsetDateTime.of(2024, 6, 15, 10, 30, 0, 0, ZoneOffset.UTC), result);
+        }
+
+        @Test
+        void readAnswerValueForApi_recordingUnitSetWithNullValue_returnsNull() {
+            CustomFieldAnswerSelectMultipleRecordingUnitViewModel answer =
+                    new CustomFieldAnswerSelectMultipleRecordingUnitViewModel();
+            answer.setValue(null);
+
+            assertNull(formService.readAnswerValueForApi(answer));
+        }
+
+        @Test
+        void readAnswerValueForApi_stratigraphyWithNullRelationshipCollections_returnsEmptyLists() {
+            CustomFieldAnswerStratigraphyViewModel answer = new CustomFieldAnswerStratigraphyViewModel();
+            answer.setAnteriorRelationships(null);
+            answer.setPosteriorRelationships(null);
+            answer.setSynchronousRelationships(null);
+
+            Object result = formService.readAnswerValueForApi(answer);
+
+            assertInstanceOf(Map.class, result);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) result;
+            assertEquals(List.of(), map.get("anterior"));
+            assertEquals(List.of(), map.get("posterior"));
+            assertEquals(List.of(), map.get("synchronous"));
+        }
+    }
+
+    @Nested
+    class HandleSpecimenSetTests {
+
+        @Test
+        void specimenSet_withSpecimenCollection_setsFilteredList() throws Exception {
+            CustomFieldAnswerSelectMultipleSpecimenViewModel answer =
+                    new CustomFieldAnswerSelectMultipleSpecimenViewModel();
+            SpecimenSummaryDTO s1 = new SpecimenSummaryDTO();
+            s1.setId(1L);
+            SpecimenSummaryDTO s2 = new SpecimenSummaryDTO();
+            s2.setId(2L);
+
+            populate(answer, Arrays.asList(s1, "not-a-specimen", s2));
+
+            assertNotNull(answer.getValue());
+            assertEquals(2, answer.getValue().size());
+            assertTrue(answer.getValue().containsAll(List.of(s1, s2)));
+        }
+
+        @Test
+        void specimenSet_withNonCollection_leavesAnswerUnchanged() throws Exception {
+            CustomFieldAnswerSelectMultipleSpecimenViewModel answer =
+                    new CustomFieldAnswerSelectMultipleSpecimenViewModel();
+            List<SpecimenSummaryDTO> before = answer.getValue();
+
+            populate(answer, "not-a-collection");
+
+            assertSame(before, answer.getValue());
+        }
+    }
 
 }

@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -20,6 +21,8 @@ import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
@@ -427,6 +430,150 @@ class ProjectApiServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
 
         verifyNoInteractions(documentService);
+    }
+
+    // ---- validatePagedListRequest (offset/limit bounds) --------------------
+
+    @Test
+    void validatePagedListRequest_negativeOffset_throws400() {
+        assertThatThrownBy(() -> service.validatePagedListRequest(-1, 10))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).isEqualTo("Paramètres de pagination invalides");
+                });
+    }
+
+    @Test
+    void validatePagedListRequest_nonPositiveLimit_throws400() {
+        assertThatThrownBy(() -> service.validatePagedListRequest(0, 0))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getReason())
+                .isEqualTo("Paramètres de pagination invalides");
+        assertThatThrownBy(() -> service.validatePagedListRequest(0, -5))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getReason())
+                .isEqualTo("Paramètres de pagination invalides");
+    }
+
+    @Test
+    void validatePagedListRequest_limitAboveMax_throws400() {
+        assertThatThrownBy(() -> service.validatePagedListRequest(0, ProjectApiService.MAX_PAGE_SIZE + 1))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).isEqualTo("Paramètres de pagination invalides");
+                });
+    }
+
+    // ---- patchProject mainLocation / spatialContext ------------------------
+
+    private void stubPatchProjectAccess(ActionUnitDTO au) {
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)))
+                .thenReturn(true);
+    }
+
+    @Test
+    void patchProject_withMainLocationAndSpatialContext_updatesPlaces() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        ConceptDTO type = new ConceptDTO();
+        au.setType(type);
+        stubPatchProjectAccess(au);
+        when(actionUnitService.save(any(), same(au), eq(type))).thenReturn(au);
+
+        SpatialUnitDTO mainPlace = new SpatialUnitDTO();
+        mainPlace.setId(100L);
+        mainPlace.setName("Commune");
+        when(spatialUnitService.findById(100L)).thenReturn(mainPlace);
+
+        SpatialUnitDTO contextPlace = new SpatialUnitDTO();
+        contextPlace.setId(200L);
+        contextPlace.setName("Parcelle");
+        when(spatialUnitService.findById(200L)).thenReturn(contextPlace);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.setMainLocationId("100");
+        patch.setSpatialContextSpatialUnitIds(java.util.Arrays.asList("200", " ", null));
+
+        AccessibleProjectForApi result = service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(result.actionUnit()).isSameAs(au);
+        assertThat(au.getMainLocation()).isNotNull();
+        assertThat(au.getMainLocation().getId()).isEqualTo(100L);
+        assertThat(au.getSpatialContext()).extracting(su -> su.getId()).containsExactly(200L);
+        verify(spatialUnitService).findById(100L);
+        verify(spatialUnitService).findById(200L);
+        verify(spatialUnitService, times(2)).findById(anyLong());
+    }
+
+    @Test
+    void patchProject_mainLocationNotFound_throws404() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        stubPatchProjectAccess(au);
+        when(spatialUnitService.findById(404L)).thenThrow(new SpatialUnitNotFoundException("missing"));
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.setMainLocationId("404");
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(rse.getReason()).isEqualTo("Lieu introuvable: 404");
+                });
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
+    void patchProject_blankMainLocationId_clearsMainLocation() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        ConceptDTO type = new ConceptDTO();
+        au.setType(type);
+        SpatialUnitDTO previous = new SpatialUnitDTO();
+        previous.setId(1L);
+        au.setMainLocation(new SpatialUnitSummaryDTO(previous));
+        stubPatchProjectAccess(au);
+        when(actionUnitService.save(any(), same(au), eq(type))).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.setMainLocationId("  ");
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getMainLocation()).isNull();
+        verify(spatialUnitService, never()).findById(anyLong());
+    }
+
+    @Test
+    void patchProject_spatialContextNotFound_throws404() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        stubPatchProjectAccess(au);
+        when(spatialUnitService.findById(501L)).thenThrow(new RuntimeException("gone"));
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        List<String> placeIds = List.of("501");
+        patch.setSpatialContextSpatialUnitIds(placeIds);
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(rse.getReason()).isEqualTo("Lieu introuvable: 501");
+                });
+        verify(actionUnitService, never()).save(any(), any(), any());
     }
 
     // ---- primaryAcceptLanguage (static helper) -----------------------------
