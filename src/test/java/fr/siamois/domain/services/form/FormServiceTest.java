@@ -1576,11 +1576,12 @@ class FormServiceTest {
         @Test
         void readAnswerValueForApi_dateTimeWithValue_returnsUtcOffset() {
             CustomFieldAnswerDateTimeViewModel answer = new CustomFieldAnswerDateTimeViewModel();
-            answer.setValue(LocalDateTime.of(2024, Month.JUNE, 15, 10, 30, 0));
+            LocalDateTime local = LocalDateTime.of(2024, Month.JUNE, 15, 10, 30, 0);
+            answer.setValue(local);
 
             Object result = formService.readAnswerValueForApi(answer);
 
-            assertEquals(OffsetDateTime.of(2024, Month.JUNE, 15, 10, 30, 0, 0, ZoneOffset.UTC), result);
+            assertEquals(local.atOffset(ZoneOffset.UTC), result);
         }
 
         @Test
