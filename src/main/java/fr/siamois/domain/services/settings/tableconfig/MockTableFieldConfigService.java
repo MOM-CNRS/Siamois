@@ -31,6 +31,7 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     private static final Map<ConfigurableTable, List<String>> TABLE_TYPES = buildTableTypes();
 
     private static final List<FieldCatalogEntry> FIELD_CATALOG = buildFieldCatalog();
+    public static final String CERAMIC = "Céramique";
 
     private final Map<Long, Map<ConfigurableTable, Map<String, TypeFormConfig>>> formConfigsByProject = new ConcurrentHashMap<>();
     private final Map<Long, Map<ConfigurableTable, Map<String, TypeFieldsConfig>>> fieldsConfigsByProject = new ConcurrentHashMap<>();
@@ -53,7 +54,7 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     private static Map<ConfigurableTable, List<String>> buildTableTypes() {
         Map<ConfigurableTable, List<String>> map = new LinkedHashMap<>();
         map.put(ConfigurableTable.UE, List.of(DEFAULT_TYPE, "Creusement", "Construction", "Dépôt", "Démolition", "Sol"));
-        map.put(ConfigurableTable.MOBILIER, List.of(DEFAULT_TYPE, "Céramique", "Lithique", "Métal", "Verre", "Os travaillé", "Monnaie", "Faune"));
+        map.put(ConfigurableTable.MOBILIER, List.of(DEFAULT_TYPE, CERAMIC, "Lithique", "Métal", "Verre", "Os travaillé", "Monnaie", "Faune"));
         map.put(ConfigurableTable.PHASE, List.of(DEFAULT_TYPE, "Occupation", "Abandon", "Construction", "Destruction"));
         map.put(ConfigurableTable.CONTENANT, List.of(DEFAULT_TYPE, "Caisse", "Sachet", "Boîte", "Palette"));
         return map;
@@ -89,7 +90,7 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
 
     @Override
     public void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config) {
-
+        // empty mock not savig
     }
 
     @Override
@@ -259,7 +260,7 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     }
 
     private List<TypeFieldFormConfig> seedSystemFields(ConfigurableTable table, String typeName) {
-        boolean hideLocalisationAndInventeur = table == ConfigurableTable.MOBILIER && "Céramique".equals(typeName);
+        boolean hideLocalisationAndInventeur = table == ConfigurableTable.MOBILIER && CERAMIC.equals(typeName);
         List<TypeFieldFormConfig> fields = new ArrayList<>();
         fields.add(sysField("Identifiant", FieldType.TEXT, true, true, true, null));
         fields.add(sysField("Code inventaire", FieldType.TEXT, true, true, false, null));
@@ -296,7 +297,7 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     }
 
     private List<TypeFieldFormConfig> seedAdditionalFields(ConfigurableTable table, String typeName) {
-        if (table != ConfigurableTable.MOBILIER || !"Céramique".equals(typeName)) {
+        if (table != ConfigurableTable.MOBILIER || !CERAMIC.equals(typeName)) {
             return new ArrayList<>();
         }
         List<TypeFieldFormConfig> fields = new ArrayList<>();
