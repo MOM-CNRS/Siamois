@@ -375,6 +375,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         FormConfig owner = requireFormConfig(projectId, table, typeName);
         FieldFormConfig config = ownedBy(field, owner) ? field.stored() : materialize(field, owner);
         change.accept(config);
+        assert config != null;
         fieldFormConfigRepository.save(config);
     }
 
