@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.settings.tableconfig.FieldType;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
@@ -107,20 +108,8 @@ class MockTableFieldConfigServiceTest {
     }
 
     @Test
-    void addAdditionalField_shouldAppendAndAvoidNameCollisions() {
-        service.addAdditionalField(1L, ConfigurableTable.PHASE, "Occupation");
-        service.addAdditionalField(1L, ConfigurableTable.PHASE, "Occupation");
-
-        TypeFieldsConfig config = service.getFieldsConfig(1L, ConfigurableTable.PHASE, "Occupation");
-
-        assertThat(config.getFields()).filteredOn(f -> !f.isSystemField())
-                .extracting(TypeFieldFormConfig::getName)
-                .containsExactly("Nouveau champ", "Nouveau champ 2");
-    }
-
-    @Test
     void deleteAdditionalField_shouldRemoveIt() {
-        service.addAdditionalField(1L, ConfigurableTable.PHASE, "Occupation");
+        service.createField(1L, ConfigurableTable.PHASE, "Occupation", "Nouveau champ", FieldType.TEXT, "");
 
         service.deleteAdditionalField(1L, ConfigurableTable.PHASE, "Occupation", "Nouveau champ");
 

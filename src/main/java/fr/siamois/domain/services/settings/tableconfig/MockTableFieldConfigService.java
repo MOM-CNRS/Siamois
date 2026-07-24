@@ -98,22 +98,6 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
     }
 
     @Override
-    public TypeFieldFormConfig addAdditionalField(Long projectId, ConfigurableTable table, String typeName) {
-        TypeFieldsConfig config = internalFieldsConfig(projectId, table, typeName);
-        TypeFieldFormConfig field = TypeFieldFormConfig.builder()
-                .name(nextNewFieldName(config))
-                .type(FieldType.TEXT)
-                .systemField(false)
-                .active(true)
-                .mandatory(false)
-                .institutionLocked(false)
-                .sourceLabel("—")
-                .build();
-        config.getFields().add(field);
-        return copyOf(field);
-    }
-
-    @Override
     public void deleteAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
         internalFieldsConfig(projectId, table, typeName).getFields()
                 .removeIf(f -> !f.isSystemField() && f.getName().equals(fieldName));
@@ -192,15 +176,6 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
 
     private Optional<TypeFieldFormConfig> findField(TypeFieldsConfig config, String fieldName) {
         return config.getFields().stream().filter(f -> f.getName().equals(fieldName)).findFirst();
-    }
-
-    private String nextNewFieldName(TypeFieldsConfig config) {
-        String base = "Nouveau champ";
-        List<String> existing = config.getFields().stream().map(TypeFieldFormConfig::getName).toList();
-        if (!existing.contains(base)) return base;
-        int suffix = 2;
-        while (existing.contains(base + " " + suffix)) suffix++;
-        return base + " " + suffix;
     }
 
     private List<String> typeNamesOf(ConfigurableTable table) {
