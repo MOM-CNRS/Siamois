@@ -96,7 +96,8 @@
             **/files/**/*.*,
             **/resources/**/*.*,
             **/*Spec.*,
-            **/initializer/*Seeder.*
+            **/initializer/*Seeder.*,
+            **/Mock*Service.*
         </sonar.coverage.exclusions>
     </properties>
 
