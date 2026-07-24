@@ -408,4 +408,92 @@ class PhaseServiceTest {
         assertDoesNotThrow(() -> phaseService.save(inputDTO));
         assertNull(managed.getPeriods());
     }
+
+    @Test
+    void findAllByActionUnitId_mapsRepositoryResults() {
+        when(phaseRepository.findAll(any(Specification.class))).thenReturn(List.of(phase));
+        when(phaseMapper.convert(phase)).thenReturn(phaseDTO);
+
+        List<PhaseDTO> result = phaseService.findAllByActionUnitId(7L);
+
+        assertEquals(1, result.size());
+        assertSame(phaseDTO, result.get(0));
+        verify(phaseRepository).findAll(any(Specification.class));
+    }
+
+    @Test
+    void findAllByActionUnitId_empty_returnsEmptyList() {
+        when(phaseRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+        List<PhaseDTO> result = phaseService.findAllByActionUnitId(7L);
+
+        assertTrue(result.isEmpty());
+        verify(phaseMapper, never()).convert(any());
+    }
+
+    @Test
+    void save_existingEntity_mergesKeywordsLikePeriods() {
+        PhaseDTO inputDTO = new PhaseDTO();
+        inputDTO.setId(9L);
+
+        fr.siamois.domain.models.vocabulary.Concept kept = new fr.siamois.domain.models.vocabulary.Concept();
+        kept.setId(1L);
+        kept.setExternalId("kept");
+        fr.siamois.domain.models.vocabulary.Concept removed = new fr.siamois.domain.models.vocabulary.Concept();
+        removed.setId(2L);
+        removed.setExternalId("removed");
+        fr.siamois.domain.models.vocabulary.Concept added = new fr.siamois.domain.models.vocabulary.Concept();
+        added.setId(3L);
+        added.setExternalId("added");
+
+        Phase entity = new Phase();
+        entity.setId(9L);
+        entity.setKeywords(new HashSet<>(Set.of(kept, added)));
+        entity.setPeriods(new HashSet<>());
+
+        Phase managed = new Phase();
+        managed.setId(9L);
+        managed.setKeywords(new HashSet<>(Set.of(kept, removed)));
+        managed.setPeriods(new HashSet<>());
+
+        when(phaseMapper.invertConvert(inputDTO)).thenReturn(entity);
+        when(phaseRepository.findById(9L)).thenReturn(Optional.of(managed));
+        when(phaseRepository.save(managed)).thenReturn(managed);
+        when(phaseMapper.convert(managed)).thenReturn(new PhaseDTO());
+
+        phaseService.save(inputDTO);
+
+        assertTrue(managed.getKeywords().contains(kept));
+        assertTrue(managed.getKeywords().contains(added));
+        assertFalse(managed.getKeywords().contains(removed));
+    }
+
+    @Test
+    void save_existingEntity_mergesType() {
+        PhaseDTO inputDTO = new PhaseDTO();
+        inputDTO.setId(10L);
+
+        fr.siamois.domain.models.vocabulary.Concept type = new fr.siamois.domain.models.vocabulary.Concept();
+        type.setId(55L);
+
+        Phase entity = new Phase();
+        entity.setId(10L);
+        entity.setType(type);
+        entity.setPeriods(new HashSet<>());
+        entity.setKeywords(new HashSet<>());
+
+        Phase managed = new Phase();
+        managed.setId(10L);
+        managed.setPeriods(new HashSet<>());
+        managed.setKeywords(new HashSet<>());
+
+        when(phaseMapper.invertConvert(inputDTO)).thenReturn(entity);
+        when(phaseRepository.findById(10L)).thenReturn(Optional.of(managed));
+        when(phaseRepository.save(managed)).thenReturn(managed);
+        when(phaseMapper.convert(managed)).thenReturn(new PhaseDTO());
+
+        phaseService.save(inputDTO);
+
+        assertSame(type, managed.getType());
+    }
 }

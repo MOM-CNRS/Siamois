@@ -1,13 +1,17 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.VocabularyOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.resource.vocabulary.VocabularyResource;
 import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesData;
+import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesResponse;
+import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
@@ -26,8 +30,23 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class VocabularyOpenApiService {
 
+    private final ProjectApiService projectApiService;
     private final InstitutionService institutionService;
     private final FieldConfigurationService fieldConfigurationService;
+    private final VocabularyService vocabularyService;
+    private final VocabularyOpenApiMapper vocabularyOpenApiMapper;
+
+    /**
+     * Vocabulaires complets pour une organisation : catalogue des thésaurus et concepts par field_code
+     * (configuration institution / utilisateur), pour alimenter les formulaires.
+     */
+    @Transactional(readOnly = true)
+    public VocabulariesResponse listOrganizationVocabularies(ProjectApiCaller caller,
+                                                             long organizationId,
+                                                             String lang) {
+        requireOrganizationInScope(organizationId, caller);
+        return new VocabulariesResponse(buildVocabulariesData(organizationId, caller.person(), lang));
+    }
 
     @Transactional(readOnly = true)
     public VocabulariesData listVocabulariesForOrganization(long organizationId,
@@ -37,10 +56,23 @@ public class VocabularyOpenApiService {
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
         }
+        return buildVocabulariesData(organizationId, personDto, lang);
+    }
+
+    private VocabulariesData buildVocabulariesData(long organizationId, PersonDTO personDto, String lang) {
+        InstitutionDTO institution = institutionService.findById(organizationId);
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Map<String, List<ConceptAutocompleteDTO>> vocabularies =
+        Map<String, List<ConceptAutocompleteDTO>> vocabulariesByFieldCode =
                 fieldConfigurationService.fetchAllConfiguredVocabularies(userInfo);
-        return new VocabulariesData(vocabularies);
+        List<String> fieldCodes = new ArrayList<>(vocabulariesByFieldCode.keySet());
+        List<VocabularyResource> catalog = vocabularyService.findAllByInstitutionId(organizationId).stream()
+                .map(v -> vocabularyOpenApiMapper.toResource(v, lang))
+                .toList();
+        return new VocabulariesData(
+                String.valueOf(organizationId),
+                fieldCodes,
+                vocabulariesByFieldCode,
+                catalog);
     }
 
     @Transactional(readOnly = true)
@@ -72,5 +104,13 @@ public class VocabularyOpenApiService {
         }
         UserInfo userInfo = new UserInfo(institution, person, lang);
         return new ArrayList<>(fieldConfigurationService.fetchAllConfiguredVocabularies(userInfo).keySet());
+    }
+
+    private void requireOrganizationInScope(long organizationId, ProjectApiCaller caller) {
+        projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+        InstitutionDTO institution = institutionService.findById(organizationId);
+        if (institution == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organisation introuvable");
+        }
     }
 }

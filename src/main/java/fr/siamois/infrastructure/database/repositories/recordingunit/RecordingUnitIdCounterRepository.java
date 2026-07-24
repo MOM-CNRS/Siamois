@@ -4,9 +4,12 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdCounter;
 import fr.siamois.domain.models.vocabulary.Concept;
+import jakarta.persistence.QueryHint;
 import jakarta.transaction.Transactional;
+import org.hibernate.jpa.HibernateHints;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,24 +19,28 @@ import java.util.Optional;
 @Repository
 public interface RecordingUnitIdCounterRepository extends CrudRepository<RecordingUnitIdCounter, Long> {
 
+    @QueryHints(@QueryHint(name = HibernateHints.HINT_FLUSH_MODE, value = "COMMIT"))
     @Query(
             nativeQuery = true,
             value = "SELECT r.* FROM ru_nextval_unique(:actionUnitId) r"
     )
     int ruNextValUnique(Long actionUnitId);
 
+    @QueryHints(@QueryHint(name = HibernateHints.HINT_FLUSH_MODE, value = "COMMIT"))
     @Query(
             nativeQuery = true,
             value = "SELECT r.* FROM ru_nextval_parent(:parentRecordingUnitId) r"
     )
     int ruNextValParent(Long parentRecordingUnitId);
 
+    @QueryHints(@QueryHint(name = HibernateHints.HINT_FLUSH_MODE, value = "COMMIT"))
     @Query(
             nativeQuery = true,
             value = "SELECT r.* FROM ru_nextval_type_unique(:actionUnitId, :conceptTypeId) r"
     )
     int ruNextValTypeUnique(Long actionUnitId, Long conceptTypeId);
 
+    @QueryHints(@QueryHint(name = HibernateHints.HINT_FLUSH_MODE, value = "COMMIT"))
     @Query(
             nativeQuery = true,
             value = "SELECT r.* FROM ru_nextval_type_parent(:parentRecordingUnitId, :conceptTypeId) r"

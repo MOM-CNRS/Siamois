@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -32,8 +33,11 @@ public class ProjectResource extends ProjectResourceIdentifier {
 
     private ResolvedConceptResource type;
 
-    @Schema(description = "Localisation ptincipale d'un projet")
-    private PlaceLightResource mainLocation ;
+    @Schema(description = "Localisation principale / commune du projet")
+    private PlaceLightResource mainLocation;
+
+    @Schema(description = "Localisations précises du projet")
+    private List<PlaceLightResource> spatialContext;
 
     @Schema(description = "Organisation d'appartenance du projet")
     private OrganizationResourceIdentifier organization;

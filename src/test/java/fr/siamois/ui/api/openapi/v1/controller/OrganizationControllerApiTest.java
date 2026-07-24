@@ -6,6 +6,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -93,6 +94,8 @@ class OrganizationControllerApiTest {
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
+    private PhaseService phaseService;
+    @Mock
     private PlaceOpenApiService placeOpenApiService;
 
     private MockMvc mockMvc;
@@ -118,7 +121,7 @@ class OrganizationControllerApiTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService);
+                recordingUnitOpenApiService, phaseService);
 
         OrganizationControllerApi controller = new OrganizationControllerApi(
                 recordingUnitService,

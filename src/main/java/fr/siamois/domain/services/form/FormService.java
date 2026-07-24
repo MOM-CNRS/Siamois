@@ -319,6 +319,9 @@ public class FormService {
         } else if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) {
             return a.getValue();
         } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
+            if (a.getValue() == null) {
+                return null;
+            }
             return new HashSet<>(a.getValue());
         } else if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
             if (a.getValue() == null) {

@@ -187,4 +187,27 @@ class VocabularyServiceTest {
         assertEquals("Label 3 fr", result.get(2).label());
         assertEquals("fr", result.get(2).langLabel());
     }
+
+    @Test
+    void findAll_returnsAllVocabularies() {
+        Vocabulary v1 = new Vocabulary();
+        v1.setId(1L);
+        Vocabulary v2 = new Vocabulary();
+        v2.setId(2L);
+        when(vocabularyRepository.findAllOrderById()).thenReturn(List.of(v1, v2));
+
+        List<Vocabulary> result = vocabularyService.findAll();
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void findAllByInstitutionId_returnsDistinctVocabularies() {
+        when(vocabularyRepository.findDistinctByInstitutionId(10L)).thenReturn(List.of(vocabulary));
+
+        List<Vocabulary> result = vocabularyService.findAllByInstitutionId(10L);
+
+        assertEquals(1, result.size());
+        assertEquals(vocabulary, result.get(0));
+    }
 }
