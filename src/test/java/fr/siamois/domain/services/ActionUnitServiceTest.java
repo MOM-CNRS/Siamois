@@ -647,16 +647,21 @@ class ActionUnitServiceTest {
         dto.setMainLocation(existingLoc);
 
         ActionUnit entity = new ActionUnit();
+        SpatialUnit existingMainLoc = new SpatialUnit();
+        existingMainLoc.setId(7L);
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
         when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
         when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
         when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
         when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(spatialUnitRepository.findById(7L)).thenReturn(Optional.of(existingMainLoc));
         when(actionUnitRepository.save(entity)).thenReturn(entity);
 
         actionUnitService.saveNotTransactional(info, dto, new ConceptDTO());
 
         verify(spatialUnitRepository, never()).save(any(SpatialUnit.class));
+        verify(spatialUnitRepository).findById(7L);
+        assertSame(existingMainLoc, entity.getMainLocation());
     }
 
     @Test

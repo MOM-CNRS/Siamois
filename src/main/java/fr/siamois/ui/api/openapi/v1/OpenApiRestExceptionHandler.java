@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,6 +35,21 @@ public class OpenApiRestExceptionHandler {
     /**
      * Corps JSON illisible (clés non quotées, virgule en trop, mauvais Content-Type, etc.).
      */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, String>> missingRequestParameter(MissingServletRequestParameterException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                STRING, "bad_request",
+                MESSAGE, "Required request parameter '" + ex.getParameterName() + "' is missing"));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<Map<String, String>> mediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(Map.of(
+                STRING, "unsupported_media_type",
+                MESSAGE, ex.getMessage() != null ? ex.getMessage()
+                        : "Content-Type not supported. Use application/json."));
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> messageNotReadable(HttpMessageNotReadableException ex) {
         Throwable cause = ex.getMostSpecificCause();

@@ -125,8 +125,9 @@ public class ProjectControllerApi {
 
     @GetMapping("/form")
     @Operation(
-            summary = "Gabarit UI du formulaire projet",
-            description = "Retourne le layout et la définition des champs du formulaire système projet (sans valeurs saisies). "
+            summary = "Gabarit UI du formulaire de création projet",
+            description = "Retourne le layout et la définition des champs du formulaire de création projet "
+                    + "(ActionUnit.NEW_UNIT_FORM, comme le dialog web). "
                     + "Vocabulaires : GET /api/v1/vocabularies."
     )
     @ApiResponses(value = {

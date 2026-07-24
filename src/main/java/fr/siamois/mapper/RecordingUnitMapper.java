@@ -16,9 +16,10 @@ import org.springframework.lang.NonNull;
 public interface RecordingUnitMapper extends Converter<RecordingUnit, RecordingUnitDTO> {
 
     @Override
+    @Mapping(source = "chronologicalAttribution", target = "chronologicalPhase")
     @Nullable RecordingUnitDTO convert(@NonNull RecordingUnit source);
 
-    @InheritInverseConfiguration(name="convert")
+    @InheritInverseConfiguration(name = "convert")
     @DelegatingConverter
     RecordingUnit invertConvert(RecordingUnitDTO recordingUnitDTO);
 

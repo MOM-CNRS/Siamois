@@ -6,8 +6,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -64,12 +66,20 @@ public class ThesaurusApi {
             throw new InvalidEndpointException("Invalid URI: " + uri);
         }
 
-        String[] data = uriObj.toString().split("\\?idt=");
-        String host = data[0];
+        MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUri(uriObj).build().getQueryParams();
+        String externalId = queryParams.getFirst("idt");
+        if (externalId == null || externalId.isBlank()) {
+            throw new InvalidEndpointException("Invalid URI: missing idt parameter in " + uriObj);
+        }
+
+        String host = UriComponentsBuilder.fromUri(uriObj)
+                .replaceQuery(null)
+                .fragment(null)
+                .build()
+                .toUriString();
         if (host.endsWith("/")) {
             host = host.substring(0, host.length() - 1);
         }
-        String externalId = data[1];
 
         Optional<ThesaurusDTO> result = fetchThesaurusInfo(host, externalId);
         if (result.isEmpty()) {
@@ -81,17 +91,16 @@ public class ThesaurusApi {
     }
 
     private URI findRedirectUriIfArk(@NotNull URI uriObj) {
-        if (isNotUriWithIdtParameters(uriObj)) {
-            HttpEntity<String> entity = restTemplate.getForEntity(uriObj, String.class);
-            if (entity.getHeaders().getLocation() != null) {
-                uriObj = entity.getHeaders().getLocation();
-            }
+        // ARK URIs have no query string and redirect to a URL containing idt.
+        // URIs that already expose query params (even without idt) must not hit the network here.
+        if (uriObj.getRawQuery() != null && !uriObj.getRawQuery().isEmpty()) {
+            return uriObj;
+        }
+        HttpEntity<String> entity = restTemplate.getForEntity(uriObj, String.class);
+        if (entity.getHeaders().getLocation() != null) {
+            return entity.getHeaders().getLocation();
         }
         return uriObj;
-    }
-
-    private static boolean isNotUriWithIdtParameters(URI uriObj) {
-        return uriObj.getRawQuery() == null || uriObj.getRawQuery().isEmpty() || !uriObj.getRawQuery().contains("idt");
     }
 
     /**

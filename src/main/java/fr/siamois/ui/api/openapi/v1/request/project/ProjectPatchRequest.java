@@ -1,18 +1,21 @@
 package fr.siamois.ui.api.openapi.v1.request.project;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * Mise à jour partielle d'un projet (champs absents ou {@code null} = inchangé).
  */
 @Data
-@Schema(description = "Champs modifiables sur la fiche projet : nom, catégorie, dates, localisation précise (contexte spatial). "
-        + "Champs absents = inchangés ;")
+@Schema(description = "Champs modifiables sur la fiche projet : nom, catégorie, dates, "
+        + "commune (mainLocationId) et localisation précise (spatialContextSpatialUnitIds). "
+        + "Champs absents = inchangés.")
 public class ProjectPatchRequest {
 
     @Schema(description = "Nom du projet")
@@ -25,6 +28,7 @@ public class ProjectPatchRequest {
 
     @Schema(description = "Identifiant du concept du type de projet")
     @JsonSetter(nulls = Nulls.FAIL)
+    @JsonAlias("typeConceptId")
     private String typeId;
 
     @Schema(description = "Date de début")
@@ -33,6 +37,9 @@ public class ProjectPatchRequest {
     @Schema(description = "Date de fin")
     private OffsetDateTime endDate;
 
-    @Schema(description = "Localisation principale du projet (Identifiant d'unité spatiale)")
+    @Schema(description = "Localisation principale du projet / commune (identifiant d'unité spatiale)")
     private String mainLocationId;
+
+    @Schema(description = "Localisations précises (identifiants d'unités spatiales)")
+    private List<String> spatialContextSpatialUnitIds;
 }

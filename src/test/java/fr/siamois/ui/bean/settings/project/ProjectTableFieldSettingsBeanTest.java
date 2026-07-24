@@ -12,6 +12,7 @@ import fr.siamois.ui.bean.LangBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProjectTableFieldSettingsBeanTest {
 
+    @InjectMocks
     private ProjectTableFieldSettingsBean bean;
 
     @Mock
@@ -40,7 +42,6 @@ class ProjectTableFieldSettingsBeanTest {
 
     @BeforeEach
     void setUp() {
-        bean = new ProjectTableFieldSettingsBean(tableFieldConfigService, langBean);
         project = new ActionUnitDTO();
         project.setId(42L);
 
@@ -88,7 +89,7 @@ class ProjectTableFieldSettingsBeanTest {
     @Test
     void toggleFieldActive_shouldForwardTheFieldsAlreadyUpdatedValue() {
         bean.init(project);
-        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Localisation").type(FieldType.TEXT).systemField(true).active(false).build();
+        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Localisation").type(FieldType.TEXTE).systemField(true).active(false).build();
 
         bean.toggleFieldActive(field);
 
@@ -98,7 +99,7 @@ class ProjectTableFieldSettingsBeanTest {
     @Test
     void toggleFieldMandatory_shouldForwardTheFieldsAlreadyUpdatedValueForAdditionalField() {
         bean.init(project);
-        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Remontage").type(FieldType.SELECT_ONE).systemField(false).mandatory(true).build();
+        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Remontage").type(FieldType.PARENTS).systemField(false).mandatory(true).build();
 
         bean.toggleFieldMandatory(field);
 

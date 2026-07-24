@@ -24,6 +24,9 @@ public record FieldResource(
         Boolean isSystemField,
 
         @Schema(description = "Nom de la propriété métier bindée si champ système (ex. openingDate)")
-        @Nullable String valueBinding
+        @Nullable String valueBinding,
+
+        @Schema(description = "Code de vocabulaire (ex. SIARU.CHRONO) pour les SELECT_*_FROM_FIELD_CODE")
+        @Nullable String fieldCode
 ) {
 }

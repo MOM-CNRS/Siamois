@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -80,6 +81,13 @@ public class PhaseService {
         return phaseRepository.findById(id)
                 .map(phaseMapper::convert)
                 .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PhaseDTO> findAllByActionUnitId(long actionUnitId) {
+        return phaseRepository.findAll(PhaseSpec.belongsToActionUnit(actionUnitId)).stream()
+                .map(phaseMapper::convert)
+                .toList();
     }
 
     private <T> void synchronizeCollection(Collection<T> managed, Collection<T> incoming) {

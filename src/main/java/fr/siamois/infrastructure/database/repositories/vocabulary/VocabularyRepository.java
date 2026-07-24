@@ -7,10 +7,27 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface VocabularyRepository extends CrudRepository<Vocabulary, Long>, RevisionRepository<Vocabulary, Long, Long> {
+
+    @Query("SELECT v FROM Vocabulary v ORDER BY v.id")
+    List<Vocabulary> findAllOrderById();
+
+    @Query(
+            nativeQuery = true,
+            value = """
+                    SELECT DISTINCT v.*
+                    FROM vocabulary v
+                    JOIN concept c ON c.fk_vocabulary_id = v.vocabulary_id
+                    JOIN concept_field_config cfc ON cfc.fk_concept_id = c.concept_id
+                    WHERE cfc.fk_institution_id = :institutionId
+                    ORDER BY v.vocabulary_id
+                    """
+    )
+    List<Vocabulary> findDistinctByInstitutionId(@Param("institutionId") Long institutionId);
 
     /**
      * Find a vocabulary by its baseUri and externalId ignoring case.
