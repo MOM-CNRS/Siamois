@@ -13,6 +13,8 @@ import java.util.List;
  */
 public interface TableFieldConfigService {
 
+    String DEFAULT_TYPE = "_default";
+
     /**
      * Lists every table that can be configured (UE, Mobilier, Phase, Contenant).
      *

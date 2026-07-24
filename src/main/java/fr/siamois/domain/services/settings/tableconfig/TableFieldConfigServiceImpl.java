@@ -51,12 +51,6 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
-    /**
-     * Name the UI addresses the configuration carrying no {@code valueConcept} by. Mirrors the
-     * constant of {@link MockTableFieldConfigService}; both implementations answer to it.
-     */
-    private static final String DEFAULT_TYPE = "_default";
-
     private static final String NEW_FIELD_BASE_NAME = "Nouveau champ";
     private static final String NO_SOURCE = "—";
 
