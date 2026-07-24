@@ -281,7 +281,7 @@ class TableFieldConfigServiceImplTest {
         TypeFieldFormConfig field =
                 service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields().get(0);
 
-        assertThat(field.getType()).isEqualTo(FieldType.VOCABULAIRE_CONTROLE);
+        assertThat(field.getType()).isEqualTo(FieldType.SELECT_ONE);
         assertThat(field.isConfigurable()).isTrue();
         assertThat(field.getSourceLabel()).isEqualTo("SIAS.CATEGORY");
     }
@@ -339,7 +339,7 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void addAdditionalField_shouldCreateANonSystemTextFieldLinkedToTheType() {
+    void createField_shouldCreateANonSystemFieldLinkedToTheType() {
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
         when(personRepository.findById(PERSON_ID)).thenReturn(Optional.of(new Person()));
         when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> {
@@ -349,30 +349,16 @@ class TableFieldConfigServiceImplTest {
         });
         when(fieldFormConfigRepository.save(any(FieldFormConfig.class))).thenAnswer(call -> call.getArgument(0));
 
-        TypeFieldFormConfig created = service.addAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+        TypeFieldFormConfig created = service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Nouveau champ", FieldType.TEXT, "");
 
         assertThat(created.getName()).isEqualTo("Nouveau champ");
         assertThat(created.isSystemField()).isFalse();
-        assertThat(created.getType()).isEqualTo(FieldType.TEXTE);
+        assertThat(created.getType()).isEqualTo(FieldType.TEXT);
         assertThat(created.isActive()).isTrue();
 
         ArgumentCaptor<FieldFormConfig> link = ArgumentCaptor.forClass(FieldFormConfig.class);
         verify(fieldFormConfigRepository).save(link.capture());
         assertThat(link.getValue().getFormConfig()).isEqualTo(ceramiqueConfig);
-    }
-
-    @Test
-    void addAdditionalField_shouldSuffixTheNameWhenTheBaseNameIsTaken() {
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
-                .thenReturn(List.of(fieldConfig(ceramiqueConfig, textField(1L, "Nouveau champ", false), true, false)));
-        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
-        when(personRepository.findById(PERSON_ID)).thenReturn(Optional.of(new Person()));
-        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
-        when(fieldFormConfigRepository.save(any(FieldFormConfig.class))).thenAnswer(call -> call.getArgument(0));
-
-        TypeFieldFormConfig created = service.addAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
-
-        assertThat(created.getName()).isEqualTo("Nouveau champ 2");
     }
 
     @Test

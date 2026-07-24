@@ -71,11 +71,25 @@ public class MockTableFieldConfigService implements TableFieldConfigService {
                 .toList();
     }
 
+    @Override
+    public List<String> listConfigurableTypes(Long projectId, ConfigurableTable table, String input) {
+        return List.of();
+    }
+
+    @Override
+    public TypeSummary addConfiguration(Long projectId, ConfigurableTable table, String typeName) {
+        return null;
+    }
 
 
     @Override
     public TypeFormConfig getFormConfig(Long projectId, ConfigurableTable table, String typeName) {
         return copyOf(internalFormConfig(projectId, table, typeName));
+    }
+
+    @Override
+    public void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config) {
+
     }
 
     @Override
