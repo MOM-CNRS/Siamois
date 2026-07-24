@@ -281,7 +281,7 @@ class TableFieldConfigServiceImplTest {
         TypeFieldFormConfig field =
                 service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields().get(0);
 
-        assertThat(field.getType()).isEqualTo(FieldType.VOCABULAIRE_CONTROLE);
+        assertThat(field.getType()).isEqualTo(FieldType.SELECT_ONE);
         assertThat(field.isConfigurable()).isTrue();
         assertThat(field.getSourceLabel()).isEqualTo("SIAS.CATEGORY");
     }
@@ -353,7 +353,7 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(created.getName()).isEqualTo("Nouveau champ");
         assertThat(created.isSystemField()).isFalse();
-        assertThat(created.getType()).isEqualTo(FieldType.TEXTE);
+        assertThat(created.getType()).isEqualTo(FieldType.TEXT);
         assertThat(created.isActive()).isTrue();
 
         ArgumentCaptor<FieldFormConfig> link = ArgumentCaptor.forClass(FieldFormConfig.class);

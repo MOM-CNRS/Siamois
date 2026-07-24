@@ -18,6 +18,9 @@ import java.io.Serializable;
  * <p>
  * {@code institutionLocked} is read-only from the project screen — it can only be set on the
  * (not yet implemented) institution-level settings screens.
+ * <p>
+ * {@code description} is likewise a UI-only display stand-in for what would be read through the
+ * linked concept's description.
  */
 @Getter
 @Setter
@@ -27,6 +30,7 @@ import java.io.Serializable;
 public class TypeFieldFormConfig implements Serializable {
     private String name;
     private FieldType type;
+    private String description;
     private boolean systemField;
     private boolean active;
     private boolean mandatory;
