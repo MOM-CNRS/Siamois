@@ -58,6 +58,29 @@
             .ptc-disabled-icon { color: #cfcfca !important; cursor: not-allowed !important; }
 
             .ptc-ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: #8a7d4a; font-size: 15px; }
+
+            /* ── add-field picker ──────────────────────── */
+            .ptc-picker-dialog .ui-dialog-content { padding: 0 !important; }
+            .ptc-picker-newfield.ui-link, .ptc-picker-newfield { display: block; margin: 16px 22px; border: 1px dashed #cfcfca; border-radius: 9px; padding: 12px 14px; text-align: center; color: #555; font-size: 14.5px; cursor: pointer; text-decoration: none; }
+            .ptc-picker-section-title { padding: 0 22px 6px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: #a3a3a0; }
+            .ptc-picker-search { padding: 0 22px 10px; }
+            .ptc-picker-list { max-height: 340px; overflow: auto; padding: 6px 14px 18px; display: flex; flex-direction: column; gap: 4px; }
+            .ptc-picker-item.ui-link, .ptc-picker-item { display: block; text-decoration: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: inherit; }
+            .ptc-picker-item:hover { background: #f6f6f4; }
+            .ptc-picker-item-head { display: flex; align-items: center; gap: 8px; font-size: 14.5px; color: #2b2b2b; }
+            .ptc-picker-item-name { font-weight: 600; }
+            .ptc-picker-item-desc { font-size: 12.5px; color: #8c8c8c; margin-top: 2px; }
+
+            /* ── field edit drawer ─────────────────────── */
+            .ptc-drawer-scrim { position: fixed; inset: 0; background: rgba(40,40,38,0.28); z-index: 1040; }
+            .ptc-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.14); z-index: 1041; display: flex; flex-direction: column; }
+            .ptc-drawer-header { padding: 18px 22px; border-bottom: 1px solid #ececec; flex: none; }
+            .ptc-drawer-title { font-size: 18px; font-weight: 600; }
+            .ptc-drawer-body { flex: 1; overflow: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+            .ptc-drawer-field { display: flex; flex-direction: column; gap: 7px; }
+            .ptc-drawer-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #a3a3a0; }
+            .ptc-drawer-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 22px; border-top: 1px solid #ececec; flex: none; }
+            .ptc-native-select { width: 100%; font-size: 14px; font-family: inherit; border: 1px solid #d8d8d2; border-radius: 8px; padding: 8px 11px; background: #fff; color: #2b2b2b; }
         </style>
     </ui:define>
 
@@ -206,7 +229,7 @@
                                             <span class="ptc-section-title">#{langBean.msg('projectTables.champs.additionalTitle')}</span>
                                             <span class="ptc-section-meta">#{langBean.msg('projectTables.champs.additionalHint')}</span>
                                         </span>
-                                        <p:commandButton value="#{langBean.msg('projectTables.champs.addField')}" actionListener="#{projectTableFieldSettingsBean.addField()}" update="@form"/>
+                                        <p:commandButton value="#{langBean.msg('projectTables.champs.addField')}" actionListener="#{projectTableFieldSettingsBean.addField()}" update="@form :addFieldForm"/>
                                     </div>
 
                                     <p:dataTable value="#{projectTableFieldSettingsBean.additionalFields}" var="a" rowKey="#{a.name}"
@@ -226,7 +249,7 @@
                                             <h:outputText value="#{a.sourceLabel}"/>
                                         </p:column>
                                         <p:column style="width:80px">
-                                            <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm ptc-disabled-icon" disabled="true" title="#{langBean.msg('projectTables.champs.editSoon')}"/>
+                                            <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(a)}" update="@form :fieldEditForm"/>
                                             <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.deleteAdditionalField(a.name)}" update="@form"/>
                                         </p:column>
                                     </p:dataTable>
@@ -243,6 +266,9 @@
 
                 </div>
             </form:csrfform>
+
+            <ui:include src="/pages/settings/project/addFieldDialog.xhtml"/>
+            <ui:include src="/pages/settings/project/fieldEditDrawer.xhtml"/>
         </main>
     </ui:define>
 

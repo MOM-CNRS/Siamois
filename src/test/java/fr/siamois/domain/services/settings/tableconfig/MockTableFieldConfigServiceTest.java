@@ -148,4 +148,13 @@ class MockTableFieldConfigServiceTest {
         assertThat(active).isTrue();
     }
 
+    @Test
+    void getFormConfig_shouldExposeValueConceptLabelAsTypeNameExceptForDefault() {
+        TypeFormConfig ceramique = service.getFormConfig(1L, ConfigurableTable.MOBILIER, "Céramique");
+        TypeFormConfig defaultType = service.getFormConfig(1L, ConfigurableTable.MOBILIER, "_default");
+
+        assertThat(ceramique.getValueConceptLabel()).isEqualTo("Céramique");
+        assertThat(defaultType.getValueConceptLabel()).isEmpty();
+    }
+
 }
