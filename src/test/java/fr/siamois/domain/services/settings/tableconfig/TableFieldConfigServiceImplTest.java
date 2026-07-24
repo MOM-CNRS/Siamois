@@ -339,26 +339,9 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void createField_shouldCreateANonSystemFieldLinkedToTheType() {
-        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
-        when(personRepository.findById(PERSON_ID)).thenReturn(Optional.of(new Person()));
-        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> {
-            CustomField field = call.getArgument(0);
-            field.setId(42L);
-            return field;
-        });
-        when(fieldFormConfigRepository.save(any(FieldFormConfig.class))).thenAnswer(call -> call.getArgument(0));
-
-        TypeFieldFormConfig created = service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Nouveau champ", FieldType.TEXT, "");
-
-        assertThat(created.getName()).isEqualTo("Nouveau champ");
-        assertThat(created.isSystemField()).isFalse();
-        assertThat(created.getType()).isEqualTo(FieldType.TEXT);
-        assertThat(created.isActive()).isTrue();
-
-        ArgumentCaptor<FieldFormConfig> link = ArgumentCaptor.forClass(FieldFormConfig.class);
-        verify(fieldFormConfigRepository).save(link.capture());
-        assertThat(link.getValue().getFormConfig()).isEqualTo(ceramiqueConfig);
+    void createField_isNotImplementedYet() {
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Nouveau champ", FieldType.TEXT, ""))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

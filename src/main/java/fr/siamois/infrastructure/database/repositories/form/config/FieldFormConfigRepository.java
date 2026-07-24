@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.form.config;
 
 import fr.siamois.domain.models.form.config.FieldFormConfig;
-import fr.siamois.domain.models.form.customfield.CustomField;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -40,20 +39,4 @@ public interface FieldFormConfigRepository extends CrudRepository<FieldFormConfi
             where ffc.field.id = :customFieldId
             """)
     long countByFieldId(@Param("customFieldId") Long customFieldId);
-
-    /**
-     * The reusable (non-system) custom fields already configured somewhere in a project, for the
-     * "reuse an existing field" picker. Scoped to the project so a field never leaks across
-     * projects/institutions through the picker.
-     *
-     * @param actionUnitId the project (action unit) to search within
-     * @return the project's non-system custom fields, without duplicates
-     */
-    @Query("""
-            select distinct ffc.field
-            from FieldFormConfig ffc
-            where ffc.formConfig.actionUnit.id = :actionUnitId
-              and ffc.field.isSystemField = false
-            """)
-    List<CustomField> findAllCustomFieldsByActionUnitId(@Param("actionUnitId") Long actionUnitId);
 }

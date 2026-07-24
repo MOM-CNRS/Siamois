@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
+import fr.siamois.annotations.NotImplemented;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -179,153 +180,28 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         updateField(projectId, table, typeName, fieldName, config -> config.setMandatory(mandatory));
     }
 
-    /**
-     * Searches the reusable field catalog: the non-system fields already configured somewhere in
-     * this project, for the "reuse an existing field" picker.
-     */
     @Override
-    @Transactional(readOnly = true)
+    @NotImplemented
     public List<FieldCatalogEntry> searchFieldCatalog(Long projectId, String query) {
-        String needle = query == null ? "" : query.trim().toLowerCase();
-        List<FieldCatalogEntry> catalog = new ArrayList<>();
-        for (CustomField field : fieldFormConfigRepository.findAllCustomFieldsByActionUnitId(projectId)) {
-            if (needle.isEmpty() || field.getLabel().toLowerCase().contains(needle)) {
-                catalog.add(FieldCatalogEntry.builder()
-                        .name(field.getLabel())
-                        .type(typeOf(field))
-                        .description("")
-                        .build());
-            }
-        }
-        return catalog;
+        throw new UnsupportedOperationException("searchFieldCatalog is not implemented yet");
     }
 
-    /**
-     * Creates a brand-new custom field and links it to the type. {@code description} is accepted
-     * but not persisted: it is meant to become the definition of the field's linked concept, but
-     * that concept isn't created here (no thesaurus integration for user-created fields yet) — same
-     * limitation as {@link #saveFormConfig}'s dropped columns.
-     */
     @Override
-    @Transactional
+    @NotImplemented
     public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name, FieldType type, String description) {
-        FormConfig owner = requireFormConfig(projectId, table, typeName);
-        log.debug("Description '{}' of new field '{}' is not persisted (no concept created for it yet)",
-                description, name);
-        CustomField field = customFieldRepository.save(newCustomField(type, name));
-        return toDto(fieldFormConfigRepository.save(link(field, owner)));
+        throw new UnsupportedOperationException("createField is not implemented yet");
     }
 
-    /**
-     * Adds a field from the reusable catalog to the type. No-op (returns the existing field) if the
-     * type already has a field of that name.
-     */
     @Override
-    @Transactional
+    @NotImplemented
     public TypeFieldFormConfig addExistingField(Long projectId, ConfigurableTable table, String typeName, String catalogFieldName) {
-        Optional<EffectiveField> existing = effectiveFields(projectId, table, typeName).values().stream()
-                .filter(f -> catalogFieldName.equals(f.field().getLabel()))
-                .findFirst();
-        if (existing.isPresent()) {
-            return toDto(existing.get());
-        }
-        CustomField field = customFieldRepository.findFirstByLabelAndIsSystemFieldFalse(catalogFieldName)
-                .orElseThrow(() -> new NoSuchElementException("Unknown catalog field: " + catalogFieldName));
-        FormConfig owner = requireFormConfig(projectId, table, typeName);
-        return toDto(fieldFormConfigRepository.save(link(field, owner)));
+        throw new UnsupportedOperationException("addExistingField is not implemented yet");
     }
 
-    /**
-     * Renames an additional field and, when safe, changes its type. {@code description} is accepted
-     * but not persisted, for the same reason as in {@link #createField}.
-     * <p>
-     * The label and the type both live on the shared {@code CustomField} row, not on the
-     * type-specific {@code FieldFormConfig} — so both changes apply everywhere that field is
-     * configured, not just for {@code typeName}. Changing the type requires replacing the row
-     * (a JPA single-table-inheritance entity can't change its discriminator in place); to avoid
-     * silently restructuring a field another type still relies on, that replacement is refused
-     * (with a log warning, keeping the old type) when the field is configured on more than one type.
-     */
     @Override
-    @Transactional
+    @NotImplemented
     public TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description) {
-        Optional<EffectiveField> target = effectiveFields(projectId, table, typeName).values().stream()
-                .filter(f -> !isSystemField(f.field()) && fieldName.equals(f.field().getLabel()))
-                .findFirst();
-        if (target.isEmpty()) {
-            log.warn("No additional field '{}' on type '{}' of table {} in project {}", fieldName, typeName, table, projectId);
-            return null;
-        }
-        EffectiveField current = target.get();
-        log.debug("Description '{}' of field '{}' is not persisted (no concept created for it yet)",
-                description, newName);
-
-        CustomField field = current.field();
-        boolean typeChanged = typeOf(field) != newType;
-        if (typeChanged && fieldFormConfigRepository.countByFieldId(field.getId()) > 1) {
-            log.warn("Field '{}' is configured on more than one type; refusing to change its type from this screen", fieldName);
-            typeChanged = false;
-        }
-
-        if (!typeChanged) {
-            field.setLabel(newName);
-            CustomField saved = customFieldRepository.save(field);
-            return toDto(new EffectiveField(saved, current.stored(), current.requiredByForm()));
-        }
-
-        CustomField replacement = customFieldRepository.save(newCustomField(newType, newName));
-        FieldFormConfig link = current.stored();
-        if (link != null) {
-            link.setField(replacement);
-            link = fieldFormConfigRepository.save(link);
-        } else {
-            FormConfig owner = requireFormConfig(projectId, table, typeName);
-            link = fieldFormConfigRepository.save(link(replacement, owner));
-        }
-        customFieldRepository.delete(field);
-        return toDto(new EffectiveField(replacement, link, current.requiredByForm()));
-    }
-
-    /** A new, unsaved link between a custom field and a form configuration, with default flags. */
-    private FieldFormConfig link(CustomField field, FormConfig formConfig) {
-        FieldFormConfig link = new FieldFormConfig();
-        link.setField(field);
-        link.setFormConfig(formConfig);
-        link.setActive(true);
-        link.setMandatory(false);
-        link.setInstitutionLocked(false);
-        return link;
-    }
-
-    /**
-     * A new, unsaved custom field of the given type — restricted to the types this screen lets a
-     * user pick when creating or retyping an additional field (see {@link FieldType}'s javadoc).
-     */
-    private CustomField newCustomField(FieldType type, String name) {
-        return switch (type) {
-            case TEXT -> CustomFieldText.builder()
-                    .label(name).isSystemField(false).isTextArea(false).author(currentPerson()).build();
-            case INTEGER -> CustomFieldInteger.builder()
-                    .label(name).isSystemField(false).author(currentPerson()).build();
-            case MEASUREMENT -> CustomFieldMeasurement.builder()
-                    .label(name).isSystemField(false).author(currentPerson()).build();
-            case SELECT_ONE -> {
-                CustomFieldSelectOne field = new CustomFieldSelectOne();
-                field.setLabel(name);
-                field.setIsSystemField(false);
-                field.setAuthor(currentPerson());
-                yield field;
-            }
-            case SELECT_MULTIPLE -> {
-                CustomFieldSelectMultiple field = new CustomFieldSelectMultiple();
-                field.setLabel(name);
-                field.setIsSystemField(false);
-                field.setAuthor(currentPerson());
-                yield field;
-            }
-            default -> throw new IllegalArgumentException(
-                    "Type " + type + " cannot be created as an additional field from this screen");
-        };
+        throw new UnsupportedOperationException("updateField is not implemented yet");
     }
 
     /**

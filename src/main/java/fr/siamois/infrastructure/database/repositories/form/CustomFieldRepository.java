@@ -42,13 +42,4 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
             @Param("isSystemField" ) Boolean isSystemField,
             @Param("valueBinding" ) String valueBinding,
             @Param("concept" ) Concept concept);
-
-    /**
-     * Looks up a reusable (non-system) custom field by its exact label, for the "reuse an existing
-     * field" picker.
-     *
-     * @param label the field's label
-     * @return the matching field, or empty if none exists
-     */
-    Optional<CustomField> findFirstByLabelAndIsSystemFieldFalse(String label);
 }
