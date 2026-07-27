@@ -1,7 +1,6 @@
 package fr.siamois.domain.models.form.customfieldanswer.basetypes;
 
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;

@@ -2,7 +2,6 @@ package fr.siamois.ui.form.rules;
 
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacyId;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
@@ -48,9 +47,6 @@ public final class EnabledRulesEngine {
 
     private CustomFieldAnswerViewModel buildConceptOverride(CustomField field, ConceptAutocompleteDTO concept) {
         CustomFieldAnswerViewModel answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
-        CustomFieldAnswerLegacyId id = new CustomFieldAnswerLegacyId();
-        id.setField(field);
-        answer.setPk(id);
 
         if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
             a.setValue(concept);

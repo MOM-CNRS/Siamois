@@ -23,7 +23,6 @@ import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnsw
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOne;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.phase.Phase;
@@ -588,7 +587,6 @@ public class RecordingUnitOpenApiService {
                                                              Locale locale) {
         try {
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-            applyPersistedCustomAnswers(entity, customForm, response, locale.getLanguage());
             return toFieldsMap(response, fieldSource, locale);
         } catch (RuntimeException ex) {
             log.warn("Impossible de construire les réponses formulaire pour l'UE id={} (fallback métadonnées seules): {}",
@@ -664,42 +662,6 @@ public class RecordingUnitOpenApiService {
     private static String answerTypeDiscriminator(CustomField field) {
         DiscriminatorValue dv = field.getClass().getAnnotation(DiscriminatorValue.class);
         return dv != null ? dv.value() : field.getClass().getSimpleName();
-    }
-
-    private void applyPersistedCustomAnswers(RecordingUnit entity,
-                                             CustomForm effectiveForm,
-                                             CustomFormResponseViewModel response,
-                                             String lang) {
-        CustomFormResponse persisted = entity.getFormResponse();
-        if (persisted == null || persisted.getForm() == null || response.getAnswers() == null) {
-            return;
-        }
-        if (!Objects.equals(persisted.getForm().getId(), effectiveForm.getId())) {
-            return;
-        }
-        for (Map.Entry<CustomField, CustomFieldAnswerLegacy> e : persisted.getAnswers().entrySet()) {
-            CustomField field = e.getKey();
-            CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
-            if (vm != null) {
-                applyOnePersistedAnswer(e.getValue(), vm, lang);
-            }
-        }
-    }
-
-    private void applyOnePersistedAnswer(CustomFieldAnswerLegacy jpa, CustomFieldAnswerViewModel vm, String lang) {
-        if (jpa instanceof CustomFieldAnswerInteger jpaInt && vm instanceof CustomFieldAnswerIntegerViewModel vmInt) {
-            vmInt.setValue(jpaInt.getValue());
-        } else if (jpa instanceof CustomFieldAnswerText jpaText && vm instanceof CustomFieldAnswerTextViewModel vmText) {
-            vmText.setValue(jpaText.getValue());
-        } else if (jpa instanceof CustomFieldAnswerDateTime jpaDt && vm instanceof CustomFieldAnswerDateTimeViewModel vmDt) {
-            vmDt.setValue(jpaDt.getValue());
-        } else if (jpa instanceof CustomFieldAnswerSelectOne jpaSel
-                && vm instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel vmFc
-                && jpaSel.getValue() != null) {
-            ConceptDTO conceptDto = conceptMapper.convert(jpaSel.getValue());
-            String label = conceptDto.getExternalId() != null ? conceptDto.getExternalId() : "";
-            vmFc.setValue(new ConceptAutocompleteDTO(conceptDto, label, lang));
-        }
     }
 
     /**
@@ -955,7 +917,6 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-            applyPersistedCustomAnswers(entity, customForm, response, langService.localeForApiLang(lang).getLanguage());
             mergeFieldAnswers(dto, response, fieldSource, answers, lang);
             formService.updateJpaEntityFromResponse(response, dto);
 

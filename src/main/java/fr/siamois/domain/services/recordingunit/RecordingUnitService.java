@@ -8,7 +8,6 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
@@ -30,7 +29,6 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
-import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
@@ -91,7 +89,6 @@ public class RecordingUnitService implements ArkEntityService {
     private final ApplicationContext applicationContext;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
     private final DocumentRepository documentRepository;
-    private final CustomFormResponseRepository customFormResponseRepository;
     private final ArkRepository arkRepository;
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
@@ -523,15 +520,10 @@ public class RecordingUnitService implements ArkEntityService {
         clearStratigraphicRelationships(ru, recordingUnitId);
         deleteLinkedData(recordingUnitId, ru);
 
-        CustomFormResponse formResponse = ru.getFormResponse();
-        ru.setFormResponse(null);
         Long arkId = ru.getArk() != null ? ru.getArk().getInternalId() : null;
 
         recordingUnitRepository.save(ru);
 
-        if (formResponse != null && formResponse.getId() != null) {
-            customFormResponseRepository.deleteById(formResponse.getId());
-        }
         recordingUnitRepository.delete(ru);
         if (arkId != null) {
             arkRepository.deleteById(arkId);

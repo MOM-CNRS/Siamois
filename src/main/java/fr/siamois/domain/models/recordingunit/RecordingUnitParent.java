@@ -5,7 +5,6 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
@@ -117,15 +116,6 @@ public abstract class RecordingUnitParent extends TraceableEntity {
 
     @Embedded
     protected RecordingUnitAltimetry altitude;
-
-    @OneToOne(
-            orphanRemoval=true,
-            cascade = {CascadeType.PERSIST, CascadeType.MERGE}
-    )
-    @JoinColumn(name = "fk_custom_form_response", referencedColumnName = "custom_form_response_id")
-    @NotAudited
-    @JsonIgnore
-    protected CustomFormResponse formResponse;
 
     @ManyToOne
     @JoinColumn(name="fk_spatial_unit_id")

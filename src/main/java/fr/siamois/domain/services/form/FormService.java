@@ -376,9 +376,6 @@ public class FormService {
                                   Object jpaEntity,
                                   List<String> bindableFields) {
 
-        CustomFieldAnswerLegacyId answerId = new CustomFieldAnswerLegacyId();
-        answerId.setField(field);
-        answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
         if (answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer

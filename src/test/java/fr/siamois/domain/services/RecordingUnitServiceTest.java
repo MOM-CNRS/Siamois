@@ -11,7 +11,6 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -33,7 +32,6 @@ import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
-import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
@@ -82,8 +80,6 @@ class RecordingUnitServiceTest {
     @Mock
     private PersonRepository personRepository;
     @Mock
-    private CustomFormResponseService customFormResponseService;
-    @Mock
     private ConceptService conceptService;
     @Mock
     private InstitutionService institutionService;
@@ -103,8 +99,6 @@ class RecordingUnitServiceTest {
     private ActionUnitSummaryMapper actionUnitSummaryMapper;
     @Mock
     private DocumentRepository documentRepository;
-    @Mock
-    private CustomFormResponseRepository customFormResponseRepository;
     @Mock
     private ArkRepository arkRepository;
     @Mock
@@ -2341,7 +2335,7 @@ class RecordingUnitServiceTest {
         }
 
         @Test
-        void deleteRecordingUnitById_deletesLinkedDataFormResponseAndArk() {
+        void deleteRecordingUnitById_deletesLinkedDataAndArk() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(20L);
             ru.setParents(new HashSet<>());
@@ -2350,10 +2344,6 @@ class RecordingUnitServiceTest {
             ru.setRelationshipsAsUnit2(new HashSet<>());
             ru.setContributors(new ArrayList<>(List.of(new Person())));
             ru.setDocuments(new HashSet<>(Set.of(new Document())));
-
-            CustomFormResponse formResponse = new CustomFormResponse();
-            formResponse.setId(55L);
-            ru.setFormResponse(formResponse);
 
             Ark ark = new Ark();
             ark.setInternalId(888L);
@@ -2370,8 +2360,6 @@ class RecordingUnitServiceTest {
             verify(recordingUnitIdInfoRepository).deleteById(20L);
             assertTrue(ru.getContributors().isEmpty());
             assertTrue(ru.getDocuments().isEmpty());
-            assertNull(ru.getFormResponse());
-            verify(customFormResponseRepository).deleteById(55L);
             verify(arkRepository).deleteById(888L);
             verify(recordingUnitRepository).delete(ru);
         }

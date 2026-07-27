@@ -238,8 +238,7 @@ class FormServiceTest {
             LocalDateTime expectedLocal = entity.getCreatedAt().toLocalDateTime();
             assertEquals(expectedLocal, ((CustomFieldAnswerDateTimeViewModel) res.getAnswers().get(createdAtField)).getValue());
 
-            // also ensure pk set + hasBeenModified false
-            assertNotNull(res.getAnswers().get(titleField).getPk());
+            // also ensure hasBeenModified false
             assertFalse(res.getAnswers().get(titleField).getHasBeenModified());
         }
     }
@@ -688,8 +687,7 @@ class FormServiceTest {
             assertEquals(1, ((CustomFieldAnswerSelectMultipleFromFieldCodeViewModel) response.getAnswers().get(multipleConceptField)).getValue().size());
             assertEquals(1, ((CustomFieldAnswerSelectMultipleSpecimenViewModel) response.getAnswers().get(specimenSetField)).getValue().size());
 
-            // Also ensure pk set + hasBeenModified false
-            assertNotNull(response.getAnswers().get(titleField).getPk());
+            // Also ensure hasBeenModified false
             assertFalse(response.getAnswers().get(titleField).getHasBeenModified());
         }
     }

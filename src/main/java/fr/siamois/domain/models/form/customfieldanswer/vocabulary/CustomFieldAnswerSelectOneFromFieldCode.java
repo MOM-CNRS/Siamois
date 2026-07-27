@@ -11,7 +11,6 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
-@SuperBuilder
 @NoArgsConstructor
 @DiscriminatorValue("SELECT_ONE_FROM_FIELD_CODE")
 public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswerSelectOne {

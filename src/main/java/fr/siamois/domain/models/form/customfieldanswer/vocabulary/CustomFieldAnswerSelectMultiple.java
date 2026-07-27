@@ -1,6 +1,5 @@
 package fr.siamois.domain.models.form.customfieldanswer.vocabulary;
 
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;

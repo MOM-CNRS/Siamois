@@ -22,7 +22,6 @@ import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import fr.siamois.domain.models.form.customform.CustomRow;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -170,15 +169,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @FieldCode
     public static final String EROSION_ORIENTATION_FIELD_CODE = "SIARU.EROSIONORIENTATION";
-
-    // Setters/Removers
-    @Override
-    public void setFormResponse(CustomFormResponse formResponse) {
-        if (formResponse != null) {
-            formResponse.setRecordingUnit(this);
-        }
-        this.formResponse = formResponse;
-    }
 
     // utils
     public String displayFullIdentifier() {
