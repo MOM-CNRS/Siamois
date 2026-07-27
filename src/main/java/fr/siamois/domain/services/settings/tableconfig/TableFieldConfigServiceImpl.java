@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
+import fr.siamois.annotations.NotImplemented;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -51,7 +52,6 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
-    private static final String NEW_FIELD_BASE_NAME = "Nouveau champ";
     private static final String NO_SOURCE = "—";
 
     private final FieldConfigurationService fieldConfigurationService;
@@ -639,7 +639,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return TypeFieldFormConfig.builder()
                 .name(field.getLabel())
                 .type(type)
-                .description(field.getHint())
                 .systemField(isSystemField(field))
                 .active(effective.active())
                 .mandatory(effective.mandatory())
@@ -656,22 +655,24 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     /**
      * Maps a custom field to the type the screen displays. {@link FieldType} covers what the
      * configuration screen knows how to show, which is less than the entity hierarchy expresses —
-     * anything else falls back on {@link FieldType#TEXTE}.
+     * anything else falls back on {@link FieldType#TEXT}. There is deliberately no dedicated
+     * mapping for {@link CustomFieldStratigraphy}: the screen has no relation type to show it as
+     * for now (see {@link FieldType}'s javadoc), so it falls back like any other unmapped field.
      */
     private FieldType typeOf(CustomField field) {
         if (field instanceof CustomFieldInteger) return FieldType.INTEGER;
         if (field instanceof CustomFieldMeasurement) return FieldType.MEASUREMENT;
-        if (field instanceof CustomFieldSelectMultipleFromFieldCode) return FieldType.SELECT_MULTIPLE;
         if (field instanceof CustomFieldSelectOneFromFieldCode
-                || field instanceof CustomFieldSelectOneActionCode
-                || field instanceof CustomFieldSelectOne) return FieldType.SELECT_ONE;
-        if (field instanceof CustomFieldSelectMultiple) return FieldType.SELECT_MULTIPLE;
+                || field instanceof CustomFieldSelectOneActionCode) return FieldType.SELECT_ONE;
+        if (field instanceof CustomFieldSelectMultipleFromFieldCode) return FieldType.SELECT_MULTIPLE;
         if (field instanceof CustomFieldSelectOneSpatialUnit
                 || field instanceof CustomFieldSelectMultipleSpatialUnitTree
                 || field instanceof CustomFieldSelectOneAddress) return FieldType.SELECT_ONE_SPATIAL_UNIT;
         if (field instanceof CustomFieldSelectOneActionUnit) return FieldType.PROJET;
         if (field instanceof CustomFieldSelectOneRecordingUnit
                 || field instanceof CustomFieldSelectMultipleRecordingUnit) return FieldType.SELECT_ONE_RECORDING_UNIT;
+        if (field instanceof CustomFieldSelectOne) return FieldType.SELECT_ONE;
+        if (field instanceof CustomFieldSelectMultiple) return FieldType.SELECT_MULTIPLE;
         return FieldType.TEXT;
     }
 
