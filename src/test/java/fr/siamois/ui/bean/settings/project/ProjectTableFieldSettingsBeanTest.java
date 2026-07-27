@@ -129,15 +129,6 @@ class ProjectTableFieldSettingsBeanTest {
         verify(tableFieldConfigService, atLeastOnce()).getFieldsConfig(42L, ConfigurableTable.UE, "Céramique");
     }
 
-    @Test
-    void addField_shouldOpenPicker() {
-        bean.init(project);
-
-        bean.addField();
-
-        assertThat(bean.isPickerOpen()).isTrue();
-        verify(tableFieldConfigService, never()).addAdditionalField(any(), any(), any());
-    }
 
     @Test
     void resolveFieldLabel_shouldTranslateSystemFieldsAndLeaveTheOthersAsIs() {

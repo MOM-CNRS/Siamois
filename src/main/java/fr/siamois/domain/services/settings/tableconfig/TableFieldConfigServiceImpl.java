@@ -180,26 +180,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         applyFieldChange(projectId, table, typeName, fieldName, config -> config.setMandatory(mandatory));
     }
 
-    @Override
-    @Transactional
-    public TypeFieldFormConfig addAdditionalField(Long projectId, ConfigurableTable table, String typeName) {
-        FormConfig formConfig = requireFormConfig(projectId, table, typeName);
-        CustomFieldText field = CustomFieldText.builder()
-                .label(nextNewFieldName(projectId, table, typeName))
-                .isSystemField(false)
-                .isTextArea(false)
-                .author(currentPerson())
-                .build();
-        CustomField saved = customFieldRepository.save(field);
-
-        FieldFormConfig link = new FieldFormConfig();
-        link.setField(saved);
-        link.setFormConfig(formConfig);
-        link.setActive(true);
-        link.setMandatory(false);
-        link.setInstitutionLocked(false);
-        return toDto(fieldFormConfigRepository.save(link));
-    }
 
     /**
      * Unlinks an additional field from the type. The custom field itself is deleted only once no

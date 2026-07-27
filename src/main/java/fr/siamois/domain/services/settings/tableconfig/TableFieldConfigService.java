@@ -120,17 +120,6 @@ public interface TableFieldConfigService {
     void setFieldMandatory(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean mandatory);
 
     /**
-     * Adds a new additional field to a type, seeded with default values (name "Nouveau champ",
-     * type {@code TEXT}, not mandatory), and returns it so the caller can display/edit it further.
-     *
-     * @param projectId the project (action unit) this configuration is scoped to
-     * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
-     * @return a copy of the newly created field
-     */
-    TypeFieldFormConfig addAdditionalField(Long projectId, ConfigurableTable table, String typeName);
-
-    /**
      * Removes an additional field from a type. No-op if the named field is a system field (system
      * fields can be deactivated but never deleted) or doesn't exist.
      * To be defined: what happens if user try to delete an additional field already in use?
