@@ -7,10 +7,16 @@ import lombok.Data;
 import java.util.Objects;
 
 
+/**
+ * This class represents a field answer with spatial unit selected
+ * @deprecated This column is replaced by {@link CustomFieldAnswerSelectMultipleSpatialUnitTree#value} using
+ * custom_field_answer_spatial_unit_answers table with one value in the list
+ */
 @Data
 @Entity
 @DiscriminatorValue("SELECT_ONE_PERSON")
 @Table(name = "custom_field_answer")
+@Deprecated(forRemoval = true, since = "0.13.2-SNAPSHOT")
 public class CustomFieldAnswerSelectOnePerson extends CustomFieldAnswerSelectPerson {
 
     @ManyToOne

@@ -7,10 +7,15 @@ import lombok.Data;
 import java.util.Objects;
 
 
+/**
+ * This class represents a field answer with one concept selected
+ * @deprecated This column is replaced by {@link CustomFieldAnswerSelectMultiple#value} using custom_field_answer_concept_answers table with one value in the list
+ */
 @Data
 @Entity
 @DiscriminatorValue("SELECT_ONE")
 @Table(name = "custom_field_answer")
+@Deprecated(forRemoval = true, since = "0.13.2-SNAPSHOT")
 public class CustomFieldAnswerSelectOne extends CustomFieldAnswer {
 
     @ManyToOne
