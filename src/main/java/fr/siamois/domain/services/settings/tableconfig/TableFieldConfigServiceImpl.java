@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
-import fr.siamois.annotations.NotImplemented;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -53,6 +52,7 @@ import java.util.function.Consumer;
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private static final String NO_SOURCE = "—";
+    private static final String NEW_FIELD_BASE_NAME = "Nouveau champ";
 
     private final FieldConfigurationService fieldConfigurationService;
     private final LabelService labelService;

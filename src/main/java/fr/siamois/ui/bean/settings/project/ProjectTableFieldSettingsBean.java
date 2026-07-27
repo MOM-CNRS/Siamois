@@ -12,6 +12,7 @@ import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
+import jakarta.faces.application.FacesMessage;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private FieldType draftType;
     private String draftDescription;
 
+    private String newTypeName;
+
     public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.langBean = langBean;
@@ -79,6 +82,21 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         pickerQuery = null;
         closeDrawer();
         newTypeName = null;
+    }
+
+    /**
+     * Caption to display for a field. A system field carries a message key rather than a caption,
+     * whereas a field added from this screen carries what the user typed — same convention as
+     * {@code SpatialUnitFieldBean#resolveCustomFieldLabel}.
+     * <p>
+     * The untranslated name stays the field's identity: it is what the service is called back with
+     * to activate, require or delete it.
+     */
+    public String resolveFieldLabel(TypeFieldFormConfig field) {
+        if (field.isSystemField()) {
+            return langBean.msg(field.getName());
+        }
+        return field.getName();
     }
 
     public void init(ActionUnitDTO project) {
@@ -186,7 +204,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         tableFieldConfigService.addExistingField(project.getId(), selectedTable, selectedTypeName, entry.getName());
         pickerOpen = false;
         loadConfigs();
-        openPicker();
     }
 
     public void openNewFieldDrawer() {
@@ -250,84 +267,16 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftType = name == null ? null : FieldType.valueOf(name);
     }
 
-    public void openPicker() {
-        pickerQuery = "";
-        pickerOpen = true;
+    public List<String> completeConfigurableTypes(String query) {
+        return tableFieldConfigService.listConfigurableTypes(project.getId(), selectedTable, query);
     }
 
-    public void closePicker() {
-        pickerOpen = false;
-    }
-
-    public List<FieldCatalogEntry> getFieldCatalog() {
-        return tableFieldConfigService.searchFieldCatalog(project.getId(), pickerQuery);
-    }
-
-    public void pickExistingField(FieldCatalogEntry entry) {
-        tableFieldConfigService.addExistingField(project.getId(), selectedTable, selectedTypeName, entry.getName());
-        pickerOpen = false;
-        loadConfigs();
-    }
-
-    public void openNewFieldDrawer() {
-        pickerOpen = false;
-        openDrawerForCreate();
-    }
-
-    public void openDrawerForCreate() {
-        draftOriginalName = null;
-        draftName = "";
-        draftType = FieldType.TEXT;
-        draftDescription = "";
-        drawerOpen = true;
-    }
-
-    public void openDrawerForEdit(TypeFieldFormConfig field) {
-        draftOriginalName = field.getName();
-        draftName = field.getName();
-        draftType = field.getType();
-        draftDescription = field.getDescription();
-        drawerOpen = true;
-    }
-
-    public void closeDrawer() {
-        drawerOpen = false;
-        draftOriginalName = null;
-        draftName = null;
-        draftType = null;
-        draftDescription = null;
-    }
-
-    public void saveDrawer() {
-        if (draftOriginalName == null) {
-            tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription);
-        } else {
-            tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName, draftName, draftType, draftDescription);
-        }
-        loadConfigs();
-        closeDrawer();
-    }
-
-    public boolean isDraftCreateMode() {
-        return draftOriginalName == null;
-    }
-
-    public FieldType[] getFieldTypeOptions() {
-        return new FieldType[]{FieldType.TEXT, FieldType.INTEGER, FieldType.MEASUREMENT, FieldType.SELECT_ONE, FieldType.SELECT_MULTIPLE};
-    }
-
-    /**
-     * The {@code p:selectOneMenu} binds to this String-backed pair rather than {@code draftType}
-     * directly: every other {@code p:selectOneMenu} in this codebase does the same (see
-     * {@code ProfileSettingsBean.FDefaultInstitutionId}/{@code FSelectedLang}), because relying on
-     * JSF's implicit enum converter here doesn't reliably round-trip the selection on postback.
-     */
-    public String getDraftTypeName() {
-        return draftType == null ? null : draftType.name();
-    }
-
-    public void setDraftTypeName(String name) {
-        draftType = name == null ? null : FieldType.valueOf(name);
+    public void addConfiguration() {
+        tableFieldConfigService.addConfiguration(project.getId(), selectedTable, newTypeName);
+        typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), selectedTable);
+        selectType(newTypeName);
+        MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.tree.newConfigSuccess", newTypeName);
+        newTypeName = null;
     }
 
 }
