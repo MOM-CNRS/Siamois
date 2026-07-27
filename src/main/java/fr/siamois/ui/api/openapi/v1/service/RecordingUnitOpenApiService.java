@@ -18,6 +18,9 @@ import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfieldanswer.*;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.permissions.PermissionConstants;
@@ -673,7 +676,7 @@ public class RecordingUnitOpenApiService {
         if (!Objects.equals(persisted.getForm().getId(), effectiveForm.getId())) {
             return;
         }
-        for (Map.Entry<CustomField, CustomFieldAnswer> e : persisted.getAnswers().entrySet()) {
+        for (Map.Entry<CustomField, CustomFieldAnswerLegacy> e : persisted.getAnswers().entrySet()) {
             CustomField field = e.getKey();
             CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
             if (vm != null) {
@@ -682,7 +685,7 @@ public class RecordingUnitOpenApiService {
         }
     }
 
-    private void applyOnePersistedAnswer(CustomFieldAnswer jpa, CustomFieldAnswerViewModel vm, String lang) {
+    private void applyOnePersistedAnswer(CustomFieldAnswerLegacy jpa, CustomFieldAnswerViewModel vm, String lang) {
         if (jpa instanceof CustomFieldAnswerInteger jpaInt && vm instanceof CustomFieldAnswerIntegerViewModel vmInt) {
             vmInt.setValue(jpaInt.getValue());
         } else if (jpa instanceof CustomFieldAnswerText jpaText && vm instanceof CustomFieldAnswerTextViewModel vmText) {

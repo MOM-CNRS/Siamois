@@ -12,6 +12,9 @@ import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOn
 import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfieldanswer.*;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
@@ -98,7 +101,7 @@ public class FormService {
 
     // --------- Answer creators
 
-    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
+    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswerLegacy>> ANSWER_CREATORS =
             Map.ofEntries(
                     Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
                     Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),

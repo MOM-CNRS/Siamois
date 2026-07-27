@@ -16,7 +16,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @DiscriminatorValue("SELECT_ONE_FROM_FIELD_CODE")
 @Table(name = "custom_field_answer")
-public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswer {
+public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswerLegacy {
 
     @Override
     public boolean equals(Object o) {

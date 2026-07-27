@@ -16,7 +16,7 @@ import java.util.Set;
 @Entity
 @DiscriminatorValue("STRATIGRAPHY")
 @Table(name = "custom_field_answer")
-public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
+public class CustomFieldAnswerStratigraphy extends CustomFieldAnswerLegacy {
 
     // The rels
     private transient Set<StratigraphicRelationshipDTO> anteriorRelationships = new HashSet<>();

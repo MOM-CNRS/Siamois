@@ -6,7 +6,7 @@ import java.util.Objects;
 
 
 @Data
-public abstract class CustomFieldAnswerSelectPerson extends CustomFieldAnswer {
+public abstract class CustomFieldAnswerSelectPerson extends CustomFieldAnswerLegacy {
 
 
     @Override

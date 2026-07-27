@@ -11,7 +11,7 @@ import java.util.Objects;
 @Entity
 @DiscriminatorValue("SELECT_ONE_ACTION_CODE")
 @Table(name = "custom_field_answer")
-public class CustomFieldAnswerSelectOneActionCode extends CustomFieldAnswer {
+public class CustomFieldAnswerSelectOneActionCode extends CustomFieldAnswerLegacy {
 
     @ManyToOne
     @JoinColumn(name = "fk_value_as_action_code")

@@ -14,7 +14,7 @@ import java.util.Set;
 @Entity
 @DiscriminatorValue("SELECT_MULTIPLE_SPATIAL_UNIT_TREE")
 @Table(name = "custom_field_answer")
-public class CustomFieldAnswerSelectMultipleSpatialUnitTree extends CustomFieldAnswer {
+public class CustomFieldAnswerSelectMultipleSpatialUnitTree extends CustomFieldAnswerLegacy {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

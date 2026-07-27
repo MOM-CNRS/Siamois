@@ -3,9 +3,9 @@ package fr.siamois.domain.services.form;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
@@ -32,8 +32,8 @@ public class CustomFormResponseService {
         this.customFormRepository = customFormRepository;
     }
 
-    private CustomFieldAnswer createAnswer(CustomFieldAnswerId pk, CustomFieldAnswer answer) {
-        CustomFieldAnswer createdAnswer;
+    private CustomFieldAnswerLegacy createAnswer(CustomFieldAnswerId pk, CustomFieldAnswerLegacy answer) {
+        CustomFieldAnswerLegacy createdAnswer;
         if (pk.getField() instanceof CustomFieldInteger) {
             createdAnswer = new CustomFieldAnswerInteger();
             ((CustomFieldAnswerInteger) createdAnswer).setValue(((CustomFieldAnswerInteger) answer).getValue());
@@ -47,7 +47,7 @@ public class CustomFormResponseService {
         return createdAnswer;
     }
 
-    private boolean hasValueChanged(CustomField field, CustomFieldAnswer existingAnswer, CustomFieldAnswer newValue) {
+    private boolean hasValueChanged(CustomField field, CustomFieldAnswerLegacy existingAnswer, CustomFieldAnswerLegacy newValue) {
         if (field instanceof CustomFieldInteger) {
             return !Objects.equals(((CustomFieldAnswerInteger) existingAnswer).getValue(),
                     ((CustomFieldAnswerInteger) newValue).getValue());
@@ -62,7 +62,7 @@ public class CustomFormResponseService {
         }
     }
 
-    private void updateAnswer(CustomFieldAnswer managedAnswer, CustomFieldAnswer answer, CustomFieldAnswerId pk) {
+    private void updateAnswer(CustomFieldAnswerLegacy managedAnswer, CustomFieldAnswerLegacy answer, CustomFieldAnswerId pk) {
         if (managedAnswer.getPk().getField() instanceof CustomFieldInteger) {
             ((CustomFieldAnswerInteger) managedAnswer).setValue(((CustomFieldAnswerInteger) answer).getValue());
         } else if (managedAnswer.getPk().getField() instanceof CustomFieldSelectMultiple) {
@@ -99,9 +99,9 @@ public class CustomFormResponseService {
     private void saveAnswer(CustomField managedField,
                             CustomFormResponse customFormResponse,
                             CustomFormResponse managedFormResponse,
-                            Map<CustomField, CustomFieldAnswer> toBeDeleted
+                            Map<CustomField, CustomFieldAnswerLegacy> toBeDeleted
     ) {
-        CustomFieldAnswer answer = customFormResponse.getAnswers().get(managedField); // get answer
+        CustomFieldAnswerLegacy answer = customFormResponse.getAnswers().get(managedField); // get answer
 
         if (answer != null) {
 
@@ -110,7 +110,7 @@ public class CustomFormResponseService {
             pk.setField(managedField);
 
             // Get the answer if it already exists and modify it if necessary. Otherwise, create it and add it.
-            CustomFieldAnswer managedAnswer;
+            CustomFieldAnswerLegacy managedAnswer;
             if (managedFormResponse.getAnswers().containsKey(managedField)) {
                 managedAnswer = managedFormResponse.getAnswers().get(managedField);
                 // Update if necessary
@@ -139,7 +139,7 @@ public class CustomFormResponseService {
 
         // get form
         CustomForm managedForm;
-        Map<CustomField, CustomFieldAnswer> toBeDeleted;
+        Map<CustomField, CustomFieldAnswerLegacy> toBeDeleted;
 
         Optional<CustomForm> optManagedForm = customFormRepository.findById(customFormResponse.getForm().getId());
         if (optManagedForm.isPresent()) {
@@ -164,7 +164,7 @@ public class CustomFormResponseService {
                         toBeDeleted));     // Process each field
 
         // Delete the answer to be deleted
-        for (CustomFieldAnswer managedAnswerToDelete : toBeDeleted.values()) {
+        for (CustomFieldAnswerLegacy managedAnswerToDelete : toBeDeleted.values()) {
 
             if (managedAnswerToDelete != null) {
                 // Clear associations between the answer and the concept list if the type is select multiple

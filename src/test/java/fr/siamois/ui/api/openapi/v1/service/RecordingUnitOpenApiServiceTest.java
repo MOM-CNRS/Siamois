@@ -18,10 +18,10 @@ import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOn
 import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerDateTime;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOne;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText;
+import fr.siamois.domain.models.form.customfieldanswer.*;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.permissions.PermissionConstants;
@@ -312,7 +312,7 @@ class RecordingUnitOpenApiServiceTest {
 
         CustomFormResponse formResponse = mock(CustomFormResponse.class);
         when(formResponse.getForm()).thenReturn(persistedForm);
-        Map<CustomField, fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer> persistedAnswers = new HashMap<>();
+        Map<CustomField, CustomFieldAnswerLegacy> persistedAnswers = new HashMap<>();
         persistedAnswers.put(intField, jpaAnswer);
         when(formResponse.getAnswers()).thenReturn(persistedAnswers);
 
@@ -366,7 +366,7 @@ class RecordingUnitOpenApiServiceTest {
         when(jpaAnswer.getValue()).thenReturn(99);
         CustomFormResponse formResponse = mock(CustomFormResponse.class);
         when(formResponse.getForm()).thenReturn(persistedForm);
-        Map<CustomField, fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer> persistedAnswers = new HashMap<>();
+        Map<CustomField, CustomFieldAnswerLegacy> persistedAnswers = new HashMap<>();
         persistedAnswers.put(fieldFromDb, jpaAnswer);
         when(formResponse.getAnswers()).thenReturn(persistedAnswers);
         when(ruEntity.getFormResponse()).thenReturn(formResponse);

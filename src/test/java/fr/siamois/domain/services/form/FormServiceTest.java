@@ -517,7 +517,7 @@ class FormServiceTest {
         specForField2.setFieldId(1L);
         specForField2.setOp(EnabledWhenJson.Op.EQ);
         EnabledWhenJson.ValueJson valueJson = new EnabledWhenJson.ValueJson();
-        valueJson.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText");
+        valueJson.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText");
         valueJson.setValue(new ObjectMapper().createObjectNode().put("value", "test"));
         specForField2.setValues(List.of(valueJson));
 
@@ -1121,7 +1121,7 @@ class FormServiceTest {
         spec.setFieldId(999L);
         spec.setOp(EnabledWhenJson.Op.EQ);
         EnabledWhenJson.ValueJson vj = new EnabledWhenJson.ValueJson();
-        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText");
+        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText");
         spec.setValues(List.of(vj));
 
         when(fieldSource.getAllFields()).thenReturn(List.of(field1));

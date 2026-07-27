@@ -17,7 +17,7 @@ import java.util.Objects;
 @DiscriminatorValue("SELECT_ONE_SPATIAL_UNIT")
 @Table(name = "custom_field_answer")
 @Deprecated(forRemoval = true, since = "0.13.2-SNAPSHOT")
-public class CustomFieldAnswerSelectOneSpatialUnit extends CustomFieldAnswer {
+public class CustomFieldAnswerSelectOneSpatialUnit extends CustomFieldAnswerLegacy {
 
     @ManyToOne
     @JoinColumn(name = "fk_value_as_spatial_unit")

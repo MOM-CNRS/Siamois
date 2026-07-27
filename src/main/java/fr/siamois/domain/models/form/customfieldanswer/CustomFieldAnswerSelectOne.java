@@ -16,7 +16,7 @@ import java.util.Objects;
 @DiscriminatorValue("SELECT_ONE")
 @Table(name = "custom_field_answer")
 @Deprecated(forRemoval = true, since = "0.13.2-SNAPSHOT")
-public class CustomFieldAnswerSelectOne extends CustomFieldAnswer {
+public class CustomFieldAnswerSelectOne extends CustomFieldAnswerLegacy {
 
     @ManyToOne
     @JoinColumn(name = "fk_value_as_concept")

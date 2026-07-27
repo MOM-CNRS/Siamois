@@ -3,9 +3,9 @@ package fr.siamois.domain.services.form;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
@@ -40,7 +40,7 @@ class CustomFormResponseServiceTest {
     // Locals
     CustomFormResponse customFormResponse; // The new form response to be submitted
     CustomFormResponse managedFormResponse; // the managed instance retrieved from DB and to be modified based on submision
-    Map<CustomField, CustomFieldAnswer> toBeDeleted; // Field answers to be deleted
+    Map<CustomField, CustomFieldAnswerLegacy> toBeDeleted; // Field answers to be deleted
     CustomField managedField; // The field to process
     CustomForm form; // A form
     CustomFieldSelectMultiple field1SelectMultiple;

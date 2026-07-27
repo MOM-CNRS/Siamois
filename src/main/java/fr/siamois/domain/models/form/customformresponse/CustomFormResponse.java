@@ -1,7 +1,7 @@
 package fr.siamois.domain.models.form.customformresponse;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import jakarta.persistence.*;
@@ -36,14 +36,14 @@ public class CustomFormResponse implements Serializable {
             mappedBy = "pk.formResponse"
     )
     @MapKey(name="pk.field")
-    private Map<CustomField, CustomFieldAnswer> answers = new HashMap<>();
+    private Map<CustomField, CustomFieldAnswerLegacy> answers = new HashMap<>();
 
     @OneToOne(mappedBy = "formResponse")
     @ToString.Exclude  // Prevent infinite loop
     private RecordingUnit recordingUnit;
 
     // Keep entities in sync
-    public void addAnswer(CustomFieldAnswer answer) {
+    public void addAnswer(CustomFieldAnswerLegacy answer) {
         this.answers.put(answer.getPk().getField(), answer);
         answer.getPk().setFormResponse(this);
     }

@@ -13,7 +13,7 @@ import java.util.Objects;
 @Entity
 @DiscriminatorValue("SELECT_MULTIPLE")
 @Table(name = "custom_field_answer")
-public class CustomFieldAnswerSelectMultiple extends CustomFieldAnswer {
+public class CustomFieldAnswerSelectMultiple extends CustomFieldAnswerLegacy {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
