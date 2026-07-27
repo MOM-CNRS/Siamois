@@ -1,5 +1,7 @@
-package fr.siamois.domain.models.form.customfieldanswer;
+package fr.siamois.domain.models.form.customfieldanswer.basetypes;
 
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -13,7 +15,6 @@ import java.util.Objects;
 @Data
 @Entity
 @DiscriminatorValue("DATETIME")
-@Table(name = "custom_field_answer")
 public class CustomFieldAnswerDateTime extends CustomFieldAnswer {
 
     @Column(name = "value_as_datetime")
@@ -21,16 +22,13 @@ public class CustomFieldAnswerDateTime extends CustomFieldAnswer {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (!(o instanceof CustomFieldAnswerDateTime that)) return false;
-        if (!super.equals(o)) return false; // Ensures inherited fields are compared
-
-        return Objects.equals(getPk(), that.getPk());
+        if (!super.equals(o)) return false;
+        return Objects.equals(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), getPk());
+        return Objects.hashCode(value);
     }
-
 }

@@ -1,5 +1,7 @@
-package fr.siamois.domain.models.form.customfieldanswer;
+package fr.siamois.domain.models.form.customfieldanswer.basetypes;
 
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -12,7 +14,6 @@ import java.util.Objects;
 @Data
 @Entity
 @DiscriminatorValue("TEXT")
-@Table(name = "custom_field_answer")
 public class CustomFieldAnswerText extends CustomFieldAnswer {
 
     @Column(name = "value_as_text")
@@ -24,12 +25,12 @@ public class CustomFieldAnswerText extends CustomFieldAnswer {
         if (!(o instanceof CustomFieldAnswerText that)) return false;
         if (!super.equals(o)) return false; // Ensures inherited fields are compared
 
-        return Objects.equals(getPk(), that.getPk());
+        return Objects.equals(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), getPk());
+        return Objects.hash(value);
     }
 
 }
