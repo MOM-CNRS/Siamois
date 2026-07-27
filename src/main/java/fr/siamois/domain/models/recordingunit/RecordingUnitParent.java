@@ -11,7 +11,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;

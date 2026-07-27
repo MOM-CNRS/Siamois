@@ -1,10 +1,10 @@
 package fr.siamois.domain.services.form;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;

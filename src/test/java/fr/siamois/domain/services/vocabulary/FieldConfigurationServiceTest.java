@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
@@ -22,7 +23,6 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRe
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;

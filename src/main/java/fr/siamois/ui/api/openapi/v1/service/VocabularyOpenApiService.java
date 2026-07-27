@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
@@ -10,8 +12,6 @@ import fr.siamois.ui.api.openapi.v1.mapper.VocabularyOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.vocabulary.VocabularyResource;
 import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesData;
 import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesResponse;
-import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;

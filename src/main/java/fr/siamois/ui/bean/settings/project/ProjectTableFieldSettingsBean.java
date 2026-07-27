@@ -1,11 +1,7 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
+import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;

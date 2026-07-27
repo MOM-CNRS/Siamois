@@ -1,8 +1,11 @@
 package fr.siamois.ui.form;
 
-import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
@@ -15,7 +18,6 @@ import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMu
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
-import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.ui.viewmodel.fieldanswer.*;

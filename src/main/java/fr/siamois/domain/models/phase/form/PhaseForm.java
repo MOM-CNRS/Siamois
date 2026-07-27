@@ -1,9 +1,9 @@
 package fr.siamois.domain.models.phase.form;
 
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;

@@ -1,7 +1,8 @@
 package fr.siamois.domain.models.form.customfieldanswer.spatialunit;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import jakarta.persistence.*;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

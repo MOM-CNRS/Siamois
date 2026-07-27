@@ -4,11 +4,9 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 
 @Data

@@ -1,7 +1,8 @@
 package fr.siamois.domain.models.form.customfieldanswer.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import jakarta.persistence.*;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 import lombok.Data;
 
 import java.util.ArrayList;

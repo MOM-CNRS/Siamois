@@ -1,14 +1,14 @@
 package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.table.column.CommandLinkColumn;

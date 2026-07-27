@@ -1,8 +1,8 @@
 package fr.siamois.ui.form.rules;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;

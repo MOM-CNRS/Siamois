@@ -1,23 +1,8 @@
 package fr.siamois.domain.services.form;
 
 
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
-import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfield.basetypes.*;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfieldanswer.*;
-import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
-import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
-import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
-import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectMultiplePerson;
-import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectOnePerson;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
@@ -49,7 +34,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**

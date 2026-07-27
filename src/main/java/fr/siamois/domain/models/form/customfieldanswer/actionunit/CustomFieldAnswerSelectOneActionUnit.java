@@ -1,7 +1,8 @@
 package fr.siamois.domain.models.form.customfieldanswer.actionunit;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import jakarta.persistence.*;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
