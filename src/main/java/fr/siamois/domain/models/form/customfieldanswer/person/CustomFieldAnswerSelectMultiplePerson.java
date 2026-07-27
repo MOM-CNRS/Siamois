@@ -28,6 +28,7 @@ public class CustomFieldAnswerSelectMultiplePerson extends CustomFieldAnswerSele
     public void setValue(Object value) {
         if (Objects.isNull(persons)) persons = new ArrayList<>();
         persons.clear();
+        if (Objects.isNull(value)) return;
         if (value instanceof Person person) {
             persons.add(person);
         } else if (value instanceof Collection collection) {

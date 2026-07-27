@@ -17,6 +17,7 @@ import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnsw
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectOnePerson;
+import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
@@ -232,7 +233,7 @@ public class FormService {
     private ValueMatcher toMatcher(EnabledWhenJson.ValueJson vj) {
         String className = vj.getAnswerClass();
         return switch (className) {
-            case "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode" ->
+            case "fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode" ->
                     ValueMatcherFactory.forSelectOneFromFieldCode(vj);
             default -> ValueMatcherFactory.defaultMatcher();
         };

@@ -26,8 +26,10 @@ public class CustomFieldAnswerSelectOnePerson extends CustomFieldAnswerSelectPer
 
     @Override
     public void setValue(Object value) {
+        if (Objects.isNull(persons)) persons = new ArrayList<>();
+        persons.clear();
+        if (Objects.isNull(value)) return;
         if (value instanceof Person person) {
-            if (Objects.isNull(persons)) persons = new ArrayList<>();
             persons.add(0, person);
         } else {
             throw new IllegalArgumentException("Invalid value for custom field answer select person");

@@ -1138,7 +1138,7 @@ class FormServiceTest {
         CustomField field1 = mock(CustomField.class);
 
         EnabledWhenJson.ValueJson vj = new EnabledWhenJson.ValueJson();
-        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode");
+        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode");
         vj.setValue(new ObjectMapper().createObjectNode().put("vocabularyExtId", "voc1").put("conceptExtId", "c1"));
 
         EnabledWhenJson spec = new EnabledWhenJson();
