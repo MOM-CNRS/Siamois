@@ -1,5 +1,6 @@
-package fr.siamois.domain.models.form.customfield;
+package fr.siamois.domain.models.form.customfield.recordingunit;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -12,16 +13,15 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @Entity
-@DiscriminatorValue("SELECT_MULTIPLE_PERSON")
+@DiscriminatorValue("SELECT_MULTIPLE_RECORDING_UNIT")
 @Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
-public class CustomFieldSelectMultiplePerson extends CustomFieldSelectPerson {
+public class CustomFieldSelectMultipleRecordingUnit extends CustomField {
 
     @Override
     public String getIcon() {
-        return "bi bi-people";
+        return "bi bi-pencil-square";
     }
-
 
 }

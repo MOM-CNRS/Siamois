@@ -2,6 +2,15 @@ package fr.siamois.domain.services.form;
 
 
 import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.*;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfieldanswer.*;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;

@@ -1,6 +1,7 @@
-package fr.siamois.domain.models.form.customfield;
+package fr.siamois.domain.models.form.customfield.recordingunit;
 
 import fr.siamois.domain.models.FieldCode;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;

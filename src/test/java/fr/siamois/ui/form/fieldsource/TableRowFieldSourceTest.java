@@ -1,7 +1,7 @@
 package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customform.DependsOnJson;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.form.dto.CustomColUiDto;

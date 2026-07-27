@@ -1,4 +1,4 @@
-package fr.siamois.domain.models.form.customfield;
+package fr.siamois.domain.models.form.customfield.person;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -8,17 +8,20 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+
 @Getter
 @Setter
 @Entity
-@DiscriminatorValue("SELECT_MULTIPLE_PHASE")
+@DiscriminatorValue("SELECT_MULTIPLE_PERSON")
 @Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
-public class CustomFieldSelectMultiplePhase extends CustomField {
+public class CustomFieldSelectMultiplePerson extends CustomFieldSelectPerson {
 
     @Override
     public String getIcon() {
-        return "bi bi-layers";
+        return "bi bi-people";
     }
+
+
 }

@@ -1,5 +1,6 @@
-package fr.siamois.domain.models.form.customfield;
+package fr.siamois.domain.models.form.customfield.person;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -5,6 +5,19 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
+import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphy;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.*;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOne;
@@ -274,7 +287,7 @@ class RecordingUnitOpenApiServiceTest {
         CustomForm customForm = mock(CustomForm.class);
         when(customForm.getId()).thenReturn(10L);
 
-        var intField = mock(fr.siamois.domain.models.form.customfield.CustomFieldInteger.class);
+        var intField = mock(CustomFieldInteger.class);
         when(intField.getId()).thenReturn(5L);
         when(intField.getLabel()).thenReturn("n");
         when(intField.getHint()).thenReturn(null);

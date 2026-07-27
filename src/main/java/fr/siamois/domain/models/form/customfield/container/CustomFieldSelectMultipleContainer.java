@@ -1,5 +1,6 @@
-package fr.siamois.domain.models.form.customfield;
+package fr.siamois.domain.models.form.customfield.container;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -12,13 +13,15 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @Entity
-@DiscriminatorValue("SELECT_ONE_PERSON")
+@DiscriminatorValue("SELECT_MULTIPLE_CONTAINER")
 @Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
-public class CustomFieldSelectOnePerson extends CustomFieldSelectPerson {
+public class CustomFieldSelectMultipleContainer extends CustomField {
+
     @Override
     public String getIcon() {
-        return "bi bi-people";
+        return "bi bi-box-seam";
     }
+
 }

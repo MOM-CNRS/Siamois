@@ -1,5 +1,6 @@
-package fr.siamois.domain.models.form.customfield;
+package fr.siamois.domain.models.form.customfield.basetypes;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -14,21 +15,18 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @Entity
-@SuperBuilder
-@DiscriminatorValue("SELECT_ONE_FROM_FIELD_CODE")
+@DiscriminatorValue("INTEGER")
 @Table(name = "custom_field")
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomFieldSelectOneFromFieldCode extends CustomField {
+public class CustomFieldInteger extends CustomField {
 
-    @Column(name = "field_code")
-    private String fieldCode ;
+    @Column(name = "min_value")
+    private Integer minValue = Integer.MIN_VALUE;
 
-    @Column(name = "icon_class")
-    private String iconClass;
-
-    @Column(name = "style_class")
-    private String styleClass;
+    @Column(name = "max_value")
+    private Integer maxValue = Integer.MAX_VALUE;
 
     @Override
     public boolean equals(Object other) {
@@ -42,7 +40,7 @@ public class CustomFieldSelectOneFromFieldCode extends CustomField {
 
     @Override
     public String getIcon() {
-        return "sia-icon-opentheso";
+        return "bi bi-123";
     }
 
 }

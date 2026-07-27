@@ -1,9 +1,9 @@
-package fr.siamois.domain.models.form.customfield;
+package fr.siamois.domain.models.form.customfield.specimen;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,18 +13,15 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @Entity
-@DiscriminatorValue("SELECT_MULTIPLE_SPATIAL_UNIT_TREE")
+@DiscriminatorValue("SELECT_MULTIPLE_SPECIMEN")
 @Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-public class CustomFieldSelectMultipleSpatialUnitTree extends CustomField {
-
-    private String source;
+public class CustomFieldSelectMultipleSpecimen extends CustomField {
 
     @Override
     public String getIcon() {
-        return "bi bi-geo-alt";
+        return "bi bi-bucket";
     }
 
 }

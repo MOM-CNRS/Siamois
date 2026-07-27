@@ -1,22 +1,24 @@
-package fr.siamois.domain.models.form.customfield;
+package fr.siamois.domain.models.form.customfield.person;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 
 @Getter
 @Setter
-@SuperBuilder
 @Entity
-@DiscriminatorValue("SELECT_ONE_ACTION_CODE")
+@DiscriminatorValue("SELECT_ONE_PERSON")
 @Table(name = "custom_field")
-public class CustomFieldSelectOneActionCode extends CustomField {
+@SuperBuilder
+@NoArgsConstructor
+public class CustomFieldSelectOnePerson extends CustomFieldSelectPerson {
     @Override
     public String getIcon() {
-        return "bi bi-qr-code";
+        return "bi bi-people";
     }
 }
