@@ -1,7 +1,9 @@
 package fr.siamois.domain.models.form.customfieldanswer;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
+@Data
 @Entity
 @Table(name = "custom_field_answer")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
