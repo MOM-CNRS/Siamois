@@ -1,5 +1,6 @@
-package fr.siamois.domain.models.form.customfieldanswer;
+package fr.siamois.domain.models.form.customfieldanswer.actionunit;
 
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -16,7 +17,7 @@ import java.util.Set;
 @Entity
 @DiscriminatorValue("STRATIGRAPHY")
 @Table(name = "custom_field_answer")
-public class CustomFieldAnswerStratigraphy extends CustomFieldAnswerLegacy {
+public class CustomFieldAnswerStratigraphy extends CustomFieldAnswer {
 
     // The rels
     private transient Set<StratigraphicRelationshipDTO> anteriorRelationships = new HashSet<>();
@@ -33,22 +34,17 @@ public class CustomFieldAnswerStratigraphy extends CustomFieldAnswerLegacy {
     // Displayed selected rel info
     private transient StratigraphicRelationshipDTO selectedRel;
 
-
-
-
-
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CustomFieldAnswerStratigraphy that)) return false;
-        if (!super.equals(o)) return false; // Ensures inherited fields are compared
-
-        return Objects.equals(getPk(), that.getPk());
+    public Object getValue() {
+        return selectedRel;
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), getPk());
+    public void setValue(Object value) {
+        if (value instanceof StratigraphicRelationshipDTO) {
+            selectedRel = (StratigraphicRelationshipDTO) value;
+        } else {
+            throw new IllegalArgumentException("Invalid value for StratigraphicRelationshipDTO");
+        }
     }
-
 }

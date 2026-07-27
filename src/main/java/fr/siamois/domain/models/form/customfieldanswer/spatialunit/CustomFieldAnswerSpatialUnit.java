@@ -11,8 +11,8 @@ public abstract class CustomFieldAnswerSpatialUnit extends CustomFieldAnswer {
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "custom_field_answer_spatial_unit_answers",
-            joinColumns = {@JoinColumn("fk_field_answer_id")},
-            inverseJoinColumns = {@JoinColumn("fk_spatial_unit_id")})
+            joinColumns = {@JoinColumn(name = "fk_field_answer_id")},
+            inverseJoinColumns = {@JoinColumn(name = "fk_spatial_unit_id")})
     protected List<SpatialUnit> spatialUnits;
 
 }
