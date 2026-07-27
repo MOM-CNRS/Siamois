@@ -9,6 +9,7 @@ import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -98,6 +99,8 @@ class ProjectControllerApiTest {
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
+    private PhaseService phaseService;
+    @Mock
     private DocumentWriteOpenApiService documentWriteOpenApiService;
 
     private MockMvc mockMvc;
@@ -125,7 +128,8 @@ class ProjectControllerApiTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService);
+                recordingUnitOpenApiService,
+                phaseService);
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
                 projectResponseMapper,

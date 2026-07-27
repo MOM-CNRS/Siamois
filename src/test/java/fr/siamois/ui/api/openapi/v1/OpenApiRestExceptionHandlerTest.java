@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
@@ -74,5 +76,53 @@ class OpenApiRestExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).containsEntry("error", "internal_error");
         assertThat(response.getBody()).containsKey("correlationId");
+    }
+
+    @Test
+    void missingRequestParameter_returns400WithParameterName() {
+        ResponseEntity<Map<String, String>> response = handler.missingRequestParameter(
+                new MissingServletRequestParameterException("projectId", "String"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).containsEntry("error", "bad_request");
+        assertThat(response.getBody().get("message")).contains("projectId");
+    }
+
+    @Test
+    void mediaTypeNotSupported_returns415() {
+        ResponseEntity<Map<String, String>> response = handler.mediaTypeNotSupported(
+                new HttpMediaTypeNotSupportedException("text/plain"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        assertThat(response.getBody()).containsEntry("error", "unsupported_media_type");
+    }
+
+    @Test
+    void badCredentials_nullMessage_usesDefault() {
+        ResponseEntity<Map<String, String>> response =
+                handler.badCredentials(new BadCredentialsException(null));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).containsEntry("message", "Invalid credentials");
+    }
+
+    @Test
+    void responseStatus_unauthorizedBlankReason_defaultsMessage() {
+        ResponseEntity<Map<String, String>> response = handler.responseStatus(
+                new ResponseStatusException(HttpStatus.UNAUTHORIZED, " "));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).containsEntry("error", "unauthorized");
+        assertThat(response.getBody()).containsEntry("message", "Unauthorized");
+    }
+
+    @Test
+    void responseStatus_otherBlankReason_defaultsToError() {
+        ResponseEntity<Map<String, String>> response = handler.responseStatus(
+                new ResponseStatusException(HttpStatus.NOT_FOUND, null));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).containsEntry("error", "error");
+        assertThat(response.getBody()).containsEntry("message", "Error");
     }
 }

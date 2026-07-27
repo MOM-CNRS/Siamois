@@ -52,18 +52,18 @@ public class RecordingUnitsControllerApi {
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     public ResponseEntity<RecordingUnitCreateFormResponse> getRecordingUnitCreateForm(
-            @Parameter(description = "Projet (doit être dans le périmètre JWT).", example = "10")
-            @RequestParam long projectId,
+            @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10")
+            @RequestParam long organizationId,
             @Parameter(description = "Identifiant du concept définissant le type d'UE (concept_id).", example = "42")
             @RequestParam long recordingUnitTypeConceptId,
             @Parameter(description = "Langue préférée pour les libellés de vocabulaire (première entrée utilisée).")
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
-        projectApiService.assertOrganizationInCallerScope(projectId, caller.accessibleInstitutionIds());
+        projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         RecordingUnitCreateFormData data = recordingUnitOpenApiService.buildRecordingUnitCreateForm(
-                projectId, recordingUnitTypeConceptId, caller.person(), lang);
+                organizationId, recordingUnitTypeConceptId, caller.person(), lang);
         return ResponseEntity.ok(new RecordingUnitCreateFormResponse(data));
     }
 

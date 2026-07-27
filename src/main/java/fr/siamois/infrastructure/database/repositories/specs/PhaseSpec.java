@@ -22,6 +22,11 @@ public class PhaseSpec {
     }
 
     @NonNull
+    public static Specification<Phase> belongsToActionUnit(long actionUnitId) {
+        return (root, query, cb) -> cb.equal(root.get("actionUnit").get("id"), actionUnitId);
+    }
+
+    @NonNull
     public static Specification<Phase> identifierContaining(@Nullable String value) {
         return (root, query, cb) -> {
             if (value == null || value.isBlank()) return null;

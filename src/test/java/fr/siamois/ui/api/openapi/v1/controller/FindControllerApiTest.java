@@ -5,6 +5,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -30,6 +32,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -178,5 +181,53 @@ class FindControllerApiTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(findOpenApiService);
+    }
+
+    @Test
+    void getFindForm_returns200() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+
+        ResolvedConceptResource type = new ResolvedConceptResource();
+        type.setId("42");
+        type.setResolvedLabel("Céramique");
+        FindCreateFormData data = new FindCreateFormData(type, null, Map.of());
+        when(recordingUnitOpenApiService.buildFindCreateForm(10L, 42L, personDto, "fr")).thenReturn(data);
+
+        mockMvc.perform(get("/api/v1/finds/form")
+                        .param("organizationId", "10")
+                        .param("typeConceptId", "42")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.findType.id").value("42"))
+                .andExpect(jsonPath("$.data.findType.resolvedLabel").value("Céramique"));
+
+        verify(projectApiService).assertOrganizationInCallerScope(10L, Set.of(10L));
+        verify(recordingUnitOpenApiService).buildFindCreateForm(10L, 42L, personDto, "fr");
+    }
+
+    @Test
+    void getFindForm_withoutAuth_returns401() throws Exception {
+        SecurityContextHolder.clearContext();
+        when(projectApiService.requireCaller())
+                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
+
+        mockMvc.perform(get("/api/v1/finds/form")
+                        .param("organizationId", "10")
+                        .param("typeConceptId", "42"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getFindForm_outOfScope_returns403() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "hors périmètre"))
+                .when(projectApiService).assertOrganizationInCallerScope(99L, Set.of(10L));
+
+        mockMvc.perform(get("/api/v1/finds/form")
+                        .param("organizationId", "99")
+                        .param("typeConceptId", "42"))
+                .andExpect(status().isForbidden());
     }
 }

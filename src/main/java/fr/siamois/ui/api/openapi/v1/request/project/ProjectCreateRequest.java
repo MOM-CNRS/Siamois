@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * Création d'un projet (unité d'action) dans une organisation.
@@ -32,9 +33,10 @@ public class ProjectCreateRequest {
     @Schema(description = "Date de fin")
     private OffsetDateTime endDate;
 
-    @Schema(description = "Localisation principale du projet (Identifiant d'unité spatiale)")
+    @Schema(description = "Localisation principale du projet / commune (identifiant d'unité spatiale)")
     private String mainLocationId;
 
-    // No additional value for creation for now
+    @Schema(description = "Localisations précises (identifiants d'unités spatiales)")
+    private List<String> spatialContextSpatialUnitIds;
 
 }

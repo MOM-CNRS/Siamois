@@ -6,6 +6,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -96,6 +97,8 @@ class RecordingUnitsControllerApiTest {
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
+    private PhaseService phaseService;
+    @Mock
     private DocumentWriteOpenApiService documentWriteOpenApiService;
 
     private MockMvc mockMvc;
@@ -124,7 +127,8 @@ class RecordingUnitsControllerApiTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService);
+                recordingUnitOpenApiService,
+                phaseService);
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,
@@ -747,7 +751,7 @@ class RecordingUnitsControllerApiTest {
         SecurityContextHolder.clearContext();
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("projectId", "10")
+                        .param("organizationId", "10")
                         .param("recordingUnitTypeConceptId", "1"))
                 .andExpect(status().isUnauthorized());
     }
@@ -758,7 +762,7 @@ class RecordingUnitsControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("projectId", "999")
+                        .param("organizationId", "999")
                         .param("recordingUnitTypeConceptId", "1"))
                 .andExpect(status().isForbidden());
     }
@@ -775,7 +779,7 @@ class RecordingUnitsControllerApiTest {
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("projectId", "10")
+                        .param("organizationId", "10")
                         .param("recordingUnitTypeConceptId", "3")
                         .header("Accept-Language", "fr"))
                 .andExpect(status().isOk())
@@ -792,7 +796,7 @@ class RecordingUnitsControllerApiTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Recording unit type not found"));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("projectId", "10")
+                        .param("organizationId", "10")
                         .param("recordingUnitTypeConceptId", "99"))
                 .andExpect(status().isNotFound());
     }
@@ -808,7 +812,7 @@ class RecordingUnitsControllerApiTest {
                 .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("projectId", "10")
+                        .param("organizationId", "10")
                         .param("recordingUnitTypeConceptId", "1")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
                 .andExpect(status().isOk());
@@ -827,7 +831,7 @@ class RecordingUnitsControllerApiTest {
                 .thenReturn(new RecordingUnitCreateFormData(type, null, Map.of()));
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("projectId", "10")
+                        .param("organizationId", "10")
                         .param("recordingUnitTypeConceptId", "2"))
                 .andExpect(status().isOk());
 
@@ -842,14 +846,14 @@ class RecordingUnitsControllerApiTest {
         ResolvedConceptResource type = new ResolvedConceptResource();
         type.setId("8");
         FormResource bundle = new FormResource(50L, "Mon formulaire", "D", "{\"layout\":[]}");
-        FieldResource field = new FieldResource("12", "fields", "Libellé", "TEXT", null, false, null);
+        FieldResource field = new FieldResource("12", "fields", "Libellé", "TEXT", null, false, null, null);
         Map<String, FieldResource> fields = Map.of("12", field);
         RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, bundle, fields);
         when(recordingUnitOpenApiService.buildRecordingUnitCreateForm(10L, 8L, personDto, "fr"))
                 .thenReturn(payload);
 
         mockMvc.perform(get("/api/v1/recording-units/creation-form")
-                        .param("projectId", "10")
+                        .param("organizationId", "10")
                         .param("recordingUnitTypeConceptId", "8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.form.resourceId").value(50))

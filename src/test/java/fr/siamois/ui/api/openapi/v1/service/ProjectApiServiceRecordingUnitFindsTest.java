@@ -4,6 +4,7 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -66,6 +67,8 @@ class ProjectApiServiceRecordingUnitFindsTest {
     private ConceptMapper conceptMapper;
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
+    @Mock
+    private PhaseService phaseService;
 
     private ProjectApiService projectApiService;
 
@@ -89,7 +92,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService);
+                recordingUnitOpenApiService, phaseService);
     }
 
     private ProjectApiCaller caller() {

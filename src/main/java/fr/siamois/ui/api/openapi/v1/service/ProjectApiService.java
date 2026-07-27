@@ -11,6 +11,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -26,6 +27,7 @@ import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -75,6 +77,7 @@ public class ProjectApiService {
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
+    private final PhaseService phaseService;
 
     public void validatePagedListRequest(int offset, int limit) {
         if (offset < 0 || limit <= 0 || limit > MAX_PAGE_SIZE) {
@@ -187,8 +190,8 @@ public class ProjectApiService {
         shell.setBeginDate(request.getBeginDate());
         shell.setEndDate(request.getEndDate());
         shell.setType(typeDto);
-        shell.setSpatialContext(new LinkedHashSet<>());
-
+        applyMainLocation(shell, request.getMainLocationId());
+        applySpatialContext(shell, request.getSpatialContextSpatialUnitIds());
 
         recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
                 shell, null, caller.person(), lang);
@@ -230,6 +233,12 @@ public class ProjectApiService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de projet inconnu"));
             type = conceptMapper.convert(concept);
             dto.setType(type);
+        }
+        if (patch.getMainLocationId() != null) {
+            applyMainLocation(dto, patch.getMainLocationId());
+        }
+        if (patch.getSpatialContextSpatialUnitIds() != null) {
+            applySpatialContext(dto, patch.getSpatialContextSpatialUnitIds());
         }
         try {
             actionUnitService.save(userInfo, dto, type);
@@ -276,12 +285,50 @@ public class ProjectApiService {
         if (patch.getName() != null) {
             dto.setName(patch.getName());
         }
+        if (patch.getIdentifier() != null) {
+            String identifier = patch.getIdentifier().trim();
+            if (!identifier.isEmpty()) {
+                dto.setIdentifier(identifier);
+            }
+        }
         if (patch.getBeginDate() != null) {
             dto.setBeginDate(patch.getBeginDate());
         }
         if (patch.getEndDate() != null) {
             dto.setEndDate(patch.getEndDate());
         }
+    }
+
+    private void applyMainLocation(ActionUnitDTO dto, String mainLocationId) {
+        if (mainLocationId == null || mainLocationId.isBlank()) {
+            dto.setMainLocation(null);
+            return;
+        }
+        long placeId = parseLong(mainLocationId.trim());
+        try {
+            dto.setMainLocation(new SpatialUnitSummaryDTO(spatialUnitService.findById(placeId)));
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lieu introuvable: " + placeId);
+        }
+    }
+
+    private void applySpatialContext(ActionUnitDTO dto, List<String> spatialContextSpatialUnitIds) {
+        if (spatialContextSpatialUnitIds == null) {
+            return;
+        }
+        LinkedHashSet<SpatialUnitSummaryDTO> context = new LinkedHashSet<>();
+        for (String rawId : spatialContextSpatialUnitIds) {
+            if (rawId == null || rawId.isBlank()) {
+                continue;
+            }
+            long placeId = parseLong(rawId.trim());
+            try {
+                context.add(new SpatialUnitSummaryDTO(spatialUnitService.findById(placeId)));
+            } catch (RuntimeException ex) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lieu introuvable: " + placeId);
+            }
+        }
+        dto.setSpatialContext(context);
     }
 
     /**
@@ -320,6 +367,24 @@ public class ProjectApiService {
     public List<DocumentResource> listDocumentsForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
         return toSortedDocumentResources(documentService.findForActionUnit(row.actionUnit()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PhaseResource> listPhasesForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        return phaseService.findAllByActionUnitId(row.actionUnit().getId()).stream()
+                .map(phase -> {
+                    PhaseResource resource = new PhaseResource();
+                    resource.setId(phase.getId() != null ? String.valueOf(phase.getId()) : null);
+                    resource.setIdentifier(phase.getIdentifier());
+                    resource.setTitle(phase.getTitle());
+                    String label = phase.getTitle() != null && !phase.getTitle().isBlank()
+                            ? phase.getTitle()
+                            : phase.getIdentifier();
+                    resource.setLabel(label);
+                    return resource;
+                })
+                .toList();
     }
 
     /**

@@ -48,6 +48,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private TypeFormConfig formConfig;
     private TypeFieldsConfig fieldsConfig;
 
+    /** Value picked in the "add a configuration" dialog. */
+    private String newTypeName;
+
     public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.langBean = langBean;
@@ -64,6 +67,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         activeTabIndex = TAB_CHAMPS;
         formConfig = null;
         fieldsConfig = null;
+        newTypeName = null;
     }
 
     public void init(ActionUnitDTO project) {
@@ -101,6 +105,31 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         fieldsConfig = tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName);
     }
 
+    /**
+     * Values of the table's type field that can still be configured. Called by the picker of the
+     * "add a configuration" dialog on every keystroke, hence the query parameter.
+     */
+    public List<String> completeConfigurableTypes(String query) {
+        if (selectedTable == null) return List.of();
+        return tableFieldConfigService.listConfigurableTypes(project.getId(), selectedTable, query);
+    }
+
+    /**
+     * Creates the configuration of the picked type and opens it, so the user lands on what they
+     * just created rather than on the type they were reading.
+     */
+    public void addConfiguration() {
+        if (newTypeName == null || newTypeName.isBlank()) {
+            MessageUtils.displayErrorMessage(langBean, "projectTables.tree.newConfigRequired");
+            return;
+        }
+        TypeSummary created = tableFieldConfigService.addConfiguration(project.getId(), selectedTable, newTypeName);
+        typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), selectedTable);
+        selectType(created.getName());
+        newTypeName = null;
+        MessageUtils.displayInfoMessage(langBean, "projectTables.tree.newConfigSuccess", created.getName());
+    }
+
     public void toggleTree() {
         treeOpen = !treeOpen;
     }
@@ -112,6 +141,21 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public long getHiddenSystemFieldCount() {
         if (fieldsConfig == null) return 0;
         return fieldsConfig.getFields().stream().filter(f -> f.isSystemField() && !f.isActive()).count();
+    }
+
+    /**
+     * Caption to display for a field. A system field carries a message key rather than a caption,
+     * whereas a field added from this screen carries what the user typed — same convention as
+     * {@code SpatialUnitFieldBean#resolveCustomFieldLabel}.
+     * <p>
+     * The untranslated name stays the field's identity: it is what the service is called back with
+     * to activate, require or delete it.
+     */
+    public String resolveFieldLabel(TypeFieldFormConfig field) {
+        if (field.isSystemField()) {
+            return langBean.msg(field.getName());
+        }
+        return field.getName();
     }
 
     public List<TypeFieldFormConfig> getSystemFields() {
