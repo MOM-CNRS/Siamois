@@ -33,4 +33,13 @@ public class CustomFieldAnswerText extends CustomFieldAnswer {
         return Objects.hash(value);
     }
 
+
+    @Override
+    public void setValue(Object value) {
+        if (value instanceof String text) {
+            this.value = text;
+        } else {
+            throw new IllegalArgumentException("Value must be a String");
+        }
+    }
 }

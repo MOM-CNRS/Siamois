@@ -31,4 +31,13 @@ public class CustomFieldAnswerDateTime extends CustomFieldAnswer {
     public int hashCode() {
         return Objects.hashCode(value);
     }
+
+    @Override
+    public void setValue(Object value) {
+        if(value instanceof LocalDateTime localDateTime) {
+            this.value = localDateTime;
+        } else {
+            throw new IllegalArgumentException("Value must be a LocalDateTime");
+        }
+    }
 }

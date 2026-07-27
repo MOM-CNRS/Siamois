@@ -34,4 +34,12 @@ public class CustomFieldAnswerInteger extends CustomFieldAnswer {
         return Objects.hash(value);
     }
 
+    @Override
+    public void setValue(Object value) {
+        if (value instanceof Integer) {
+            this.value = (Integer) value;
+        } else {
+            throw new IllegalArgumentException("Value must be an Integer");
+        }
+    }
 }

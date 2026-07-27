@@ -12,4 +12,8 @@ public abstract class CustomFieldAnswer {
     @Column(name = "custom_field_answer_id")
     protected Long id;
 
+    public abstract Object getValue();
+
+    public abstract void setValue(Object value);
+
 }
