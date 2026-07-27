@@ -57,10 +57,30 @@
             .ptc-hidden-name { text-decoration: line-through; color: #a3a3a0; }
             .ptc-disabled-icon { color: #cfcfca !important; cursor: not-allowed !important; }
 
-            .ptc-dialog-hint { font-size: 13px; color: #8c8c8c; margin: 0 0 14px; }
-            .ptc-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
-
             .ptc-ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: #8a7d4a; font-size: 15px; }
+
+            /* ── add-field picker ──────────────────────── */
+            .ptc-picker-dialog .ui-dialog-content { padding: 0 !important; }
+            .ptc-picker-newfield.ui-link, .ptc-picker-newfield { display: block; margin: 16px 22px; border: 1px dashed #cfcfca; border-radius: 9px; padding: 12px 14px; text-align: center; color: #555; font-size: 14.5px; cursor: pointer; text-decoration: none; }
+            .ptc-picker-section-title { padding: 0 22px 6px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: #a3a3a0; }
+            .ptc-picker-search { padding: 0 22px 10px; }
+            .ptc-picker-list { max-height: 340px; overflow: auto; padding: 6px 14px 18px; display: flex; flex-direction: column; gap: 4px; }
+            .ptc-picker-item.ui-link, .ptc-picker-item { display: block; text-decoration: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: inherit; }
+            .ptc-picker-item:hover { background: #f6f6f4; }
+            .ptc-picker-item-head { display: flex; align-items: center; gap: 8px; font-size: 14.5px; color: #2b2b2b; }
+            .ptc-picker-item-name { font-weight: 600; }
+            .ptc-picker-item-desc { font-size: 12.5px; color: #8c8c8c; margin-top: 2px; }
+
+            /* ── field edit drawer ─────────────────────── */
+            .ptc-drawer-scrim { position: fixed; inset: 0; background: rgba(40,40,38,0.28); z-index: 1040; }
+            .ptc-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.14); z-index: 1041; display: flex; flex-direction: column; }
+            .ptc-drawer-header { padding: 18px 22px; border-bottom: 1px solid #ececec; flex: none; }
+            .ptc-drawer-title { font-size: 18px; font-weight: 600; }
+            .ptc-drawer-body { flex: 1; overflow: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+            .ptc-drawer-field { display: flex; flex-direction: column; gap: 7px; }
+            .ptc-drawer-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #a3a3a0; }
+            .ptc-drawer-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 22px; border-top: 1px solid #ececec; flex: none; }
+            .ptc-native-select { width: 100%; font-size: 14px; font-family: inherit; border: 1px solid #d8d8d2; border-radius: 8px; padding: 8px 11px; background: #fff; color: #2b2b2b; }
         </style>
     </ui:define>
 
@@ -75,6 +95,8 @@
             </form:csrfform>
 
             <form:csrfform formId="projectTablesForm" styleClass="sia-settings-form">
+                <p:messages showDetail="true" autoUpdate="true" closable="true" id="ptcMessages"/>
+
                 <h1 class="ptc-title">#{langBean.msg('projectTables.title')}</h1>
                 <p class="ptc-description">#{langBean.msg('projectTables.description')}</p>
 
@@ -114,10 +136,7 @@
                                                 </h:panelGroup>
                                             </p:commandLink>
                                         </ui:repeat>
-                                        <p:commandButton id="openNewConfig" type="button"
-                                                         value="#{langBean.msg('projectTables.tree.newConfig')}"
-                                                         styleClass="ptc-new-type-btn"
-                                                         onclick="PF('newConfigDialogWidget').show()"/>
+                                        <p:commandButton value="#{langBean.msg('projectTables.tree.newType')}" disabled="true" styleClass="ptc-new-type-btn"/>
                                     </div>
                                 </h:panelGroup>
                             </ui:repeat>
@@ -169,9 +188,6 @@
                                             <p:toggleSwitch value="#{projectTableFieldSettingsBean.formConfig.visibleInApp}"/>
                                         </div>
 
-                                        <p:outputPanel layout="block" style="display:flex;justify-content:flex-end;">
-                                            <p:commandButton value="#{langBean.msg('common.action.save')}" actionListener="#{projectTableFieldSettingsBean.saveFormConfig()}" update="@form"/>
-                                        </p:outputPanel>
                                     </div>
                                 </h:panelGroup>
                             </p:tab>
@@ -192,7 +208,7 @@
                                             </p:toggleSwitch>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
-                                            <span class="#{not f.active ? 'ptc-hidden-name' : ''}">#{projectTableFieldSettingsBean.resolveFieldLabel(f)}</span>
+                                            <span class="#{not f.active ? 'ptc-hidden-name' : ''}">#{f.name}</span>
                                             <h:panelGroup rendered="#{f.institutionLocked}">
                                                 <span class="bi bi-lock-fill" style="font-size:12px;color:#a3a3a0;margin-left:6px;" title="#{langBean.msg('projectTables.champs.institutionLocked')}"/>
                                             </h:panelGroup>
@@ -213,13 +229,13 @@
                                             <span class="ptc-section-title">#{langBean.msg('projectTables.champs.additionalTitle')}</span>
                                             <span class="ptc-section-meta">#{langBean.msg('projectTables.champs.additionalHint')}</span>
                                         </span>
-                                        <p:commandButton value="#{langBean.msg('projectTables.champs.addField')}" actionListener="#{projectTableFieldSettingsBean.addField()}" update="@form"/>
+                                        <p:commandButton value="#{langBean.msg('projectTables.champs.addField')}" actionListener="#{projectTableFieldSettingsBean.addField()}" update="@form :addFieldForm"/>
                                     </div>
 
                                     <p:dataTable value="#{projectTableFieldSettingsBean.additionalFields}" var="a" rowKey="#{a.name}"
                                                  emptyMessage="#{langBean.msg('projectTables.champs.emptyAdditional')}">
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
-                                            <h:outputText value="#{projectTableFieldSettingsBean.resolveFieldLabel(a)}"/>
+                                            <h:outputText value="#{a.name}"/>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:190px">
                                             <span class="ptc-chip">#{a.type.label}</span>
@@ -233,7 +249,7 @@
                                             <h:outputText value="#{a.sourceLabel}"/>
                                         </p:column>
                                         <p:column style="width:80px">
-                                            <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm ptc-disabled-icon" disabled="true" title="#{langBean.msg('projectTables.champs.editSoon')}"/>
+                                            <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(a)}" update="@form :fieldEditForm"/>
                                             <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.deleteAdditionalField(a.name)}" update="@form"/>
                                         </p:column>
                                     </p:dataTable>
@@ -249,27 +265,10 @@
                     </div>
 
                 </div>
-
-                <p:dialog id="newConfigDialog" widgetVar="newConfigDialogWidget" modal="true" resizable="false"
-                          header="#{langBean.msg('projectTables.tree.newConfig')}" width="460">
-                    <p class="ptc-dialog-hint">#{langBean.msg('projectTables.tree.newConfigHint')}</p>
-                    <p:outputLabel for="newTypeName" value="#{langBean.msg('projectTables.tree.newConfigValue')}"/>
-                    <p:autoComplete id="newTypeName" value="#{projectTableFieldSettingsBean.newTypeName}"
-                                    completeMethod="#{projectTableFieldSettingsBean.completeConfigurableTypes}"
-                                    dropdown="true" forceSelection="true" scrollHeight="220" style="width:100%"
-                                    placeholder="#{langBean.msg('projectTables.tree.newConfigPlaceholder')}"/>
-                    <p:message for="newTypeName"/>
-                    <div class="ptc-dialog-actions">
-                        <p:commandButton value="#{langBean.msg('common.action.cancel')}" type="button"
-                                         styleClass="ui-button-flat"
-                                         onclick="PF('newConfigDialogWidget').hide()"/>
-                        <p:commandButton id="addConfiguration" value="#{langBean.msg('common.action.create')}"
-                                         actionListener="#{projectTableFieldSettingsBean.addConfiguration()}"
-                                         process="@this newTypeName" update="@form"
-                                         oncomplete="PF('newConfigDialogWidget').hide()"/>
-                    </div>
-                </p:dialog>
             </form:csrfform>
+
+            <ui:include src="/pages/settings/project/addFieldDialog.xhtml"/>
+            <ui:include src="/pages/settings/project/fieldEditDrawer.xhtml"/>
         </main>
     </ui:define>
 

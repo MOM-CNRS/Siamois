@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
+import fr.siamois.annotations.NotImplemented;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -51,7 +52,6 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
-    private static final String NEW_FIELD_BASE_NAME = "Nouveau champ";
     private static final String NO_SOURCE = "—";
 
     private final FieldConfigurationService fieldConfigurationService;
@@ -181,24 +181,27 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     @Override
-    @Transactional
-    public TypeFieldFormConfig addAdditionalField(Long projectId, ConfigurableTable table, String typeName) {
-        FormConfig formConfig = requireFormConfig(projectId, table, typeName);
-        CustomFieldText field = CustomFieldText.builder()
-                .label(nextNewFieldName(projectId, table, typeName))
-                .isSystemField(false)
-                .isTextArea(false)
-                .author(currentPerson())
-                .build();
-        CustomField saved = customFieldRepository.save(field);
+    @NotImplemented
+    public List<FieldCatalogEntry> searchFieldCatalog(Long projectId, String query) {
+        throw new UnsupportedOperationException("searchFieldCatalog is not implemented yet");
+    }
 
-        FieldFormConfig link = new FieldFormConfig();
-        link.setField(saved);
-        link.setFormConfig(formConfig);
-        link.setActive(true);
-        link.setMandatory(false);
-        link.setInstitutionLocked(false);
-        return toDto(fieldFormConfigRepository.save(link));
+    @Override
+    @NotImplemented
+    public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name, FieldType type, String description) {
+        throw new UnsupportedOperationException("createField is not implemented yet");
+    }
+
+    @Override
+    @NotImplemented
+    public TypeFieldFormConfig addExistingField(Long projectId, ConfigurableTable table, String typeName, String catalogFieldName) {
+        throw new UnsupportedOperationException("addExistingField is not implemented yet");
+    }
+
+    @Override
+    @NotImplemented
+    public TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description) {
+        throw new UnsupportedOperationException("updateField is not implemented yet");
     }
 
     /**
@@ -423,16 +426,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return formConfigRepository.save(config);
     }
 
-    private String nextNewFieldName(Long projectId, ConfigurableTable table, String typeName) {
-        List<String> existing = effectiveFields(projectId, table, typeName).values().stream()
-                .map(field -> field.field().getLabel())
-                .toList();
-        if (!existing.contains(NEW_FIELD_BASE_NAME)) return NEW_FIELD_BASE_NAME;
-        int suffix = 2;
-        while (existing.contains(NEW_FIELD_BASE_NAME + " " + suffix)) suffix++;
-        return NEW_FIELD_BASE_NAME + " " + suffix;
-    }
-
     /**
      * The concept the table's type field is configured on, i.e. the root of the vocabulary its
      * values are taken from. Empty when the project has no configuration for that field, which is
@@ -500,22 +493,25 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     /**
      * Maps a custom field to the type the screen displays. {@link FieldType} covers what the
      * configuration screen knows how to show, which is less than the entity hierarchy expresses —
-     * anything else falls back on {@link FieldType#TEXTE}.
+     * anything else falls back on {@link FieldType#TEXT}. There is deliberately no dedicated
+     * mapping for {@link CustomFieldStratigraphy}: the screen has no relation type to show it as
+     * for now (see {@link FieldType}'s javadoc), so it falls back like any other unmapped field.
      */
     private FieldType typeOf(CustomField field) {
-        if (field instanceof CustomFieldInteger) return FieldType.NUMERIQUE;
-        if (field instanceof CustomFieldMeasurement) return FieldType.MESURE;
+        if (field instanceof CustomFieldInteger) return FieldType.INTEGER;
+        if (field instanceof CustomFieldMeasurement) return FieldType.MEASUREMENT;
         if (field instanceof CustomFieldSelectOneFromFieldCode
-                || field instanceof CustomFieldSelectMultipleFromFieldCode
-                || field instanceof CustomFieldSelectOneActionCode) return FieldType.VOCABULAIRE_CONTROLE;
+                || field instanceof CustomFieldSelectOneActionCode) return FieldType.SELECT_ONE;
+        if (field instanceof CustomFieldSelectMultipleFromFieldCode) return FieldType.SELECT_MULTIPLE;
         if (field instanceof CustomFieldSelectOneSpatialUnit
                 || field instanceof CustomFieldSelectMultipleSpatialUnitTree
-                || field instanceof CustomFieldSelectOneAddress) return FieldType.LIEU;
+                || field instanceof CustomFieldSelectOneAddress) return FieldType.SELECT_ONE_SPATIAL_UNIT;
         if (field instanceof CustomFieldSelectOneActionUnit) return FieldType.PROJET;
         if (field instanceof CustomFieldSelectOneRecordingUnit
-                || field instanceof CustomFieldSelectMultipleRecordingUnit) return FieldType.UNITE_ENREGISTREMENT;
-        if (field instanceof CustomFieldStratigraphy) return FieldType.PARENTS;
-        return FieldType.TEXTE;
+                || field instanceof CustomFieldSelectMultipleRecordingUnit) return FieldType.SELECT_ONE_RECORDING_UNIT;
+        if (field instanceof CustomFieldSelectOne) return FieldType.SELECT_ONE;
+        if (field instanceof CustomFieldSelectMultiple) return FieldType.SELECT_MULTIPLE;
+        return FieldType.TEXT;
     }
 
     /**
