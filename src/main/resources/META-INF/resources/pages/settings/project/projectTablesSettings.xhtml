@@ -150,27 +150,6 @@
                         </div>
                     </h:panelGroup>
 
-                    <p:dialog id="newConfigDialog" widgetVar="newConfigDialogWidget" modal="true" resizable="false"
-                              header="#{langBean.msg('projectTables.tree.newConfig')}" width="460">
-                        <p class="ptc-dialog-hint">#{langBean.msg('projectTables.tree.newConfigHint')}</p>
-                        <p:outputLabel for="newTypeName" value="#{langBean.msg('projectTables.tree.newConfigValue')}"/>
-                        <p:autoComplete id="newTypeName" value="#{projectTableFieldSettingsBean.newTypeName}"
-                                        completeMethod="#{projectTableFieldSettingsBean.completeConfigurableTypes}"
-                                        dropdown="true" forceSelection="true" scrollHeight="220" style="width:100%"
-                                        required="true" requiredMessage="#{langBean.msg('projectTables.tree.newConfigRequired')}"
-                                        placeholder="#{langBean.msg('projectTables.tree.newConfigPlaceholder')}"/>
-                        <p:message for="newTypeName"/>
-                        <div class="ptc-dialog-actions">
-                            <p:commandButton value="#{langBean.msg('common.action.cancel')}" type="button"
-                                             styleClass="ui-button-flat"
-                                             onclick="PF('newConfigDialogWidget').hide()"/>
-                            <p:commandButton id="addConfiguration" value="#{langBean.msg('common.action.create')}"
-                                             actionListener="#{projectTableFieldSettingsBean.addConfiguration()}"
-                                             process="@this newTypeName" update="@form"
-                                             oncomplete="PF('newConfigDialogWidget').hide()"/>
-                        </div>
-                    </p:dialog>
-
                     <!-- ===== EDITOR ===== -->
                     <div class="ptc-editor">
                         <p:tabView activeIndex="#{projectTableFieldSettingsBean.activeTabIndex}" dynamic="false">
@@ -296,6 +275,7 @@
             </form:csrfform>
 
             <ui:include src="/pages/settings/project/addFieldDialog.xhtml"/>
+            <ui:include src="/pages/settings/project/newConfigDialog.xhtml"/>
             <ui:include src="/pages/settings/project/fieldEditDrawer.xhtml"/>
         </main>
     </ui:define>
