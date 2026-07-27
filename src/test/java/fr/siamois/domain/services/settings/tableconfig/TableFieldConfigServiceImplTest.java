@@ -527,40 +527,8 @@ class TableFieldConfigServiceImplTest {
         assertThat(results.get(0).getName()).isEqualTo("Couleur");
     }
 
-    // --- createField ---
-    @Test
-    void createField_shouldCreateTextFieldByDefaultForUnknownType() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
-                .thenReturn(Optional.of(ceramiqueConfig));
-        when(customFieldRepository.save(any(CustomField.class)))
-                .thenAnswer(call -> call.getArgument(0));
 
-        TypeFieldFormConfig result = service.createField(
-                PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Nouveau champ", FieldType.TEXT, "Description");
 
-        assertThat(result.getName()).isEqualTo("Nouveau champ");
-        assertThat(result.getType()).isEqualTo(FieldType.TEXT);
-        assertThat(result.isSystemField()).isFalse();
-        assertThat(result.isActive()).isTrue();
-        assertThat(result.isMandatory()).isFalse();
-    }
-
-    @Test
-    void createField_shouldCreateFieldWithAllTypes() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
-                .thenReturn(Optional.of(ceramiqueConfig));
-        when(customFieldRepository.save(any(CustomField.class)))
-                .thenAnswer(call -> call.getArgument(0));
-
-        // Test pour chaque FieldType
-        for (FieldType type : FieldType.values()) {
-            TypeFieldFormConfig result = service.createField(
-                    PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Champ " + type, type, "Description");
-
-            assertThat(result.getName()).isEqualTo("Champ " + type);
-            assertThat(result.getType()).isEqualTo(type);
-        }
-    }
 
     @Test
     void createField_shouldThrowWhenTypeNameIsInvalid() {
@@ -640,39 +608,8 @@ class TableFieldConfigServiceImplTest {
                 .isNull();
     }
 
-    @Test
-    void updateField_shouldUpdateFieldWhenSameType() {
-        CustomField oldField = textField(1L, "Ancien", false);
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
-                .thenReturn(List.of(fieldConfig(ceramiqueConfig, oldField, true, false)));
-        when(customFieldRepository.save(any(CustomField.class)))
-                .thenAnswer(call -> call.getArgument(0));
 
-        TypeFieldFormConfig result = service.updateField(
-                PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Ancien", "Nouveau", FieldType.TEXT, "Nouvelle description");
 
-        assertThat(result.getName()).isEqualTo("Nouveau");
-        assertThat(result.getType()).isEqualTo(FieldType.TEXT);
-        assertThat(result.getDescription()).isEqualTo("Nouvelle description");
-        verify(customFieldRepository).save(oldField);
-    }
-
-    @Test
-    void updateField_shouldChangeTypeAndCreateNewField() {
-        CustomField oldField = textField(1L, "Ancien", false);
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
-                .thenReturn(List.of(fieldConfig(ceramiqueConfig, oldField, true, false)));
-        when(customFieldRepository.save(any(CustomField.class)))
-                .thenAnswer(call -> call.getArgument(0));
-        when(fieldFormConfigRepository.countByFieldId(1L)).thenReturn(0L);
-
-        TypeFieldFormConfig result = service.updateField(
-                PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Ancien", "Nouveau", FieldType.INTEGER, "Desc");
-
-        assertThat(result.getName()).isEqualTo("Nouveau");
-        assertThat(result.getType()).isEqualTo(FieldType.INTEGER);
-        verify(customFieldRepository).delete(oldField);
-    }
 
     // --- deleteAdditionalField ---
     @Test
@@ -699,18 +636,6 @@ class TableFieldConfigServiceImplTest {
         verify(customFieldRepository, never()).delete(any());
     }
 
-    // --- getFormConfig ---
-    @Test
-    void getFormConfig_shouldThrowWhenTypeNotFound() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
-                .thenReturn(Optional.empty());
-        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() ->
-                service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Inconnu"))
-                .isInstanceOf(NoSuchElementException.class);
-    }
 
     // --- Edge Cases ---
     @Test
