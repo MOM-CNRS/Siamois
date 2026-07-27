@@ -19,7 +19,7 @@ import java.util.Objects;
 public abstract class CustomFieldAnswerLegacy implements Serializable {
 
     @EmbeddedId
-    private CustomFieldAnswerId pk;
+    private CustomFieldAnswerLegacyId pk;
 
     // Not persisted, used in UI
     private Boolean hasBeenModified ;

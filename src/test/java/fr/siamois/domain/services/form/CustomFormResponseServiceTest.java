@@ -4,7 +4,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacyId;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customform.CustomCol;
@@ -142,19 +142,19 @@ class CustomFormResponseServiceTest {
         // Prepare the answers
         // Two answers won't be modified bc they did not change
         CustomFieldAnswerSelectMultiple a1 = new CustomFieldAnswerSelectMultiple();
-        CustomFieldAnswerId pk1 = new CustomFieldAnswerId();
+        CustomFieldAnswerLegacyId pk1 = new CustomFieldAnswerLegacyId();
         pk1.setField(field1SelectMultiple);
         a1.setPk(pk1);
         a1.setValue(new ArrayList<>());
         a1.getValue().add(answer1Value);
         CustomFieldAnswerInteger a2 = new CustomFieldAnswerInteger();
-        CustomFieldAnswerId pk2 = new CustomFieldAnswerId();
+        CustomFieldAnswerLegacyId pk2 = new CustomFieldAnswerLegacyId();
         pk2.setField(field1Integer);
         a2.setPk(pk2);
         a2.setValue(2);
         // Two answers will be updated because the value did change
         CustomFieldAnswerSelectMultiple a3Old = new CustomFieldAnswerSelectMultiple();
-        CustomFieldAnswerId pk3 = new CustomFieldAnswerId();
+        CustomFieldAnswerLegacyId pk3 = new CustomFieldAnswerLegacyId();
         pk3.setField(field2SelectMultiple);
         a3Old.setPk(pk3);
         a3Old.setValue(new ArrayList<>());
@@ -165,7 +165,7 @@ class CustomFormResponseServiceTest {
         a3new.setValue(new ArrayList<>());
         a3new.getValue().add(answer2ValueNew);
         CustomFieldAnswerInteger a4old = new CustomFieldAnswerInteger();
-        CustomFieldAnswerId pk4 = new CustomFieldAnswerId();
+        CustomFieldAnswerLegacyId pk4 = new CustomFieldAnswerLegacyId();
         pk4.setField(field2Integer);
         a4old.setPk(pk4);
         a4old.setValue(3);
@@ -175,19 +175,19 @@ class CustomFormResponseServiceTest {
         a4new.setValue(4);
         // Two answers will be created
         CustomFieldAnswerSelectMultiple a5 = new CustomFieldAnswerSelectMultiple();
-        CustomFieldAnswerId pk5 = new CustomFieldAnswerId();
+        CustomFieldAnswerLegacyId pk5 = new CustomFieldAnswerLegacyId();
         pk5.setField(field3SelectMultiple);
         a5.setPk(pk5);
         a5.setValue(new ArrayList<>());
         a5.getValue().add(answer3Value);
         CustomFieldAnswerInteger a6 = new CustomFieldAnswerInteger();
-        CustomFieldAnswerId pk6 = new CustomFieldAnswerId();
+        CustomFieldAnswerLegacyId pk6 = new CustomFieldAnswerLegacyId();
         pk6.setField(field1Integer);
         a6.setPk(pk6);
         a6.setValue(6);
         // One answer to be deleted
 
-        CustomFieldAnswerId pk7 = new CustomFieldAnswerId();
+        CustomFieldAnswerLegacyId pk7 = new CustomFieldAnswerLegacyId();
         pk7.setField(field4SelectMultipleToBeDeleted);
         a7ToBeDeleted.setPk(pk7);
         a7ToBeDeleted.setValue(new ArrayList<>());

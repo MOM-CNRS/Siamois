@@ -387,7 +387,7 @@ public class FormService {
                                   Object jpaEntity,
                                   List<String> bindableFields) {
 
-        CustomFieldAnswerId answerId = new CustomFieldAnswerId();
+        CustomFieldAnswerLegacyId answerId = new CustomFieldAnswerLegacyId();
         answerId.setField(field);
         answer.setPk(answerId);
         answer.setHasBeenModified(false);

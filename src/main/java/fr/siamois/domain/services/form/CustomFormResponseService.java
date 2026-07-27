@@ -4,7 +4,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacy;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerLegacyId;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customform.CustomCol;
@@ -32,7 +32,7 @@ public class CustomFormResponseService {
         this.customFormRepository = customFormRepository;
     }
 
-    private CustomFieldAnswerLegacy createAnswer(CustomFieldAnswerId pk, CustomFieldAnswerLegacy answer) {
+    private CustomFieldAnswerLegacy createAnswer(CustomFieldAnswerLegacyId pk, CustomFieldAnswerLegacy answer) {
         CustomFieldAnswerLegacy createdAnswer;
         if (pk.getField() instanceof CustomFieldInteger) {
             createdAnswer = new CustomFieldAnswerInteger();
@@ -62,7 +62,7 @@ public class CustomFormResponseService {
         }
     }
 
-    private void updateAnswer(CustomFieldAnswerLegacy managedAnswer, CustomFieldAnswerLegacy answer, CustomFieldAnswerId pk) {
+    private void updateAnswer(CustomFieldAnswerLegacy managedAnswer, CustomFieldAnswerLegacy answer, CustomFieldAnswerLegacyId pk) {
         if (managedAnswer.getPk().getField() instanceof CustomFieldInteger) {
             ((CustomFieldAnswerInteger) managedAnswer).setValue(((CustomFieldAnswerInteger) answer).getValue());
         } else if (managedAnswer.getPk().getField() instanceof CustomFieldSelectMultiple) {
@@ -105,7 +105,7 @@ public class CustomFormResponseService {
 
         if (answer != null) {
 
-            CustomFieldAnswerId pk = new CustomFieldAnswerId();
+            CustomFieldAnswerLegacyId pk = new CustomFieldAnswerLegacyId();
             pk.setFormResponse(managedFormResponse);
             pk.setField(managedField);
 

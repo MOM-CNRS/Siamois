@@ -14,7 +14,8 @@ import java.util.Objects;
 @Embeddable
 @Getter
 @Setter
-public class CustomFieldAnswerId implements Serializable {
+@Deprecated(forRemoval = true, since = "0.13.2-SNAPSHOT")
+public class CustomFieldAnswerLegacyId implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "fk_field_id", nullable = false)
@@ -27,7 +28,7 @@ public class CustomFieldAnswerId implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof CustomFieldAnswerId that)) return false;
+        if (!(o instanceof CustomFieldAnswerLegacyId that)) return false;
 
         return Objects.equals(field, that.field) &&
                 Objects.equals(formResponse, that.formResponse);
