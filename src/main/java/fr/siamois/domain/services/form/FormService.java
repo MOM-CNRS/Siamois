@@ -104,20 +104,6 @@ public class FormService {
 
     // --------- Answer creators
 
-    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswerLegacy>> ANSWER_CREATORS =
-            Map.ofEntries(
-                    Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
-                    Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
-                    Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
-                    Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
-                    Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
-                    Map.entry(CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new),
-                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new),
-                    Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new),
-                    Map.entry(CustomFieldInteger.class, CustomFieldAnswerInteger::new),
-                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new)
-            );
-
     /**
      * Create or reuse a CustomFormResponse for the given entity + field source.
      *

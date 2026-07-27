@@ -1,7 +1,6 @@
 package fr.siamois.domain.models.form.customfieldanswer.person;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectMultipleSpatialUnitTree;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
