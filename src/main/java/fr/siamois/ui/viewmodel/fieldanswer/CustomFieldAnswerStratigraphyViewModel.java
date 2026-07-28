@@ -54,7 +54,7 @@ public class CustomFieldAnswerStratigraphyViewModel extends CustomFieldAnswerVie
         }
 
         // Determine which set to search based on typeRel
-        Set<StratigraphicRelationshipDTO> relsToSearch = null;
+        Set<StratigraphicRelationshipDTO> relsToSearch;
         switch (typeRel.toLowerCase()) {
             case "synchronous":
                 relsToSearch = synchronousRelationships;
