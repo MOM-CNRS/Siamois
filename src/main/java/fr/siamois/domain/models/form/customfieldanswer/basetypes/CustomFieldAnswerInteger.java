@@ -34,8 +34,8 @@ public class CustomFieldAnswerInteger extends CustomFieldAnswer {
 
     @Override
     public void setValue(Object value) {
-        if (value instanceof Integer) {
-            this.value = (Integer) value;
+        if (value instanceof Integer integer) {
+            this.value = integer;
         } else {
             throw new IllegalArgumentException("Value must be an Integer");
         }
