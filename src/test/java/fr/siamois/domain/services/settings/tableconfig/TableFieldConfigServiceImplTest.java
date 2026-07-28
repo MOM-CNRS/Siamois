@@ -229,6 +229,35 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void getActiveAdditionalFields_shouldReturnOnlyActiveNonSystemFields() {
+        CustomField identifier = textField(1L, "Identifiant", true);
+        CustomField activeAdditional = textField(9L, "Couleur", false);
+        CustomField inactiveAdditional = textField(8L, "Poids", false);
+        givenFormOf(null, column(identifier, true));
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(
+                fieldConfig(defaultConfig, activeAdditional, true, false),
+                fieldConfig(defaultConfig, inactiveAdditional, false, false)
+        ));
+
+        List<CustomField> fields =
+                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "_default");
+
+        assertThat(fields).containsExactly(activeAdditional);
+    }
+
+    @Test
+    void getActiveAdditionalFields_shouldReturnEmptyListWhenOnlySystemFieldsExist() {
+        CustomField identifier = textField(1L, "Identifiant", true);
+        givenFormOf(null, column(identifier, true));
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        List<CustomField> fields =
+                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "_default");
+
+        assertThat(fields).isEmpty();
+    }
+
+    @Test
     void setFieldActive_shouldCreateTheRowOfASystemFieldThatWasNeverConfigured() {
         CustomField identifier = textField(1L, "Identifiant", true);
         givenFormOf(null, column(identifier, true));
