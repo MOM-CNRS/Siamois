@@ -38,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -467,9 +466,9 @@ class TableFieldConfigServiceImplTest {
     // --- saveFormConfig ---
     @Test
     void saveFormConfig_shouldThrowWhenTypeNameIsInvalid() {
-        assertThatThrownBy(() ->
-                service.saveFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER,
-                        TypeFormConfig.builder().typeName("Inconnu").build()))
+        TypeFormConfig config = TypeFormConfig.builder().typeName("Inconnu").build();
+
+        assertThatThrownBy(() -> service.saveFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, config))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
@@ -502,7 +501,6 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void searchFieldCatalog_shouldExcludeSystemFields() {
-        CustomField systemField = textField(1L, "Identifiant", true);
         CustomField customField = textField(2L, "Couleur", false);
         when(customFieldRepository.findAllByIsSystemField(false))
                 .thenReturn(List.of(customField));
