@@ -360,7 +360,7 @@ class EntityFormContextTest {
 
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
-        when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(new RecordingUnitDTO());
+        when(recordingUnitService.save(any(RecordingUnitDTO.class), anyMap())).thenReturn(new RecordingUnitDTO());
         when(recordingUnitService.fullIdentifierAlreadyExistInAction(any(RecordingUnitDTO.class))).thenReturn(false);
 
         ctx.init(false);
