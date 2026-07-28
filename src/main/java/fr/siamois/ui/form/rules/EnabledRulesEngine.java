@@ -51,9 +51,15 @@ public final class EnabledRulesEngine {
         if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
             a.setValue(concept);
         } else {
-            throw new IllegalArgumentException(
-                    "Field " + field.getLabel() + " does not accept a Concept value"
-            );
+            if (field == null) {
+                throw new IllegalArgumentException(
+                        "Field is null"
+                );
+            } else {
+                throw new IllegalArgumentException(
+                        "Field " + field.getLabel() + " does not accept a Concept value"
+                );
+            }
         }
 
         return answer;
