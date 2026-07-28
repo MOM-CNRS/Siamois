@@ -16,7 +16,8 @@ public abstract class CustomFieldAnswerSelectPerson extends CustomFieldAnswer {
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "custom_field_answer_person_answers",
-            joinColumns = { @JoinColumn(name = "fk_field_answer_id") },
+            joinColumns = {@JoinColumn(name = "fk_custom_field_id", referencedColumnName = "fk_custom_field_id"),
+                          @JoinColumn(name = "fk_form_config_answer_id", referencedColumnName = "fk_form_config_answer_id")},
             inverseJoinColumns = { @JoinColumn(name = "fk_person_id") }
     )
     protected List<Person> persons;

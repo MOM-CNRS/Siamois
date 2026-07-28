@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
@@ -12,6 +13,7 @@ import java.util.Objects;
 @Data
 @Entity
 @DiscriminatorValue("TEXT")
+@NoArgsConstructor
 public class CustomFieldAnswerText extends CustomFieldAnswer {
 
     @Column(name = "value_as_text")

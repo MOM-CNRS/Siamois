@@ -2,15 +2,24 @@ package fr.siamois.domain.models.form.config;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.util.Set;
+
+@Data
 @Entity
 @Table(name = "form_config_answer")
+@NoArgsConstructor
+@AllArgsConstructor
 public class FormConfigAnswer {
 
     @NonNull
@@ -28,6 +37,10 @@ public class FormConfigAnswer {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fk_form_config_id", nullable = false)
     private FormConfig formConfig;
+
+    @NonNull
+    @OneToMany(mappedBy = "formConfigAnswer", fetch = FetchType.LAZY)
+    private Set<CustomFieldAnswer> answers;
 
     @Nullable
     @ManyToOne(fetch = FetchType.LAZY)
