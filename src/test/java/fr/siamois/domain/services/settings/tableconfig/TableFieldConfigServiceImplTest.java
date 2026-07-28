@@ -475,12 +475,12 @@ class TableFieldConfigServiceImplTest {
     // --- searchFieldCatalog ---
     @Test
     void searchFieldCatalog_shouldReturnEmptyListWhenQueryIsNull() {
-        assertThat(service.searchFieldCatalog(PROJECT_ID, null)).isEmpty();
+        assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", null)).isEmpty();
     }
 
     @Test
     void searchFieldCatalog_shouldReturnEmptyListWhenQueryIsEmpty() {
-        assertThat(service.searchFieldCatalog(PROJECT_ID, "   ")).isEmpty();
+        assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "   ")).isEmpty();
     }
 
     @Test
@@ -489,10 +489,11 @@ class TableFieldConfigServiceImplTest {
         field1.setHint("Description de la couleur");
         CustomField field2 = textField(2L, "Matériau", false);
         field2.setHint("Type de matériau");
-        when(customFieldRepository.findAllByIsSystemField(false))
+        when(customFieldRepository.findAllReusableByInstitution(1L))
                 .thenReturn(List.of(field1, field2));
 
-        List<FieldCatalogEntry> results = service.searchFieldCatalog(PROJECT_ID, "couleur");
+        List<FieldCatalogEntry> results = service.searchFieldCatalog(
+                PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "couleur");
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getName()).isEqualTo("Couleur");
@@ -502,10 +503,11 @@ class TableFieldConfigServiceImplTest {
     @Test
     void searchFieldCatalog_shouldExcludeSystemFields() {
         CustomField customField = textField(2L, "Couleur", false);
-        when(customFieldRepository.findAllByIsSystemField(false))
+        when(customFieldRepository.findAllReusableByInstitution(1L))
                 .thenReturn(List.of(customField));
 
-        List<FieldCatalogEntry> results = service.searchFieldCatalog(PROJECT_ID, "Identifiant");
+        List<FieldCatalogEntry> results = service.searchFieldCatalog(
+                PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Identifiant");
 
         assertThat(results).isEmpty();
     }
@@ -516,13 +518,68 @@ class TableFieldConfigServiceImplTest {
         field1.setHint(null);
         CustomField field2 = textField(2L, null, false);
         field2.setHint("Description");
-        when(customFieldRepository.findAllByIsSystemField(false))
+        when(customFieldRepository.findAllReusableByInstitution(1L))
                 .thenReturn(List.of(field1, field2));
 
-        List<FieldCatalogEntry> results = service.searchFieldCatalog(PROJECT_ID, "Couleur");
+        List<FieldCatalogEntry> results = service.searchFieldCatalog(
+                PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getName()).isEqualTo("Couleur");
+    }
+
+    @Test
+    void searchFieldCatalog_shouldOnlyOfferTheFieldsOfTheCurrentInstitution() {
+        InstitutionDTO otherInstitution = new InstitutionDTO();
+        otherInstitution.setId(2L);
+        ExecutionContextHolder.set(new UserInfo(otherInstitution, person, "fr"));
+        when(customFieldRepository.findAllReusableByInstitution(1L))
+                .thenReturn(List.of(textField(1L, "Couleur", false)));
+        when(customFieldRepository.findAllReusableByInstitution(2L))
+                .thenReturn(List.of(textField(2L, "Matériau", false)));
+
+        List<FieldCatalogEntry> results = service.searchFieldCatalog(
+                PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", null);
+
+        assertThat(results).extracting(FieldCatalogEntry::getName).containsExactly("Matériau");
+    }
+
+    @Test
+    void searchFieldCatalog_shouldNotOfferFieldsAlreadyConfiguredOnTheType() {
+        CustomField couleur = textField(1L, "Couleur", false);
+        CustomField materiau = textField(2L, "Matériau", false);
+        when(customFieldRepository.findAllReusableByInstitution(1L))
+                .thenReturn(List.of(couleur, materiau));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, couleur, true, false)));
+
+        List<FieldCatalogEntry> results = service.searchFieldCatalog(
+                PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", null);
+
+        assertThat(results).extracting(FieldCatalogEntry::getName).containsExactly("Matériau");
+    }
+
+    @Test
+    void searchFieldCatalog_shouldNotOfferFieldsInheritedFromTheDefaultConfiguration() {
+        CustomField couleur = textField(1L, "Couleur", false);
+        when(customFieldRepository.findAllReusableByInstitution(1L))
+                .thenReturn(List.of(couleur));
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
+                .thenReturn(List.of(fieldConfig(defaultConfig, couleur, true, false)));
+
+        assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", null))
+                .isEmpty();
+    }
+
+    @Test
+    void searchFieldCatalog_shouldNotOfferFieldsTheFormAlreadyLaysOut() {
+        CustomField couleur = textField(1L, "Couleur", false);
+        givenFormOf(null, column(couleur, false));
+        when(customFieldRepository.findAllReusableByInstitution(1L))
+                .thenReturn(List.of(couleur));
+
+        assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", null))
+                .isEmpty();
     }
 
 
@@ -540,7 +597,7 @@ class TableFieldConfigServiceImplTest {
     void addExistingField_shouldThrowWhenFieldNotFound() {
         when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
                 .thenReturn(Optional.of(ceramiqueConfig));
-        when(customFieldRepository.findAllByIsSystemField(false))
+        when(customFieldRepository.findAllReusableByInstitution(1L))
                 .thenReturn(List.of());
 
         assertThatThrownBy(() ->
@@ -555,7 +612,7 @@ class TableFieldConfigServiceImplTest {
                 .thenReturn(Optional.of(ceramiqueConfig));
         when(fieldFormConfigRepository.findAllByFormConfigId(11L))
                 .thenReturn(List.of(fieldConfig(ceramiqueConfig, existingField, true, false)));
-        when(customFieldRepository.findAllByIsSystemField(false))
+        when(customFieldRepository.findAllReusableByInstitution(1L))
                 .thenReturn(List.of(existingField));
 
         TypeFieldFormConfig result = service.addExistingField(
@@ -572,7 +629,7 @@ class TableFieldConfigServiceImplTest {
                 .thenReturn(Optional.of(ceramiqueConfig));
         when(fieldFormConfigRepository.findAllByFormConfigId(11L))
                 .thenReturn(List.of());
-        when(customFieldRepository.findAllByIsSystemField(false))
+        when(customFieldRepository.findAllReusableByInstitution(1L))
                 .thenReturn(List.of(existingField));
         when(fieldFormConfigRepository.save(any(FieldFormConfig.class)))
                 .thenAnswer(call -> call.getArgument(0));

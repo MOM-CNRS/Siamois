@@ -196,8 +196,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         pickerOpen = false;
     }
 
+    /**
+     * The catalog is read against the selected type, which the picker adds the field to: a field
+     * that type already carries is not offered. The dialog is part of the page, so this is called
+     * on every render, including before a type is selected.
+     */
     public List<FieldCatalogEntry> getFieldCatalog() {
-        return tableFieldConfigService.searchFieldCatalog(project.getId(), pickerQuery);
+        if (project == null || selectedTable == null || selectedTypeName == null) return List.of();
+        return tableFieldConfigService.searchFieldCatalog(project.getId(), selectedTable, selectedTypeName, pickerQuery);
     }
 
     public void pickExistingField(FieldCatalogEntry entry) {

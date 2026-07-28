@@ -133,13 +133,20 @@ public interface TableFieldConfigService {
 
     /**
      * Searches the reusable field catalog offered by the "reuse an existing field" picker.
+     * <p>
+     * The catalog holds the non-system fields of the current user's institution only, minus the
+     * ones already configured on the type: those are offered by the picker for nothing, since
+     * {@link #addExistingField(Long, ConfigurableTable, String, String)} would leave the type
+     * unchanged.
      *
      * @param projectId the project (action unit) the catalog is scoped to
+     * @param table     the table the fields would be added to
+     * @param typeName  the type's name, or {@code _default}; its fields are excluded from the result
      * @param query     a free-text filter matched against field name and description,
      *                  case-insensitively; blank or {@code null} returns the full catalog
      * @return the matching catalog entries
      */
-    List<FieldCatalogEntry> searchFieldCatalog(Long projectId, String query);
+    List<FieldCatalogEntry> searchFieldCatalog(Long projectId, ConfigurableTable table, String typeName, String query);
 
     /**
      * Creates a new additional field on a type from user-provided name, type and description.

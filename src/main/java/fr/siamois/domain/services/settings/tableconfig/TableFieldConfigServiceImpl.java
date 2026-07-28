@@ -205,14 +205,18 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     /**
      * Reusable, non-system custom fields whose name or description matches the query, offered by the
-     * "reuse an existing field" picker. The reuse pool is the custom fields already defined in the
-     * database, de-duplicated by label; the description shown is the field's {@code hint}.
+     * "reuse an existing field" picker. The reuse pool is the custom fields of the current
+     * institution, de-duplicated by label and minus the ones the type already carries — offering a
+     * field that is already configured would be a no-op click; the description shown is the field's
+     * {@code hint}.
      */
     @Override
     @Transactional(readOnly = true)
-    public List<FieldCatalogEntry> searchFieldCatalog(Long projectId, String query) {
+    public List<FieldCatalogEntry> searchFieldCatalog(Long projectId, ConfigurableTable table, String typeName, String query) {
         String needle = query == null ? "" : query.toLowerCase().trim();
+        Set<String> configured = configuredFieldNames(projectId, table, typeName);
         return reusableCatalogFields().stream()
+                .filter(field -> !configured.contains(field.getLabel()))
                 .filter(field -> needle.isBlank()
                         || matches(field.getLabel(), needle)
                         || matches(field.getHint(), needle))
@@ -222,6 +226,17 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                         .description(field.getHint())
                         .build())
                 .toList();
+    }
+
+    /** The names of the fields a type already carries, system and additional ones alike. */
+    private Set<String> configuredFieldNames(Long projectId, ConfigurableTable table, String typeName) {
+        Set<String> names = new HashSet<>();
+        for (EffectiveField field : effectiveFields(projectId, table, typeName).values()) {
+            if (field.field().getLabel() != null) {
+                names.add(field.field().getLabel());
+            }
+        }
+        return names;
     }
 
     /**
@@ -333,10 +348,14 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return fieldFormConfigRepository.save(link);
     }
 
-    /** Non-system custom fields the reuse picker can offer, de-duplicated by label. */
+    /**
+     * Non-system custom fields the reuse picker can offer, de-duplicated by label. The pool is
+     * scoped to the current user's institution: a field another institution defined is none of this
+     * one's business, and reusing it would link the two institutions' configurations to the same row.
+     */
     private List<CustomField> reusableCatalogFields() {
         Map<String, CustomField> byLabel = new LinkedHashMap<>();
-        for (CustomField field : customFieldRepository.findAllByIsSystemField(false)) {
+        for (CustomField field : customFieldRepository.findAllReusableByInstitution(currentUser().getInstitution().getId())) {
             if (field.getLabel() != null) {
                 byLabel.putIfAbsent(field.getLabel(), field);
             }
