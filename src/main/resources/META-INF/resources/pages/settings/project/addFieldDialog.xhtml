@@ -11,9 +11,9 @@
                   width="520" styleClass="ptc-picker-dialog"
                   header="#{langBean.msg('projectTables.picker.title')}">
 
-            <p:ajax event="close" listener="#{projectTableFieldSettingsBean.closePicker()}" update="@form :projectTablesForm"/>
+            <p:ajax event="close" listener="#{projectTableFieldSettingsBean.closePicker()}" update="@form :projectTablesFormCC:projectTablesForm"/>
 
-            <p:commandLink actionListener="#{projectTableFieldSettingsBean.openNewFieldDrawer()}" update="@form :projectTablesForm :fieldEditForm" styleClass="ptc-picker-newfield">
+            <p:commandLink actionListener="#{projectTableFieldSettingsBean.openNewFieldDrawer()}" update="@form :projectTablesFormCC:projectTablesForm :fieldEditForm" styleClass="ptc-picker-newfield">
                 #{langBean.msg('projectTables.picker.newField')}
             </p:commandLink>
 
@@ -26,7 +26,7 @@
 
             <h:panelGroup id="catalogList" layout="block" styleClass="ptc-picker-list">
                 <ui:repeat value="#{projectTableFieldSettingsBean.fieldCatalog}" var="fc">
-                    <p:commandLink actionListener="#{projectTableFieldSettingsBean.pickExistingField(fc)}" update=":projectTablesForm @form" styleClass="ptc-picker-item">
+                    <p:commandLink actionListener="#{projectTableFieldSettingsBean.pickExistingField(fc)}" update=":projectTablesFormCC:projectTablesForm @form" styleClass="ptc-picker-item">
                         <div class="ptc-picker-item-head">
                             <span class="ptc-picker-item-name">#{fc.name}</span>
                             <span class="ptc-chip">#{fc.type.label}</span>

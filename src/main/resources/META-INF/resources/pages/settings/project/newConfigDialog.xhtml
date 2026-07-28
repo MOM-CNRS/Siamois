@@ -23,7 +23,7 @@
                                  onclick="PF('newConfigDialogWidget').hide()"/>
                 <p:commandButton id="addConfiguration" value="#{langBean.msg('common.action.create')}"
                                  actionListener="#{projectTableFieldSettingsBean.addConfiguration()}"
-                                 process="@this newTypeName" update="@form"
+                                 process="@this newTypeName" update="@form :projectTablesFormCC:projectTablesForm"
                                  oncomplete="PF('newConfigDialogWidget').hide()"/>
             </div>
         </p:dialog>

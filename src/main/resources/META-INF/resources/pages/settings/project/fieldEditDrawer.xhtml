@@ -40,9 +40,9 @@
 
                 <div class="ptc-drawer-footer">
                     <p:commandButton id="cancelBtn" value="#{langBean.msg('common.action.cancel')}" styleClass="ui-button-secondary"
-                                      actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true" update="@form :projectTablesForm"/>
+                                      actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true" update="@form :projectTablesFormCC:projectTablesForm"/>
                     <p:commandButton value="#{langBean.msg('common.action.save')}"
-                                      actionListener="#{projectTableFieldSettingsBean.saveDrawer()}" update="@form :projectTablesForm"/>
+                                      actionListener="#{projectTableFieldSettingsBean.saveDrawer()}" update="@form :projectTablesFormCC:projectTablesForm"/>
                 </div>
             </div>
         </h:panelGroup>
