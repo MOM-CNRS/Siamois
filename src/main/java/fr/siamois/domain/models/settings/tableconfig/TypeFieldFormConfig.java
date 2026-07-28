@@ -19,6 +19,11 @@ import java.io.Serializable;
  * {@code institutionLocked} is read-only from the project screen — it can only be set on the
  * (not yet implemented) institution-level settings screens.
  * <p>
+ * {@code valueBinding} is mock/UI-only bridging: it mirrors {@code CustomField.valueBinding} so a
+ * mock field entry can be matched to the real rendered {@code CustomField} it stands in for (see
+ * {@code CustomFormComposer.withoutFields}). The real {@code FieldFormConfig} has no such property —
+ * it links to the actual {@code CustomField} row directly via FK instead.
+ * <p>
  * {@code description} is likewise a UI-only display stand-in for what would be read through the
  * linked concept's description.
  */
@@ -37,4 +42,5 @@ public class TypeFieldFormConfig implements Serializable {
     private boolean institutionLocked;
     private boolean configurable;
     private String sourceLabel;
+    private String valueBinding;
 }

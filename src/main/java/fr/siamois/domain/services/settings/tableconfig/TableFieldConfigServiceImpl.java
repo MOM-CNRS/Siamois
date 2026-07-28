@@ -168,6 +168,15 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, String typeName) {
+        return effectiveFields(projectId, table, typeName).values().stream()
+                .filter(field -> !isSystemField(field.field()) && field.active())
+                .map(EffectiveField::field)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public void setFieldActive(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean active) {
         applyFieldChange(projectId, table, typeName, fieldName, config -> config.setActive(active));
@@ -633,6 +642,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .institutionLocked(effective.institutionLocked())
                 .configurable(type.isConfigurable())
                 .sourceLabel(sourceOf(field))
+                .valueBinding(field.getValueBinding())
                 .build();
     }
 
