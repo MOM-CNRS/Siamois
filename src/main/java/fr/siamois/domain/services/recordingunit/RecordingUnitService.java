@@ -96,12 +96,6 @@ public class RecordingUnitService implements ArkEntityService {
     private final PhaseMapper phaseMapper;
     private final UnitDefinitionRepository unitDefinitionRepository;
 
-    /**
-     * Self-reference to the Spring proxy of this bean, used so internal calls to transactional
-     * methods go through the proxy
-     */
-    @Lazy
-    private final RecordingUnitService self;
 
     /**
      * Utilisé pour maîtriser le flush avant les appels native {@code ru_nextval_*},
@@ -135,7 +129,6 @@ public class RecordingUnitService implements ArkEntityService {
      * @param recordingUnitDTO The recording unit to save.
      * @return The saved RecordingUnit instance.
      */
-    @Transactional
     @CacheEvict({
             "InstitutionHasRootChildrenRU",
             "ActionHasRootChildrenRU"
@@ -160,13 +153,13 @@ public class RecordingUnitService implements ArkEntityService {
      * @param additionalFieldValues Values answered for additional (non-system) fields, keyed by CustomField.
      * @return The saved RecordingUnit instance.
      */
-    @Transactional
     @CacheEvict({
             "InstitutionHasRootChildrenRU",
             "ActionHasRootChildrenRU"
     })
+    @Transactional
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO, Map<CustomField, Object> additionalFieldValues) {
-        return self.save(recordingUnitDTO);
+        return save(recordingUnitDTO);
     }
 
     @Transactional
@@ -178,7 +171,6 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
 
-    @Transactional
     protected RecordingUnit save(RecordingUnit recordingUnit) {
         try {
             RecordingUnit managedRecordingUnit;
