@@ -7,7 +7,6 @@ import fr.siamois.domain.models.form.customform.CustomFormPanel;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
