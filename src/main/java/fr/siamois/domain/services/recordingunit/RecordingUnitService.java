@@ -132,7 +132,6 @@ public class RecordingUnitService implements ArkEntityService {
      * @param recordingUnitDTO The recording unit to save.
      * @return The saved RecordingUnit instance.
      */
-    @Transactional
     @CacheEvict({
             "InstitutionHasRootChildrenRU",
             "ActionHasRootChildrenRU"
@@ -161,6 +160,7 @@ public class RecordingUnitService implements ArkEntityService {
             "InstitutionHasRootChildrenRU",
             "ActionHasRootChildrenRU"
     })
+    @Transactional
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO, Map<CustomField, Object> additionalFieldValues) {
         return save(recordingUnitDTO);
     }
@@ -174,7 +174,6 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
 
-    @Transactional
     protected RecordingUnit save(RecordingUnit recordingUnit) {
         try {
             RecordingUnit managedRecordingUnit;
