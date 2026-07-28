@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.FieldCatalogEntry;
 import fr.siamois.domain.models.settings.tableconfig.FieldType;
@@ -91,6 +92,17 @@ public interface TableFieldConfigService {
      * @return a copy of the type's field configuration
      */
     TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, String typeName);
+
+    /**
+     * The real additional (non-system) fields active for a type, in configuration order — the
+     * entities needed to render them, not the display DTO returned by {@link #getFieldsConfig}.
+     *
+     * @param projectId the project (action unit) this configuration is scoped to
+     * @param table     the table the type belongs to
+     * @param typeName  the type's name, or {@code _default}
+     * @return the active additional fields configured for the type
+     */
+    List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, String typeName);
 
     /**
      * Activates or deactivates a field for a type. No-op when the target field is

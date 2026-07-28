@@ -6,7 +6,6 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
 import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
@@ -15,12 +14,12 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
@@ -85,6 +84,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient TableFieldConfigService tableFieldConfigService;
+    private final transient LabelService labelService;
 
 
     // lazy model for children
@@ -114,6 +114,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
+        this.labelService = context.getBean(LabelService.class);
 
     }
 
@@ -394,8 +395,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        CustomForm base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings());
-        CustomForm form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", temporaryAdditionalFields());
+        String typeName = resolveTypeName();
+        CustomForm base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings(typeName));
+        CustomForm form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(typeName));
         detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
@@ -403,12 +405,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     /**
-     * TODO: resolves against table UE / type "_default" only — there's no real mapping yet from a
-     * RecordingUnit's actual thesaurus type concept to a configured type, so every RecordingUnit
-     * currently shares the same "_default" field configuration regardless of its real type.
+     * The label of the RecordingUnit's own type concept, i.e. the type name field configurations
+     * are keyed on ({@link TableFieldConfigService#DEFAULT_TYPE} when the unit has none).
      */
-    private Set<String> inactiveSystemFieldBindings() {
-        TypeFieldsConfig fieldsConfig = tableFieldConfigService.getFieldsConfig(unit.getActionUnit().getId(), ConfigurableTable.UE, "_default");
+    private String resolveTypeName() {
+        return unit.getType() != null
+                ? labelService.findLabelOf(unit.getType(), langBean.getLanguageCode()).getLabel()
+                : TableFieldConfigService.DEFAULT_TYPE;
+    }
+
+    private Set<String> inactiveSystemFieldBindings(String typeName) {
+        TypeFieldsConfig fieldsConfig = tableFieldConfigService.getFieldsConfig(unit.getActionUnit().getId(), ConfigurableTable.UE, typeName);
         return fieldsConfig.getFields().stream()
                 .filter(f -> !f.isActive())
                 .map(TypeFieldFormConfig::getValueBinding)
@@ -416,32 +423,10 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * TODO: replace with the real per-type additional fields once FieldFormConfig exists (currently
-     * mocked by TableFieldConfigService). These two are placeholders to exercise CustomFormComposer
-     * end to end. IDs are well outside RecordingUnitForm's 1-28 range to avoid any collision.
-     */
-    private List<CustomCol> temporaryAdditionalFields() {
-        return List.of(
-                new CustomCol.Builder()
-                        .field(CustomFieldText.builder()
-                                .id(900L)
-                                .label("Champ additionnel test 1")
-                                .isSystemField(false)
-                                .valueBinding("additionalTest1")
-                                .concept(new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("TEST-ADDITIONAL-1").build())
-                                .build())
-                        .build(),
-                new CustomCol.Builder()
-                        .field(CustomFieldText.builder()
-                                .id(901L)
-                                .label("Champ additionnel test 2")
-                                .isSystemField(false)
-                                .valueBinding("additionalTest2")
-                                .concept(new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("TEST-ADDITIONAL-2").build())
-                                .build())
-                        .build()
-        );
+    private List<CustomCol> additionalFields(String typeName) {
+        return tableFieldConfigService.getActiveAdditionalFields(unit.getActionUnit().getId(), ConfigurableTable.UE, typeName).stream()
+                .map(field -> new CustomCol.Builder().field(field).build())
+                .toList();
     }
 
 
