@@ -5,7 +5,6 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,7 +17,7 @@ class RecordingUnitNewFormTest {
         assertThat(form.getLayout()).hasSize(1);
         List<CustomCol> columns = form.getLayout().get(0).getRows().get(0).getColumns();
         assertThat(columns).hasSize(5);
-        assertThat(columns.stream().map(c -> c.getField().getValueBinding()).collect(Collectors.toList()))
+        assertThat(columns.stream().map(c -> c.getField().getValueBinding()).toList())
                 .containsExactly("actionUnit", "spatialUnit", "author", "type", "openingDate");
     }
 

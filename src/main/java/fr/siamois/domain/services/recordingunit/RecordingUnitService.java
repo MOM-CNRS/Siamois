@@ -48,9 +48,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -97,6 +99,16 @@ public class RecordingUnitService implements ArkEntityService {
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
     private final UnitDefinitionRepository unitDefinitionRepository;
+
+    /**
+     * Self-reference to the Spring proxy of this bean, used so internal calls to transactional
+     * methods go through the proxy (and thus actually apply {@code @Transactional}/{@code @CacheEvict})
+     * instead of bypassing it via {@code this}. {@code @Lazy} avoids a circular dependency at
+     * construction time, since the proxy doesn't exist yet while this bean is being built.
+     */
+    @Lazy
+    @Autowired
+    private RecordingUnitService self;
 
     /**
      * Utilisé pour maîtriser le flush avant les appels native {@code ru_nextval_*},
@@ -161,7 +173,7 @@ public class RecordingUnitService implements ArkEntityService {
             "ActionHasRootChildrenRU"
     })
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO, Map<CustomField, Object> additionalFieldValues) {
-        return save(recordingUnitDTO);
+        return self.save(recordingUnitDTO);
     }
 
     @Transactional

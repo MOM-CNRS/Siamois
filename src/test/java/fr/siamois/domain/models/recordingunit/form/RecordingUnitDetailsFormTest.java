@@ -34,7 +34,7 @@ class RecordingUnitDetailsFormTest {
 
         List<String> firstRowBindings = allColumns(generalPanel).stream()
                 .map(c -> c.getField().getValueBinding())
-                .collect(Collectors.toList());
+                .toList();
 
         assertThat(firstRowBindings).containsSubsequence(
                 "spatialUnit", "parents", "children", "fullIdentifier", "type",
