@@ -1,0 +1,41 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://java.sun.com/jsf/core">
+
+    <h:form id="addFieldForm">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <p:dialog widgetVar="addFieldDiag" id="addFieldDiag" visible="#{projectTableFieldSettingsBean.pickerOpen}"
+                  dynamic="false" showEffect="fade" closeOnEscape="true" appendToBody="true" modal="true"
+                  width="520" styleClass="ptc-picker-dialog"
+                  header="#{langBean.msg('projectTables.picker.title')}">
+
+            <p:ajax event="close" listener="#{projectTableFieldSettingsBean.closePicker()}" update="@form :projectTablesFormCC:projectTablesForm"/>
+
+            <p:commandLink actionListener="#{projectTableFieldSettingsBean.openNewFieldDrawer()}" update="@form :projectTablesFormCC:projectTablesForm :fieldEditForm" styleClass="ptc-picker-newfield">
+                #{langBean.msg('projectTables.picker.newField')}
+            </p:commandLink>
+
+            <div class="ptc-picker-section-title">#{langBean.msg('projectTables.picker.reuseSectionTitle')}</div>
+            <div class="ptc-picker-search">
+                <p:inputText value="#{projectTableFieldSettingsBean.pickerQuery}" placeholder="#{langBean.msg('projectTables.picker.searchPlaceholder')}" style="width:100%">
+                    <p:ajax event="keyup" update="addFieldForm:catalogList" queue="pickerQueryQueue" delay="250"/>
+                </p:inputText>
+            </div>
+
+            <h:panelGroup id="catalogList" layout="block" styleClass="ptc-picker-list">
+                <ui:repeat value="#{projectTableFieldSettingsBean.fieldCatalog}" var="fc">
+                    <p:commandLink actionListener="#{projectTableFieldSettingsBean.pickExistingField(fc)}" update=":projectTablesFormCC:projectTablesForm @form" styleClass="ptc-picker-item">
+                        <div class="ptc-picker-item-head">
+                            <span class="ptc-picker-item-name">#{fc.name}</span>
+                            <span class="ptc-chip">#{fc.type.label}</span>
+                        </div>
+                        <div class="ptc-picker-item-desc">#{fc.description}</div>
+                    </p:commandLink>
+                </ui:repeat>
+            </h:panelGroup>
+
+        </p:dialog>
+    </h:form>
+</ui:fragment>

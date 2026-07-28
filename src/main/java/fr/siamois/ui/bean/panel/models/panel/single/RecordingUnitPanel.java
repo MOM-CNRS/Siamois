@@ -6,12 +6,22 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
+import fr.siamois.domain.models.form.customform.CustomCol;
 import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
@@ -55,6 +65,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
@@ -72,6 +85,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient ProfilePermissionService profilePermissionService;
+    private final transient TableFieldConfigService tableFieldConfigService;
+    private final transient LabelService labelService;
 
 
     // lazy model for children
@@ -100,6 +115,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
+        this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
+        this.labelService = context.getBean(LabelService.class);
 
     }
 
@@ -380,11 +397,38 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
+        String typeName = resolveTypeName();
+        CustomForm base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings(typeName));
+        CustomForm form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(typeName));
         detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);
+    }
+
+    /**
+     * The label of the RecordingUnit's own type concept, i.e. the type name field configurations
+     * are keyed on ({@link TableFieldConfigService#DEFAULT_TYPE} when the unit has none).
+     */
+    private String resolveTypeName() {
+        return unit.getType() != null
+                ? labelService.findLabelOf(unit.getType(), langBean.getLanguageCode()).getLabel()
+                : TableFieldConfigService.DEFAULT_TYPE;
+    }
+
+    private Set<String> inactiveSystemFieldBindings(String typeName) {
+        TypeFieldsConfig fieldsConfig = tableFieldConfigService.getFieldsConfig(unit.getActionUnit().getId(), ConfigurableTable.UE, typeName);
+        return fieldsConfig.getFields().stream()
+                .filter(f -> !f.isActive())
+                .map(TypeFieldFormConfig::getValueBinding)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private List<CustomCol> additionalFields(String typeName) {
+        return tableFieldConfigService.getActiveAdditionalFields(unit.getActionUnit().getId(), ConfigurableTable.UE, typeName).stream()
+                .map(field -> new CustomCol.Builder().field(field).build())
+                .toList();
     }
 
 

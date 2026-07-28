@@ -17,6 +17,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectTableFieldSettingsBeanTest {
@@ -81,7 +85,7 @@ class ProjectTableFieldSettingsBeanTest {
     @Test
     void toggleFieldActive_shouldForwardTheFieldsAlreadyUpdatedValue() {
         bean.init(project);
-        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Localisation").type(FieldType.TEXTE).systemField(true).active(false).build();
+        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Localisation").type(FieldType.TEXT).systemField(true).active(false).build();
 
         bean.toggleFieldActive(field);
 
@@ -91,7 +95,7 @@ class ProjectTableFieldSettingsBeanTest {
     @Test
     void toggleFieldMandatory_shouldForwardTheFieldsAlreadyUpdatedValueForAdditionalField() {
         bean.init(project);
-        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Remontage").type(FieldType.PARENTS).systemField(false).mandatory(true).build();
+        TypeFieldFormConfig field = TypeFieldFormConfig.builder().name("Remontage").type(FieldType.SELECT_ONE).systemField(false).mandatory(true).build();
 
         bean.toggleFieldMandatory(field);
 
@@ -121,14 +125,6 @@ class ProjectTableFieldSettingsBeanTest {
         verify(tableFieldConfigService, atLeastOnce()).getFieldsConfig(42L, ConfigurableTable.UE, "Céramique");
     }
 
-    @Test
-    void addField_shouldDelegateAndReload() {
-        bean.init(project);
-
-        bean.addField();
-
-        verify(tableFieldConfigService).addAdditionalField(42L, ConfigurableTable.UE, "Céramique");
-    }
 
     @Test
     void resolveFieldLabel_shouldTranslateSystemFieldsAndLeaveTheOthersAsIs() {

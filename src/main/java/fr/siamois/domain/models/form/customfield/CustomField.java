@@ -69,6 +69,9 @@ public abstract class CustomField implements Serializable {
     }
 
     public String getConceptUri() {
+        if (concept == null || concept.getVocabulary() == null) {
+            return null;
+        }
         String vocabularyUri = concept.getVocabulary().getUri();
         return vocabularyUri+"&idc="+concept.getExternalId();
     }

@@ -503,6 +503,73 @@ class FormServiceTest {
         assertEquals("initial", entity.getTitle(), "Title must remain unchanged");
     }
 
+    // -----------------------------------------------------------------------
+    // extractAdditionalFieldValues
+    // -----------------------------------------------------------------------
+
+    @Test
+    void extractAdditionalFieldValues_returnsEmptyMap_whenResponseIsNull() {
+        Map<CustomField, Object> result = formService.extractAdditionalFieldValues(null);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void extractAdditionalFieldValues_returnsEmptyMap_whenAnswersIsNull() {
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
+        response.setAnswers(null);
+
+        Map<CustomField, Object> result = formService.extractAdditionalFieldValues(response);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void extractAdditionalFieldValues_collectsOnlyNonSystemFieldsWithNonNullValues() {
+        // non-system field with a value -> kept
+        CustomField additionalField = mock(CustomField.class);
+        when(additionalField.getIsSystemField()).thenReturn(false);
+        CustomFieldAnswerTextViewModel additionalAnswer = new CustomFieldAnswerTextViewModel();
+        additionalAnswer.setValue("extra value");
+
+        // system field -> ignored regardless of value
+        CustomField systemField = mock(CustomField.class);
+        when(systemField.getIsSystemField()).thenReturn(true);
+        CustomFieldAnswerTextViewModel systemAnswer = new CustomFieldAnswerTextViewModel();
+        systemAnswer.setValue("system value");
+
+        // isSystemField == null -> treated as non-system, kept
+        CustomField unspecifiedField = mock(CustomField.class);
+        when(unspecifiedField.getIsSystemField()).thenReturn(null);
+        CustomFieldAnswerTextViewModel unspecifiedAnswer = new CustomFieldAnswerTextViewModel();
+        unspecifiedAnswer.setValue("unspecified value");
+
+        // non-system field with a null value -> ignored
+        CustomField additionalNullValueField = mock(CustomField.class);
+        when(additionalNullValueField.getIsSystemField()).thenReturn(false);
+        CustomFieldAnswerTextViewModel additionalNullValueAnswer = new CustomFieldAnswerTextViewModel();
+        additionalNullValueAnswer.setValue(null);
+
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(additionalField, additionalAnswer);
+        answers.put(systemField, systemAnswer);
+        answers.put(unspecifiedField, unspecifiedAnswer);
+        answers.put(additionalNullValueField, additionalNullValueAnswer);
+        answers.put(null, additionalAnswer);
+        response.setAnswers(answers);
+
+        Map<CustomField, Object> result = formService.extractAdditionalFieldValues(response);
+
+        assertEquals(2, result.size());
+        assertEquals("extra value", result.get(additionalField));
+        assertEquals("unspecified value", result.get(unspecifiedField));
+        assertFalse(result.containsKey(systemField));
+        assertFalse(result.containsKey(additionalNullValueField));
+    }
+
     @Test
     void buildEnabledEngine_createsEngineWithCorrectRulesAndDependencies() {
         // Arrange
