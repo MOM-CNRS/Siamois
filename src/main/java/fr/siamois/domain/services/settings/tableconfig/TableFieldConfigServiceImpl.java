@@ -52,7 +52,6 @@ import java.util.function.Consumer;
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private static final String NO_SOURCE = "—";
-    private static final String NEW_FIELD_BASE_NAME = "Nouveau champ";
 
     private final FieldConfigurationService fieldConfigurationService;
     private final LabelService labelService;
@@ -556,16 +555,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                             "Unknown type '" + typeName + "' for table " + table)));
         }
         return formConfigRepository.save(config);
-    }
-
-    private String nextNewFieldName(Long projectId, ConfigurableTable table, String typeName) {
-        List<String> existing = effectiveFields(projectId, table, typeName).values().stream()
-                .map(field -> field.field().getLabel())
-                .toList();
-        if (!existing.contains(NEW_FIELD_BASE_NAME)) return NEW_FIELD_BASE_NAME;
-        int suffix = 2;
-        while (existing.contains(NEW_FIELD_BASE_NAME + " " + suffix)) suffix++;
-        return NEW_FIELD_BASE_NAME + " " + suffix;
     }
 
     /**
