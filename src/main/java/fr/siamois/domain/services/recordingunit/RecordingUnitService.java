@@ -138,7 +138,9 @@ public class RecordingUnitService implements ArkEntityService {
     })
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO) {
         try {
-            RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+            RecordingUnit recordingUnit =
+                    recordingUnitMapper.invertConvert(recordingUnitDTO);
+
             return recordingUnitMapper.convert(save(recordingUnit));
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
