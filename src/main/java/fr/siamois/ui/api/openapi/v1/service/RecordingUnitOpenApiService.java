@@ -128,7 +128,6 @@ public class RecordingUnitOpenApiService {
         RecordingUnitService.AccessibleRecordingUnit bundle =
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, counts);
         RecordingUnitDTO dto = bundle.dto();
-        RecordingUnit entity = bundle.entity();
 
         RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
         if (resource.getType() != null && dto.getType() != null) {
@@ -156,7 +155,7 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsWithFallback(entity, dto, customForm, fieldSource, locale));
+                userInfo, () -> buildFieldsWithFallback(dto, fieldSource, locale));
 
         resource.setAnswers(fields);
         return resource;
@@ -577,9 +576,7 @@ public class RecordingUnitOpenApiService {
     /**
      * Construit les réponses typées avec valeurs ; si le moteur de réponses échoue, retourne des réponses sans valeur.
      */
-    private Map<String, FieldAnswer> buildFieldsWithFallback(RecordingUnit entity,
-                                                             RecordingUnitDTO dto,
-                                                             CustomForm customForm,
+    private Map<String, FieldAnswer> buildFieldsWithFallback(RecordingUnitDTO dto,
                                                              FieldSource fieldSource,
                                                              Locale locale) {
         try {
