@@ -128,11 +128,6 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
     @Override
     public Integer resolveCount(TableColumn column, ContainerDTO au) {
-        if (column instanceof RelationColumn rel) {
-            return switch (rel.getCountKey()) {
-                default -> 0;
-            };
-        }
         return 0;
     }
 
@@ -188,6 +183,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         }
     }
 
+    @SuppressWarnings("unused")
     public boolean isRendered(RowAction action, ContainerDTO au) {
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> false;
@@ -196,7 +192,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         };
     }
 
-
+    @SuppressWarnings("unused")
     public String resolveIcon(RowAction action,
                               ContainerDTO au) {
         return switch (action.getAction()) {

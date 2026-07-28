@@ -8,7 +8,11 @@
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
         <h:panelGroup rendered="#{projectTableFieldSettingsBean.drawerOpen}">
-            <div class="ptc-drawer-scrim" onclick="document.getElementById('fieldEditForm:cancelBtn').click()"></div>
+            <!-- A native button, not a div: the scrim is clickable, so it must be focusable and
+                 keyboard-activatable — which <button> is for free, without role nor key handlers. -->
+            <button type="button" class="ptc-drawer-scrim"
+                    aria-label="#{langBean.msg('projectTables.drawer.close')}"
+                    onclick="document.getElementById('fieldEditForm:cancelBtn').click()"></button>
             <div class="ptc-drawer">
                 <div class="ptc-drawer-header">
                     <div class="ptc-drawer-title">
