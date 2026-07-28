@@ -123,8 +123,6 @@ public interface TableFieldConfigService {
      * Removes an additional field from a type. No-op if the named field is a system field (system
      * fields can be deactivated but never deleted) or doesn't exist.
      * To be defined: what happens if user try to delete an additional field already in use?
-     * Adds a new additional field to a type, seeded with default values (name "Nouveau champ",
-     * type {@code TEXTE}, not mandatory), and returns it so the caller can display/edit it further.
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to

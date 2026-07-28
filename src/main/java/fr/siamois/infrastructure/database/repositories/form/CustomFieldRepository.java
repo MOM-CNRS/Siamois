@@ -42,4 +42,6 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
             @Param("isSystemField" ) Boolean isSystemField,
             @Param("valueBinding" ) String valueBinding,
             @Param("concept" ) Concept concept);
+
+    List<CustomField> findAllByIsSystemField(Boolean isSystemField);
 }

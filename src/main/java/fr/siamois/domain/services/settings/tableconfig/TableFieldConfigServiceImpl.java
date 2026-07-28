@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
-import fr.siamois.annotations.NotImplemented;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -171,38 +170,15 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public void setFieldActive(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean active) {
-        updateField(projectId, table, typeName, fieldName, config -> config.setActive(active));
+        applyFieldChange(projectId, table, typeName, fieldName, config -> config.setActive(active));
     }
 
     @Override
     @Transactional
     public void setFieldMandatory(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean mandatory) {
-        updateField(projectId, table, typeName, fieldName, config -> config.setMandatory(mandatory));
+        applyFieldChange(projectId, table, typeName, fieldName, config -> config.setMandatory(mandatory));
     }
 
-    @Override
-    @NotImplemented
-    public List<FieldCatalogEntry> searchFieldCatalog(Long projectId, String query) {
-        throw new UnsupportedOperationException("searchFieldCatalog is not implemented yet");
-    }
-
-    @Override
-    @NotImplemented
-    public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name, FieldType type, String description) {
-        throw new UnsupportedOperationException("createField is not implemented yet");
-    }
-
-    @Override
-    @NotImplemented
-    public TypeFieldFormConfig addExistingField(Long projectId, ConfigurableTable table, String typeName, String catalogFieldName) {
-        throw new UnsupportedOperationException("addExistingField is not implemented yet");
-    }
-
-    @Override
-    @NotImplemented
-    public TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description) {
-        throw new UnsupportedOperationException("updateField is not implemented yet");
-    }
 
     /**
      * Unlinks an additional field from the type. The custom field itself is deleted only once no
@@ -225,6 +201,161 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                         customFieldRepository.delete(field);
                     }
                 });
+    }
+
+    /**
+     * Reusable, non-system custom fields whose name or description matches the query, offered by the
+     * "reuse an existing field" picker. The reuse pool is the custom fields already defined in the
+     * database, de-duplicated by label; the description shown is the field's {@code hint}.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<FieldCatalogEntry> searchFieldCatalog(Long projectId, String query) {
+        String needle = query == null ? "" : query.toLowerCase().trim();
+        return reusableCatalogFields().stream()
+                .filter(field -> needle.isBlank()
+                        || matches(field.getLabel(), needle)
+                        || matches(field.getHint(), needle))
+                .map(field -> FieldCatalogEntry.builder()
+                        .name(field.getLabel())
+                        .type(typeOf(field))
+                        .description(field.getHint())
+                        .build())
+                .toList();
+    }
+
+    /**
+     * Creates a new additional field on a type from a user-provided name, type and description.
+     * The name is stored as the custom field's label and the description as its hint; a custom field
+     * subclass matching {@code type} is instantiated so the persisted {@code answer_type}
+     * discriminator stays in step with the type shown in the UI.
+     */
+    @Override
+    @Transactional
+    public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName,
+                                           String name, FieldType type, String description) {
+        FormConfig formConfig = requireFormConfig(projectId, table, typeName);
+        CustomField field = newCustomFieldOfType(type);
+        field.setLabel(name);
+        field.setIsSystemField(false);
+        field.setHint(description);
+        field.setAuthor(currentPerson());
+        CustomField saved = customFieldRepository.save(field);
+        return toDto(linkField(saved, formConfig, true, false));
+    }
+
+    /**
+     * Adds an already-defined custom field, picked from the catalog by its name, to a type. No-op
+     * (returns the field as already configured) when a field with that name is present on the type.
+     */
+    @Override
+    @Transactional
+    public TypeFieldFormConfig addExistingField(Long projectId, ConfigurableTable table, String typeName,
+                                                String catalogFieldName) {
+        FormConfig formConfig = requireFormConfig(projectId, table, typeName);
+        Optional<EffectiveField> present = effectiveFields(projectId, table, typeName).values().stream()
+                .filter(field -> catalogFieldName.equals(field.field().getLabel()))
+                .findFirst();
+        if (present.isPresent()) {
+            return toDto(present.get());
+        }
+        CustomField field = reusableCatalogFields().stream()
+                .filter(candidate -> catalogFieldName.equals(candidate.getLabel()))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Unknown catalog field: " + catalogFieldName));
+        return toDto(linkField(field, formConfig, true, false));
+    }
+
+    /**
+     * Modifies an additional field's name, type and description for a type. No-op (returns
+     * {@code null}) when the named field is a system field or doesn't exist.
+     * <p>
+     * A same-type edit updates the custom field entity in place. A type change can't move an
+     * existing row to another {@code answer_type} discriminator, so it creates a fresh field of the
+     * new type, repoints this type's configuration to it (keeping its active/mandatory state), and
+     * deletes the old field once nothing else references it.
+     */
+    @Override
+    @Transactional
+    public TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName,
+                                           String fieldName, String newName, FieldType newType, String description) {
+        Optional<EffectiveField> target = effectiveFields(projectId, table, typeName).values().stream()
+                .filter(field -> fieldName.equals(field.field().getLabel()))
+                .findFirst();
+        if (target.isEmpty()) {
+            log.warn("No field '{}' on type '{}' of table {} in project {}", fieldName, typeName, table, projectId);
+            return null;
+        }
+        EffectiveField effective = target.get();
+        CustomField current = effective.field();
+        if (isSystemField(current)) {
+            log.debug("Field '{}' is a system field; its definition is not editable from this screen", fieldName);
+            return null;
+        }
+
+        if (typeOf(current) == newType) {
+            current.setLabel(newName);
+            current.setHint(description);
+            customFieldRepository.save(current);
+            return toDto(new EffectiveField(current, effective.stored(), effective.requiredByForm()));
+        }
+
+        FormConfig owner = requireFormConfig(projectId, table, typeName);
+        CustomField replacement = newCustomFieldOfType(newType);
+        replacement.setLabel(newName);
+        replacement.setIsSystemField(false);
+        replacement.setHint(description);
+        replacement.setAuthor(currentPerson());
+        CustomField savedReplacement = customFieldRepository.save(replacement);
+
+        if (ownedBy(effective, owner)) {
+            fieldFormConfigRepository.delete(effective.stored());
+        }
+        FieldFormConfig link = linkField(savedReplacement, owner, effective.active(), effective.mandatory());
+        if (fieldFormConfigRepository.countByFieldId(current.getId()) == 0) {
+            customFieldRepository.delete(current);
+        }
+        return toDto(link);
+    }
+
+    private boolean matches(@Nullable String value, String lowerCaseNeedle) {
+        return value != null && value.toLowerCase().contains(lowerCaseNeedle);
+    }
+
+    /** Links a custom field to a form config as an additional (non institution-locked) field. */
+    private FieldFormConfig linkField(CustomField field, FormConfig formConfig, boolean active, boolean mandatory) {
+        FieldFormConfig link = new FieldFormConfig();
+        link.setField(field);
+        link.setFormConfig(formConfig);
+        link.setActive(active);
+        link.setMandatory(mandatory);
+        link.setInstitutionLocked(false);
+        return fieldFormConfigRepository.save(link);
+    }
+
+    /** Non-system custom fields the reuse picker can offer, de-duplicated by label. */
+    private List<CustomField> reusableCatalogFields() {
+        Map<String, CustomField> byLabel = new LinkedHashMap<>();
+        for (CustomField field : customFieldRepository.findAllByIsSystemField(false)) {
+            if (field.getLabel() != null) {
+                byLabel.putIfAbsent(field.getLabel(), field);
+            }
+        }
+        return List.copyOf(byLabel.values());
+    }
+
+    /**
+     * A blank custom field of the subclass matching a UI {@link FieldType}. Only the user-creatable
+     * types are mapped; anything else falls back on a plain text field.
+     */
+    private CustomField newCustomFieldOfType(FieldType type) {
+        return switch (type) {
+            case INTEGER -> CustomFieldInteger.builder().build();
+            case MEASUREMENT -> CustomFieldMeasurement.builder().build();
+            case SELECT_ONE -> new CustomFieldSelectOne();
+            case SELECT_MULTIPLE -> new CustomFieldSelectMultiple();
+            default -> CustomFieldText.builder().isTextArea(false).build();
+        };
     }
 
     /**
@@ -358,8 +489,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
      * A field the institution locked is left untouched: its state can only be changed from the
      * (not yet implemented) institution-level screens.
      */
-    private void updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName,
-                             Consumer<FieldFormConfig> change) {
+    private void applyFieldChange(Long projectId, ConfigurableTable table, String typeName, String fieldName,
+                                  Consumer<FieldFormConfig> change) {
         Optional<EffectiveField> target = effectiveFields(projectId, table, typeName).values().stream()
                 .filter(field -> fieldName.equals(field.field().getLabel()))
                 .findFirst();

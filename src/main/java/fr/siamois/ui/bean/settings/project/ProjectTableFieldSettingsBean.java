@@ -12,6 +12,7 @@ import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
+import jakarta.faces.application.FacesMessage;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private FieldType draftType;
     private String draftDescription;
 
+    private String newTypeName;
+
     public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.langBean = langBean;
@@ -78,6 +81,22 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         pickerOpen = false;
         pickerQuery = null;
         closeDrawer();
+        newTypeName = null;
+    }
+
+    /**
+     * Caption to display for a field. A system field carries a message key rather than a caption,
+     * whereas a field added from this screen carries what the user typed — same convention as
+     * {@code SpatialUnitFieldBean#resolveCustomFieldLabel}.
+     * <p>
+     * The untranslated name stays the field's identity: it is what the service is called back with
+     * to activate, require or delete it.
+     */
+    public String resolveFieldLabel(TypeFieldFormConfig field) {
+        if (field.isSystemField()) {
+            return langBean.msg(field.getName());
+        }
+        return field.getName();
     }
 
     public void init(ActionUnitDTO project) {
@@ -246,6 +265,18 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public void setDraftTypeName(String name) {
         draftType = name == null ? null : FieldType.valueOf(name);
+    }
+
+    public List<String> completeConfigurableTypes(String query) {
+        return tableFieldConfigService.listConfigurableTypes(project.getId(), selectedTable, query);
+    }
+
+    public void addConfiguration() {
+        tableFieldConfigService.addConfiguration(project.getId(), selectedTable, newTypeName);
+        typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), selectedTable);
+        selectType(newTypeName);
+        MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.tree.newConfigSuccess", newTypeName);
+        newTypeName = null;
     }
 
 }
