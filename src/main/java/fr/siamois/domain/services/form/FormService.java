@@ -263,7 +263,31 @@ public class FormService {
                 && bindableFields.contains(field.getValueBinding());
     }
 
-    private static Object extractValueFromAnswer(CustomFieldAnswerViewModel answer) {
+    /**
+     * Collect raw values for all "additional" (non-system) fields answered in the response.
+     * Prepared for future persistence of additional-field values; not yet used to bind
+     * anything onto the JPA entity.
+     *
+     * @param response the form response
+     * @return a map of additional CustomField to its extracted answer value (never null)
+     */
+    public Map<CustomField, Object> extractAdditionalFieldValues(CustomFormResponseViewModel response) {
+        if (response == null || response.getAnswers() == null) return Map.of();
+
+        Map<CustomField, Object> result = new HashMap<>();
+        for (Map.Entry<CustomField, CustomFieldAnswerViewModel> entry : response.getAnswers().entrySet()) {
+            CustomField field = entry.getKey();
+            if (field == null || Boolean.TRUE.equals(field.getIsSystemField())) continue;
+
+            Object value = extractValueFromAnswer(entry.getValue());
+            if (value != null) {
+                result.put(field, value);
+            }
+        }
+        return result;
+    }
+
+    static Object extractValueFromAnswer(CustomFieldAnswerViewModel answer) {
         if (answer instanceof CustomFieldAnswerDateTimeViewModel a && a.getValue() != null) {
             return a.getValue().atOffset(ZoneOffset.UTC);
         } else if (answer instanceof CustomFieldAnswerTextViewModel a) {

@@ -8,6 +8,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
@@ -142,6 +143,25 @@ public class RecordingUnitService implements ArkEntityService {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
         }
+    }
+
+    /**
+     * Save a recording unit along with the values answered for its additional (non-system) fields.
+     * <p>
+     * The additional field values are not persisted yet: this overload is the entry point
+     * that future work will use to wire up their persistence, without needing to touch callers.
+     *
+     * @param recordingUnitDTO      The recording unit to save.
+     * @param additionalFieldValues Values answered for additional (non-system) fields, keyed by CustomField.
+     * @return The saved RecordingUnit instance.
+     */
+    @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenRU",
+            "ActionHasRootChildrenRU"
+    })
+    public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO, Map<CustomField, Object> additionalFieldValues) {
+        return save(recordingUnitDTO);
     }
 
     @Transactional
