@@ -13,7 +13,6 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
@@ -21,7 +20,6 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerSelectOneActionCode;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerStratigraphy;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
@@ -33,7 +31,6 @@ import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAns
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel;
@@ -94,7 +91,6 @@ class CustomFieldAnswerServiceTest {
         SpatialUnit spatialUnit = spatialUnit(30L);
         ActionUnit actionUnit = actionUnit(40L);
         ActionCode actionCode = actionCode("FOUILLE");
-        StratigraphicRelationshipDTO relationship = new StratigraphicRelationshipDTO();
         LocalDateTime moment = LocalDateTime.of(2026, Month.JULY, 28, 14, 30);
 
         return Stream.of(
@@ -119,9 +115,7 @@ class CustomFieldAnswerServiceTest {
                 arguments(CustomFieldSelectOneActionCode.builder().id(10L).build(),
                         actionCode, CustomFieldAnswerSelectOneActionCode.class, actionCode),
                 arguments(CustomFieldSelectOneActionUnit.builder().id(11L).build(),
-                        actionUnit, CustomFieldAnswerSelectOneActionUnit.class, actionUnit),
-                arguments(stratigraphyField(12L),
-                        relationship, CustomFieldAnswerStratigraphy.class, relationship)
+                        actionUnit, CustomFieldAnswerSelectOneActionUnit.class, actionUnit)
         );
     }
 
@@ -289,12 +283,6 @@ class CustomFieldAnswerServiceTest {
                 return value;
             }
         };
-    }
-
-    private static CustomFieldStratigraphy stratigraphyField(Long id) {
-        CustomFieldStratigraphy field = new CustomFieldStratigraphy();
-        field.setId(id);
-        return field;
     }
 
     private static Concept concept(Long id) {

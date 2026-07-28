@@ -13,7 +13,6 @@ import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiple
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
@@ -23,7 +22,6 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerSelectOneActionCode;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerStratigraphy;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
@@ -66,7 +64,6 @@ public final class CustomFieldAnswerFactory {
                 Map.entry(CustomFieldSelectOneActionCode.class, f -> new CustomFieldAnswerSelectOneActionCodeViewModel()),
                 Map.entry(CustomFieldInteger.class, f -> new CustomFieldAnswerIntegerViewModel()),
                 Map.entry(CustomFieldSelectOnePerson.class, f -> new CustomFieldAnswerSelectOnePersonViewModel()),
-                Map.entry(CustomFieldStratigraphy.class, f -> new CustomFieldAnswerStratigraphyViewModel()),
                 Map.entry(CustomFieldSelectMultipleRecordingUnit.class, f -> new CustomFieldAnswerSelectMultipleRecordingUnitViewModel()),
                 Map.entry(CustomFieldMeasurement.class, f -> new CustomFieldAnswerMeasurementViewModel()),
                 Map.entry(CustomFieldSelectMultipleContainer.class, f -> new CustomFieldAnswerSelectMultipleContainerViewModel()),
@@ -89,8 +86,7 @@ public final class CustomFieldAnswerFactory {
                 Map.entry(CustomFieldSelectOneSpatialUnit.class, v -> new CustomFieldAnswerSelectOneSpatialUnit()),
                 Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, v -> new CustomFieldAnswerSelectMultipleSpatialUnitTree()),
                 Map.entry(CustomFieldSelectOneActionCode.class, v -> new CustomFieldAnswerSelectOneActionCode()),
-                Map.entry(CustomFieldSelectOneActionUnit.class, v -> new CustomFieldAnswerSelectOneActionUnit()),
-                Map.entry(CustomFieldStratigraphy.class, v -> new CustomFieldAnswerStratigraphy())
+                Map.entry(CustomFieldSelectOneActionUnit.class, v -> new CustomFieldAnswerSelectOneActionUnit())
         );
     }
 

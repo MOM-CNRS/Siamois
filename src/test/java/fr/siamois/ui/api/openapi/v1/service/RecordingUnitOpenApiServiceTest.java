@@ -15,7 +15,6 @@ import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePers
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphy;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
@@ -73,6 +72,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
@@ -135,6 +135,7 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private PhaseMapper phaseMapper;
 
+    @InjectMocks
     private RecordingUnitOpenApiService service;
 
     private PersonDTO personDto;
@@ -145,28 +146,6 @@ class RecordingUnitOpenApiServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
-        service = new RecordingUnitOpenApiService(
-                recordingUnitService,
-                formService,
-                fieldConfigurationService,
-                recordingUnitResponseMapper,
-                conversionService,
-                customFormLayoutConverter,
-                conceptMapper,
-                institutionService,
-                conceptRepository,
-                specimenService,
-                langService,
-                actionUnitService,
-                profilePermissionService,
-                personService,
-                spatialUnitService,
-                personMapper,
-                findOpenApiMapper,
-                labelService,
-                unitDefinitionMapper,
-                phaseRepository,
-                phaseMapper);
 
         lenient().when(langService.localeForApiLang(any())).thenAnswer(inv -> {
             Object arg = inv.getArgument(0);
@@ -1600,40 +1579,6 @@ class RecordingUnitOpenApiServiceTest {
         service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
 
         verify(formService, never()).applyTypedValueToAnswer(any(), any());
-    }
-
-    @Test
-    void patchRecordingUnit_unsupportedFieldType_valueIgnored() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        ruDto.setCreatedByInstitution(inst);
-        ConceptDTO type = new ConceptDTO();
-        ruDto.setType(type);
-
-        CustomForm customForm = mock(CustomForm.class);
-        CustomFieldStratigraphy stratigraphyField = mock(CustomFieldStratigraphy.class);
-        when(stratigraphyField.getId()).thenReturn(52L);
-
-        CustomFieldAnswerStratigraphyViewModel stratigraphyVm = new CustomFieldAnswerStratigraphyViewModel();
-        CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
-        responseVm.setAnswers(Map.of(stratigraphyField, stratigraphyVm));
-
-        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
-                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(formService.findCustomFormByRecordingUnitTypeAndInstitutionId(type, inst)).thenReturn(customForm);
-        when(conversionService.convert(customForm, FormUiDto.class)).thenReturn(formUiDtoWithOneField(stratigraphyField));
-        when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
-        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(formService.readAnswerValueForApi(any())).thenReturn(null);
-
-        RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
-        request.setAnswers(Map.of("52", new AnswerInput("x", null)));
-
-        service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr");
-
-        verify(formService, never()).applyTypedValueToAnswer(same(stratigraphyVm), any());
     }
 
     private static FormUiDto formUiDtoWithOneField(CustomField field) {
