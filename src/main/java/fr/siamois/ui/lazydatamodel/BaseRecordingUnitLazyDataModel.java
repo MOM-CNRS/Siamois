@@ -1,7 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;

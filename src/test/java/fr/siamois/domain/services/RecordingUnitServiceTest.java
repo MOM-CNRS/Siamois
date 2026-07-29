@@ -11,7 +11,6 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -21,7 +20,6 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.form.CustomFormResponseService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
@@ -34,7 +32,6 @@ import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
-import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
@@ -43,11 +40,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.*;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -83,8 +76,6 @@ class RecordingUnitServiceTest {
     @Mock
     private PersonRepository personRepository;
     @Mock
-    private CustomFormResponseService customFormResponseService;
-    @Mock
     private ConceptService conceptService;
     @Mock
     private InstitutionService institutionService;
@@ -104,8 +95,6 @@ class RecordingUnitServiceTest {
     private ActionUnitSummaryMapper actionUnitSummaryMapper;
     @Mock
     private DocumentRepository documentRepository;
-    @Mock
-    private CustomFormResponseRepository customFormResponseRepository;
     @Mock
     private ArkRepository arkRepository;
     @Mock
@@ -2342,7 +2331,7 @@ class RecordingUnitServiceTest {
         }
 
         @Test
-        void deleteRecordingUnitById_deletesLinkedDataFormResponseAndArk() {
+        void deleteRecordingUnitById_deletesLinkedDataAndArk() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(20L);
             ru.setParents(new HashSet<>());
@@ -2351,10 +2340,6 @@ class RecordingUnitServiceTest {
             ru.setRelationshipsAsUnit2(new HashSet<>());
             ru.setContributors(new ArrayList<>(List.of(new Person())));
             ru.setDocuments(new HashSet<>(Set.of(new Document())));
-
-            CustomFormResponse formResponse = new CustomFormResponse();
-            formResponse.setId(55L);
-            ru.setFormResponse(formResponse);
 
             Ark ark = new Ark();
             ark.setInternalId(888L);
@@ -2371,8 +2356,6 @@ class RecordingUnitServiceTest {
             verify(recordingUnitIdInfoRepository).deleteById(20L);
             assertTrue(ru.getContributors().isEmpty());
             assertTrue(ru.getDocuments().isEmpty());
-            assertNull(ru.getFormResponse());
-            verify(customFormResponseRepository).deleteById(55L);
             verify(arkRepository).deleteById(888L);
             verify(recordingUnitRepository).delete(ru);
         }

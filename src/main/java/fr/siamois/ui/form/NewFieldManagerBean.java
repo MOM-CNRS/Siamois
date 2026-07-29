@@ -1,6 +1,6 @@
 package fr.siamois.ui.form;
 
-import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;

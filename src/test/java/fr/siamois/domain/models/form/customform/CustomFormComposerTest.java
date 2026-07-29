@@ -1,6 +1,6 @@
 package fr.siamois.domain.models.form.customform;
 
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

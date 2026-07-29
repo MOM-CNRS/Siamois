@@ -1,8 +1,8 @@
 package fr.siamois.domain.services.form;
 
 
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customfieldanswer.*;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
@@ -35,7 +35,6 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -89,20 +88,6 @@ public class FormService {
     }
 
     // --------- Answer creators
-
-    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
-            Map.ofEntries(
-                    Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
-                    Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
-                    Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
-                    Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
-                    Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
-                    Map.entry(CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new),
-                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new),
-                    Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new),
-                    Map.entry(CustomFieldInteger.class, CustomFieldAnswerInteger::new),
-                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new)
-            );
 
     /**
      * Create or reuse a CustomFormResponse for the given entity + field source.
@@ -219,7 +204,7 @@ public class FormService {
     private ValueMatcher toMatcher(EnabledWhenJson.ValueJson vj) {
         String className = vj.getAnswerClass();
         return switch (className) {
-            case "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode" ->
+            case "fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode" ->
                     ValueMatcherFactory.forSelectOneFromFieldCode(vj);
             default -> ValueMatcherFactory.defaultMatcher();
         };
@@ -293,27 +278,27 @@ public class FormService {
                     Map.entry(CustomFieldAnswerDateTimeViewModel.class,
                             a -> extractDateTime((CustomFieldAnswerDateTimeViewModel) a)),
                     Map.entry(CustomFieldAnswerTextViewModel.class,
-                            a -> ((CustomFieldAnswerTextViewModel) a).getValue()),
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectMultiplePersonViewModel.class,
-                            a -> ((CustomFieldAnswerSelectMultiplePersonViewModel) a).getValue()),
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectOnePersonViewModel.class,
-                            a -> ((CustomFieldAnswerSelectOnePersonViewModel) a).getValue()),
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerMeasurementViewModel.class,
                             a -> extractMeasurement((CustomFieldAnswerMeasurementViewModel) a)),
                     Map.entry(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class,
                             a -> extractConceptFromFieldCode((CustomFieldAnswerSelectOneFromFieldCodeViewModel) a)),
                     Map.entry(CustomFieldAnswerSelectOneActionUnitViewModel.class,
-                            a -> ((CustomFieldAnswerSelectOneActionUnitViewModel) a).getValue()),
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectOneSpatialUnitViewModel.class,
                             a -> extractSpatialUnit((CustomFieldAnswerSelectOneSpatialUnitViewModel) a)),
                     Map.entry(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class,
                             a -> extractSpatialUnitSet((CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel) a)),
                     Map.entry(CustomFieldAnswerSelectOneActionCodeViewModel.class,
-                            a -> ((CustomFieldAnswerSelectOneActionCodeViewModel) a).getValue()),
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerIntegerViewModel.class,
-                            a -> ((CustomFieldAnswerIntegerViewModel) a).getValue()),
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectOneAddressViewModel.class,
-                            a -> ((CustomFieldAnswerSelectOneAddressViewModel) a).getValue()),
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class,
                             a -> extractRecordingUnitSet((CustomFieldAnswerSelectMultipleRecordingUnitViewModel) a)),
                     Map.entry(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class,
@@ -427,9 +412,6 @@ public class FormService {
                                   Object jpaEntity,
                                   List<String> bindableFields) {
 
-        CustomFieldAnswerId answerId = new CustomFieldAnswerId();
-        answerId.setField(field);
-        answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
         if (answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer

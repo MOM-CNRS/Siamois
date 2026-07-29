@@ -2,7 +2,6 @@ package fr.siamois.ui.form.rules;
 
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerId;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
@@ -48,16 +47,19 @@ public final class EnabledRulesEngine {
 
     private CustomFieldAnswerViewModel buildConceptOverride(CustomField field, ConceptAutocompleteDTO concept) {
         CustomFieldAnswerViewModel answer = CustomFieldAnswerFactory.instantiateAnswerForField(field);
-        CustomFieldAnswerId id = new CustomFieldAnswerId();
-        id.setField(field);
-        answer.setPk(id);
 
         if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
             a.setValue(concept);
         } else {
-            throw new IllegalArgumentException(
-                    "Field " + field.getLabel() + " does not accept a Concept value"
-            );
+            if (field == null) {
+                throw new IllegalArgumentException(
+                        "Field is null"
+                );
+            } else {
+                throw new IllegalArgumentException(
+                        "Field " + field.getLabel() + " does not accept a Concept value"
+                );
+            }
         }
 
         return answer;

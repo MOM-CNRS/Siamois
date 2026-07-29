@@ -10,9 +10,11 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
-import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
+import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
@@ -162,14 +164,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @FieldCode
     public static final String EROSION_ORIENTATION_FIELD_CODE = "SIARU.EROSIONORIENTATION";
 
-    // Setters/Removers
-    @Override
-    public void setFormResponse(CustomFormResponse formResponse) {
-        if (formResponse != null) {
-            formResponse.setRecordingUnit(this);
-        }
-        this.formResponse = formResponse;
-    }
 
     // utils
     public String displayFullIdentifier() {

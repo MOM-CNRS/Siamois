@@ -1,13 +1,7 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.settings.tableconfig.FieldCatalogEntry;
-import fr.siamois.domain.models.settings.tableconfig.FieldType;
-import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
+import fr.siamois.domain.models.settings.tableconfig.*;
 
 import java.util.List;
 

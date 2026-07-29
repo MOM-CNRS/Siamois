@@ -18,7 +18,7 @@ public class EnabledWhenJson implements Serializable {
     @Data
     public static class ValueJson implements Serializable {
         /** Classe concrète de la réponse, ex:
-         *  "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerInteger" */
+         *  "fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger" */
         private String answerClass;
 
         /** Valeur sérialisée, typée JSON:

@@ -1,6 +1,6 @@
 package fr.siamois.domain.services.form;
 
-import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldMeasurementRepository;
 import fr.siamois.mapper.CustomFieldMeasurementMapper;

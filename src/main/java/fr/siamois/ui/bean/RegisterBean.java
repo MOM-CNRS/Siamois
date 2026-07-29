@@ -1,12 +1,7 @@
 package fr.siamois.ui.bean;
 
 import fr.siamois.domain.models.auth.pending.PendingPerson;
-import fr.siamois.domain.models.exceptions.auth.EmailAlreadyExistException;
-import fr.siamois.domain.models.exceptions.auth.InvalidEmailException;
-import fr.siamois.domain.models.exceptions.auth.InvalidNameException;
-import fr.siamois.domain.models.exceptions.auth.InvalidPasswordException;
-import fr.siamois.domain.models.exceptions.auth.InvalidUsernameException;
-import fr.siamois.domain.models.exceptions.auth.UserAlreadyExistException;
+import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.person.PersonService;

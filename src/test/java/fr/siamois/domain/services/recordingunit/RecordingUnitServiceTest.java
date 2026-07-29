@@ -7,7 +7,6 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -17,18 +16,10 @@ import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierR
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
-import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -95,9 +86,6 @@ class RecordingUnitServiceTest {
 
     @Mock
     private DocumentRepository documentRepository;
-
-    @Mock
-    private CustomFormResponseRepository customFormResponseRepository;
 
     @Mock
     private ArkRepository arkRepository;
@@ -1321,10 +1309,6 @@ class RecordingUnitServiceTest {
             StratigraphicRelationship rel = new StratigraphicRelationship();
             ru.setRelationshipsAsUnit1(new HashSet<>(Set.of(rel)));
 
-            CustomFormResponse formResponse = new CustomFormResponse();
-            formResponse.setId(50L);
-            ru.setFormResponse(formResponse);
-
             Ark ark = new Ark();
             ark.setInternalId(99L);
             ru.setArk(ark);
@@ -1345,13 +1329,12 @@ class RecordingUnitServiceTest {
             verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(1L);
             verify(recordingUnitIdCounterRepository).deleteAllByRecordingUnitId(1L);
             verify(recordingUnitIdInfoRepository).deleteById(1L);
-            verify(customFormResponseRepository).deleteById(50L);
             verify(recordingUnitRepository).delete(ru);
             verify(arkRepository).deleteById(99L);
         }
 
         @Test
-        void deleteRecordingUnitById_noFormResponseNoArkNoIdInfo_skipsOptionalDeletes() {
+        void deleteRecordingUnitById_noArkNoIdInfo_skipsOptionalDeletes() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(5L);
             ru.setFullIdentifier("RU-5");
@@ -1366,7 +1349,6 @@ class RecordingUnitServiceTest {
 
             verify(stratigraphicRelationshipRepository, never()).deleteAll(anyList());
             verify(recordingUnitIdInfoRepository, never()).deleteById(any());
-            verify(customFormResponseRepository, never()).deleteById(any());
             verify(arkRepository, never()).deleteById(any());
             verify(recordingUnitRepository).delete(ru);
         }

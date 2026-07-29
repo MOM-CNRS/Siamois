@@ -5,13 +5,24 @@ import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customfieldanswer.*;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
+import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -28,12 +39,12 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.mapper.ConceptMapper;
-import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
@@ -60,7 +71,7 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.*;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import jakarta.persistence.DiscriminatorValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -117,7 +128,6 @@ public class RecordingUnitOpenApiService {
         RecordingUnitService.AccessibleRecordingUnit bundle =
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, counts);
         RecordingUnitDTO dto = bundle.dto();
-        RecordingUnit entity = bundle.entity();
 
         RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
         if (resource.getType() != null && dto.getType() != null) {
@@ -145,7 +155,7 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsWithFallback(entity, dto, customForm, fieldSource, locale));
+                userInfo, () -> buildFieldsWithFallback(dto, fieldSource, locale));
 
         resource.setAnswers(fields);
         return resource;
@@ -566,14 +576,11 @@ public class RecordingUnitOpenApiService {
     /**
      * Construit les réponses typées avec valeurs ; si le moteur de réponses échoue, retourne des réponses sans valeur.
      */
-    private Map<String, FieldAnswer> buildFieldsWithFallback(RecordingUnit entity,
-                                                             RecordingUnitDTO dto,
-                                                             CustomForm customForm,
+    private Map<String, FieldAnswer> buildFieldsWithFallback(RecordingUnitDTO dto,
                                                              FieldSource fieldSource,
                                                              Locale locale) {
         try {
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-            applyPersistedCustomAnswers(entity, customForm, response, locale.getLanguage());
             return toFieldsMap(response, fieldSource, locale);
         } catch (RuntimeException ex) {
             log.warn("Impossible de construire les réponses formulaire pour l'UE id={} (fallback métadonnées seules): {}",
@@ -649,42 +656,6 @@ public class RecordingUnitOpenApiService {
     private static String answerTypeDiscriminator(CustomField field) {
         DiscriminatorValue dv = field.getClass().getAnnotation(DiscriminatorValue.class);
         return dv != null ? dv.value() : field.getClass().getSimpleName();
-    }
-
-    private void applyPersistedCustomAnswers(RecordingUnit entity,
-                                             CustomForm effectiveForm,
-                                             CustomFormResponseViewModel response,
-                                             String lang) {
-        CustomFormResponse persisted = entity.getFormResponse();
-        if (persisted == null || persisted.getForm() == null || response.getAnswers() == null) {
-            return;
-        }
-        if (!Objects.equals(persisted.getForm().getId(), effectiveForm.getId())) {
-            return;
-        }
-        for (Map.Entry<CustomField, CustomFieldAnswer> e : persisted.getAnswers().entrySet()) {
-            CustomField field = e.getKey();
-            CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
-            if (vm != null) {
-                applyOnePersistedAnswer(e.getValue(), vm, lang);
-            }
-        }
-    }
-
-    private void applyOnePersistedAnswer(CustomFieldAnswer jpa, CustomFieldAnswerViewModel vm, String lang) {
-        if (jpa instanceof CustomFieldAnswerInteger jpaInt && vm instanceof CustomFieldAnswerIntegerViewModel vmInt) {
-            vmInt.setValue(jpaInt.getValue());
-        } else if (jpa instanceof CustomFieldAnswerText jpaText && vm instanceof CustomFieldAnswerTextViewModel vmText) {
-            vmText.setValue(jpaText.getValue());
-        } else if (jpa instanceof CustomFieldAnswerDateTime jpaDt && vm instanceof CustomFieldAnswerDateTimeViewModel vmDt) {
-            vmDt.setValue(jpaDt.getValue());
-        } else if (jpa instanceof CustomFieldAnswerSelectOne jpaSel
-                && vm instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel vmFc
-                && jpaSel.getValue() != null) {
-            ConceptDTO conceptDto = conceptMapper.convert(jpaSel.getValue());
-            String label = conceptDto.getExternalId() != null ? conceptDto.getExternalId() : "";
-            vmFc.setValue(new ConceptAutocompleteDTO(conceptDto, label, lang));
-        }
     }
 
     /**
@@ -940,7 +911,6 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-            applyPersistedCustomAnswers(entity, customForm, response, langService.localeForApiLang(lang).getLanguage());
             mergeFieldAnswers(dto, response, fieldSource, answers, lang);
             formService.updateJpaEntityFromResponse(response, dto);
 
