@@ -20,6 +20,10 @@ public class PersonDTO extends AbstractEntityDTO {
         return name + " " + lastname ;
     }
 
+    public String getFirstName() {
+        return name;
+    }
+
     public String initials() {
         String first = (name == null || name.isBlank()) ? "" : name.substring(0, 1);
         String last = (lastname == null || lastname.isBlank()) ? "" : lastname.substring(0, 1);
