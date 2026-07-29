@@ -19,7 +19,9 @@ import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
@@ -40,6 +42,8 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.*;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -111,6 +115,8 @@ class RecordingUnitServiceTest {
     private PhaseMapper phaseMapper;
     @Mock
     private UnitDefinitionRepository unitDefinitionRepository;
+    @Mock
+    private CustomFieldAnswerService customFieldAnswerService;
 
 
     @InjectMocks
@@ -547,6 +553,62 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository).save(foundUnit);
     }
 
+    private void mockSuccessfulSingleArgSave(RecordingUnitDTO input, RecordingUnitDTO output) {
+        RecordingUnit mapped = new RecordingUnit();
+        mapped.setId(input.getId());
+        when(recordingUnitMapper.invertConvert(input)).thenReturn(mapped);
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(output);
+        when(personRepository.findAllById(anyList())).thenReturn(List.of());
+    }
+
+    @Test
+    void save_withEmptyAdditionalFieldAnswers_stillDelegatesToCustomFieldAnswerService() {
+        // The empty-map short-circuit lives in CustomFieldAnswerService itself, not here:
+        // RecordingUnitService always hands the map over and lets it decide.
+        RecordingUnitDTO input = new RecordingUnitDTO();
+        input.setId(1L);
+        RecordingUnitDTO saved = new RecordingUnitDTO();
+        saved.setId(1L);
+        mockSuccessfulSingleArgSave(input, saved);
+
+        RecordingUnitDTO result = recordingUnitService.save(input, Map.of());
+
+        assertSame(saved, result);
+        verify(customFieldAnswerService).saveAdditionalFieldAnswers(saved, Map.of());
+    }
+
+    @Test
+    void save_withAdditionalFieldAnswers_delegatesToCustomFieldAnswerServiceWithTheSavedDto() {
+        RecordingUnitDTO input = new RecordingUnitDTO();
+        input.setId(1L);
+        RecordingUnitDTO saved = new RecordingUnitDTO();
+        saved.setId(1L);
+        mockSuccessfulSingleArgSave(input, saved);
+
+        CustomField field = mock(CustomField.class);
+        CustomFieldAnswerViewModel answer = new CustomFieldAnswerTextViewModel();
+        Map<CustomField, CustomFieldAnswerViewModel> answers = Map.of(field, answer);
+
+        RecordingUnitDTO result = recordingUnitService.save(input, answers);
+
+        assertSame(saved, result);
+        verify(customFieldAnswerService).saveAdditionalFieldAnswers(saved, answers);
+    }
+
+    @Test
+    void save_whenAdditionalFieldAnswersPersistenceFails_throwsFailedRecordingUnitSaveException() {
+        RecordingUnitDTO input = new RecordingUnitDTO();
+        input.setId(1L);
+        RecordingUnitDTO saved = new RecordingUnitDTO();
+        saved.setId(1L);
+        mockSuccessfulSingleArgSave(input, saved);
+
+        Map<CustomField, CustomFieldAnswerViewModel> answers = Map.of(mock(CustomField.class), new CustomFieldAnswerTextViewModel());
+        doThrow(new RuntimeException("boom")).when(customFieldAnswerService).saveAdditionalFieldAnswers(saved, answers);
+
+        assertThrows(FailedRecordingUnitSaveException.class, () -> recordingUnitService.save(input, answers));
+    }
 
     @Test
     void save_shouldCreateNewUnit_whenIdIsProvidedButNotFound() {

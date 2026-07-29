@@ -115,6 +115,38 @@ class FormConfigAnswerServiceTest {
         assertThatItHasASingleOwner(created);
     }
 
+    // ========== findFormConfigAnswer (read-only) ==========
+
+    @Test
+    void findFormConfigAnswer_shouldReturnTheExistingAnswer() {
+        RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
+        RecordingUnit recordingUnit = new RecordingUnit();
+        givenCurrentPerson();
+        when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
+        when(formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit))
+                .thenReturn(Optional.of(stored));
+
+        Optional<FormConfigAnswer> answer = service.findFormConfigAnswer(formConfig, recordingUnitDTO);
+
+        assertThat(answer).contains(stored);
+        verify(formConfigAnswerRepository, never()).save(any());
+    }
+
+    @Test
+    void findFormConfigAnswer_shouldNotCreateAnAnswerWhenNoneExists() {
+        RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
+        RecordingUnit recordingUnit = new RecordingUnit();
+        givenCurrentPerson();
+        when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
+        when(formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit))
+                .thenReturn(Optional.empty());
+
+        Optional<FormConfigAnswer> answer = service.findFormConfigAnswer(formConfig, recordingUnitDTO);
+
+        assertThat(answer).isEmpty();
+        verify(formConfigAnswerRepository, never()).save(any());
+    }
+
     // ========== Specimen ==========
 
     @Test

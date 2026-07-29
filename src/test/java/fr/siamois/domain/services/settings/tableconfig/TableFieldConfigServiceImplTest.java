@@ -315,6 +315,30 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void findFormConfig_shouldReturnTheDefaultConfig() {
+        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default");
+
+        assertThat(result).contains(defaultConfig);
+    }
+
+    @Test
+    void findFormConfig_shouldReturnTheTypeOwnConfig() {
+        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(result).contains(ceramiqueConfig);
+    }
+
+    @Test
+    void findFormConfig_shouldReturnEmptyWhenTypeHasNoConfiguration() {
+        when(conceptRepository.findAllByFieldContextAndExactLabel(FIELD_CONCEPT_ID, "fr", "Métal"))
+                .thenReturn(List.of());
+
+        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Métal");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void getFieldsConfig_shouldMapVocabularyFieldsToTheirTypeAndSource() {
         CustomFieldSelectOneFromFieldCode vocabularyField = CustomFieldSelectOneFromFieldCode.builder()
                 .id(3L).label("Catégorie").isSystemField(true).fieldCode("SIAS.CATEGORY").build();

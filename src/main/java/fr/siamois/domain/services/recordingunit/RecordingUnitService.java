@@ -21,6 +21,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
@@ -38,6 +39,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.*;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -94,6 +96,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
     private final UnitDefinitionRepository unitDefinitionRepository;
+    private final CustomFieldAnswerService customFieldAnswerService;
 
 
     /**
@@ -145,13 +148,10 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
-     * Save a recording unit along with the values answered for its additional (non-system) fields.
-     * <p>
-     * The additional field values are not persisted yet: this overload is the entry point
-     * that future work will use to wire up their persistence, without needing to touch callers.
+     * Save a recording unit along with the answers to its additional (non-system) fields.
      *
      * @param recordingUnitDTO      The recording unit to save.
-     * @param additionalFieldValues Values answered for additional (non-system) fields, keyed by CustomField.
+     * @param additionalFieldAnswers Answers to additional (non-system) fields, keyed by CustomField.
      * @return The saved RecordingUnit instance.
      */
     @CacheEvict({
@@ -159,8 +159,15 @@ public class RecordingUnitService implements ArkEntityService {
             "ActionHasRootChildrenRU"
     })
     @Transactional
-    public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO, Map<CustomField, Object> additionalFieldValues) {
-        return save(recordingUnitDTO);
+    public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO, Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers) {
+        RecordingUnitDTO saved = save(recordingUnitDTO);
+        try {
+            customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+            throw new FailedRecordingUnitSaveException(e.getMessage());
+        }
+        return saved;
     }
 
     @Transactional

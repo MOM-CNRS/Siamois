@@ -1,9 +1,11 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
+import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.*;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Configuration of tables, their types and the fields available on each type, for a given project.
@@ -97,6 +99,18 @@ public interface TableFieldConfigService {
      * @return the active additional fields configured for the type
      */
     List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, String typeName);
+
+    /**
+     * Resolves the {@link FormConfig} that applies to a type, if one was ever materialized for it
+     * (see {@link #addConfiguration(Long, ConfigurableTable, String)} / the field-editing actions
+     * that create one lazily). Read-only: unlike {@link #getFieldsConfig}, this never creates a row.
+     *
+     * @param projectId the project (action unit) this configuration is scoped to
+     * @param table     the table the type belongs to
+     * @param typeName  the type's name, or {@code _default}
+     * @return the type's form configuration, empty if none was ever materialized
+     */
+    Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName);
 
     /**
      * Activates or deactivates a field for a type. No-op when the target field is

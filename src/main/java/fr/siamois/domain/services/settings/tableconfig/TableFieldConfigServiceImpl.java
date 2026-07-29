@@ -36,6 +36,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.context.annotation.Primary;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -436,7 +437,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             fields.put(field.getId(), new EffectiveField(field, stored.get(field.getId()), formField.required()));
         }
         stored.forEach((fieldId, config) ->
-                fields.computeIfAbsent(fieldId, id -> new EffectiveField(config.getField(), config, false)));
+                // FieldFormConfig#field is lazy: unproxy it so field.getClass() matches the
+                // concrete subclass everywhere else (CustomFieldAnswerFactory dispatches on it).
+                fields.computeIfAbsent(fieldId, id -> new EffectiveField((CustomField) Hibernate.unproxy(config.getField()), config, false)));
         return fields;
     }
 
@@ -510,7 +513,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return formFields;
     }
 
-    private Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName) {
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName) {
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
         if (fieldConcept.isEmpty()) return Optional.empty();
 

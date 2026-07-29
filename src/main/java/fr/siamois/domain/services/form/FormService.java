@@ -54,6 +54,7 @@ public class FormService {
     private final FormRepository formRepository;
     private final FormScopeRepository formScopeRepository;
     private final UnitDefinitionMapper unitDefinitionMapper;
+    private final CustomFieldAnswerService customFieldAnswerService;
 
 
     /**
@@ -118,11 +119,20 @@ public class FormService {
 
         boolean onlyInitMissing = (existing != null && !forceInit);
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
+        Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers = jpaEntity instanceof RecordingUnitDTO ru
+                ? customFieldAnswerService.loadAdditionalFieldAnswers(ru)
+                : Map.of();
 
         for (CustomField field : fieldSource.getAllFields()) {
 
             if (field == null ||
                     (onlyInitMissing && answers.containsKey(field))) {
+                continue;
+            }
+
+            CustomFieldAnswerViewModel additional = additionalAnswers.get(field);
+            if (additional != null &&  Boolean.TRUE.equals(!field.getIsSystemField())) {
+                answers.put(field, additional);
                 continue;
             }
 
@@ -250,25 +260,21 @@ public class FormService {
     }
 
     /**
-     * Collect raw values for all "additional" (non-system) fields answered in the response.
-     * Prepared for future persistence of additional-field values; not yet used to bind
-     * anything onto the JPA entity.
+     * Collect the answers for all "additional" (non-system) fields in the response, keyed by field.
+     * Used to persist additional-field answers as {@code CustomFieldAnswer} entities.
      *
      * @param response the form response
-     * @return a map of additional CustomField to its extracted answer value (never null)
+     * @return a map of additional CustomField to its answer view model (never null)
      */
-    public Map<CustomField, Object> extractAdditionalFieldValues(CustomFormResponseViewModel response) {
+    public Map<CustomField, CustomFieldAnswerViewModel> extractAdditionalFieldAnswers(CustomFormResponseViewModel response) {
         if (response == null || response.getAnswers() == null) return Map.of();
 
-        Map<CustomField, Object> result = new HashMap<>();
+        Map<CustomField, CustomFieldAnswerViewModel> result = new HashMap<>();
         for (Map.Entry<CustomField, CustomFieldAnswerViewModel> entry : response.getAnswers().entrySet()) {
             CustomField field = entry.getKey();
-            if (field == null || Boolean.TRUE.equals(field.getIsSystemField())) continue;
+            if (field == null || Boolean.TRUE.equals(field.getIsSystemField()) || entry.getValue() == null) continue;
 
-            Object value = extractValueFromAnswer(entry.getValue());
-            if (value != null) {
-                result.put(field, value);
-            }
+            result.put(field, entry.getValue());
         }
         return result;
     }
@@ -441,6 +447,8 @@ public class FormService {
 
         }
     }
+
+
 
 
     /**

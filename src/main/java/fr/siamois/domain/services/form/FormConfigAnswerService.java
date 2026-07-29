@@ -31,6 +31,19 @@ public class FormConfigAnswerService {
     private final PhaseMapper phaseMapper;
     private final ContainerMapper containerMapper;
 
+    /**
+     * Read-only lookup of the pivot row for a recording unit, unlike
+     * {@link #createOrGetFormConfigAnswer(FormConfig, RecordingUnitDTO)}: used to load previously
+     * saved additional-field answers back into the form, where opening a form must not create rows.
+     */
+    public Optional<FormConfigAnswer> findFormConfigAnswer(FormConfig formConfig, RecordingUnitDTO recordingUnitDTO) {
+        UserInfo info = ExecutionContextHolder.get();
+        assert info != null;
+        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+        Person person = personMapper.invertConvert(info.getUser());
+        return formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit);
+    }
+
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, RecordingUnitDTO recordingUnitDTO) {
         UserInfo info = ExecutionContextHolder.get();
         assert info != null;

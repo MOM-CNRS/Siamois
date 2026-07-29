@@ -32,6 +32,7 @@ import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAn
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
+import org.hibernate.Hibernate;
 import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
@@ -94,12 +95,15 @@ public final class CustomFieldAnswerFactory {
     public static CustomFieldAnswerViewModel instantiateAnswerForField(CustomField field) {
         if (field == null) return null;
 
-        Function<CustomField, ? extends CustomFieldAnswerViewModel> creator = ANSWER_VIEW_CREATORS.get(field.getClass());
+        // Unwrap: a field loaded through a lazy association (e.g. FieldFormConfig#field) is a
+        // Hibernate proxy whose getClass() is a generated subclass, missing from this map entirely.
+        Class<?> fieldClass = Hibernate.getClass(field);
+        Function<CustomField, ? extends CustomFieldAnswerViewModel> creator = ANSWER_VIEW_CREATORS.get(fieldClass);
 
         if (creator != null) {
             return creator.apply(field);
         }
 
-        throw new IllegalArgumentException("Unsupported CustomField type: " + field.getClass().getName());
+        throw new IllegalArgumentException("Unsupported CustomField type: " + fieldClass.getName());
     }
 }

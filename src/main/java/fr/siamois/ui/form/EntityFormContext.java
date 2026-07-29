@@ -120,8 +120,8 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     private CustomFormResponseViewModel formResponse;
 
-    // Values for non-system ("additional") fields, extracted at flush time; not yet persisted.
-    private Map<CustomField, Object> additionalFieldValues = new HashMap<>();
+    // Answers for non-system ("additional") fields, extracted at flush time and persisted alongside the entity.
+    private Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers = new HashMap<>();
 
     private boolean hasUnsavedModifications = false;
 
@@ -280,7 +280,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public void flushBackToEntity() {
         formService.updateJpaEntityFromResponse(formResponse, unit);
-        this.additionalFieldValues = formService.extractAdditionalFieldValues(formResponse);
+        this.additionalFieldAnswers = formService.extractAdditionalFieldAnswers(formResponse);
     }
 
 
