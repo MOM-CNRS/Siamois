@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 import java.util.Objects;
 
 
-@Data
 @Entity
+@Data
 @DiscriminatorValue("TEXT")
 @NoArgsConstructor
 public class CustomFieldAnswerText extends CustomFieldAnswer {
@@ -42,4 +42,5 @@ public class CustomFieldAnswerText extends CustomFieldAnswer {
             throw new IllegalArgumentException("Value must be a String");
         }
     }
+
 }
