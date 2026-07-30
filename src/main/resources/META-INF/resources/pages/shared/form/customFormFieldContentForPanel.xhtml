@@ -26,14 +26,14 @@
 
     <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
                    style="display: flex"
-                   id="field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}">
+                   id="field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}-#{col.field.id}">
 
 
         <sharedInput:panelField
                 icon="#{col.field.icon}"
                 uncertain="#{answer.uncertain}"
                 conceptUri="#{col.field.conceptUri}"
-                id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}"
+                id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}-#{col.field.id}"
                 required="#{col.required}"
                 onToggle="#{bean.formContext.toggleUncertainty(answer)}"
                 title="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"

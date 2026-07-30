@@ -58,6 +58,9 @@ class FormServiceTest {
     @Mock
     private UnitDefinitionMapper unitDefinitionMapper;
 
+    @Mock
+    private CustomFieldAnswerService customFieldAnswerService;
+
     @InjectMocks
     private FormService formService;
 
@@ -240,6 +243,27 @@ class FormServiceTest {
             // also ensure hasBeenModified false
             assertFalse(res.getAnswers().get(titleField).getHasBeenModified());
         }
+    }
+
+    @Test
+    void initOrReuseResponse_populatesAdditionalFieldValues_forRecordingUnit() {
+        FieldSource fieldSource = mock(FieldSource.class);
+        CustomField additionalTextField = mock(CustomField.class);
+        when(fieldSource.getAllFields()).thenReturn(List.of(additionalTextField));
+
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
+        recordingUnit.setId(42L);
+
+        CustomFieldAnswerTextViewModel additionalAnswer = new CustomFieldAnswerTextViewModel();
+        additionalAnswer.setValue("Deux tessons");
+        when(customFieldAnswerService.loadAdditionalFieldAnswers(recordingUnit))
+                .thenReturn(Map.of(additionalTextField, additionalAnswer));
+
+        CustomFormResponseViewModel res = formService.initOrReuseResponse(null, recordingUnit, fieldSource, false);
+
+        assertSame(additionalAnswer, res.getAnswers().get(additionalTextField));
+        assertEquals("Deux tessons",
+                ((CustomFieldAnswerTextViewModel) res.getAnswers().get(additionalTextField)).getValue());
     }
 
     @Test
@@ -503,37 +527,37 @@ class FormServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // extractAdditionalFieldValues
+    // extractAdditionalFieldAnswers
     // -----------------------------------------------------------------------
 
     @Test
-    void extractAdditionalFieldValues_returnsEmptyMap_whenResponseIsNull() {
-        Map<CustomField, Object> result = formService.extractAdditionalFieldValues(null);
+    void extractAdditionalFieldAnswers_returnsEmptyMap_whenResponseIsNull() {
+        Map<CustomField, CustomFieldAnswerViewModel> result = formService.extractAdditionalFieldAnswers(null);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void extractAdditionalFieldValues_returnsEmptyMap_whenAnswersIsNull() {
+    void extractAdditionalFieldAnswers_returnsEmptyMap_whenAnswersIsNull() {
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(null);
 
-        Map<CustomField, Object> result = formService.extractAdditionalFieldValues(response);
+        Map<CustomField, CustomFieldAnswerViewModel> result = formService.extractAdditionalFieldAnswers(response);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void extractAdditionalFieldValues_collectsOnlyNonSystemFieldsWithNonNullValues() {
-        // non-system field with a value -> kept
+    void extractAdditionalFieldAnswers_collectsOnlyNonSystemFieldsWithNonNullAnswers() {
+        // non-system field with an answer -> kept
         CustomField additionalField = mock(CustomField.class);
         when(additionalField.getIsSystemField()).thenReturn(false);
         CustomFieldAnswerTextViewModel additionalAnswer = new CustomFieldAnswerTextViewModel();
         additionalAnswer.setValue("extra value");
 
-        // system field -> ignored regardless of value
+        // system field -> ignored regardless of answer
         CustomField systemField = mock(CustomField.class);
         when(systemField.getIsSystemField()).thenReturn(true);
         CustomFieldAnswerTextViewModel systemAnswer = new CustomFieldAnswerTextViewModel();
@@ -545,28 +569,26 @@ class FormServiceTest {
         CustomFieldAnswerTextViewModel unspecifiedAnswer = new CustomFieldAnswerTextViewModel();
         unspecifiedAnswer.setValue("unspecified value");
 
-        // non-system field with a null value -> ignored
-        CustomField additionalNullValueField = mock(CustomField.class);
-        when(additionalNullValueField.getIsSystemField()).thenReturn(false);
-        CustomFieldAnswerTextViewModel additionalNullValueAnswer = new CustomFieldAnswerTextViewModel();
-        additionalNullValueAnswer.setValue(null);
+        // non-system field but the answer view model itself is null -> ignored
+        CustomField additionalNullAnswerField = mock(CustomField.class);
+        when(additionalNullAnswerField.getIsSystemField()).thenReturn(false);
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
         answers.put(additionalField, additionalAnswer);
         answers.put(systemField, systemAnswer);
         answers.put(unspecifiedField, unspecifiedAnswer);
-        answers.put(additionalNullValueField, additionalNullValueAnswer);
+        answers.put(additionalNullAnswerField, null);
         answers.put(null, additionalAnswer);
         response.setAnswers(answers);
 
-        Map<CustomField, Object> result = formService.extractAdditionalFieldValues(response);
+        Map<CustomField, CustomFieldAnswerViewModel> result = formService.extractAdditionalFieldAnswers(response);
 
         assertEquals(2, result.size());
-        assertEquals("extra value", result.get(additionalField));
-        assertEquals("unspecified value", result.get(unspecifiedField));
+        assertSame(additionalAnswer, result.get(additionalField));
+        assertSame(unspecifiedAnswer, result.get(unspecifiedField));
         assertFalse(result.containsKey(systemField));
-        assertFalse(result.containsKey(additionalNullValueField));
+        assertFalse(result.containsKey(additionalNullAnswerField));
     }
 
     @Test
@@ -898,12 +920,14 @@ class FormServiceTest {
 
     @Test
     void constructor_assignsAllFinalFields() {
-        FormService service = new FormService(labelBean, formRepository, formScopeRepository, unitDefinitionMapper);
+        FormService service = new FormService(labelBean, formRepository, formScopeRepository, unitDefinitionMapper,
+                customFieldAnswerService);
 
         assertSame(labelBean, service.getLabelBean());
         assertSame(formRepository, service.getFormRepository());
         assertSame(formScopeRepository, service.getFormScopeRepository());
         assertSame(unitDefinitionMapper, service.getUnitDefinitionMapper());
+        assertSame(customFieldAnswerService, service.getCustomFieldAnswerService());
     }
 
     // =====================================================================

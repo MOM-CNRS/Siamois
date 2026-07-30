@@ -11,7 +11,9 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
@@ -29,6 +31,8 @@ import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
 import fr.siamois.mapper.RecordingUnitSummaryMapper;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -102,6 +106,9 @@ class RecordingUnitServiceTest {
     @Mock
     private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
 
+    @Mock
+    private CustomFieldAnswerService customFieldAnswerService;
+
     @InjectMocks
     private RecordingUnitService recordingUnitService;
 
@@ -142,6 +149,26 @@ class RecordingUnitServiceTest {
         RecordingUnit savedEntity = entityCaptor.getValue();
         assertNotNull(savedEntity);
 
+    }
+
+    @Test
+    void save_withAdditionalFieldAnswers_delegatesToCustomFieldAnswerServiceWithTheSavedDto() {
+        RecordingUnit recordingUnit = new RecordingUnit();
+        RecordingUnitDTO savedDto = new RecordingUnitDTO();
+        savedDto.setId(1L);
+
+        when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(recordingUnit);
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(recordingUnit);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(savedDto);
+
+        CustomField field = mock(CustomField.class);
+        CustomFieldAnswerViewModel answer = new CustomFieldAnswerTextViewModel();
+        Map<CustomField, CustomFieldAnswerViewModel> answers = Map.of(field, answer);
+
+        RecordingUnitDTO result = recordingUnitService.save(new RecordingUnitDTO(), answers);
+
+        assertSame(savedDto, result);
+        verify(customFieldAnswerService).saveAdditionalFieldAnswers(savedDto, answers);
     }
 
     @Test
