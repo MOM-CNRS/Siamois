@@ -1,4 +1,3 @@
-```yaml
 name: "Demande de fonctionnalité"
 description: Créer un nouveau ticket pour proposer une fonctionnalité.
 title: "[Demande de fonctionnalité] - <titre>"
@@ -88,4 +87,3 @@ body:
       placeholder: Ajoutez les tâches d'implémentation...
     validations:
       required: false
-```
