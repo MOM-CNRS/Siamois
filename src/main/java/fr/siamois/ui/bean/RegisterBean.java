@@ -64,7 +64,7 @@ public class RegisterBean {
         this.person = personMapper.convert(pendingPerson.getDisabledPerson());
         assert person != null;
         this.email = person.getEmail();
-        this.firstName = person.getFirstName();
+        this.firstName = person.firstName();
         this.lastName = person.getLastname();
         this.username = person.getUsername();
     }
