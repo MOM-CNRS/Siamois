@@ -37,6 +37,7 @@ import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1369,6 +1370,7 @@ class TableFieldConfigServiceImplTest {
         long id = SYSTEM_FIELD_FIRST_ID;
         for (FormFieldColumn column : SystemFieldCatalog.columnsOf(table)) {
             CustomField definition = column.getField();
+            Assertions.assertNotNull(definition);
             if (!wanted.contains(definition.getLabel())) continue;
             definition.setId(id++);
             rows.put(definition.getLabel(), definition);

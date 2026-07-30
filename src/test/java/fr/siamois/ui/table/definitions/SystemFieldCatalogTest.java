@@ -2,6 +2,7 @@ package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -26,19 +27,28 @@ class SystemFieldCatalogTest {
         assertThat(SystemFieldCatalog.columnsOf(table))
                 .as("%s has no system field to configure", table)
                 .isNotEmpty()
-                .allSatisfy(column -> assertThat(column.getField().getIsSystemField()).isTrue());
+                .allSatisfy(column -> {
+                    Assertions.assertNotNull(column.getField());
+                    assertThat(column.getField().getIsSystemField()).isTrue();
+                });
     }
 
     @ParameterizedTest
     @EnumSource(ConfigurableTable.class)
     void columnsOf_shouldFollowTheOrderOfTheTableDefinition(ConfigurableTable table) {
         List<String> definitionOrder = definitionOf(table).getFieldColumns().stream()
-                .filter(column -> Boolean.TRUE.equals(column.getField().getIsSystemField()))
+                .filter(column -> {
+                    Assertions.assertNotNull(column.getField());
+                    return Boolean.TRUE.equals(column.getField().getIsSystemField());
+                })
                 .map(column -> column.getField().getLabel())
                 .toList();
 
         assertThat(SystemFieldCatalog.columnsOf(table))
-                .extracting(column -> column.getField().getLabel())
+                .extracting(column -> {
+                    Assertions.assertNotNull(column.getField());
+                    return column.getField().getLabel();
+                })
                 .containsExactlyElementsOf(definitionOrder);
     }
 
@@ -52,7 +62,10 @@ class SystemFieldCatalogTest {
         assertThat(SystemFieldCatalog.fieldsOf(table))
                 .extracting(CustomField::getLabel)
                 .containsExactlyElementsOf(SystemFieldCatalog.columnsOf(table).stream()
-                        .map(column -> column.getField().getLabel())
+                        .map(column -> {
+                            Assertions.assertNotNull(column.getField());
+                            return column.getField().getLabel();
+                        })
                         .toList());
     }
 
