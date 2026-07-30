@@ -1,4 +1,4 @@
-```yaml
+yaml
 name: "Rapport de bug"
 description: Créer un nouveau ticket pour signaler un bug.
 title: "[Bug] - <titre>"
@@ -107,4 +107,4 @@ body:
         - macOS
     validations:
       required: false
-```
+
