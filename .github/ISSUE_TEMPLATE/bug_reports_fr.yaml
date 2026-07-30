@@ -50,7 +50,7 @@ body:
     attributes:
       label: Version
       description: Quelle version du logiciel est concernée ?
-      placeholder: Par exemple : v1.2.3
+      placeholder: 'Par exemple : v1.2.3'
     validations:
       required: true
 
