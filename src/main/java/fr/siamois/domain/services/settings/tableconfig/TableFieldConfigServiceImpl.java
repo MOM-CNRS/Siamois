@@ -203,6 +203,12 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         applyFieldChange(projectId, table, typeName, fieldName, config -> config.setMandatory(mandatory));
     }
 
+    @Override
+    @Transactional
+    public void reorderAdditionalFields(Long projectId, ConfigurableTable table, String typeName, List<String> orderedFieldNames) {
+
+    }
+
 
     /**
      * Unlinks an additional field from the type. The custom field itself is deleted only once no
@@ -273,14 +279,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional
     public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName,
                                            String name, FieldType type, String description) {
-        FormConfig formConfig = requireFormConfig(projectId, table, typeName);
-        CustomField field = newCustomFieldOfType(type);
-        field.setLabel(name);
-        field.setIsSystemField(false);
-        field.setHint(description);
-        field.setAuthor(currentPerson());
-        CustomField saved = customFieldRepository.save(field);
-        return toDto(linkField(saved, formConfig, true, false));
+        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, name, type, description);
+        return toDto(linkField(result.savedReplacement, result.owner, true, false));
     }
 
     /**
@@ -322,7 +322,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .filter(field -> fieldName.equals(field.field().getLabel()))
                 .findFirst();
         if (target.isEmpty()) {
-            log.warn("No field '{}' on type '{}' of table {} in project {}", fieldName, typeName, table, projectId);
+            warnNoFieldOnType(projectId, table, typeName, fieldName);
             return null;
         }
         EffectiveField effective = target.get();
@@ -339,6 +339,19 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             return toDto(new EffectiveField(current, effective.stored(), effective.requiredByForm()));
         }
 
+        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, newName, newType, description);
+
+        if (ownedBy(effective, result.owner())) {
+            fieldFormConfigRepository.delete(effective.stored());
+        }
+        FieldFormConfig link = linkField(result.savedReplacement(), result.owner(), effective.active(), effective.mandatory());
+        if (fieldFormConfigRepository.countByFieldId(current.getId()) == 0) {
+            customFieldRepository.delete(current);
+        }
+        return toDto(link);
+    }
+
+    private @NonNull TableFieldConfigServiceImpl.SetupReplacementLabelResult configureReplacementLabel(Long projectId, ConfigurableTable table, String typeName, String newName, FieldType newType, String description) {
         FormConfig owner = requireFormConfig(projectId, table, typeName);
         CustomField replacement = newCustomFieldOfType(newType);
         replacement.setLabel(newName);
@@ -346,15 +359,10 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         replacement.setHint(description);
         replacement.setAuthor(currentPerson());
         CustomField savedReplacement = customFieldRepository.save(replacement);
+        return new SetupReplacementLabelResult(owner, savedReplacement);
+    }
 
-        if (ownedBy(effective, owner)) {
-            fieldFormConfigRepository.delete(effective.stored());
-        }
-        FieldFormConfig link = linkField(savedReplacement, owner, effective.active(), effective.mandatory());
-        if (fieldFormConfigRepository.countByFieldId(current.getId()) == 0) {
-            customFieldRepository.delete(current);
-        }
-        return toDto(link);
+    private record SetupReplacementLabelResult(FormConfig owner, CustomField savedReplacement) {
     }
 
     private boolean matches(@Nullable String value, String lowerCaseNeedle) {
@@ -542,8 +550,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .findFirst();
 
         if (target.isEmpty()) {
-            log.warn("No field '{}' on type '{}' of table {} in project {}",
-                    fieldName, typeName, table, projectId);
+            warnNoFieldOnType(projectId, table, typeName, fieldName);
             return;
         }
         EffectiveField field = target.get();
@@ -557,6 +564,11 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         change.accept(config);
         assert config != null;
         fieldFormConfigRepository.save(config);
+    }
+
+    private static void warnNoFieldOnType(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
+        log.warn("No field '{}' on type '{}' of table {} in project {}",
+                fieldName, typeName, table, projectId);
     }
 
     private boolean ownedBy(EffectiveField field, FormConfig owner) {

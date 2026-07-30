@@ -59,6 +59,13 @@
 
             .ptc-ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: #8a7d4a; font-size: 15px; }
 
+            /* ── additional fields row reordering ──────── */
+            .ptc-drag-cell { text-align: center; }
+            .ptc-drag-handle { color: #c4c4c0; font-size: 16px; cursor: grab; }
+            .ptc-drag-handle:active { cursor: grabbing; }
+            tr:hover .ptc-drag-handle { color: #8c8c8c; }
+            .ui-datatable-rowordering { outline: 1px dashed #cfcfca; background: #f6f6f4 !important; height: 42px; }
+
             /* ── add-field picker ──────────────────────── */
             .ptc-picker-dialog .ui-dialog-content { padding: 0 !important; }
             .ptc-picker-newfield.ui-link, .ptc-picker-newfield { display: block; margin: 16px 22px; border: 1px dashed #cfcfca; border-radius: 9px; padding: 12px 14px; text-align: center; color: #555; font-size: 14.5px; cursor: pointer; text-decoration: none; }
@@ -239,8 +246,15 @@
                                         <p:commandButton value="#{langBean.msg('projectTables.champs.addField')}" actionListener="#{projectTableFieldSettingsBean.addField()}" update="@form :addFieldForm"/>
                                     </div>
 
-                                    <p:dataTable value="#{projectTableFieldSettingsBean.additionalFields}" var="a" rowKey="#{a.name}"
+                                    <!-- Row reordering drags from the grip only: the row carries switches and buttons,
+                                         and PrimeFaces would otherwise start a drag from any cell of it. -->
+                                    <p:dataTable id="additionalFieldsTable" value="#{projectTableFieldSettingsBean.additionalFields}" var="a" rowKey="#{a.name}"
+                                                 draggableRows="true" rowDragSelector=".ptc-drag-handle"
                                                  emptyMessage="#{langBean.msg('projectTables.champs.emptyAdditional')}">
+                                        <p:ajax event="rowReorder" listener="#{projectTableFieldSettingsBean.onAdditionalFieldReorder}"/>
+                                        <p:column styleClass="ptc-drag-cell" style="width:38px">
+                                            <span class="bi bi-grip-vertical ptc-drag-handle" title="#{langBean.msg('projectTables.champs.reorderHint')}"/>
+                                        </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
                                             <h:outputText value="#{a.name}"/>
                                         </p:column>

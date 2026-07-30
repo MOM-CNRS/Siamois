@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -44,6 +45,15 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     private TypeFormConfig formConfig;
     private TypeFieldsConfig fieldsConfig;
+
+    /**
+     * The additional fields of {@link #fieldsConfig}, in display order — held as a mutable list
+     * rather than derived on every call because the table they back is row-draggable: PrimeFaces
+     * reorders the very list a draggable table reads while decoding the drag (see
+     * {@code DraggableRowsFeature}), so a fresh list per call would drop the new order, and an
+     * immutable one would make the decode throw.
+     */
+    private List<TypeFieldFormConfig> additionalFields = new ArrayList<>();
 
     private boolean pickerOpen;
     private String pickerQuery;
@@ -71,7 +81,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         treeOpen = true;
         activeTabIndex = TAB_CHAMPS;
         formConfig = null;
-        fieldsConfig = null;
+        setFieldsConfig(null);
         pickerOpen = false;
         pickerQuery = null;
         closeDrawer();
@@ -117,7 +127,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         selectedTypeName = typeName;
         if (typeName == null) {
             formConfig = null;
-            fieldsConfig = null;
+            setFieldsConfig(null);
             return;
         }
         loadConfigs();
@@ -125,7 +135,18 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     private void loadConfigs() {
         formConfig = tableFieldConfigService.getFormConfig(project.getId(), selectedTable, selectedTypeName);
-        fieldsConfig = tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName);
+        setFieldsConfig(tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName));
+    }
+
+    /**
+     * Reloads {@link #additionalFields} along, so the list the draggable table reads always mirrors
+     * the configuration it is the additional-field view of.
+     */
+    public void setFieldsConfig(TypeFieldsConfig fieldsConfig) {
+        this.fieldsConfig = fieldsConfig;
+        this.additionalFields = fieldsConfig == null ? new ArrayList<>() : fieldsConfig.getFields().stream()
+                .filter(f -> !f.isSystemField())
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     public void toggleTree() {
@@ -146,9 +167,15 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         return fieldsConfig.getFields().stream().filter(TypeFieldFormConfig::isSystemField).toList();
     }
 
-    public List<TypeFieldFormConfig> getAdditionalFields() {
-        if (fieldsConfig == null) return List.of();
-        return fieldsConfig.getFields().stream().filter(f -> !f.isSystemField()).toList();
+    /**
+     * Persists the order the user dropped the additional fields in. PrimeFaces has already applied
+     * the move to {@link #additionalFields} by the time this runs — it reorders the list backing a
+     * draggable table itself while decoding the drag — so the listener only reads the resulting
+     * order off the list; the {@code ReorderEvent} indices carry nothing else it needs.
+     */
+    public void onAdditionalFieldReorder() {
+        tableFieldConfigService.reorderAdditionalFields(project.getId(), selectedTable, selectedTypeName,
+                additionalFields.stream().map(TypeFieldFormConfig::getName).toList());
     }
 
     public int getTypeCountFor(ConfigurableTable table) {

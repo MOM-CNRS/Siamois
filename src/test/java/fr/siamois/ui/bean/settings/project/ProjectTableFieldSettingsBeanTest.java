@@ -111,6 +111,28 @@ class ProjectTableFieldSettingsBeanTest {
         assertThat(bean.getAdditionalFields()).containsExactly(custom);
     }
 
+    /**
+     * PrimeFaces reorders the list backing the draggable table itself while decoding the drag, so
+     * the test moves the row the way the decode would and expects the listener to forward the names
+     * as they then stand.
+     */
+    @Test
+    void onAdditionalFieldReorder_shouldForwardTheAdditionalFieldNamesInTheirNewOrder() {
+        bean.init(project);
+        TypeFieldFormConfig sys = TypeFieldFormConfig.builder().name("Identifiant").systemField(true).build();
+        TypeFieldFormConfig remontage = TypeFieldFormConfig.builder().name("Remontage").systemField(false).build();
+        TypeFieldFormConfig couleur = TypeFieldFormConfig.builder().name("Couleur").systemField(false).build();
+        TypeFieldsConfig config = new TypeFieldsConfig();
+        config.setFields(List.of(sys, remontage, couleur));
+        bean.setFieldsConfig(config);
+
+        bean.getAdditionalFields().add(0, bean.getAdditionalFields().remove(1));
+        bean.onAdditionalFieldReorder();
+
+        verify(tableFieldConfigService).reorderAdditionalFields(42L, ConfigurableTable.UE, "Céramique",
+                List.of("Couleur", "Remontage"));
+    }
+
     @Test
     void deleteAdditionalField_shouldDelegateAndReload() {
         bean.init(project);
