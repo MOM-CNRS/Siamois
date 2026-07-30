@@ -27,12 +27,13 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
-import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +73,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final LabelService labelService;
     private final ActionUnitRepository actionUnitRepository;
     private final ConceptRepository conceptRepository;
-    private final FormRepository formRepository;
     private final FormConfigRepository formConfigRepository;
     private final FieldFormConfigRepository fieldFormConfigRepository;
     private final CustomFieldRepository customFieldRepository;
@@ -444,16 +444,16 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     /**
-     * The fields that apply to a type, keyed by custom field id and in the order the form lays them
-     * out. The form is the source of the list: a system field exists for the screen as soon as the
-     * form carries it, whether or not anything was ever configured on it. Fields configured but
-     * absent from the form — the ones added from this screen — come last.
+     * The fields that apply to a type, keyed by custom field id and in the order the table lays them
+     * out. The table's definition is the source of the list: a system field exists for the screen as
+     * soon as the definition carries it, whether or not anything was ever configured on it. Fields
+     * configured but absent from the definition — the ones added from this screen — come last.
      */
     private Map<Long, EffectiveField> effectiveFields(Long projectId, ConfigurableTable table, String typeName) {
         Map<Long, FieldFormConfig> stored = storedFields(projectId, table, typeName);
         Map<Long, EffectiveField> fields = new LinkedHashMap<>();
 
-        for (FormField formField : formFields(projectId, table, typeName)) {
+        for (FormField formField : systemFields(table)) {
             CustomField field = formField.field();
             fields.put(field.getId(), new EffectiveField(field, stored.get(field.getId()), formField.required()));
         }
@@ -482,56 +482,35 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .forEach(field -> into.put(field.getField().getId(), field)));
     }
 
-    /** A field the form lays out, with the requiredness the form declares for it. */
+    /** A field the table lays out, with the requiredness its definition declares for it. */
     private record FormField(CustomField field, boolean required) {
     }
 
     /**
-     * The fields of the form that applies to a type, in layout order. The form is the one the
-     * application would display for that type — resolved by the same institution/type cascade the
-     * data entry screens use — so the configuration screen lists exactly the fields the user fills
-     * in.
+     * The system fields of a table, in the order its definition lays them out. The definition
+     * ({@link SystemFieldCatalog}) says which fields exist and whether the table requires them; the
+     * rows returned are the persistent ones {@code SystemFieldInitializer} gives them at startup,
+     * because a configuration links to a field by foreign key and cannot point at a definition.
+     * <p>
+     * A field the initializer has not created yet is skipped rather than shown: the screen would
+     * offer to configure something no configuration could be saved for.
      */
-    private List<FormField> formFields(Long projectId, ConfigurableTable table, String typeName) {
-        Long valueConceptId = DEFAULT_TYPE.equals(typeName) ? null
-                : findFieldConcept(projectId, table)
-                .flatMap(fieldConcept -> findValueConcept(projectId, fieldConcept, typeName))
-                .map(Concept::getId)
-                .orElse(null);
+    private List<FormField> systemFields(ConfigurableTable table) {
+        Map<String, CustomField> persisted = new HashMap<>();
+        customFieldRepository.findAllSystemFields()
+                .forEach(field -> persisted.putIfAbsent(SystemFieldCatalog.identityOf(field), field));
 
-        Optional<Long> formId = formRepository.findEffectiveFormIdByTypeAndInstitution(
-                valueConceptId, currentUser().getInstitution().getId());
-        if (formId.isEmpty()) {
-            log.warn("No form applies to type '{}' of table {}; the screen has no system field to show",
-                    typeName, table);
-            return List.of();
-        }
-        return layoutFieldsOf(formId.get());
-    }
-
-    /**
-     * Loads the fields a form lays out from the layout's raw ids rather than from the
-     * {@link fr.siamois.domain.models.form.customform.CustomForm} entity, whose layout converter
-     * hands out <em>detached</em> fields — attaching one of those to a configuration, or merely
-     * leaving it behind in a read-write transaction, breaks the next flush.
-     */
-    private List<FormField> layoutFieldsOf(Long formId) {
-        Map<Long, Boolean> requiredByFieldId = new LinkedHashMap<>();
-        for (Object[] layoutField : formRepository.findLayoutFieldsByFormId(formId)) {
-            requiredByFieldId.putIfAbsent(((Number) layoutField[0]).longValue(), Boolean.TRUE.equals(layoutField[1]));
-        }
-
-        Map<Long, CustomField> fields = new HashMap<>();
-        customFieldRepository.findAllById(requiredByFieldId.keySet()).forEach(field -> fields.put(field.getId(), field));
-
-        List<FormField> formFields = new ArrayList<>();
-        requiredByFieldId.forEach((fieldId, required) -> {
-            CustomField field = fields.get(fieldId);
-            if (field != null) {
-                formFields.add(new FormField(field, required));
+        List<FormField> fields = new ArrayList<>();
+        for (FormFieldColumn column : SystemFieldCatalog.columnsOf(table)) {
+            CustomField field = persisted.get(SystemFieldCatalog.identityOf(column.getField()));
+            if (field == null) {
+                log.warn("System field '{}' of table {} has no row; it was defined after the last startup",
+                        column.getField().getLabel(), table);
+                continue;
             }
-        });
-        return formFields;
+            fields.add(new FormField(field, column.isRequired()));
+        }
+        return fields;
     }
 
     @Override

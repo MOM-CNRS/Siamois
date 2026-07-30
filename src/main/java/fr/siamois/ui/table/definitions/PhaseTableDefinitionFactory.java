@@ -7,6 +7,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
@@ -23,7 +24,26 @@ public class PhaseTableDefinitionFactory {
     private PhaseTableDefinitionFactory() {}
 
     public static void applyTo(EntityTableViewModel<PhaseDTO, ?> tableModel) {
-        if (tableModel == null) return;
+        if (tableModel == null) {
+            return;
+        }
+        applyTo(tableModel.getTableDefinition());
+    }
+
+    /**
+     * The columns of the table on their own, with no view model to apply them to: the field
+     * configuration screen reads a table's system fields from here, since they are defined in this
+     * factory rather than in the database.
+     *
+     * @return a fresh definition carrying the table's standard columns
+     */
+    public static TableDefinition definition() {
+        TableDefinition definition = new TableDefinition();
+        applyTo(definition);
+        return definition;
+    }
+
+    private static void applyTo(TableDefinition definition) {
 
         Concept identifierConcept = new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("phase.identifier").build();
         Concept typeConcept = new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("phase.type").build();
@@ -76,7 +96,7 @@ public class PhaseTableDefinitionFactory {
                 .id(4L).valueBinding("description").concept(descriptionConcept).build();
 
         // CommandLink column
-        tableModel.getTableDefinition().setCommandLinkColumn(
+        definition.setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey(PHASE_FIELD_IDENTIFIER)
@@ -94,40 +114,40 @@ public class PhaseTableDefinitionFactory {
         );
 
         // Visible columns
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id(IDENTIFIER).headerKey(PHASE_FIELD_IDENTIFIER).field(identifierField)
                 .sortable(true).filterable(true).visible(true).required(true).build());
 
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id("type").headerKey("phase.field.type").field(typeField)
                 .sortable(false).filterable(false).visible(true).required(true).build());
 
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id("title").headerKey("phase.field.title").field(titleField)
                 .sortable(false).filterable(false).visible(true).required(false).build());
 
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id("orderNumber").headerKey("phase.field.orderNumber").field(orderNumberField)
                 .sortable(true).filterable(false).visible(true).required(false).build());
 
         // Hidden columns
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id("lowerBound").headerKey("phase.field.lowerBound").field(lowerBoundField)
                 .sortable(false).filterable(false).visible(false).required(false).build());
 
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id("upperBound").headerKey("phase.field.upperBound").field(upperBoundField)
                 .sortable(false).filterable(false).visible(false).required(false).build());
 
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id("periods").headerKey("phase.field.periods").field(periodsField)
                 .sortable(false).filterable(false).visible(false).required(false).build());
 
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id("keywords").headerKey("phase.field.keywords").field(keywordsField)
                 .sortable(false).filterable(false).visible(false).required(false).build());
 
-        tableModel.getTableDefinition().addColumn(FormFieldColumn.builder()
+        definition.addColumn(FormFieldColumn.builder()
                 .id("description").headerKey("phase.field.description").field(descriptionField)
                 .sortable(false).filterable(false).visible(false).required(false).build());
     }

@@ -8,6 +8,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
@@ -28,6 +29,23 @@ public class ContainerTableDefinitionFactory {
         if (tableModel == null) {
             return;
         }
+        applyTo(tableModel.getTableDefinition());
+    }
+
+    /**
+     * The columns of the table on their own, with no view model to apply them to: the field
+     * configuration screen reads a table's system fields from here, since they are defined in this
+     * factory rather than in the database.
+     *
+     * @return a fresh definition carrying the table's standard columns
+     */
+    public static TableDefinition definition() {
+        TableDefinition definition = new TableDefinition();
+        applyTo(definition);
+        return definition;
+    }
+
+    private static void applyTo(TableDefinition definition) {
 
         Concept identifierConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
@@ -123,7 +141,7 @@ public class ContainerTableDefinitionFactory {
                 .build();
 
         // --- CommandLink column ---
-        tableModel.getTableDefinition().setCommandLinkColumn(
+        definition.setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey(CONTAINER_FIELD_IDENTIFIER)
@@ -144,7 +162,7 @@ public class ContainerTableDefinitionFactory {
         );
 
         // --- Visible columns ---
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id(IDENTIFIER)
                         .headerKey(CONTAINER_FIELD_IDENTIFIER)
@@ -156,7 +174,7 @@ public class ContainerTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("type")
                         .headerKey("container.field.type")
@@ -168,7 +186,7 @@ public class ContainerTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("spatialUnit")
                         .headerKey("container.field.spatialUnit")
@@ -181,7 +199,7 @@ public class ContainerTableDefinitionFactory {
         );
 
         // --- Hidden/toggleable columns ---
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("length")
                         .headerKey("container.field.length")
@@ -193,7 +211,7 @@ public class ContainerTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("width")
                         .headerKey("container.field.width")
@@ -205,7 +223,7 @@ public class ContainerTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("height")
                         .headerKey("container.field.height")
@@ -217,7 +235,7 @@ public class ContainerTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("weight")
                         .headerKey("container.field.weight")

@@ -13,6 +13,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
@@ -45,6 +46,23 @@ public final class SpecimenTableDefinitionFactory {
         if (tableModel == null) {
             return;
         }
+        applyTo(tableModel.getTableDefinition());
+    }
+
+    /**
+     * The columns of the table on their own, with no view model to apply them to: the field
+     * configuration screen reads a table's system fields from here, since they are defined in this
+     * factory rather than in the database.
+     *
+     * @return a fresh definition carrying the table's standard columns
+     */
+    public static TableDefinition definition() {
+        TableDefinition definition = new TableDefinition();
+        applyTo(definition);
+        return definition;
+    }
+
+    private static void applyTo(TableDefinition definition) {
 
         // --- Concepts (from SpecimenForm) ---
         Concept idConcept = new Concept.Builder()
@@ -242,7 +260,7 @@ public final class SpecimenTableDefinitionFactory {
                 .build();
 
         // --- CommandLink column (non-toggleable identifier chip) ---
-        tableModel.getTableDefinition().setCommandLinkColumn(
+        definition.setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.recordingunit.column.identifier")
@@ -263,7 +281,7 @@ public final class SpecimenTableDefinitionFactory {
         );
 
         // --- Visible columns ---
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("identifier")
                         .headerKey("recordingunit.field.identifier")
@@ -275,7 +293,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("category")
                         .headerKey("specimen.field.category")
@@ -287,7 +305,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("material")
                         .headerKey("specimen.field.material")
@@ -299,7 +317,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("materialClass")
                         .headerKey("specimen.field.materialClass")
@@ -311,7 +329,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("normalizedInterpretation")
                         .headerKey("specimen.field.normalizedInterpretation")
@@ -323,7 +341,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("recordingUnit")
                         .headerKey("specimen.field.recordingUnit")
@@ -335,7 +353,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("isPartOf")
                         .headerKey("specimen.field.isPartOf")
@@ -347,7 +365,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("contains")
                         .headerKey("specimen.field.contains")
@@ -359,7 +377,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("authors")
                         .headerKey("specimen.field.authors")
@@ -372,7 +390,7 @@ public final class SpecimenTableDefinitionFactory {
         );
 
         // --- Hidden/toggleable columns ---
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("chronologicalAttribution")
                         .headerKey("specimen.field.chronologicalAttribution")
@@ -384,7 +402,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("collectionDate")
                         .headerKey("specimen.field.collectionDate")
@@ -396,7 +414,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("collectors")
                         .headerKey("specimen.field.collectors")
@@ -408,7 +426,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("numberOfElements")
                         .headerKey("specimen.field.numberOfElement")
@@ -420,7 +438,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("otherIdentifier")
                         .headerKey("recordingunit.field.otherIdentifier")
@@ -432,7 +450,7 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("isolationNumber")
                         .headerKey("recordingunit.field.isolationIdentifier")
@@ -457,7 +475,7 @@ public final class SpecimenTableDefinitionFactory {
                 .concept(phasesConcept)
                 .build();
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("phases")
                         .headerKey("specimen.field.phases")
