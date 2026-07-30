@@ -31,8 +31,6 @@
     <!-- TEXT -->
     <c:if test="#{(col['class'].simpleName eq 'FormFieldColumn') or col['class'].simpleName eq 'CustomColUiDto'}">
 
-        #{answer.value}
-
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldText'}">
             <siaInplace:text
                     id="text"
