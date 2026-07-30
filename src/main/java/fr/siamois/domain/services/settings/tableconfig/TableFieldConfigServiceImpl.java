@@ -514,7 +514,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName) {
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
         if (fieldConcept.isEmpty()) return Optional.empty();

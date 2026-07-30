@@ -6,12 +6,9 @@ import lombok.Setter;
 
 
 @Setter
+@Getter
 @NoArgsConstructor
 public class CustomFieldAnswerTextViewModel extends CustomFieldAnswerViewModel {
     private String value;
 
-    @Override
-    public String getValue() {
-        return value;
-    }
 }

@@ -90,64 +90,89 @@ public class FormService {
 
     // --------- Answer creators
 
-    /**
-     * Create or reuse a CustomFormResponse for the given entity + field source.
-     *
-     * @param existing    existing response (may be null)
-     * @param jpaEntity   entity we bind system fields against
-     * @param fieldSource abstraction over fields (single panel or row)
-     * @param forceInit   if true, ignore existing answers and rebuild everything
-     */
-    public CustomFormResponseViewModel initOrReuseResponse(CustomFormResponseViewModel existing,
-                                                           Object jpaEntity,
-                                                           FieldSource fieldSource,
-                                                           boolean forceInit) {
+    public CustomFormResponseViewModel initOrReuseResponse(
+            CustomFormResponseViewModel existing,
+            Object jpaEntity,
+            FieldSource fieldSource,
+            boolean forceInit) {
 
-        CustomFormResponseViewModel response;
-        Map<CustomField, CustomFieldAnswerViewModel> answers;
+        boolean onlyInitMissing = existing != null && !forceInit;
 
-        if (existing != null && !forceInit) {
-            response = existing;
-            answers = response.getAnswers();
-            if (answers == null) {
-                answers = new HashMap<>();
-            }
-        } else {
-            response = new CustomFormResponseViewModel();
-            answers = new HashMap<>();
-        }
+        CustomFormResponseViewModel response =
+                onlyInitMissing ? existing : new CustomFormResponseViewModel();
 
-        boolean onlyInitMissing = (existing != null && !forceInit);
+        Map<CustomField, CustomFieldAnswerViewModel> answers =
+                getOrCreateAnswers(response, onlyInitMissing);
+
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
-        Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers = jpaEntity instanceof RecordingUnitDTO ru
-                ? customFieldAnswerService.loadAdditionalFieldAnswers(ru)
-                : Map.of();
+
+        Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
+                loadAdditionalAnswers(jpaEntity);
 
         for (CustomField field : fieldSource.getAllFields()) {
-
-            if (field == null ||
-                    (onlyInitMissing && answers.containsKey(field))) {
-                continue;
-            }
-
-            CustomFieldAnswerViewModel additional = additionalAnswers.get(field);
-            if (additional != null &&  Boolean.TRUE.equals(!field.getIsSystemField())) {
-                answers.put(field, additional);
-                continue;
-            }
-
-            CustomFieldAnswerViewModel answer =
-                    CustomFieldAnswerFactory.instantiateAnswerForField(field);
-
-            if (answer != null) {
-                initializeAnswer(answer, field, jpaEntity, bindableFields);
-                answers.put(field, answer);
-            }
+            initializeFieldIfNeeded(
+                    field,
+                    answers,
+                    additionalAnswers,
+                    jpaEntity,
+                    bindableFields,
+                    onlyInitMissing
+            );
         }
-
 
         response.setAnswers(answers);
         return response;
+    }
+
+    private Map<CustomField, CustomFieldAnswerViewModel> getOrCreateAnswers(
+            CustomFormResponseViewModel response,
+            boolean reuseExisting) {
+
+        if (!reuseExisting || response.getAnswers() == null) {
+            return new HashMap<>();
+        }
+
+        return response.getAnswers();
+    }
+
+    private Map<CustomField, CustomFieldAnswerViewModel> loadAdditionalAnswers(
+            Object jpaEntity) {
+
+        if (jpaEntity instanceof RecordingUnitDTO recordingUnit) {
+            return customFieldAnswerService.loadAdditionalFieldAnswers(recordingUnit);
+        }
+
+        return Map.of();
+    }
+
+    private void initializeFieldIfNeeded(
+            CustomField field,
+            Map<CustomField, CustomFieldAnswerViewModel> answers,
+            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers,
+            Object jpaEntity,
+            List<String> bindableFields,
+            boolean onlyInitMissing) {
+
+        if (field == null || onlyInitMissing && answers.containsKey(field)) {
+            return;
+        }
+
+        CustomFieldAnswerViewModel additionalAnswer = additionalAnswers.get(field);
+
+        if (additionalAnswer != null && !Boolean.TRUE.equals(field.getIsSystemField())) {
+            answers.put(field, additionalAnswer);
+            return;
+        }
+
+        CustomFieldAnswerViewModel answer =
+                CustomFieldAnswerFactory.instantiateAnswerForField(field);
+
+        if (answer == null) {
+            return;
+        }
+
+        initializeAnswer(answer, field, jpaEntity, bindableFields);
+        answers.put(field, answer);
     }
 
     /**

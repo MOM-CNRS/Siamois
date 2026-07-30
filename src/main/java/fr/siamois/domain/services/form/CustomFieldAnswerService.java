@@ -173,7 +173,6 @@ public class CustomFieldAnswerService {
 
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void save(@NonNull CustomFormResponseViewModel response) {
         for (Map.Entry<CustomField, CustomFieldAnswerViewModel> fieldAnswer : response.getAnswers().entrySet()) {
             CustomField field = fieldAnswer.getKey();
