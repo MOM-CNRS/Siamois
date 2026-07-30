@@ -1,0 +1,89 @@
+name: "Feature Request"
+description: Create a new ticket to request a feature.
+title: "[Feature Request] - <title>"
+labels:
+  - enhancement
+
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type of request
+      description: Is this a new feature or an enhancement to an existing one?
+      options:
+        - New feature
+        - Enhancement
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Provide a brief overview of the requested feature.
+      placeholder: Describe your feature request in a few sentences...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem or limitation does this feature solve?
+      placeholder: Describe the problem you're trying to solve...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      description: Describe your proposed solution or implementation.
+      placeholder: Explain how you envision this feature working...
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements
+      description: List any functional or technical requirements.
+      placeholder: Add any relevant requirements...
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Provide examples, mockups, or use cases that illustrate the feature.
+      placeholder: Include examples, screenshots, or references...
+    validations:
+      required: false
+
+  - type: textarea
+    id: drawbacks
+    attributes:
+      label: Drawbacks or impacts
+      description: Are there any potential drawbacks, risks, or impacts of implementing this feature?
+      placeholder: Describe any trade-offs or concerns...
+    validations:
+      required: false
+
+  - type: textarea
+    id: unresolved_questions
+    attributes:
+      label: Unresolved questions
+      description: Are there any open questions or decisions that still need to be made?
+      placeholder: List any unresolved questions...
+    validations:
+      required: false
+
+  - type: textarea
+    id: todos
+    attributes:
+      label: Implementation TODOs
+      description: If the feature is accepted, list the implementation tasks or TODOs.
+      placeholder: Add implementation tasks...
+    validations:
+      required: false
