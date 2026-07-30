@@ -47,6 +47,12 @@ public class FieldFormConfig {
     @Column(name = "is_institution_locked", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean isInstitutionLocked = false;
 
+    /**
+     * Defines the position of the field in the additional fields. 0 if no position set, order may be random if position = 0
+     */
+    @Column(name = "position", columnDefinition = "INT DEFAULT 0")
+    private int position = 0;
+
     public void setField(@NonNull CustomField field) {
         this.field = field;
         this.id.customFieldId = field.getId();

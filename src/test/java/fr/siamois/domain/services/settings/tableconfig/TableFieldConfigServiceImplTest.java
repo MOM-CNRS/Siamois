@@ -7,9 +7,14 @@ import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
@@ -1004,6 +1009,267 @@ class TableFieldConfigServiceImplTest {
         Person author = new Person();
         author.setId(PERSON_ID);
         when(personRepository.findById(PERSON_ID)).thenReturn(Optional.of(author));
+    }
+
+    // --- reorderAdditionalFields ---
+
+    @Test
+    void reorderAdditionalFields_shouldNumberTheFieldsFromOneInTheOrderGiven() {
+        FieldFormConfig couleur = fieldConfig(ceramiqueConfig, textField(1L, "Couleur", false), true, false);
+        FieldFormConfig poids = fieldConfig(ceramiqueConfig, textField(2L, "Poids", false), true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(couleur, poids));
+
+        service.reorderAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                List.of("Poids", "Couleur"));
+
+        assertThat(poids.getPosition()).isEqualTo(1);
+        assertThat(couleur.getPosition()).isEqualTo(2);
+        verify(fieldFormConfigRepository).save(poids);
+        verify(fieldFormConfigRepository).save(couleur);
+    }
+
+    @Test
+    void reorderAdditionalFields_shouldMatchFieldNamesRegardlessOfCase() {
+        FieldFormConfig couleur = fieldConfig(ceramiqueConfig, textField(1L, "Couleur", false), true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(couleur));
+
+        service.reorderAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                List.of("COULEUR"));
+
+        assertThat(couleur.getPosition()).isEqualTo(1);
+        verify(fieldFormConfigRepository).save(couleur);
+    }
+
+    @Test
+    void reorderAdditionalFields_shouldIgnoreTheNamesTheTypeDoesNotCarry() {
+        FieldFormConfig couleur = fieldConfig(ceramiqueConfig, textField(1L, "Couleur", false), true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(couleur));
+
+        service.reorderAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                List.of("Inexistant", "Couleur"));
+
+        assertThat(couleur.getPosition()).isEqualTo(2);
+        verify(fieldFormConfigRepository).save(couleur);
+        verify(fieldFormConfigRepository, times(1)).save(any(FieldFormConfig.class));
+    }
+
+    /**
+     * A field the type only inherits from the default configuration has no row of its own to carry a
+     * position, and the default configuration must not be reordered on its behalf: the order would
+     * then change for every other type inheriting it too.
+     */
+    @Test
+    void reorderAdditionalFields_shouldLeaveTheConfigurationsInheritedFromTheDefaultTypeAlone() {
+        FieldFormConfig inherited = fieldConfig(defaultConfig, textField(1L, "Couleur", false), true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(inherited));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of());
+
+        service.reorderAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                List.of("Couleur"));
+
+        assertThat(inherited.getPosition()).isZero();
+        verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
+    }
+
+    @Test
+    void reorderAdditionalFields_shouldCreateTheConfigurationOfATypeThatHasNoneYet() {
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        service.reorderAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", List.of("Couleur"));
+
+        ArgumentCaptor<FormConfig> saved = ArgumentCaptor.forClass(FormConfig.class);
+        verify(formConfigRepository).save(saved.capture());
+        assertThat(saved.getValue().getValueConcept()).isEqualTo(ceramiqueConcept);
+    }
+
+    @Test
+    void reorderAdditionalFields_shouldSaveNothingWhenNoOrderIsGiven() {
+        FieldFormConfig couleur = fieldConfig(ceramiqueConfig, textField(1L, "Couleur", false), true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(couleur));
+
+        service.reorderAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", List.of());
+
+        assertThat(couleur.getPosition()).isZero();
+        verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
+    }
+
+    // --- typeOf / toDto ---
+
+    @Test
+    void getFieldsConfig_shouldMapActionUnitAndActionCodeFields() {
+        CustomField projectField = CustomFieldSelectOneActionUnit.builder()
+                .id(1L).label("Projet").isSystemField(true).build();
+        CustomField actionCodeField = CustomFieldSelectOneActionCode.builder()
+                .id(2L).label("Code opération").isSystemField(true).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(
+                fieldConfig(defaultConfig, projectField, true, false),
+                fieldConfig(defaultConfig, actionCodeField, true, false)));
+
+        List<TypeFieldFormConfig> fields =
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+
+        assertThat(fields).extracting(TypeFieldFormConfig::getType)
+                .containsExactly(FieldType.PROJET, FieldType.SELECT_ONE);
+        assertThat(fields).extracting(TypeFieldFormConfig::getSourceLabel).containsOnly("—");
+    }
+
+    @Test
+    void getFieldsConfig_shouldMapEveryFlavourOfSpatialUnitFieldToTheSameType() {
+        CustomField address = CustomFieldSelectOneAddress.builder()
+                .id(1L).label("Adresse").isSystemField(true).build();
+        CustomField tree = CustomFieldSelectMultipleSpatialUnitTree.builder()
+                .id(2L).label("Lieux").isSystemField(true).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(
+                fieldConfig(defaultConfig, address, true, false),
+                fieldConfig(defaultConfig, tree, true, false)));
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+                .extracting(TypeFieldFormConfig::getType)
+                .containsExactly(FieldType.SELECT_ONE_SPATIAL_UNIT, FieldType.SELECT_ONE_SPATIAL_UNIT);
+    }
+
+    /**
+     * The screen shows fewer types than the entity hierarchy expresses; one it has no type for falls
+     * back on text, and only the controlled-vocabulary types are announced as configurable.
+     */
+    @Test
+    void getFieldsConfig_shouldFallBackOnTextForAFieldItHasNoTypeFor() {
+        CustomField dateField = CustomFieldDateTime.builder()
+                .id(1L).label("Date d'ouverture").isSystemField(true).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
+                .thenReturn(List.of(fieldConfig(defaultConfig, dateField, true, false)));
+
+        TypeFieldFormConfig field =
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields().get(0);
+
+        assertThat(field.getType()).isEqualTo(FieldType.TEXT);
+        assertThat(field.isConfigurable()).isFalse();
+    }
+
+    /**
+     * The data entry screens match a configuration to the field it applies to by value binding (see
+     * {@code RecordingUnitPanel#inactiveSystemFieldBindings}), so the DTO has to carry it.
+     */
+    @Test
+    void getFieldsConfig_shouldCarryTheValueBindingOfTheField() {
+        CustomField field = textField(1L, "Identifiant", true);
+        field.setValueBinding("fullIdentifier");
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
+                .thenReturn(List.of(fieldConfig(defaultConfig, field, true, false)));
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+                .extracting(TypeFieldFormConfig::getValueBinding)
+                .containsExactly("fullIdentifier");
+    }
+
+    @Test
+    void getFieldsConfig_shouldReportAFieldLockedByTheInstitutionAsSuch() {
+        FieldFormConfig locked = fieldConfig(defaultConfig, textField(1L, "Identifiant", true), true, true);
+        locked.setInstitutionLocked(true);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(locked));
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+                .extracting(TypeFieldFormConfig::isInstitutionLocked)
+                .containsExactly(true);
+    }
+
+    // --- getActiveAdditionalFields ---
+
+    @Test
+    void getActiveAdditionalFields_shouldIncludeTheOnesInheritedFromTheDefaultConfiguration() {
+        CustomField inherited = textField(1L, "Couleur", false);
+        CustomField ownField = textField(2L, "Poids", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
+                .thenReturn(List.of(fieldConfig(defaultConfig, inherited, true, false)));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, ownField, true, false)));
+
+        assertThat(service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique"))
+                .containsExactly(inherited, ownField);
+    }
+
+    @Test
+    void getActiveAdditionalFields_shouldDropAFieldTheTypeDeactivatedOnTopOfTheDefaultConfiguration() {
+        CustomField inherited = textField(1L, "Couleur", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
+                .thenReturn(List.of(fieldConfig(defaultConfig, inherited, true, false)));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, inherited, false, false)));
+
+        assertThat(service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique"))
+                .isEmpty();
+    }
+
+    // --- listTypes / getFormConfig / findFormConfig ---
+
+    @Test
+    void listTypes_shouldSortTheConfiguredTypesCaseInsensitivelyAfterTheDefaultOne() {
+        Concept metalConcept = concept(300L, "metal");
+        Concept amphoreConcept = concept(400L, "amphore");
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(List.of(formConfig(12L, metalConcept), ceramiqueConfig, formConfig(13L, amphoreConcept)));
+        when(labelService.findLabelOf(metalConcept, "fr")).thenReturn(prefLabel("métal"));
+        when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
+        when(labelService.findLabelOf(amphoreConcept, "fr")).thenReturn(prefLabel("amphore"));
+
+        assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER))
+                .extracting(TypeSummary::getName)
+                .containsExactly("_default", "amphore", "Céramique", "métal");
+    }
+
+    @Test
+    void listTypes_shouldHoldOnlyTheDefaultTypeWhenTheProjectHasNoVocabularyForTheTableField() throws Exception {
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAS.CATEGORY"), eq(PROJECT_ID)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+
+        assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER))
+                .extracting(TypeSummary::getName).containsExactly("_default");
+    }
+
+    @Test
+    void findFormConfig_shouldReturnEmptyWhenTheProjectHasNoVocabularyForTheTableField() throws Exception {
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAS.CATEGORY"), eq(PROJECT_ID)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+
+        assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default")).isEmpty();
+    }
+
+    /**
+     * A type is shown before anything is configured on it, so the screen falls back on the name it
+     * was asked for rather than on nothing.
+     */
+    @Test
+    void getFormConfig_shouldFallBackOnTheTypeNameWhenTheTypeHasNoConfigurationYet() {
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+
+        TypeFormConfig config = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(config.getValueConceptLabel()).isEqualTo("Céramique");
+        assertThat(config.getDescription()).isEmpty();
+        assertThat(config.isVisibleInApp()).isTrue();
+    }
+
+    // --- searchFieldCatalog ---
+
+    /**
+     * Several institutions can define a field of the same name; the picker offers the name once,
+     * since that is all it shows of a field.
+     */
+    @Test
+    void searchFieldCatalog_shouldOfferAFieldOnceWhenSeveralShareTheSameLabel() {
+        when(customFieldRepository.findAllReusableByInstitution(1L))
+                .thenReturn(List.of(textField(1L, "Couleur", false), textField(2L, "Couleur", false)));
+
+        assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "couleur"))
+                .extracting(FieldCatalogEntry::getName)
+                .containsExactly("Couleur");
     }
 
     // ========== Helper Methods ==========

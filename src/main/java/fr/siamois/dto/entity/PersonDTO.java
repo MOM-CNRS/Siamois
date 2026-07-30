@@ -20,7 +20,7 @@ public class PersonDTO extends AbstractEntityDTO {
         return name + " " + lastname ;
     }
 
-    public String getFirstName() {
+    public String firstName() {
         return name;
     }
 

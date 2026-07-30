@@ -80,7 +80,9 @@ public interface TableFieldConfigService {
     void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config);
 
     /**
-     * Reads the system and additional fields configured for a type.
+     * Reads the system and additional fields configured for a type. System fields come in the order
+     * the form lays them out; the additional ones follow, in the display order set through
+     * {@link #reorderAdditionalFields(Long, ConfigurableTable, String, List)}.
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
@@ -90,15 +92,38 @@ public interface TableFieldConfigService {
     TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, String typeName);
 
     /**
-     * The real additional (non-system) fields active for a type, in configuration order — the
-     * entities needed to render them, not the display DTO returned by {@link #getFieldsConfig}.
+     * The real additional (non-system) fields active for a type — the entities needed to render
+     * them, not the display DTO returned by {@link #getFieldsConfig} — in the display order set
+     * through {@link #reorderAdditionalFields(Long, ConfigurableTable, String, List)}. This is the
+     * order the data entry screens lay the additional fields out in, so the two screens agree.
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
      * @param typeName  the type's name, or {@code _default}
-     * @return the active additional fields configured for the type
+     * @return the active additional fields configured for the type, in display order
      */
     List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, String typeName);
+
+    /**
+     * Sets the order the additional fields of a type are displayed in, both on the configuration
+     * screen and on the data entry screens that lay them out.
+     * <p>
+     * The order is a property of the type's own configuration: applying it to a type that inherits
+     * additional fields from the default configuration gives that type its own configuration rows
+     * for them, so the reorder does not leak to every other type — the same rule
+     * {@link #setFieldActive} and {@link #setFieldMandatory} follow.
+     * <p>
+     * Names that are unknown to the type, or that name a system field, are ignored: system fields
+     * are laid out by the form, not by this screen. An additional field the list omits keeps its
+     * position relative to the other omitted ones, after the listed ones.
+     *
+     * @param projectId         the project (action unit) this configuration is scoped to
+     * @param table             the table the type belongs to
+     * @param typeName          the type's name, or {@code _default}
+     * @param orderedFieldNames the names of the type's additional fields, in the order they must be
+     *                          displayed in
+     */
+    void reorderAdditionalFields(Long projectId, ConfigurableTable table, String typeName, List<String> orderedFieldNames);
 
     /**
      * Resolves the {@link FormConfig} that applies to a type, if one was ever materialized for it

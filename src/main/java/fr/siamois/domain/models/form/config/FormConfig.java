@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * Un "FormConfig" est un ensemble de configuration de champs (FieldFormConfig) associé à une valeur d'un champ.
@@ -51,6 +51,6 @@ public class FormConfig {
     private ActionUnit actionUnit;
 
     @OneToMany(mappedBy = "formConfig", fetch = FetchType.LAZY)
-    private Set<FieldFormConfig> fieldConfigs;
+    private List<FieldFormConfig> fieldConfigs;
 
 }
