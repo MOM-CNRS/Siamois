@@ -1,0 +1,91 @@
+```yaml
+name: "Demande de fonctionnalité"
+description: Créer un nouveau ticket pour proposer une fonctionnalité.
+title: "[Demande de fonctionnalité] - <titre>"
+labels:
+  - enhancement
+
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type de demande
+      description: S'agit-il d'une nouvelle fonctionnalité ou de l'amélioration d'une fonctionnalité existante ?
+      options:
+        - Nouvelle fonctionnalité
+        - Amélioration
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Résumé
+      description: Fournissez un aperçu rapide de la fonctionnalité demandée.
+      placeholder: Décrivez votre demande en quelques phrases...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème rencontré
+      description: Quel problème ou quelle limitation cette fonctionnalité permettrait-elle de résoudre ?
+      placeholder: Décrivez le problème que vous souhaitez résoudre...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Solution proposée
+      description: Décrivez la solution ou le fonctionnement que vous proposez.
+      placeholder: Expliquez comment vous imaginez le fonctionnement de cette fonctionnalité...
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Exigences
+      description: Listez les éventuelles exigences fonctionnelles ou techniques.
+      placeholder: Ajoutez les exigences pertinentes...
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Exemples
+      description: Ajoutez des exemples, des maquettes ou des cas d'utilisation illustrant la fonctionnalité.
+      placeholder: Ajoutez des exemples, captures d'écran ou références...
+    validations:
+      required: false
+
+  - type: textarea
+    id: drawbacks
+    attributes:
+      label: Inconvénients ou impacts
+      description: Existe-t-il des inconvénients, des risques ou des impacts potentiels liés à cette fonctionnalité ?
+      placeholder: Décrivez les compromis, risques ou points d'attention...
+    validations:
+      required: false
+
+  - type: textarea
+    id: unresolved_questions
+    attributes:
+      label: Questions non résolues
+      description: Existe-t-il encore des questions ouvertes ou des décisions à prendre ?
+      placeholder: Listez les questions qui restent à résoudre...
+    validations:
+      required: false
+
+  - type: textarea
+    id: todos
+    attributes:
+      label: Tâches d'implémentation
+      description: Si la fonctionnalité est acceptée, listez ici les tâches nécessaires à son implémentation.
+      placeholder: Ajoutez les tâches d'implémentation...
+    validations:
+      required: false
+```
