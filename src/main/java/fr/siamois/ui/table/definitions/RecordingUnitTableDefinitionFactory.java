@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOn
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.RelationColumn;
@@ -46,6 +47,23 @@ public final class RecordingUnitTableDefinitionFactory {
         if (tableModel == null) {
             return;
         }
+        applyTo(tableModel.getTableDefinition());
+    }
+
+    /**
+     * The columns of the table on their own, with no view model to apply them to: the field
+     * configuration screen reads a table's system fields from here, since they are defined in this
+     * factory rather than in the database.
+     *
+     * @return a fresh definition carrying the table's standard columns
+     */
+    public static TableDefinition definition() {
+        TableDefinition definition = new TableDefinition();
+        applyTo(definition);
+        return definition;
+    }
+
+    private static void applyTo(TableDefinition definition) {
 
         Concept typeConcept = new Concept.Builder()
                 .vocabulary(SYSTEM_THESO)
@@ -175,7 +193,7 @@ public final class RecordingUnitTableDefinitionFactory {
         contributorsField.setId(4L);
         actionField.setId(5L);
         spatialField.setId(6L);
-        tableModel.getTableDefinition().setCommandLinkColumn(
+        definition.setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.recordingunit.column.identifier")
@@ -201,7 +219,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("identifier")
                         .headerKey("recordingunit.field.identifier")
@@ -213,7 +231,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("isPartOf")
                         .headerKey("common.field.parents")
@@ -225,7 +243,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("contains")
                         .headerKey("common.field.children")
@@ -237,7 +255,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("action")
                         .headerKey("recordingunit.field.actionUnit")
@@ -250,7 +268,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("type")
                         .headerKey("recordingunit.property.type")
@@ -275,7 +293,7 @@ public final class RecordingUnitTableDefinitionFactory {
                 .concept(phasesConcept)
                 .build();
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("phases")
                         .headerKey("recordingunit.field.phases")
@@ -287,7 +305,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 RelationColumn.builder()
                         .id("relationships")
                         .headerKey("common.label.ruRelationships")
@@ -312,7 +330,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 RelationColumn.builder()
                         .id("specimen")
                         .headerKey("common.entity.specimen")
@@ -338,7 +356,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("spatial")
                         .headerKey("recordingunit.field.spatialUnit")
@@ -358,7 +376,7 @@ public final class RecordingUnitTableDefinitionFactory {
 
 
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("matrixColor")
                         .headerKey("recordingunit.field.matrixColor")
@@ -370,7 +388,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("openingDate")
                         .headerKey("recordingunit.field.openingDate")
@@ -381,7 +399,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(true)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("author")
                         .headerKey("recordingunit.field.author")
@@ -392,7 +410,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(true)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("contributors")
                         .headerKey("recordingunit.field.contributors")

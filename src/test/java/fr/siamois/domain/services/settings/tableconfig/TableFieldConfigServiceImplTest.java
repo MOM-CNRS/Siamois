@@ -12,15 +12,13 @@ import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
@@ -30,14 +28,16 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
-import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,9 +49,12 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -66,7 +69,13 @@ class TableFieldConfigServiceImplTest {
     private static final Long FIELD_CONCEPT_ID = 100L;
     private static final Long CERAMIQUE_CONCEPT_ID = 200L;
     private static final Long PERSON_ID = 2L;
-    private static final Long FORM_ID = 500L;
+    private static final String IDENTIFIER_FIELD = "recordingunit.field.identifier";
+    private static final String CATEGORY_FIELD = "specimen.field.category";
+    private static final String MATERIAL_FIELD = "specimen.field.material";
+    private static final String RECORDING_UNIT_FIELD = "specimen.field.recordingUnit";
+    private static final String AUTHORS_FIELD = "specimen.field.authors";
+    /** Kept clear of the ids the tests give their own fields, so the two never collide. */
+    private static final long SYSTEM_FIELD_FIRST_ID = 100L;
 
     @Mock
     private FieldConfigurationService fieldConfigurationService;
@@ -76,8 +85,6 @@ class TableFieldConfigServiceImplTest {
     private ActionUnitRepository actionUnitRepository;
     @Mock
     private ConceptRepository conceptRepository;
-    @Mock
-    private FormRepository formRepository;
     @Mock
     private FormConfigRepository formConfigRepository;
     @Mock
@@ -197,26 +204,76 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void getFieldsConfig_shouldListTheSystemFieldsOfTheFormEvenWhenNothingIsConfigured() {
-        CustomField identifier = textField(1L, "Identifiant", true);
-        CustomField description = textField(2L, "Description", true);
-        givenFormOf(null, column(identifier, true), column(description, false));
+    void getFieldsConfig_shouldListTheSystemFieldsOfTheTableEvenWhenNothingIsConfigured() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD, CATEGORY_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         List<TypeFieldFormConfig> fields =
                 service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
 
-        assertThat(fields).extracting(TypeFieldFormConfig::getName).containsExactly("Identifiant", "Description");
+        assertThat(fields).extracting(TypeFieldFormConfig::getName)
+                .containsExactly(IDENTIFIER_FIELD, CATEGORY_FIELD);
         assertThat(fields).allMatch(TypeFieldFormConfig::isSystemField);
         assertThat(fields).allMatch(TypeFieldFormConfig::isActive);
         assertThat(fields.get(0).isMandatory()).isTrue();
         assertThat(fields.get(1).isMandatory()).isFalse();
     }
 
+    /**
+     * The definition lays the fields out in an order of its own, which is the one the screen shows
+     * them in — not the order the rows come back from the database in.
+     */
+    @Test
+    void getFieldsConfig_shouldFollowTheOrderOfTheTableDefinitionRatherThanTheOneOfTheRows() {
+        Map<String, CustomField> fields = givenSystemFieldsOf(
+                ConfigurableTable.MOBILIER, CATEGORY_FIELD, IDENTIFIER_FIELD, MATERIAL_FIELD);
+        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(
+                fields.get(MATERIAL_FIELD), fields.get(CATEGORY_FIELD), fields.get(IDENTIFIER_FIELD)));
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+                .extracting(TypeFieldFormConfig::getName)
+                .containsExactly(IDENTIFIER_FIELD, CATEGORY_FIELD, MATERIAL_FIELD);
+    }
+
+    /**
+     * A field defined in code after the last startup has no row yet, so no configuration could be
+     * saved for it; the screen leaves it out rather than offering a switch that cannot be written.
+     */
+    @Test
+    void getFieldsConfig_shouldSkipTheSystemFieldsThatHaveNoRowYet() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+                .extracting(TypeFieldFormConfig::getName).containsExactly(IDENTIFIER_FIELD);
+    }
+
+    @Test
+    void getFieldsConfig_shouldHoldNoSystemFieldWhenTheyWereNeverInitialized() {
+        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of());
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+                .isEmpty();
+    }
+
+    /**
+     * Every table reads the same pool of rows, so each must take its own fields out of it: the
+     * identifier is shared by UE and Mobilier, the category belongs to Mobilier alone.
+     */
+    @Test
+    void getFieldsConfig_shouldOnlyListTheSystemFieldsOfTheTableItIsAskedAbout() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD, CATEGORY_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, "_default").getFields())
+                .extracting(TypeFieldFormConfig::getName).containsExactly(IDENTIFIER_FIELD);
+    }
+
     @Test
     void getFieldsConfig_shouldLetTheStoredConfigurationWinOverTheFormDefaults() {
-        CustomField identifier = textField(1L, "Identifiant", true);
-        givenFormOf(null, column(identifier, true));
+        CustomField identifier = givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD).get(IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(10L))
                 .thenReturn(List.of(fieldConfig(defaultConfig, identifier, false, false)));
 
@@ -230,25 +287,23 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void getFieldsConfig_shouldAppendTheAdditionalFieldsAfterTheFormOnes() {
-        CustomField identifier = textField(1L, "Identifiant", true);
         CustomField additional = textField(9L, "Couleur", false);
-        givenFormOf(null, column(identifier, false));
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(10L))
                 .thenReturn(List.of(fieldConfig(defaultConfig, additional, true, false)));
 
         List<TypeFieldFormConfig> fields =
                 service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
 
-        assertThat(fields).extracting(TypeFieldFormConfig::getName).containsExactly("Identifiant", "Couleur");
+        assertThat(fields).extracting(TypeFieldFormConfig::getName).containsExactly(IDENTIFIER_FIELD, "Couleur");
         assertThat(fields.get(1).isSystemField()).isFalse();
     }
 
     @Test
     void getActiveAdditionalFields_shouldReturnOnlyActiveNonSystemFields() {
-        CustomField identifier = textField(1L, "Identifiant", true);
         CustomField activeAdditional = textField(9L, "Couleur", false);
         CustomField inactiveAdditional = textField(8L, "Poids", false);
-        givenFormOf(null, column(identifier, true));
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(
                 fieldConfig(defaultConfig, activeAdditional, true, false),
                 fieldConfig(defaultConfig, inactiveAdditional, false, false)
@@ -262,8 +317,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void getActiveAdditionalFields_shouldReturnEmptyListWhenOnlySystemFieldsExist() {
-        CustomField identifier = textField(1L, "Identifiant", true);
-        givenFormOf(null, column(identifier, true));
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         List<CustomField> fields =
@@ -274,11 +328,10 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void setFieldActive_shouldCreateTheRowOfASystemFieldThatWasNeverConfigured() {
-        CustomField identifier = textField(1L, "Identifiant", true);
-        givenFormOf(null, column(identifier, true));
+        CustomField identifier = givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD).get(IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", "Identifiant", false);
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", IDENTIFIER_FIELD, false);
 
         ArgumentCaptor<FieldFormConfig> saved = ArgumentCaptor.forClass(FieldFormConfig.class);
         verify(fieldFormConfigRepository).save(saved.capture());
@@ -640,11 +693,10 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void searchFieldCatalog_shouldNotOfferFieldsTheFormAlreadyLaysOut() {
-        CustomField couleur = textField(1L, "Couleur", false);
-        givenFormOf(null, column(couleur, false));
+    void searchFieldCatalog_shouldNotOfferFieldsTheTableAlreadyLaysOut() {
+        CustomField identifier = givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD).get(IDENTIFIER_FIELD);
         when(customFieldRepository.findAllReusableByInstitution(1L))
-                .thenReturn(List.of(couleur));
+                .thenReturn(List.of(identifier));
 
         assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", null))
                 .isEmpty();
@@ -775,28 +827,16 @@ class TableFieldConfigServiceImplTest {
 
 
     @Test
-    void getFieldsConfig_shouldMapAllFieldTypesCorrectly() {
-        CustomFieldSelectOneFromFieldCode selectField = CustomFieldSelectOneFromFieldCode.builder()
-                .id(3L).label("Catégorie").isSystemField(true).fieldCode("SIAS.CATEGORY").build();
-        givenFormOf(null, column(selectField, false));
+    void getFieldsConfig_shouldMapASystemFieldToItsTypeAndSource() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, CATEGORY_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         List<TypeFieldFormConfig> fields = service.getFieldsConfig(
                 PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
 
         assertThat(fields).hasSize(1);
         assertThat(fields.get(0).getType()).isEqualTo(FieldType.SELECT_ONE);
-        assertThat(fields.get(0).getSourceLabel()).isEqualTo("SIAS.CATEGORY");
-    }
-
-    @Test
-    void getFieldsConfig_shouldHandleEmptyForm() {
-        when(formRepository.findEffectiveFormIdByTypeAndInstitution(any(), anyLong()))
-                .thenReturn(Optional.empty());
-
-        List<TypeFieldFormConfig> fields = service.getFieldsConfig(
-                PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
-
-        assertThat(fields).isEmpty();
+        assertThat(fields.get(0).getSourceLabel()).isEqualTo(Specimen.CAT_FIELD);
     }
 
     // --- createField ---
@@ -960,31 +1000,36 @@ class TableFieldConfigServiceImplTest {
 
     // --- typeOf ---
     @Test
-    void getFieldsConfig_shouldMapSpatialAndRecordingUnitFields() {
-        CustomFieldSelectOneSpatialUnit spatialField = CustomFieldSelectOneSpatialUnit.builder()
-                .id(4L).label("Localisation").isSystemField(true).build();
-        CustomFieldSelectOneRecordingUnit recordingField = CustomFieldSelectOneRecordingUnit.builder()
-                .id(5L).label("Unité").isSystemField(true).build();
-        givenFormOf(null, column(spatialField, false), column(recordingField, false));
+    void getFieldsConfig_shouldMapRecordingUnitFields() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, RECORDING_UNIT_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        List<TypeFieldFormConfig> fields = service.getFieldsConfig(
-                PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+                .extracting(TypeFieldFormConfig::getType)
+                .containsExactly(FieldType.SELECT_ONE_RECORDING_UNIT);
+    }
 
-        assertThat(fields).extracting(TypeFieldFormConfig::getType)
-                .containsExactly(FieldType.SELECT_ONE_SPATIAL_UNIT, FieldType.SELECT_ONE_RECORDING_UNIT);
+    @Test
+    void getFieldsConfig_shouldMapSpatialUnitFields() {
+        givenSystemFieldsOf(ConfigurableTable.CONTENANT, "container.field.spatialUnit");
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.CONTENANT, "_default").getFields())
+                .extracting(TypeFieldFormConfig::getType)
+                .containsExactly(FieldType.SELECT_ONE_SPATIAL_UNIT);
     }
 
     @Test
     void getFieldsConfig_shouldMapMultipleSelectFieldsAndDashUnsetSources() {
-        CustomFieldSelectMultipleFromFieldCode vocabularyField = CustomFieldSelectMultipleFromFieldCode.builder()
-                .id(6L).label("Matériaux").isSystemField(true).fieldCode("  ").build();
-        givenFormOf(null, column(vocabularyField, false));
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, MATERIAL_FIELD, AUTHORS_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        TypeFieldFormConfig field = service.getFieldsConfig(
-                PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields().get(0);
+        List<TypeFieldFormConfig> fields = service.getFieldsConfig(
+                PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
 
-        assertThat(field.getType()).isEqualTo(FieldType.SELECT_MULTIPLE);
-        assertThat(field.getSourceLabel()).isEqualTo("—");
+        assertThat(fields.get(0).getType()).isEqualTo(FieldType.SELECT_MULTIPLE);
+        assertThat(fields.get(0).getSourceLabel()).isEqualTo(Specimen.MATIERE_FIELD);
+        assertThat(fields.get(1).getSourceLabel()).isEqualTo("—");
     }
 
     // --- currentUser / currentPerson ---
@@ -1309,23 +1354,32 @@ class TableFieldConfigServiceImplTest {
         return prefLabel;
     }
 
-    private void givenFormOf(Long valueConceptId, Object[]... layoutFields) {
-        when(formRepository.findEffectiveFormIdByTypeAndInstitution(valueConceptId, 1L))
-                .thenReturn(Optional.of(FORM_ID));
-
-        List<Object[]> rows = new ArrayList<>();
-        List<CustomField> fields = new ArrayList<>();
-        for (Object[] layoutField : layoutFields) {
-            CustomField field = (CustomField) layoutField[0];
-            rows.add(new Object[]{field.getId(), layoutField[1]});
-            fields.add(field);
+    /**
+     * The system fields of a table as they exist once {@code SystemFieldInitializer} has run: the
+     * definitions {@link SystemFieldCatalog} declares, each given the database id it would have been
+     * persisted with. A field the table defines but that is left out here stands for one defined
+     * after the last startup, which has no row yet.
+     *
+     * @param table  the table whose system fields are persisted
+     * @param labels the labels of the ones to persist, in any order
+     * @return the persisted fields, by label
+     */
+    private Map<String, CustomField> givenSystemFieldsOf(ConfigurableTable table, String... labels) {
+        Set<String> wanted = Set.of(labels);
+        Map<String, CustomField> rows = new LinkedHashMap<>();
+        long id = SYSTEM_FIELD_FIRST_ID;
+        for (FormFieldColumn column : SystemFieldCatalog.columnsOf(table)) {
+            CustomField definition = column.getField();
+            Assertions.assertNotNull(definition);
+            if (!wanted.contains(definition.getLabel())) continue;
+            definition.setId(id++);
+            rows.put(definition.getLabel(), definition);
         }
-        when(formRepository.findLayoutFieldsByFormId(FORM_ID)).thenReturn(rows);
-        when(customFieldRepository.findAllById(any())).thenReturn(fields);
-    }
-
-    private Object[] column(CustomField field, boolean required) {
-        return new Object[]{field, required};
+        assertThat(rows.keySet())
+                .as("the labels a test asks for must be ones the table really defines")
+                .containsExactlyInAnyOrderElementsOf(wanted);
+        when(customFieldRepository.findAllSystemFields()).thenReturn(new ArrayList<>(rows.values()));
+        return rows;
     }
 
     private ConceptAutocompleteDTO autocomplete(String label) {

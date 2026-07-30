@@ -44,6 +44,20 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
             @Param("concept" ) Concept concept);
 
     /**
+     * Every system field of the instance. System fields are defined by the application itself (see
+     * {@code SystemFieldCatalog}) and shared by every project of every institution, so they are read
+     * as a whole and matched against their definition rather than queried one institution at a time.
+     *
+     * @return the system custom fields
+     */
+    @Query("""
+            select f
+            from CustomField f
+            where f.isSystemField = true
+            """)
+    List<CustomField> findAllSystemFields();
+
+    /**
      * The non-system custom fields an institution can reuse, i.e. the ones at least one of its form
      * configurations references. A custom field carries no institution of its own, so the
      * institution it belongs to is the one of the configurations it is linked to; a field linked
