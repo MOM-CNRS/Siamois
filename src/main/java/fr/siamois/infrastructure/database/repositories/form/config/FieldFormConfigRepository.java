@@ -23,6 +23,7 @@ public interface FieldFormConfigRepository extends CrudRepository<FieldFormConfi
             from FieldFormConfig ffc
             join fetch ffc.field
             where ffc.formConfig.id = :formConfigId
+            order by ffc.position
             """)
     List<FieldFormConfig> findAllByFormConfigId(@Param("formConfigId") Long formConfigId);
 

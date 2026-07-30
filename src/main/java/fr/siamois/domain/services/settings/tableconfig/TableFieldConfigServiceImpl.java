@@ -206,7 +206,20 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public void reorderAdditionalFields(Long projectId, ConfigurableTable table, String typeName, List<String> orderedFieldNames) {
+        FormConfig owner = requireFormConfig(projectId, table, typeName);
+        List<FieldFormConfig> fieldConfigs = fieldFormConfigRepository.findAllByFormConfigId(owner.getId());
 
+        for (int i = 0; i < orderedFieldNames.size(); i++) {
+            String fieldName = orderedFieldNames.get(i);
+            Optional<FieldFormConfig> optFieldFormConfig = fieldConfigs.stream()
+                    .filter(ffc -> ffc.getField().getLabel().equalsIgnoreCase(fieldName))
+                    .findFirst();
+            if (optFieldFormConfig.isPresent()) {
+                FieldFormConfig toUpdate = optFieldFormConfig.get();
+                toUpdate.setPosition(i + 1);
+                fieldFormConfigRepository.save(toUpdate);
+            }
+        }
     }
 
 
@@ -606,7 +619,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         config.setActionUnit(project);
         config.setInstitution(project.getCreatedByInstitution());
         config.setFieldConcept(fieldConcept);
-        config.setFieldConfigs(new HashSet<>());
+        config.setFieldConfigs(new ArrayList<>());
         if (!DEFAULT_TYPE.equals(typeName)) {
             config.setValueConcept(findValueConcept(projectId, fieldConcept, typeName)
                     .orElseThrow(() -> new NoSuchElementException(
