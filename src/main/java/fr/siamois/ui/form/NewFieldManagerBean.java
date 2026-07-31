@@ -2,7 +2,10 @@ package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -23,7 +26,9 @@ import java.util.List;
 public class NewFieldManagerBean {
 
     private final CustomFieldMeasurementService customFieldMeasurementService;
+    private final RecordingUnitService recordingUnitService;
     private final CustomFormResponseViewModel formResponse;
+    private final AbstractEntityDTO owner; // entity whose form the fields are created from
     private final List<CustomFieldMeasurement> addFieldOptions; // options of existing fields when clicking the split button dropdown
 
     private boolean showEditor = false;
@@ -59,11 +64,28 @@ public class NewFieldManagerBean {
 
         CustomFieldMeasurement created = customFieldMeasurementService.save(newField);
 
-        // 2. Delegate to the common UI update logic
+        // 2. Keep the field attached to the unit that created it, and offer it right away among the
+        // existing measurement fields of the split button dropdown
+        linkToOwner(created);
+        if (!addFieldOptions.contains(created)) {
+            addFieldOptions.add(created);
+        }
+
+        // 3. Delegate to the common UI update logic
         attachFieldToPanel(currentPanel, created);
 
-        // 3. Cleanup
+        // 4. Cleanup
         cancelNewField();
+    }
+
+    /**
+     * Records the newly created field on the recording unit it was created from. Only recording
+     * units own measurement fields; forms of other entities simply create a shared field.
+     */
+    private void linkToOwner(CustomFieldMeasurement created) {
+        if (owner instanceof RecordingUnitDTO recordingUnit && recordingUnit.getId() != null) {
+            recordingUnitService.addMeasurementField(recordingUnit.getId(), created);
+        }
     }
 
     public void addFieldFromMeasurement(CustomFormPanelUiDto panel, CustomFieldMeasurement field) {

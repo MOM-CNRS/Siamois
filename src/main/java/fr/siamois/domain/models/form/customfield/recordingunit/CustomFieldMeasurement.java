@@ -28,6 +28,9 @@ public class CustomFieldMeasurement extends CustomField {
     @Column(name = "max_value")
     private Long maxValue ;
 
+    /**
+     * Unit as a measurement unit
+     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_unit")
     private UnitDefinition unit;

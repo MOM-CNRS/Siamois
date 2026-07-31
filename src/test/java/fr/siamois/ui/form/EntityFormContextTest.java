@@ -31,7 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.Page;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -148,7 +147,7 @@ class EntityFormContextTest {
         // build a response containing a spatial-unit-tree answer
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
+        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
         answers.put(mock(CustomField.class), treeAnswer);
@@ -188,7 +187,7 @@ class EntityFormContextTest {
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(r);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
-        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
+        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
 
         ctx.init(false);
         assertNull(ctx.getFieldAnswer(f));
@@ -222,7 +221,7 @@ class EntityFormContextTest {
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>(Map.of(field, ans)));
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
+        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -247,7 +246,7 @@ class EntityFormContextTest {
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>());
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
+        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -273,7 +272,7 @@ class EntityFormContextTest {
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>());
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
+        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -350,7 +349,7 @@ class EntityFormContextTest {
 
         CustomField scopeField = mock(CustomField.class);
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
+        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
         when(scopeField.getIsSystemField()).thenReturn(true);
         when(scopeField.getValueBinding()).thenReturn(scopeBinding);
         CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = mock(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class);
@@ -393,7 +392,7 @@ class EntityFormContextTest {
         CustomField otherField = mock(CustomField.class);
         when(otherField.getIsSystemField()).thenReturn(true);
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().find(any(int.class))).thenReturn(Page.empty());
+        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
         when(otherField.getValueBinding()).thenReturn("otherBinding");
         CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = mock(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class);
 

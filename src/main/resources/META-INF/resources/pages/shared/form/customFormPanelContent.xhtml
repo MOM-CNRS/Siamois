@@ -157,8 +157,10 @@
                                                  actionListener="#{bean.formContext.newFieldManager.saveNewField}"
                                                  value="Ajouter le champ"
                                                  update="@form"/>
-                                <p:commandButton icon="pi pi-times" actionListener="#{customFormPanel.cancelNewField}"
-                                                 update="@parent"
+                                <p:commandButton icon="pi pi-times"
+                                                 actionListener="#{bean.formContext.newFieldManager.cancelNewField}"
+                                                 process="@this"
+                                                 update="@form"
                                                  styleClass="ui-button-flat ui-button-plain ui-button-danger"/>
                             </div>
                         </div>

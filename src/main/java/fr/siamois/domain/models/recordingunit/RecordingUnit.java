@@ -14,6 +14,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.phase.Phase;
@@ -136,7 +137,17 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     )
     @JsonIgnore
     private Set<Document> documents = new HashSet<>();
-    
+
+    @NotAudited
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "recording_unit_measurement_fields",
+            joinColumns = { @JoinColumn(name = "fk_recording_unit_id") },
+            inverseJoinColumns = { @JoinColumn(name = "fk_custom_field_id") }
+    )
+    private Set<CustomFieldMeasurement> measurements = new HashSet<>();
+
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIARU.TYPE";
 

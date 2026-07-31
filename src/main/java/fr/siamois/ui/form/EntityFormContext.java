@@ -48,7 +48,6 @@ import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
@@ -203,14 +202,27 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
 
-        // Prepare new field manager
-        Page<CustomFieldMeasurement> customFieldMeasurements = services.getCustomFieldMeasurementService().find(10);
-        // find all
+        // Prepare new field manager; the list stays mutable so a field created here shows up in the
+        // "existing fields" dropdown without waiting for the next form init
+        List<CustomFieldMeasurement> measurementOptions = new ArrayList<>(
+                services.getCustomFieldMeasurementService()
+                        .findOptionsForRecordingUnit(recordingUnitIdOrNull(), 10));
+
         this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
+                services.getRecordingUnitService(),
                 this.formResponse,
-                customFieldMeasurements.getContent()
+                unit,
+                measurementOptions
                 );
 
+    }
+
+    /**
+     * The id of the recording unit this form edits, or null when the form belongs to another kind of
+     * entity or to a unit that has not been persisted yet.
+     */
+    private Long recordingUnitIdOrNull() {
+        return unit instanceof RecordingUnitDTO recordingUnit ? recordingUnit.getId() : null;
     }
 
     // -------------------------------------------------------------------------
