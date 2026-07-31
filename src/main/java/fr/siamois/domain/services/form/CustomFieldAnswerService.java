@@ -5,14 +5,17 @@ import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigAnswer;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
+import fr.siamois.domain.models.form.customfieldanswer.measurement.CustomFieldAnswerMeasurement;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurementViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
@@ -39,6 +42,7 @@ public class CustomFieldAnswerService {
     private final TableFieldConfigService tableFieldConfigService;
     private final FormConfigAnswerService formConfigAnswerService;
     private final LabelService labelService;
+    private final CustomFieldMeasurementService customFieldMeasurementService;
 
     /**
      * Persists the answers to a recording unit's additional (non-system) fields.
@@ -60,22 +64,27 @@ public class CustomFieldAnswerService {
         Long projectId = recordingUnitDTO.getActionUnit().getId();
         String typeName = typeNameOf(recordingUnitDTO);
 
-        Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(projectId, ConfigurableTable.UE, typeName);
-        if (formConfig.isEmpty()) {
-            log.warn("No form config for type '{}' on recording unit {}; additional field answers not persisted",
-                    typeName, recordingUnitDTO.getId());
-            return;
-        }
-
         // Defense in depth: only persist answers for fields still active on the type's form today,
         // in case a field was deactivated (or the unit's type changed) between form load and save.
+        // Measurement fields created from this very unit's form are never part of the project-level
+        // configuration, so they are whitelisted alongside it.
         Set<CustomField> activeFields = new HashSet<>(
                 tableFieldConfigService.getActiveAdditionalFields(projectId, ConfigurableTable.UE, typeName));
+        activeFields.addAll(customFieldMeasurementService.findByRecordingUnit(recordingUnitDTO.getId()));
         Map<CustomField, CustomFieldAnswerViewModel> filteredAnswers = answers.entrySet().stream()
                 .filter(entry -> activeFields.contains(entry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (filteredAnswers.isEmpty()) return;
+
+        // Materialized on demand: a field created straight from a unit's form gives the type answers
+        // to store before anyone ever opened its settings screen, so the config may not exist yet.
+        Optional<FormConfig> formConfig = tableFieldConfigService.createOrGetFormConfig(projectId, ConfigurableTable.UE, typeName);
+        if (formConfig.isEmpty()) {
+            log.warn("No form config for type '{}' on recording unit {}; additional field answers not persisted",
+                    typeName, recordingUnitDTO.getId());
+            return;
+        }
 
         FormConfigAnswer formConfigAnswer = formConfigAnswerService.createOrGetFormConfigAnswer(formConfig.get(), recordingUnitDTO);
         save(new CustomFormResponseViewModel(formConfigAnswer, filteredAnswers));
@@ -135,6 +144,13 @@ public class CustomFieldAnswerService {
             v.setValue(s);
         } else if (viewModel instanceof CustomFieldAnswerIntegerViewModel v && value instanceof Integer i) {
             v.setValue(i);
+        } else if (viewModel instanceof CustomFieldAnswerMeasurementViewModel v
+                && answer instanceof CustomFieldAnswerMeasurement stored) {
+            // The unit is not stored per answer; FormService fills it in from the field definition.
+            v.setValue(MeasurementAnswerDTO.builder()
+                    .numericValue(stored.getValue())
+                    .comment(stored.getComment())
+                    .build());
         } else {
             return null;
         }
@@ -166,11 +182,40 @@ public class CustomFieldAnswerService {
             answer.setCustomField(customField);
             answer.setFormConfigAnswer(formConfigAnswer);
         }
+
+        if (answer instanceof CustomFieldAnswerMeasurement measurementAnswer
+                && customFieldAnswerViewModel instanceof CustomFieldAnswerMeasurementViewModel measurementViewModel) {
+            createOrUpdateMeasurementAnswer(measurementAnswer, measurementViewModel, optAnswer.isPresent());
+            return;
+        }
+
         if(customFieldAnswerViewModel.getValue() != null) {
             answer.setValue(customFieldAnswerViewModel.getValue());
             customFieldAnswerRepository.save(answer);
         }
 
+    }
+
+    /**
+     * A measurement view model always carries a {@link MeasurementAnswerDTO} — the number and
+     * comment inputs bind straight into it — so an untouched field would otherwise persist an empty
+     * row. Write only once something has been entered, or when a row already exists so that
+     * clearing a value sticks.
+     */
+    private void createOrUpdateMeasurementAnswer(CustomFieldAnswerMeasurement answer,
+                                                 CustomFieldAnswerMeasurementViewModel viewModel,
+                                                 boolean alreadyStored) {
+        MeasurementAnswerDTO value = viewModel.getValue();
+        Double numericValue = value != null ? value.getNumericValue() : null;
+        String comment = value != null ? value.getComment() : null;
+
+        if (!alreadyStored && numericValue == null && (comment == null || comment.isBlank())) {
+            return;
+        }
+
+        answer.setValue(numericValue);
+        answer.setComment(comment);
+        customFieldAnswerRepository.save(answer);
     }
 
     public void save(@NonNull CustomFormResponseViewModel response) {

@@ -154,4 +154,47 @@ class CustomFormComposerTest {
         assertThat(base.getLayout().get(0).getRows()).hasSize(originalRowCount);
         assertThat(base.getLayout().get(0).getRows().get(0).getColumns()).hasSize(2);
     }
+
+    @Test
+    void withFieldsInPanel_shouldReturnBaseFormUnchangedWhenNoColumns() {
+        CustomForm base = baseForm();
+
+        assertThat(CustomFormComposer.withFieldsInPanel(base, "General", List.of())).isSameAs(base);
+        assertThat(CustomFormComposer.withFieldsInPanel(base, "General", null)).isSameAs(base);
+    }
+
+    @Test
+    void withFieldsInPanel_shouldAppendATrailingRowToTheNamedPanel() {
+        CustomForm base = baseFormWithTwoRows();
+        List<CustomCol> columns = List.of(additionalColumn("profondeur"));
+
+        CustomForm composed = CustomFormComposer.withFieldsInPanel(base, "General", columns);
+
+        CustomFormPanel panel = composed.getLayout().get(0);
+        assertThat(panel.getRows()).hasSize(3);
+        assertThat(panel.getRows().get(2).getColumns()).containsExactlyElementsOf(columns);
+        assertThat(panel.getName()).isEqualTo("General");
+        assertThat(panel.getIsSystemPanel()).isTrue();
+    }
+
+    @Test
+    void withFieldsInPanel_shouldLeaveTheFormAloneWhenThePanelIsUnknown() {
+        CustomForm base = baseFormWithTwoRows();
+
+        CustomForm composed = CustomFormComposer.withFieldsInPanel(base, "Mesures", List.of(additionalColumn("profondeur")));
+
+        assertThat(composed.getLayout().get(0).getRows()).hasSize(2);
+    }
+
+    @Test
+    void withFieldsInPanel_shouldNotMutateTheBaseForm() {
+        CustomForm base = baseFormWithTwoRows();
+        CustomFormPanel originalPanel = base.getLayout().get(0);
+        int originalRowCount = originalPanel.getRows().size();
+
+        CustomFormComposer.withFieldsInPanel(base, "General", List.of(additionalColumn("profondeur")));
+
+        assertThat(base.getLayout().get(0)).isSameAs(originalPanel);
+        assertThat(originalPanel.getRows()).hasSize(originalRowCount);
+    }
 }

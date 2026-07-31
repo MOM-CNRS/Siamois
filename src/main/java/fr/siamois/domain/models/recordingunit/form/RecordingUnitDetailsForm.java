@@ -19,6 +19,9 @@ import java.util.List;
  */
 public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
+    /** Panel users add their own measurement fields to; those fields are re-injected here on reopen. */
+    public static final String MEASUREMENTS_PANEL_NAME = "recordingunit.panel.measurements";
+
     private static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
     private static final String UI_G_12_UI_MD_12_UI_LG_12 = "ui-g-12 ui-md-12 ui-lg-12";
     private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
@@ -107,7 +110,7 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
     private static CustomFormPanel measurementsPanel() {
         return new CustomFormPanel.Builder()
-                .name("recordingunit.panel.measurements")
+                .name(MEASUREMENTS_PANEL_NAME)
                 .isSystemPanel(true)
                 .canUserAddField(true)
                 .addRow(

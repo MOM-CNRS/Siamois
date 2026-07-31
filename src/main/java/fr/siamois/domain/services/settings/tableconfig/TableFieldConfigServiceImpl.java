@@ -526,6 +526,22 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                         projectId, fieldConcept.get().getId(), value.getId()));
     }
 
+    @Override
+    @Transactional
+    public Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, String typeName) {
+        Optional<FormConfig> existing = findFormConfig(projectId, table, typeName);
+        if (existing.isPresent()) {
+            return existing;
+        }
+
+        Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
+        if (fieldConcept.isEmpty()
+                || !DEFAULT_TYPE.equals(typeName) && findValueConcept(projectId, fieldConcept.get(), typeName).isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(createFormConfig(projectId, table, typeName));
+    }
+
     /**
      * Applies a change to the type's configuration of a field. The row is created when the field is
      * still configured nowhere — a system field the form declares but nobody ever touched — and when

@@ -160,6 +160,7 @@ public class FormService {
         CustomFieldAnswerViewModel additionalAnswer = additionalAnswers.get(field);
 
         if (additionalAnswer != null && !Boolean.TRUE.equals(field.getIsSystemField())) {
+            initializeMeasurement(additionalAnswer, field);
             answers.put(field, additionalAnswer);
             return;
         }
@@ -458,18 +459,29 @@ public class FormService {
 
             Object value = getFieldValue(jpaEntity, field.getValueBinding());
             populateSystemFieldValue(answer, value);
+        }
 
-            // POST INIT
-            if (field instanceof CustomFieldMeasurement measField
-                    && answer instanceof CustomFieldAnswerMeasurementViewModel measAnswer
-                    && measAnswer.getValue().getUnit() == null) {
+        // POST INIT
+        initializeMeasurement(answer, field);
+    }
 
-                measAnswer.getValue().setUnit(
-                        unitDefinitionMapper.convert(measField.getUnit())
-                );
-            }
+    /**
+     * Gives every measurement answer the holder its inputs bind into ({@code answer.value
+     * .numericValue}, {@code answer.value.comment}) and the unit carried by the field definition.
+     * Applies to fields added to a form just as much as to the system ones: the unit is a property
+     * of the field, never stored per answer.
+     */
+    private void initializeMeasurement(CustomFieldAnswerViewModel answer, CustomField field) {
+        if (!(field instanceof CustomFieldMeasurement measurementField)
+                || !(answer instanceof CustomFieldAnswerMeasurementViewModel measurementAnswer)) {
+            return;
+        }
 
-
+        if (measurementAnswer.getValue() == null) {
+            measurementAnswer.setValue(new MeasurementAnswerDTO());
+        }
+        if (measurementAnswer.getValue().getUnit() == null) {
+            measurementAnswer.getValue().setUnit(unitDefinitionMapper.convert(measurementField.getUnit()));
         }
     }
 

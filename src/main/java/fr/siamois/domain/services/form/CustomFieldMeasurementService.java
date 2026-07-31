@@ -41,6 +41,15 @@ public class CustomFieldMeasurementService {
     }
 
     /**
+     * The measurement fields created from a recording unit's form.
+     *
+     * @param recordingUnitId the recording unit, null when the form belongs to another kind of entity
+     */
+    public List<CustomFieldMeasurement> findByRecordingUnit(Long recordingUnitId) {
+        return recordingUnitId == null ? List.of() : repository.findByRecordingUnitId(recordingUnitId);
+    }
+
+    /**
      * The measurement fields offered as "existing fields" on a recording unit's form: the ones this
      * unit created come first, so a field the unit just created is always offered again no matter
      * where it falls in the global listing, followed by up to {@code limit} other existing fields.
@@ -50,10 +59,7 @@ public class CustomFieldMeasurementService {
      * @param limit           how many fields to pull from the global listing
      */
     public List<CustomFieldMeasurement> findOptionsForRecordingUnit(Long recordingUnitId, int limit) {
-        Set<CustomFieldMeasurement> options = new LinkedHashSet<>();
-        if (recordingUnitId != null) {
-            options.addAll(repository.findByRecordingUnitId(recordingUnitId));
-        }
+        Set<CustomFieldMeasurement> options = new LinkedHashSet<>(findByRecordingUnit(recordingUnitId));
         options.addAll(find(limit).getContent());
         return new ArrayList<>(options);
     }

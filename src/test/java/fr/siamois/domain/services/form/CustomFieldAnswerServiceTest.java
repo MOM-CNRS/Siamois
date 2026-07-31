@@ -15,6 +15,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
@@ -25,6 +26,7 @@ import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAns
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
+import fr.siamois.domain.models.form.customfieldanswer.measurement.CustomFieldAnswerMeasurement;
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectOnePerson;
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSelectMultipleSpatialUnitTree;
@@ -40,12 +42,14 @@ import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurementViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
@@ -83,6 +87,8 @@ class CustomFieldAnswerServiceTest {
     private FormConfigAnswerService formConfigAnswerService;
     @Mock
     private LabelService labelService;
+    @Mock
+    private CustomFieldMeasurementService customFieldMeasurementService;
 
     @InjectMocks
     private CustomFieldAnswerService service;
@@ -111,9 +117,11 @@ class CustomFieldAnswerServiceTest {
     /**
      * One row per field type that has an answer entity, with a value that entity accepts.
      * <p>
-     * The seven other field types — measurement, address, and the container / phase / specimen /
-     * recording unit selections — have no discriminator in {@code custom_field_answer}; they are
-     * covered by {@link #save_shouldFailRatherThanWriteAnAnswerForAFieldTypeThatHasNone()}.
+     * Measurement fields answer through their own view model rather than an arbitrary value, so
+     * they are covered separately by {@link #save_shouldStoreWhatAMeasurementViewModelHolds()}.
+     * The six remaining field types — address, and the container / phase / specimen / recording unit
+     * selections — have no discriminator in {@code custom_field_answer}; they are covered by
+     * {@link #save_shouldFailRatherThanWriteAnAnswerForAFieldTypeThatHasNone()}.
      */
     static Stream<Arguments> fieldTypesAndTheirAnswers() {
         Concept concept = concept(10L);
@@ -221,6 +229,47 @@ class CustomFieldAnswerServiceTest {
         assertThat(saved.getValue()).isEqualTo(moment);
     }
 
+    @Test
+    void save_shouldStoreWhatAMeasurementViewModelHolds() {
+        CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
+        viewModel.setValue(MeasurementAnswerDTO.builder().numericValue(14.2).comment("au nord").build());
+
+        CustomFieldAnswer saved = savedAnswerOf(CustomFieldMeasurement.builder().id(1L).build(), viewModel);
+
+        assertThat(saved).isInstanceOf(CustomFieldAnswerMeasurement.class);
+        assertThat(saved.getValue()).isEqualTo(14.2);
+        assertThat(((CustomFieldAnswerMeasurement) saved).getComment()).isEqualTo("au nord");
+    }
+
+    @Test
+    void save_shouldWriteNothingForAMeasurementNobodyFilledIn() {
+        CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
+        viewModel.setValue(new MeasurementAnswerDTO());
+
+        service.save(response(CustomFieldMeasurement.builder().id(1L).build(), viewModel));
+
+        verify(customFieldAnswerRepository, never()).save(any());
+    }
+
+    @Test
+    void save_shouldClearAStoredMeasurementTheUserEmptied() {
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).build();
+        CustomFieldAnswerMeasurement existing = new CustomFieldAnswerMeasurement();
+        existing.setCustomField(field);
+        existing.setFormConfigAnswer(formConfigAnswer);
+        existing.setValue(14.2);
+        when(customFieldAnswerRepository.findByFormConfigAnswerAndCustomField(formConfigAnswer, field))
+                .thenReturn(Optional.of(existing));
+
+        CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
+        viewModel.setValue(new MeasurementAnswerDTO());
+
+        CustomFieldAnswer saved = savedAnswerOf(field, viewModel);
+
+        assertThat(saved).isSameAs(existing);
+        assertThat(saved.getValue()).isNull();
+    }
+
     // ========== Creating vs updating ==========
 
     @Test
@@ -272,9 +321,9 @@ class CustomFieldAnswerServiceTest {
 
     @Test
     void save_shouldFailRatherThanWriteAnAnswerForAFieldTypeThatHasNone() {
-        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).build();
+        CustomFieldSelectOneAddress field = CustomFieldSelectOneAddress.builder().id(1L).build();
 
-        CustomFormResponseViewModel viewModel = response(field, viewModelOf("14,2 cm"));
+        CustomFormResponseViewModel viewModel = response(field, viewModelOf("12 rue des Lices"));
         assertThatThrownBy(() -> service.save(viewModel))
                 .isInstanceOf(RuntimeException.class);
 
@@ -299,12 +348,9 @@ class CustomFieldAnswerServiceTest {
         Map<CustomField, CustomFieldAnswerViewModel> answers =
                 Map.of(CustomFieldText.builder().id(1L).build(), viewModelOf("valeur"));
 
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
-                .thenReturn(Optional.empty());
-
         service.saveAdditionalFieldAnswers(unit, answers);
 
-        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE);
+        verify(tableFieldConfigService).getActiveAdditionalFields(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE);
         verifyNoInteractions(formConfigAnswerService);
         verify(customFieldAnswerRepository, never()).save(any());
     }
@@ -320,20 +366,20 @@ class CustomFieldAnswerServiceTest {
         ConceptPrefLabelDTO label = new ConceptPrefLabelDTO();
         label.setLabel("Céramique");
         when(labelService.findLabelOf(type, "fr")).thenReturn(label);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, "Céramique"))
-                .thenReturn(Optional.empty());
 
         service.saveAdditionalFieldAnswers(unit, answers);
 
-        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.UE, "Céramique");
+        verify(tableFieldConfigService).getActiveAdditionalFields(7L, ConfigurableTable.UE, "Céramique");
     }
 
     @Test
-    void saveAdditionalFieldAnswers_doesNothing_whenNoFormConfigFound() {
+    void saveAdditionalFieldAnswers_doesNothing_whenNoFormConfigCanBeResolved() {
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
-        Map<CustomField, CustomFieldAnswerViewModel> answers =
-                Map.of(CustomFieldText.builder().id(1L).build(), viewModelOf("x"));
-        when(tableFieldConfigService.findFormConfig(any(), any(), any())).thenReturn(Optional.empty());
+        CustomField field = CustomFieldText.builder().id(1L).build();
+        Map<CustomField, CustomFieldAnswerViewModel> answers = Map.of(field, viewModelOf("x"));
+        when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+                .thenReturn(List.of(field));
+        when(tableFieldConfigService.createOrGetFormConfig(any(), any(), any())).thenReturn(Optional.empty());
 
         service.saveAdditionalFieldAnswers(unit, answers);
 
@@ -352,7 +398,7 @@ class CustomFieldAnswerServiceTest {
 
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.createOrGetFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
                 .thenReturn(Optional.of(formConfig));
         when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
                 .thenReturn(List.of(activeField));
@@ -371,15 +417,13 @@ class CustomFieldAnswerServiceTest {
         CustomField inactiveField = CustomFieldText.builder().id(2L).build();
         Map<CustomField, CustomFieldAnswerViewModel> answers = Map.of(inactiveField, viewModelOf("filtre"));
 
-        FormConfig formConfig = new FormConfig();
-        formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
-                .thenReturn(Optional.of(formConfig));
         when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
                 .thenReturn(List.of());
 
         service.saveAdditionalFieldAnswers(unit, answers);
 
+        // Not even a form config is resolved: there is nothing to hang an answer on
+        verify(tableFieldConfigService, never()).createOrGetFormConfig(any(), any(), any());
         verifyNoInteractions(formConfigAnswerService);
         verify(customFieldAnswerRepository, never()).save(any());
     }
@@ -392,7 +436,7 @@ class CustomFieldAnswerServiceTest {
 
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.createOrGetFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
                 .thenReturn(Optional.of(formConfig));
         when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
                 .thenReturn(List.of(field));
@@ -404,6 +448,29 @@ class CustomFieldAnswerServiceTest {
         verify(customFieldAnswerRepository).save(saved.capture());
         assertThat(saved.getValue().getFormConfigAnswer()).isSameAs(formConfigAnswer);
         assertThat(saved.getValue().getValue()).isEqualTo("Deux tessons");
+    }
+
+    @Test
+    void saveAdditionalFieldAnswers_keepsAMeasurementFieldCreatedFromTheUnitsOwnForm() {
+        RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).build();
+        CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
+        viewModel.setValue(MeasurementAnswerDTO.builder().numericValue(14.2).build());
+
+        FormConfig formConfig = new FormConfig();
+        formConfig.setId(9L);
+        // Not part of the project-level configuration, only of the unit's own fields
+        when(customFieldMeasurementService.findByRecordingUnit(100L)).thenReturn(List.of(field));
+        when(tableFieldConfigService.createOrGetFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+                .thenReturn(Optional.of(formConfig));
+        when(formConfigAnswerService.createOrGetFormConfigAnswer(formConfig, unit)).thenReturn(formConfigAnswer);
+
+        service.saveAdditionalFieldAnswers(unit, Map.of(field, viewModel));
+
+        ArgumentCaptor<CustomFieldAnswer> saved = ArgumentCaptor.forClass(CustomFieldAnswer.class);
+        verify(customFieldAnswerRepository).save(saved.capture());
+        assertThat(saved.getValue().getCustomField()).isSameAs(field);
+        assertThat(saved.getValue().getValue()).isEqualTo(14.2);
     }
 
     // ========== loadAdditionalFieldAnswers ==========
@@ -473,6 +540,31 @@ class CustomFieldAnswerServiceTest {
         assertThat(result.get(integerField)).isInstanceOfSatisfying(CustomFieldAnswerIntegerViewModel.class,
                 v -> assertThat(v.getValue()).isEqualTo(2));
         assertThat(result.values()).allSatisfy(v -> assertThat(v.getHasBeenModified()).isFalse());
+    }
+
+    @Test
+    void loadAdditionalFieldAnswers_readsBackAMeasurementNumberAndComment() {
+        RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
+        FormConfig formConfig = new FormConfig();
+        formConfig.setId(9L);
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+                .thenReturn(Optional.of(formConfig));
+
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).build();
+        CustomFieldAnswerMeasurement answer = new CustomFieldAnswerMeasurement();
+        answer.setCustomField(field);
+        answer.setValue(14.2);
+        answer.setComment("au nord");
+
+        formConfigAnswer.setAnswers(Set.of(answer));
+        when(formConfigAnswerService.findFormConfigAnswer(formConfig, unit)).thenReturn(Optional.of(formConfigAnswer));
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = service.loadAdditionalFieldAnswers(unit);
+
+        assertThat(result.get(field)).isInstanceOfSatisfying(CustomFieldAnswerMeasurementViewModel.class, v -> {
+            assertThat(v.getValue().getNumericValue()).isEqualTo(14.2);
+            assertThat(v.getValue().getComment()).isEqualTo("au nord");
+        });
     }
 
     @Test

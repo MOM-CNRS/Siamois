@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
@@ -392,7 +393,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public void initForms(boolean forceInit) {
         String typeName = resolveTypeName();
         CustomForm base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings(typeName));
-        CustomForm form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(typeName));
+        CustomForm withMeasurements = CustomFormComposer.withFieldsInPanel(base,
+                RecordingUnitDetailsForm.MEASUREMENTS_PANEL_NAME, measurementFields());
+        CustomForm form = CustomFormComposer.withAdditionalFields(withMeasurements, "Champs additionnels", additionalFields(typeName));
         detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
@@ -416,6 +419,21 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .map(TypeFieldFormConfig::getValueBinding)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * The measurement fields created from this unit's own form. They belong to the unit rather than
+     * to the project's type configuration, so they are re-injected into the measurements panel on
+     * every form build — otherwise the field, and the answer stored for it, would vanish on reopen.
+     */
+    private List<CustomCol> measurementFields() {
+        return formContextServices.getCustomFieldMeasurementService()
+                .findByRecordingUnit(unit.getId()).stream()
+                .map(field -> new CustomCol.Builder()
+                        .className("ui-g-12 ui-md-6 ui-lg-6")
+                        .field(field)
+                        .build())
+                .toList();
     }
 
     private List<CustomCol> additionalFields(String typeName) {

@@ -397,6 +397,42 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void createOrGetFormConfig_shouldReturnTheConfigurationTheTypeAlreadyHas() {
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(result).contains(ceramiqueConfig);
+        verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
+    void createOrGetFormConfig_shouldMaterializeTheConfigurationOfATypeThatHasNone() {
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getValueConcept()).isEqualTo(ceramiqueConcept);
+        verify(formConfigRepository).save(any(FormConfig.class));
+    }
+
+    @Test
+    void createOrGetFormConfig_shouldReturnEmptyRatherThanCreateOneForAnUnknownType() {
+        when(conceptRepository.findAllByFieldContextAndExactLabel(FIELD_CONCEPT_ID, "fr", "Métal"))
+                .thenReturn(List.of());
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Métal");
+
+        assertThat(result).isEmpty();
+        verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
     void getFieldsConfig_shouldMapVocabularyFieldsToTheirTypeAndSource() {
         CustomFieldSelectOneFromFieldCode vocabularyField = CustomFieldSelectOneFromFieldCode.builder()
                 .id(3L).label("Catégorie").isSystemField(true).fieldCode("SIAS.CATEGORY").build();
