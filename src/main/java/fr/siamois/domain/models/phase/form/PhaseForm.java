@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.phase.form;
 
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
@@ -32,6 +33,8 @@ public abstract class PhaseForm {
             .vocabulary(SYSTEM_THESO).externalId("phase.periods").build();
     protected static final Concept keywordsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO).externalId("phase.keywords").build();
+    protected static final Concept actionUnitConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO).externalId("phase.actionUnit").build();
 
     @Transient
     protected static final CustomFieldText identifierField = CustomFieldText.builder()
@@ -125,5 +128,14 @@ public abstract class PhaseForm {
             .valueBinding("keywords")
             .fieldCode(Phase.KEYWORD_FIELD)
             .concept(keywordsConcept)
+            .build();
+
+    @Transient
+    protected static final CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
+            .label("phase.field.actionUnit")
+            .isSystemField(true)
+            .id(10L)
+            .valueBinding("actionUnit")
+            .concept(actionUnitConcept)
             .build();
 }

@@ -64,6 +64,7 @@ public class PhaseService {
 
         if (managed != entity) {
             managed.setIdentifier(entity.getIdentifier());
+            managed.setActionUnit(entity.getActionUnit());
             managed.setType(entity.getType());
             managed.setTitle(entity.getTitle());
             managed.setDescription(entity.getDescription());
