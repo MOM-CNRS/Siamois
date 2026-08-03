@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -51,6 +52,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     private final transient ProfilePermissionService profilePermissionService;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
+    private final transient EffectiveFormResolver effectiveFormResolver;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -80,6 +82,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.navBean = context.getBean(NavBean.class);
         this.formContextServices = context.getBean(FormContextServices.class);
+        this.effectiveFormResolver = context.getBean(EffectiveFormResolver.class);
     }
 
     @Override
@@ -110,7 +113,8 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
                 profilePermissionService,
                 recordingUnitService,
                                 langBean,
-                formContextServices
+                formContextServices,
+                effectiveFormResolver
         );
         tableModel.setParentPanel(this);
 

@@ -105,6 +105,30 @@ public interface TableFieldConfigService {
     List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, String typeName);
 
     /**
+     * Same as {@link #getFieldsConfig(Long, ConfigurableTable, String)}, but keyed directly on the
+     * type's {@link fr.siamois.domain.models.vocabulary.Concept} id instead of its label — avoids the
+     * label round-trip ({@link #findFormConfig(Long, ConfigurableTable, String)} resolving a label
+     * back to a concept), which is fragile for a caller that already holds the concept (e.g. an API
+     * request whose {@code lang} may differ from the label's language).
+     *
+     * @param projectId     the project (action unit) this configuration is scoped to
+     * @param table         the table the type belongs to
+     * @param typeConceptId the type's concept id, or {@code null} for the default configuration
+     * @return a copy of the type's field configuration
+     */
+    TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, Long typeConceptId);
+
+    /**
+     * Concept-id-keyed equivalent of {@link #getActiveAdditionalFields(Long, ConfigurableTable, String)}.
+     *
+     * @param projectId     the project (action unit) this configuration is scoped to
+     * @param table         the table the type belongs to
+     * @param typeConceptId the type's concept id, or {@code null} for the default configuration
+     * @return the active additional fields configured for the type, in display order
+     */
+    List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, Long typeConceptId);
+
+    /**
      * Sets the order the additional fields of a type are displayed in, both on the configuration
      * screen and on the data entry screens that lay them out.
      * <p>
@@ -136,6 +160,16 @@ public interface TableFieldConfigService {
      * @return the type's form configuration, empty if none was ever materialized
      */
     Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName);
+
+    /**
+     * Concept-id-keyed equivalent of {@link #findFormConfig(Long, ConfigurableTable, String)}.
+     *
+     * @param projectId     the project (action unit) this configuration is scoped to
+     * @param table         the table the type belongs to
+     * @param typeConceptId the type's concept id, or {@code null} for the default configuration
+     * @return the type's form configuration, empty if none was ever materialized
+     */
+    Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId);
 
     /**
      * Activates or deactivates a field for a type. No-op when the target field is

@@ -3,14 +3,12 @@ package fr.siamois.domain.services.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
-import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
@@ -51,37 +49,9 @@ import java.util.stream.Collectors;
 public class FormService {
 
     private final LabelBean labelBean;
-    private final FormRepository formRepository;
     private final FormScopeRepository formScopeRepository;
     private final UnitDefinitionMapper unitDefinitionMapper;
     private final CustomFieldAnswerService customFieldAnswerService;
-
-
-    /**
-     * Find a form by its ID
-     *
-     * @param id The ID of the form
-     * @return The form having the given ID
-     */
-    @Transactional(readOnly = true)
-    public CustomForm findById(long id) {
-        return formRepository.findById(id).orElse(null);
-    }
-
-    /**
-     * Find the form to display for a given type of recording unit in the context of an institution
-     *
-     * @param recordingUnitType The type of recording unit
-     * @param institution       The institution
-     * @return The form
-     */
-    @Transactional(readOnly = true)
-    public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(ConceptDTO recordingUnitType, InstitutionDTO institution) {
-        Optional<CustomForm> optForm = formRepository.findEffectiveFormByTypeAndInstitution(recordingUnitType == null ? null : recordingUnitType.getId(), institution.getId());
-        // If none found, try to find a form without specifying the type
-        // Should we throw an error if none found?
-        return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
-    }
 
     @Transactional(readOnly = true)
     public List<Concept> findConfiguredRecordingUnitTypesByInstitution(InstitutionDTO institution) {

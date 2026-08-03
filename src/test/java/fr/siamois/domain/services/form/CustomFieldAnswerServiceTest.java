@@ -35,10 +35,8 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
-import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
@@ -81,8 +79,6 @@ class CustomFieldAnswerServiceTest {
     private TableFieldConfigService tableFieldConfigService;
     @Mock
     private FormConfigAnswerService formConfigAnswerService;
-    @Mock
-    private LabelService labelService;
 
     @InjectMocks
     private CustomFieldAnswerService service;
@@ -299,33 +295,30 @@ class CustomFieldAnswerServiceTest {
         Map<CustomField, CustomFieldAnswerViewModel> answers =
                 Map.of(CustomFieldText.builder().id(1L).build(), viewModelOf("valeur"));
 
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.empty());
 
         service.saveAdditionalFieldAnswers(unit, answers);
 
-        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE);
+        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.UE, (Long) null);
         verifyNoInteractions(formConfigAnswerService);
         verify(customFieldAnswerRepository, never()).save(any());
     }
 
     @Test
-    void saveAdditionalFieldAnswers_resolvesTypeLabel_whenUnitHasAType() {
+    void saveAdditionalFieldAnswers_resolvesTypeId_whenUnitHasAType() {
         ConceptDTO type = new ConceptDTO();
         type.setId(50L);
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, type);
         Map<CustomField, CustomFieldAnswerViewModel> answers =
                 Map.of(CustomFieldText.builder().id(1L).build(), viewModelOf("valeur"));
 
-        ConceptPrefLabelDTO label = new ConceptPrefLabelDTO();
-        label.setLabel("Céramique");
-        when(labelService.findLabelOf(type, "fr")).thenReturn(label);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, "Céramique"))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, 50L))
                 .thenReturn(Optional.empty());
 
         service.saveAdditionalFieldAnswers(unit, answers);
 
-        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.UE, "Céramique");
+        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.UE, 50L);
     }
 
     @Test
@@ -333,7 +326,7 @@ class CustomFieldAnswerServiceTest {
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
         Map<CustomField, CustomFieldAnswerViewModel> answers =
                 Map.of(CustomFieldText.builder().id(1L).build(), viewModelOf("x"));
-        when(tableFieldConfigService.findFormConfig(any(), any(), any())).thenReturn(Optional.empty());
+        when(tableFieldConfigService.findFormConfig(any(), any(), nullable(Long.class))).thenReturn(Optional.empty());
 
         service.saveAdditionalFieldAnswers(unit, answers);
 
@@ -352,9 +345,9 @@ class CustomFieldAnswerServiceTest {
 
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.of(formConfig));
-        when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(List.of(activeField));
         when(formConfigAnswerService.createOrGetFormConfigAnswer(formConfig, unit)).thenReturn(formConfigAnswer);
 
@@ -373,9 +366,9 @@ class CustomFieldAnswerServiceTest {
 
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.of(formConfig));
-        when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(List.of());
 
         service.saveAdditionalFieldAnswers(unit, answers);
@@ -392,9 +385,9 @@ class CustomFieldAnswerServiceTest {
 
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.of(formConfig));
-        when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(List.of(field));
         when(formConfigAnswerService.createOrGetFormConfigAnswer(formConfig, unit)).thenReturn(formConfigAnswer);
 
@@ -421,7 +414,7 @@ class CustomFieldAnswerServiceTest {
     @Test
     void loadAdditionalFieldAnswers_returnsEmptyMap_whenNoFormConfigFound() {
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.empty());
 
         Map<CustomField, CustomFieldAnswerViewModel> result = service.loadAdditionalFieldAnswers(unit);
@@ -435,7 +428,7 @@ class CustomFieldAnswerServiceTest {
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.of(formConfig));
         when(formConfigAnswerService.findFormConfigAnswer(formConfig, unit)).thenReturn(Optional.empty());
 
@@ -449,7 +442,7 @@ class CustomFieldAnswerServiceTest {
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.of(formConfig));
 
         CustomFieldText textField = CustomFieldText.builder().id(1L).build();
@@ -480,7 +473,7 @@ class CustomFieldAnswerServiceTest {
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
-        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.of(formConfig));
 
         // DateTime is persistable (in ANSWER_ENTITY_CREATORS) but its stored value type

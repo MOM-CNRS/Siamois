@@ -19,7 +19,6 @@ import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
-import fr.siamois.ui.mapper.FormMapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -48,7 +47,6 @@ import java.util.stream.Collectors;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements Serializable {
 
-    private final transient FormMapper formMapper;
     private final transient PhaseService phaseService;
     private final transient RedirectBean redirectBean;
     private final transient TableFieldConfigService tableFieldConfigService;
@@ -64,12 +62,11 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         // not yet supported
     }
 
-    protected PhasePanel(FormMapper formMapper, ApplicationContext context) {
+    protected PhasePanel(ApplicationContext context) {
         super("common.entity.phase",
                 "bi bi-layers",
                 "siamois-panel phase-panel single-panel",
                 context);
-        this.formMapper = formMapper;
         this.phaseService = context.getBean(PhaseService.class);
         this.redirectBean = context.getBean(RedirectBean.class);
         this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);

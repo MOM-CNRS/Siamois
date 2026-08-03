@@ -29,7 +29,6 @@ import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
-import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ActionUnitTableDefinitionFactory;
 import fr.siamois.ui.table.definitions.SpatialUnitTableDefinitionFactory;
@@ -79,7 +78,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient ProfilePermissionService profilePermissionService;
-    private final transient FormMapper formMapper;
 
 
     private String spatialUnitErrorMessage;
@@ -124,7 +122,6 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
-        this.formMapper = context.getBean(FormMapper.class);
     }
 
 

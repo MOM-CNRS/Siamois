@@ -24,7 +24,6 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
-import fr.siamois.ui.mapper.FormMapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -54,7 +53,6 @@ import java.util.stream.Collectors;
 public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  implements Serializable {
 
     public static final String BI_BI_BUCKET = "bi bi-bucket";
-    private final transient FormMapper formMapper;
 
     protected final transient RecordingUnitService recordingUnitService;
     protected final transient PersonService personService;
@@ -75,13 +73,12 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     // ---------- Locals
 
-    protected SpecimenPanel(FormMapper formMapper, ApplicationContext context) {
+    protected SpecimenPanel(ApplicationContext context) {
 
         super("common.entity.specimen",
                 BI_BI_BUCKET,
                 "siamois-panel specimen-panel single-panel",
                 context);
-        this.formMapper = formMapper;
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
         this.personService = context.getBean(PersonService.class);
         this.specimenService = context.getBean(SpecimenService.class);

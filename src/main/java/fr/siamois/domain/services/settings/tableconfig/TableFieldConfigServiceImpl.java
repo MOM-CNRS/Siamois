@@ -192,6 +192,25 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        TypeFieldsConfig config = new TypeFieldsConfig();
+        config.setFields(new ArrayList<>(effectiveFields(projectId, table, typeConceptId).values().stream()
+                .map(this::toDto)
+                .toList()));
+        return config;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        return effectiveFields(projectId, table, typeConceptId).values().stream()
+                .filter(field -> !isSystemField(field.field()) && field.active())
+                .map(EffectiveField::field)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public void setFieldActive(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean active) {
         applyFieldChange(projectId, table, typeName, fieldName, config -> config.setActive(active));
@@ -450,7 +469,15 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
      * configured but absent from the definition — the ones added from this screen — come last.
      */
     private Map<Long, EffectiveField> effectiveFields(Long projectId, ConfigurableTable table, String typeName) {
-        Map<Long, FieldFormConfig> stored = storedFields(projectId, table, typeName);
+        return effectiveFields(table, storedFields(projectId, table, typeName));
+    }
+
+    /** Concept-id-keyed equivalent of {@link #effectiveFields(Long, ConfigurableTable, String)}. */
+    private Map<Long, EffectiveField> effectiveFields(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        return effectiveFields(table, storedFields(projectId, table, typeConceptId));
+    }
+
+    private Map<Long, EffectiveField> effectiveFields(ConfigurableTable table, Map<Long, FieldFormConfig> stored) {
         Map<Long, EffectiveField> fields = new LinkedHashMap<>();
 
         for (FormField formField : systemFields(table)) {
@@ -474,6 +501,16 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             collectFields(findFormConfig(projectId, table, DEFAULT_TYPE), fields);
         }
         collectFields(findFormConfig(projectId, table, typeName), fields);
+        return fields;
+    }
+
+    /** Concept-id-keyed equivalent of {@link #storedFields(Long, ConfigurableTable, String)}. */
+    private Map<Long, FieldFormConfig> storedFields(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        Map<Long, FieldFormConfig> fields = new LinkedHashMap<>();
+        if (typeConceptId != null) {
+            collectFields(findFormConfig(projectId, table, (Long) null), fields);
+        }
+        collectFields(findFormConfig(projectId, table, typeConceptId), fields);
         return fields;
     }
 
@@ -524,6 +561,17 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return findValueConcept(projectId, fieldConcept.get(), typeName)
                 .flatMap(value -> formConfigRepository.findByActionUnitAndFieldAndValue(
                         projectId, fieldConcept.get().getId(), value.getId()));
+    }
+
+    @Override
+    public Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
+        if (fieldConcept.isEmpty()) return Optional.empty();
+
+        if (typeConceptId == null) {
+            return formConfigRepository.findDefaultByActionUnitAndField(projectId, fieldConcept.get().getId());
+        }
+        return formConfigRepository.findByActionUnitAndFieldAndValue(projectId, fieldConcept.get().getId(), typeConceptId);
     }
 
     /**
