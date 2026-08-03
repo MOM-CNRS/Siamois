@@ -61,7 +61,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     // Cache: key = (projectId, type)
     private final Map<FormCacheKey, FormUiDto> formCache = new HashMap<>();
 
-    private final transient EffectiveFormResolver effectiveFormResolver;
+    private final EffectiveFormResolver effectiveFormResolver;
 
     public static final String THIS = "@this";
     public static final String SIA_ICON_BTN = "sia-icon-btn";

@@ -2107,7 +2107,7 @@ class RecordingUnitOpenApiServiceTest {
         field.setId(43L);
         field.setLabel("Champ");
         field.setIsSystemField(false);
-        when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), eq(42L)))
+        when(effectiveFormResolver.resolveEffectiveForm(RecordingUnit.DETAILS_FORM, 5L, ConfigurableTable.UE, 42L))
                 .thenReturn(formUiDtoWithOneField(field));
 
         ProjectRecordingUnitTypeListResponse response =
