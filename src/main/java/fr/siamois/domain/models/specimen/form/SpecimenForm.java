@@ -1,6 +1,7 @@
 package fr.siamois.domain.models.specimen.form;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -191,7 +192,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectOneRecordingUnit recordingUnitField = CustomFieldSelectOneRecordingUnit.builder()
             .label("specimen.field.recordingUnit")
             .isSystemField(true)
-            .id(1L)
+            .id(-401L)
             .valueBinding("recordingUnit")
             .concept(recordingUnitConcept)
             .build();
@@ -200,7 +201,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultipleSpecimen isPartOfField = CustomFieldSelectMultipleSpecimen.builder()
             .label("specimen.field.isPartOf")
             .isSystemField(true)
-            .id(2L)
+            .id(-402L)
             .valueBinding("parents")
             .concept(isPartOfConcept)
             .build();
@@ -209,7 +210,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultipleSpecimen containsField = CustomFieldSelectMultipleSpecimen.builder()
             .label("specimen.field.contains")
             .isSystemField(true)
-            .id(3L)
+            .id(-403L)
             .valueBinding("children")
             .concept(containsConcept)
             .build();
@@ -220,7 +221,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldText specimenIdField = CustomFieldText.builder()
             .label("recordingunit.field.identifier")
             .isSystemField(true)
-            .id(4L)
+            .id(-404L)
             .valueBinding("fullIdentifier")
             .concept(specimenIdConcept)
             .build();
@@ -229,7 +230,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldText specimenOtherIdField = CustomFieldText.builder()
             .label("recordingunit.field.otherIdentifier")
             .isSystemField(true)
-            .id(5L)
+            .id(-405L)
             .valueBinding("otherIdentifier")
             .concept(specimenOtherIdConcept)
             .build();
@@ -239,7 +240,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldText isolationNumberField = CustomFieldText.builder()
             .label("recordingunit.field.isolationIdentifier")
             .isSystemField(true)
-            .id(10L)
+            .id(-406L)
             .valueBinding("isolationNumber")
             .concept(isolationNumberConcept)
             .build();
@@ -250,7 +251,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultiplePerson authorsField =  CustomFieldSelectMultiplePerson.builder()
             .label("specimen.field.authors")
             .isSystemField(true)
-            .id(6L)
+            .id(-407L)
             .valueBinding("authors")
             .concept(authorsConcept)
             .build();
@@ -260,7 +261,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultiplePerson collectorsField =  CustomFieldSelectMultiplePerson.builder()
             .label("specimen.field.collectors")
             .isSystemField(true)
-            .id(7L)
+            .id(-408L)
             .valueBinding("collectors")
             .concept(collectorsConcept)
             .build();
@@ -272,7 +273,7 @@ public abstract class SpecimenForm {
             .label("specimen.field.category")
             .isSystemField(true)
             .valueBinding("category")
-            .id(9L)
+            .id(-409L)
             .styleClass("mr-2 specimen-type-chip")
             .iconClass("bi bi-bucket")
             .fieldCode(Specimen.CAT_FIELD)
@@ -284,7 +285,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldDateTime collectionDateField =  CustomFieldDateTime.builder()
             .label("specimen.field.collectionDate")
             .isSystemField(true)
-            .id(11L)
+            .id(-410L)
             .valueBinding("collectionDate")
             .showTime(false)
             .concept(collectionDateConcept)
@@ -296,7 +297,7 @@ public abstract class SpecimenForm {
             .label("specimen.field.material")
             .isSystemField(true)
             .isSystemField(true)
-            .id(13L)
+            .id(-411L)
             .fieldCode(Specimen.MATIERE_FIELD)
             .valueBinding("material")
             .concept(materialConcept)
@@ -307,7 +308,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultipleFromFieldCode materialClassField =  CustomFieldSelectMultipleFromFieldCode.builder()
             .label("specimen.field.materialClass")
             .isSystemField(true)
-            .id(14L)
+            .id(-412L)
             .fieldCode(Specimen.CLASS_FIELD)
             .valueBinding("materialClass")
             .concept(materialClassConcept)
@@ -318,7 +319,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectOneFromFieldCode normalizedInterpretationField =  CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.normalizedInterpretation")
             .isSystemField(true)
-            .id(15L)
+            .id(-413L)
             .fieldCode(Specimen.INTERPRETATION_FIELD)
             .valueBinding("normalizedInterpretation")
             .concept(normalizedInterpretationConcept)
@@ -329,7 +330,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldText descriptionField = CustomFieldText.builder()
             .label("recordingunit.field.description")
             .isSystemField(true)
-            .id(16L)
+            .id(-414L)
             .isTextArea(true)
             .valueBinding("description")
             .concept(descriptionConcept)
@@ -340,7 +341,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldText commentsField = CustomFieldText.builder()
             .label("recordingunit.field.comments")
             .isSystemField(true)
-            .id(17L)
+            .id(-415L)
             .isTextArea(true)
             .valueBinding("comments")
             .concept(commentsConcept)
@@ -351,7 +352,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectOneFromFieldCode chronologicalAttributionField =  CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.chronologicalAttribution")
             .isSystemField(true)
-            .id(18L)
+            .id(-416L)
             .valueBinding("chronologicalAttribution")
             .concept(chronologicalAttributionConcept)
             .build();
@@ -361,7 +362,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldInteger taqField =  CustomFieldInteger.builder()
             .label("specimen.field.taq")
             .isSystemField(true)
-            .id(19L)
+            .id(-417L)
             .valueBinding("taq")
             .maxValue(Integer.MAX_VALUE)
             .minValue(0)
@@ -373,7 +374,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldInteger tpqField =  CustomFieldInteger.builder()
             .label("specimen.field.tpq")
             .isSystemField(true)
-            .id(20L)
+            .id(-418L)
             .maxValue(Integer.MAX_VALUE)
             .minValue(Integer.MIN_VALUE)
             .valueBinding("tpq")
@@ -385,7 +386,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldInteger numberOfElementField =  CustomFieldInteger.builder()
             .label("specimen.field.numberOfElement")
             .isSystemField(true)
-            .id(21L)
+            .id(-419L)
             .maxValue(Integer.MAX_VALUE)
             .minValue(0)
             .valueBinding("numberOfElements")
@@ -397,7 +398,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldMeasurement weightField =  CustomFieldMeasurement.builder()
             .label("specimen.field.weight")
             .isSystemField(true)
-            .id(22L)
+            .id(-420L)
             .unit(new UnitDefinition(
                     null,
                     null,
@@ -416,7 +417,7 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultipleContainer containerField =  CustomFieldSelectMultipleContainer.builder()
             .label("specimen.field.containers")
             .isSystemField(true)
-            .id(23L)
+            .id(-421L)
             .valueBinding("containers")
             .concept(containerConcept)
             .build();
@@ -431,9 +432,24 @@ public abstract class SpecimenForm {
     protected static CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
             .label("specimen.field.phases")
             .isSystemField(true)
-            .id(24L)
+            .id(-422L)
             .valueBinding("phases")
             .concept(phasesConcept)
+            .build();
+
+    protected static Concept actionUnitConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("specimen.actionUnit")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
+            .label("specimen.field.actionUnit")
+            .isSystemField(true)
+            .id(-423L)
+            .valueBinding("actionUnit")
+            .concept(actionUnitConcept)
             .build();
 
 

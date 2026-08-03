@@ -176,7 +176,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     public static final CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
-            .id(1L)
+            .id(-201L)
             .isSystemField(true)
             .valueBinding("category")
             .styleClass("mr-2 spatial-unit-type-chip")
@@ -192,7 +192,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     public static final CustomFieldText NAME_FIELD =  CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
-            .id(2L)
+            .id(-202L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
             .build();
@@ -202,7 +202,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     public static final CustomFieldText CODE_FIELD =  CustomFieldText.builder()
             .label("common.label.code")
             .isSystemField(true)
-            .id(9L)
+            .id(-203L)
             .valueBinding("code")
             .concept(CODE_CONCEPT)
             .build();
@@ -214,7 +214,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .isSystemField(true)
             .valueBinding("address")
             .concept(ADDRESS_CONCEPT)
-            .id(3L)
+            .id(-204L)
             .build();
 
     @Transient

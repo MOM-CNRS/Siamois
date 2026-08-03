@@ -1,5 +1,6 @@
 package fr.siamois.ui.viewmodel.fieldanswer;
 
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import lombok.Data;
@@ -19,4 +20,5 @@ public class CustomFieldAnswerSelectMultiplePhaseViewModel extends CustomFieldAn
     private String newTitle;
     private Integer newOrderNumber;
     private ConceptAutocompleteDTO newType;
+    private ActionUnitSummaryDTO newActionUnit;
 }

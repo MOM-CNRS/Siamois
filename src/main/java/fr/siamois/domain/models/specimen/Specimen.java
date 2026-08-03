@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
@@ -155,6 +156,10 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_recording_unit_id")
     protected RecordingUnit recordingUnit;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_action_unit_id")
+    protected ActionUnit actionUnit;
 
     @Column(name = "identifier")
     protected Integer identifier;

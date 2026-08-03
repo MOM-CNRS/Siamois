@@ -1,6 +1,7 @@
 package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
@@ -48,35 +49,39 @@ public class ContainerTableDefinitionFactory {
     private static void applyTo(TableDefinition definition) {
         CustomFieldText identifierField = CustomFieldText.builder()
                 .label(CONTAINER_FIELD_IDENTIFIER).isSystemField(true).isTextArea(false)
-                .id(1L).valueBinding(IDENTIFIER).concept(systemConcept("container.identifier")).build();
+                .id(-651L).valueBinding(IDENTIFIER).concept(systemConcept("container.identifier")).build();
 
         CustomFieldSelectOneFromFieldCode typeField = CustomFieldSelectOneFromFieldCode.builder()
-                .label("container.field.type").isSystemField(true).id(2L)
+                .label("container.field.type").isSystemField(true).id(-652L)
                 .valueBinding("type").fieldCode(Container.TYPE_FIELD)
                 .styleClass("mr-2 container-type-chip").concept(systemConcept("container.type")).build();
 
         CustomFieldSelectOneSpatialUnit spatialUnitField = CustomFieldSelectOneSpatialUnit.builder()
                 .label("container.field.spatialUnit").isSystemField(true)
-                .id(3L).valueBinding("spatialUnit").concept(systemConcept("container.spatialUnit")).build();
+                .id(-653L).valueBinding("spatialUnit").concept(systemConcept("container.spatialUnit")).build();
+
+        CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
+                .label("container.field.actionUnit").isSystemField(true)
+                .id(-658L).valueBinding("actionUnit").concept(systemConcept("container.actionUnit")).build();
 
         CustomFieldMeasurement lengthField = CustomFieldMeasurement.builder()
                 .label("container.field.length").isSystemField(true)
-                .id(4L).valueBinding("length").concept(systemConcept("container.length"))
+                .id(-654L).valueBinding("length").concept(systemConcept("container.length"))
                 .unit(centimetres()).build();
 
         CustomFieldMeasurement widthField = CustomFieldMeasurement.builder()
                 .label("container.field.width").isSystemField(true)
-                .id(5L).valueBinding("width").concept(systemConcept("container.width"))
+                .id(-655L).valueBinding("width").concept(systemConcept("container.width"))
                 .unit(centimetres()).build();
 
         CustomFieldMeasurement heightField = CustomFieldMeasurement.builder()
                 .label("container.field.height").isSystemField(true)
-                .id(6L).valueBinding("height").concept(systemConcept("container.height"))
+                .id(-656L).valueBinding("height").concept(systemConcept("container.height"))
                 .unit(centimetres()).build();
 
         CustomFieldMeasurement weightField = CustomFieldMeasurement.builder()
                 .label("container.field.weight").isSystemField(true)
-                .id(7L).valueBinding("weight").concept(systemConcept("container.weight"))
+                .id(-657L).valueBinding("weight").concept(systemConcept("container.weight"))
                 .unit(unit("Kilogramme", "kg", UnitDefinition.Dimension.MASS, 1000.0)).build();
 
         definition.setCommandLinkColumn(panelLinkColumn(CONTAINER_FIELD_IDENTIFIER, "bi bi-box-seam",
@@ -86,6 +91,7 @@ public class ContainerTableDefinitionFactory {
                 column(identifierField).sortable(true).filterable(true).visible(true).required(true).build(),
                 column(typeField).visible(true).required(true).build(),
                 column(spatialUnitField).visible(true).build(),
+                column(actionUnitField).visible(true).build(),
                 column(lengthField).build(),
                 column(widthField).build(),
                 column(heightField).build(),

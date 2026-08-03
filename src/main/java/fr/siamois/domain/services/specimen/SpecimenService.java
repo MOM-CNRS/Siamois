@@ -167,6 +167,7 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setCategory(specimen.getCategory());
         managedSpecimen.setIsolationNumber(specimen.getIsolationNumber());
         managedSpecimen.setNumberOfElements(specimen.getNumberOfElements());
+        managedSpecimen.setActionUnit(specimen.getActionUnit());
         if (managedSpecimen.getCreatedBy() == null) {
             managedSpecimen.setCreatedBy(specimen.getCreatedBy());
         }

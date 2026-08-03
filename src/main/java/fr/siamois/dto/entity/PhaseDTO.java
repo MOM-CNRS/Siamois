@@ -26,6 +26,7 @@ public class PhaseDTO extends AbstractEntityDTO {
     public static List<String> getBindableFieldNames() {
         return List.of(
                 "identifier",
+                "actionUnit",
                 "type",
                 "title",
                 "description",
