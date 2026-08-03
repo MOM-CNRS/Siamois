@@ -396,6 +396,100 @@ class TableFieldConfigServiceImplTest {
         assertThat(result).isEmpty();
     }
 
+    // ========== Concept-id-keyed overloads ==========
+    // These skip the label round-trip (Concept -> label -> re-resolved Concept) that the
+    // String-keyed overloads above go through via findValueConcept/conceptRepository. They must
+    // never touch labelService/conceptRepository at all.
+
+    @Test
+    void findFormConfig_byId_shouldReturnTheDefaultConfigWhenTypeConceptIdIsNull() {
+        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
+
+        assertThat(result).contains(defaultConfig);
+        verifyNoInteractions(labelService);
+        verify(conceptRepository, never()).findAllByFieldContextAndExactLabel(any(), any(), any());
+    }
+
+    @Test
+    void findFormConfig_byId_shouldReturnTheTypeOwnConfig() {
+        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
+
+        assertThat(result).contains(ceramiqueConfig);
+        verifyNoInteractions(labelService);
+        verify(conceptRepository, never()).findAllByFieldContextAndExactLabel(any(), any(), any());
+    }
+
+    @Test
+    void findFormConfig_byId_shouldReturnEmptyWhenTypeHasNoConfiguration() {
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, 999L))
+                .thenReturn(Optional.empty());
+
+        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, 999L);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getFieldsConfig_byId_shouldListTheSystemFieldsOfTheTableEvenWhenNothingIsConfigured() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD, CATEGORY_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        List<TypeFieldFormConfig> fields =
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null).getFields();
+
+        assertThat(fields).extracting(TypeFieldFormConfig::getName)
+                .containsExactly(IDENTIFIER_FIELD, CATEGORY_FIELD);
+        verifyNoInteractions(labelService);
+    }
+
+    @Test
+    void getFieldsConfig_byId_shouldOverrideInheritedDefaultFieldsWithTheTypeOwnOnes() {
+        CustomField shared = textField(1L, "Description", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
+                .thenReturn(List.of(fieldConfig(defaultConfig, shared, true, false)));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, shared, false, true)));
+
+        List<TypeFieldFormConfig> fields =
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID).getFields();
+
+        assertThat(fields).hasSize(1);
+        assertThat(fields.get(0).getName()).isEqualTo("Description");
+        assertThat(fields.get(0).isActive()).isFalse();
+        assertThat(fields.get(0).isMandatory()).isTrue();
+        verifyNoInteractions(labelService);
+    }
+
+    @Test
+    void getActiveAdditionalFields_byId_shouldReturnOnlyActiveNonSystemFields() {
+        CustomField activeAdditional = textField(9L, "Couleur", false);
+        CustomField inactiveAdditional = textField(8L, "Poids", false);
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(
+                fieldConfig(defaultConfig, activeAdditional, true, false),
+                fieldConfig(defaultConfig, inactiveAdditional, false, false)
+        ));
+
+        List<CustomField> fields =
+                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
+
+        assertThat(fields).containsExactly(activeAdditional);
+        verifyNoInteractions(labelService);
+    }
+
+    @Test
+    void getActiveAdditionalFields_byId_shouldReadFieldsFromTheGivenTypeConceptId() {
+        CustomField additional = textField(9L, "Couleur", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
+
+        List<CustomField> fields =
+                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
+
+        assertThat(fields).containsExactly(additional);
+    }
+
     @Test
     void getFieldsConfig_shouldMapVocabularyFieldsToTheirTypeAndSource() {
         CustomFieldSelectOneFromFieldCode vocabularyField = CustomFieldSelectOneFromFieldCode.builder()
