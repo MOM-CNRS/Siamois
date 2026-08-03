@@ -3,6 +3,7 @@ package fr.siamois.domain.models.recordingunit.form;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customform.*;
+import fr.siamois.ui.form.dto.*;
 
 import java.util.List;
 
@@ -32,13 +33,11 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
         throw new UnsupportedOperationException();
     }
 
-    public static CustomForm build() {
+    public static FormUiDto build() {
         EnabledWhenJson erosionEnabledWhen = erosionEnabledWhen();
         DependsOnJson interpretationDependsOnNature = dependsOnNature();
 
-        return new CustomForm.Builder()
-                .name("Details tab form")
-                .description("Contains the main form")
+        return new FormUiDto.Builder()
                 .addPanel(generalPanel(erosionEnabledWhen, interpretationDependsOnNature))
                 .addPanel(chronologyPanel())
                 .addPanel(measurementsPanel())
@@ -46,89 +45,89 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .build();
     }
 
-    private static CustomFormPanel generalPanel(EnabledWhenJson erosionEnabledWhen, DependsOnJson interpretationDependsOnNature) {
-        return new CustomFormPanel.Builder()
+    private static CustomFormPanelUiDto generalPanel(EnabledWhenJson erosionEnabledWhen, DependsOnJson interpretationDependsOnNature) {
+        return new CustomFormPanelUiDto.Builder()
                 .name(COMMON_HEADER_GENERAL)
                 .isSystemPanel(true)
                 .addRow(
-                        new CustomRow.Builder()
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(SPATIAL_UNIT_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(PARENTS_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(CHILDREN_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(FULL_IDENTIFIER_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(RECORDING_UNIT_TYPE_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(NATURE_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(GEOMORPHO_AGENT_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(INTERPRETATION_FIELD)
+                        new CustomRowUiDto.Builder()
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(SPATIAL_UNIT_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(PARENTS_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(CHILDREN_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(FULL_IDENTIFIER_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(RECORDING_UNIT_TYPE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(NATURE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(GEOMORPHO_AGENT_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(INTERPRETATION_FIELD)
                                         .dependsOnSpec(interpretationDependsOnNature).build())
                                 .build()
                 )
                 .addRow(
-                        new CustomRow.Builder()
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_SHAPE_FIELD)
+                        new CustomRowUiDto.Builder()
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_SHAPE_FIELD)
                                         .enabledWhenSpec(erosionEnabledWhen).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_PROFILE_FIELD)
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_PROFILE_FIELD)
                                         .enabledWhenSpec(erosionEnabledWhen).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_ORIENTATION_FIELD)
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_ORIENTATION_FIELD)
                                         .enabledWhenSpec(erosionEnabledWhen).build())
                                 .build()
                 )
                 .addRow(
-                        new CustomRow.Builder()
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(DESCRIPTION_FIELD).build())
+                        new CustomRowUiDto.Builder()
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(DESCRIPTION_FIELD).build())
                                 .build()
                 )
                 .addRow(
-                        new CustomRow.Builder()
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(COMMENTS_FIELD).build())
+                        new CustomRowUiDto.Builder()
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(COMMENTS_FIELD).build())
                                 .build()
                 )
                 .build();
     }
 
-    private static CustomFormPanel chronologyPanel() {
-        return new CustomFormPanel.Builder()
+    private static CustomFormPanelUiDto chronologyPanel() {
+        return new CustomFormPanelUiDto.Builder()
                 .name("recordingunit.panel.chronology")
                 .isSystemPanel(true)
                 .addRow(
-                        new CustomRow.Builder()
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CHRONOLOGICAL_PHASE_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(TPQ_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(TAQ_FIELD).build())
+                        new CustomRowUiDto.Builder()
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CHRONOLOGICAL_PHASE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(TPQ_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(TAQ_FIELD).build())
                                 .build()
                 )
                 .addRow(
-                        new CustomRow.Builder()
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(PHASES_FIELD).build())
+                        new CustomRowUiDto.Builder()
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(PHASES_FIELD).build())
                                 .build()
                 )
                 .build();
     }
 
-    private static CustomFormPanel measurementsPanel() {
-        return new CustomFormPanel.Builder()
+    private static CustomFormPanelUiDto measurementsPanel() {
+        return new CustomFormPanelUiDto.Builder()
                 .name("recordingunit.panel.measurements")
                 .isSystemPanel(true)
                 .canUserAddField(true)
                 .addRow(
-                        new CustomRow.Builder()
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_6).field(Z_INF_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_6).field(Z_SUP_FIELD).build())
+                        new CustomRowUiDto.Builder()
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_6).field(Z_INF_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_6).field(Z_SUP_FIELD).build())
                                 .build()
                 )
                 .build();
     }
 
-    private static CustomFormPanel datesPanel() {
-        return new CustomFormPanel.Builder()
+    private static CustomFormPanelUiDto datesPanel() {
+        return new CustomFormPanelUiDto.Builder()
                 .name(COMMON_HEADER_GENERAL)
                 .isSystemPanel(true)
                 .addRow(
-                        new CustomRow.Builder()
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(OPENING_DATE_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CLOSING_DATE_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(AUTHOR_FIELD).build())
-                                .addColumn(new CustomCol.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CONTRIBUTORS_FIELD).build())
+                        new CustomRowUiDto.Builder()
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(OPENING_DATE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CLOSING_DATE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(AUTHOR_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CONTRIBUTORS_FIELD).build())
                                 .build()
                 )
                 .build();

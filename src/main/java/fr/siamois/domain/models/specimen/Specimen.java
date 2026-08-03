@@ -11,7 +11,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -244,11 +244,11 @@ public class Specimen extends TraceableEntity implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomForm DETAILS_FORM = SpecimenDetailsForm.build();
+    public static final FormUiDto DETAILS_FORM = SpecimenDetailsForm.build();
 
     @Transient
     @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = SpecimenNewUnitForm.build();
+    public static final FormUiDto NEW_UNIT_FORM = SpecimenNewUnitForm.build();
 
 
 }

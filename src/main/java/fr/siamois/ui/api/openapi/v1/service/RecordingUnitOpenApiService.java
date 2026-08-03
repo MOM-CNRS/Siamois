@@ -68,6 +68,7 @@ import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListRes
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
@@ -312,15 +313,11 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
         }
 
-        CustomForm systemForm = Specimen.NEW_UNIT_FORM;
+        FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(systemForm.getLayout());
-        FormResource formBundle = new FormResource(
-                systemForm.getId(),
-                systemForm.getName(),
-                systemForm.getDescription() != null ? systemForm.getDescription() : "",
-                layoutJson);
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
+        FormResource formBundle = new FormResource(layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -357,9 +354,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        defaultType.setFormBundle(new FormResource(
-                customForm.getId(), customForm.getName(),
-                customForm.getDescription() != null ? customForm.getDescription() : "", layoutJson));
+        defaultType.setFormBundle(new FormResource(layoutJson));
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -387,9 +382,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        type.setFormBundle(new FormResource(
-                customForm.getId(), customForm.getName(),
-                customForm.getDescription() != null ? customForm.getDescription() : "", layoutJson));
+        type.setFormBundle(new FormResource(layoutJson));
 
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
                 userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
@@ -426,7 +419,7 @@ public class RecordingUnitOpenApiService {
         }
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
-            CustomForm systemForm = ActionUnit.NEW_UNIT_FORM;
+            FormUiDto systemForm = ActionUnit.NEW_UNIT_FORM;
             FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
@@ -438,15 +431,11 @@ public class RecordingUnitOpenApiService {
     private ProjectFormData buildProjectFormBundle(InstitutionDTO institution,
                                                    PersonDTO personDto,
                                                    String lang) {
-        CustomForm systemForm = ActionUnit.NEW_UNIT_FORM;
+        FormUiDto systemForm = ActionUnit.NEW_UNIT_FORM;
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(systemForm.getLayout());
-        FormResource formBundle = new FormResource(
-                systemForm.getId(),
-                systemForm.getName(),
-                systemForm.getDescription() != null ? systemForm.getDescription() : "",
-                layoutJson);
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
+        FormResource formBundle = new FormResource(layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -480,8 +469,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        FormResource formBundle = new FormResource(
-                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
+        FormResource formBundle = new FormResource(layoutJson);
 
         RecordingUnitDTO shell = new RecordingUnitDTO();
         shell.setType(typeDto);
@@ -512,13 +500,11 @@ public class RecordingUnitOpenApiService {
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
         ResolvedConceptResource typeResource = toConceptResource(typeDto, lang);
 
-        CustomForm customForm = Specimen.NEW_UNIT_FORM;
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
+        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        FormResource formBundle = new FormResource(
-                customForm.getId(), customForm.getName(),
-                customForm.getDescription() != null ? customForm.getDescription() : "", layoutJson);
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
+        FormResource formBundle = new FormResource(layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -547,8 +533,8 @@ public class RecordingUnitOpenApiService {
             return resource;
         }
 
-        CustomForm customForm = Specimen.DETAILS_FORM;
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FormUiDto systemForm = Specimen.DETAILS_FORM;
+        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);

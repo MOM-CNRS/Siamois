@@ -6,8 +6,8 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -34,7 +34,6 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -391,9 +390,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     @Override
     public void initForms(boolean forceInit) {
         String typeName = resolveTypeName();
-        CustomForm base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings(typeName));
-        CustomForm form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(typeName));
-        detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
+        FormUiDto base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings(typeName));
+        FormUiDto form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(typeName));
+        detailsForm = form;
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);
@@ -418,9 +417,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .collect(Collectors.toSet());
     }
 
-    private List<CustomCol> additionalFields(String typeName) {
+    private List<CustomColUiDto> additionalFields(String typeName) {
         return tableFieldConfigService.getActiveAdditionalFields(unit.getActionUnit().getId(), ConfigurableTable.UE, typeName).stream()
-                .map(field -> new CustomCol.Builder().field(field).build())
+                .map(field -> new CustomColUiDto.Builder().field(field).build())
                 .toList();
     }
 

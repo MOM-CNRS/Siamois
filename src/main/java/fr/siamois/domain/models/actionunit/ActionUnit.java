@@ -9,7 +9,7 @@ import fr.siamois.domain.models.actionunit.form.ActionUnitNewForm;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -64,9 +64,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
             inverseJoinColumns = {@JoinColumn(name = "fk_document_id")}
     )
     private Set<Document> documents = new HashSet<>();
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "pk.actionUnit")
-    private Set<ActionUnitFormMapping> formsAvailable = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -217,12 +214,12 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = ActionUnitNewForm.build();
+    public static final FormUiDto NEW_UNIT_FORM = ActionUnitNewForm.build();
 
 
     @Transient
     @JsonIgnore
-    public static final CustomForm DETAILS_FORM = ActionUnitDetailsForm.build();
+    public static final FormUiDto DETAILS_FORM = ActionUnitDetailsForm.build();
 
     public String getSpatialContextNames() {
         if (spatialContext == null || spatialContext.isEmpty()) {

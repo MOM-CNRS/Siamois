@@ -845,7 +845,7 @@ class RecordingUnitsControllerApiTest {
 
         ResolvedConceptResource type = new ResolvedConceptResource();
         type.setId("8");
-        FormResource bundle = new FormResource(50L, "Mon formulaire", "D", "{\"layout\":[]}");
+        FormResource bundle = new FormResource("{\"layout\":[]}");
         FieldResource field = new FieldResource("12", "fields", "Libellé", "TEXT", null, false, null, null);
         Map<String, FieldResource> fields = Map.of("12", field);
         RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, bundle, fields);
@@ -856,8 +856,7 @@ class RecordingUnitsControllerApiTest {
                         .param("organizationId", "10")
                         .param("recordingUnitTypeConceptId", "8"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.form.resourceId").value(50))
-                .andExpect(jsonPath("$.data.form.name").value("Mon formulaire"))
+                .andExpect(jsonPath("$.data.form.layoutJson").value("{\"layout\":[]}"))
                 .andExpect(jsonPath("$.data.fields['12'].id").value("12"))
                 .andExpect(jsonPath("$.data.fields['12'].answerType").value("TEXT"));
     }

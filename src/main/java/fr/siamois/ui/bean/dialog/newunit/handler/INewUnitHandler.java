@@ -2,13 +2,13 @@ package fr.siamois.ui.bean.dialog.newunit.handler;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException;
+import fr.siamois.ui.form.dto.FormUiDto;
 
 import java.util.List;
 
@@ -31,7 +31,7 @@ public interface INewUnitHandler<T extends AbstractEntityDTO> {
     default String styleClassName()     { return kind().getConfig().styleClass(); }
     default String getIcon()            { return kind().getConfig().icon(); }
     default String getAutocompleteClass(){ return kind().getConfig().autocompleteClass(); }
-    default CustomForm formLayout(){ return kind().getConfig().customForm(); }
+    default FormUiDto formLayout(){ return kind().getConfig().customForm(); }
     default String viewUrlFor(Long id){ return kind().getConfig().urlPrefix() + id; }
     default String successMessageCode(){ return kind().getConfig().successMessageCode(); }
 

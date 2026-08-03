@@ -1,31 +1,29 @@
 package fr.siamois.domain.models.specimen.form;
 
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
 
 public class SpecimenNewUnitForm extends SpecimenForm {
 
-    public static CustomForm build() {
-        return new CustomForm.Builder()
-                .name("Details tab form")
-                .description("Contains the main form")
+    public static FormUiDto build() {
+        return new FormUiDto.Builder()
                 .addPanel(
-                        new CustomFormPanel.Builder()
+                        new CustomFormPanelUiDto.Builder()
                                 .name("common.header.general")
                                 .isSystemPanel(true)
                                 .addRow(
-                                        new CustomRow.Builder()
-                                                .addColumn(new CustomCol.Builder()
+                                        new CustomRowUiDto.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .isRequired(true)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(authorsField)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .isRequired(true)
                                                         .className(COLUMN_CLASS_NAME)
@@ -34,14 +32,14 @@ public class SpecimenNewUnitForm extends SpecimenForm {
                                                 .build()
                                 )
                                 .addRow(
-                                        new CustomRow.Builder()
-                                                .addColumn(new CustomCol.Builder()
+                                        new CustomRowUiDto.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .isRequired(true)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(specimenCategoryField)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .isRequired(true)
                                                         .className(COLUMN_CLASS_NAME)

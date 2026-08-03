@@ -1,11 +1,16 @@
 package fr.siamois.domain.models.form.customform;
 
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Rebuilds a {@link CustomForm} as a base form plus a trailing panel of additional fields.
+ * Rebuilds a {@link FormUiDto} as a base form plus a trailing panel of additional fields.
  * <p>
  * Never mutates the base form or any of its existing panels/rows/cols — several base forms
  * (e.g. {@code RecordingUnit.DETAILS_FORM}) are {@code public static final} shared singletons,
@@ -22,63 +27,59 @@ public final class CustomFormComposer {
      * @param baseForm             the form to start from, left untouched
      * @param additionalPanelName  name/label key of the trailing panel holding the additional columns
      * @param additionalColumns    columns to append; if empty, {@code baseForm} is returned as-is
-     * @return a new {@link CustomForm} equal to {@code baseForm} plus one trailing panel containing
+     * @return a new {@link FormUiDto} equal to {@code baseForm} plus one trailing panel containing
      * {@code additionalColumns}, or {@code baseForm} itself when there is nothing to add
      */
-    public static CustomForm withAdditionalFields(CustomForm baseForm, String additionalPanelName, List<CustomCol> additionalColumns) {
+    public static FormUiDto withAdditionalFields(FormUiDto baseForm, String additionalPanelName, List<CustomColUiDto> additionalColumns) {
         if (additionalColumns == null || additionalColumns.isEmpty()) {
             return baseForm;
         }
 
-        List<CustomFormPanel> panels = new ArrayList<>(baseForm.getLayout());
+        List<CustomFormPanelUiDto> panels = new ArrayList<>(baseForm.getLayout());
         panels.add(additionalFieldsPanel(additionalPanelName, additionalColumns));
 
-        return new CustomForm.Builder()
-                .name(baseForm.getName())
-                .description(baseForm.getDescription())
+        return new FormUiDto.Builder()
                 .addPanels(panels)
                 .build();
     }
 
-    private static CustomFormPanel additionalFieldsPanel(String name, List<CustomCol> additionalColumns) {
-        return new CustomFormPanel.Builder()
+    private static CustomFormPanelUiDto additionalFieldsPanel(String name, List<CustomColUiDto> additionalColumns) {
+        return new CustomFormPanelUiDto.Builder()
                 .name(name)
                 .isSystemPanel(false)
-                .addRow(new CustomRow.Builder().addColumns(additionalColumns).build())
+                .addRow(new CustomRowUiDto.Builder().addColumns(additionalColumns).build())
                 .build();
     }
 
     /**
      * @param baseForm              the form to start from, left untouched
-     * @param valueBindingsToRemove {@link CustomCol#getField()}'s {@code valueBinding}s to drop;
+     * @param valueBindingsToRemove {@link CustomColUiDto#getField()}'s {@code valueBinding}s to drop;
      *                              if empty, {@code baseForm} is returned as-is
-     * @return a new {@link CustomForm} with any column whose field's valueBinding is in
+     * @return a new {@link FormUiDto} with any column whose field's valueBinding is in
      * {@code valueBindingsToRemove} removed (rows left empty by the removal are dropped too), or
      * {@code baseForm} itself when there is nothing to remove
      */
-    public static CustomForm withoutFields(CustomForm baseForm, Set<String> valueBindingsToRemove) {
+    public static FormUiDto withoutFields(FormUiDto baseForm, Set<String> valueBindingsToRemove) {
         if (valueBindingsToRemove == null || valueBindingsToRemove.isEmpty()) {
             return baseForm;
         }
 
-        List<CustomFormPanel> panels = baseForm.getLayout().stream()
+        List<CustomFormPanelUiDto> panels = baseForm.getLayout().stream()
                 .map(panel -> withoutFields(panel, valueBindingsToRemove))
                 .toList();
 
-        return new CustomForm.Builder()
-                .name(baseForm.getName())
-                .description(baseForm.getDescription())
+        return new FormUiDto.Builder()
                 .addPanels(panels)
                 .build();
     }
 
-    private static CustomFormPanel withoutFields(CustomFormPanel panel, Set<String> valueBindingsToRemove) {
-        List<CustomRow> rows = panel.getRows().stream()
+    private static CustomFormPanelUiDto withoutFields(CustomFormPanelUiDto panel, Set<String> valueBindingsToRemove) {
+        List<CustomRowUiDto> rows = panel.getRows().stream()
                 .map(row -> withoutFields(row, valueBindingsToRemove))
                 .filter(row -> !row.getColumns().isEmpty())
                 .toList();
 
-        CustomFormPanel copy = new CustomFormPanel();
+        CustomFormPanelUiDto copy = new CustomFormPanelUiDto();
         copy.setName(panel.getName());
         copy.setClassName(panel.getClassName());
         copy.setIsSystemPanel(panel.getIsSystemPanel());
@@ -87,12 +88,12 @@ public final class CustomFormComposer {
         return copy;
     }
 
-    private static CustomRow withoutFields(CustomRow row, Set<String> valueBindingsToRemove) {
-        List<CustomCol> columns = row.getColumns().stream()
+    private static CustomRowUiDto withoutFields(CustomRowUiDto row, Set<String> valueBindingsToRemove) {
+        List<CustomColUiDto> columns = row.getColumns().stream()
                 .filter(col -> !valueBindingsToRemove.contains(col.getField().getValueBinding()))
                 .toList();
 
-        CustomRow copy = new CustomRow();
+        CustomRowUiDto copy = new CustomRowUiDto();
         copy.setColumns(columns);
         return copy;
     }

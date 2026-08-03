@@ -275,7 +275,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = formContextServices.getConversionService().convert(ActionUnit.DETAILS_FORM, FormUiDto.class);
+        detailsForm = ActionUnit.DETAILS_FORM;
         // Init system form answers
         initFormContext(forceInit);
 

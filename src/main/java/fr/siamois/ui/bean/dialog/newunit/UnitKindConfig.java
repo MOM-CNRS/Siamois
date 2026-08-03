@@ -1,6 +1,6 @@
 package fr.siamois.ui.bean.dialog.newunit;
 
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.ui.form.dto.FormUiDto;
 
 public record UnitKindConfig(
         String resourceUri,
@@ -10,5 +10,5 @@ public record UnitKindConfig(
         String autocompleteClass,
         String successMessageCode,
         String urlPrefix,
-        CustomForm customForm
+        FormUiDto customForm
 ) {}

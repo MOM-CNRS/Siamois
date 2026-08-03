@@ -18,4 +18,43 @@ public class CustomColUiDto implements Serializable {
     private EnabledWhenJson enabledWhenSpec;
     private DependsOnJson dependsOnSpec;
 
+    public static class Builder {
+
+        private final CustomColUiDto col = new CustomColUiDto();
+
+        public Builder readOnly(boolean readOnly) {
+            col.setReadOnly(readOnly);
+            return this;
+        }
+
+        public Builder isRequired(boolean isRequired) {
+            col.setRequired(isRequired);
+            return this;
+        }
+
+        public Builder field(CustomField field) {
+            col.setField(field);
+            return this;
+        }
+
+        public Builder className(String className) {
+            col.setClassName(className);
+            return this;
+        }
+
+        public Builder enabledWhenSpec(EnabledWhenJson enabledWhenSpec) {
+            col.setEnabledWhenSpec(enabledWhenSpec);
+            return this;
+        }
+
+        public Builder dependsOnSpec(DependsOnJson dependsOnSpec) {
+            col.setDependsOnSpec(dependsOnSpec);
+            return this;
+        }
+
+        public CustomColUiDto build() {
+            return col;
+        }
+    }
+
 }

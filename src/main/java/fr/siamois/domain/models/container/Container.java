@@ -7,7 +7,7 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.form.ContainerDetailsForm;
 import fr.siamois.domain.models.container.form.ContainerNewUnitForm;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -83,10 +83,10 @@ public class Container extends TraceableEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomForm DETAILS_FORM = ContainerDetailsForm.build();
+    public static final FormUiDto DETAILS_FORM = ContainerDetailsForm.build();
 
     @Transient
     @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = ContainerNewUnitForm.build();
+    public static final FormUiDto NEW_UNIT_FORM = ContainerNewUnitForm.build();
 
 }
