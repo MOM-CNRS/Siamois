@@ -18,4 +18,8 @@ public class VocabularyDTO implements Serializable {
     private String externalVocabularyId;
     private String baseUri;
 
+    public String completeUri() {
+        return String.format("%s?idt=%s", baseUri, externalVocabularyId);
+    }
+
 }
