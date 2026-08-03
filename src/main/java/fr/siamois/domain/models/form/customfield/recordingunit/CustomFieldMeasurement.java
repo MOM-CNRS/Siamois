@@ -4,7 +4,6 @@ import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,7 +17,6 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper=true)
 public class CustomFieldMeasurement extends CustomFieldOnTheFly {
 
     @Column(name = "min_value")
@@ -49,6 +47,13 @@ public class CustomFieldMeasurement extends CustomFieldOnTheFly {
         return "bi bi-rulers";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
 
-
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }
