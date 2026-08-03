@@ -29,19 +29,19 @@ import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerS
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectOnePerson;
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectMultiple;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerAnswerSelectMultiple;
+import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel;
@@ -131,9 +131,9 @@ class CustomFieldAnswerServiceTest {
                 arguments(CustomFieldDateTime.builder().id(3L).build(),
                         moment, CustomFieldAnswerDateTime.class, moment),
                 arguments(CustomFieldSelectOneFromFieldCode.builder().id(4L).build(),
-                        concept, CustomFieldAnswerSelectOneFromFieldCode.class, concept),
+                        concept, CustomFieldAnswerSelectOneFromFieldAnswerCode.class, concept),
                 arguments(CustomFieldSelectMultipleFromFieldCode.builder().id(5L).build(),
-                        new ArrayList<>(List.of(concept)), CustomFieldAnswerSelectMultiple.class, List.of(concept)),
+                        new ArrayList<>(List.of(concept)), CustomFieldAnswerAnswerSelectMultiple.class, List.of(concept)),
                 arguments(CustomFieldSelectOnePerson.builder().id(6L).build(),
                         person, CustomFieldAnswerSelectOnePerson.class, person),
                 arguments(CustomFieldSelectMultiplePerson.builder().id(7L).build(),

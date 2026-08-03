@@ -24,4 +24,7 @@ public class ConceptFieldFormConfig extends FieldFormConfig {
     @JoinColumn(name = "fk_collection_id")
     private ConceptCollection collection;
 
+    public ConceptFieldFormConfig(FieldFormConfig fieldFormConfig) {
+        super(fieldFormConfig);
+    }
 }

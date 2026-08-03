@@ -1,9 +1,9 @@
 package fr.siamois.infrastructure.database.repositories.vocabulary.dto;
 
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.ConceptLabelDTO;
-import fr.siamois.dto.entity.ConceptPrefLabelDTO;
-import fr.siamois.dto.entity.VocabularyDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;

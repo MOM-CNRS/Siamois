@@ -7,9 +7,9 @@ import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasur
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
-import fr.siamois.dto.entity.VocabularyDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.customfield.CustomFieldSeederSpec;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;

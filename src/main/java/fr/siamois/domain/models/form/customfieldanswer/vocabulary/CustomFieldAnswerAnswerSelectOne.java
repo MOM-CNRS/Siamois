@@ -13,7 +13,7 @@ import java.util.Objects;
 @Data
 @Entity
 @DiscriminatorValue("SELECT_ONE")
-public class CustomFieldAnswerSelectOne extends CustomFieldSelectConcept {
+public class CustomFieldAnswerAnswerSelectOne extends CustomFieldAnswerSelectConcept {
 
     @Override
     public Object getValue() {

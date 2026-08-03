@@ -1,6 +1,7 @@
-package fr.siamois.dto.entity;
+package fr.siamois.dto.entity.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.label.LabelType;
+import fr.siamois.dto.entity.AbstractEntityDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

@@ -54,6 +54,16 @@ public class FieldFormConfig {
     @Column(name = "position", columnDefinition = "INT DEFAULT 0")
     protected int position = 0;
 
+    public FieldFormConfig(FieldFormConfig fieldFormConfig) {
+        this.id = fieldFormConfig.getId();
+        this.field = fieldFormConfig.getField();
+        this.formConfig = fieldFormConfig.getFormConfig();
+        this.isActive = fieldFormConfig.isActive();
+        this.isMandatory = fieldFormConfig.isMandatory();
+        this.isInstitutionLocked = fieldFormConfig.isInstitutionLocked();
+        this.position = fieldFormConfig.getPosition();
+    }
+
     public void setField(@NonNull CustomField field) {
         this.field = field;
         this.id.customFieldId = field.getId();

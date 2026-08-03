@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
