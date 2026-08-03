@@ -10,7 +10,6 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 
 @Getter
@@ -35,13 +34,11 @@ public class CustomFieldDateTime extends CustomField {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof CustomFieldDateTime that)) return false;
-        if (!super.equals(o)) return false;
-        return Objects.equals(showTime, that.showTime) && Objects.equals(min, that.min) && Objects.equals(max, that.max);
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), showTime, min, max);
+        return super.hashCode();
     }
 }
