@@ -1390,16 +1390,6 @@ class TableFieldConfigServiceImplTest {
         return prefLabel;
     }
 
-    /**
-     * The system fields of a table as they exist once {@code SystemFieldInitializer} has run: the
-     * definitions {@link SystemFieldCatalog} declares, each given the database id it would have been
-     * persisted with. A field the table defines but that is left out here stands for one defined
-     * after the last startup, which has no row yet.
-     *
-     * @param table  the table whose system fields are persisted
-     * @param labels the labels of the ones to persist, in any order
-     * @return the persisted fields, by label
-     */
     private Map<String, CustomField> givenSystemFieldsOf(ConfigurableTable table, String... labels) {
         Set<String> wanted = Set.of(labels);
         Map<String, CustomField> rows = new LinkedHashMap<>();

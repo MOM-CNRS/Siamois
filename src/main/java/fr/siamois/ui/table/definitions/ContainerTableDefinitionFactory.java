@@ -92,7 +92,6 @@ public class ContainerTableDefinitionFactory {
                 column(weightField).build());
     }
 
-    /** The unit the dimensions of a container are given in. */
     private static UnitDefinition centimetres() {
         return unit(CENTIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01);
     }

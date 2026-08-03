@@ -98,10 +98,6 @@ public class NewFieldManagerBean {
                 .orElse(null);
     }
 
-    /**
-     * Records the newly created field on the recording unit it was created from. Only recording
-     * units own measurement fields; forms of other entities simply create a shared field.
-     */
     private void linkToOwner(CustomFieldMeasurement created) {
         if (owner instanceof RecordingUnitDTO recordingUnit && recordingUnit.getId() != null) {
             recordingUnitService.addMeasurementField(recordingUnit.getId(), created);
@@ -112,10 +108,6 @@ public class NewFieldManagerBean {
         attachFieldToPanel(panel, field);
     }
 
-    /**
-     * Common logic to inject a field into the UI tree.
-     * Logic: If a row exists, add to last row. Otherwise, create a new row.
-     */
     private void attachFieldToPanel(CustomFormPanelUiDto panel, CustomFieldMeasurement field) {
         if (panel.getRows() == null) {
             panel.setRows(new ArrayList<>());
@@ -160,10 +152,6 @@ public class NewFieldManagerBean {
         }
     }
 
-    /**
-     * Helper to handle column removal and row cleanup.
-     * Returns true if the column was found and removed.
-     */
     private boolean processRowRemoval(Iterator<CustomRowUiDto> rowIterator, CustomColUiDto colToRemove) {
         CustomRowUiDto row = rowIterator.next();
 

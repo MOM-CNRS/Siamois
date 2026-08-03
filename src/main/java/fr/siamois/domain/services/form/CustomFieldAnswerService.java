@@ -136,14 +136,6 @@ public class CustomFieldAnswerService {
         return result;
     }
 
-    /**
-     * Builds the view model for a saved additional-field answer. Scoped to the field types
-     * actually persistable today (see {@link CustomFieldAnswerFactory#ANSWER_ENTITY_CREATORS}),
-     * rather than reused generically: {@code CustomFieldAnswer}-side value types (e.g.
-     * {@code LocalDateTime}) don't always match what a view model expects (e.g. the system-field
-     * date/time handlers expect {@code OffsetDateTime}), so guessing a conversion for an
-     * unsupported type would risk a wrong cast instead of just not showing that field's value.
-     */
     private CustomFieldAnswerViewModel toViewModel(CustomField field, CustomFieldAnswer answer) {
         CustomFieldAnswerViewModel viewModel = CustomFieldAnswerFactory.instantiateAnswerForField(field);
         if (viewModel == null) return null;
@@ -168,14 +160,12 @@ public class CustomFieldAnswerService {
         return viewModel;
     }
 
-    /** Identifies fields in the logs by what tells them apart in the database. */
     private static String fieldIdsOf(Collection<CustomField> fields) {
         return fields.stream()
                 .map(field -> field.getId() + " (" + field.getLabel() + ")")
                 .collect(Collectors.joining(", ", "[", "]"));
     }
 
-    /** Mirrors {@link fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel#resolveTypeName()}. */
     private String typeNameOf(RecordingUnitDTO recordingUnitDTO) {
         return recordingUnitDTO.getType() != null
                 ? labelService.findLabelOf(recordingUnitDTO.getType(), currentLang()).getLabel()
@@ -212,12 +202,6 @@ public class CustomFieldAnswerService {
 
     }
 
-    /**
-     * A measurement view model always carries a {@link MeasurementAnswerDTO} — the number and
-     * comment inputs bind straight into it — so an untouched field would otherwise persist an empty
-     * row. Write only once something has been entered, or when a row already exists so that
-     * clearing a value sticks.
-     */
     private void createOrUpdateMeasurementAnswer(CustomFieldAnswerMeasurement answer,
                                                  CustomFieldAnswerMeasurementViewModel viewModel,
                                                  CustomField customField,

@@ -117,10 +117,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return new TypeSummary(typeName, false);
     }
 
-    /**
-     * The names of the types this project configured for a table, i.e. the value concepts its form
-     * configurations carry. The default configuration has no value concept and is not one of them.
-     */
     private Set<String> configuredTypeNames(Long projectId, ConfigurableTable table) {
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
         if (fieldConcept.isEmpty()) return Set.of();
@@ -271,7 +267,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .toList();
     }
 
-    /** The names of the fields a type already carries, system and additional ones alike. */
     private Set<String> configuredFieldNames(Long projectId, ConfigurableTable table, String typeName) {
         Set<String> names = new HashSet<>();
         for (EffectiveField field : effectiveFields(projectId, table, typeName).values()) {
@@ -382,7 +377,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return value != null && value.toLowerCase().contains(lowerCaseNeedle);
     }
 
-    /** Links a custom field to a form config as an additional (non institution-locked) field. */
     private FieldFormConfig linkField(CustomField field, FormConfig formConfig, boolean active, boolean mandatory) {
         FieldFormConfig link = new FieldFormConfig();
         link.setField(field);
@@ -393,11 +387,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return fieldFormConfigRepository.save(link);
     }
 
-    /**
-     * Non-system custom fields the reuse picker can offer, de-duplicated by label. The pool is
-     * scoped to the current user's institution: a field another institution defined is none of this
-     * one's business, and reusing it would link the two institutions' configurations to the same row.
-     */
     private List<CustomField> reusableCatalogFields() {
         Map<String, CustomField> byLabel = new LinkedHashMap<>();
         for (CustomField field : customFieldRepository.findAllReusableByInstitution(currentUser().getInstitution().getId())) {
@@ -408,10 +397,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return List.copyOf(byLabel.values());
     }
 
-    /**
-     * A blank custom field of the subclass matching a UI {@link FieldType}. Only the user-creatable
-     * types are mapped; anything else falls back on a plain text field.
-     */
     private CustomField newCustomFieldOfType(FieldType type) {
         return switch (type) {
             case INTEGER -> CustomFieldInteger.builder().build();
@@ -443,12 +428,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         }
     }
 
-    /**
-     * The fields that apply to a type, keyed by custom field id and in the order the table lays them
-     * out. The table's definition is the source of the list: a system field exists for the screen as
-     * soon as the definition carries it, whether or not anything was ever configured on it. Fields
-     * configured but absent from the definition — the ones added from this screen — come last.
-     */
     private Map<Long, EffectiveField> effectiveFields(Long projectId, ConfigurableTable table, String typeName) {
         Map<Long, FieldFormConfig> stored = storedFields(projectId, table, typeName);
         Map<Long, EffectiveField> fields = new LinkedHashMap<>();
@@ -464,10 +443,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return fields;
     }
 
-    /**
-     * The configurations stored for a type, keyed by custom field id: the default configuration's
-     * ones first, then the type's own ones, which replace the inherited entry for the same field.
-     */
     private Map<Long, FieldFormConfig> storedFields(Long projectId, ConfigurableTable table, String typeName) {
         Map<Long, FieldFormConfig> fields = new LinkedHashMap<>();
         if (!DEFAULT_TYPE.equals(typeName)) {
@@ -486,15 +461,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private record FormField(CustomField field, boolean required) {
     }
 
-    /**
-     * The system fields of a table, in the order its definition lays them out. The definition
-     * ({@link SystemFieldCatalog}) says which fields exist and whether the table requires them; the
-     * rows returned are the persistent ones {@code SystemFieldInitializer} gives them at startup,
-     * because a configuration links to a field by foreign key and cannot point at a definition.
-     * <p>
-     * A field the initializer has not created yet is skipped rather than shown: the screen would
-     * offer to configure something no configuration could be saved for.
-     */
     private List<FormField> systemFields(ConfigurableTable table) {
         Map<String, CustomField> persisted = new HashMap<>();
         customFieldRepository.findAllSystemFields()
@@ -542,15 +508,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return Optional.of(createFormConfig(projectId, table, typeName));
     }
 
-    /**
-     * Applies a change to the type's configuration of a field. The row is created when the field is
-     * still configured nowhere — a system field the form declares but nobody ever touched — and when
-     * it is only inherited from the default configuration, which must not be edited in place or the
-     * change would leak to every other type.
-     * <p>
-     * A field the institution locked is left untouched: its state can only be changed from the
-     * (not yet implemented) institution-level screens.
-     */
     private void applyFieldChange(Long projectId, ConfigurableTable table, String typeName, String fieldName,
                                   Consumer<FieldFormConfig> change) {
         Optional<EffectiveField> target = effectiveFields(projectId, table, typeName).values().stream()
@@ -583,11 +540,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return field.stored() != null && owner.getId().equals(field.stored().getFormConfig().getId());
     }
 
-    /**
-     * Gives the type its own configuration row for a field, starting from the state the field
-     * currently shows — the values it inherits from the default configuration, or the ones the form
-     * declares when nothing was ever stored for it.
-     */
     private FieldFormConfig materialize(EffectiveField field, FormConfig owner) {
         FieldFormConfig config = new FieldFormConfig();
         config.setField(field.field());
@@ -623,11 +575,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return formConfigRepository.save(config);
     }
 
-    /**
-     * The concept the table's type field is configured on, i.e. the root of the vocabulary its
-     * values are taken from. Empty when the project has no configuration for that field, which is
-     * a setup problem rather than an error of this screen — the tables are then simply typeless.
-     */
     private Optional<Concept> findFieldConcept(Long projectId, ConfigurableTable table) {
         try {
             return Optional.of(fieldConfigurationService
@@ -639,11 +586,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         }
     }
 
-    /**
-     * The concept a type name stands for, looked up by exact label within the field's vocabulary.
-     * An ambiguous label is refused rather than resolved arbitrarily, since picking the wrong
-     * concept would silently configure another type.
-     */
     private Optional<Concept> findValueConcept(Long projectId, Concept fieldConcept, String typeName) {
         List<Concept> matches = conceptRepository.findAllByFieldContextAndExactLabel(
                 fieldConcept.getId(), currentUser().getLang(), typeName);
@@ -688,13 +630,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return toDto(new EffectiveField(config.getField(), config, config.isMandatory()));
     }
 
-    /**
-     * Maps a custom field to the type the screen displays. {@link FieldType} covers what the
-     * configuration screen knows how to show, which is less than the entity hierarchy expresses —
-     * anything else falls back on {@link FieldType#TEXT}. There is deliberately no dedicated
-     * mapping for {@link CustomFieldStratigraphy}: the screen has no relation type to show it as
-     * for now (see {@link FieldType}'s javadoc), so it falls back like any other unmapped field.
-     */
     private FieldType typeOf(CustomField field) {
         if (field instanceof CustomFieldInteger) return FieldType.INTEGER;
         if (field instanceof CustomFieldMeasurement) return FieldType.MEASUREMENT;
@@ -712,10 +647,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return FieldType.TEXT;
     }
 
-    /**
-     * Where the values of a field come from: the field code of a controlled vocabulary, nothing for
-     * the fields the user types into.
-     */
     private String sourceOf(CustomField field) {
         if (field instanceof CustomFieldSelectOneFromFieldCode select) return orDash(select.getFieldCode());
         if (field instanceof CustomFieldSelectMultipleFromFieldCode select) return orDash(select.getFieldCode());

@@ -402,10 +402,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         initFormContext(forceInit);
     }
 
-    /**
-     * The label of the RecordingUnit's own type concept, i.e. the type name field configurations
-     * are keyed on ({@link TableFieldConfigService#DEFAULT_TYPE} when the unit has none).
-     */
     private String resolveTypeName() {
         return unit.getType() != null
                 ? labelService.findLabelOf(unit.getType(), langBean.getLanguageCode()).getLabel()
@@ -421,11 +417,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * The measurement fields created from this unit's own form. They belong to the unit rather than
-     * to the project's type configuration, so they are re-injected into the measurements panel on
-     * every form build — otherwise the field, and the answer stored for it, would vanish on reopen.
-     */
     private List<CustomCol> measurementFields() {
         return formContextServices.getCustomFieldMeasurementService()
                 .findByRecordingUnit(unit.getId()).stream()

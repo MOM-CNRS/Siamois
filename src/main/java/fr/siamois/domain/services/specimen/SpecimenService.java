@@ -221,9 +221,6 @@ public class SpecimenService implements ArkEntityService {
         return specimenMapper.convert(savedSpecimen);
     }
 
-    /**
-     * Remplace les associations mappées (instances transientes) par des références JPA managées.
-     */
     private void attachManagedAssociations(Specimen source, Specimen managed) {
         attachRecordingUnit(source, managed);
         if (source.getAuthors() != null) {

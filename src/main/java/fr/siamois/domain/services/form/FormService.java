@@ -365,7 +365,6 @@ public class FormService {
         }
     }
 
-    /** Converts back to a place DTO (single selection). */
     private static Object extractSpatialUnit(CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
         if (a.getValue() == null) return null;
         PlaceSuggestionDTO ans = a.getValue();
@@ -377,7 +376,6 @@ public class FormService {
         return dto;
     }
 
-    /** Converts each PlaceSuggestionDTO in the list to a SpatialUnitSummaryDTO. */
     private static Object extractSpatialUnitSet(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
         List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
         return placeSuggestionList.stream()

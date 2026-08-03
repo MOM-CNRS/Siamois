@@ -49,14 +49,6 @@ public class UnitDefinitionInitializer implements DatabaseInitializer {
         log.info("Unit definitions initialized: {} known in total", UNITS.size());
     }
 
-    /**
-     * @param conceptExternalId the unit's concept in the SIAMOIS thesaurus, created with the given
-     *                          label if the instance does not know it yet; null for a unit the
-     *                          thesaurus has no concept for, which is then identified by its symbol
-     *                          and dimension alone
-     * @param factorToBase      what to multiply a value by to express it in the dimension's base
-     *                          unit, {@code 1.0} for the base unit itself
-     */
     private static UnitDefinitionDTO unit(String conceptExternalId,
                                           String label,
                                           String symbol,

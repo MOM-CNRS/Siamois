@@ -219,10 +219,6 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     }
 
-    /**
-     * The id of the recording unit this form edits, or null when the form belongs to another kind of
-     * entity or to a unit that has not been persisted yet.
-     */
     private Long recordingUnitIdOrNull() {
         return unit instanceof RecordingUnitDTO recordingUnit ? recordingUnit.getId() : null;
     }
@@ -372,9 +368,6 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return chips;
     }
 
-    /**
-     * Returns all ancestor IDs in the business graph (transitive), with cycle detection.
-     */
     private Set<Long> getAllAncestorIds(long id) {
         Set<Long> res = new HashSet<>();
 
@@ -496,8 +489,6 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
-    /** * Sous-méthode privée pour isoler les appels API
-     */
     private List<PlaceSuggestionDTO> resolveExternalSuggestions(String query, String source) {
         if (Objects.equals(source, "INSEE")) {
             return geoApiService.fetchCommunes(query);

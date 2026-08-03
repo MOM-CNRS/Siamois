@@ -137,9 +137,6 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .build();
     }
 
-    /**
-     * Erosion shape/profile/orientation are only enabled when Nature (geomorphologicalCycle) == "Erosion".
-     */
     private static EnabledWhenJson erosionEnabledWhen() {
         EnabledWhenJson.ValueJson erosionValue = new EnabledWhenJson.ValueJson();
         erosionValue.setAnswerClass(SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS);
@@ -155,9 +152,6 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
         return enabledWhen;
     }
 
-    /**
-     * Interpretation's autocomplete is restricted to concepts related to whichever Nature was chosen.
-     */
     private static DependsOnJson dependsOnNature() {
         DependsOnJson dependsOn = new DependsOnJson();
         dependsOn.setFieldId(NATURE_FIELD.getId());

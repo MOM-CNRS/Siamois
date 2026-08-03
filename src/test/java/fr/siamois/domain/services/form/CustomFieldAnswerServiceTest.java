@@ -648,10 +648,6 @@ class CustomFieldAnswerServiceTest {
 
     // ========== Helpers ==========
 
-    /**
-     * Saves one answer and hands back the entity that reached the repository, which is what the
-     * assertions are about: the service returns nothing, it writes.
-     */
     private CustomFieldAnswer savedAnswerOf(CustomField field, CustomFieldAnswerViewModel viewModel) {
         service.save(response(field, viewModel));
 
@@ -666,11 +662,6 @@ class CustomFieldAnswerServiceTest {
         return new CustomFormResponseViewModel(formConfigAnswer, answers);
     }
 
-    /**
-     * A view model carrying an arbitrary value: the service reads nothing else from it, so this
-     * keeps the parameterized tests about the field type → entity mapping. The real view models of
-     * the select fields cannot be used there — they hold DTOs, which the entities reject.
-     */
     private static CustomFieldAnswerViewModel viewModelOf(Object value) {
         return new CustomFieldAnswerViewModel() {
             @Override

@@ -925,7 +925,6 @@ class FormServiceTest {
     // Accessed via the private populateSystemFieldValue dispatcher.
     // =====================================================================
 
-    /** Reflective helper to invoke populateSystemFieldValue(answer, value). */
     private void populate(CustomFieldAnswerViewModel answer, Object value) throws Exception {
         Method m = FormService.class.getDeclaredMethod(
                 "populateSystemFieldValue", CustomFieldAnswerViewModel.class, Object.class);
@@ -933,7 +932,6 @@ class FormServiceTest {
         m.invoke(formService, answer, value);
     }
 
-    /** Reflective helper to invoke any private static method declared directly on FormService. */
     private static Object invokeStatic(String name, Class<?>[] paramTypes, Object... args) throws Exception {
         Method m = FormService.class.getDeclaredMethod(name, paramTypes);
         m.setAccessible(true);
