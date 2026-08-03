@@ -286,6 +286,9 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     private Long resolveProjectId() {
+        if (unit.getActionUnit() != null) {
+            return unit.getActionUnit().getId();
+        }
         if (unit.getRecordingUnit() == null) return null;
         RecordingUnitDTO recordingUnit = recordingUnitService.findById(unit.getRecordingUnit().getId());
         return recordingUnit != null && recordingUnit.getActionUnit() != null

@@ -41,7 +41,7 @@ public final class ActionUnitTableDefinitionFactory {
                 .build();
         CustomFieldText nameField =  CustomFieldText.builder()
                 .label("common.label.name")
-                .id(2L)
+                .id(-151L)
                 .isSystemField(true)
                 .valueBinding("name")
                 .concept(nameConcept)

@@ -1,6 +1,7 @@
 package fr.siamois.ui.table.definitions;
 
 
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -131,7 +132,7 @@ public final class SpecimenTableDefinitionFactory {
                 .label("recordingunit.field.identifier")
                 .isSystemField(true)
                 .isTextArea(false)
-                .id(4L)
+                .id(-451L)
                 .valueBinding("fullIdentifier")
                 .concept(idConcept)
                 .build();
@@ -139,7 +140,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectOneFromFieldCode categoryField = CustomFieldSelectOneFromFieldCode.builder()
                 .label("specimen.field.category")
                 .isSystemField(true)
-                .id(9L)
+                .id(-452L)
                 .valueBinding("category")
                 .concept(categoryConcept)
                 .fieldCode(Specimen.CAT_FIELD)
@@ -150,7 +151,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectOneRecordingUnit recordingUnitField = CustomFieldSelectOneRecordingUnit.builder()
                 .label("specimen.field.recordingUnit")
                 .isSystemField(true)
-                .id(1L)
+                .id(-453L)
                 .valueBinding("recordingUnit")
                 .concept(recordingUnitConcept)
                 .build();
@@ -158,7 +159,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectMultipleSpecimen isPartOfField = CustomFieldSelectMultipleSpecimen.builder()
                 .label("specimen.field.isPartOf")
                 .isSystemField(true)
-                .id(2L)
+                .id(-454L)
                 .valueBinding("parents")
                 .concept(isPartOfConcept)
                 .build();
@@ -166,7 +167,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectMultipleSpecimen containsField = CustomFieldSelectMultipleSpecimen.builder()
                 .label("specimen.field.contains")
                 .isSystemField(true)
-                .id(3L)
+                .id(-455L)
                 .valueBinding("children")
                 .concept(containsConcept)
                 .build();
@@ -175,7 +176,7 @@ public final class SpecimenTableDefinitionFactory {
                 .label("recordingunit.field.otherIdentifier")
                 .isSystemField(true)
                 .isTextArea(false)
-                .id(5L)
+                .id(-456L)
                 .valueBinding("otherIdentifier")
                 .concept(otherIdConcept)
                 .build();
@@ -184,7 +185,7 @@ public final class SpecimenTableDefinitionFactory {
                 .label("recordingunit.field.isolationIdentifier")
                 .isSystemField(true)
                 .isTextArea(false)
-                .id(10L)
+                .id(-457L)
                 .valueBinding("isolationNumber")
                 .concept(isolationNumberConcept)
                 .build();
@@ -192,7 +193,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectMultiplePerson authorsField = CustomFieldSelectMultiplePerson.builder()
                 .label("specimen.field.authors")
                 .isSystemField(true)
-                .id(6L)
+                .id(-458L)
                 .valueBinding("authors")
                 .concept(authorsConcept)
                 .build();
@@ -200,7 +201,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectMultiplePerson collectorsField = CustomFieldSelectMultiplePerson.builder()
                 .label("specimen.field.collectors")
                 .isSystemField(true)
-                .id(7L)
+                .id(-459L)
                 .valueBinding("collectors")
                 .concept(collectorsConcept)
                 .build();
@@ -208,7 +209,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldDateTime collectionDateField = CustomFieldDateTime.builder()
                 .label("specimen.field.collectionDate")
                 .isSystemField(true)
-                .id(11L)
+                .id(-460L)
                 .valueBinding("collectionDate")
                 .showTime(false)
                 .concept(collectionDateConcept)
@@ -217,7 +218,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectMultipleFromFieldCode materialField = CustomFieldSelectMultipleFromFieldCode.builder()
                 .label("specimen.field.material")
                 .isSystemField(true)
-                .id(13L)
+                .id(-461L)
                 .fieldCode(Specimen.MATIERE_FIELD)
                 .valueBinding("material")
                 .concept(materialConcept)
@@ -226,7 +227,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectMultipleFromFieldCode materialClassField = CustomFieldSelectMultipleFromFieldCode.builder()
                 .label("specimen.field.materialClass")
                 .isSystemField(true)
-                .id(14L)
+                .id(-462L)
                 .fieldCode(Specimen.CLASS_FIELD)
                 .valueBinding("materialClass")
                 .concept(materialClassConcept)
@@ -235,7 +236,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectOneFromFieldCode normalizedInterpretationField = CustomFieldSelectOneFromFieldCode.builder()
                 .label("specimen.field.normalizedInterpretation")
                 .isSystemField(true)
-                .id(15L)
+                .id(-463L)
                 .fieldCode(Specimen.INTERPRETATION_FIELD)
                 .valueBinding("normalizedInterpretation")
                 .concept(normalizedInterpretationConcept)
@@ -244,7 +245,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectOneFromFieldCode chronologicalAttributionField = CustomFieldSelectOneFromFieldCode.builder()
                 .label("specimen.field.chronologicalAttribution")
                 .isSystemField(true)
-                .id(18L)
+                .id(-464L)
                 .valueBinding("chronologicalAttribution")
                 .concept(chronologicalAttributionConcept)
                 .build();
@@ -252,7 +253,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldInteger numberOfElementField = CustomFieldInteger.builder()
                 .label("specimen.field.numberOfElement")
                 .isSystemField(true)
-                .id(21L)
+                .id(-465L)
                 .maxValue(Integer.MAX_VALUE)
                 .minValue(0)
                 .valueBinding("numberOfElements")
@@ -470,7 +471,7 @@ public final class SpecimenTableDefinitionFactory {
         CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
                 .label("specimen.field.phases")
                 .isSystemField(true)
-                .id(24L)
+                .id(-466L)
                 .valueBinding("phases")
                 .concept(phasesConcept)
                 .build();
@@ -483,6 +484,31 @@ public final class SpecimenTableDefinitionFactory {
                         .sortable(false)
                         .filterable(false)
                         .visible(false)
+                        .required(false)
+                        .build()
+        );
+
+        Concept actionUnitConcept = new Concept.Builder()
+                .vocabulary(SYSTEM_THESO)
+                .externalId("specimen.actionUnit")
+                .build();
+
+        CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
+                .label("specimen.field.actionUnit")
+                .isSystemField(true)
+                .id(-467L)
+                .valueBinding("actionUnit")
+                .concept(actionUnitConcept)
+                .build();
+
+        definition.addColumn(
+                FormFieldColumn.builder()
+                        .id("actionUnit")
+                        .headerKey("specimen.field.actionUnit")
+                        .field(actionUnitField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
                         .required(false)
                         .build()
         );

@@ -1,5 +1,6 @@
 package fr.siamois.ui.table.definitions;
 
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
@@ -45,43 +46,47 @@ public class PhaseTableDefinitionFactory {
     private static void applyTo(TableDefinition definition) {
         CustomFieldText identifierField = CustomFieldText.builder()
                 .label(PHASE_FIELD_IDENTIFIER).isSystemField(true).isTextArea(false)
-                .id(1L).valueBinding(IDENTIFIER).concept(systemConcept("phase.identifier")).build();
+                .id(-551L).valueBinding(IDENTIFIER).concept(systemConcept("phase.identifier")).build();
 
         CustomFieldSelectOneFromFieldCode typeField = CustomFieldSelectOneFromFieldCode.builder()
-                .label("phase.field.type").isSystemField(true).id(2L)
+                .label("phase.field.type").isSystemField(true).id(-552L)
                 .valueBinding("type").fieldCode(Phase.TYPE_FIELD)
                 .styleClass("mr-2 phase-type-chip").concept(systemConcept("phase.type")).build();
 
         CustomFieldText titleField = CustomFieldText.builder()
                 .label("phase.field.title").isSystemField(true).isTextArea(false)
-                .id(3L).valueBinding("title").concept(systemConcept("phase.title")).build();
+                .id(-553L).valueBinding("title").concept(systemConcept("phase.title")).build();
 
         CustomFieldInteger orderNumberField = CustomFieldInteger.builder()
                 .label("phase.field.orderNumber").isSystemField(true)
-                .id(5L).valueBinding("orderNumber").concept(systemConcept("phase.orderNumber"))
+                .id(-554L).valueBinding("orderNumber").concept(systemConcept("phase.orderNumber"))
                 .minValue(0).maxValue(Integer.MAX_VALUE).build();
 
         CustomFieldInteger lowerBoundField = CustomFieldInteger.builder()
                 .label("phase.field.lowerBound").isSystemField(true)
-                .id(6L).valueBinding("lowerBound").concept(systemConcept("phase.lowerBound"))
+                .id(-555L).valueBinding("lowerBound").concept(systemConcept("phase.lowerBound"))
                 .minValue(Integer.MIN_VALUE).maxValue(Integer.MAX_VALUE).build();
 
         CustomFieldInteger upperBoundField = CustomFieldInteger.builder()
                 .label("phase.field.upperBound").isSystemField(true)
-                .id(7L).valueBinding("upperBound").concept(systemConcept("phase.upperBound"))
+                .id(-556L).valueBinding("upperBound").concept(systemConcept("phase.upperBound"))
                 .minValue(Integer.MIN_VALUE).maxValue(Integer.MAX_VALUE).build();
 
         CustomFieldSelectMultipleFromFieldCode periodsField = CustomFieldSelectMultipleFromFieldCode.builder()
-                .label("phase.field.periods").isSystemField(true).id(8L)
+                .label("phase.field.periods").isSystemField(true).id(-557L)
                 .valueBinding("periods").fieldCode(Phase.PERIOD_FIELD).concept(systemConcept("phase.periods")).build();
 
         CustomFieldSelectMultipleFromFieldCode keywordsField = CustomFieldSelectMultipleFromFieldCode.builder()
-                .label("phase.field.keywords").isSystemField(true).id(9L)
+                .label("phase.field.keywords").isSystemField(true).id(-558L)
                 .valueBinding("keywords").fieldCode(Phase.KEYWORD_FIELD).concept(systemConcept("phase.keywords")).build();
 
         CustomFieldText descriptionField = CustomFieldText.builder()
                 .label("phase.field.description").isSystemField(true).isTextArea(true)
-                .id(4L).valueBinding("description").concept(systemConcept("phase.description")).build();
+                .id(-559L).valueBinding("description").concept(systemConcept("phase.description")).build();
+
+        CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
+                .label("phase.field.actionUnit").isSystemField(true)
+                .id(-560L).valueBinding("actionUnit").concept(systemConcept("phase.actionUnit")).build();
 
         definition.setCommandLinkColumn(panelLinkColumn(PHASE_FIELD_IDENTIFIER, "bi bi-layers",
                 "var(--ground-main-color)", TableColumnAction.GO_TO_PHASE));
@@ -95,6 +100,7 @@ public class PhaseTableDefinitionFactory {
                 column(upperBoundField).build(),
                 column(periodsField).build(),
                 column(keywordsField).build(),
-                column(descriptionField).build());
+                column(descriptionField).build(),
+                column(actionUnitField).visible(true).required(true).build());
     }
 }

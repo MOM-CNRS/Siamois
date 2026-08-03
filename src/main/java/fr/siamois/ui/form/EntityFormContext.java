@@ -736,11 +736,16 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
             return;
         }
+        if (answer.getNewActionUnit() == null) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "Le projet est obligatoire");
+            return;
+        }
         try {
             PhaseDTO toSave = new PhaseDTO();
             toSave.setIdentifier(answer.getNewIdentifier());
             toSave.setTitle(answer.getNewTitle());
             toSave.setOrderNumber(answer.getNewOrderNumber());
+            toSave.setActionUnit(answer.getNewActionUnit());
             if (answer.getNewType() != null) {
                 toSave.setType(answer.getNewType().getConceptLabelToDisplay().getConcept());
             }
@@ -753,6 +758,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             answer.setNewTitle(null);
             answer.setNewOrderNumber(null);
             answer.setNewType(null);
+            answer.setNewActionUnit(null);
 
             if (unit.getId() != null) {
                 this.save();
