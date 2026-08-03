@@ -1,10 +1,10 @@
 package fr.siamois.domain.models.form.customfield.recordingunit;
 
 import fr.siamois.domain.models.FieldCode;
-import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,7 +18,8 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
-public class CustomFieldMeasurement extends CustomField {
+@EqualsAndHashCode(callSuper=true)
+public class CustomFieldMeasurement extends CustomFieldOnTheFly {
 
     @Column(name = "min_value")
     private Long minValue ;

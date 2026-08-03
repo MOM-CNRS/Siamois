@@ -15,7 +15,7 @@ public interface CustomFieldMeasurementRepository extends JpaRepository<CustomFi
      * The measurement fields created from the given recording unit's form.
      */
     @Query("""
-            SELECT m FROM RecordingUnit ru JOIN ru.measurements m
+            SELECT m FROM RecordingUnit ru JOIN ru.onTheFlyFields m
             WHERE ru.id = :recordingUnitId
             """)
     List<CustomFieldMeasurement> findByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);

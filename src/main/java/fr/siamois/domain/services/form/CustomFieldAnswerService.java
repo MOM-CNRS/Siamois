@@ -83,7 +83,7 @@ public class CustomFieldAnswerService {
                     fieldIdsOf(answers.keySet()), fieldIdsOf(activeFields));
             return;
         }
-        log.debug("Persisting {} of the {} additional field answers of recording unit {}",
+        log.trace("Persisting {} of the {} additional field answers of recording unit {}",
                 filteredAnswers.size(), answers.size(), recordingUnitDTO.getId());
 
         // Materialized on demand: a field created straight from a unit's form gives the type answers

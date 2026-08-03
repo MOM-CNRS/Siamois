@@ -182,7 +182,7 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnit recordingUnit = recordingUnitRepository.findById(recordingUnitId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
                         RECORDING_UNIT_NOT_FOUND_WITH_ID + recordingUnitId));
-        recordingUnit.getMeasurements().add(field);
+        recordingUnit.getOnTheFlyFields().add(field);
         recordingUnitRepository.save(recordingUnit);
     }
 
