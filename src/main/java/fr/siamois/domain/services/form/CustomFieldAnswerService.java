@@ -4,14 +4,18 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigAnswer;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.measurement.CustomFieldAnswerMeasurement;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
+import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel;
@@ -26,11 +30,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -43,6 +43,8 @@ public class CustomFieldAnswerService {
     private final FormConfigAnswerService formConfigAnswerService;
     private final LabelService labelService;
     private final CustomFieldMeasurementService customFieldMeasurementService;
+    private final UnitDefinitionRepository unitDefinitionRepository;
+    private final UnitDefinitionMapper unitDefinitionMapper;
 
     /**
      * Persists the answers to a recording unit's additional (non-system) fields.
@@ -146,10 +148,10 @@ public class CustomFieldAnswerService {
             v.setValue(i);
         } else if (viewModel instanceof CustomFieldAnswerMeasurementViewModel v
                 && answer instanceof CustomFieldAnswerMeasurement stored) {
-            // The unit is not stored per answer; FormService fills it in from the field definition.
             v.setValue(MeasurementAnswerDTO.builder()
                     .numericValue(stored.getValue())
                     .comment(stored.getComment())
+                    .unit(unitDefinitionMapper.convert(stored.getUnit()))
                     .build());
         } else {
             return null;
@@ -185,7 +187,7 @@ public class CustomFieldAnswerService {
 
         if (answer instanceof CustomFieldAnswerMeasurement measurementAnswer
                 && customFieldAnswerViewModel instanceof CustomFieldAnswerMeasurementViewModel measurementViewModel) {
-            createOrUpdateMeasurementAnswer(measurementAnswer, measurementViewModel, optAnswer.isPresent());
+            createOrUpdateMeasurementAnswer(measurementAnswer, measurementViewModel, customField, optAnswer.isPresent());
             return;
         }
 
@@ -204,6 +206,7 @@ public class CustomFieldAnswerService {
      */
     private void createOrUpdateMeasurementAnswer(CustomFieldAnswerMeasurement answer,
                                                  CustomFieldAnswerMeasurementViewModel viewModel,
+                                                 CustomField customField,
                                                  boolean alreadyStored) {
         MeasurementAnswerDTO value = viewModel.getValue();
         Double numericValue = value != null ? value.getNumericValue() : null;
@@ -215,7 +218,26 @@ public class CustomFieldAnswerService {
 
         answer.setValue(numericValue);
         answer.setComment(comment);
+        answer.setUnit(unitOf(value, customField));
         customFieldAnswerRepository.save(answer);
+    }
+
+    private UnitDefinition unitOf(MeasurementAnswerDTO value, CustomField customField) {
+        Long answerUnitId = value != null && value.getUnit() != null ? value.getUnit().getId() : null;
+        Long unitId = answerUnitId != null ? answerUnitId : fieldUnitId(customField);
+
+        if (unitId == null) return null;
+
+        return unitDefinitionRepository.findById(unitId)
+                .orElseThrow(() -> new IllegalStateException("UnitDefinition not found: " + unitId));
+    }
+
+    private Long fieldUnitId(CustomField customField) {
+        if (Hibernate.unproxy(customField) instanceof CustomFieldMeasurement measurementField
+                && measurementField.getUnit() != null) {
+            return measurementField.getUnit().getId();
+        }
+        return null;
     }
 
     public void save(@NonNull CustomFormResponseViewModel response) {
@@ -227,8 +249,6 @@ public class CustomFieldAnswerService {
     }
 
     private CustomFieldAnswer answerEntityOf(@NonNull CustomField field) {
-        // Unwrap: a field loaded through a lazy association is a Hibernate proxy whose getClass()
-        // is a generated subclass, missing from this map entirely.
         return CustomFieldAnswerFactory.ANSWER_ENTITY_CREATORS.get(Hibernate.getClass(field)).apply(null);
     }
 

@@ -15,8 +15,8 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
@@ -33,25 +33,18 @@ import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAn
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.ConceptPrefLabelDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.MeasurementAnswerDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
+import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurementViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.*;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,6 +82,10 @@ class CustomFieldAnswerServiceTest {
     private LabelService labelService;
     @Mock
     private CustomFieldMeasurementService customFieldMeasurementService;
+    @Mock
+    private UnitDefinitionRepository unitDefinitionRepository;
+    @Mock
+    private UnitDefinitionMapper unitDefinitionMapper;
 
     @InjectMocks
     private CustomFieldAnswerService service;
@@ -239,6 +236,57 @@ class CustomFieldAnswerServiceTest {
         assertThat(saved).isInstanceOf(CustomFieldAnswerMeasurement.class);
         assertThat(saved.getValue()).isEqualTo(14.2);
         assertThat(((CustomFieldAnswerMeasurement) saved).getComment()).isEqualTo("au nord");
+    }
+
+    @Test
+    void save_shouldStoreTheUnitTheMeasurementWasEnteredIn() {
+        UnitDefinition metre = unitDefinition(5L);
+        when(unitDefinitionRepository.findById(5L)).thenReturn(Optional.of(metre));
+
+        CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
+        viewModel.setValue(MeasurementAnswerDTO.builder()
+                .numericValue(14.2)
+                .unit(UnitDefinitionDTO.builder().id(5L).build())
+                .build());
+
+        CustomFieldAnswer saved = savedAnswerOf(CustomFieldMeasurement.builder().id(1L).build(), viewModel);
+
+        assertThat(((CustomFieldAnswerMeasurement) saved).getUnit()).isSameAs(metre);
+    }
+
+    /**
+     * The unit only reaches the view model through the field definition anyway, but an answer
+     * built elsewhere (the API) may carry none, and it still has to be stored with one.
+     */
+    @Test
+    void save_shouldFallBackToTheFieldsUnitWhenTheAnswerCarriesNone() {
+        UnitDefinition metre = unitDefinition(5L);
+        when(unitDefinitionRepository.findById(5L)).thenReturn(Optional.of(metre));
+
+        CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
+        viewModel.setValue(MeasurementAnswerDTO.builder().numericValue(14.2).build());
+
+        CustomFieldAnswer saved = savedAnswerOf(
+                CustomFieldMeasurement.builder().id(1L).unit(unitDefinition(5L)).build(), viewModel);
+
+        assertThat(((CustomFieldAnswerMeasurement) saved).getUnit()).isSameAs(metre);
+    }
+
+    @Test
+    void save_shouldFailRatherThanStoreAMeasurementWhoseUnitNoLongerExists() {
+        when(unitDefinitionRepository.findById(5L)).thenReturn(Optional.empty());
+
+        CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
+        viewModel.setValue(MeasurementAnswerDTO.builder()
+                .numericValue(14.2)
+                .unit(UnitDefinitionDTO.builder().id(5L).build())
+                .build());
+
+        CustomFormResponseViewModel responseViewModel = response(CustomFieldMeasurement.builder().id(1L).build(), viewModel);
+        assertThatThrownBy(() -> service.save(responseViewModel))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("5");
+        verify(customFieldAnswerRepository, never()).save(any());
     }
 
     @Test
@@ -543,18 +591,23 @@ class CustomFieldAnswerServiceTest {
     }
 
     @Test
-    void loadAdditionalFieldAnswers_readsBackAMeasurementNumberAndComment() {
+    void loadAdditionalFieldAnswers_readsBackAMeasurementNumberCommentAndUnit() {
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
         when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, TableFieldConfigService.DEFAULT_TYPE))
                 .thenReturn(Optional.of(formConfig));
 
+        UnitDefinition metre = unitDefinition(5L);
+        UnitDefinitionDTO metreDto = UnitDefinitionDTO.builder().id(5L).build();
+        when(unitDefinitionMapper.convert(metre)).thenReturn(metreDto);
+
         CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).build();
         CustomFieldAnswerMeasurement answer = new CustomFieldAnswerMeasurement();
         answer.setCustomField(field);
         answer.setValue(14.2);
         answer.setComment("au nord");
+        answer.setUnit(metre);
 
         formConfigAnswer.setAnswers(Set.of(answer));
         when(formConfigAnswerService.findFormConfigAnswer(formConfig, unit)).thenReturn(Optional.of(formConfigAnswer));
@@ -564,6 +617,7 @@ class CustomFieldAnswerServiceTest {
         assertThat(result.get(field)).isInstanceOfSatisfying(CustomFieldAnswerMeasurementViewModel.class, v -> {
             assertThat(v.getValue().getNumericValue()).isEqualTo(14.2);
             assertThat(v.getValue().getComment()).isEqualTo("au nord");
+            assertThat(v.getValue().getUnit()).isSameAs(metreDto);
         });
     }
 
@@ -629,6 +683,12 @@ class CustomFieldAnswerServiceTest {
         Concept concept = new Concept();
         concept.setId(id);
         return concept;
+    }
+
+    private static UnitDefinition unitDefinition(Long id) {
+        UnitDefinition unitDefinition = new UnitDefinition();
+        unitDefinition.setId(id);
+        return unitDefinition;
     }
 
     private static Person person(Long id) {

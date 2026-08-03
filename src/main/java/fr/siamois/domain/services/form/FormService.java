@@ -465,12 +465,6 @@ public class FormService {
         initializeMeasurement(answer, field);
     }
 
-    /**
-     * Gives every measurement answer the holder its inputs bind into ({@code answer.value
-     * .numericValue}, {@code answer.value.comment}) and the unit carried by the field definition.
-     * Applies to fields added to a form just as much as to the system ones: the unit is a property
-     * of the field, never stored per answer.
-     */
     private void initializeMeasurement(CustomFieldAnswerViewModel answer, CustomField field) {
         if (!(field instanceof CustomFieldMeasurement measurementField)
                 || !(answer instanceof CustomFieldAnswerMeasurementViewModel measurementAnswer)) {
