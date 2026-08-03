@@ -33,7 +33,7 @@ import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRep
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
@@ -215,7 +215,9 @@ class TableFieldConfigServiceImplTest {
                 .containsExactly(IDENTIFIER_FIELD, CATEGORY_FIELD);
         assertThat(fields).allMatch(TypeFieldFormConfig::isSystemField);
         assertThat(fields).allMatch(TypeFieldFormConfig::isActive);
-        assertThat(fields.get(0).isMandatory()).isTrue();
+        // Mandatory falls back on the requiredness SpecimenDetailsForm's real panel declares for
+        // each field — neither the identifier nor the category column is marked required there.
+        assertThat(fields.get(0).isMandatory()).isFalse();
         assertThat(fields.get(1).isMandatory()).isFalse();
     }
 
@@ -259,16 +261,25 @@ class TableFieldConfigServiceImplTest {
     }
 
     /**
-     * Every table reads the same pool of rows, so each must take its own fields out of it: the
-     * identifier is shared by UE and Mobilier, the category belongs to Mobilier alone.
+     * Every table reads the same pool of rows, so each must take its own fields out of it: a row
+     * belonging to Mobilier (its category field) must not leak into UE's field list.
      */
     @Test
     void getFieldsConfig_shouldOnlyListTheSystemFieldsOfTheTableItIsAskedAbout() {
-        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD, CATEGORY_FIELD);
+        String ueIdentifierLabel = "common.label.identifier";
+        CustomField ueIdentifier = SystemFieldCatalog.fieldsOf(ConfigurableTable.UE).stream()
+                .filter(field -> ueIdentifierLabel.equals(field.getLabel()))
+                .findFirst().orElseThrow();
+        ueIdentifier.setId(SYSTEM_FIELD_FIRST_ID);
+        CustomField mobilierCategory = SystemFieldCatalog.fieldsOf(ConfigurableTable.MOBILIER).stream()
+                .filter(field -> CATEGORY_FIELD.equals(field.getLabel()))
+                .findFirst().orElseThrow();
+        mobilierCategory.setId(SYSTEM_FIELD_FIRST_ID + 1);
+        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(ueIdentifier, mobilierCategory));
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, "_default").getFields())
-                .extracting(TypeFieldFormConfig::getName).containsExactly(IDENTIFIER_FIELD);
+                .extracting(TypeFieldFormConfig::getName).containsExactly(ueIdentifierLabel);
     }
 
     @Test
@@ -338,7 +349,8 @@ class TableFieldConfigServiceImplTest {
         assertThat(saved.getValue().getField()).isEqualTo(identifier);
         assertThat(saved.getValue().getFormConfig()).isEqualTo(defaultConfig);
         assertThat(saved.getValue().isActive()).isFalse();
-        assertThat(saved.getValue().isMandatory()).isTrue();
+        // Falls back on SpecimenDetailsForm's real requiredness for the identifier column: false.
+        assertThat(saved.getValue().isMandatory()).isFalse();
     }
 
     @Test
@@ -1462,7 +1474,7 @@ class TableFieldConfigServiceImplTest {
         Set<String> wanted = Set.of(labels);
         Map<String, CustomField> rows = new LinkedHashMap<>();
         long id = SYSTEM_FIELD_FIRST_ID;
-        for (FormFieldColumn column : SystemFieldCatalog.columnsOf(table)) {
+        for (CustomColUiDto column : SystemFieldCatalog.systemColumnsOf(table)) {
             CustomField definition = column.getField();
             Assertions.assertNotNull(definition);
             if (!wanted.contains(definition.getLabel())) continue;
