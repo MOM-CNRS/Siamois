@@ -2,14 +2,18 @@ package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
+import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.UnitDefinitionDTO;
+import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -31,6 +36,7 @@ class NewFieldManagerBeanTest {
 
     @Mock private CustomFieldMeasurementService customFieldMeasurementService;
     @Mock private RecordingUnitService recordingUnitService;
+    @Mock private FormService formService;
 
     private CustomFormResponseViewModel formResponse;
     private CustomFieldMeasurement created;
@@ -45,12 +51,20 @@ class NewFieldManagerBeanTest {
     }
 
     private NewFieldManagerBean beanFor(AbstractEntityDTO owner, List<CustomFieldMeasurement> options) {
+        return beanFor(owner, options, List.of());
+    }
+
+    private NewFieldManagerBean beanFor(AbstractEntityDTO owner,
+                                        List<CustomFieldMeasurement> options,
+                                        List<UnitDefinitionDTO> unitOptions) {
         return new NewFieldManagerBean(
                 customFieldMeasurementService,
                 recordingUnitService,
+                formService,
                 formResponse,
                 owner,
-                options);
+                options,
+                unitOptions);
     }
 
     private void fillEditor(NewFieldManagerBean bean) {
@@ -112,6 +126,67 @@ class NewFieldManagerBeanTest {
         bean.saveNewField();
 
         verifyNoInteractions(recordingUnitService);
+    }
+
+    @Test
+    @DisplayName("The field is created with the unit picked in the editor")
+    void saveNewField_storesThePickedUnitOnTheField() {
+        UnitDefinitionDTO metre = UnitDefinitionDTO.builder().id(5L).label("Mètre").symbol("m").build();
+        NewFieldManagerBean bean = beanFor(new SpecimenDTO(), new ArrayList<>(), List.of(metre));
+        when(customFieldMeasurementService.save(any())).thenReturn(created);
+
+        fillEditor(bean);
+        bean.setUnitId(5L);
+        bean.saveNewField();
+
+        ArgumentCaptor<CustomFieldMeasurementDTO> saved = ArgumentCaptor.forClass(CustomFieldMeasurementDTO.class);
+        verify(customFieldMeasurementService).save(saved.capture());
+        assertEquals(metre, saved.getValue().getUnit());
+    }
+
+    @Test
+    @DisplayName("The editor opens on the base unit, which is what an untouched menu creates")
+    void prepareNewField_preselectsTheBaseUnit() {
+        UnitDefinitionDTO centimetre = UnitDefinitionDTO.builder().id(4L).symbol("cm").build();
+        UnitDefinitionDTO metre = UnitDefinitionDTO.builder().id(5L).symbol("m").systemBase(true).build();
+        NewFieldManagerBean bean = beanFor(new SpecimenDTO(), new ArrayList<>(), List.of(centimetre, metre));
+        when(customFieldMeasurementService.save(any())).thenReturn(created);
+
+        fillEditor(bean);
+        bean.saveNewField();
+
+        ArgumentCaptor<CustomFieldMeasurementDTO> saved = ArgumentCaptor.forClass(CustomFieldMeasurementDTO.class);
+        verify(customFieldMeasurementService).save(saved.capture());
+        assertEquals(metre, saved.getValue().getUnit());
+    }
+
+    /** An instance with no unit seeded at all still has to let a field be created. */
+    @Test
+    @DisplayName("Nothing to offer leaves the field without a unit")
+    void saveNewField_leavesTheFieldWithoutUnitWhenNoneIsOffered() {
+        NewFieldManagerBean bean = beanFor(new SpecimenDTO(), new ArrayList<>(), List.of());
+        when(customFieldMeasurementService.save(any())).thenReturn(created);
+
+        fillEditor(bean);
+        bean.saveNewField();
+
+        ArgumentCaptor<CustomFieldMeasurementDTO> saved = ArgumentCaptor.forClass(CustomFieldMeasurementDTO.class);
+        verify(customFieldMeasurementService).save(saved.capture());
+        assertNull(saved.getValue().getUnit());
+    }
+
+    /**
+     * A field attached here never goes through {@code FormService}'s init pass, so its answer would
+     * otherwise reach the save path with no unit at all.
+     */
+    @Test
+    @DisplayName("The answer of a field added to the form is initialized with the field's unit")
+    void addFieldFromMeasurement_initializesTheAnswerWithItsUnit() {
+        NewFieldManagerBean bean = beanFor(new SpecimenDTO(), new ArrayList<>());
+
+        bean.addFieldFromMeasurement(new CustomFormPanelUiDto(), created);
+
+        verify(formService).initializeMeasurement(formResponse.getAnswers().get(created), created);
     }
 
     @Test

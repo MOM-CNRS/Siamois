@@ -8,6 +8,7 @@ import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitio
 import fr.siamois.mapper.UnitDefinitionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,41 +24,43 @@ public class UnitDefinitionSeeder {
                 .orElse(null);
     }
 
+    @Transactional
     public void seed(Vocabulary vocabulary, List<UnitDefinitionDTO> specs) {
         for (int i = 0; i < specs.size(); i++) {
             var s = specs.get(i);
             try {
-                Concept concept = conceptSeeder.findConceptOrReturnNull(s.getConcept().getVocabulary().getExternalVocabularyId(),
-                        s.getConcept().getExternalId());
-
-                if (concept == null) {
-                    conceptSeeder.seed(vocabulary,
-                            List.of(new ConceptSeeder.ConceptSpec(
-                                    s.getConcept().getVocabulary().getExternalVocabularyId(),
-                                    s.getConcept().getExternalId(),
-                                    s.getLabel(),
-                                    "fr"
-                            )));
-                }
-
                 UnitDefinition unitDefinition = mapper.invertConvert(s);
+                unitDefinition.setConcept(seedConceptOf(vocabulary, s));
 
-                unitDefinition.setConcept(
-                        conceptSeeder.findConceptOrReturnNull(
-                                s.getConcept().getVocabulary().getExternalVocabularyId(),
-                                s.getConcept().getExternalId()
-                        )
-                );
-
-                UnitDefinition found = findUnitOrReturnNull(unitDefinition.getConcept());
-
-                if (found == null) {
+                if (!alreadyKnown(unitDefinition)) {
                     unitDefinitionRepository.save(unitDefinition);
                 }
             } catch (Exception e) {
                 throw new IllegalStateException(
-                        "[Unité ligne " + (i + 1) + "] '" + s.getConcept().getExternalId() + "' : " + e.getMessage(), e);
+                        "[Unité ligne " + (i + 1) + "] '" + s.getSymbol() + "' : " + e.getMessage(), e);
             }
         }
+    }
+
+    private Concept seedConceptOf(Vocabulary vocabulary, UnitDefinitionDTO spec) {
+        if (spec.getConcept() == null) return null;
+
+        String vocabularyId = spec.getConcept().getVocabulary().getExternalVocabularyId();
+        String externalId = spec.getConcept().getExternalId();
+
+        if (conceptSeeder.findConceptOrReturnNull(vocabularyId, externalId) == null) {
+            conceptSeeder.seed(vocabulary,
+                    List.of(new ConceptSeeder.ConceptSpec(vocabularyId, externalId, spec.getLabel(), "fr")));
+        }
+        return conceptSeeder.findConceptOrReturnNull(vocabularyId, externalId);
+    }
+
+    private boolean alreadyKnown(UnitDefinition unitDefinition) {
+        if (unitDefinition.getConcept() != null) {
+            return findUnitOrReturnNull(unitDefinition.getConcept()) != null;
+        }
+        return unitDefinitionRepository
+                .findFirstBySymbolAndDimensionOrderByIdAsc(unitDefinition.getSymbol(), unitDefinition.getDimension())
+                .isPresent();
     }
 }

@@ -4,16 +4,15 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 
-@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @Entity
@@ -34,4 +33,15 @@ public class CustomFieldDateTime extends CustomField {
         return "bi bi-calendar";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof CustomFieldDateTime that)) return false;
+        if (!super.equals(o)) return false;
+        return Objects.equals(showTime, that.showTime) && Objects.equals(min, that.min) && Objects.equals(max, that.max);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), showTime, min, max);
+    }
 }

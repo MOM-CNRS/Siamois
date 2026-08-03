@@ -465,7 +465,7 @@ public class FormService {
         initializeMeasurement(answer, field);
     }
 
-    private void initializeMeasurement(CustomFieldAnswerViewModel answer, CustomField field) {
+    public void initializeMeasurement(CustomFieldAnswerViewModel answer, CustomField field) {
         if (!(field instanceof CustomFieldMeasurement measurementField)
                 || !(answer instanceof CustomFieldAnswerMeasurementViewModel measurementAnswer)) {
             return;

@@ -11,7 +11,6 @@ import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundEx
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
-import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -23,6 +22,7 @@ import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
@@ -32,7 +32,6 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
-import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -96,7 +95,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final ArkRepository arkRepository;
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
-    private final UnitDefinitionRepository unitDefinitionRepository;
+    private final UnitDefinitionService unitDefinitionService;
     private final CustomFieldAnswerService customFieldAnswerService;
 
 
@@ -317,8 +316,6 @@ public class RecordingUnitService implements ArkEntityService {
 
 
     private void setupOtherFields(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
-        Map<Long, UnitDefinition> resolvedUnits = new HashMap<>();
-
         managedRecordingUnit.setAltitude(recordingUnit.getAltitude());
         managedRecordingUnit.setArk(recordingUnit.getArk());
         managedRecordingUnit.setDescription(recordingUnit.getDescription());
@@ -344,9 +341,9 @@ public class RecordingUnitService implements ArkEntityService {
 
         // altimetry
         managedRecordingUnit.setZInf(mergeMeasurementAnswer(
-                recordingUnit.getZInf(), managedRecordingUnit.getZInf(), resolvedUnits));
+                recordingUnit.getZInf(), managedRecordingUnit.getZInf()));
         managedRecordingUnit.setZSup(mergeMeasurementAnswer(
-                recordingUnit.getZSup(), managedRecordingUnit.getZSup(), resolvedUnits));
+                recordingUnit.getZSup(), managedRecordingUnit.getZSup()));
 
         if (managedRecordingUnit.getCreatedBy() == null) {
             managedRecordingUnit.setCreatedBy(recordingUnit.getCreatedBy());
@@ -358,14 +355,9 @@ public class RecordingUnitService implements ArkEntityService {
 
     }
 
-    /**
-     * Réutilise la réponse mesure managée et résout l'unité via la PK pour éviter
-     * « Multiple representations of the same entity UnitDefinition#id » (ex. zInf + zSup).
-     */
     @Nullable
     private MeasurementAnswer mergeMeasurementAnswer(@Nullable MeasurementAnswer incoming,
-                                                     @Nullable MeasurementAnswer managed,
-                                                     Map<Long, UnitDefinition> resolvedUnits) {
+                                                     @Nullable MeasurementAnswer managed) {
         if (incoming == null) {
             return null;
         }
@@ -373,14 +365,7 @@ public class RecordingUnitService implements ArkEntityService {
         target.setNumericValue(incoming.getNumericValue());
         target.setComment(incoming.getComment());
         target.setNormalizedValue(incoming.getNormalizedValue());
-        UnitDefinition unit = incoming.getUnit();
-        if (unit != null && unit.getId() != null) {
-            target.setUnit(resolvedUnits.computeIfAbsent(unit.getId(), id ->
-                    unitDefinitionRepository.findById(id)
-                            .orElseThrow(() -> new IllegalStateException("UnitDefinition not found: " + id))));
-        } else {
-            target.setUnit(unit);
-        }
+        target.setUnit(unitDefinitionService.resolve(incoming.getUnit()));
         return target;
     }
 

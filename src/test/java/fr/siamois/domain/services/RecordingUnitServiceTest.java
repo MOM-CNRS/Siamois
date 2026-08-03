@@ -34,7 +34,7 @@ import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
-import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -114,7 +114,7 @@ class RecordingUnitServiceTest {
     @Mock
     private PhaseMapper phaseMapper;
     @Mock
-    private UnitDefinitionRepository unitDefinitionRepository;
+    private UnitDefinitionService unitDefinitionService;
     @Mock
     private CustomFieldAnswerService customFieldAnswerService;
 
@@ -354,7 +354,7 @@ class RecordingUnitServiceTest {
 
         when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
         when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
-        when(unitDefinitionRepository.findById(1L)).thenReturn(Optional.of(managedUnit));
+        when(unitDefinitionService.resolve(any(UnitDefinition.class))).thenReturn(managedUnit);
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
         when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
 
@@ -366,7 +366,7 @@ class RecordingUnitServiceTest {
         assertNotNull(saved.getZInf());
         assertNotNull(saved.getZSup());
         assertSame(saved.getZInf().getUnit(), saved.getZSup().getUnit());
-        verify(unitDefinitionRepository).findById(1L);
+        assertSame(managedUnit, saved.getZInf().getUnit());
     }
 
     @Test
@@ -396,16 +396,18 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository).save(savedCaptor.capture());
         assertNull(savedCaptor.getValue().getZInf());
         assertNull(savedCaptor.getValue().getZSup());
-        verify(unitDefinitionRepository, never()).findById(any());
+        verifyNoInteractions(unitDefinitionService);
     }
 
+    /** A unit with no id comes from a definition written in code; it must never be stored as is. */
     @Test
-    void save_measurementWithoutUnitId_setsUnitDirectly() {
+    void save_measurementWithoutUnitId_storesTheSeededUnit() {
         long existingId = 44L;
         RecordingUnitDTO unitDto = new RecordingUnitDTO();
         unitDto.setId(existingId);
 
         UnitDefinition unitWithoutId = UnitDefinition.builder().symbol("m").build();
+        UnitDefinition seededUnit = UnitDefinition.builder().id(1L).symbol("m").build();
         MeasurementAnswer zInf = MeasurementAnswer.builder().numericValue(1.0).unit(unitWithoutId).build();
 
         RecordingUnit incoming = new RecordingUnit();
@@ -419,13 +421,13 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
         when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
         when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(unitDto);
+        when(unitDefinitionService.resolve(unitWithoutId)).thenReturn(seededUnit);
 
         recordingUnitService.save(unitDto);
 
         ArgumentCaptor<RecordingUnit> savedCaptor = ArgumentCaptor.forClass(RecordingUnit.class);
         verify(recordingUnitRepository).save(savedCaptor.capture());
-        assertSame(unitWithoutId, savedCaptor.getValue().getZInf().getUnit());
-        verify(unitDefinitionRepository, never()).findById(any());
+        assertSame(seededUnit, savedCaptor.getValue().getZInf().getUnit());
     }
 
     @Test
@@ -446,7 +448,7 @@ class RecordingUnitServiceTest {
 
         when(recordingUnitMapper.invertConvert(unitDto)).thenReturn(incoming);
         when(recordingUnitRepository.findById(existingId)).thenReturn(Optional.of(managed));
-        when(unitDefinitionRepository.findById(99L)).thenReturn(Optional.empty());
+        when(unitDefinitionService.resolve(detached)).thenThrow(new IllegalStateException("UnitDefinition not found: 99"));
 
         assertThrows(FailedRecordingUnitSaveException.class, () -> recordingUnitService.save(unitDto));
     }

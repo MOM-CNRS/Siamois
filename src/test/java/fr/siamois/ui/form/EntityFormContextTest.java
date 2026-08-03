@@ -7,6 +7,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -76,6 +77,7 @@ class EntityFormContextTest {
     @Mock private EnabledRulesEngine enabledRulesEngine;
 
     @Mock private CustomFieldMeasurementService customFieldMeasurementService;
+    @Mock private UnitDefinitionService unitDefinitionService;
 
     @Mock
     private ActionUnitDTO actionUnitDTO;
@@ -148,6 +150,8 @@ class EntityFormContextTest {
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
+        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
+        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
         answers.put(mock(CustomField.class), treeAnswer);
@@ -188,6 +192,8 @@ class EntityFormContextTest {
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(r);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
         when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
+        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
+        when(unitDefinitionService.findOptions()).thenReturn(List.of());
 
         ctx.init(false);
         assertNull(ctx.getFieldAnswer(f));
@@ -222,6 +228,8 @@ class EntityFormContextTest {
         response.setAnswers(new HashMap<>(Map.of(field, ans)));
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
+        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
+        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -247,6 +255,8 @@ class EntityFormContextTest {
         response.setAnswers(new HashMap<>());
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
+        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
+        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -273,6 +283,8 @@ class EntityFormContextTest {
         response.setAnswers(new HashMap<>());
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
+        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
+        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -350,6 +362,8 @@ class EntityFormContextTest {
         CustomField scopeField = mock(CustomField.class);
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
+        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
+        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         when(scopeField.getIsSystemField()).thenReturn(true);
         when(scopeField.getValueBinding()).thenReturn(scopeBinding);
         CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = mock(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class);
@@ -393,6 +407,8 @@ class EntityFormContextTest {
         when(otherField.getIsSystemField()).thenReturn(true);
         when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
+        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
+        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         when(otherField.getValueBinding()).thenReturn("otherBinding");
         CustomFieldAnswerSelectOneFromFieldCodeViewModel ans = mock(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class);
 

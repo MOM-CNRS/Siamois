@@ -41,7 +41,7 @@ import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
-import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
@@ -83,7 +83,7 @@ class CustomFieldAnswerServiceTest {
     @Mock
     private CustomFieldMeasurementService customFieldMeasurementService;
     @Mock
-    private UnitDefinitionRepository unitDefinitionRepository;
+    private UnitDefinitionService unitDefinitionService;
     @Mock
     private UnitDefinitionMapper unitDefinitionMapper;
 
@@ -241,7 +241,7 @@ class CustomFieldAnswerServiceTest {
     @Test
     void save_shouldStoreTheUnitTheMeasurementWasEnteredIn() {
         UnitDefinition metre = unitDefinition(5L);
-        when(unitDefinitionRepository.findById(5L)).thenReturn(Optional.of(metre));
+        when(unitDefinitionService.resolveById(5L)).thenReturn(metre);
 
         CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
         viewModel.setValue(MeasurementAnswerDTO.builder()
@@ -261,7 +261,7 @@ class CustomFieldAnswerServiceTest {
     @Test
     void save_shouldFallBackToTheFieldsUnitWhenTheAnswerCarriesNone() {
         UnitDefinition metre = unitDefinition(5L);
-        when(unitDefinitionRepository.findById(5L)).thenReturn(Optional.of(metre));
+        when(unitDefinitionService.resolveById(5L)).thenReturn(metre);
 
         CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
         viewModel.setValue(MeasurementAnswerDTO.builder().numericValue(14.2).build());
@@ -274,7 +274,8 @@ class CustomFieldAnswerServiceTest {
 
     @Test
     void save_shouldFailRatherThanStoreAMeasurementWhoseUnitNoLongerExists() {
-        when(unitDefinitionRepository.findById(5L)).thenReturn(Optional.empty());
+        when(unitDefinitionService.resolveById(5L))
+                .thenThrow(new IllegalStateException("UnitDefinition not found: 5"));
 
         CustomFieldAnswerMeasurementViewModel viewModel = new CustomFieldAnswerMeasurementViewModel();
         viewModel.setValue(MeasurementAnswerDTO.builder()

@@ -39,7 +39,7 @@
                                    inputStyle="width: 100%"
                                    inputStyleClass="#{cc.attrs.answer.hasBeenModified ? 'track-change sia-modified-field': 'track-change'}"
                                    label="#{cc.attrs.label}"
-                                   symbol="m"
+                                   symbol="#{cc.attrs.answer.value.unit.symbol}"
                                    symbolPosition="s"
                                    required="#{cc.attrs.required}"
                                    id="input">

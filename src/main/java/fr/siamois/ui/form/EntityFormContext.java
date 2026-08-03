@@ -210,9 +210,11 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
         this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
                 services.getRecordingUnitService(),
+                formService,
                 this.formResponse,
                 unit,
-                measurementOptions
+                measurementOptions,
+                services.getUnitDefinitionService().findOptions()
                 );
 
     }

@@ -145,8 +145,15 @@
                                 <div>
                                     <p:outputLabel for="fieldUnit" value="Unité"
                                                    style="color:var(--text-light);display:block;"/>
-                                    <p:selectOneMenu id="fieldUnit" style="width:100%">
-                                        <f:selectItem itemLabel="m" itemValue="m"/>
+                                    <p:selectOneMenu id="fieldUnit" style="width:100%"
+                                                     value="#{bean.formContext.newFieldManager.unitId}">
+                                        <f:selectItem itemLabel="" itemValue="#{null}"
+                                                      noSelectionOption="true"/>
+                                        <f:selectItems
+                                                value="#{bean.formContext.newFieldManager.unitOptions}"
+                                                var="unitOption"
+                                                itemValue="#{unitOption.id}"
+                                                itemLabel="#{empty unitOption.symbol ? unitOption.label : unitOption.symbol}"/>
                                     </p:selectOneMenu>
                                 </div>
                             </div>

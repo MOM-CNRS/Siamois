@@ -9,12 +9,12 @@ import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.measurement.CustomFieldAnswerMeasurement;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
-import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
@@ -43,7 +43,7 @@ public class CustomFieldAnswerService {
     private final FormConfigAnswerService formConfigAnswerService;
     private final LabelService labelService;
     private final CustomFieldMeasurementService customFieldMeasurementService;
-    private final UnitDefinitionRepository unitDefinitionRepository;
+    private final UnitDefinitionService unitDefinitionService;
     private final UnitDefinitionMapper unitDefinitionMapper;
 
     /**
@@ -61,15 +61,14 @@ public class CustomFieldAnswerService {
     @Transactional(rollbackFor = Exception.class)
     public void saveAdditionalFieldAnswers(RecordingUnitDTO recordingUnitDTO,
                                            Map<CustomField, CustomFieldAnswerViewModel> answers) {
-        if (answers == null || answers.isEmpty()) return;
+        if (answers == null || answers.isEmpty()) {
+            log.debug("No additional field answer given for recording unit {}", recordingUnitDTO.getId());
+            return;
+        }
 
         Long projectId = recordingUnitDTO.getActionUnit().getId();
         String typeName = typeNameOf(recordingUnitDTO);
 
-        // Defense in depth: only persist answers for fields still active on the type's form today,
-        // in case a field was deactivated (or the unit's type changed) between form load and save.
-        // Measurement fields created from this very unit's form are never part of the project-level
-        // configuration, so they are whitelisted alongside it.
         Set<CustomField> activeFields = new HashSet<>(
                 tableFieldConfigService.getActiveAdditionalFields(projectId, ConfigurableTable.UE, typeName));
         activeFields.addAll(customFieldMeasurementService.findByRecordingUnit(recordingUnitDTO.getId()));
@@ -77,7 +76,15 @@ public class CustomFieldAnswerService {
                 .filter(entry -> activeFields.contains(entry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        if (filteredAnswers.isEmpty()) return;
+        if (filteredAnswers.isEmpty()) {
+            log.warn("None of the {} answers of recording unit {} is for a field active on type '{}' of project {}"
+                            + " — nothing persisted. Answered fields: {}, active fields: {}",
+                    answers.size(), recordingUnitDTO.getId(), typeName, projectId,
+                    fieldIdsOf(answers.keySet()), fieldIdsOf(activeFields));
+            return;
+        }
+        log.debug("Persisting {} of the {} additional field answers of recording unit {}",
+                filteredAnswers.size(), answers.size(), recordingUnitDTO.getId());
 
         // Materialized on demand: a field created straight from a unit's form gives the type answers
         // to store before anyone ever opened its settings screen, so the config may not exist yet.
@@ -161,6 +168,13 @@ public class CustomFieldAnswerService {
         return viewModel;
     }
 
+    /** Identifies fields in the logs by what tells them apart in the database. */
+    private static String fieldIdsOf(Collection<CustomField> fields) {
+        return fields.stream()
+                .map(field -> field.getId() + " (" + field.getLabel() + ")")
+                .collect(Collectors.joining(", ", "[", "]"));
+    }
+
     /** Mirrors {@link fr.siamois.ui.bean.panel.models.panel.single.RecordingUnitPanel#resolveTypeName()}. */
     private String typeNameOf(RecordingUnitDTO recordingUnitDTO) {
         return recordingUnitDTO.getType() != null
@@ -226,10 +240,7 @@ public class CustomFieldAnswerService {
         Long answerUnitId = value != null && value.getUnit() != null ? value.getUnit().getId() : null;
         Long unitId = answerUnitId != null ? answerUnitId : fieldUnitId(customField);
 
-        if (unitId == null) return null;
-
-        return unitDefinitionRepository.findById(unitId)
-                .orElseThrow(() -> new IllegalStateException("UnitDefinition not found: " + unitId));
+        return unitDefinitionService.resolveById(unitId);
     }
 
     private Long fieldUnitId(CustomField customField) {

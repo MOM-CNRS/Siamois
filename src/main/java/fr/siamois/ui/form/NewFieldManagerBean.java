@@ -2,9 +2,9 @@ package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
+import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
@@ -27,22 +27,34 @@ public class NewFieldManagerBean {
 
     private final CustomFieldMeasurementService customFieldMeasurementService;
     private final RecordingUnitService recordingUnitService;
+    private final FormService formService;
     private final CustomFormResponseViewModel formResponse;
     private final AbstractEntityDTO owner; // entity whose form the fields are created from
     private final List<CustomFieldMeasurement> addFieldOptions; // options of existing fields when clicking the split button dropdown
+    private final List<UnitDefinitionDTO> unitOptions; // units a new field can measure in
 
     private boolean showEditor = false;
     private CustomFormPanelUiDto currentPanel;
     private CustomFieldMeasurementDTO newField;
     private ConceptAutocompleteDTO type;
     private ConceptAutocompleteDTO nature;
-    private UnitDefinitionDTO unit;
+    private Long unitId; // the unit picked in the editor, among unitOptions
 
     public void prepareNewField(CustomFormPanelUiDto panel) {
         this.currentPanel = panel;
         this.showEditor = true;
         this.newField = new CustomFieldMeasurementDTO();
+        this.unitId = defaultUnitId();
         newField.setSystemField(false);
+    }
+
+    private Long defaultUnitId() {
+        return unitOptions.stream()
+                .filter(UnitDefinitionDTO::isSystemBase)
+                .findFirst()
+                .or(() -> unitOptions.stream().findFirst())
+                .map(UnitDefinitionDTO::getId)
+                .orElse(null);
     }
 
     public void cancelNewField() {
@@ -58,7 +70,7 @@ public class NewFieldManagerBean {
         // 1. Prepare and persist the new field definition
         newField.setLabel(type.getOriginalPrefLabel() + (nature != null ? " " + nature.getOriginalPrefLabel() : ""));
         newField.setSystemField(false);
-        newField.setUnit(unit);
+        newField.setUnit(selectedUnit());
         newField.setConcept(type.concept());
         newField.setMeasurementNature(nature != null ? nature.concept() : null);
 
@@ -76,6 +88,14 @@ public class NewFieldManagerBean {
 
         // 4. Cleanup
         cancelNewField();
+    }
+
+    private UnitDefinitionDTO selectedUnit() {
+        if (unitId == null) return null;
+        return unitOptions.stream()
+                .filter(option -> unitId.equals(option.getId()))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -122,10 +142,8 @@ public class NewFieldManagerBean {
             lastRow.getColumns().add(newCol);
         }
 
-        // 4. Initialize the placeholder in the answer map
-        // Use putIfAbsent to prevent overwriting if the user clicks the same library item twice
         CustomFieldAnswerMeasurementViewModel answer = new CustomFieldAnswerMeasurementViewModel();
-        answer.setValue(new MeasurementAnswerDTO());
+        formService.initializeMeasurement(answer, field);
         formResponse.getAnswers().putIfAbsent(field, answer);
     }
 
