@@ -21,37 +21,38 @@ import java.util.Objects;
 })
 @NoArgsConstructor
 @AllArgsConstructor
+@Inheritance(strategy = InheritanceType.JOINED)
 public class FieldFormConfig {
 
     @EmbeddedId
-    private FieldFormConfigId id = new FieldFormConfigId();
+    protected FieldFormConfigId id = new FieldFormConfigId();
 
     @NonNull
     @MapsId("customFieldId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fk_custom_field_id", nullable = false)
-    private CustomField field;
+    protected CustomField field;
 
     @NonNull
     @MapsId("formsConfigId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fk_form_config_id", nullable = false)
-    private FormConfig formConfig;
+    protected FormConfig formConfig;
 
     @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE")
-    private boolean isActive = true;
+    protected boolean isActive = true;
 
     @Column(name = "is_mandatory", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean isMandatory = false;
+    protected boolean isMandatory = false;
 
     @Column(name = "is_institution_locked", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean isInstitutionLocked = false;
+    protected boolean isInstitutionLocked = false;
 
     /**
      * Defines the position of the field in the additional fields. 0 if no position set, order may be random if position = 0
      */
     @Column(name = "position", columnDefinition = "INT DEFAULT 0")
-    private int position = 0;
+    protected int position = 0;
 
     public void setField(@NonNull CustomField field) {
         this.field = field;
@@ -78,8 +79,8 @@ public class FieldFormConfig {
     @Embeddable
     @EqualsAndHashCode
     public static class FieldFormConfigId {
-        private Long customFieldId;
-        private Long formsConfigId;
+        protected Long customFieldId;
+        protected Long formsConfigId;
     }
 
 }
