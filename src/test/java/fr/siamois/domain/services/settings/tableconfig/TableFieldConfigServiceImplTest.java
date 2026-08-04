@@ -521,6 +521,93 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void createOrGetFormConfig_byId_shouldReturnTheConfigurationTheTypeAlreadyHas() {
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
+
+        assertThat(result).contains(ceramiqueConfig);
+        verify(formConfigRepository, never()).save(any());
+        verifyNoInteractions(labelService);
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldMaterializeTheConfigurationOfATypeThatHasNone() {
+        Long metalConceptId = 300L;
+        Concept metalConcept = concept(metalConceptId, "metal");
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, metalConceptId))
+                .thenReturn(Optional.empty());
+        when(conceptRepository.findById(metalConceptId)).thenReturn(Optional.of(metalConcept));
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, metalConceptId);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getValueConcept()).isEqualTo(metalConcept);
+        verify(formConfigRepository).save(any(FormConfig.class));
+        verifyNoInteractions(labelService);
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldMaterializeTheDefaultConfigurationWhenTypeConceptIdIsNull() {
+        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getValueConcept()).isNull();
+        verify(formConfigRepository).save(any(FormConfig.class));
+        verify(conceptRepository, never()).findById(any());
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldFailWhenTheProjectDoesNotExist() {
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining(PROJECT_ID.toString());
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldFailWhenTheConceptIdIsUnknown() {
+        Long unknownConceptId = 404L;
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, unknownConceptId))
+                .thenReturn(Optional.empty());
+        when(conceptRepository.findById(unknownConceptId)).thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, unknownConceptId))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining(unknownConceptId.toString());
+        verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldReturnEmptyRatherThanCreateOneWhenProjectHasNoVocabularyConfigured() throws Exception {
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
+
+        assertThat(result).isEmpty();
+        verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
     void getFieldsConfig_shouldMapVocabularyFieldsToTheirTypeAndSource() {
         CustomFieldSelectOneFromFieldCode vocabularyField = CustomFieldSelectOneFromFieldCode.builder()
                 .id(3L).label("Catégorie").isSystemField(true).fieldCode("SIAS.CATEGORY").build();
