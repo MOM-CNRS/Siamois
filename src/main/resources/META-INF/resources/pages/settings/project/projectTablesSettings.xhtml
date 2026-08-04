@@ -22,10 +22,6 @@
             /* ── mobile selector bar ───────────────────── */
             .ptc-mobile-bar { display: none; gap: 8px; margin-bottom: 16px; }
             .ptc-mobile-bar .ui-selectonemenu { flex: 1; min-width: 0; }
-            @media (max-width: 760px) {
-                .ptc-mobile-bar { display: flex; }
-                .ptc-tree { display: none; }
-            }
 
             /* ── tree ───────────────────────────────────── */
             .ptc-tree { width: 258px; flex: none; border: 1px solid #e7e7e3; border-radius: 10px; background: #fff; padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 250px); min-height: 420px; overflow: auto; }
@@ -40,6 +36,13 @@
             .ptc-tree-type-row.ptc-default-row:not(.ptc-selected) { background: #faf8ee; }
             .ptc-badge-default { font-size: 10.5px; color: #8a7d4a; border: 1px solid #d8cfa6; border-radius: 5px; padding: 0 5px; background: #faf6e8; margin-left: auto; }
             .ptc-new-type-btn.ui-button { border: 1px dashed #cfcfca !important; background: transparent !important; border-radius: 7px !important; color: #999 !important; font-size: 13px !important; width: 100%; }
+
+            /* Below this breakpoint the mobile selector bar replaces the tree entirely — declared
+               after every .ptc-tree rule above so display:none actually wins the cascade. */
+            @media (max-width: 760px) {
+                .ptc-mobile-bar { display: flex; }
+                .ptc-tree { display: none; }
+            }
 
             /* ── editor ─────────────────────────────────── */
             /* The summary block and the tab bar stay put; only the active tab's content (Champs/
