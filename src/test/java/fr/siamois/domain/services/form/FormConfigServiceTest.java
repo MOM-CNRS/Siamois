@@ -22,6 +22,7 @@ import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -68,10 +70,17 @@ class FormConfigServiceTest {
     @Mock
     private ConceptRepository conceptRepository;
 
+    @Mock
+    private VocabularyMapper vocabularyMapper;
+
+    @Mock
+    private ApplicationContext applicationContext;
+
     @InjectMocks
     private FormConfigService formConfigService;
 
     private Vocabulary vocabulary;
+    private VocabularyDTO vocabularyDTO;
     private ConceptDTO branchTopConceptDTO;
     private Concept branchTopConcept;
     private Concept childConcept;
@@ -90,7 +99,7 @@ class FormConfigServiceTest {
         vocabulary.setBaseUri("https://thesaurus.example");
         vocabulary.setType(vocabularyType);
 
-        VocabularyDTO vocabularyDTO = VocabularyDTO.builder()
+        vocabularyDTO = VocabularyDTO.builder()
                 .id(1L)
                 .externalVocabularyId("th221")
                 .baseUri("https://thesaurus.example")
@@ -126,9 +135,7 @@ class FormConfigServiceTest {
 
     @Test
     void addConceptConfigFor_shouldCreateConfigWithTopTermAndNoCollection_whenNoConfigExists() throws Exception {
-        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
-        when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
-        when(conceptApi.fetchDownExpansion(vocabulary, "parent")).thenReturn(new ConceptBranchDTO());
+        stubDownExpansion(new ConceptBranchDTO());
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
@@ -143,13 +150,13 @@ class FormConfigServiceTest {
 
     @Test
     void addConceptConfigFor_shouldResolveVocabularyFromCompleteUri() throws Exception {
-        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
-        when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
-        when(conceptApi.fetchDownExpansion(vocabulary, "parent")).thenReturn(new ConceptBranchDTO());
+        stubDownExpansion(new ConceptBranchDTO());
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
         verify(vocabularyService).findOrCreateVocabularyOfUri("https://thesaurus.example?idt=th221");
+        // the resolved vocabulary is handed back to the DTO before the concept is saved
+        assertThat(branchTopConceptDTO.getVocabulary()).isSameAs(vocabularyDTO);
     }
 
     @Test
@@ -175,8 +182,10 @@ class FormConfigServiceTest {
         existing.setCollection(previousCollection);
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+        stubVocabularyResolution();
         when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
         when(conceptApi.fetchDownExpansion(vocabulary, "parent")).thenReturn(new ConceptBranchDTO());
+        stubBranchLoadComponents();
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
@@ -200,8 +209,10 @@ class FormConfigServiceTest {
         existing.setPosition(7);
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+        stubVocabularyResolution();
         when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
         when(conceptApi.fetchDownExpansion(vocabulary, "parent")).thenReturn(new ConceptBranchDTO());
+        stubBranchLoadComponents();
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
@@ -337,6 +348,7 @@ class FormConfigServiceTest {
     @Test
     void addConceptConfigFor_shouldStillSaveConfig_whenDownExpansionFails() throws Exception {
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+        stubVocabularyResolution();
         when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
         when(conceptApi.fetchDownExpansion(vocabulary, "parent"))
                 .thenThrow(new ErrorProcessingExpansionException("expansion failed"));
@@ -351,6 +363,26 @@ class FormConfigServiceTest {
 
     // --- Helpers -------------------------------------------------------------------------------
 
+    /**
+     * The service resolves the vocabulary of the top term before saving it, and hands the resolved
+     * one back to the DTO through the mapper.
+     */
+    private void stubVocabularyResolution() throws InvalidEndpointException {
+        when(vocabularyService.findOrCreateVocabularyOfUri("https://thesaurus.example?idt=th221")).thenReturn(vocabulary);
+        when(vocabularyMapper.convert(vocabulary)).thenReturn(vocabularyDTO);
+    }
+
+    /**
+     * The branch is loaded through {@link fr.siamois.utils.vocabulary.ConceptApiUtils.BranchLoadComponents},
+     * which pulls its collaborators from the application context.
+     */
+    private void stubBranchLoadComponents() {
+        when(applicationContext.getBean(ConceptApi.class)).thenReturn(conceptApi);
+        when(applicationContext.getBean(ConceptService.class)).thenReturn(conceptService);
+        when(applicationContext.getBean(ConceptRepository.class)).thenReturn(conceptRepository);
+        when(applicationContext.getBean(ConceptHierarchyRepository.class)).thenReturn(conceptHierarchyRepository);
+    }
+
     private ConceptFieldFormConfig captureSavedConfig() {
         ArgumentCaptor<FieldFormConfig> captor = ArgumentCaptor.forClass(FieldFormConfig.class);
         verify(fieldFormConfigRepository).save(captor.capture());
@@ -358,10 +390,12 @@ class FormConfigServiceTest {
         return (ConceptFieldFormConfig) captor.getValue();
     }
 
-    private void stubDownExpansion(ConceptBranchDTO branch) throws ErrorProcessingExpansionException {
+    private void stubDownExpansion(ConceptBranchDTO branch) throws ErrorProcessingExpansionException, InvalidEndpointException {
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+        stubVocabularyResolution();
         when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
         when(conceptApi.fetchDownExpansion(vocabulary, "parent")).thenReturn(branch);
+        stubBranchLoadComponents();
     }
 
     private ConceptBranchDTO branchWithParentAndChild() {

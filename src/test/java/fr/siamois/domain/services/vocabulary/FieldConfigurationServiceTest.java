@@ -734,14 +734,25 @@ class FieldConfigurationServiceTest {
 
         List<ConceptAutocompleteDTO> expectedResults = List.of(
                 new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"));
-        when(autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", null, FieldConfigurationService.LIMIT_RESULTS))
+        when(autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", "que", FieldConfigurationService.LIMIT_RESULTS))
                 .thenReturn(expectedResults);
 
-        // a null input is forwarded as-is, the SQL function treats it as "no text filter"
-        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(field, null, 42L);
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(field, "que", 42L);
 
         assertThat(results).isEqualTo(expectedResults);
         verify(autocompleteRepository, never()).findMatchingConceptsInBranchOf(any(), anyString(), any(), anyInt());
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldReturnNoSuggestion_whenInputIsBlank() throws NoConfigForFieldException {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        // an empty input matches everything, the configured branch or collection is not searched for it
+        assertThat(service.fetchAutocomplete(field, null, 42L)).isEmpty();
+        assertThat(service.fetchAutocomplete(field, "   ", 42L)).isEmpty();
+
+        verifyNoInteractions(autocompleteRepository, fieldFormConfigRepository);
     }
 
     @Test

@@ -31,8 +31,6 @@ import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerS
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectOnePerson;
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectMultiple;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerAnswerSelectMultiple;
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode;

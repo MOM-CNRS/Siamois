@@ -12,7 +12,6 @@ import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;

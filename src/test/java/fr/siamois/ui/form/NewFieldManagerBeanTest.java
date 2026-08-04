@@ -5,6 +5,7 @@ import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
