@@ -77,7 +77,7 @@ public class CustomFieldAnswerService {
         if (filteredAnswers.isEmpty()) {
             log.warn("None of the {} answers of recording unit {} is for a field active on type '{}' of project {}"
                             + " — nothing persisted. Answered fields: {}, active fields: {}",
-                    answers.size(), recordingUnitDTO.getId(), typeName, projectId,
+                    answers.size(), recordingUnitDTO.getId(), typeConceptId, projectId,
                     fieldIdsOf(answers.keySet()), fieldIdsOf(activeFields));
             return;
         }
@@ -89,7 +89,7 @@ public class CustomFieldAnswerService {
         Optional<FormConfig> formConfig = tableFieldConfigService.createOrGetFormConfig(projectId, ConfigurableTable.UE, typeConceptId);
         if (formConfig.isEmpty()) {
             log.warn("No form config for type '{}' on recording unit {}; additional field answers not persisted",
-                    typeName, recordingUnitDTO.getId());
+                    typeConceptId, recordingUnitDTO.getId());
             return;
         }
 
@@ -162,18 +162,6 @@ public class CustomFieldAnswerService {
         return fields.stream()
                 .map(field -> field.getId() + " (" + field.getLabel() + ")")
                 .collect(Collectors.joining(", ", "[", "]"));
-    }
-
-    private String typeNameOf(RecordingUnitDTO recordingUnitDTO) {
-        return recordingUnitDTO.getType() != null
-                ? labelService.findLabelOf(recordingUnitDTO.getType(), currentLang()).getLabel()
-                : TableFieldConfigService.DEFAULT_TYPE;
-    }
-
-    private String currentLang() {
-        UserInfo info = ExecutionContextHolder.get();
-        assert info != null;
-        return info.getLang();
     }
 
     private void createOrUpdateAnswer(FormConfigAnswer formConfigAnswer, CustomField customField, CustomFieldAnswerViewModel customFieldAnswerViewModel) {

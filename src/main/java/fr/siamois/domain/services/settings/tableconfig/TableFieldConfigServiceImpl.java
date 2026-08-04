@@ -564,6 +564,19 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return Optional.of(createFormConfig(projectId, table, typeName));
     }
 
+    @Override
+    @Transactional
+    public Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        Optional<FormConfig> existing = findFormConfig(projectId, table, typeConceptId);
+        if (existing.isPresent()) {
+            return existing;
+        }
+        if (findFieldConcept(projectId, table).isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(createFormConfig(projectId, table, typeConceptId));
+    }
+
     private void applyFieldChange(Long projectId, ConfigurableTable table, String typeName, String fieldName,
                                   Consumer<FieldFormConfig> change) {
         Optional<EffectiveField> target = effectiveFields(projectId, table, typeName).values().stream()
@@ -627,6 +640,25 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             config.setValueConcept(findValueConcept(projectId, fieldConcept, typeName)
                     .orElseThrow(() -> new NoSuchElementException(
                             "Unknown type '" + typeName + "' for table " + table)));
+        }
+        return formConfigRepository.save(config);
+    }
+
+    private FormConfig createFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        ActionUnit project = actionUnitRepository.findById(projectId)
+                .orElseThrow(() -> new NoSuchElementException("Unknown project: " + projectId));
+        Concept fieldConcept = findFieldConcept(projectId, table)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No vocabulary configured for field " + table.getFieldCode() + " of project " + projectId));
+
+        FormConfig config = new FormConfig();
+        config.setActionUnit(project);
+        config.setInstitution(project.getCreatedByInstitution());
+        config.setFieldConcept(fieldConcept);
+        config.setFieldConfigs(new ArrayList<>());
+        if (typeConceptId != null) {
+            config.setValueConcept(conceptRepository.findById(typeConceptId)
+                    .orElseThrow(() -> new NoSuchElementException("Unknown concept id " + typeConceptId)));
         }
         return formConfigRepository.save(config);
     }

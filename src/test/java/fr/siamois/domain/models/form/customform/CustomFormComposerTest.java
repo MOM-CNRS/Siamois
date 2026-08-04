@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 class CustomFormComposerTest {
 
@@ -154,21 +155,34 @@ class CustomFormComposerTest {
     }
 
     @Test
-    void withFieldsInPanel_shouldReturnBaseFormUnchangedWhenNoColumns() {
-        CustomForm base = baseForm();
+    void withFieldsInPanel_shouldHandBackAnIndependentMutableCopyOfTheNamedPanelEvenWithNoColumns() {
+        FormUiDto base = baseForm();
 
-        assertThat(CustomFormComposer.withFieldsInPanel(base, "General", List.of())).isSameAs(base);
-        assertThat(CustomFormComposer.withFieldsInPanel(base, "General", null)).isSameAs(base);
+        FormUiDto composedFromEmptyList = CustomFormComposer.withFieldsInPanel(base, "General", List.of());
+        FormUiDto composedFromNull = CustomFormComposer.withFieldsInPanel(base, "General", null);
+
+        // Not the same instances: a caller may go on to add fields to the named panel in place
+        // (e.g. a field created "on the fly"), and the base form may be a shared static singleton.
+        assertThat(composedFromEmptyList).isNotSameAs(base);
+        assertThat(composedFromNull).isNotSameAs(base);
+        CustomFormPanelUiDto panel = composedFromEmptyList.getLayout().get(0);
+        assertThat(panel.getRows()).isNotSameAs(base.getLayout().get(0).getRows());
+        assertThat(panel.getRows().get(0).getColumns())
+                .isNotSameAs(base.getLayout().get(0).getRows().get(0).getColumns())
+                .isEqualTo(base.getLayout().get(0).getRows().get(0).getColumns());
+
+        // The copy is mutable: a caller can safely add a row/column to it in place
+        assertThatCode(() -> panel.getRows().add(new CustomRowUiDto())).doesNotThrowAnyException();
     }
 
     @Test
     void withFieldsInPanel_shouldAppendATrailingRowToTheNamedPanel() {
-        CustomForm base = baseFormWithTwoRows();
-        List<CustomCol> columns = List.of(additionalColumn("profondeur"));
+        FormUiDto base = baseFormWithTwoRows();
+        List<CustomColUiDto> columns = List.of(additionalColumn("profondeur"));
 
-        CustomForm composed = CustomFormComposer.withFieldsInPanel(base, "General", columns);
+        FormUiDto composed = CustomFormComposer.withFieldsInPanel(base, "General", columns);
 
-        CustomFormPanel panel = composed.getLayout().get(0);
+        CustomFormPanelUiDto panel = composed.getLayout().get(0);
         assertThat(panel.getRows()).hasSize(3);
         assertThat(panel.getRows().get(2).getColumns()).containsExactlyElementsOf(columns);
         assertThat(panel.getName()).isEqualTo("General");
@@ -177,17 +191,17 @@ class CustomFormComposerTest {
 
     @Test
     void withFieldsInPanel_shouldLeaveTheFormAloneWhenThePanelIsUnknown() {
-        CustomForm base = baseFormWithTwoRows();
+        FormUiDto base = baseFormWithTwoRows();
 
-        CustomForm composed = CustomFormComposer.withFieldsInPanel(base, "Mesures", List.of(additionalColumn("profondeur")));
+        FormUiDto composed = CustomFormComposer.withFieldsInPanel(base, "Mesures", List.of(additionalColumn("profondeur")));
 
         assertThat(composed.getLayout().get(0).getRows()).hasSize(2);
     }
 
     @Test
     void withFieldsInPanel_shouldNotMutateTheBaseForm() {
-        CustomForm base = baseFormWithTwoRows();
-        CustomFormPanel originalPanel = base.getLayout().get(0);
+        FormUiDto base = baseFormWithTwoRows();
+        CustomFormPanelUiDto originalPanel = base.getLayout().get(0);
         int originalRowCount = originalPanel.getRows().size();
 
         CustomFormComposer.withFieldsInPanel(base, "General", List.of(additionalColumn("profondeur")));
