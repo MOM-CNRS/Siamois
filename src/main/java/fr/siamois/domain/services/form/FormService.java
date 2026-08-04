@@ -130,6 +130,7 @@ public class FormService {
         CustomFieldAnswerViewModel additionalAnswer = additionalAnswers.get(field);
 
         if (additionalAnswer != null && !Boolean.TRUE.equals(field.getIsSystemField())) {
+            initializeMeasurement(additionalAnswer, field);
             answers.put(field, additionalAnswer);
             return;
         }
@@ -334,7 +335,6 @@ public class FormService {
         }
     }
 
-    /** Converts back to a place DTO (single selection). */
     private static Object extractSpatialUnit(CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
         if (a.getValue() == null) return null;
         PlaceSuggestionDTO ans = a.getValue();
@@ -346,7 +346,6 @@ public class FormService {
         return dto;
     }
 
-    /** Converts each PlaceSuggestionDTO in the list to a SpatialUnitSummaryDTO. */
     private static Object extractSpatialUnitSet(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
         List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
         return placeSuggestionList.stream()
@@ -428,18 +427,23 @@ public class FormService {
 
             Object value = getFieldValue(jpaEntity, field.getValueBinding());
             populateSystemFieldValue(answer, value);
+        }
 
-            // POST INIT
-            if (field instanceof CustomFieldMeasurement measField
-                    && answer instanceof CustomFieldAnswerMeasurementViewModel measAnswer
-                    && measAnswer.getValue().getUnit() == null) {
+        // POST INIT
+        initializeMeasurement(answer, field);
+    }
 
-                measAnswer.getValue().setUnit(
-                        unitDefinitionMapper.convert(measField.getUnit())
-                );
-            }
+    public void initializeMeasurement(CustomFieldAnswerViewModel answer, CustomField field) {
+        if (!(field instanceof CustomFieldMeasurement measurementField)
+                || !(answer instanceof CustomFieldAnswerMeasurementViewModel measurementAnswer)) {
+            return;
+        }
 
-
+        if (measurementAnswer.getValue() == null) {
+            measurementAnswer.setValue(new MeasurementAnswerDTO());
+        }
+        if (measurementAnswer.getValue().getUnit() == null) {
+            measurementAnswer.getValue().setUnit(unitDefinitionMapper.convert(measurementField.getUnit()));
         }
     }
 

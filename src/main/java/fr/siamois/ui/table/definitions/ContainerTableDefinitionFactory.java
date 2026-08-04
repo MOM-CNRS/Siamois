@@ -12,12 +12,7 @@ import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.TableColumnAction;
 import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
-import static fr.siamois.ui.table.definitions.TableDefinitions.IDENTIFIER;
-import static fr.siamois.ui.table.definitions.TableDefinitions.addColumns;
-import static fr.siamois.ui.table.definitions.TableDefinitions.column;
-import static fr.siamois.ui.table.definitions.TableDefinitions.panelLinkColumn;
-import static fr.siamois.ui.table.definitions.TableDefinitions.systemConcept;
-import static fr.siamois.ui.table.definitions.TableDefinitions.unit;
+import static fr.siamois.ui.table.definitions.TableDefinitions.*;
 
 public class ContainerTableDefinitionFactory {
 
@@ -98,7 +93,6 @@ public class ContainerTableDefinitionFactory {
                 column(weightField).build());
     }
 
-    /** The unit the dimensions of a container are given in. */
     private static UnitDefinition centimetres() {
         return unit(CENTIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01);
     }

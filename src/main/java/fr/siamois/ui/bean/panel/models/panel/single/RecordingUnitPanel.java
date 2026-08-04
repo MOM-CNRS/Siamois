@@ -10,6 +10,7 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -381,13 +382,49 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        Long typeConceptId = unit.getType() != null ? unit.getType().getId() : null;
-        detailsForm = effectiveFormResolver.resolveEffectiveForm(
-                RecordingUnit.DETAILS_FORM, unit.getActionUnit().getId(), ConfigurableTable.UE, typeConceptId);
+        String typeName = resolveTypeName();
+        CustomForm base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings(typeName));
+        CustomForm withMeasurements = CustomFormComposer.withFieldsInPanel(base,
+                RecordingUnitDetailsForm.MEASUREMENTS_PANEL_NAME, measurementFields());
+        CustomForm form = CustomFormComposer.withAdditionalFields(withMeasurements, "Champs additionnels", additionalFields(typeName));
+        detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);
     }
+
+    private String resolveTypeName() {
+        return unit.getType() != null
+                ? labelService.findLabelOf(unit.getType(), langBean.getLanguageCode()).getLabel()
+                : TableFieldConfigService.DEFAULT_TYPE;
+    }
+
+    private Set<String> inactiveSystemFieldBindings(String typeName) {
+        TypeFieldsConfig fieldsConfig = tableFieldConfigService.getFieldsConfig(unit.getActionUnit().getId(), ConfigurableTable.UE, typeName);
+        return fieldsConfig.getFields().stream()
+                .filter(f -> !f.isActive())
+                .map(TypeFieldFormConfig::getValueBinding)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private List<CustomCol> measurementFields() {
+        return formContextServices.getCustomFieldMeasurementService()
+                .findByRecordingUnit(unit.getId()).stream()
+                .map(field -> new CustomCol.Builder()
+                        .className("ui-g-12 ui-md-6 ui-lg-6")
+                        .field(field)
+                        .build())
+                .toList();
+    }
+
+    private List<CustomCol> additionalFields(String typeName) {
+        return tableFieldConfigService.getActiveAdditionalFields(unit.getActionUnit().getId(), ConfigurableTable.UE, typeName).stream()
+                .map(field -> new CustomCol.Builder().field(field).build())
+                .toList();
+    }
+
+
 
     @Override
     protected void configureSystemFieldsBeforeInit() {

@@ -43,8 +43,48 @@ public final class CustomFormComposer {
                 .build();
     }
 
-    private static CustomFormPanelUiDto additionalFieldsPanel(String name, List<CustomColUiDto> additionalColumns) {
-        return new CustomFormPanelUiDto.Builder()
+    /**
+     * @param baseForm  the form to start from, left untouched
+     * @param panelName name of the existing panel to append to; unknown names are a no-op
+     * @param columns   columns to append as a trailing row of that panel; if empty, {@code baseForm}
+     *                  is returned as-is
+     * @return a new {@link CustomForm} equal to {@code baseForm} with {@code columns} appended to
+     * the named panel, for fields that belong with that panel's own rather than in a trailing
+     * "additional fields" panel (e.g. measurement fields created from the measurements panel)
+     */
+    public static CustomForm withFieldsInPanel(CustomForm baseForm, String panelName, List<CustomCol> columns) {
+        if (columns == null || columns.isEmpty()) {
+            return baseForm;
+        }
+
+        List<CustomFormPanel> panels = baseForm.getLayout().stream()
+                .map(panel -> panel.getName() != null && panel.getName().equals(panelName)
+                        ? withExtraRow(panel, columns)
+                        : panel)
+                .toList();
+
+        return new CustomForm.Builder()
+                .name(baseForm.getName())
+                .description(baseForm.getDescription())
+                .addPanels(panels)
+                .build();
+    }
+
+    private static CustomFormPanel withExtraRow(CustomFormPanel panel, List<CustomCol> columns) {
+        List<CustomRow> rows = new ArrayList<>(panel.getRows());
+        rows.add(new CustomRow.Builder().addColumns(columns).build());
+
+        CustomFormPanel copy = new CustomFormPanel();
+        copy.setName(panel.getName());
+        copy.setClassName(panel.getClassName());
+        copy.setIsSystemPanel(panel.getIsSystemPanel());
+        copy.setCanUserAddFields(panel.getCanUserAddFields());
+        copy.setRows(rows);
+        return copy;
+    }
+
+    private static CustomFormPanel additionalFieldsPanel(String name, List<CustomCol> additionalColumns) {
+        return new CustomFormPanel.Builder()
                 .name(name)
                 .isSystemPanel(false)
                 .addRow(new CustomRowUiDto.Builder().addColumns(additionalColumns).build())

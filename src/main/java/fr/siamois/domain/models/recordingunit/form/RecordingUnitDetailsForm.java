@@ -20,6 +20,9 @@ import java.util.List;
  */
 public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
+    /** Panel users add their own measurement fields to; those fields are re-injected here on reopen. */
+    public static final String MEASUREMENTS_PANEL_NAME = "recordingunit.panel.measurements";
+
     private static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
     private static final String UI_G_12_UI_MD_12_UI_LG_12 = "ui-g-12 ui-md-12 ui-lg-12";
     private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
@@ -106,7 +109,7 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
     private static CustomFormPanelUiDto measurementsPanel() {
         return new CustomFormPanelUiDto.Builder()
-                .name("recordingunit.panel.measurements")
+                .name(MEASUREMENTS_PANEL_NAME)
                 .isSystemPanel(true)
                 .canUserAddField(true)
                 .addRow(
@@ -133,9 +136,6 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .build();
     }
 
-    /**
-     * Erosion shape/profile/orientation are only enabled when Nature (geomorphologicalCycle) == "Erosion".
-     */
     private static EnabledWhenJson erosionEnabledWhen() {
         EnabledWhenJson.ValueJson erosionValue = new EnabledWhenJson.ValueJson();
         erosionValue.setAnswerClass(SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS);
@@ -151,9 +151,6 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
         return enabledWhen;
     }
 
-    /**
-     * Interpretation's autocomplete is restricted to concepts related to whichever Nature was chosen.
-     */
     private static DependsOnJson dependsOnNature() {
         DependsOnJson dependsOn = new DependsOnJson();
         dependsOn.setFieldId(NATURE_FIELD.getId());

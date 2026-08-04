@@ -1,18 +1,15 @@
 package fr.siamois.domain.models.form.customfield.recordingunit;
 
 import fr.siamois.domain.models.FieldCode;
-import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 
-@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @Entity
@@ -20,7 +17,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
-public class CustomFieldMeasurement extends CustomField {
+public class CustomFieldMeasurement extends CustomFieldOnTheFly {
 
     @Column(name = "min_value")
     private Long minValue ;
@@ -28,6 +25,9 @@ public class CustomFieldMeasurement extends CustomField {
     @Column(name = "max_value")
     private Long maxValue ;
 
+    /**
+     * Unit as a measurement unit
+     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_unit")
     private UnitDefinition unit;
@@ -47,6 +47,13 @@ public class CustomFieldMeasurement extends CustomField {
         return "bi bi-rulers";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
 
-
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }
