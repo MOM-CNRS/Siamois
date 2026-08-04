@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
@@ -392,17 +393,15 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public void initForms(boolean forceInit) {
         String typeName = resolveTypeName();
         CustomForm base = CustomFormComposer.withoutFields(RecordingUnit.DETAILS_FORM, inactiveSystemFieldBindings(typeName));
-        CustomForm form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(typeName));
+        CustomForm withMeasurements = CustomFormComposer.withFieldsInPanel(base,
+                RecordingUnitDetailsForm.MEASUREMENTS_PANEL_NAME, measurementFields());
+        CustomForm form = CustomFormComposer.withAdditionalFields(withMeasurements, "Champs additionnels", additionalFields(typeName));
         detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);
     }
 
-    /**
-     * The label of the RecordingUnit's own type concept, i.e. the type name field configurations
-     * are keyed on ({@link TableFieldConfigService#DEFAULT_TYPE} when the unit has none).
-     */
     private String resolveTypeName() {
         return unit.getType() != null
                 ? labelService.findLabelOf(unit.getType(), langBean.getLanguageCode()).getLabel()
@@ -416,6 +415,16 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 .map(TypeFieldFormConfig::getValueBinding)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+
+    private List<CustomCol> measurementFields() {
+        return formContextServices.getCustomFieldMeasurementService()
+                .findByRecordingUnit(unit.getId()).stream()
+                .map(field -> new CustomCol.Builder()
+                        .className("ui-g-12 ui-md-6 ui-lg-6")
+                        .field(field)
+                        .build())
+                .toList();
     }
 
     private List<CustomCol> additionalFields(String typeName) {

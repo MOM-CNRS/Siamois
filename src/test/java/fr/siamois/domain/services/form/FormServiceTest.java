@@ -7,6 +7,7 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
@@ -780,6 +781,31 @@ class FormServiceTest {
         }
     }
 
+    /**
+     * A measurement field added to a form binds its inputs into {@code answer.value.numericValue}
+     * and shows the unit its definition carries, exactly like the system ones — nothing of that is
+     * stored per answer, so it has to be rebuilt on every form init.
+     */
+    @Test
+    void initOrReuseResponse_shouldGiveAnAddedMeasurementFieldItsValueHolderAndTheFieldsUnit() {
+        UnitDefinition metre = UnitDefinition.builder().id(1L).label("Mètre").symbol("m").build();
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder()
+                .id(1L).isSystemField(false).unit(metre).build();
+        UnitDefinitionDTO metreDto = UnitDefinitionDTO.builder().id(1L).symbol("m").build();
+
+        FieldSource fieldSource = mock(FieldSource.class);
+        when(fieldSource.getAllFields()).thenReturn(List.of(field));
+        when(unitDefinitionMapper.convert(metre)).thenReturn(metreDto);
+
+        CustomFormResponseViewModel response =
+                formService.initOrReuseResponse(null, new DummyEntity(), fieldSource, false);
+
+        CustomFieldAnswerMeasurementViewModel answer =
+                (CustomFieldAnswerMeasurementViewModel) response.getAnswers().get(field);
+        assertNotNull(answer.getValue());
+        assertEquals(metreDto, answer.getValue().getUnit());
+    }
+
     // Helper method to create a RecordingUnitDTO with a specific ID
     private RecordingUnitDTO createRecordingUnitDTO(Long id) {
         RecordingUnitDTO unit = new RecordingUnitDTO();
@@ -899,7 +925,6 @@ class FormServiceTest {
     // Accessed via the private populateSystemFieldValue dispatcher.
     // =====================================================================
 
-    /** Reflective helper to invoke populateSystemFieldValue(answer, value). */
     private void populate(CustomFieldAnswerViewModel answer, Object value) throws Exception {
         Method m = FormService.class.getDeclaredMethod(
                 "populateSystemFieldValue", CustomFieldAnswerViewModel.class, Object.class);
@@ -907,7 +932,6 @@ class FormServiceTest {
         m.invoke(formService, answer, value);
     }
 
-    /** Reflective helper to invoke any private static method declared directly on FormService. */
     private static Object invokeStatic(String name, Class<?>[] paramTypes, Object... args) throws Exception {
         Method m = FormService.class.getDeclaredMethod(name, paramTypes);
         m.setAccessible(true);

@@ -138,6 +138,20 @@ public interface TableFieldConfigService {
     Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName);
 
     /**
+     * Same as {@link #findFormConfig}, but materializes the configuration when the type has none —
+     * for answers that need something to hang on even though nobody ever opened the settings screen
+     * for that type, such as a measurement field created straight from a unit's form.
+     *
+     * @param projectId the project (action unit) this configuration is scoped to
+     * @param table     the table the type belongs to
+     * @param typeName  the type's name, or {@code _default}
+     * @return the type's form configuration, empty when the project has no vocabulary configured for
+     * the table's type field, or the type is not one of that field's values — there is then nothing
+     * to scope a configuration to
+     */
+    Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, String typeName);
+
+    /**
      * Activates or deactivates a field for a type. No-op when the target field is
      * {@code institutionLocked}: a locked field's {@code active} state can't be overridden at the
      * project level (only future institution-level settings screens may change it).
