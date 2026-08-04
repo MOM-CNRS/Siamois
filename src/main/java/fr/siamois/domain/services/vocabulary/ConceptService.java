@@ -358,6 +358,9 @@ public class ConceptService {
      */
     @NonNull
     public List<ConceptAutocompleteDetachedDTO> fetchAutocompleteFromRemoteThesaurus(VocabularyDTO vocabularyDTO, String input) {
+        if (input == null || input.isBlank()) {
+            return Collections.emptyList();
+        }
         List<ConceptRemoteAutocompleteDTO> autocompleteDTOS = conceptApi.fetchRemoteAutocomplete(vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId(), input);
         Map<Long, List<ConceptRemoteAutocompleteDTO>> conceptIdToResults = new LinkedHashMap<>();
         Map<Long, ConceptRemoteAutocompleteDTO> conceptIdToPrefLabel = new HashMap<>();

@@ -8,14 +8,17 @@ import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.vocabulary.ConceptCollectionDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
+import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.utils.vocabulary.ConceptApiUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,7 @@ public class FormConfigService {
     private final ConceptApi conceptApi;
     private final ConceptCollectionService conceptCollectionService;
     private final ApplicationContext applicationContext;
+    private final VocabularyMapper vocabularyMapper;
 
     /**
      * Creates the branch config for a {@link CustomFieldConcept} with a specified top term.
@@ -51,18 +55,19 @@ public class FormConfigService {
         ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);
         Concept concept;
         try {
-            vocabularyService.findOrCreateVocabularyOfUri(branchTopConcept.getVocabulary().completeUri());
+            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(branchTopConcept.getVocabulary().completeUri());
+            branchTopConcept.setVocabulary(vocabularyMapper.convert(vocabulary));
             concept = conceptService.saveOrGetConcept(branchTopConcept);
+            conceptFieldFormConfig.setBranchTopTerm(concept);
+            conceptFieldFormConfig.setCollection(null);
+
+            loadDownExpansion(concept);
+
+            fieldFormConfigRepository.save(conceptFieldFormConfig);
         } catch (InvalidEndpointException e) {
             log.error("Error while saving concept {} ", branchTopConcept.getExternalId(), e);
             throw new IllegalArgumentException("Error while saving concept " + branchTopConcept.getExternalId(), e);
         }
-        conceptFieldFormConfig.setBranchTopTerm(concept);
-        conceptFieldFormConfig.setCollection(null);
-
-        loadDownExpansion(concept);
-
-        fieldFormConfigRepository.save(conceptFieldFormConfig);
     }
 
     @Transactional(rollbackFor = Exception.class)

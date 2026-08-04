@@ -13,7 +13,6 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +21,8 @@ import java.util.Objects;
 import java.util.Set;
 
 public class ConceptApiUtils {
+
+    public static final String IDC = "idc=";
 
     private ConceptApiUtils() {
         throw new UnsupportedOperationException("ConceptApiUtils should never be instantiated");
@@ -44,7 +45,12 @@ public class ConceptApiUtils {
             return uri.substring(uri.indexOf("ark:"));
         }
         try {
-            return UriComponentsBuilder.fromUriString(uri).build().getQueryParams().getFirst("idc");
+            int indexStart = uri.indexOf(IDC) + IDC.length();
+            int indexEnd = indexStart + 1;
+            while (indexEnd < uri.length() && uri.charAt(indexEnd) != '&') {
+                indexEnd++;
+            }
+            return uri.substring(indexStart, indexEnd);
         } catch (IllegalArgumentException e) {
             return null;
         }
