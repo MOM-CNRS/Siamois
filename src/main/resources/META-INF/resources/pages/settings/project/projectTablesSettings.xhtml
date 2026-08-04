@@ -74,6 +74,24 @@
 
             .ptc-ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: #8a7d4a; font-size: 15px; }
 
+            /* ── identifiants tab ────────────────────────── */
+            .ptc-ident-numbers { display: flex; gap: 16px; }
+            .ptc-ident-format-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; border: 1px solid #d8d8d2; border-radius: 9px; background: #fff; padding: 10px 12px; min-height: 46px; }
+            .ptc-ident-segment-text { display: flex; align-items: center; gap: 2px; background: #fff; border: 1px solid #d8d8d2; border-radius: 20px; padding: 3px 4px 3px 8px; }
+            .ptc-ident-segment-text input { width: 90px; font-size: 14.5px; border: none; background: transparent; padding: 3px 2px; color: #2b2b2b; outline: none; }
+            .ptc-ident-segment-token { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #fff; background: var(--sia-accent, #5e8c61); border-radius: 20px; padding: 5px 6px 5px 10px; white-space: nowrap; }
+            .ptc-ident-digits-box { display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.22); border-radius: 11px; padding: 1px 6px; }
+            .ptc-ident-digits-box span { font-size: 10.5px; opacity: 0.85; }
+            .ptc-ident-digits-box input { width: 18px; border: none; background: transparent; color: #fff; font-size: 12px; font-weight: 600; outline: none; text-align: center; padding: 0; }
+            .ptc-ident-arrow.ui-button, .ptc-ident-remove.ui-button { background: transparent !important; border: none !important; color: #909088 !important; font-size: 17px !important; line-height: 1 !important; padding: 0 4px !important; width: auto !important; }
+            .ptc-ident-arrow.ui-button { font-weight: 700 !important; }
+            .ptc-ident-remove.ui-button { font-size: 12px !important; }
+            .ptc-ident-segment-token .ptc-ident-arrow.ui-button, .ptc-ident-segment-token .ptc-ident-remove.ui-button { color: rgba(255,255,255,0.85) !important; }
+            .ptc-ident-remove.ui-button { border-radius: 50% !important; }
+            .ptc-ident-add-text.ui-button { font-size: 13px !important; color: #777 !important; border: 1px dashed #cfcfca !important; background: transparent !important; border-radius: 20px !important; padding: 5px 12px !important; }
+            .ptc-ident-token-option.ui-button { font-size: 13px !important; color: #3a5a3c !important; background: var(--sia-accent-soft, #eaf3ea) !important; border: 1px solid transparent !important; border-radius: 20px !important; padding: 6px 13px !important; }
+            .ptc-ident-preview { font-size: 15px; font-family: 'SFMono-Regular', Consolas, monospace; border: 1px solid #e7e7e3; border-radius: 8px; padding: 10px 13px; background: #f6f6f4; color: #2b2b2b; letter-spacing: .02em; }
+
             /* ── additional fields row reordering ──────── */
             .ptc-drag-cell { text-align: center; }
             .ptc-drag-handle { color: #c4c4c0; font-size: 16px; cursor: grab; }
@@ -127,6 +145,16 @@
                     <p:menuitem value="#{projectTableFieldSettingsBean.project.name}" action="#{projectDetailsBean.backToProjectSettings()}"/>
                     <p:menuitem value="#{langBean.msg('projectTables.breadcrumb.title')}"/>
                 </p:breadCrumb>
+            </form:csrfform>
+
+            <form:csrfform formId="linkToActionForm" style="margin-top: 1em;">
+                <p:commandButton action="#{navBean.redirectToActionUnit()}"
+                                 icon="bi bi-database"
+                                 value="Ouvrir le projet dans l'application"
+                                 process="@this"
+                                 styleClass="ui-button-flat">
+                    <f:param name="id" value="#{projectTableFieldSettingsBean.project.id}"/>
+                </p:commandButton>
             </form:csrfform>
 
             <!-- The composite is a NamingContainer: the dialogs and the drawer are in their own forms
@@ -286,7 +314,74 @@
 
                             <!-- Identifiants -->
                             <p:tab title="#{langBean.msg('projectTables.tab.identifiants')}">
-                                <div class="ptc-ident-placeholder">#{langBean.msg('projectTables.ident.placeholder')}</div>
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.identTabAvailable}">
+                                    <div style="display:flex;flex-direction:column;gap:20px;max-width:720px;">
+
+                                        <div class="ptc-ident-numbers">
+                                            <div class="ptc-drawer-field" style="flex:1;">
+                                                <label class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.firstNumber')}</label>
+                                                <p:inputNumber value="#{projectTableFieldSettingsBean.identFirst}" inputStyle="width:100%" minValue="1" maxValue="99998"/>
+                                            </div>
+                                            <div class="ptc-drawer-field" style="flex:1;">
+                                                <label class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.lastNumber')}</label>
+                                                <p:inputNumber value="#{projectTableFieldSettingsBean.identLast}" inputStyle="width:100%" minValue="2" maxValue="99999"/>
+                                            </div>
+                                        </div>
+
+                                        <div class="ptc-drawer-field">
+                                            <label class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.format')}</label>
+                                            <div class="ptc-ident-format-box">
+                                                <ui:repeat value="#{projectTableFieldSettingsBean.identSegments}" var="seg" varStatus="status">
+                                                    <h:panelGroup rendered="#{not seg.token}">
+                                                        <div class="ptc-ident-segment-text">
+                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update="@form" process="@this"/>
+                                                            <p:inputText value="#{projectTableFieldSettingsBean.identSegments[status.index].text}" placeholder="texte">
+                                                                <p:ajax event="change" update="@form" process="@this"/>
+                                                            </p:inputText>
+                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update="@form" process="@this"/>
+                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update="@form" process="@this"/>
+                                                        </div>
+                                                    </h:panelGroup>
+                                                    <h:panelGroup rendered="#{seg.token}">
+                                                        <div class="ptc-ident-segment-token">
+                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update="@form" process="@this"/>
+                                                            <span>#{seg.label}</span>
+                                                            <h:panelGroup rendered="#{seg.numeric}">
+                                                                <div class="ptc-ident-digits-box">
+                                                                    <span>#{langBean.msg('projectTables.ident.digits')}</span>
+                                                                    <p:inputText value="#{projectTableFieldSettingsBean.identSegments[status.index].digits}">
+                                                                        <p:ajax event="change" update="@form" process="@this"/>
+                                                                    </p:inputText>
+                                                                </div>
+                                                            </h:panelGroup>
+                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update="@form" process="@this"/>
+                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update="@form" process="@this"/>
+                                                        </div>
+                                                    </h:panelGroup>
+                                                </ui:repeat>
+                                                <p:commandButton value="+ #{langBean.msg('projectTables.ident.addText')}" styleClass="ptc-ident-add-text" actionListener="#{projectTableFieldSettingsBean.addIdentTextSegment()}" update="@form" process="@this"/>
+                                            </div>
+                                            <div class="ptc-chip-row">
+                                                <ui:repeat value="#{projectTableFieldSettingsBean.identifierResolvers}" var="resolver">
+                                                    <p:commandButton value="{ } #{langBean.msg(resolver.titleCode)}" styleClass="ptc-ident-token-option" actionListener="#{projectTableFieldSettingsBean.addIdentTokenSegment(resolver.code)}" update="@form" process="@this"/>
+                                                </ui:repeat>
+                                            </div>
+                                        </div>
+
+                                        <div class="ptc-drawer-field">
+                                            <label class="ptc-drawer-label">#{langBean.msg('projectTables.ident.preview')}</label>
+                                            <div class="ptc-ident-preview">#{projectTableFieldSettingsBean.identExample}</div>
+                                            <div class="ptc-field-hint">#{langBean.msg('projectTables.ident.previewHint')}</div>
+                                        </div>
+
+                                        <div style="display:flex;justify-content:flex-end;">
+                                            <p:commandButton value="#{langBean.msg('common.action.save')}" actionListener="#{projectTableFieldSettingsBean.saveIdentConfig()}" update="@form"/>
+                                        </div>
+                                    </div>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{not projectTableFieldSettingsBean.identTabAvailable}">
+                                    <div class="ptc-ident-placeholder">#{langBean.msg('projectTables.ident.unavailable')}</div>
+                                </h:panelGroup>
                             </p:tab>
 
                         </p:tabView>

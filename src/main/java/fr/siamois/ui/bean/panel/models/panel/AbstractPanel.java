@@ -143,6 +143,11 @@ public abstract class AbstractPanel implements Serializable {
         return false;
     }
 
+    /** Only an Action Unit panel has project-level settings to jump to from its header toolbar. */
+    public boolean canOpenInProjectSettings() {
+        return false;
+    }
+
     public void duplicate() {
         // no-op by default
     }

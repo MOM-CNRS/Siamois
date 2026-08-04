@@ -2,6 +2,9 @@ package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -18,7 +21,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,6 +40,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final LangBean langBean;
+    private final transient RecordingUnitService recordingUnitService;
+    private final transient ActionUnitService actionUnitService;
 
     private ActionUnitDTO project;
     private List<ConfigurableTable> tables = new ArrayList<>();
@@ -78,9 +87,19 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     private String newTypeName;
 
-    public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
+    private List<IdentifierSegment> identSegments = new ArrayList<>();
+    private Integer identFirst;
+    private Integer identLast;
+
+    private static final Pattern IDENT_PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
+    private static final int IDENT_DEFAULT_DIGITS = 3;
+
+    public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean,
+                                          RecordingUnitService recordingUnitService, ActionUnitService actionUnitService) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.langBean = langBean;
+        this.recordingUnitService = recordingUnitService;
+        this.actionUnitService = actionUnitService;
     }
 
     @EventListener(LoginEvent.class)
@@ -97,6 +116,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         pickerQuery = null;
         closeDrawer();
         newTypeName = null;
+        identSegments = new ArrayList<>();
+        identFirst = null;
+        identLast = null;
     }
 
     /**
@@ -147,6 +169,28 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private void loadConfigs() {
         formConfig = tableFieldConfigService.getFormConfig(project.getId(), selectedTable, selectedTypeName);
         setFieldsConfig(tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName));
+        loadIdentConfig();
+    }
+
+    /**
+     * The UE identifier format is project-wide (one format governs every RecordingUnit in the
+     * project), so it only makes sense to surface it when the UE / _default node is selected —
+     * other table/type combinations show an "unavailable" placeholder instead.
+     */
+    public boolean isIdentTabAvailable() {
+        return selectedTable == ConfigurableTable.UE && isSelectedTypeDefault();
+    }
+
+    private void loadIdentConfig() {
+        if (!isIdentTabAvailable()) {
+            identSegments = new ArrayList<>();
+            identFirst = null;
+            identLast = null;
+            return;
+        }
+        identFirst = project.getMinRecordingUnitCode();
+        identLast = project.getMaxRecordingUnitCode();
+        identSegments = parseFormat(project.getRecordingUnitIdentifierFormat());
     }
 
     /**
@@ -364,6 +408,228 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         selectType(newTypeName);
         MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.tree.newConfigSuccess", newTypeName);
         newTypeName = null;
+    }
+
+    // ===== Identifiants (UE / _default only) =====
+
+    private List<IdentifierSegment> parseFormat(String format) {
+        List<IdentifierSegment> segments = new ArrayList<>();
+        if (format == null) return segments;
+
+        Matcher matcher = IDENT_PLACEHOLDER_PATTERN.matcher(format);
+        int last = 0;
+        while (matcher.find()) {
+            if (matcher.start() > last) {
+                segments.add(textSegment(format.substring(last, matcher.start())));
+            }
+            String[] parts = matcher.group(1).split(":", 2);
+            String code = parts[0];
+            boolean numeric = recordingUnitService.findAllNumericalIdentifiersCode().contains(code);
+            int digits = parts.length > 1 ? parts[1].length() : IDENT_DEFAULT_DIGITS;
+            segments.add(tokenSegment(code, numeric, digits <= 0 ? IDENT_DEFAULT_DIGITS : digits));
+            last = matcher.end();
+        }
+        if (last < format.length()) {
+            segments.add(textSegment(format.substring(last)));
+        }
+        return segments;
+    }
+
+    private String serializeFormat(List<IdentifierSegment> segments) {
+        StringBuilder sb = new StringBuilder();
+        for (IdentifierSegment seg : segments) {
+            if (!seg.isToken()) {
+                sb.append(seg.getText() == null ? "" : seg.getText());
+                continue;
+            }
+            sb.append('{').append(seg.getCode());
+            if (!"ID_UA".equals(seg.getCode())) {
+                String specifierChar = seg.isNumeric() ? "0" : "X";
+                sb.append(':').append(specifierChar.repeat(Math.max(1, seg.getDigits())));
+            }
+            sb.append('}');
+        }
+        return sb.toString();
+    }
+
+    private IdentifierSegment textSegment(String text) {
+        return IdentifierSegment.builder().token(false).text(text).build();
+    }
+
+    private IdentifierSegment tokenSegment(String code, boolean numeric, int digits) {
+        RuIdentifierResolver resolver = recordingUnitService.findAllIdentifierResolver().get(code);
+        String label = resolver == null ? code : langBean.msg(resolver.getTitleCode());
+        return IdentifierSegment.builder().token(true).code(code).label(label).numeric(numeric).digits(digits).build();
+    }
+
+    public void addIdentTextSegment() {
+        identSegments.add(textSegment(""));
+    }
+
+    public void addIdentTokenSegment(String code) {
+        boolean numeric = recordingUnitService.findAllNumericalIdentifiersCode().contains(code);
+        identSegments.add(tokenSegment(code, numeric, IDENT_DEFAULT_DIGITS));
+    }
+
+    public void moveIdentSegmentLeft(int index) {
+        if (index > 0) Collections.swap(identSegments, index, index - 1);
+    }
+
+    public void moveIdentSegmentRight(int index) {
+        if (index < identSegments.size() - 1) Collections.swap(identSegments, index, index + 1);
+    }
+
+    public void removeIdentSegment(int index) {
+        identSegments.remove(index);
+    }
+
+    /**
+     * The addable token catalog for the format builder — same fixed NUM_UE/NUM_PARENT-first
+     * ordering as the moved-from {@code ActionUnitPanel.findAllResolvers()}, minus TYPE_UE/
+     * TYPE_PARENT: those are not offered as placeholders here, the user types static text instead.
+     */
+    public List<RuIdentifierResolver> getIdentifierResolvers() {
+        Map<String, RuIdentifierResolver> resolvers = recordingUnitService.findAllIdentifierResolver();
+        List<RuIdentifierResolver> result = new ArrayList<>();
+        result.add(resolvers.get("NUM_UE"));
+        result.add(resolvers.get("NUM_PARENT"));
+        for (RuIdentifierResolver resolver : resolvers.values()) {
+            if (!result.contains(resolver)) {
+                result.add(resolver);
+            }
+        }
+        result.removeIf(r -> r == null || "TYPE_UE".equals(r.getCode()) || "TYPE_PARENT".equals(r.getCode()));
+        return result;
+    }
+
+    /**
+     * A preview built from sample values, never the real {@code RuIdentifierResolver.resolve()} —
+     * text resolvers persist a dedup row as a side effect of resolving, which would be wrong to
+     * trigger just from the user typing in this format builder. The design's own caption already
+     * frames this as illustrative ("Exemple généré avec des valeurs types").
+     */
+    public String getIdentExample() {
+        StringBuilder sb = new StringBuilder();
+        for (IdentifierSegment seg : identSegments) {
+            sb.append(seg.isToken() ? sampleValueFor(seg) : seg.getText());
+        }
+        return sb.toString();
+    }
+
+    private String sampleValueFor(IdentifierSegment seg) {
+        return switch (seg.getCode()) {
+            case "NUM_UE" -> zeroPad(142, seg.getDigits());
+            case "NUM_PARENT" -> zeroPad(4, seg.getDigits());
+            case "NUM_USPATIAL" -> zeroPad(3, seg.getDigits());
+            case "TYPE_UE" -> truncate("CERAMIQUE", seg.getDigits());
+            case "TYPE_PARENT" -> truncate("SONDAGE", seg.getDigits());
+            case "ID_UA" -> "UA1";
+            default -> seg.getLabel();
+        };
+    }
+
+    private String zeroPad(int value, int digits) {
+        return String.format("%0" + Math.max(1, digits) + "d", value);
+    }
+
+    private String truncate(String value, int digits) {
+        int width = digits <= 0 ? IDENT_DEFAULT_DIGITS : digits;
+        return value.length() > width ? value.substring(0, width) : value;
+    }
+
+    public void saveIdentConfig() {
+        if (!isIdentTabAvailable()) return;
+
+        String format = serializeFormat(identSegments);
+        if (identifierFormatIsInvalid(format)) return;
+
+        project.setMinRecordingUnitCode(identFirst);
+        project.setMaxRecordingUnitCode(identLast);
+        project.setRecordingUnitIdentifierFormat(format);
+        project.setRecordingUnitIdentifierLang(langBean.getLanguageCode());
+
+        actionUnitService.save(project);
+        loadIdentConfig();
+
+        MessageUtils.displayInfoMessage(langBean, "actionUnit.settings.success.identifierConfigSaved");
+    }
+
+    private boolean identifierFormatIsInvalid(String format) {
+        if (format == null || format.isEmpty()) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
+            return true;
+        }
+
+        boolean containsNumRu = false;
+        Matcher matcher = IDENT_PLACEHOLDER_PATTERN.matcher(format);
+
+        String strippedFormat = format.replaceAll(IDENT_PLACEHOLDER_PATTERN.pattern(), "");
+        if (strippedFormat.contains("{") || strippedFormat.contains("}")) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+            return true;
+        }
+
+        while (matcher.find()) {
+            String[] parts = matcher.group(1).split(":", 2);
+            String placeholderName = parts[0];
+
+            if (identFormatContainsInvalidCode(placeholderName)) return true;
+            containsNumRu = containsNumRu || placeholderName.equals("NUM_UE");
+
+            if (identFormatOfCodeIsNotValid(parts, placeholderName)) return true;
+        }
+
+        if (!containsNumRu) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean identFormatContainsInvalidCode(String placeholderName) {
+        if (!recordingUnitService.findAllIdentifiersCode().contains(placeholderName)) {
+            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean identFormatOfCodeIsNotValid(String[] parts, String placeholderName) {
+        if (parts.length <= 1) return false;
+        String formatSpecifier = parts[1];
+        return identFormatSpecifierIsNotValid(placeholderName, formatSpecifier) || identNumericalFormatIsNotValid(placeholderName, formatSpecifier);
+    }
+
+    /**
+     * A numeric code (NUM_UE, NUM_PARENT, NUM_USPATIAL) needs a {@code 0+} specifier; any other
+     * code needs {@code X+} (and ID_UA may carry none at all — enforced by the caller, which never
+     * passes it a specifier to check here). Numeric and text codes are checked by two separate
+     * branches — a specifier valid for one must never fall through into the other's check.
+     */
+    private boolean identFormatSpecifierIsNotValid(String placeholderName, String formatSpecifier) {
+        if (recordingUnitService.findAllNumericalIdentifiersCode().contains(placeholderName)) {
+            if (!formatSpecifier.matches("0+")) {
+                MessageUtils.displayWarnMessage(langBean, "actionUnit.settings.help.numericalFormat", placeholderName);
+                return true;
+            }
+            return false;
+        }
+        if (!formatSpecifier.matches("X+") || placeholderName.equals("ID_UA")) {
+            MessageUtils.displayWarnMessage(langBean, "actionUnit.settings.help.textualFormat", placeholderName);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean identNumericalFormatIsNotValid(String placeholderName, String formatSpecifier) {
+        if (recordingUnitService.findAllNumericalIdentifiersCode().contains(placeholderName)) {
+            long zeroCount = formatSpecifier.chars().filter(ch -> ch == '0').count();
+            if (zeroCount > 0 && identLast != null && String.valueOf(identLast).length() > zeroCount) {
+                MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.insufficientDigits", placeholderName);
+                return true;
+            }
+        }
+        return false;
     }
 
 }
