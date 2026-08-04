@@ -12,11 +12,11 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
+import fr.siamois.infrastructure.api.dto.ConceptRemoteAutocompleteDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
-import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -182,6 +182,21 @@ public class ConceptApi {
         TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {};
 
         return processApiResponse(response, typeReference);
+    }
+
+    public List<ConceptRemoteAutocompleteDTO> fetchRemoteAutocomplete(String vocabularyUri, String vocabularyExternalId, String input) {
+        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/autocomplete/%s?full=true", vocabularyUri, vocabularyExternalId, input));
+        ResponseEntity<String> response = sendRequestAcceptJson(uri);
+        String body = response.getBody();
+
+        TypeReference<List<ConceptRemoteAutocompleteDTO>> typeReference = new TypeReference<>() {};
+
+        try {
+            return mapper.readValue(body, typeReference);
+        } catch (JsonProcessingException e) {
+            log.error("Error while processing JSON", e);
+            return new ArrayList<>();
+        }
     }
 
     static class ConceptDTO {

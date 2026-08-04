@@ -12,8 +12,11 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarc
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -22,6 +25,29 @@ public class ConceptApiUtils {
 
     private ConceptApiUtils() {
         throw new UnsupportedOperationException("ConceptApiUtils should never be instantiated");
+    }
+
+    /**
+     * The external id of a concept, read from its URI in the thesaurus : the ark identifier when the
+     * thesaurus is ark based, the {@code idc} query parameter otherwise. This is the identifier concepts
+     * are stored and looked up with locally, see {@code Concept.externalId}.
+     *
+     * @param uri the URI of the concept in its thesaurus
+     * @return the external id of the concept, or null when the URI carries none
+     */
+    @Nullable
+    public static String externalIdFromUri(@Nullable String uri) {
+        if (uri == null || uri.isBlank()) {
+            return null;
+        }
+        if (uri.contains("ark:")) {
+            return uri.substring(uri.indexOf("ark:"));
+        }
+        try {
+            return UriComponentsBuilder.fromUriString(uri).build().getQueryParams().getFirst("idc");
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public static Map<String, Concept> saveAllConceptsOfBranch(@NonNull BranchLoadComponents components, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO branchDTO, @NonNull Map<String, Concept> urlSavedConcept) {
@@ -44,11 +70,15 @@ public class ConceptApiUtils {
 
     private static void createRelatedConceptsRelations(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, Map.Entry<String, FullInfoDTO> info, @NonNull Map<String, Concept> urlTosavedConcept, @NonNull FullInfoDTO fullInfoDTO) {
         Concept currentConcept = urlTosavedConcept.get(info.getKey());
-        Set<Concept> relatedConcepts = currentConcept.getRelatedConcepts();
+        // Only a concept loaded by Hibernate carries the collection, one that was just created has none yet
+        Set<Concept> relatedConcepts = Objects.isNull(currentConcept.getRelatedConcepts())
+                ? new HashSet<>()
+                : currentConcept.getRelatedConcepts();
         for (PurlInfoDTO related : fullInfoDTO.getRelated()) {
             FullInfoDTO relatedInfos = utils.conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
             relatedConcepts.add(utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null));
         }
+        currentConcept.setRelatedConcepts(relatedConcepts);
         urlTosavedConcept.put(info.getKey(), utils.conceptRepository.save(currentConcept));
     }
 

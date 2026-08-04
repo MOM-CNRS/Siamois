@@ -7,8 +7,11 @@ import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
+import fr.siamois.infrastructure.api.dto.ConceptAutocompleteDetachedDTO;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
+import fr.siamois.infrastructure.api.dto.ConceptRemoteAutocompleteDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,8 +60,22 @@ class ConceptServiceTest {
     @Mock
     private ConceptHierarchyRepository conceptHierarchyRepository;
 
+    @Mock
+    private ApplicationContext applicationContext;
+
     @InjectMocks
     private ConceptService conceptService;
+
+    /**
+     * The branch loading resolves its collaborators from the context, see
+     * {@link fr.siamois.utils.vocabulary.ConceptApiUtils.BranchLoadComponents}.
+     */
+    private void stubBranchLoadComponents() {
+        when(applicationContext.getBean(ConceptApi.class)).thenReturn(conceptApi);
+        when(applicationContext.getBean(ConceptService.class)).thenReturn(conceptService);
+        when(applicationContext.getBean(ConceptRepository.class)).thenReturn(conceptRepository);
+        when(applicationContext.getBean(ConceptHierarchyRepository.class)).thenReturn(conceptHierarchyRepository);
+    }
 
     private Vocabulary vocabulary;
     private Concept concept;
@@ -400,6 +418,8 @@ class ConceptServiceTest {
         fetchedRelated.setIdentifier(new PurlInfoDTO[]{relatedId});
         when(conceptApi.fetchConceptInfoByUri(vocabulary, "url-related")).thenReturn(fetchedRelated);
 
+        stubBranchLoadComponents();
+
         // When
         conceptService.saveAllSubConceptOfIfUpdated(config);
 
@@ -451,6 +471,8 @@ class ConceptServiceTest {
         // The service will query labels by parent concept -> return our alt label which refers to 'other'
         when(conceptLabelRepository.findAllByParentConcept(concept)).thenReturn(List.of(alt));
 
+        stubBranchLoadComponents();
+
         // When
         when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
         conceptService.saveAllSubConceptOfIfUpdated(config);
@@ -497,6 +519,8 @@ class ConceptServiceTest {
 
         LocalizedConceptData lcd = new LocalizedConceptData();
         lcd.setConcept(other);
+
+        stubBranchLoadComponents();
 
         // When
         conceptService.saveAllSubConceptOfIfUpdated(config);
@@ -680,6 +704,106 @@ class ConceptServiceTest {
         assertNull(result);
         verify(localizedConceptDataRepository, times(1))
                 .findByConceptAndLangCode(concept.getId(), "fr");
+    }
+
+    private VocabularyDTO remoteVocabulary() {
+        return VocabularyDTO.builder()
+                .baseUri("http://example.org")
+                .externalVocabularyId("th1")
+                .build();
+    }
+
+    @Test
+    void fetchAutocompleteFromRemoteThesaurus_shouldReturnOneResultPerMatchingLabel_sharingTheConceptData() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchRemoteAutocomplete("http://example.org", "th1", "céram")).thenReturn(List.of(
+                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Céramique", false, "Objet en terre cuite"),
+                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Poterie", true, "Objet en terre cuite")
+        ));
+
+        List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "céram");
+
+        assertThat(results).hasSize(2)
+                .allSatisfy(result -> {
+            assertThat(result.getOriginalPrefLabel()).isEqualTo("Céramique");
+            assertThat(result.getAltLabels()).containsExactly("Poterie");
+            assertThat(result.getDefinition()).isEqualTo("Objet en terre cuite");
+            assertThat(result.getHierarchyPrefLabels()).isEmpty();
+            assertThat(result.getVocabularyUri()).isEqualTo("http://example.org?idt=th1");
+            assertThat(result.concept().getExternalId()).isEqualTo("12");
+            assertThat(result.concept().getVocabulary()).isEqualTo(vocabularyDTO);
+        });
+        assertThat(results.get(0).getConceptLabelToDisplay().isAltLabel()).isFalse();
+        assertThat(results.get(0).getConceptLabelToDisplay().getLabel()).isEqualTo("Céramique");
+        assertThat(results.get(1).getConceptLabelToDisplay().isAltLabel()).isTrue();
+        assertThat(results.get(1).getConceptLabelToDisplay().getLabel()).isEqualTo("Poterie");
+    }
+
+    @Test
+    void fetchAutocompleteFromRemoteThesaurus_shouldKeepTheConceptsApart_andPreserveTheRemoteOrder() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
+                new ConceptRemoteAutocompleteDTO(2L, "http://example.org/?idc=20&idt=th1", "Verre", false, null),
+                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Céramique", false, "Objet en terre cuite")
+        ));
+
+        List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "e");
+
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).concept().getExternalId()).isEqualTo("20");
+        assertThat(results.get(0).getAltLabels()).isEmpty();
+        // a missing definition becomes an empty string, as the local autocomplete does
+        assertThat(results.get(0).getDefinition()).isEmpty();
+        assertThat(results.get(1).concept().getExternalId()).isEqualTo("12");
+    }
+
+    @Test
+    void fetchAutocompleteFromRemoteThesaurus_shouldFallBackOnTheAltLabel_whenThePrefLabelDoesNotMatch() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
+                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Poterie", true, null)
+        ));
+
+        List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "pot");
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getOriginalPrefLabel()).isEqualTo("Poterie");
+        assertThat(results.get(0).getConceptLabelToDisplay().isAltLabel()).isTrue();
+    }
+
+    @Test
+    void fetchAutocompleteFromRemoteThesaurus_shouldReadTheArkIdentifier_whenTheThesaurusIsArkBased() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
+                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/ark:/12345/ab6789", "Céramique", false, null)
+        ));
+
+        List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "céram");
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).concept().getExternalId()).isEqualTo("ark:/12345/ab6789");
+    }
+
+    @Test
+    void fetchAutocompleteFromRemoteThesaurus_shouldIgnoreResults_whenTheConceptCannotBeIdentified() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
+                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idt=th1", "Sans identifiant", false, null),
+                new ConceptRemoteAutocompleteDTO(2L, "http://example.org/?idc=20&idt=th1", "Verre", false, null)
+        ));
+
+        List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "e");
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).concept().getExternalId()).isEqualTo("20");
+    }
+
+    @Test
+    void fetchAutocompleteFromRemoteThesaurus_shouldReturnEmptyList_whenTheThesaurusReturnsNothing() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of());
+
+        assertThat(conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "céram")).isEmpty();
     }
 
 }
