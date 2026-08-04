@@ -28,9 +28,8 @@ import java.util.stream.Collectors;
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class ProjectTableFieldSettingsBean implements Serializable {
 
-    public static final int TAB_GENERAL = 0;
-    public static final int TAB_CHAMPS = 1;
-    public static final int TAB_IDENTIFIANTS = 2;
+    public static final int TAB_CHAMPS = 0;
+    public static final int TAB_IDENTIFIANTS = 1;
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final LangBean langBean;
@@ -40,7 +39,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private ConfigurableTable selectedTable;
     private List<TypeSummary> typesForSelectedTable = new ArrayList<>();
     private String selectedTypeName;
-    private boolean treeOpen = true;
     private int activeTabIndex = TAB_CHAMPS;
 
     private TypeFormConfig formConfig;
@@ -78,7 +76,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         selectedTable = null;
         typesForSelectedTable = new ArrayList<>();
         selectedTypeName = null;
-        treeOpen = true;
         activeTabIndex = TAB_CHAMPS;
         formConfig = null;
         setFieldsConfig(null);
@@ -147,10 +144,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.additionalFields = fieldsConfig == null ? new ArrayList<>() : fieldsConfig.getFields().stream()
                 .filter(f -> !f.isSystemField())
                 .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    public void toggleTree() {
-        treeOpen = !treeOpen;
     }
 
     public boolean isSelectedTypeDefault() {
