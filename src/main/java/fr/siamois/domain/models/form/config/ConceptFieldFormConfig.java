@@ -27,4 +27,12 @@ public class ConceptFieldFormConfig extends FieldFormConfig {
     public ConceptFieldFormConfig(FieldFormConfig fieldFormConfig) {
         super(fieldFormConfig);
     }
+
+    public boolean isBranchConfig() {
+        return branchTopTerm != null && collection == null;
+    }
+
+    public boolean isNotValid() {
+        return branchTopTerm == null && collection == null;
+    }
 }

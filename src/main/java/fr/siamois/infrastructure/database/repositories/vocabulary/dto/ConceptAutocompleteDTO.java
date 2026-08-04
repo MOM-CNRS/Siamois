@@ -19,11 +19,11 @@ import java.util.Objects;
 @Data
 public class ConceptAutocompleteDTO implements Serializable {
 
-    private final ConceptLabelDTO conceptLabelToDisplay;
-    private final String originalPrefLabel;
-    private final List<String> altLabels;
-    private final String definition;
-    private final String hierarchyPrefLabels;
+    protected final ConceptLabelDTO conceptLabelToDisplay;
+    protected final String originalPrefLabel;
+    protected final transient List<String> altLabels;
+    protected final String definition;
+    protected final String hierarchyPrefLabels;
 
     public ConceptAutocompleteDTO(
             ConceptLabelDTO conceptLabelToDisplay,

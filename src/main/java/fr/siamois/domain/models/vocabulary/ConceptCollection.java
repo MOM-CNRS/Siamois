@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,6 +29,10 @@ public class ConceptCollection {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fk_vocabulary_id", nullable = false)
     private Vocabulary vocabulary;
+
+    @Nullable
+    @Column(name = "existing_hash")
+    private String existingHash;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

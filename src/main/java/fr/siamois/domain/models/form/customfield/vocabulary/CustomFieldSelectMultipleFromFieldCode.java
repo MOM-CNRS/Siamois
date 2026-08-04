@@ -19,10 +19,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "custom_field")
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomFieldSelectMultipleFromFieldCode extends CustomFieldConcept {
-
-    @Column(name = "field_code")
-    private String fieldCode ;
+public class CustomFieldSelectMultipleFromFieldCode extends CustomFieldConceptFromFieldCode {
 
     @Column(name = "icon_class")
     private String iconClass;

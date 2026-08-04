@@ -9,14 +9,18 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
+import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -25,10 +29,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service to fetch concept information from the API.
@@ -43,6 +44,7 @@ public class ConceptApi {
 
     private final ObjectMapper mapper;
     private FieldRepository fieldRepository;
+    private ConceptCollectionRepository conceptCollectionRepository;
 
     /**
      * Autowired constructor for ConceptApi.
@@ -50,11 +52,12 @@ public class ConceptApi {
      * @param factory RequestFactory to build the RestTemplate.
      */
     @Autowired
-    public ConceptApi(RequestFactory factory, FieldRepository fieldRepository) {
+    public ConceptApi(RequestFactory factory, FieldRepository fieldRepository, ConceptCollectionRepository conceptCollectionRepository) {
         restTemplate = factory.buildRestTemplate(true);
         mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.fieldRepository = fieldRepository;
+        this.conceptCollectionRepository = conceptCollectionRepository;
     }
 
     /**
@@ -150,6 +153,34 @@ public class ConceptApi {
 
         TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
         };
+        return processApiResponse(response, typeReference);
+    }
+
+    /**
+     * Fetch collection's concepts
+     * @param vocabulary The vocabulary of the Concept
+     * @param collection The collection
+     * @return The complete branch including all concepts of the collection, if the collection has not changed since last fetch. Skip process and returns null
+     */
+    @Nullable
+    public ConceptBranchDTO fetchCollectionBranch(Vocabulary vocabulary, ConceptCollection collection) throws ErrorProcessingExpansionException {
+        URI uri = URI.create(String.format("%s/openapi/v1/group/%s/branch?idGroups=%s", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), collection.getExternalId()));
+        ResponseEntity<String> response = sendRequestAcceptJson(uri);
+        String body = response.getBody();
+        if (body == null) {
+            throw new ErrorProcessingExpansionException("Could not find branch with id " + collection.getExternalId());
+        }
+        String contentSum = hashOfString(body);
+        if (Objects.equals(collection.getExistingHash(), contentSum)) {
+            log.warn("Collection {} of {} has not changed. Skipping...",  collection.getExternalId(), vocabulary.getExternalVocabularyId());
+            return null;
+        }
+
+        collection.setExistingHash(contentSum);
+        conceptCollectionRepository.save(collection);
+
+        TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {};
+
         return processApiResponse(response, typeReference);
     }
 

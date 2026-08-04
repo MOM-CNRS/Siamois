@@ -1,8 +1,10 @@
 package fr.siamois.infrastructure.database.repositories.form.config;
 
+import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -45,4 +47,13 @@ public interface FieldFormConfigRepository extends CrudRepository<FieldFormConfi
     long countByFieldId(@Param("customFieldId") Long customFieldId);
 
     Optional<FieldFormConfig> findByFormConfigAndField(FormConfig formConfig, CustomField field);
+
+    @Query(
+            """
+            SELECT ffc
+            FROM ConceptFieldFormConfig ffc
+            WHERE ffc.field = :conceptField AND ffc.formConfig.actionUnit.id = :actionUnitId
+            """
+    )
+    Optional<ConceptFieldFormConfig> findByFieldAndActionUnit(CustomFieldConcept conceptField, Long actionUnitId);
 }
