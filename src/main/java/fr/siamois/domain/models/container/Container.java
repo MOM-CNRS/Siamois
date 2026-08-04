@@ -4,6 +4,7 @@ package fr.siamois.domain.models.container;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.form.ContainerDetailsForm;
 import fr.siamois.domain.models.container.form.ContainerNewUnitForm;
 import fr.siamois.domain.models.form.customform.CustomForm;
@@ -41,6 +42,10 @@ public class Container extends TraceableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_spatial_unit_id")
     protected SpatialUnit spatialUnit;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_action_unit_id")
+    protected ActionUnit actionUnit;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_parent_id", referencedColumnName = "container_id")

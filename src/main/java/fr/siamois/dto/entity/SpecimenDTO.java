@@ -23,6 +23,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private List<PersonDTO> authors;
     private List<PersonDTO> collectors;
     private RecordingUnitSummaryDTO recordingUnit;
+    private ActionUnitSummaryDTO actionUnit;
     protected OffsetDateTime collectionDate;
     private Set<SpecimenSummaryDTO> parents;
     private Set<SpecimenSummaryDTO> children;
@@ -46,6 +47,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     public static List<String> getBindableFieldNames() {
         return List.of(
                 "recordingUnit",
+                "actionUnit",
                 "parents",
                 "children",
                 "fullIdentifier",

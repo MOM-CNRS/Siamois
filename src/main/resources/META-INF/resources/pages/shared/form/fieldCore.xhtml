@@ -358,6 +358,8 @@
                     hasBeenModified="#{hasBeenModified}"
                     field="#{col.field}"
                     mode="#{mode}"
+                    panelId="#{panelId}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                     onModified="#{formCtx.onFieldAnswerModifiedListener}"
                     updateTargetsOnBlur="#{updateTargetsOnBlur}"
                     required="#{col.required}"

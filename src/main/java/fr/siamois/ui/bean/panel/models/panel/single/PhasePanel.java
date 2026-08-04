@@ -1,9 +1,18 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.form.customform.CustomCol;
+import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.services.PhaseService;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -29,6 +38,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
@@ -41,6 +53,8 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     private final transient FormMapper formMapper;
     private final transient PhaseService phaseService;
     private final transient RedirectBean redirectBean;
+    private final transient TableFieldConfigService tableFieldConfigService;
+    private final transient LabelService labelService;
 
     @Override
     protected boolean documentExistsInUnitByHash(PhaseDTO unit, String hash) {
@@ -60,6 +74,8 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         this.formMapper = formMapper;
         this.phaseService = context.getBean(PhaseService.class);
         this.redirectBean = context.getBean(RedirectBean.class);
+        this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
+        this.labelService = context.getBean(LabelService.class);
     }
 
     public String entityRessourceUri() {
@@ -95,7 +111,6 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     @Override
     public void init() {
         try {
-            detailsForm = formContextServices.getConversionService().convert(Phase.DETAILS_FORM, FormUiDto.class);
             activeTabIndex = 0;
 
             if (unitId == null) {
@@ -183,7 +198,42 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
 
     @Override
     public void initForms(boolean forceInit) {
+        String typeName = resolveTypeName();
+        Long projectId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
+
+        CustomForm form = Phase.DETAILS_FORM;
+        if (projectId != null) {
+            CustomForm base = CustomFormComposer.withoutFields(form, inactiveSystemFieldBindings(projectId, typeName));
+            form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(projectId, typeName));
+        }
+        detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
+
         initFormContext(forceInit);
+    }
+
+    /**
+     * The label of the Phase's own type concept, i.e. the type name field configurations
+     * are keyed on ({@link TableFieldConfigService#DEFAULT_TYPE} when the phase has none).
+     */
+    private String resolveTypeName() {
+        return unit.getType() != null
+                ? labelService.findLabelOf(unit.getType(), langBean.getLanguageCode()).getLabel()
+                : TableFieldConfigService.DEFAULT_TYPE;
+    }
+
+    private Set<String> inactiveSystemFieldBindings(Long projectId, String typeName) {
+        TypeFieldsConfig fieldsConfig = tableFieldConfigService.getFieldsConfig(projectId, ConfigurableTable.PHASE, typeName);
+        return fieldsConfig.getFields().stream()
+                .filter(f -> !f.isActive())
+                .map(TypeFieldFormConfig::getValueBinding)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private List<CustomCol> additionalFields(Long projectId, String typeName) {
+        return tableFieldConfigService.getActiveAdditionalFields(projectId, ConfigurableTable.PHASE, typeName).stream()
+                .map(field -> new CustomCol.Builder().field(field).build())
+                .toList();
     }
 
     @Override

@@ -155,6 +155,24 @@
 
                 <h:panelGrid columns="2" cellpadding="5" id="newGrid">
 
+                    <p:outputLabel for="newPhaseProjectAutocomplete" value="Projet :"/>
+                    <p:autoComplete value="#{cc.attrs.answer.newActionUnit}"
+                                    id="newPhaseProjectAutocomplete"
+                                    completeMethod="#{cc.attrs.formCtx.completeActionUnitOptions}"
+                                    var="au"
+                                    itemValue="#{au}"
+                                    itemLabel="#{au.name}"
+                                    converter="#{actionUnitSummaryConverter}"
+                                    required="true"
+                                    forceSelection="true"
+                                    scrollHeight="300"
+                                    dropdown="true"
+                                    placeholder="Rechercher un projet…"
+                                    showEmptyMessage="false"
+                                    onmousedown="event.stopPropagation();"
+                                    onclick="event.stopPropagation();"
+                                    maxResults="#{fieldConfigurationService.resultLimit()}"/>
+
                     <p:outputLabel for="newPhaseIdentifier" value="Identifiant :"/>
                     <p:inputText value="#{cc.attrs.answer.newIdentifier}"
                                  id="newPhaseIdentifier"

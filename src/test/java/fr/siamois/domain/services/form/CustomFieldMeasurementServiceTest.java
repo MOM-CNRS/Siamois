@@ -74,4 +74,42 @@ class CustomFieldMeasurementServiceTest {
         assertEquals(1, result.getContent().size());
         verify(repository, times(1)).findAll(expectedPageable);
     }
+
+    @Test
+    @DisplayName("Should list the recording unit's own fields first, without repeating them")
+    void findOptionsForRecordingUnit_ShouldPutOwnFieldsFirstAndDeduplicate() {
+        // Given
+        CustomFieldMeasurement own = measurement(1L);
+        CustomFieldMeasurement shared = measurement(2L);
+
+        when(repository.findByRecordingUnitId(7L)).thenReturn(List.of(own));
+        when(repository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(shared, measurement(1L))));
+
+        // When
+        List<CustomFieldMeasurement> result = service.findOptionsForRecordingUnit(7L, 10);
+
+        // Then
+        assertEquals(List.of(own, shared), result);
+    }
+
+    @Test
+    @DisplayName("Should fall back to the global listing when there is no recording unit")
+    void findOptionsForRecordingUnit_ShouldSkipLookupWhenNoRecordingUnit() {
+        // Given
+        CustomFieldMeasurement shared = measurement(2L);
+        when(repository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(shared)));
+
+        // When
+        List<CustomFieldMeasurement> result = service.findOptionsForRecordingUnit(null, 10);
+
+        // Then
+        assertEquals(List.of(shared), result);
+        verify(repository, never()).findByRecordingUnitId(any());
+    }
+
+    private CustomFieldMeasurement measurement(Long id) {
+        CustomFieldMeasurement measurement = new CustomFieldMeasurement();
+        measurement.setId(id);
+        return measurement;
+    }
 }

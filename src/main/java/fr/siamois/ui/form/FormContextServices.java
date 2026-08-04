@@ -7,6 +7,7 @@ import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -45,6 +46,7 @@ public class FormContextServices {
     private final ConceptMapper conceptMapper;
     private final PlaceSuggestionMapper placeSuggestionMapper;
     private final CustomFieldMeasurementService customFieldMeasurementService;
+    private final UnitDefinitionService unitDefinitionService;
     private final FieldConfigurationService fieldConfigurationService;
     private final ConceptRepository conceptRepository;
 }

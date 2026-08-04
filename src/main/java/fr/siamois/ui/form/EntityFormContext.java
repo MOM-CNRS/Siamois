@@ -49,7 +49,6 @@ import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
@@ -204,14 +203,25 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
 
-        // Prepare new field manager
-        Page<CustomFieldMeasurement> customFieldMeasurements = services.getCustomFieldMeasurementService().find(10);
-        // find all
+        // Prepare new field manager; the list stays mutable so a field created here shows up in the
+        // "existing fields" dropdown without waiting for the next form init
+        List<CustomFieldMeasurement> measurementOptions = new ArrayList<>(
+                services.getCustomFieldMeasurementService()
+                        .findOptionsForRecordingUnit(recordingUnitIdOrNull(), 10));
+
         this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
+                services.getRecordingUnitService(),
+                formService,
                 this.formResponse,
-                customFieldMeasurements.getContent()
+                unit,
+                measurementOptions,
+                services.getUnitDefinitionService().findOptions()
                 );
 
+    }
+
+    private Long recordingUnitIdOrNull() {
+        return unit instanceof RecordingUnitDTO recordingUnit ? recordingUnit.getId() : null;
     }
 
     // -------------------------------------------------------------------------
@@ -359,9 +369,6 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return chips;
     }
 
-    /**
-     * Returns all ancestor IDs in the business graph (transitive), with cycle detection.
-     */
     private Set<Long> getAllAncestorIds(long id) {
         Set<Long> res = new HashSet<>();
 
@@ -483,8 +490,6 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
-    /** * Sous-méthode privée pour isoler les appels API
-     */
     private List<PlaceSuggestionDTO> resolveExternalSuggestions(String query, String source) {
         if (Objects.equals(source, "INSEE")) {
             return geoApiService.fetchCommunes(query);
@@ -737,11 +742,16 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
             return;
         }
+        if (answer.getNewActionUnit() == null) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "Le projet est obligatoire");
+            return;
+        }
         try {
             PhaseDTO toSave = new PhaseDTO();
             toSave.setIdentifier(answer.getNewIdentifier());
             toSave.setTitle(answer.getNewTitle());
             toSave.setOrderNumber(answer.getNewOrderNumber());
+            toSave.setActionUnit(answer.getNewActionUnit());
             if (answer.getNewType() != null) {
                 toSave.setType(answer.getNewType().getConceptLabelToDisplay().getConcept());
             }
@@ -754,6 +764,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             answer.setNewTitle(null);
             answer.setNewOrderNumber(null);
             answer.setNewType(null);
+            answer.setNewActionUnit(null);
 
             if (unit.getId() != null) {
                 this.save();
