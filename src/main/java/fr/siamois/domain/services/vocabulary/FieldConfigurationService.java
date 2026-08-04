@@ -437,6 +437,10 @@ public class FieldConfigurationService {
     @ExecutionTimeLogger
     @Transactional(readOnly = true, rollbackFor = Exception.class)
     public List<ConceptAutocompleteDTO> fetchAutocomplete(CustomFieldConcept conceptField, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
+        if (input == null || input.isBlank()) {
+            return new ArrayList<>();
+        }
+
         UserInfo info = ExecutionContextHolder.get();
         if (info == null) {
             throw new IllegalStateException(String.format("No execution context bound to fetch the autocomplete of field %s", conceptField.getId()));
