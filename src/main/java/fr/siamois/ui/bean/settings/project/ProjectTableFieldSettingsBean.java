@@ -296,8 +296,10 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     /**
-     * Mocked: no external thesaurus is actually contacted yet — this only simulates the connection
-     * check until a real thesaurus-browsing service exists.
+     * Backs the refresh button next to the thesaurus URL: meant to both test the connection and
+     * reload the concept/collection catalog from it. Mocked — no external thesaurus is actually
+     * contacted, and the catalog isn't really reloaded, until a real thesaurus-browsing service
+     * exists.
      */
     public void testThesaurusConnection() {
         if (draftThesaurusUrl == null || draftThesaurusUrl.isBlank()) {

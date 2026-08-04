@@ -94,10 +94,11 @@
                             <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche' or projectTableFieldSettingsBean.draftSource eq 'collection'}">
                                 <div class="ptc-drawer-field">
                                     <label class="ptc-drawer-label" for="fieldEditForm:draftThesaurusUrl">#{langBean.msg('projectTables.drawer.params.thesaurusUrl')}</label>
-                                    <p:inputText id="draftThesaurusUrl" value="#{projectTableFieldSettingsBean.draftThesaurusUrl}"
-                                                 placeholder="#{langBean.msg('projectTables.drawer.params.thesaurusUrlPlaceholder')}" style="width:100%"/>
-                                    <div>
-                                        <p:commandButton value="#{langBean.msg('projectTables.drawer.params.testConnection')}" styleClass="ui-button-secondary ui-button-sm"
+                                    <div class="ptc-params-url-row">
+                                        <p:inputText id="draftThesaurusUrl" value="#{projectTableFieldSettingsBean.draftThesaurusUrl}"
+                                                     placeholder="#{langBean.msg('projectTables.drawer.params.thesaurusUrlPlaceholder')}"/>
+                                        <p:commandButton icon="bi bi-arrow-clockwise" styleClass="ui-button-secondary ui-button-sm ptc-params-refresh"
+                                                          title="#{langBean.msg('projectTables.drawer.params.testConnection')}"
                                                           actionListener="#{projectTableFieldSettingsBean.testThesaurusConnection()}" update="@form" process="@this draftThesaurusUrl"/>
                                     </div>
                                     <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConnectionTested}">
