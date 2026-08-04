@@ -44,16 +44,17 @@ public class ConceptApiUtils {
         if (uri.contains("ark:")) {
             return uri.substring(uri.indexOf("ark:"));
         }
-        try {
-            int indexStart = uri.indexOf(IDC) + IDC.length();
-            int indexEnd = indexStart + 1;
-            while (indexEnd < uri.length() && uri.charAt(indexEnd) != '&') {
-                indexEnd++;
-            }
-            return uri.substring(indexStart, indexEnd);
-        } catch (IllegalArgumentException e) {
+        int idcIndex = uri.indexOf(IDC);
+        if (idcIndex < 0) {
             return null;
         }
+        int indexStart = idcIndex + IDC.length();
+        int indexEnd = indexStart;
+        while (indexEnd < uri.length() && uri.charAt(indexEnd) != '&') {
+            indexEnd++;
+        }
+        String externalId = uri.substring(indexStart, indexEnd);
+        return externalId.isBlank() ? null : externalId;
     }
 
     public static Map<String, Concept> saveAllConceptsOfBranch(@NonNull BranchLoadComponents components, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO branchDTO, @NonNull Map<String, Concept> urlSavedConcept) {

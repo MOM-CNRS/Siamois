@@ -13,12 +13,14 @@ import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptApiCollectionDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptRemoteAutocompleteDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.lang.Nullable;
@@ -41,6 +43,7 @@ import java.util.*;
 @Service
 public class ConceptApi {
 
+    public static final String ERROR_WHILE_PROCESSING_JSON = "Error while processing JSON";
     private final RestTemplate restTemplate;
 
     private final ObjectMapper mapper;
@@ -111,7 +114,7 @@ public class ConceptApi {
             result.forEach(branch::addConceptBranchDTO);
             return branch;
         } catch (JsonProcessingException e) {
-            log.error("Error while processing JSON", e);
+            log.error(ERROR_WHILE_PROCESSING_JSON, e);
             throw new ErrorProcessingExpansionException("Error while processing JSON for expansion");
         }
     }
@@ -195,13 +198,22 @@ public class ConceptApi {
         try {
             return mapper.readValue(body, typeReference);
         } catch (JsonProcessingException e) {
-            log.error("Error while processing JSON", e);
+            log.error(ERROR_WHILE_PROCESSING_JSON, e);
             return new ArrayList<>();
         }
     }
 
-    public Object fetchPublicCollections(VocabularyDTO vocabularyDTO) {
-
+    public List<ConceptApiCollectionDTO> fetchPublicCollections(VocabularyDTO vocabularyDTO) {
+        var uri = URI.create(String.format("%s/openapi/v1/group/%s", vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId()));
+        ResponseEntity<String> response = sendRequestAcceptJson(uri);
+        String body = response.getBody();
+        TypeReference<List<ConceptApiCollectionDTO>> typeReference = new TypeReference<>() {};
+        try {
+            return mapper.readValue(body, typeReference);
+        } catch (JsonProcessingException e) {
+            log.error(ERROR_WHILE_PROCESSING_JSON, e);
+            return new ArrayList<>();
+        }
     }
 
     static class ConceptDTO {
