@@ -14,9 +14,9 @@ import java.util.List;
  * fields not relevant to a given type) is deferred to the (currently mocked) field-configuration
  * mechanism rather than baked into multiple hardcoded layouts.
  * <p>
- * The "matrix" fields (composition/color/texture) that exist as seed data but are never actually
- * wired into the live stratigraphic layout are intentionally left out here too, to match today's
- * real rendered output rather than the seeder's unused/dead columns.
+ * {@code actionUnit} is placed here too, but hidden ({@code d-none}) and read-only: it needs to be
+ * a real, configurable system field (so the field-configuration screen and table columns can see
+ * it), yet is not meant to be edited from this form.
  */
 public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
@@ -60,6 +60,8 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(GEOMORPHO_AGENT_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(INTERPRETATION_FIELD)
                                         .dependsOnSpec(interpretationDependsOnNature).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(MATRIX_COLOR_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className("d-none").readOnly(true).field(ACTION_UNIT_FIELD).build())
                                 .build()
                 )
                 .addRow(
