@@ -11,8 +11,9 @@ import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
-import fr.siamois.infrastructure.api.dto.ConceptRemoteAutocompleteDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptRemoteAutocompleteDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
@@ -197,6 +198,10 @@ public class ConceptApi {
             log.error("Error while processing JSON", e);
             return new ArrayList<>();
         }
+    }
+
+    public Object fetchPublicCollections(VocabularyDTO vocabularyDTO) {
+
     }
 
     static class ConceptDTO {

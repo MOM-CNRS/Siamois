@@ -31,7 +31,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.api.dto.ConceptFieldDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptFieldDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
@@ -1066,7 +1066,7 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findAllById(List.of(nonExistentParentId))).thenReturn(Collections.emptyList());
 
         // Act & Assert
-        FailedRecordingUnitSaveException exception = assertThrows(
+        assertThrows(
                 FailedRecordingUnitSaveException.class,
                 () -> recordingUnitService.save(recordingUnitToSave2)
         );

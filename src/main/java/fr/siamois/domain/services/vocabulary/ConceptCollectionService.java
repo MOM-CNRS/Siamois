@@ -7,8 +7,9 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.dto.entity.vocabulary.ConceptCollectionDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
-import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
 import fr.siamois.utils.vocabulary.ConceptApiUtils;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -76,6 +78,10 @@ public class ConceptCollectionService {
             savedCollection.getConcepts().add(concept);
         }
         conceptCollectionRepository.save(savedCollection);
+    }
+
+    public List<ConceptCollectionDTO> fetchCollectionsFromRemoteThesaurus(VocabularyDTO vocabularyDTO) {
+        Object collections = conceptApi.fetchPublicCollections(vocabularyDTO);
     }
 
 }

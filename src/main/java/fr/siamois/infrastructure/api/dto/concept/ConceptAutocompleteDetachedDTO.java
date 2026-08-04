@@ -1,4 +1,4 @@
-package fr.siamois.infrastructure.api.dto;
+package fr.siamois.infrastructure.api.dto.concept;
 
 import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
