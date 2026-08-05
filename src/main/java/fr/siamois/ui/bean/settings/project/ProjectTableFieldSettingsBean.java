@@ -331,12 +331,12 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * from {@link #openDrawerForEdit} untouched when the field carries no restriction.
      */
     private void prefillVocabularyConfig() {
-        Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(project.getId(), selectedTable, selectedTypeName);
+        Optional<FormConfig> formConfigLocal = tableFieldConfigService.findFormConfig(project.getId(), selectedTable, selectedTypeName);
         Optional<CustomField> field = tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName);
-        if (formConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept customFieldConcept)) {
+        if (formConfigLocal.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept customFieldConcept)) {
             return;
         }
-        Optional<ConceptFieldFormConfig> conceptConfig = formConfigService.findConceptConfigFor(formConfig.get(), customFieldConcept);
+        Optional<ConceptFieldFormConfig> conceptConfig = formConfigService.findConceptConfigFor(formConfigLocal.get(), customFieldConcept);
         if (conceptConfig.isEmpty() || conceptConfig.get().isNotValid()) {
             return;
         }
@@ -506,10 +506,10 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     private void clearConceptConfigIfAny() {
         tableFieldConfigService.findFormConfig(project.getId(), selectedTable, selectedTypeName)
-                .ifPresent(formConfig -> tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName)
+                .ifPresent(formConfigLocal -> tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName)
                         .filter(CustomFieldConcept.class::isInstance)
                         .map(CustomFieldConcept.class::cast)
-                        .ifPresent(customFieldConcept -> formConfigService.clearConceptConfigFor(formConfig, customFieldConcept)));
+                        .ifPresent(customFieldConcept -> formConfigService.clearConceptConfigFor(formConfigLocal, customFieldConcept)));
     }
 
     private void saveBrancheConceptIfChanged() {
@@ -538,12 +538,12 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private Optional<ConceptFieldTarget> resolveConceptFieldTarget() {
-        Optional<FormConfig> formConfig = tableFieldConfigService.createOrGetFormConfig(project.getId(), selectedTable, selectedTypeName);
+        Optional<FormConfig> formConfigLocal = tableFieldConfigService.createOrGetFormConfig(project.getId(), selectedTable, selectedTypeName);
         Optional<CustomField> field = tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName);
-        if (formConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept customFieldConcept)) {
+        if (formConfigLocal.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept customFieldConcept)) {
             return Optional.empty();
         }
-        return Optional.of(new ConceptFieldTarget(formConfig.get(), customFieldConcept));
+        return Optional.of(new ConceptFieldTarget(formConfigLocal.get(), customFieldConcept));
     }
 
     private void warnFieldNotResolved() {
