@@ -226,6 +226,10 @@ class FormConfigServiceTest {
         assertThat(saved.getPosition()).isEqualTo(7);
         assertThat(saved.getBranchTopTerm()).isSameAs(branchTopConcept);
         assertThat(saved.getCollection()).isNull();
+        // the stale plain FieldFormConfig must be removed (and the removal flushed) before the new
+        // ConceptFieldFormConfig with the same id is saved, or Hibernate throws NonUniqueObjectException
+        verify(fieldFormConfigRepository).delete(existing);
+        verify(fieldFormConfigRepository).flush();
     }
 
     @Test
@@ -433,6 +437,8 @@ class FormConfigServiceTest {
         assertThat(saved.isActive()).isFalse();
         assertThat(saved.getPosition()).isEqualTo(7);
         assertThat(saved.getCollection()).isSameAs(savedCollection);
+        verify(fieldFormConfigRepository).delete(existing);
+        verify(fieldFormConfigRepository).flush();
     }
 
     @Test
@@ -445,6 +451,63 @@ class FormConfigServiceTest {
 
         assertThatThrownBy(() -> formConfigService.addConceptConfigFor(formConfig, field, collectionDTO))
                 .isInstanceOf(VocabularyNotFoundException.class);
+
+        verify(fieldFormConfigRepository, never()).save(any());
+    }
+
+    // --- Reading / clearing the current configuration -------------------------------------------
+
+    @Test
+    void findConceptConfigFor_shouldReturnTheExistingConceptConfig() {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+        existing.setBranchTopTerm(branchTopConcept);
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        Optional<ConceptFieldFormConfig> found = formConfigService.findConceptConfigFor(formConfig, field);
+
+        assertThat(found).contains(existing);
+    }
+
+    @Test
+    void findConceptConfigFor_shouldBeEmptyWhenNoConfigExists() {
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+
+        assertThat(formConfigService.findConceptConfigFor(formConfig, field)).isEmpty();
+    }
+
+    @Test
+    void findConceptConfigFor_shouldBeEmptyWhenTheExistingConfigIsNotConceptTyped() {
+        FieldFormConfig existing = new FieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        assertThat(formConfigService.findConceptConfigFor(formConfig, field)).isEmpty();
+    }
+
+    @Test
+    void clearConceptConfigFor_shouldNullOutBothBranchAndCollectionAndSave() {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+        existing.setBranchTopTerm(branchTopConcept);
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        formConfigService.clearConceptConfigFor(formConfig, field);
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved).isSameAs(existing);
+        assertThat(saved.getBranchTopTerm()).isNull();
+        assertThat(saved.getCollection()).isNull();
+    }
+
+    @Test
+    void clearConceptConfigFor_shouldDoNothingWhenNoConfigExists() {
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+
+        formConfigService.clearConceptConfigFor(formConfig, field);
 
         verify(fieldFormConfigRepository, never()).save(any());
     }
