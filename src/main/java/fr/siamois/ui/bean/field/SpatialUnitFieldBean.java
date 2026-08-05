@@ -4,6 +4,7 @@ import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -133,6 +134,7 @@ public class SpatialUnitFieldBean implements Serializable {
         try {
             FacesContext context = FacesContext.getCurrentInstance();
             fieldCode = (String) UIComponent.getCurrentComponent(context).getAttributes().get("fieldCode");
+            Object fieldAttr = UIComponent.getCurrentComponent(context).getAttributes().get("field");
 
             // Retrieve the sortByParent attribute from the current UI component
             Boolean sortByParent = Boolean.parseBoolean(
@@ -149,11 +151,20 @@ public class SpatialUnitFieldBean implements Serializable {
             Long actionUnitId = (Long) UIComponent.getCurrentComponent(context)
                     .getAttributes().get("actionUnitId");
 
-            List<ConceptAutocompleteDTO> results = dependsOnBaseConcept != null
-                    ? fieldConfigurationService.fetchAutocompleteRelated(
-                            sessionSettingsBean.getUserInfo(), fieldCode, dependsOnBaseConcept, input, actionUnitId)
-                    : fieldConfigurationService.fetchAutocomplete(
-                            sessionSettingsBean.getUserInfo(), fieldCode, input, actionUnitId);
+            // A field's own branch/collection restriction (set through the project's field-settings
+            // drawer) takes priority over its field-code configuration; fetchAutocomplete(CustomFieldConcept, ...)
+            // already falls back to the field-code lookup on its own when the field carries no such
+            // restriction, so this only needs to pick which overload to call.
+            List<ConceptAutocompleteDTO> results;
+            if (dependsOnBaseConcept != null) {
+                results = fieldConfigurationService.fetchAutocompleteRelated(
+                        sessionSettingsBean.getUserInfo(), fieldCode, dependsOnBaseConcept, input, actionUnitId);
+            } else if (fieldAttr instanceof CustomFieldConcept conceptField) {
+                results = fieldConfigurationService.fetchAutocomplete(conceptField, input, actionUnitId);
+            } else {
+                results = fieldConfigurationService.fetchAutocomplete(
+                        sessionSettingsBean.getUserInfo(), fieldCode, input, actionUnitId);
+            }
 
             if (sortByParent != null && sortByParent) {
                 // Sort the results by root group (using the getRootGroup method)

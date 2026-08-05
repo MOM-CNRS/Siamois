@@ -14,6 +14,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
@@ -177,6 +178,26 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(service.listConfigurableTypes(PROJECT_ID, ConfigurableTable.MOBILIER, "é"))
                 .containsExactly("Métal");
+    }
+
+    /**
+     * When the table's own type field is itself a known system field (a {@code CustomFieldConceptFromFieldCode}
+     * whose field code matches {@link ConfigurableTable#getFieldCode()} — true for {@code UE}, whose
+     * "recordingunit.property.type" field carries {@code RecordingUnit.TYPE_FIELD_CODE}), a branch/collection
+     * restriction configured on it through the field-settings drawer must be honored — so the search goes
+     * through the field-entity overload, not the field-code one.
+     */
+    @Test
+    void listConfigurableTypes_shouldUseTheFieldEntityOverload_whenTheTypeFieldIsAKnownSystemField() throws Exception {
+        givenSystemFieldsOf(ConfigurableTable.UE, "recordingunit.property.type");
+        when(fieldConfigurationService.fetchAutocomplete(any(CustomFieldConcept.class), eq("é"), eq(PROJECT_ID)))
+                .thenReturn(List.of(autocomplete("Céramique")));
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(List.of());
+
+        assertThat(service.listConfigurableTypes(PROJECT_ID, ConfigurableTable.UE, "é"))
+                .containsExactly("Céramique");
+        verify(fieldConfigurationService, never()).fetchAutocomplete(any(UserInfo.class), anyString(), any(), any());
     }
 
     @Test
