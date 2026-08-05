@@ -26,7 +26,6 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionTab;
 import fr.siamois.ui.bean.panel.utils.SpatialUnitHelperService;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.ActionUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpatialUnitLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;

@@ -7,13 +7,11 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
-import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -36,6 +34,8 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -60,7 +60,10 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.Month;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)

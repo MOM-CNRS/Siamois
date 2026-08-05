@@ -28,7 +28,6 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;

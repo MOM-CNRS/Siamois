@@ -7,13 +7,11 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
@@ -40,7 +38,6 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 

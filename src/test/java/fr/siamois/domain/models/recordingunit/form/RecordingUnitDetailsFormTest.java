@@ -2,8 +2,8 @@ package fr.siamois.domain.models.recordingunit.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

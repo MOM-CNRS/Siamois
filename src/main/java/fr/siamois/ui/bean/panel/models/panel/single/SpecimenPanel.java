@@ -2,8 +2,6 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
-import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -24,6 +22,8 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
