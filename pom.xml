@@ -402,6 +402,14 @@
             <version>2.22.1</version>
         </dependency>
 
+        <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson/annotations -->
+        <dependency>
+            <groupId>com.fasterxml.jackson</groupId>
+            <artifactId>annotations</artifactId>
+            <version>2.7.0</version>
+            <scope>compile</scope>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.springframework.data/spring-data-envers -->
         <dependency>
             <groupId>org.springframework.data</groupId>
