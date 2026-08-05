@@ -178,7 +178,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isSpecimenBookmarkedByUser(s.getFullIdentifier()))
                             ? "bi bi-bookmark-x-fill"
-                            : "bi bi-bookmark-plus";
+                            : "bi bi-bookmark";
             case DUPLICATE_ROW -> "bi bi-copy";
             default -> "";
         };

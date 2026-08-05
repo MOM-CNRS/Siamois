@@ -10,18 +10,22 @@ import fr.siamois.domain.models.vocabulary.ConceptHierarchy;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
-import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.*;
 import fr.siamois.infrastructure.api.ConceptApi;
-import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptRemoteAutocompleteDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
+import fr.siamois.utils.vocabulary.ConceptApiUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -51,6 +55,7 @@ public class ConceptService {
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
 
     private static final String DEFAULT_LABEL_RESOLUTION_LANG = "fr";
+    private final ApplicationContext applicationContext;
 
     /**
      * Resolves a concept by exact label (case/accent-insensitive) within the institution's
@@ -259,7 +264,8 @@ public class ConceptService {
             saveOrGetAllConceptsFromBranchAndStoreInMap(config, branchDTO, urlToSavedConceptMap, vocabulary);
             progressWrapper.incrementStep();
 
-            saveAllConceptDataAndRelations(branchDTO, urlToSavedConceptMap, parentSavedConcept, vocabulary);
+            ConceptApiUtils.BranchLoadComponents components = new ConceptApiUtils.BranchLoadComponents(applicationContext);
+            ConceptApiUtils.saveAllConceptsOfBranch(components, vocabulary, branchDTO, urlToSavedConceptMap);
             progressWrapper.incrementStep();
 
             processDeletedConcepts(urlToSavedConceptMap, parentSavedConcept);
@@ -290,62 +296,10 @@ public class ConceptService {
         log.trace("Mark as deleted {} concepts for parent concept {} in {}", deletedConcepts.size(), parentSavedConcept.getExternalId(), parentSavedConcept.getVocabulary().getExternalVocabularyId());
     }
 
-    private void saveAllConceptDataAndRelations(ConceptBranchDTO branchDTO, Map<String, Concept> urlToSavedConceptMap, Concept parentSavedConcept, Vocabulary vocabulary) {
-        Map<Concept, Concept> childAndParentMap = new HashMap<>();
-        for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
-
-            if (Objects.nonNull(entry.getValue().getNarrower())) {
-                createRelationBetweenConcepts(entry, urlToSavedConceptMap, childAndParentMap, parentSavedConcept);
-            }
-
-            if (Objects.nonNull(entry.getValue().getRelated())) {
-                saveRelatedConcepts(vocabulary, entry.getValue().getRelated(), urlToSavedConceptMap.get(entry.getKey()), urlToSavedConceptMap);
-            }
-        }
-    }
-
-    private void createRelationBetweenConcepts(Map.Entry<String, FullInfoDTO> entry, Map<String, Concept> concepts, Map<Concept, Concept> childToParentMap, Concept parentSavedConcept) {
-        for (PurlInfoDTO narrower : entry.getValue().getNarrower()) {
-            Concept parent = concepts.get(entry.getKey());
-            if (parent == null) {
-                throw new IllegalStateException("No concept found in cache map for URL " + entry.getKey());
-            }
-            Concept child = concepts.get(narrower.getValue());
-            if (child == null) {
-                throw new IllegalStateException("No concept found in cache map for URL " + narrower.getValue());
-            }
-
-            if (!parent.equals(parentSavedConcept)) {
-                if (!childToParentMap.containsKey(child)) {
-                    ConceptHierarchy relation = new ConceptHierarchy(parent, child, parentSavedConcept);
-                    conceptHierarchyRepository.save(relation);
-                    childToParentMap.put(child, parent);
-                } else {
-                    log.debug("Concept {} already has a parent concept, skipping relation creation for {}.", child.getExternalId(), parent.getExternalId());
-                }
-            }
-        }
-    }
-
     private void saveOrGetAllConceptsFromBranchAndStoreInMap(ConceptFieldConfig config, ConceptBranchDTO branchDTO, Map<String, Concept> concepts, Vocabulary vocabulary) {
         for (Map.Entry<String, FullInfoDTO> entry : branchDTO.getData().entrySet()) {
             concepts.put(entry.getKey(), saveOrGetConceptFromFullDTO(vocabulary, entry.getValue(), config.getConcept()));
         }
-    }
-
-    protected void saveRelatedConcepts(Vocabulary vocabulary, @NonNull PurlInfoDTO[] relatedConceptsInfos, Concept savedConcept, Map<String, Concept> urlToSavedConceptMap) {
-        Set<Concept> proxySavedConcepts = savedConcept.getRelatedConcepts();
-        Set<Concept> relatedConcepts = new HashSet<>();
-        if (Objects.nonNull(proxySavedConcepts) && relatedConceptsInfos.length > 0) {
-            relatedConcepts.addAll(proxySavedConcepts);
-        }
-        for (PurlInfoDTO related : relatedConceptsInfos) {
-            FullInfoDTO relatedInfos = conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
-            Concept savedRelatedConcept = saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
-            relatedConcepts.add(savedRelatedConcept);
-        }
-        savedConcept.setRelatedConcepts(relatedConcepts);
-        urlToSavedConceptMap.put(savedConcept.getExternalId(), conceptRepository.save(savedConcept));
     }
 
     private static FullInfoDTO findAndSetParentConceptDTO(ConceptBranchDTO branchDTO, Concept concept) {
@@ -393,5 +347,106 @@ public class ConceptService {
             parents = conceptHierarchyRepository.findAllByChildAndParentFieldContext(concept, parentFieldConcept);
         }
         return result;
+    }
+
+    /**
+     * Fetches autocomplete suggestions straight from a remote thesaurus, for concepts that are not
+     * imported in the local database.
+     * The results carry no language, since the remote autocomplete does not tell which language each
+     * label is written in, and no hierarchy, since it does not expose the ancestors of a concept.
+     *
+     * @param vocabularyDTO the remote vocabulary to search into
+     * @param input         the input string to match against concept labels
+     * @return a list of matching ConceptAutocompleteDetachedDTO, one per matching label
+     */
+    @NonNull
+    public List<ConceptAutocompleteDetachedDTO> fetchAutocompleteFromRemoteThesaurus(VocabularyDTO vocabularyDTO, String input) {
+        if (input == null || input.isBlank()) {
+            return Collections.emptyList();
+        }
+        List<ConceptRemoteAutocompleteDTO> autocompleteDTOS = conceptApi. fetchRemoteAutocomplete(vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId(), input);
+        Map<Long, List<ConceptRemoteAutocompleteDTO>> conceptIdToResults = new LinkedHashMap<>();
+        Map<Long, ConceptRemoteAutocompleteDTO> conceptIdToPrefLabel = new HashMap<>();
+        for (ConceptRemoteAutocompleteDTO autocompleteDTO : autocompleteDTOS) {
+            if (!conceptIdToResults.containsKey(autocompleteDTO.identifier())) {
+                conceptIdToResults.put(autocompleteDTO.identifier(), new ArrayList<>());
+            }
+            if (!isAltLabel(autocompleteDTO)) {
+                conceptIdToPrefLabel.put(autocompleteDTO.identifier(), autocompleteDTO);
+            }
+            conceptIdToResults.get(autocompleteDTO.identifier()).add(autocompleteDTO);
+        }
+
+        List<ConceptAutocompleteDetachedDTO> results = new ArrayList<>();
+        for (Map.Entry<Long, List<ConceptRemoteAutocompleteDTO>> entry : conceptIdToResults.entrySet()) {
+            results.addAll(detachedResultsOfConcept(vocabularyDTO, entry.getValue(), conceptIdToPrefLabel.get(entry.getKey())));
+        }
+        return results;
+    }
+
+    /**
+     * Turns every label matching the input for one remote concept into its own autocomplete result.
+     * All of them share the labels and the definition of that concept, so the caller displays the same
+     * information whichever label was matched.
+     *
+     * @param vocabularyDTO   the vocabulary the concept belongs to
+     * @param labelsOfConcept the matching labels of that concept, in the order the thesaurus returned them
+     * @param prefLabel       the preferred label of that concept, null when only alt labels matched
+     * @return one result per label, or an empty list when the concept cannot be identified
+     */
+    @NonNull
+    private List<ConceptAutocompleteDetachedDTO> detachedResultsOfConcept(@NonNull VocabularyDTO vocabularyDTO,
+                                                                         @NonNull List<ConceptRemoteAutocompleteDTO> labelsOfConcept,
+                                                                         @Nullable ConceptRemoteAutocompleteDTO prefLabel) {
+        // The pref label carries the display name of the concept. When it did not match the input, the
+        // thesaurus only returned alt labels : the first one then stands for the concept.
+        ConceptRemoteAutocompleteDTO reference = prefLabel != null ? prefLabel : labelsOfConcept.get(0);
+
+        String externalId = ConceptApiUtils.externalIdFromUri(reference.uri());
+        if (externalId == null) {
+            log.warn("Ignoring remote autocomplete result '{}' : no concept id could be read from its URI {}", reference.label(), reference.uri());
+            return List.of();
+        }
+
+        ConceptDTO concept = ConceptDTO.builder()
+                .externalId(externalId)
+                .vocabulary(vocabularyDTO)
+                .deleted(false)
+                .build();
+
+        List<String> altLabels = labelsOfConcept.stream()
+                .filter(ConceptService::isAltLabel)
+                .map(ConceptRemoteAutocompleteDTO::label)
+                .toList();
+
+        String definition = labelsOfConcept.stream()
+                .map(ConceptRemoteAutocompleteDTO::definition)
+                .filter(value -> value != null && !value.isBlank())
+                .findFirst()
+                .orElse("");
+
+        List<ConceptAutocompleteDetachedDTO> results = new ArrayList<>();
+        for (ConceptRemoteAutocompleteDTO matchingLabel : labelsOfConcept) {
+            results.add(new ConceptAutocompleteDetachedDTO(
+                    labelToDisplay(matchingLabel, concept),
+                    reference.label(),
+                    altLabels,
+                    definition,
+                    vocabularyDTO.completeUri()));
+        }
+        return results;
+    }
+
+    @NonNull
+    private ConceptLabelDTO labelToDisplay(@NonNull ConceptRemoteAutocompleteDTO remoteLabel, @NonNull ConceptDTO concept) {
+        ConceptLabelDTO label = isAltLabel(remoteLabel) ? new ConceptAltLabelDTO() : new ConceptPrefLabelDTO();
+        label.setConcept(concept);
+        label.setVocabulary(concept.getVocabulary());
+        label.setLabel(remoteLabel.label());
+        return label;
+    }
+
+    private static boolean isAltLabel(@NonNull ConceptRemoteAutocompleteDTO remoteLabel) {
+        return Boolean.TRUE.equals(remoteLabel.isAltLabel());
     }
 }

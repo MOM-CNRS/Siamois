@@ -1,9 +1,9 @@
 package fr.siamois.domain.models.phase.form;
 
 import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
 
@@ -30,6 +30,11 @@ public class PhaseDetailsForm extends PhaseForm {
                                                 .readOnly(false)
                                                 .className(COLUMN_CLASS_NAME)
                                                 .field(titleField)
+                                                .build())
+                                        .addColumn(new CustomColUiDto.Builder()
+                                                .readOnly(true)
+                                                .className(COLUMN_CLASS_NAME)
+                                                .field(actionUnitField)
                                                 .build())
                                         .build())
                                 .addRow(new CustomRowUiDto.Builder()

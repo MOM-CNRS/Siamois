@@ -1,7 +1,7 @@
 package fr.siamois.mapper;
 
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.InjectionStrategy;

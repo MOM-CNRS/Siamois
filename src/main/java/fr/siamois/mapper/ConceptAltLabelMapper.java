@@ -1,7 +1,7 @@
 package fr.siamois.mapper;
 
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
-import fr.siamois.dto.entity.ConceptAltLabelDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptAltLabelDTO;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;

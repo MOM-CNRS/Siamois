@@ -9,6 +9,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
@@ -210,7 +211,7 @@ public class FormService {
     private ValueMatcher toMatcher(EnabledWhenJson.ValueJson vj) {
         String className = vj.getAnswerClass();
         return switch (className) {
-            case "fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode" ->
+            case "fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode" ->
                     ValueMatcherFactory.forSelectOneFromFieldCode(vj);
             default -> ValueMatcherFactory.defaultMatcher();
         };

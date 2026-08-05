@@ -5,6 +5,9 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
@@ -15,14 +18,16 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
-import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -54,6 +59,7 @@ public class FieldConfigurationService {
     private final AutocompleteRepository autocompleteRepository;
     private final InstitutionMapper institutionMapper;
     private final ActionUnitMapper actionUnitMapper;
+    private final FieldFormConfigRepository fieldFormConfigRepository;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();
@@ -185,7 +191,7 @@ public class FieldConfigurationService {
                                                                   @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
         FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
-        if (config.isWrongConfig()) log.warn("Missing code in thesaurus configuration: "+config.missingFieldCode());
+        if (config.isWrongConfig()) log.warn("Missing code in thesaurus configuration: {}", config.missingFieldCode());
 
         progressWrapper.setTotalSteps((config.conceptWithValidFieldCode().size() * (NUMBER_OF_STEPS_IN_FIELD_CONFIG + NUMBER_OF_STEPS_IN_CONCEPT_UPDATE)));
 
@@ -412,6 +418,49 @@ public class FieldConfigurationService {
     public List<ConceptAutocompleteDTO> fetchAutocomplete(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
         ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode, actionUnitId);
         return autocompleteRepository.findMatchingConceptsFor(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
+    }
+
+    /**
+     * Fetches autocomplete suggestions for a concept field, following the configuration set up for that
+     * field on the given project (Action Unit) : a thesaurus branch or a thesaurus collection.
+     * When the field has no such configuration and is driven by a field code, falls back on the
+     * institution or project configuration of that field code.
+     *
+     * @param conceptField the concept field for which to fetch autocomplete suggestions
+     * @param input        the input string to match against concept labels. Can be null or empty.
+     * @param actionUnitId the action unit (project) the field is displayed in, or null for institution-only
+     * @return a list of matching ConceptAutocompleteDTO objects
+     * @throws NoConfigForFieldException if the field falls back on a field code that has no configuration
+     * @throws IllegalStateException     if the field has no usable configuration at all
+     */
+    @NonNull
+    @ExecutionTimeLogger
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public List<ConceptAutocompleteDTO> fetchAutocomplete(CustomFieldConcept conceptField, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
+        if (input == null || input.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        UserInfo info = ExecutionContextHolder.get();
+        if (info == null) {
+            throw new IllegalStateException(String.format("No execution context bound to fetch the autocomplete of field %s", conceptField.getId()));
+        }
+
+        Optional<ConceptFieldFormConfig> opt = fieldFormConfigRepository.findByFieldAndActionUnit(conceptField, actionUnitId);
+        if (opt.isEmpty()) {
+            if (conceptField instanceof CustomFieldConceptFromFieldCode conceptFromFieldCode) {
+                return fetchAutocomplete(info, conceptFromFieldCode.getFieldCode(), input, actionUnitId);
+            }
+            throw new IllegalStateException(String.format("CustomFieldConcept %s has no configuration which is not allowed", conceptField.getId()));
+        }
+        ConceptFieldFormConfig conceptFieldFormConfig = opt.get();
+        if (conceptFieldFormConfig.isNotValid()) {
+            throw new IllegalStateException(String.format("ConceptFieldFormConfig %s should not be saved without any configurations", conceptFieldFormConfig.getId()));
+        }
+        if (conceptFieldFormConfig.isBranchConfig()) {
+            return autocompleteRepository.findMatchingConceptsInBranchOf(conceptFieldFormConfig.getBranchTopTerm(), info.getLang(), input, LIMIT_RESULTS);
+        }
+        return autocompleteRepository.findMatchingConceptsInCollection(conceptFieldFormConfig.getCollection(), info.getLang(), input, LIMIT_RESULTS);
     }
 
     /**

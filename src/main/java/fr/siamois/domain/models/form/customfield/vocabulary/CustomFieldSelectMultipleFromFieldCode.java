@@ -1,6 +1,5 @@
 package fr.siamois.domain.models.form.customfield.vocabulary;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -20,10 +19,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "custom_field")
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomFieldSelectMultipleFromFieldCode extends CustomField {
-
-    @Column(name = "field_code")
-    private String fieldCode ;
+public class CustomFieldSelectMultipleFromFieldCode extends CustomFieldConceptFromFieldCode {
 
     @Column(name = "icon_class")
     private String iconClass;
@@ -41,9 +37,6 @@ public class CustomFieldSelectMultipleFromFieldCode extends CustomField {
         return super.hashCode();
     }
 
-    @Override
-    public String getIcon() {
-        return "sia-icon-opentheso";
-    }
+
 
 }

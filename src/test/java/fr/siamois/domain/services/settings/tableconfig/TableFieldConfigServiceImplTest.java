@@ -14,6 +14,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
@@ -28,14 +29,16 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
@@ -89,6 +92,8 @@ class TableFieldConfigServiceImplTest {
     private FieldFormConfigRepository fieldFormConfigRepository;
     @Mock
     private CustomFieldRepository customFieldRepository;
+    @Mock
+    private CustomFieldAnswerRepository customFieldAnswerRepository;
     @Mock
     private PersonRepository personRepository;
 
@@ -175,6 +180,26 @@ class TableFieldConfigServiceImplTest {
                 .containsExactly("Métal");
     }
 
+    /**
+     * When the table's own type field is itself a known system field (a {@code CustomFieldConceptFromFieldCode}
+     * whose field code matches {@link ConfigurableTable#getFieldCode()} — true for {@code UE}, whose
+     * "recordingunit.property.type" field carries {@code RecordingUnit.TYPE_FIELD_CODE}), a branch/collection
+     * restriction configured on it through the field-settings drawer must be honored — so the search goes
+     * through the field-entity overload, not the field-code one.
+     */
+    @Test
+    void listConfigurableTypes_shouldUseTheFieldEntityOverload_whenTheTypeFieldIsAKnownSystemField() throws Exception {
+        givenSystemFieldsOf(ConfigurableTable.UE, "recordingunit.property.type");
+        when(fieldConfigurationService.fetchAutocomplete(any(CustomFieldConcept.class), eq("é"), eq(PROJECT_ID)))
+                .thenReturn(List.of(autocomplete("Céramique")));
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(List.of());
+
+        assertThat(service.listConfigurableTypes(PROJECT_ID, ConfigurableTable.UE, "é"))
+                .containsExactly("Céramique");
+        verify(fieldConfigurationService, never()).fetchAutocomplete(any(UserInfo.class), anyString(), any(), any());
+    }
+
     @Test
     void addConfiguration_shouldCreateTheFormConfigOfTheChosenValue() {
         when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
@@ -213,7 +238,9 @@ class TableFieldConfigServiceImplTest {
                 .containsExactly(IDENTIFIER_FIELD, CATEGORY_FIELD);
         assertThat(fields).allMatch(TypeFieldFormConfig::isSystemField);
         assertThat(fields).allMatch(TypeFieldFormConfig::isActive);
-        assertThat(fields.get(0).isMandatory()).isTrue();
+        // Mandatory falls back on the requiredness SpecimenDetailsForm's real panel declares for
+        // each field — neither the identifier nor the category column is marked required there.
+        assertThat(fields.get(0).isMandatory()).isFalse();
         assertThat(fields.get(1).isMandatory()).isFalse();
     }
 
@@ -257,16 +284,25 @@ class TableFieldConfigServiceImplTest {
     }
 
     /**
-     * Every table reads the same pool of rows, so each must take its own fields out of it: the
-     * identifier is shared by UE and Mobilier, the category belongs to Mobilier alone.
+     * Every table reads the same pool of rows, so each must take its own fields out of it: a row
+     * belonging to Mobilier (its category field) must not leak into UE's field list.
      */
     @Test
     void getFieldsConfig_shouldOnlyListTheSystemFieldsOfTheTableItIsAskedAbout() {
-        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD, CATEGORY_FIELD);
+        String ueIdentifierLabel = "common.label.identifier";
+        CustomField ueIdentifier = SystemFieldCatalog.fieldsOf(ConfigurableTable.UE).stream()
+                .filter(field -> ueIdentifierLabel.equals(field.getLabel()))
+                .findFirst().orElseThrow();
+        ueIdentifier.setId(SYSTEM_FIELD_FIRST_ID);
+        CustomField mobilierCategory = SystemFieldCatalog.fieldsOf(ConfigurableTable.MOBILIER).stream()
+                .filter(field -> CATEGORY_FIELD.equals(field.getLabel()))
+                .findFirst().orElseThrow();
+        mobilierCategory.setId(SYSTEM_FIELD_FIRST_ID + 1);
+        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(ueIdentifier, mobilierCategory));
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, "_default").getFields())
-                .extracting(TypeFieldFormConfig::getName).containsExactly(IDENTIFIER_FIELD);
+                .extracting(TypeFieldFormConfig::getName).containsExactly(ueIdentifierLabel);
     }
 
     @Test
@@ -325,6 +361,39 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void findField_shouldResolveASystemFieldByName() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", IDENTIFIER_FIELD);
+
+        assertThat(field).isPresent();
+        assertThat(field.get().getLabel()).isEqualTo(IDENTIFIER_FIELD);
+    }
+
+    @Test
+    void findField_shouldResolveAnAdditionalFieldByName() {
+        CustomField additional = textField(9L, "Couleur", false);
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
+                .thenReturn(List.of(fieldConfig(defaultConfig, additional, true, false)));
+
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", "Couleur");
+
+        assertThat(field).contains(additional);
+    }
+
+    @Test
+    void findField_shouldReturnEmptyWhenNoFieldMatchesTheName() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", "Unknown");
+
+        assertThat(field).isEmpty();
+    }
+
+    @Test
     void setFieldActive_shouldCreateTheRowOfASystemFieldThatWasNeverConfigured() {
         CustomField identifier = givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD).get(IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
@@ -336,7 +405,8 @@ class TableFieldConfigServiceImplTest {
         assertThat(saved.getValue().getField()).isEqualTo(identifier);
         assertThat(saved.getValue().getFormConfig()).isEqualTo(defaultConfig);
         assertThat(saved.getValue().isActive()).isFalse();
-        assertThat(saved.getValue().isMandatory()).isTrue();
+        // Falls back on SpecimenDetailsForm's real requiredness for the identifier column: false.
+        assertThat(saved.getValue().isMandatory()).isFalse();
     }
 
     @Test
@@ -679,29 +749,49 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void deleteAdditionalField_shouldDropTheLinkAndTheNowUnusedField() {
+    void deleteAdditionalField_shouldDropTheLinkOfTheType() {
         CustomField additional = textField(5L, "Couleur", false);
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
-                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
-        when(fieldFormConfigRepository.countByFieldId(5L)).thenReturn(0L);
+        FieldFormConfig link = fieldConfig(ceramiqueConfig, additional, true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(link));
 
-        service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
 
-        verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
-        verify(customFieldRepository).delete(additional);
+        assertThat(deleted).isTrue();
+        verify(fieldFormConfigRepository).delete(link);
+        verify(customFieldRepository, never()).delete(any(CustomField.class));
+    }
+
+    /**
+     * The additional fields of a type include the ones it inherits from the default configuration:
+     * deleting one of those has to reach the default configuration, or the field would be read back
+     * — and displayed — right after being "deleted".
+     */
+    @Test
+    void deleteAdditionalField_shouldDropTheLinkAFieldIsInheritedThrough() {
+        CustomField additional = textField(5L, "Couleur", false);
+        FieldFormConfig inherited = fieldConfig(defaultConfig, additional, true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(inherited));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of());
+
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        assertThat(deleted).isTrue();
+        verify(fieldFormConfigRepository).delete(inherited);
     }
 
     @Test
-    void deleteAdditionalField_shouldKeepAFieldStillConfiguredElsewhere() {
+    void deleteAdditionalField_shouldDropBothTheTypesOwnLinkAndTheInheritedOne() {
         CustomField additional = textField(5L, "Couleur", false);
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
-                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
-        when(fieldFormConfigRepository.countByFieldId(5L)).thenReturn(1L);
+        FieldFormConfig inherited = fieldConfig(defaultConfig, additional, true, false);
+        FieldFormConfig own = fieldConfig(ceramiqueConfig, additional, true, true);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(inherited));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(own));
 
-        service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
 
-        verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
-        verify(customFieldRepository, never()).delete(any(CustomField.class));
+        assertThat(deleted).isTrue();
+        verify(fieldFormConfigRepository).delete(inherited);
+        verify(fieldFormConfigRepository).delete(own);
     }
 
     @Test
@@ -713,6 +803,48 @@ class TableFieldConfigServiceImplTest {
 
         verify(fieldFormConfigRepository, never()).delete(any(FieldFormConfig.class));
         verify(customFieldRepository, never()).delete(any(CustomField.class));
+    }
+
+    @Test
+    void deleteAdditionalField_shouldKeepAFieldTheProjectAlreadyAnswered() {
+        CustomField additional = textField(5L, "Couleur", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
+        when(customFieldAnswerRepository.countByFieldIdAndProjectId(5L, PROJECT_ID)).thenReturn(3L);
+
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        assertThat(deleted).isFalse();
+        verify(fieldFormConfigRepository, never()).delete(any(FieldFormConfig.class));
+        verify(customFieldRepository, never()).delete(any(CustomField.class));
+    }
+
+    /** A single answer is already one too many: it is what deleting the field would strand. */
+    @Test
+    void deleteAdditionalField_shouldKeepAFieldTheProjectAnsweredExactlyOnce() {
+        CustomField additional = textField(5L, "Couleur", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
+        when(customFieldAnswerRepository.countByFieldIdAndProjectId(5L, PROJECT_ID)).thenReturn(1L);
+
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        assertThat(deleted).isFalse();
+        verify(fieldFormConfigRepository, never()).delete(any(FieldFormConfig.class));
+    }
+
+    /** Answers of another project are none of this project's business: they don't hold it back. */
+    @Test
+    void deleteAdditionalField_shouldIgnoreAnswersGivenInAnotherProject() {
+        CustomField additional = textField(5L, "Couleur", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
+        when(customFieldAnswerRepository.countByFieldIdAndProjectId(5L, PROJECT_ID)).thenReturn(0L);
+
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        assertThat(deleted).isTrue();
+        verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
     }
 
     @Test
@@ -1002,6 +1134,7 @@ class TableFieldConfigServiceImplTest {
 
 
     // --- deleteAdditionalField ---
+    /** Nothing to remove is not a refusal: the caller must not report the field as being in use. */
     @Test
     void deleteAdditionalField_shouldDoNothingWhenFieldNotFound() {
         when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
@@ -1009,7 +1142,7 @@ class TableFieldConfigServiceImplTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(11L))
                 .thenReturn(List.of());
 
-        service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Inconnu");
+        assertThat(service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Inconnu")).isTrue();
 
         verify(fieldFormConfigRepository, never()).delete(any());
         verify(customFieldRepository, never()).delete(any());
@@ -1020,7 +1153,7 @@ class TableFieldConfigServiceImplTest {
         when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
                 .thenReturn(Optional.empty());
 
-        service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Inconnu", "Couleur");
+        assertThat(service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Inconnu", "Couleur")).isTrue();
 
         verify(fieldFormConfigRepository, never()).delete(any());
         verify(customFieldRepository, never()).delete(any());
@@ -1572,7 +1705,7 @@ class TableFieldConfigServiceImplTest {
         Set<String> wanted = Set.of(labels);
         Map<String, CustomField> rows = new LinkedHashMap<>();
         long id = SYSTEM_FIELD_FIRST_ID;
-        for (FormFieldColumn column : SystemFieldCatalog.columnsOf(table)) {
+        for (CustomColUiDto column : SystemFieldCatalog.systemColumnsOf(table)) {
             CustomField definition = column.getField();
             Assertions.assertNotNull(definition);
             if (!wanted.contains(definition.getLabel())) continue;
@@ -1587,7 +1720,7 @@ class TableFieldConfigServiceImplTest {
     }
 
     private ConceptAutocompleteDTO autocomplete(String label) {
-        fr.siamois.dto.entity.ConceptPrefLabelDTO labelDTO = new fr.siamois.dto.entity.ConceptPrefLabelDTO();
+        ConceptPrefLabelDTO labelDTO = new ConceptPrefLabelDTO();
         labelDTO.setLabel(label);
         return ConceptAutocompleteDTO.builder().conceptLabelToDisplay(labelDTO).build();
     }

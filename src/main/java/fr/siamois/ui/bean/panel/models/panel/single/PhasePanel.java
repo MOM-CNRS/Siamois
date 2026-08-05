@@ -1,8 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.phase.Phase;
@@ -12,13 +10,15 @@ import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;

@@ -1,12 +1,7 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.container.Container;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.TableColumnAction;
@@ -42,42 +37,14 @@ public class ContainerTableDefinitionFactory {
     }
 
     private static void applyTo(TableDefinition definition) {
-        CustomFieldText identifierField = CustomFieldText.builder()
-                .label(CONTAINER_FIELD_IDENTIFIER).isSystemField(true).isTextArea(false)
-                .id(-651L).valueBinding(IDENTIFIER).concept(systemConcept("container.identifier")).build();
-
-        CustomFieldSelectOneFromFieldCode typeField = CustomFieldSelectOneFromFieldCode.builder()
-                .label("container.field.type").isSystemField(true).id(-652L)
-                .valueBinding("type").fieldCode(Container.TYPE_FIELD)
-                .styleClass("mr-2 container-type-chip").concept(systemConcept("container.type")).build();
-
-        CustomFieldSelectOneSpatialUnit spatialUnitField = CustomFieldSelectOneSpatialUnit.builder()
-                .label("container.field.spatialUnit").isSystemField(true)
-                .id(-653L).valueBinding("spatialUnit").concept(systemConcept("container.spatialUnit")).build();
-
-        CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
-                .label("container.field.actionUnit").isSystemField(true)
-                .id(-658L).valueBinding("actionUnit").concept(systemConcept("container.actionUnit")).build();
-
-        CustomFieldMeasurement lengthField = CustomFieldMeasurement.builder()
-                .label("container.field.length").isSystemField(true)
-                .id(-654L).valueBinding("length").concept(systemConcept("container.length"))
-                .unit(centimetres()).build();
-
-        CustomFieldMeasurement widthField = CustomFieldMeasurement.builder()
-                .label("container.field.width").isSystemField(true)
-                .id(-655L).valueBinding("width").concept(systemConcept("container.width"))
-                .unit(centimetres()).build();
-
-        CustomFieldMeasurement heightField = CustomFieldMeasurement.builder()
-                .label("container.field.height").isSystemField(true)
-                .id(-656L).valueBinding("height").concept(systemConcept("container.height"))
-                .unit(centimetres()).build();
-
-        CustomFieldMeasurement weightField = CustomFieldMeasurement.builder()
-                .label("container.field.weight").isSystemField(true)
-                .id(-657L).valueBinding("weight").concept(systemConcept("container.weight"))
-                .unit(unit("Kilogramme", "kg", UnitDefinition.Dimension.MASS, 1000.0)).build();
+        CustomField identifierField = systemField(ConfigurableTable.CONTENANT, IDENTIFIER);
+        CustomField typeField = systemField(ConfigurableTable.CONTENANT, "type");
+        CustomField spatialUnitField = systemField(ConfigurableTable.CONTENANT, "spatialUnit");
+        CustomField actionUnitField = systemField(ConfigurableTable.CONTENANT, "actionUnit");
+        CustomField lengthField = systemField(ConfigurableTable.CONTENANT, "length");
+        CustomField widthField = systemField(ConfigurableTable.CONTENANT, "width");
+        CustomField heightField = systemField(ConfigurableTable.CONTENANT, "height");
+        CustomField weightField = systemField(ConfigurableTable.CONTENANT, "weight");
 
         definition.setCommandLinkColumn(panelLinkColumn(CONTAINER_FIELD_IDENTIFIER, "bi bi-box-seam",
                 "var(--third-main-color)", TableColumnAction.GO_TO_CONTAINER));
@@ -93,7 +60,4 @@ public class ContainerTableDefinitionFactory {
                 column(weightField).build());
     }
 
-    private static UnitDefinition centimetres() {
-        return unit(CENTIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01);
-    }
 }

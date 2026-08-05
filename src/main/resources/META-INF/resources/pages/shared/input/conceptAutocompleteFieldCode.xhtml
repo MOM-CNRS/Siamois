@@ -45,12 +45,11 @@
                         multiple="#{cc.attrs.multiple}"
                         scrollHeight="300"
                         onchange="this.input[0].classList.add('sia-modified-field')"
-                        dropdown="true"
                         placeholder="#{langBean.msg('common.action.chooseConcept')}"
                         showEmptyMessage="false"
                         maxResults="#{fieldConfigurationService.resultLimit()}"
         >
-            <f:attribute name="fieldCode" value="#{cc.attrs.field.fieldCode}" />
+            <f:attribute name="fieldCode" value="#{spatialUnitFieldBean.resolveFieldCode(cc.attrs.field)}" />
             <f:attribute name="field" value="#{cc.attrs.field}" />
             <f:attribute name="selected" value="#{cc.attrs.selectedConcept}"/>
             <f:attribute name="dependsOnBaseConcept" value="#{cc.attrs.dependsOnBaseConcept}"/>

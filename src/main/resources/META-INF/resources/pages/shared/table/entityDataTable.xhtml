@@ -37,7 +37,7 @@
                  partialUpdate="false"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
                  paginatorTemplate="#{langBean.msg('label.resultsPerPage')}: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
-                 rowsPerPageTemplate="5,10,15,20,25"
+                 rowsPerPageTemplate="#{tableModel.rowPerPage()}"
                  rowIndexVar="rowIndex"
                  tableStyle="table-layout: auto;"
                  tableStyleClass="datatable-hoverable-table"

@@ -269,7 +269,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
             return switch (action.getAction()) {
                 case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isSpatialUnitBookmarkedByUser(su.getId()))
                         ? "bi bi-bookmark-x-fill"
-                        : "bi bi-bookmark-plus";
+                        : "bi bi-bookmark";
                 case DUPLICATE_ROW -> "bi bi-copy";
                 case NEW_ACTION -> "bi bi-arrow-down-square";
                 case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";

@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 @DiscriminatorValue("SELECT_ONE_FROM_FIELD_CODE")
-public class CustomFieldAnswerSelectOneFromFieldCode extends CustomFieldAnswerSelectOne {
+public class CustomFieldAnswerSelectOneFromFieldAnswerCode extends CustomFieldAnswerAnswerSelectOne {
 
 }

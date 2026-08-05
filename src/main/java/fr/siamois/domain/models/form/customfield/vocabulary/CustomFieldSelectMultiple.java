@@ -1,6 +1,5 @@
 package fr.siamois.domain.models.form.customfield.vocabulary;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -16,7 +15,7 @@ import java.util.Set;
 @Entity
 @DiscriminatorValue("SELECT_MULTIPLE")
 @Table(name = "custom_field")
-public class CustomFieldSelectMultiple extends CustomField {
+public class CustomFieldSelectMultiple extends CustomFieldConcept {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

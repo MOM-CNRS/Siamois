@@ -1,9 +1,9 @@
 package fr.siamois.domain.models.specimen.form;
 
 import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.LONG_COLUMN_CLASS_NAME;
@@ -37,6 +37,11 @@ public class SpecimenDetailsForm extends SpecimenForm {
                                                         .readOnly(true)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(specimenIdField)
+                                                        .build())
+                                                .addColumn(new CustomColUiDto.Builder()
+                                                        .readOnly(true)
+                                                        .className(COLUMN_CLASS_NAME)
+                                                        .field(actionUnitField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)

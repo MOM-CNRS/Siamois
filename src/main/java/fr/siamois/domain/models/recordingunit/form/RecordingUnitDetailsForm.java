@@ -2,8 +2,12 @@ package fr.siamois.domain.models.recordingunit.form;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import fr.siamois.domain.models.form.customform.*;
-import fr.siamois.ui.form.dto.*;
+import fr.siamois.domain.models.form.customform.DependsOnJson;
+import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 
 import java.util.List;
 
@@ -14,9 +18,9 @@ import java.util.List;
  * fields not relevant to a given type) is deferred to the (currently mocked) field-configuration
  * mechanism rather than baked into multiple hardcoded layouts.
  * <p>
- * The "matrix" fields (composition/color/texture) that exist as seed data but are never actually
- * wired into the live stratigraphic layout are intentionally left out here too, to match today's
- * real rendered output rather than the seeder's unused/dead columns.
+ * {@code actionUnit} is placed here too, but hidden ({@code d-none}) and read-only: it needs to be
+ * a real, configurable system field (so the field-configuration screen and table columns can see
+ * it), yet is not meant to be edited from this form.
  */
 public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
@@ -28,7 +32,7 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
     private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
 
     private static final String SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS =
-            "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode";
+            "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldAnswerCode";
     private static final String EROSION_ANSWER_VOCABULARY_EXT_ID = "th230";
     private static final String EROSION_ANSWER_CONCEPT_EXT_ID = "4287639";
 
@@ -63,6 +67,8 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(GEOMORPHO_AGENT_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(INTERPRETATION_FIELD)
                                         .dependsOnSpec(interpretationDependsOnNature).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(MATRIX_COLOR_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className("d-none").readOnly(true).field(ACTION_UNIT_FIELD).build())
                                 .build()
                 )
                 .addRow(

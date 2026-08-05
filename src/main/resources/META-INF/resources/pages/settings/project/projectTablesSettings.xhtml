@@ -111,9 +111,9 @@
             .ptc-picker-item-name { font-weight: 600; }
             .ptc-picker-item-desc { font-size: 12.5px; color: #8c8c8c; margin-top: 2px; }
 
-            /* ── field edit drawer ─────────────────────── */
-            .ptc-drawer-scrim { position: fixed; inset: 0; background: rgba(40,40,38,0.28); z-index: 1040; border: 0; padding: 0; appearance: none; -webkit-appearance: none; cursor: default; }
-            .ptc-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.14); z-index: 1041; display: flex; flex-direction: column; }
+            /* ── field edit drawer (p:sidebar) ─────────── */
+            .ui-sidebar.ptc-drawer-sidebar { padding: 0; display: flex; flex-direction: column; }
+            .ptc-drawer { display: flex; flex-direction: column; height: 100%; min-height: 0; }
             .ptc-drawer-header { padding: 18px 22px; border-bottom: 1px solid #ececec; flex: none; }
             .ptc-drawer-title { font-size: 18px; font-weight: 600; }
             .ptc-drawer-system-note { font-size: 12px; color: #8a7d4a; margin-top: 2px; }
@@ -130,6 +130,9 @@
             .ptc-chip-option.ui-button { font-size: 12.5px !important; padding: 5px 10px !important; border-radius: 7px !important; border: 1px solid #e7e7e3 !important; background: #fff !important; color: #555 !important; }
             .ptc-chip-option-selected.ui-button { border: 1.5px solid var(--sia-accent, #5e8c61) !important; background: var(--sia-accent-soft, #eaf3ea) !important; color: #3a5a3c !important; font-weight: 600 !important; }
             .ptc-params-connection-ok { font-size: 12.5px; color: #3a5a3c; }
+            .ptc-params-url-row { display: flex; gap: 7px; align-items: center; }
+            .ptc-params-url-row .ui-inputtext { flex: 1; min-width: 0; }
+            .ptc-params-refresh.ui-button { flex: none !important; width: 38px !important; }
 
             /* ── new configuration dialog ──────────────── */
             .ptc-dialog-hint { font-size: 13px; color: #8c8c8c; background: #f6f6f3; border: 1px solid #ececec; border-radius: 8px; padding: 9px 12px; margin: 0 0 14px; }
@@ -231,7 +234,7 @@
                             </div>
                         </h:panelGroup>
 
-                        <p:tabView activeIndex="#{projectTableFieldSettingsBean.activeTabIndex}" dynamic="false">
+                        <p:tabView id="fieldsTabs" activeIndex="#{projectTableFieldSettingsBean.activeTabIndex}" dynamic="false">
                             <p:ajax event="tabChange" listener="#{projectTableFieldSettingsBean.onTabChange}"/>
 
                             <!-- Champs -->
@@ -305,7 +308,11 @@
                                         </p:column>
                                         <p:column style="width:80px">
                                             <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(a)}" update="@form :fieldEditForm"/>
-                                            <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.deleteAdditionalField(a.name)}" update="@form"/>
+                                            <!-- Only the table is re-rendered: the tab panel is what scrolls
+                                                 (.ui-tabs-panels), so replacing the whole form would put the user
+                                                 back at the top of it. p:tabView is a NamingContainer, hence the
+                                                 full client id. -->
+                                            <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.deleteAdditionalField(a.name)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:additionalFieldsTable"/>
                                         </p:column>
                                     </p:dataTable>
                                     </div>

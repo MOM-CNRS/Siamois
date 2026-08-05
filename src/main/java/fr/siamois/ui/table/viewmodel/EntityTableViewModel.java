@@ -10,6 +10,7 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.view.FilterState;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -62,6 +63,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Getter
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
+    private static final List<Integer> ROW_PER_PAGE = List.of(10, 50, 100);
     public static final String CONTAINER = "-container');";
     public static final int LIMIT = 100;
     public static final String LABEL = "label";
@@ -1024,5 +1026,14 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public void handleSelectionChange() {
         // Empty action handler for selection changes
+    }
+
+    public String rowPerPage() {
+        List<String> rowPerPage = ROW_PER_PAGE
+                .stream()
+                .map(Object::toString)
+                .toList();
+
+        return String.join(",", rowPerPage);
     }
 }

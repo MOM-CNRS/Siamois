@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 
 import com.zaxxer.hikari.HikariDataSource;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -308,6 +309,226 @@ class AutocompleteRepositoryTest {
 
         assertNotNull(results);
         assertEquals(0, results.size());
+    }
+
+    @Test
+    void shouldBindNullBaseConceptWhenRelatedHasNoBaseValue() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+
+        Concept field = new Concept();
+        field.setId(77L);
+
+        // no value selected yet on the field the current one depends on
+        assertEquals(0, autocompleteRepository.findMatchingConceptsFromRelatedFor(field, null, "fr", "in", 10).size());
+        verify(statement).setObject(2, null);
+    }
+
+    // --- Concepts imported outside of any field context --------------------------------------------
+
+    @Test
+    void shouldLeaveParentConceptNullWhenTheLabelHasNoFieldContext() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+
+        stubSingleRow();
+        // concepts configured through a branch or a collection carry no field context
+        when(resultSet.getLong("parent_concept_id")).thenReturn(0L);
+        when(resultSet.wasNull()).thenReturn(true);
+
+        Concept topTerm = new Concept();
+        topTerm.setId(99L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "cer", 10);
+
+        assertEquals(1, results.size());
+        assertNull(results.get(0).getConceptLabelToDisplay().getParentConcept());
+        // the parent concept is the only thing missing, the concept itself is still fully read
+        assertEquals("extConcept", results.get(0).concept().getExternalId());
+        verify(resultSet, never()).getString("parent_concept_external_id");
+    }
+
+    // --- findMatchingConceptsInBranchOf ------------------------------------------------------------
+
+    @Test
+    void shouldQueryBranchFunctionAndBindTopTerm() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+
+        stubSingleRow();
+        stubParentConcept(99L, "extTopTerm");
+        when(resultSet.getString("data_aggregated_alt_labels")).thenReturn("altA;#altB");
+
+        Concept topTerm = new Concept();
+        topTerm.setId(99L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "cer", 10);
+
+        // one row -> the pref label entry + one entry per alt label
+        assertEquals(3, results.size());
+        assertTrue(results.stream().allMatch(d -> "prefLabel".equals(d.getOriginalPrefLabel())));
+
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(connection).prepareStatement(queryCaptor.capture());
+        assertTrue(queryCaptor.getValue().contains("concept_autocomplete_branch(?, ?, ?, ?)"),
+                "Expected the query to call concept_autocomplete_branch, but was: " + queryCaptor.getValue());
+
+        verify(statement).setLong(1, 99L);
+        verify(statement).setString(2, "fr");
+        verify(statement).setString(3, "cer");
+        verify(statement).setInt(4, 10);
+
+        verify(statement).close();
+        verify(connection).close();
+    }
+
+    @Test
+    void shouldBindEmptyStringWhenBranchInputIsNull() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+
+        Concept topTerm = new Concept();
+        topTerm.setId(99L);
+
+        assertEquals(0, autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", null, 10).size());
+        verify(statement).setString(3, "");
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenBranchStatementThrows() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenThrow(new SQLException("boom"));
+
+        Concept topTerm = new Concept();
+        topTerm.setId(99L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "cer", 10);
+
+        assertNotNull(results);
+        assertEquals(0, results.size());
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenDataSourceThrowsOnBranch() throws Exception {
+        when(dataSource.getConnection()).thenThrow(new SQLException("no conn"));
+
+        Concept topTerm = new Concept();
+        topTerm.setId(99L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "cer", 10);
+
+        assertNotNull(results);
+        assertEquals(0, results.size());
+    }
+
+    // --- findMatchingConceptsInCollection ----------------------------------------------------------
+
+    @Test
+    void shouldQueryCollectionFunctionAndBindCollection() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+
+        stubSingleRow();
+        stubParentConcept(88L, "extParent");
+        when(resultSet.getString("data_definition")).thenReturn("def");
+
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(88L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", "cer", 10);
+
+        assertEquals(1, results.size());
+        assertEquals("prefLabel", results.get(0).getOriginalPrefLabel());
+        assertEquals("def", results.get(0).getDefinition());
+
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(connection).prepareStatement(queryCaptor.capture());
+        assertTrue(queryCaptor.getValue().contains("concept_autocomplete_collection(?, ?, ?, ?)"),
+                "Expected the query to call concept_autocomplete_collection, but was: " + queryCaptor.getValue());
+
+        verify(statement).setLong(1, 88L);
+        verify(statement).setString(2, "fr");
+        verify(statement).setString(3, "cer");
+        verify(statement).setInt(4, 10);
+
+        verify(statement).close();
+        verify(connection).close();
+    }
+
+    @Test
+    void shouldBindEmptyStringWhenCollectionInputIsNull() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(88L);
+
+        assertEquals(0, autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", null, 10).size());
+        verify(statement).setString(3, "");
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenCollectionStatementThrows() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenThrow(new SQLException("boom"));
+
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(88L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", "cer", 10);
+
+        assertNotNull(results);
+        assertEquals(0, results.size());
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenDataSourceThrowsOnCollection() throws Exception {
+        when(dataSource.getConnection()).thenThrow(new SQLException("no conn"));
+
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(88L);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", "cer", 10);
+
+        assertNotNull(results);
+        assertEquals(0, results.size());
+    }
+
+    // --- Helpers -----------------------------------------------------------------------------------
+
+    /**
+     * Every column of a single result row, except the ones each test cares about.
+     */
+    private void stubSingleRow() throws SQLException {
+        when(resultSet.next()).thenReturn(true, false);
+        when(resultSet.getLong("vocabulary_type_id")).thenReturn(1L);
+        when(resultSet.getString("vocabulary_type_label")).thenReturn("Type");
+        when(resultSet.getLong("vocabulary_id")).thenReturn(2L);
+        when(resultSet.getString("vocabulary_base_uri")).thenReturn("base");
+        when(resultSet.getString("vocabulary_external_id")).thenReturn("ext");
+        when(resultSet.getLong("concept_id")).thenReturn(3L);
+        when(resultSet.getString("concept_external_id")).thenReturn("extConcept");
+        when(resultSet.getLong("concept_label_id")).thenReturn(5L);
+        when(resultSet.getString("concept_label_label")).thenReturn("prefLabel");
+        lenient().when(resultSet.getString("data_aggregated_alt_labels")).thenReturn(null);
+        lenient().when(resultSet.getString("data_definition")).thenReturn(null);
+        lenient().when(resultSet.getString("data_hierarchy_str")).thenReturn(null);
+    }
+
+    private void stubParentConcept(long id, String externalId) throws SQLException {
+        when(resultSet.getLong("parent_concept_id")).thenReturn(id);
+        when(resultSet.getString("parent_concept_external_id")).thenReturn(externalId);
     }
 
 }

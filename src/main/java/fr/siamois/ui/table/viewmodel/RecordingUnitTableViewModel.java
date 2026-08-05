@@ -12,9 +12,9 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -310,7 +310,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(String.valueOf(ru.getId())))
                             ? "bi bi-bookmark-x-fill"
-                            : "bi bi-bookmark-plus";
+                            : "bi bi-bookmark";
             case DUPLICATE_ROW -> "bi bi-copy";
             case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
             case NEW_PARENT -> "bi bi-node-plus-fill rotate-minus90";
