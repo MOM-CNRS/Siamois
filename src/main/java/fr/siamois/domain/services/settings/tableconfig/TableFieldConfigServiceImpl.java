@@ -32,7 +32,7 @@ import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRep
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.ui.table.column.FormFieldColumn;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -504,7 +504,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .forEach(field -> persisted.putIfAbsent(SystemFieldCatalog.identityOf(field), field));
 
         List<FormField> fields = new ArrayList<>();
-        for (FormFieldColumn column : SystemFieldCatalog.columnsOf(table)) {
+        for (CustomColUiDto column : SystemFieldCatalog.systemColumnsOf(table)) {
             CustomField field = persisted.get(SystemFieldCatalog.identityOf(column.getField()));
             if (field == null) {
                 log.warn("System field '{}' of table {} has no row; it was defined after the last startup",
