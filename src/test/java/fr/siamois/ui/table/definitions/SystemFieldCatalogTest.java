@@ -6,7 +6,6 @@ import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
