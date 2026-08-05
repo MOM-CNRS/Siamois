@@ -20,8 +20,10 @@ import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -76,6 +78,8 @@ class TableFieldConfigServiceImplTest {
     private FieldConfigurationService fieldConfigurationService;
     @Mock
     private LabelService labelService;
+    @Mock
+    private ConceptService conceptService;
     @Mock
     private ActionUnitRepository actionUnitRepository;
     @Mock
@@ -725,22 +729,22 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void getFormConfig_shouldReportTheValueConceptLabelOfTheType() {
-        when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
+    void getFormConfig_shouldReportTheTypeNameAndTheConceptDefinition() {
+        LocalizedConceptData data = new LocalizedConceptData();
+        data.setDefinition("Objets façonnés en terre cuite.");
+        when(conceptService.getLocalizedConceptDataByConceptAndLangCode(ceramiqueConcept, "fr")).thenReturn(data);
 
         var config = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
 
         assertThat(config.getTypeName()).isEqualTo("Céramique");
-        assertThat(config.getValueConceptLabel()).isEqualTo("Céramique");
-        assertThat(config.isInheritsDefaultFields()).isTrue();
+        assertThat(config.getDefinition()).isEqualTo("Objets façonnés en terre cuite.");
     }
 
     @Test
-    void getFormConfig_shouldLeaveTheDefaultTypeWithoutValueConcept() {
+    void getFormConfig_shouldLeaveTheDefaultTypeWithoutDefinition() {
         var config = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default");
 
-        assertThat(config.getValueConceptLabel()).isEmpty();
-        assertThat(config.isInheritsDefaultFields()).isFalse();
+        assertThat(config.getDefinition()).isEmpty();
     }
 
     @Test
@@ -1520,9 +1524,8 @@ class TableFieldConfigServiceImplTest {
 
         TypeFormConfig config = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
 
-        assertThat(config.getValueConceptLabel()).isEqualTo("Céramique");
-        assertThat(config.getDescription()).isEmpty();
-        assertThat(config.isVisibleInApp()).isTrue();
+        assertThat(config.getTypeName()).isEqualTo("Céramique");
+        assertThat(config.getDefinition()).isEmpty();
     }
 
     // --- searchFieldCatalog ---
