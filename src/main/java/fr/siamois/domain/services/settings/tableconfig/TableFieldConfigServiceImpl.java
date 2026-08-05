@@ -28,6 +28,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
@@ -79,6 +80,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final FormConfigRepository formConfigRepository;
     private final FieldFormConfigRepository fieldFormConfigRepository;
     private final CustomFieldRepository customFieldRepository;
+    private final CustomFieldAnswerRepository customFieldAnswerRepository;
     private final PersonRepository personRepository;
 
     @Override
@@ -235,26 +237,54 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
 
     /**
-     * Unlinks an additional field from the type. The custom field itself is deleted only once no
-     * other configuration references it, since the same field can be configured on several types.
+     * Unlinks an additional field from the type, unless the project already holds answers for it —
+     * those answers would be stranded, so the field is kept and the caller told about it.
+     * <p>
+     * Every link that puts the field on the type is dropped, the type's own and the one it inherits
+     * from the default configuration alike: dropping only the type's own would leave the field
+     * inherited, so it would come straight back on the very next read. A field the type only
+     * inherits is therefore removed from every type that inherits it, which is what removing a field
+     * the screen presents as one row means.
      */
     @Override
     @Transactional
-    public void deleteAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
-        Optional<FormConfig> formConfig = findFormConfig(projectId, table, typeName);
-        if (formConfig.isEmpty()) return;
+    public boolean deleteAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
+        List<FieldFormConfig> links = linksOfAdditionalField(projectId, table, typeName, fieldName);
+        if (links.isEmpty()) {
+            warnNoFieldOnType(projectId, table, typeName, fieldName);
+            return true;
+        }
 
-        fieldFormConfigRepository.findAllByFormConfigId(formConfig.get().getId()).stream()
-                .filter(config -> !isSystemField(config.getField()))
-                .filter(config -> fieldName.equals(config.getField().getLabel()))
-                .findFirst()
-                .ifPresent(config -> {
-                    CustomField field = config.getField();
-                    fieldFormConfigRepository.delete(config);
-                    if (fieldFormConfigRepository.countByFieldId(field.getId()) == 0) {
-                        customFieldRepository.delete(field);
-                    }
-                });
+        CustomField field = links.get(0).getField();
+        if (customFieldAnswerRepository.countByFieldIdAndProjectId(field.getId(), projectId) > 0) {
+            log.debug("Field '{}' is answered in project {}; it is kept on type '{}' of table {}",
+                    fieldName, projectId, typeName, table);
+            return false;
+        }
+
+        links.forEach(fieldFormConfigRepository::delete);
+        return true;
+    }
+
+    /**
+     * The stored configurations that put an additional field on a type: the type's own and the one
+     * it inherits from the default configuration. {@link #storedFields} keeps only the winning one
+     * of the two, which is all reading a field needs, whereas removing it has to reach both.
+     */
+    private List<FieldFormConfig> linksOfAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
+        List<FieldFormConfig> links = new ArrayList<>();
+        if (!DEFAULT_TYPE.equals(typeName)) {
+            collectLinksOfAdditionalField(findFormConfig(projectId, table, DEFAULT_TYPE), fieldName, links);
+        }
+        collectLinksOfAdditionalField(findFormConfig(projectId, table, typeName), fieldName, links);
+        return links;
+    }
+
+    private void collectLinksOfAdditionalField(Optional<FormConfig> formConfig, String fieldName, List<FieldFormConfig> into) {
+        formConfig.ifPresent(config -> fieldFormConfigRepository.findAllByFormConfigId(config.getId()).stream()
+                .filter(link -> !isSystemField(link.getField()))
+                .filter(link -> fieldName.equalsIgnoreCase(link.getField().getLabel()))
+                .forEach(into::add));
     }
 
     /**
