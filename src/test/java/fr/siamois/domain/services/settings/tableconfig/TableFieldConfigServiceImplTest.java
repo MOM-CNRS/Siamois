@@ -26,6 +26,7 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
@@ -1584,7 +1585,7 @@ class TableFieldConfigServiceImplTest {
     }
 
     private ConceptAutocompleteDTO autocomplete(String label) {
-        fr.siamois.dto.entity.ConceptPrefLabelDTO labelDTO = new fr.siamois.dto.entity.ConceptPrefLabelDTO();
+        ConceptPrefLabelDTO labelDTO = new ConceptPrefLabelDTO();
         labelDTO.setLabel(label);
         return ConceptAutocompleteDTO.builder().conceptLabelToDisplay(labelDTO).build();
     }

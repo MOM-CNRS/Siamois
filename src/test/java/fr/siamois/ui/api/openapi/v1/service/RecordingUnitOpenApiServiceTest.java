@@ -39,6 +39,8 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -197,7 +199,7 @@ class RecordingUnitOpenApiServiceTest {
         ruDto.setType(type);
         ruResource.setType(new fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource());
 
-        fr.siamois.dto.entity.ConceptPrefLabelDTO label = new fr.siamois.dto.entity.ConceptPrefLabelDTO();
+        ConceptPrefLabelDTO label = new ConceptPrefLabelDTO();
         label.setLabel("Céramique");
 
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))

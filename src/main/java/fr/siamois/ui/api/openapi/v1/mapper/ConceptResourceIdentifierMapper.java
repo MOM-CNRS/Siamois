@@ -1,6 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
-import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.generic.mapper.ResourceIdentifierMapper;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;

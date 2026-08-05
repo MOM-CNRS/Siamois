@@ -13,6 +13,7 @@ import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;

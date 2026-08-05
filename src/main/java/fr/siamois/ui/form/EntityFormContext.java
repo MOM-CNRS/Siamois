@@ -22,6 +22,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;

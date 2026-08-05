@@ -28,7 +28,7 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
     private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
 
     private static final String SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS =
-            "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode";
+            "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldAnswerCode";
     private static final String EROSION_ANSWER_VOCABULARY_EXT_ID = "th230";
     private static final String EROSION_ANSWER_CONCEPT_EXT_ID = "4287639";
 

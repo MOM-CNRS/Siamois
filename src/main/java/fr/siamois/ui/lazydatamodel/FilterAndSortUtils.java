@@ -1,7 +1,7 @@
 package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.view.FilterState;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import jakarta.faces.context.FacesContext;

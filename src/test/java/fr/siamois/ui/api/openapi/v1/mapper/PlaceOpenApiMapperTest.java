@@ -1,10 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -3,11 +3,12 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 import com.zaxxer.hikari.HikariDataSource;
 import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.dto.entity.ConceptAltLabelDTO;
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.ConceptPrefLabelDTO;
-import fr.siamois.dto.entity.VocabularyDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptAltLabelDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,11 +53,7 @@ public class AutocompleteRepository {
         concept.setDeleted(false);
         concept.setExternalId(resultSet.getString("concept_external_id"));
 
-        ConceptDTO parentConcept = new ConceptDTO();
-        parentConcept.setId(resultSet.getLong("parent_concept_id"));
-        parentConcept.setVocabulary(vocabulary);
-        parentConcept.setDeleted(false);
-        parentConcept.setExternalId(resultSet.getString("parent_concept_external_id"));
+        ConceptDTO parentConcept = parentConceptOf(resultSet, vocabulary);
 
         ConceptPrefLabelDTO prefLabel = new ConceptPrefLabelDTO();
         prefLabel.setId(resultSet.getLong("concept_label_id"));
@@ -83,6 +80,25 @@ public class AutocompleteRepository {
     }
 
     /**
+     * The concept in whose field context the label was imported. Concepts configured through a branch
+     * or a collection are imported outside of any field context, so the column is then null.
+     */
+    @Nullable
+    private ConceptDTO parentConceptOf(@NonNull ResultSet resultSet, @NonNull VocabularyDTO vocabulary) throws SQLException {
+        long parentConceptId = resultSet.getLong("parent_concept_id");
+        if (resultSet.wasNull()) {
+            return null;
+        }
+
+        ConceptDTO parentConcept = new ConceptDTO();
+        parentConcept.setId(parentConceptId);
+        parentConcept.setVocabulary(vocabulary);
+        parentConcept.setDeleted(false);
+        parentConcept.setExternalId(resultSet.getString("parent_concept_external_id"));
+        return parentConcept;
+    }
+
+    /**
      * Find matching concepts for the given concept in the specified language, input string, and limit.
      * This method calls the database function concept_autocomplete.
      *
@@ -106,9 +122,72 @@ public class AutocompleteRepository {
             statement.setString(3, input != null ? input : "");
             statement.setInt(4, limit);
 
-            return processResultSet(field, lang, statement);
+            return processResultSet("field id " + field.getId(), lang, statement);
         } catch (SQLException e) {
             log.error("Error while fetching autocomplete results for field id {}: {}", field.getId(), e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Find matching concepts among the children and sub-children of the given top term, in the specified
+     * language, input string and limit. This method calls the database function concept_autocomplete_branch.
+     * The top term itself is never a candidate.
+     *
+     * @param topTerm The concept the candidates must descend from
+     * @param lang    The language code to filter results
+     * @param input   The input string to match against concept labels. Can be null, then treated as no text filter
+     * @param limit   The maximum number of results to return
+     * @return A list of ConceptAutocompleteDTO containing the matching concepts of the branch
+     */
+    @NonNull
+    @ExecutionTimeLogger
+    public List<ConceptAutocompleteDTO> findMatchingConceptsInBranchOf(@NonNull Concept topTerm,
+                                                                      @NonNull String lang,
+                                                                      @Nullable String input,
+                                                                      int limit) {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT ca.* FROM concept_autocomplete_branch(?, ?, ?, ?) ca")) {
+            log.trace("Executing findMatchingConceptsInBranchOf with top term id {}, lang {}, input '{}', limit {}", topTerm.getId(), lang, input, limit);
+            statement.setLong(1, topTerm.getId());
+            statement.setString(2, lang);
+            statement.setString(3, input != null ? input : "");
+            statement.setInt(4, limit);
+
+            return processResultSet("branch of concept id " + topTerm.getId(), lang, statement);
+        } catch (SQLException e) {
+            log.error("Error while fetching autocomplete results for branch of concept id {}: {}", topTerm.getId(), e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Find matching concepts among the concepts of the given collection, in the specified language, input
+     * string and limit. This method calls the database function concept_autocomplete_collection.
+     *
+     * @param collection The collection the candidates must belong to
+     * @param lang       The language code to filter results
+     * @param input      The input string to match against concept labels. Can be null, then treated as no text filter
+     * @param limit      The maximum number of results to return
+     * @return A list of ConceptAutocompleteDTO containing the matching concepts of the collection
+     */
+    @NonNull
+    @ExecutionTimeLogger
+    public List<ConceptAutocompleteDTO> findMatchingConceptsInCollection(@NonNull ConceptCollection collection,
+                                                                         @NonNull String lang,
+                                                                         @Nullable String input,
+                                                                         int limit) {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT ca.* FROM concept_autocomplete_collection(?, ?, ?, ?) ca")) {
+            log.trace("Executing findMatchingConceptsInCollection with collection id {}, lang {}, input '{}', limit {}", collection.getId(), lang, input, limit);
+            statement.setLong(1, collection.getId());
+            statement.setString(2, lang);
+            statement.setString(3, input != null ? input : "");
+            statement.setInt(4, limit);
+
+            return processResultSet("collection id " + collection.getId(), lang, statement);
+        } catch (SQLException e) {
+            log.error("Error while fetching autocomplete results for collection id {}: {}", collection.getId(), e.getMessage(), e);
             return List.of();
         }
     }
@@ -142,14 +221,14 @@ public class AutocompleteRepository {
             statement.setString(4, input);
             statement.setInt(5, limitResults);
 
-            return processResultSet(field, lang, statement);
+            return processResultSet("field id " + field.getId(), lang, statement);
         } catch (SQLException e) {
             log.error("Error while fetching autocomplete results for field id {} and related of {} : {}", field.getId(), baseValue.getId(), e.getMessage(), e);
             return List.of();
         }
     }
 
-    private List<ConceptAutocompleteDTO> processResultSet(@NonNull Concept concept, @NonNull String lang, PreparedStatement statement) {
+    private List<ConceptAutocompleteDTO> processResultSet(@NonNull String searchedScope, @NonNull String lang, PreparedStatement statement) {
         List<ConceptAutocompleteDTO> results = new ArrayList<>();
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
@@ -159,7 +238,7 @@ public class AutocompleteRepository {
             }
             return results;
         } catch (Exception e) {
-            log.error("Error while processing result set for concept autocomplete for concept id {}: {}", concept.getId(), e.getMessage(), e);
+            log.error("Error while processing result set for concept autocomplete of {}: {}", searchedScope, e.getMessage(), e);
             return List.of();
         }
     }

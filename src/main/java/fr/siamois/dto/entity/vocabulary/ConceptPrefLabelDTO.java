@@ -1,4 +1,4 @@
-package fr.siamois.dto.entity;
+package fr.siamois.dto.entity.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.label.LabelType;
 
