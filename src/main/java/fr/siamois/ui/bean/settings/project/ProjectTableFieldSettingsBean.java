@@ -60,6 +60,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public static final int TAB_CHAMPS = 0;
     public static final int TAB_IDENTIFIANTS = 1;
+    public static final String ID_UA = "ID_UA";
+    public static final String NUM_UE = "NUM_UE";
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient FormConfigService formConfigService;
@@ -669,7 +671,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                 continue;
             }
             sb.append('{').append(seg.getCode());
-            if (!"ID_UA".equals(seg.getCode())) {
+            if (!ID_UA.equals(seg.getCode())) {
                 String specifierChar = seg.isNumeric() ? "0" : "X";
                 sb.append(':').append(specifierChar.repeat(Math.max(1, seg.getDigits())));
             }
@@ -717,7 +719,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public List<RuIdentifierResolver> getIdentifierResolvers() {
         Map<String, RuIdentifierResolver> resolvers = recordingUnitService.findAllIdentifierResolver();
         List<RuIdentifierResolver> result = new ArrayList<>();
-        result.add(resolvers.get("NUM_UE"));
+        result.add(resolvers.get(NUM_UE));
         result.add(resolvers.get("NUM_PARENT"));
         for (RuIdentifierResolver resolver : resolvers.values()) {
             if (!result.contains(resolver)) {
@@ -744,18 +746,20 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     private String sampleValueFor(IdentifierSegment seg) {
         return switch (seg.getCode()) {
-            case "NUM_UE" -> zeroPad(142, seg.getDigits());
+            case NUM_UE -> zeroPad(142, seg.getDigits());
             case "NUM_PARENT" -> zeroPad(4, seg.getDigits());
             case "NUM_USPATIAL" -> zeroPad(3, seg.getDigits());
             case "TYPE_UE" -> truncate("CERAMIQUE", seg.getDigits());
             case "TYPE_PARENT" -> truncate("SONDAGE", seg.getDigits());
-            case "ID_UA" -> "UA1";
+            case ID_UA -> "UA1";
             default -> seg.getLabel();
         };
     }
 
     private String zeroPad(int value, int digits) {
-        return String.format("%0" + Math.max(1, digits) + "d", value);
+        String raw = Integer.toString(value);
+        int width = Math.max(1, digits);
+        return raw.length() >= width ? raw : "0".repeat(width - raw.length()) + raw;
     }
 
     private String truncate(String value, int digits) {
@@ -800,7 +804,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             String placeholderName = parts[0];
 
             if (identFormatContainsInvalidCode(placeholderName)) return true;
-            containsNumRu = containsNumRu || placeholderName.equals("NUM_UE");
+            containsNumRu = containsNumRu || placeholderName.equals(NUM_UE);
 
             if (identFormatOfCodeIsNotValid(parts, placeholderName)) return true;
         }
@@ -840,7 +844,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             }
             return false;
         }
-        if (!formatSpecifier.matches("X+") || placeholderName.equals("ID_UA")) {
+        if (!formatSpecifier.matches("X+") || placeholderName.equals(ID_UA)) {
             MessageUtils.displayWarnMessage(langBean, "actionUnit.settings.help.textualFormat", placeholderName);
             return true;
         }
