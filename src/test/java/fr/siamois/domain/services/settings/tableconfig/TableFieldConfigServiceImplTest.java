@@ -26,6 +26,7 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
@@ -48,13 +49,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -500,6 +495,129 @@ class TableFieldConfigServiceImplTest {
                 service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
 
         assertThat(fields).containsExactly(additional);
+    }
+
+    @Test
+    void createOrGetFormConfig_shouldReturnTheConfigurationTheTypeAlreadyHas() {
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(result).contains(ceramiqueConfig);
+        verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
+    void createOrGetFormConfig_shouldMaterializeTheConfigurationOfATypeThatHasNone() {
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getValueConcept()).isEqualTo(ceramiqueConcept);
+        verify(formConfigRepository).save(any(FormConfig.class));
+    }
+
+    @Test
+    void createOrGetFormConfig_shouldReturnEmptyRatherThanCreateOneForAnUnknownType() {
+        when(conceptRepository.findAllByFieldContextAndExactLabel(FIELD_CONCEPT_ID, "fr", "Métal"))
+                .thenReturn(List.of());
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Métal");
+
+        assertThat(result).isEmpty();
+        verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldReturnTheConfigurationTheTypeAlreadyHas() {
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
+
+        assertThat(result).contains(ceramiqueConfig);
+        verify(formConfigRepository, never()).save(any());
+        verifyNoInteractions(labelService);
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldMaterializeTheConfigurationOfATypeThatHasNone() {
+        Long metalConceptId = 300L;
+        Concept metalConcept = concept(metalConceptId, "metal");
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, metalConceptId))
+                .thenReturn(Optional.empty());
+        when(conceptRepository.findById(metalConceptId)).thenReturn(Optional.of(metalConcept));
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, metalConceptId);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getValueConcept()).isEqualTo(metalConcept);
+        verify(formConfigRepository).save(any(FormConfig.class));
+        verifyNoInteractions(labelService);
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldMaterializeTheDefaultConfigurationWhenTypeConceptIdIsNull() {
+        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getValueConcept()).isNull();
+        verify(formConfigRepository).save(any(FormConfig.class));
+        verify(conceptRepository, never()).findById(any());
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldFailWhenTheProjectDoesNotExist() {
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining(PROJECT_ID.toString());
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldFailWhenTheConceptIdIsUnknown() {
+        Long unknownConceptId = 404L;
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, unknownConceptId))
+                .thenReturn(Optional.empty());
+        when(conceptRepository.findById(unknownConceptId)).thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, unknownConceptId))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining(unknownConceptId.toString());
+        verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
+    void createOrGetFormConfig_byId_shouldReturnEmptyRatherThanCreateOneWhenProjectHasNoVocabularyConfigured() throws Exception {
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
+
+        assertThat(result).isEmpty();
+        verify(formConfigRepository, never()).save(any());
     }
 
     @Test
@@ -1460,16 +1578,6 @@ class TableFieldConfigServiceImplTest {
         return prefLabel;
     }
 
-    /**
-     * The system fields of a table as they exist once {@code SystemFieldInitializer} has run: the
-     * definitions {@link SystemFieldCatalog} declares, each given the database id it would have been
-     * persisted with. A field the table defines but that is left out here stands for one defined
-     * after the last startup, which has no row yet.
-     *
-     * @param table  the table whose system fields are persisted
-     * @param labels the labels of the ones to persist, in any order
-     * @return the persisted fields, by label
-     */
     private Map<String, CustomField> givenSystemFieldsOf(ConfigurableTable table, String... labels) {
         Set<String> wanted = Set.of(labels);
         Map<String, CustomField> rows = new LinkedHashMap<>();
@@ -1489,7 +1597,7 @@ class TableFieldConfigServiceImplTest {
     }
 
     private ConceptAutocompleteDTO autocomplete(String label) {
-        fr.siamois.dto.entity.ConceptPrefLabelDTO labelDTO = new fr.siamois.dto.entity.ConceptPrefLabelDTO();
+        ConceptPrefLabelDTO labelDTO = new ConceptPrefLabelDTO();
         labelDTO.setLabel(label);
         return ConceptAutocompleteDTO.builder().conceptLabelToDisplay(labelDTO).build();
     }

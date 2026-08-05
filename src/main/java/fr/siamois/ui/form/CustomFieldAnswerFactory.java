@@ -25,12 +25,13 @@ import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAns
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
+import fr.siamois.domain.models.form.customfieldanswer.measurement.CustomFieldAnswerMeasurement;
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectOnePerson;
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectMultiple;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerAnswerSelectMultiple;
+import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 import org.hibernate.Hibernate;
 import org.jspecify.annotations.NonNull;
@@ -80,14 +81,15 @@ public final class CustomFieldAnswerFactory {
                 Map.entry(CustomFieldText.class, v -> new CustomFieldAnswerText()),
                 Map.entry(CustomFieldInteger.class, v -> new CustomFieldAnswerInteger()),
                 Map.entry(CustomFieldDateTime.class, v -> new CustomFieldAnswerDateTime()),
-                Map.entry(CustomFieldSelectOneFromFieldCode.class, v -> new CustomFieldAnswerSelectOneFromFieldCode()),
-                Map.entry(CustomFieldSelectMultipleFromFieldCode.class, v -> new CustomFieldAnswerSelectMultiple()),
+                Map.entry(CustomFieldSelectOneFromFieldCode.class, v -> new CustomFieldAnswerSelectOneFromFieldAnswerCode()),
+                Map.entry(CustomFieldSelectMultipleFromFieldCode.class, v -> new CustomFieldAnswerAnswerSelectMultiple()),
                 Map.entry(CustomFieldSelectOnePerson.class, v -> new CustomFieldAnswerSelectOnePerson()),
                 Map.entry(CustomFieldSelectMultiplePerson.class, v -> new CustomFieldAnswerSelectMultiplePerson()),
                 Map.entry(CustomFieldSelectOneSpatialUnit.class, v -> new CustomFieldAnswerSelectOneSpatialUnit()),
                 Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, v -> new CustomFieldAnswerSelectMultipleSpatialUnitTree()),
                 Map.entry(CustomFieldSelectOneActionCode.class, v -> new CustomFieldAnswerSelectOneActionCode()),
-                Map.entry(CustomFieldSelectOneActionUnit.class, v -> new CustomFieldAnswerSelectOneActionUnit())
+                Map.entry(CustomFieldSelectOneActionUnit.class, v -> new CustomFieldAnswerSelectOneActionUnit()),
+                Map.entry(CustomFieldMeasurement.class, v -> new CustomFieldAnswerMeasurement())
         );
     }
 

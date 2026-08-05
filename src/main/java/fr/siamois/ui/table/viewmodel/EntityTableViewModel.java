@@ -10,6 +10,7 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.view.FilterState;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -662,18 +663,17 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         rowContexts.remove(id);
     }
 
-    /**
-     * Updates the entity in the cache and drops its row context only if it is present
-     * in the current page. Safe to call with any AbstractEntityDTO due to type erasure —
-     * no actual cast failure can occur when just replacing in List and removing from Map.
-     */
     @SuppressWarnings("unchecked")
     public void updateIfPresent(AbstractEntityDTO entity) {
-        if (entity == null || entity.getId() == null) return;
-        if (getRowIndexInCurrentPage(entity.getId()) < 0) return;
-        if (lazyDataModel != null) {
-            lazyDataModel.updateEntityInCache((T) entity);
-        }
+        if (entity == null || entity.getId() == null || lazyDataModel == null) return;
+
+        int rowIndex = getRowIndexInCurrentPage(entity.getId());
+        if (rowIndex < 0) return;
+
+        T shownRow = lazyDataModel.getQueryResult().get(rowIndex);
+        if (shownRow == null || shownRow.getClass() != entity.getClass()) return;
+
+        lazyDataModel.updateEntityInCache((T) entity);
         rowContexts.remove(entity.getId());
     }
 

@@ -2,7 +2,7 @@ package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ConceptResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;

@@ -1,6 +1,5 @@
 package fr.siamois.domain.models.form.customfield.vocabulary;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -20,10 +19,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "custom_field")
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomFieldSelectOneFromFieldCode extends CustomField {
-
-    @Column(name = "field_code")
-    private String fieldCode ;
+public class CustomFieldSelectOneFromFieldCode extends CustomFieldConceptFromFieldCode {
 
     @Column(name = "icon_class")
     private String iconClass;

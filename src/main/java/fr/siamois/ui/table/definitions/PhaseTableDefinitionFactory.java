@@ -7,11 +7,7 @@ import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.TableColumnAction;
 import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
-import static fr.siamois.ui.table.definitions.TableDefinitions.IDENTIFIER;
-import static fr.siamois.ui.table.definitions.TableDefinitions.addColumns;
-import static fr.siamois.ui.table.definitions.TableDefinitions.column;
-import static fr.siamois.ui.table.definitions.TableDefinitions.panelLinkColumn;
-import static fr.siamois.ui.table.definitions.TableDefinitions.systemField;
+import static fr.siamois.ui.table.definitions.TableDefinitions.*;
 
 public class PhaseTableDefinitionFactory {
 

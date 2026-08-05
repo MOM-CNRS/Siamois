@@ -1,6 +1,8 @@
-package fr.siamois.infrastructure.api.dto;
+package fr.siamois.infrastructure.api.dto.concept;
 
 
+import fr.siamois.infrastructure.api.dto.FullInfoDTO;
+import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import lombok.Getter;
 import lombok.Setter;
 

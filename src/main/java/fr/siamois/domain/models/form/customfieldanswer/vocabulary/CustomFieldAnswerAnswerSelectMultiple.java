@@ -12,7 +12,7 @@ import java.util.Objects;
 @Data
 @Entity
 @DiscriminatorValue("SELECT_MULTIPLE")
-public class CustomFieldAnswerSelectMultiple extends CustomFieldSelectConcept {
+public class CustomFieldAnswerAnswerSelectMultiple extends CustomFieldAnswerSelectConcept {
 
     /**
      * Adds a concept to the list if it doesn't already exist

@@ -6,10 +6,12 @@ import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasur
 import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
@@ -36,7 +38,6 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -359,7 +360,7 @@ class FormServiceTest {
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
         createdAtAnswer.setValue(LocalDateTime.of(2023, Month.JANUARY, 1, 12, 0));
 
-        // CustomFieldAnswerSelectOneFromFieldCode: Use uiVal to set the concept
+        // CustomFieldAnswerSelectOneFromFieldAnswerCode: Use uiVal to set the concept
         ConceptDTO concept = mock(ConceptDTO.class);
         ConceptAutocompleteDTO conceptAutocompleteDTO = new ConceptAutocompleteDTO(concept, "Test Label", "fr");
         CustomFieldAnswerSelectOneFromFieldCodeViewModel  conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCodeViewModel ();
@@ -739,6 +740,31 @@ class FormServiceTest {
         }
     }
 
+    /**
+     * A measurement field added to a form binds its inputs into {@code answer.value.numericValue}
+     * and shows the unit its definition carries, exactly like the system ones — nothing of that is
+     * stored per answer, so it has to be rebuilt on every form init.
+     */
+    @Test
+    void initOrReuseResponse_shouldGiveAnAddedMeasurementFieldItsValueHolderAndTheFieldsUnit() {
+        UnitDefinition metre = UnitDefinition.builder().id(1L).label("Mètre").symbol("m").build();
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder()
+                .id(1L).isSystemField(false).unit(metre).build();
+        UnitDefinitionDTO metreDto = UnitDefinitionDTO.builder().id(1L).symbol("m").build();
+
+        FieldSource fieldSource = mock(FieldSource.class);
+        when(fieldSource.getAllFields()).thenReturn(List.of(field));
+        when(unitDefinitionMapper.convert(metre)).thenReturn(metreDto);
+
+        CustomFormResponseViewModel response =
+                formService.initOrReuseResponse(null, new DummyEntity(), fieldSource, false);
+
+        CustomFieldAnswerMeasurementViewModel answer =
+                (CustomFieldAnswerMeasurementViewModel) response.getAnswers().get(field);
+        assertNotNull(answer.getValue());
+        assertEquals(metreDto, answer.getValue().getUnit());
+    }
+
     // Helper method to create a RecordingUnitDTO with a specific ID
     private RecordingUnitDTO createRecordingUnitDTO(Long id) {
         RecordingUnitDTO unit = new RecordingUnitDTO();
@@ -761,7 +787,6 @@ class FormServiceTest {
     // Accessed via the private populateSystemFieldValue dispatcher.
     // =====================================================================
 
-    /** Reflective helper to invoke populateSystemFieldValue(answer, value). */
     private void populate(CustomFieldAnswerViewModel answer, Object value) throws Exception {
         Method m = FormService.class.getDeclaredMethod(
                 "populateSystemFieldValue", CustomFieldAnswerViewModel.class, Object.class);
@@ -769,7 +794,6 @@ class FormServiceTest {
         m.invoke(formService, answer, value);
     }
 
-    /** Reflective helper to invoke any private static method declared directly on FormService. */
     private static Object invokeStatic(String name, Class<?>[] paramTypes, Object... args) throws Exception {
         Method m = FormService.class.getDeclaredMethod(name, paramTypes);
         m.setAccessible(true);
@@ -891,7 +915,7 @@ class FormServiceTest {
         CustomField field1 = mock(CustomField.class);
 
         EnabledWhenJson.ValueJson vj = new EnabledWhenJson.ValueJson();
-        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode");
+        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode");
         vj.setValue(new ObjectMapper().createObjectNode().put("vocabularyExtId", "voc1").put("conceptExtId", "c1"));
 
         EnabledWhenJson spec = new EnabledWhenJson();

@@ -12,10 +12,12 @@ import static fr.siamois.ui.table.definitions.TableDefinitions.addColumns;
 import static fr.siamois.ui.table.definitions.TableDefinitions.column;
 import static fr.siamois.ui.table.definitions.TableDefinitions.panelLinkColumn;
 import static fr.siamois.ui.table.definitions.TableDefinitions.systemField;
+import static fr.siamois.ui.table.definitions.TableDefinitions.*;
 
 public class ContainerTableDefinitionFactory {
 
     public static final String CONTAINER_FIELD_IDENTIFIER = "container.field.identifier";
+    public static final String CENTIMETRE = "Centimètre";
 
     private ContainerTableDefinitionFactory() {}
 
@@ -61,5 +63,9 @@ public class ContainerTableDefinitionFactory {
                 column(widthField).build(),
                 column(heightField).build(),
                 column(weightField).build());
+    }
+
+    private static UnitDefinition centimetres() {
+        return unit(CENTIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01);
     }
 }

@@ -66,12 +66,6 @@ public abstract class CustomField implements Serializable {
     @JoinColumn(name = "fk_author")
     private Person author;
 
-    /**
-     * Identity is the database row, not {@code concept}: additional fields commonly have no
-     * concept at all (several would then be considered equal to one another), and comparing
-     * {@code getClass()} breaks whenever one side is a Hibernate lazy proxy (e.g. loaded through
-     * {@code FieldFormConfig.field}) and the other a concrete instance of the same row.
-     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

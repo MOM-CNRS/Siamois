@@ -2,8 +2,12 @@ package fr.siamois.domain.models.recordingunit.form;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import fr.siamois.domain.models.form.customform.*;
-import fr.siamois.ui.form.dto.*;
+import fr.siamois.domain.models.form.customform.DependsOnJson;
+import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 
 import java.util.List;
 
@@ -20,12 +24,15 @@ import java.util.List;
  */
 public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
+    /** Panel users add their own measurement fields to; those fields are re-injected here on reopen. */
+    public static final String MEASUREMENTS_PANEL_NAME = "recordingunit.panel.measurements";
+
     private static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
     private static final String UI_G_12_UI_MD_12_UI_LG_12 = "ui-g-12 ui-md-12 ui-lg-12";
     private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
 
     private static final String SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS =
-            "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode";
+            "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldAnswerCode";
     private static final String EROSION_ANSWER_VOCABULARY_EXT_ID = "th230";
     private static final String EROSION_ANSWER_CONCEPT_EXT_ID = "4287639";
 
@@ -108,7 +115,7 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
     private static CustomFormPanelUiDto measurementsPanel() {
         return new CustomFormPanelUiDto.Builder()
-                .name("recordingunit.panel.measurements")
+                .name(MEASUREMENTS_PANEL_NAME)
                 .isSystemPanel(true)
                 .canUserAddField(true)
                 .addRow(
@@ -135,9 +142,6 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .build();
     }
 
-    /**
-     * Erosion shape/profile/orientation are only enabled when Nature (geomorphologicalCycle) == "Erosion".
-     */
     private static EnabledWhenJson erosionEnabledWhen() {
         EnabledWhenJson.ValueJson erosionValue = new EnabledWhenJson.ValueJson();
         erosionValue.setAnswerClass(SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS);
@@ -153,9 +157,6 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
         return enabledWhen;
     }
 
-    /**
-     * Interpretation's autocomplete is restricted to concepts related to whichever Nature was chosen.
-     */
     private static DependsOnJson dependsOnNature() {
         DependsOnJson dependsOn = new DependsOnJson();
         dependsOn.setFieldId(NATURE_FIELD.getId());

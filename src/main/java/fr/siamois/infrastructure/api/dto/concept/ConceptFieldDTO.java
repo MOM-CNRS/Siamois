@@ -1,4 +1,4 @@
-package fr.siamois.infrastructure.api.dto;
+package fr.siamois.infrastructure.api.dto.concept;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

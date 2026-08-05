@@ -1,10 +1,10 @@
 package fr.siamois.ui.form;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
-import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectOneFromFieldCodeViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 
@@ -33,7 +33,7 @@ public final class ValueMatcherFactory {
 
             @Override
             public Class<?> expectedAnswerClass() {
-                return CustomFieldAnswerSelectOneFromFieldCode.class;
+                return CustomFieldAnswerSelectOneFromFieldAnswerCode.class;
             }
         };
     }

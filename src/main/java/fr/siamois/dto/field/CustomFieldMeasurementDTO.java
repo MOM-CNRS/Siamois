@@ -1,8 +1,8 @@
 package fr.siamois.dto.field;
 
 
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.*;
 
 import java.io.Serializable;

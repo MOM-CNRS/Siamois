@@ -1,6 +1,7 @@
 package fr.siamois.dto.entity;
 
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

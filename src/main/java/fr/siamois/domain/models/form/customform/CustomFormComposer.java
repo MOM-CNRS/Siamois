@@ -8,6 +8,7 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Rebuilds a {@link FormUiDto} as a base form plus a trailing panel of additional fields.
@@ -41,6 +42,58 @@ public final class CustomFormComposer {
         return new FormUiDto.Builder()
                 .addPanels(panels)
                 .build();
+    }
+
+    /**
+     * @param baseForm  the form to start from, left untouched
+     * @param panelName name of the existing panel to append to; unknown names are a no-op
+     * @param columns   columns to append as a trailing row of that panel; may be empty
+     * @return a new {@link FormUiDto} equal to {@code baseForm} with {@code columns} appended to
+     * the named panel, for fields that belong with that panel's own rather than in a trailing
+     * "additional fields" panel (e.g. measurement fields created from the measurements panel).
+     * The named panel is always handed back as an independent, mutable copy — even when
+     * {@code columns} is empty — since callers may go on to add fields to it in place (e.g. a
+     * user creating a field "on the fly" from that panel); {@code baseForm} itself is only
+     * returned as-is when it carries no panel of that name at all. Other panels are left as the
+     * same instances {@code baseForm} already carries.
+     */
+    public static FormUiDto withFieldsInPanel(FormUiDto baseForm, String panelName, List<CustomColUiDto> columns) {
+        List<CustomColUiDto> extraColumns = columns == null ? List.of() : columns;
+        boolean hasNamedPanel = baseForm.getLayout().stream().anyMatch(panel -> panelName.equals(panel.getName()));
+        if (!hasNamedPanel) {
+            return baseForm;
+        }
+
+        List<CustomFormPanelUiDto> panels = baseForm.getLayout().stream()
+                .map(panel -> panelName.equals(panel.getName()) ? withExtraRow(panel, extraColumns) : panel)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        return new FormUiDto.Builder()
+                .addPanels(panels)
+                .build();
+    }
+
+    private static CustomFormPanelUiDto withExtraRow(CustomFormPanelUiDto panel, List<CustomColUiDto> columns) {
+        List<CustomRowUiDto> rows = panel.getRows().stream()
+                .map(CustomFormComposer::copyOfRow)
+                .collect(Collectors.toCollection(ArrayList::new));
+        if (!columns.isEmpty()) {
+            rows.add(new CustomRowUiDto.Builder().addColumns(columns).build());
+        }
+
+        CustomFormPanelUiDto copy = new CustomFormPanelUiDto();
+        copy.setName(panel.getName());
+        copy.setClassName(panel.getClassName());
+        copy.setIsSystemPanel(panel.getIsSystemPanel());
+        copy.setCanUserAddFields(panel.getCanUserAddFields());
+        copy.setRows(rows);
+        return copy;
+    }
+
+    private static CustomRowUiDto copyOfRow(CustomRowUiDto row) {
+        CustomRowUiDto copy = new CustomRowUiDto();
+        copy.setColumns(new ArrayList<>(row.getColumns()));
+        return copy;
     }
 
     private static CustomFormPanelUiDto additionalFieldsPanel(String name, List<CustomColUiDto> additionalColumns) {
@@ -77,7 +130,7 @@ public final class CustomFormComposer {
         List<CustomRowUiDto> rows = panel.getRows().stream()
                 .map(row -> withoutFields(row, valueBindingsToRemove))
                 .filter(row -> !row.getColumns().isEmpty())
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
 
         CustomFormPanelUiDto copy = new CustomFormPanelUiDto();
         copy.setName(panel.getName());
@@ -91,7 +144,7 @@ public final class CustomFormComposer {
     private static CustomRowUiDto withoutFields(CustomRowUiDto row, Set<String> valueBindingsToRemove) {
         List<CustomColUiDto> columns = row.getColumns().stream()
                 .filter(col -> !valueBindingsToRemove.contains(col.getField().getValueBinding()))
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
 
         CustomRowUiDto copy = new CustomRowUiDto();
         copy.setColumns(columns);
