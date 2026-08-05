@@ -37,9 +37,6 @@ public class CustomFieldSelectMultipleFromFieldCode extends CustomFieldConceptFr
         return super.hashCode();
     }
 
-    @Override
-    public String getIcon() {
-        return "sia-icon-opentheso";
-    }
+
 
 }

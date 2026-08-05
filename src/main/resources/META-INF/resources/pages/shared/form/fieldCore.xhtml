@@ -83,32 +83,16 @@
         </c:if>
 
 
-        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'}">
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'
+                   or col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'
+                   or col.field['class'].simpleName eq 'CustomFieldSelectOne'
+                   or col.field['class'].simpleName eq 'CustomFieldSelectMultiple'}">
             <!-- CONCEPT -->
             <siaInplace:concept
                     id="concept"
                     hasBeenModified="#{hasBeenModified}"
                     field="#{col.field}"
-                    panelId="#{panelId}"
-                    required="#{col.required}"
-                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                    mode="#{mode}"
-                    updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur} #{updateTargetsOnBlur}"
-                    answer="#{answer}"
-                    panelStyleClass="#{panelStyleClass}"
-                    onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
-                    dependsOnBaseConcept="#{formCtx.getDependsOnBaseConcept(col.field)}"
-                    formCtx="#{formCtx}"
-            />
-        </c:if>
-
-        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'}">
-            <!-- CONCEPT -->
-            <siaInplace:concept
-                    id="conceptMultiple"
-                    hasBeenModified="#{hasBeenModified}"
-                    field="#{col.field}"
-                    multiple="true"
+                    multiple="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode' or col.field['class'].simpleName eq 'CustomFieldSelectMultiple'}"
                     panelId="#{panelId}"
                     required="#{col.required}"
                     label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"

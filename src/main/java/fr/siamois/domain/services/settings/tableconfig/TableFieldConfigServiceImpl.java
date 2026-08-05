@@ -17,6 +17,8 @@ import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelect
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
@@ -720,8 +722,28 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return Optional.empty();
     }
 
+    /**
+     * The table's own type field, resolved as an entity rather than by its field code — needed to
+     * honor a branch/collection restriction configured on it through the field-settings drawer, which
+     * {@link fr.siamois.domain.services.vocabulary.FieldConfigurationService#fetchAutocomplete(CustomFieldConcept, String, Long)}
+     * reads before falling back to the field-code configuration.
+     */
+    private Optional<CustomFieldConcept> findTypeField(ConfigurableTable table) {
+        return systemFields(table).stream()
+                .map(FormField::field)
+                .filter(CustomFieldConceptFromFieldCode.class::isInstance)
+                .map(CustomFieldConceptFromFieldCode.class::cast)
+                .filter(field -> table.getFieldCode().equals(field.getFieldCode()))
+                .map(CustomFieldConcept.class::cast)
+                .findFirst();
+    }
+
     private List<ConceptAutocompleteDTO> fieldValues(Long projectId, ConfigurableTable table, @Nullable String input) {
         try {
+            Optional<CustomFieldConcept> typeField = findTypeField(table);
+            if (typeField.isPresent()) {
+                return fieldConfigurationService.fetchAutocomplete(typeField.get(), input, projectId);
+            }
             return fieldConfigurationService.fetchAutocomplete(currentUser(), table.getFieldCode(), input, projectId);
         } catch (NoConfigForFieldException e) {
             log.warn("No configuration for field {} in project {}", table.getFieldCode(), projectId, e);

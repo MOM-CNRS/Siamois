@@ -8,4 +8,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public abstract class CustomFieldConcept extends CustomField {
 
+    @Override
+    public String getIcon() {
+        return "sia-icon-opentheso";
+    }
+
 }
