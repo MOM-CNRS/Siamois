@@ -430,6 +430,14 @@ function rumEdit(id) {
     }
 }
 
+function rumWrapperClick(event, id) {
+    let wrapper = document.getElementById('rum_v_' + id);
+    if (!wrapper || !wrapper.classList.contains('rum-editable')) return;
+    if (event.target.closest('.rum-action-btn')) return;
+    if (event.target.closest('a')) return;
+    rumEdit(id);
+}
+
 function rumClose(id) {
     let edit = document.getElementById('rum_e_' + id);
     let view = document.getElementById('rum_v_' + id);

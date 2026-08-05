@@ -824,7 +824,19 @@ body .view-edit-button.ui-splitbutton {
   align-items: center;
   gap: 0.25rem;
   min-height: 32px;
+  padding: 0;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
 }
+
+.rum-wrapper:hover {
+  border-color: var(--siamois-green-light-200);
+}
+
+.rum-wrapper.rum-editable:hover {
+  cursor: pointer;
+}
+
 .rum-items {
   display: flex;
   flex-wrap: wrap;
@@ -840,9 +852,6 @@ body .view-edit-button.ui-splitbutton {
   visibility: hidden;
 }
 .rum-wrapper:hover .rum-actions {
-  visibility: visible;
-}
-.rum-wrapper.rum-empty .rum-actions {
   visibility: visible;
 }
 .rum-edit-wrapper {
