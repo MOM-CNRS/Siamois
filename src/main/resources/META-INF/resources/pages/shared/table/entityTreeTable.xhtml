@@ -34,7 +34,7 @@
                  partialUpdate="false"
                  resizableColumns="true"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
-                 rowsPerPageTemplate="5,10,15,20,25,50,100"
+                 rowsPerPageTemplate="#{tableModel.rowPerPage()}"
                  paginatorPosition="bottom"
                  paginatorTemplate="#{langBean.msg('label.resultsPerPage')}: {RowsPerPageDropdown} {CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                  currentPageReportTemplate="{startRecord}-{endRecord} of {totalRecords}"
