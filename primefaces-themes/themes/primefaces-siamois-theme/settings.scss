@@ -3,6 +3,11 @@
     padding: 0;
 }
 
+.ui-tabs-nav a {
+    font-size: 120%;
+}
+
+
 main {
     display: flex;
     justify-content: center;
@@ -417,4 +422,9 @@ a:hover {
     gap: 10px;
     padding: 15px 22px;
     border-top: 1px solid var(--siamois-green-light-350);
+}
+
+
+body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
+    padding: 2em;
 }

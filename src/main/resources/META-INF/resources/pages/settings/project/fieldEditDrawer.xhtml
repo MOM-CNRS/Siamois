@@ -18,28 +18,116 @@
                     <div class="ptc-drawer-title">
                         #{projectTableFieldSettingsBean.draftCreateMode ? langBean.msg('projectTables.drawer.titleCreate') : langBean.msg('projectTables.drawer.titleEdit')}
                     </div>
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
+                        <div class="ptc-drawer-system-note">#{langBean.msg('projectTables.drawer.systemNote')}</div>
+                    </h:panelGroup>
                 </div>
 
                 <div class="ptc-drawer-body">
                     <div class="ptc-drawer-field">
                         <label class="ptc-drawer-label" for="fieldEditForm:draftName">#{langBean.msg('projectTables.drawer.name')}</label>
-                        <p:inputText id="draftName" value="#{projectTableFieldSettingsBean.draftName}" style="width:100%"/>
+                        <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
+                            <p:inputText id="draftName" value="#{projectTableFieldSettingsBean.draftName}" style="width:100%"/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
+                            <div class="ptc-readonly-value">#{langBean.msg(projectTableFieldSettingsBean.draftName)}</div>
+                        </h:panelGroup>
                     </div>
 
                     <div class="ptc-drawer-field">
                         <label class="ptc-drawer-label" for="fieldEditForm:draftType">#{langBean.msg('projectTables.drawer.type')}</label>
-                        <h:selectOneMenu id="draftType" value="#{projectTableFieldSettingsBean.draftTypeName}" styleClass="ptc-native-select">
-                            <f:selectItems value="#{projectTableFieldSettingsBean.fieldTypeOptions}" var="t" itemLabel="#{t.label}" itemValue="#{t.name()}"/>
-                        </h:selectOneMenu>
+                        <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
+                            <h:selectOneMenu id="draftType" value="#{projectTableFieldSettingsBean.draftTypeName}" styleClass="ptc-native-select">
+                                <f:selectItems value="#{projectTableFieldSettingsBean.fieldTypeOptions}" var="t" itemLabel="#{t.label}" itemValue="#{t.name()}"/>
+                                <p:ajax event="change" update="@form"/>
+                            </h:selectOneMenu>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
+                            <div class="ptc-readonly-value">#{projectTableFieldSettingsBean.draftType.label}</div>
+                        </h:panelGroup>
                     </div>
 
                     <div class="ptc-drawer-field">
-                        <label class="ptc-drawer-label" for="fieldEditForm:draftDescription">#{langBean.msg('projectTables.drawer.description')} #{langBean.msg('projectTables.general.descriptionOptional')}</label>
-                        <p:inputTextarea id="draftDescription" value="#{projectTableFieldSettingsBean.draftDescription}"
-                                         placeholder="#{langBean.msg('projectTables.drawer.descriptionPlaceholder')}"
-                                         style="width:100%" rows="3" autoResize="false"/>
-                        <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.descriptionHint')}</div>
+                        <label class="ptc-drawer-label" for="fieldEditForm:draftDescription">#{langBean.msg('projectTables.drawer.description')} #{langBean.msg('projectTables.drawer.descriptionOptional')}</label>
+                        <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
+                            <p:inputTextarea id="draftDescription" value="#{projectTableFieldSettingsBean.draftDescription}"
+                                             placeholder="#{langBean.msg('projectTables.drawer.descriptionPlaceholder')}"
+                                             style="width:100%" rows="3" autoResize="false"/>
+                            <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.descriptionHint')}</div>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
+                            <div class="ptc-readonly-value">#{empty projectTableFieldSettingsBean.draftDescription ? langBean.msg('projectTables.drawer.descriptionEmpty') : projectTableFieldSettingsBean.draftDescription}</div>
+                        </h:panelGroup>
                     </div>
+
+                    <!-- ===== PARAMÈTRES (vocabulaire contrôlé only) ===== -->
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable}">
+                        <div class="ptc-params">
+                            <div class="ptc-params-title">#{langBean.msg('projectTables.drawer.params.title', projectTableFieldSettingsBean.draftType.label)}</div>
+
+                            <div class="ptc-chip-row">
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
+                                    <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourcePrincipal')}"
+                                                      styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'principal' ? 'ptc-chip-option-selected' : ''}"
+                                                      actionListener="#{projectTableFieldSettingsBean.selectDraftSource('principal')}" update="@form" process="@this"/>
+                                </h:panelGroup>
+                                <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceBranche')}"
+                                                  styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'branche' ? 'ptc-chip-option-selected' : ''}"
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('branche')}" update="@form" process="@this"/>
+                                <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceCollection')}"
+                                                  styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'collection' ? 'ptc-chip-option-selected' : ''}"
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('collection')}" update="@form" process="@this"/>
+                            </div>
+
+                            <h:panelGroup rendered="#{empty projectTableFieldSettingsBean.draftSource}">
+                                <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.params.pickSourceHint')}</div>
+                            </h:panelGroup>
+
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'principal'}">
+                                <div class="ptc-drawer-field">
+                                    <label class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.params.fieldCode')}</label>
+                                    <div class="ptc-readonly-value">#{projectTableFieldSettingsBean.draftFieldCode}</div>
+                                    <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.params.fieldCodeHint')}</div>
+                                </div>
+                            </h:panelGroup>
+
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche' or projectTableFieldSettingsBean.draftSource eq 'collection'}">
+                                <div class="ptc-drawer-field">
+                                    <label class="ptc-drawer-label" for="fieldEditForm:draftThesaurusUrl">#{langBean.msg('projectTables.drawer.params.thesaurusUrl')}</label>
+                                    <div class="ptc-params-url-row">
+                                        <p:inputText id="draftThesaurusUrl" value="#{projectTableFieldSettingsBean.draftThesaurusUrl}"
+                                                     placeholder="#{langBean.msg('projectTables.drawer.params.thesaurusUrlPlaceholder')}"/>
+                                        <p:commandButton icon="bi bi-arrow-clockwise" styleClass="ui-button-secondary ui-button-sm ptc-params-refresh"
+                                                          title="#{langBean.msg('projectTables.drawer.params.testConnection')}"
+                                                          actionListener="#{projectTableFieldSettingsBean.testThesaurusConnection()}" update="@form" process="@this draftThesaurusUrl"/>
+                                    </div>
+                                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConnectionTested}">
+                                        <div class="ptc-params-connection-ok">✓ #{langBean.msg('projectTables.drawer.params.connectionOk')}</div>
+                                    </h:panelGroup>
+                                </div>
+
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche'}">
+                                    <div class="ptc-drawer-field">
+                                        <label class="ptc-drawer-label" for="fieldEditForm:draftBrancheConcept">#{langBean.msg('projectTables.drawer.params.brancheConcept')}</label>
+                                        <p:autoComplete id="draftBrancheConcept" value="#{projectTableFieldSettingsBean.draftBrancheConcept}"
+                                                        completeMethod="#{projectTableFieldSettingsBean.completeBrancheConcepts}"
+                                                        dropdown="true" scrollHeight="220" style="width:100%"
+                                                        placeholder="#{langBean.msg('projectTables.drawer.params.brancheConceptPlaceholder')}"/>
+                                    </div>
+                                </h:panelGroup>
+
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'collection'}">
+                                    <div class="ptc-drawer-field">
+                                        <label class="ptc-drawer-label" for="fieldEditForm:draftCollectionName">#{langBean.msg('projectTables.drawer.params.collection')}</label>
+                                        <p:autoComplete id="draftCollectionName" value="#{projectTableFieldSettingsBean.draftCollectionName}"
+                                                        completeMethod="#{projectTableFieldSettingsBean.completeCollections}"
+                                                        dropdown="true" scrollHeight="220" style="width:100%"
+                                                        placeholder="#{langBean.msg('projectTables.drawer.params.collectionPlaceholder')}"/>
+                                    </div>
+                                </h:panelGroup>
+                            </h:panelGroup>
+                        </div>
+                    </h:panelGroup>
                 </div>
 
                 <div class="ptc-drawer-footer">

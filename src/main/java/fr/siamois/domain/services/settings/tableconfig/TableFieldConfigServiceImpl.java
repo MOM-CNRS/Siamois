@@ -23,6 +23,8 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -71,6 +73,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private final FieldConfigurationService fieldConfigurationService;
     private final LabelService labelService;
+    private final ConceptService conceptService;
     private final ActionUnitRepository actionUnitRepository;
     private final ConceptRepository conceptRepository;
     private final FormConfigRepository formConfigRepository;
@@ -134,32 +137,25 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional(readOnly = true)
     public TypeFormConfig getFormConfig(Long projectId, ConfigurableTable table, String typeName) {
         boolean isDefault = DEFAULT_TYPE.equals(typeName);
-        String valueConceptLabel = findFormConfig(projectId, table, typeName)
-                .map(FormConfig::getValueConcept)
-                .map(this::labelOf)
-                .orElse(isDefault ? "" : typeName);
+        Optional<Concept> valueConcept = findFormConfig(projectId, table, typeName)
+                .map(FormConfig::getValueConcept);
+        if (valueConcept.isEmpty() && !isDefault) {
+            valueConcept = findFieldConcept(projectId, table)
+                    .flatMap(fieldConcept -> findValueConcept(projectId, fieldConcept, typeName));
+        }
         return TypeFormConfig.builder()
                 .typeName(typeName)
-                .valueConceptLabel(isDefault ? "" : valueConceptLabel)
-                .description("")
-                .inheritsDefaultFields(!isDefault)
-                .visibleInApp(true)
+                .definition(valueConcept.map(this::definitionOf).orElse(""))
                 .build();
     }
 
     /**
      * Materializes the type's configuration so later field edits have somewhere to be written.
-     * <p>
-     * {@code description}, {@code inheritsDefaultFields} and {@code visibleInApp} are dropped: the
-     * {@code FormConfig} entity has no column for them, so there is nothing to save them into.
      */
     @Override
     @Transactional
     public void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config) {
         requireFormConfig(projectId, table, config.getTypeName());
-        log.debug("Form config of type '{}' on table {} materialized for project {}; description, " +
-                        "inheritance and visibility are not persisted (no column on FormConfig)",
-                config.getTypeName(), table, projectId);
     }
 
     /**
@@ -696,6 +692,12 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private String labelOf(@Nullable Concept concept) {
         return concept == null ? "" : labelService.findLabelOf(concept, currentUser().getLang()).getLabel();
+    }
+
+    private String definitionOf(@Nullable Concept concept) {
+        if (concept == null) return "";
+        LocalizedConceptData data = conceptService.getLocalizedConceptDataByConceptAndLangCode(concept, currentUser().getLang());
+        return data == null || data.getDefinition() == null ? "" : data.getDefinition();
     }
 
     private TypeFieldFormConfig toDto(EffectiveField effective) {

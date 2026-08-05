@@ -28,9 +28,8 @@ import java.util.stream.Collectors;
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class ProjectTableFieldSettingsBean implements Serializable {
 
-    public static final int TAB_GENERAL = 0;
-    public static final int TAB_CHAMPS = 1;
-    public static final int TAB_IDENTIFIANTS = 2;
+    public static final int TAB_CHAMPS = 0;
+    public static final int TAB_IDENTIFIANTS = 1;
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final LangBean langBean;
@@ -40,7 +39,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private ConfigurableTable selectedTable;
     private List<TypeSummary> typesForSelectedTable = new ArrayList<>();
     private String selectedTypeName;
-    private boolean treeOpen = true;
     private int activeTabIndex = TAB_CHAMPS;
 
     private TypeFormConfig formConfig;
@@ -64,6 +62,20 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private FieldType draftType;
     private String draftDescription;
 
+    private boolean draftIsSystem;
+    private String draftFieldCode;
+    private String draftSource;
+    private String draftThesaurusUrl;
+    private boolean draftConnectionTested;
+    private String draftBrancheConcept;
+    private String draftCollectionName;
+
+    private static final List<String> MOCK_CONCEPTS = List.of(
+            "Céramique", "Métal", "Verre", "Lithique", "Os travaillé", "Construction", "Faune");
+    private static final List<String> MOCK_COLLECTIONS = List.of(
+            "Collection céramique gallo-romaine", "Collection numismatique", "Collection lithique",
+            "Collection faune et flore");
+
     private String newTypeName;
 
     public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
@@ -78,7 +90,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         selectedTable = null;
         typesForSelectedTable = new ArrayList<>();
         selectedTypeName = null;
-        treeOpen = true;
         activeTabIndex = TAB_CHAMPS;
         formConfig = null;
         setFieldsConfig(null);
@@ -147,10 +158,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.additionalFields = fieldsConfig == null ? new ArrayList<>() : fieldsConfig.getFields().stream()
                 .filter(f -> !f.isSystemField())
                 .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    public void toggleTree() {
-        treeOpen = !treeOpen;
     }
 
     public boolean isSelectedTypeDefault() {
@@ -243,6 +250,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftName = "";
         draftType = FieldType.TEXT;
         draftDescription = "";
+        draftIsSystem = false;
+        resetDraftParams();
         drawerOpen = true;
     }
 
@@ -251,6 +260,10 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftName = field.getName();
         draftType = field.getType();
         draftDescription = field.getDescription();
+        draftIsSystem = field.isSystemField();
+        draftFieldCode = field.getSourceLabel();
+        resetDraftParams();
+        draftSource = draftIsSystem && field.getType().isConfigurable() ? "principal" : null;
         drawerOpen = true;
     }
 
@@ -260,6 +273,55 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftName = null;
         draftType = null;
         draftDescription = null;
+        draftIsSystem = false;
+        draftFieldCode = null;
+        resetDraftParams();
+    }
+
+    private void resetDraftParams() {
+        draftSource = null;
+        draftThesaurusUrl = null;
+        draftConnectionTested = false;
+        draftBrancheConcept = null;
+        draftCollectionName = null;
+    }
+
+    public boolean isDraftConfigurable() {
+        return draftType != null && draftType.isConfigurable();
+    }
+
+    public void selectDraftSource(String source) {
+        resetDraftParams();
+        draftSource = source;
+    }
+
+    /**
+     * Backs the refresh button next to the thesaurus URL: meant to both test the connection and
+     * reload the concept/collection catalog from it. Mocked — no external thesaurus is actually
+     * contacted, and the catalog isn't really reloaded, until a real thesaurus-browsing service
+     * exists.
+     */
+    public void testThesaurusConnection() {
+        if (draftThesaurusUrl == null || draftThesaurusUrl.isBlank()) {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "projectTables.drawer.params.connectionMissingUrl");
+            return;
+        }
+        draftConnectionTested = true;
+        MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.params.connectionOk");
+    }
+
+    /** Mocked catalog until a real thesaurus-browsing service exists. */
+    public List<String> completeBrancheConcepts(String query) {
+        return MOCK_CONCEPTS.stream()
+                .filter(c -> query == null || query.isBlank() || c.toLowerCase().contains(query.toLowerCase()))
+                .toList();
+    }
+
+    /** Mocked catalog until a real thesaurus-browsing service exists. */
+    public List<String> completeCollections(String query) {
+        return MOCK_COLLECTIONS.stream()
+                .filter(c -> query == null || query.isBlank() || c.toLowerCase().contains(query.toLowerCase()))
+                .toList();
     }
 
     public void saveDrawer() {

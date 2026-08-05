@@ -15,7 +15,7 @@
     </ui:define>
 
     <ui:define name="content">
-        <main >
+        <main>
 
             <comp:datatable
                     createButtonLabel="NULL"
@@ -42,11 +42,12 @@
                         widgetVar="actionUnitDatatable"
                         rowKey="#{au.id}"
                 >
-                    <p:column headerText="Institution">
-                        <p:outputLabel value="#{au.createdByInstitution.name}"/>
-                    </p:column>
                     <p:column headerText="#{langBean.msg('actionManagers.header.name')}">
                         <p:outputLabel value="#{au.name}"/>
+                    </p:column>
+
+                    <p:column headerText="Institution">
+                        <p:outputLabel value="#{au.createdByInstitution.name}"/>
                     </p:column>
                     <p:column headerText="Identifiant">
                         <p:outputLabel value="#{au.fullIdentifier}"/>
