@@ -21,11 +21,4 @@ public interface CustomFieldAnswerRepository extends CrudRepository<CustomFieldA
               and a.formConfigAnswer.formConfig.actionUnit.id = :projectId
             """)
     long countByFieldIdAndProjectId(@Param("customFieldId") Long customFieldId, @Param("projectId") Long projectId);
-
-    @Query("""
-            select count(a)
-            from CustomFieldAnswer a
-            where a.customField.id = :customFieldId
-            """)
-    long countByFieldId(@Param("customFieldId") Long customFieldId);
 }

@@ -695,31 +695,49 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void deleteAdditionalField_shouldDropTheLinkAndTheNowUnusedField() {
+    void deleteAdditionalField_shouldDropTheLinkOfTheType() {
         CustomField additional = textField(5L, "Couleur", false);
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
-                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
-        when(fieldFormConfigRepository.countByFieldId(5L)).thenReturn(0L);
+        FieldFormConfig link = fieldConfig(ceramiqueConfig, additional, true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(link));
 
         boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
 
         assertThat(deleted).isTrue();
-        verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
-        verify(customFieldRepository).delete(additional);
+        verify(fieldFormConfigRepository).delete(link);
+        verify(customFieldRepository, never()).delete(any(CustomField.class));
+    }
+
+    /**
+     * The additional fields of a type include the ones it inherits from the default configuration:
+     * deleting one of those has to reach the default configuration, or the field would be read back
+     * — and displayed — right after being "deleted".
+     */
+    @Test
+    void deleteAdditionalField_shouldDropTheLinkAFieldIsInheritedThrough() {
+        CustomField additional = textField(5L, "Couleur", false);
+        FieldFormConfig inherited = fieldConfig(defaultConfig, additional, true, false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(inherited));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of());
+
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        assertThat(deleted).isTrue();
+        verify(fieldFormConfigRepository).delete(inherited);
     }
 
     @Test
-    void deleteAdditionalField_shouldKeepAFieldStillConfiguredElsewhere() {
+    void deleteAdditionalField_shouldDropBothTheTypesOwnLinkAndTheInheritedOne() {
         CustomField additional = textField(5L, "Couleur", false);
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
-                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
-        when(fieldFormConfigRepository.countByFieldId(5L)).thenReturn(1L);
+        FieldFormConfig inherited = fieldConfig(defaultConfig, additional, true, false);
+        FieldFormConfig own = fieldConfig(ceramiqueConfig, additional, true, true);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(inherited));
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(own));
 
         boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
 
         assertThat(deleted).isTrue();
-        verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
-        verify(customFieldRepository, never()).delete(any(CustomField.class));
+        verify(fieldFormConfigRepository).delete(inherited);
+        verify(fieldFormConfigRepository).delete(own);
     }
 
     @Test
@@ -747,24 +765,32 @@ class TableFieldConfigServiceImplTest {
         verify(customFieldRepository, never()).delete(any(CustomField.class));
     }
 
-    /**
-     * Answers of another project keep the custom field alive even once nothing configures it
-     * anymore: dropping the row they point at would break their foreign key.
-     */
+    /** A single answer is already one too many: it is what deleting the field would strand. */
     @Test
-    void deleteAdditionalField_shouldDropTheLinkButKeepAFieldAnsweredInAnotherProject() {
+    void deleteAdditionalField_shouldKeepAFieldTheProjectAnsweredExactlyOnce() {
+        CustomField additional = textField(5L, "Couleur", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
+        when(customFieldAnswerRepository.countByFieldIdAndProjectId(5L, PROJECT_ID)).thenReturn(1L);
+
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        assertThat(deleted).isFalse();
+        verify(fieldFormConfigRepository, never()).delete(any(FieldFormConfig.class));
+    }
+
+    /** Answers of another project are none of this project's business: they don't hold it back. */
+    @Test
+    void deleteAdditionalField_shouldIgnoreAnswersGivenInAnotherProject() {
         CustomField additional = textField(5L, "Couleur", false);
         when(fieldFormConfigRepository.findAllByFormConfigId(11L))
                 .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
         when(customFieldAnswerRepository.countByFieldIdAndProjectId(5L, PROJECT_ID)).thenReturn(0L);
-        when(fieldFormConfigRepository.countByFieldId(5L)).thenReturn(0L);
-        when(customFieldAnswerRepository.countByFieldId(5L)).thenReturn(2L);
 
         boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
 
         assertThat(deleted).isTrue();
         verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
-        verify(customFieldRepository, never()).delete(any(CustomField.class));
     }
 
     @Test
@@ -1054,6 +1080,7 @@ class TableFieldConfigServiceImplTest {
 
 
     // --- deleteAdditionalField ---
+    /** Nothing to remove is not a refusal: the caller must not report the field as being in use. */
     @Test
     void deleteAdditionalField_shouldDoNothingWhenFieldNotFound() {
         when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
@@ -1061,7 +1088,7 @@ class TableFieldConfigServiceImplTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(11L))
                 .thenReturn(List.of());
 
-        service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Inconnu");
+        assertThat(service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Inconnu")).isTrue();
 
         verify(fieldFormConfigRepository, never()).delete(any());
         verify(customFieldRepository, never()).delete(any());
@@ -1072,7 +1099,7 @@ class TableFieldConfigServiceImplTest {
         when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
                 .thenReturn(Optional.empty());
 
-        service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Inconnu", "Couleur");
+        assertThat(service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Inconnu", "Couleur")).isTrue();
 
         verify(fieldFormConfigRepository, never()).delete(any());
         verify(customFieldRepository, never()).delete(any());

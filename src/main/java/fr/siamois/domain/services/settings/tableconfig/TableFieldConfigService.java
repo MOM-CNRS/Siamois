@@ -233,6 +233,10 @@ public interface TableFieldConfigService {
      * A field the project already holds answers for is kept: removing it would strand those answers,
      * which no screen would show anymore. Deactivating it through {@link #setFieldActive} is the way
      * to retire such a field while keeping what was recorded in it.
+     * <p>
+     * A field the type inherits from the default configuration is removed from that configuration,
+     * so it stops being inherited: it therefore leaves every type that inherits it, not just the one
+     * it is removed from.
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
