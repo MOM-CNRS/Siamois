@@ -4,7 +4,9 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -53,8 +55,13 @@ import static fr.siamois.ui.table.column.TableColumnAction.GO_TO_RECORDING_UNIT;
 @Getter
 public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingUnitDTO, Long> {
 
-    // Cache: key = (type, institutionId), value = CustomForm
-    private final Map<ConceptDTO, FormUiDto> formCache = new HashMap<>();
+    private record FormCacheKey(Long projectId, ConceptDTO type) {
+    }
+
+    // Cache: key = (projectId, type)
+    private final Map<FormCacheKey, FormUiDto> formCache = new HashMap<>();
+
+    private final EffectiveFormResolver effectiveFormResolver;
 
     public static final String THIS = "@this";
     public static final String SIA_ICON_BTN = "sia-icon-btn";
@@ -79,7 +86,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        FlowBean flowBean, GenericNewUnitDialogBean<RecordingUnitDTO> genericNewUnitDialogBean,
                                        ProfilePermissionService profilePermissionService,
                                        RecordingUnitService recordingUnitService,
-                                      LangBean langBean, FormContextServices formContextServices) {
+                                      LangBean langBean, FormContextServices formContextServices,
+                                      EffectiveFormResolver effectiveFormResolver) {
 
         super(
                 lazyDataModel,
@@ -98,28 +106,25 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         this.flowBean = flowBean;
         this.recordingUnitService = recordingUnitService;
         this.profilePermissionService = profilePermissionService;
+        this.effectiveFormResolver = effectiveFormResolver;
     }
 
     @Override
     protected FormUiDto resolveRowFormFor(RecordingUnitDTO ru) {
         ConceptDTO type = ru.getType();
-        if (type == null) {
+        if (type == null || ru.getActionUnit() == null) {
             return null;
         }
 
-        // Check cache first
-        if (formCache.containsKey(type)) {
-            return formCache.get(type);
+        FormCacheKey key = new FormCacheKey(ru.getActionUnit().getId(), type);
+        if (formCache.containsKey(key)) {
+            return formCache.get(key);
         }
 
-        CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(
-                type,
-                sessionSettingsBean.getSelectedInstitution()
-        );
+        FormUiDto formDto = effectiveFormResolver.resolveEffectiveForm(
+                RecordingUnit.DETAILS_FORM, ru.getActionUnit().getId(), ConfigurableTable.UE, type.getId());
 
-        FormUiDto formDto = formContextServices.getConversionService().convert(form, FormUiDto.class);
-
-        formCache.put(type, formDto);
+        formCache.put(key, formDto);
         return formDto;
     }
 

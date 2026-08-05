@@ -15,13 +15,13 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
 import fr.siamois.domain.models.recordingunit.form.RecordingUnitNewForm;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -330,11 +330,11 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Transient
     @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = RecordingUnitNewForm.build();
+    public static final FormUiDto NEW_UNIT_FORM = RecordingUnitNewForm.build();
 
     @Transient
     @JsonIgnore
-    public static final CustomForm DETAILS_FORM = RecordingUnitDetailsForm.build();
+    public static final FormUiDto DETAILS_FORM = RecordingUnitDetailsForm.build();
 
 
 

@@ -1,9 +1,9 @@
 package fr.siamois.domain.models.recordingunit.form;
 
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
 
@@ -17,41 +17,39 @@ public class RecordingUnitNewForm extends RecordingUnitForm {
         throw new UnsupportedOperationException();
     }
 
-    public static CustomForm build() {
-        return new CustomForm.Builder()
-                .name("Details tab form")
-                .description("Contains the main form")
+    public static FormUiDto build() {
+        return new FormUiDto.Builder()
                 .addPanel(
-                        new CustomFormPanel.Builder()
+                        new CustomFormPanelUiDto.Builder()
                                 .name(COMMON_HEADER_GENERAL)
                                 .isSystemPanel(true)
                                 .addRow(
-                                        new CustomRow.Builder()
-                                                .addColumn(new CustomCol.Builder()
+                                        new CustomRowUiDto.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(true)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .isRequired(true)
                                                         .field(ACTION_UNIT_FIELD)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .isRequired(false)
                                                         .field(SPATIAL_UNIT_FIELD)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .isRequired(true)
                                                         .field(AUTHOR_FIELD)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .isRequired(true)
                                                         .field(RECORDING_UNIT_TYPE_FIELD)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .isRequired(true)

@@ -1,8 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.phase.Phase;
@@ -19,8 +17,8 @@ import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.ui.mapper.FormMapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -49,7 +47,6 @@ import java.util.stream.Collectors;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements Serializable {
 
-    private final transient FormMapper formMapper;
     private final transient PhaseService phaseService;
     private final transient RedirectBean redirectBean;
     private final transient TableFieldConfigService tableFieldConfigService;
@@ -65,12 +62,11 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         // not yet supported
     }
 
-    protected PhasePanel(FormMapper formMapper, ApplicationContext context) {
+    protected PhasePanel(ApplicationContext context) {
         super("common.entity.phase",
                 "bi bi-layers",
                 "siamois-panel phase-panel single-panel",
                 context);
-        this.formMapper = formMapper;
         this.phaseService = context.getBean(PhaseService.class);
         this.redirectBean = context.getBean(RedirectBean.class);
         this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
@@ -200,12 +196,12 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         String typeName = resolveTypeName();
         Long projectId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
 
-        CustomForm form = Phase.DETAILS_FORM;
+        FormUiDto form = Phase.DETAILS_FORM;
         if (projectId != null) {
-            CustomForm base = CustomFormComposer.withoutFields(form, inactiveSystemFieldBindings(projectId, typeName));
+            FormUiDto base = CustomFormComposer.withoutFields(form, inactiveSystemFieldBindings(projectId, typeName));
             form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(projectId, typeName));
         }
-        detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
+        detailsForm = form;
 
         initFormContext(forceInit);
     }
@@ -229,9 +225,9 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
                 .collect(Collectors.toSet());
     }
 
-    private List<CustomCol> additionalFields(Long projectId, String typeName) {
+    private List<CustomColUiDto> additionalFields(Long projectId, String typeName) {
         return tableFieldConfigService.getActiveAdditionalFields(projectId, ConfigurableTable.PHASE, typeName).stream()
-                .map(field -> new CustomCol.Builder().field(field).build())
+                .map(field -> new CustomColUiDto.Builder().field(field).build())
                 .toList();
     }
 

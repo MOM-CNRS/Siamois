@@ -340,7 +340,7 @@ class ProjectControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
         ProjectFormData formData = new ProjectFormData(
-                new FormResource(null, "Details", "", "{}"),
+                new FormResource("{}"),
                 Map.of());
         when(recordingUnitOpenApiService.buildProjectUiForm(100L, personDto, "fr"))
                 .thenReturn(formData);
@@ -349,7 +349,7 @@ class ProjectControllerApiTest {
                         .param("organizationId", "100")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.form.name").value("Details"))
+                .andExpect(jsonPath("$.data.form.layoutJson").value("{}"))
                 .andExpect(jsonPath("$.data.vocabulariesByFieldCode").doesNotExist());
 
         verify(recordingUnitOpenApiService).buildProjectUiForm(100L, personDto, "fr");

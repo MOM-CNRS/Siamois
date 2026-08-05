@@ -143,7 +143,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     }
 
     public void initForms(boolean forceInit) {
-        detailsForm = formContextServices.getConversionService().convert(handler.formLayout(), FormUiDto.class);
+        detailsForm = handler.formLayout();
 
         initFormContext(forceInit);
     }

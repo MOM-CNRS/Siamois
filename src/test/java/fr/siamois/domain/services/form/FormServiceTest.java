@@ -5,16 +5,13 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
@@ -41,15 +38,11 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FormServiceTest {
-
-    @Mock
-    private FormRepository formRepository;
 
     @Mock
     private FormScopeRepository formScopeRepository;
@@ -65,41 +58,6 @@ class FormServiceTest {
 
     @InjectMocks
     private FormService formService;
-
-    void setUpForReturnTypeSpecificTests() {
-        Concept recordingUnitType = mock(Concept.class);
-        Institution institution = mock(Institution.class);
-        ConceptDTO recordingUnitTypeDTO = mock(ConceptDTO.class);
-        InstitutionDTO institutionDTO = mock(InstitutionDTO.class);
-
-        // Use deterministic IDs in stubs
-        given(recordingUnitType.getId()).willReturn(101L);  // Add this line
-        given(recordingUnitTypeDTO.getId()).willReturn(101L); // Add this line
-        given(institution.getId()).willReturn(55L);
-        given(institutionDTO.getId()).willReturn(55L);
-    }
-
-
-    @Test
-    void findAllFieldsBySpatialUnitId_success() {
-        when(formRepository.findById(anyLong()))
-                .thenReturn(Optional.of(new CustomForm()));
-
-        CustomForm res = formService.findById(anyLong());
-
-        assertNotNull(res);
-        assertInstanceOf(CustomForm.class, res);
-    }
-
-    @Test
-    void findAllFieldsBySpatialUnitId_null() {
-        when(formRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        CustomForm res = formService.findById(anyLong());
-        assertNull(res);
-    }
-
 
 
 
@@ -824,103 +782,6 @@ class FormServiceTest {
         return rel;
     }
 
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithNullRecordingUnitType_ReturnsInstitutionForm() {
-        // Arrange
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(55L);
-
-        CustomForm institutionForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
-                .willReturn(Optional.of(institutionForm));
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, institutionDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertSame(institutionForm, result);
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithRecordingUnitType_ReturnsTypeSpecificForm() {
-        // Arrange
-        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
-        recordingUnitTypeDTO.setId(101L);
-
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(55L);
-
-        CustomForm typeSpecificForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.of(typeSpecificForm));
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertSame(typeSpecificForm, result);
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithRecordingUnitType_FallsBackToInstitutionForm() {
-        // Arrange
-        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
-        recordingUnitTypeDTO.setId(101L);
-
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(55L);
-
-        CustomForm institutionForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.empty());
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
-                .willReturn(Optional.of(institutionForm));
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertSame(institutionForm, result);
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_ReturnsNullWhenNothingFound() {
-        // Arrange
-        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
-        recordingUnitTypeDTO.setId(101L);
-
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(55L);
-
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.empty());
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
-                .willReturn(Optional.empty());
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
-
-        // Assert
-        assertNull(result);
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithNullInstitution_ReturnsNull() {
-        // Arrange
-        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
-        recordingUnitTypeDTO.setId(101L);
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO,
-                new InstitutionDTO());
-
-        // Assert
-        assertNull(result);
-    }
-
     // =====================================================================
     // handlePhaseSet / handleRecordingUnitSet
     // Accessed via the private populateSystemFieldValue dispatcher.
@@ -945,11 +806,10 @@ class FormServiceTest {
 
     @Test
     void constructor_assignsAllFinalFields() {
-        FormService service = new FormService(labelBean, formRepository, formScopeRepository, unitDefinitionMapper,
+        FormService service = new FormService(labelBean, formScopeRepository, unitDefinitionMapper,
                 customFieldAnswerService);
 
         assertSame(labelBean, service.getLabelBean());
-        assertSame(formRepository, service.getFormRepository());
         assertSame(formScopeRepository, service.getFormScopeRepository());
         assertSame(unitDefinitionMapper, service.getUnitDefinitionMapper());
         assertSame(customFieldAnswerService, service.getCustomFieldAnswerService());

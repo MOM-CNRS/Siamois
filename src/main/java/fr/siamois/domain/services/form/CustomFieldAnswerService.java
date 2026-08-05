@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.form;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigAnswer;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -22,7 +21,6 @@ import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerIntegerViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurementViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
-import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -67,10 +65,10 @@ public class CustomFieldAnswerService {
         }
 
         Long projectId = recordingUnitDTO.getActionUnit().getId();
-        String typeName = typeNameOf(recordingUnitDTO);
+        Long typeConceptId = recordingUnitDTO.getType() != null ? recordingUnitDTO.getType().getId() : null;
 
         Set<CustomField> activeFields = new HashSet<>(
-                tableFieldConfigService.getActiveAdditionalFields(projectId, ConfigurableTable.UE, typeName));
+                tableFieldConfigService.getActiveAdditionalFields(projectId, ConfigurableTable.UE, typeConceptId));
         activeFields.addAll(customFieldMeasurementService.findByRecordingUnit(recordingUnitDTO.getId()));
         Map<CustomField, CustomFieldAnswerViewModel> filteredAnswers = answers.entrySet().stream()
                 .filter(entry -> activeFields.contains(entry.getKey()))
@@ -79,7 +77,7 @@ public class CustomFieldAnswerService {
         if (filteredAnswers.isEmpty()) {
             log.warn("None of the {} answers of recording unit {} is for a field active on type '{}' of project {}"
                             + " — nothing persisted. Answered fields: {}, active fields: {}",
-                    answers.size(), recordingUnitDTO.getId(), typeName, projectId,
+                    answers.size(), recordingUnitDTO.getId(), typeConceptId, projectId,
                     fieldIdsOf(answers.keySet()), fieldIdsOf(activeFields));
             return;
         }
@@ -88,10 +86,10 @@ public class CustomFieldAnswerService {
 
         // Materialized on demand: a field created straight from a unit's form gives the type answers
         // to store before anyone ever opened its settings screen, so the config may not exist yet.
-        Optional<FormConfig> formConfig = tableFieldConfigService.createOrGetFormConfig(projectId, ConfigurableTable.UE, typeName);
+        Optional<FormConfig> formConfig = tableFieldConfigService.createOrGetFormConfig(projectId, ConfigurableTable.UE, typeConceptId);
         if (formConfig.isEmpty()) {
             log.warn("No form config for type '{}' on recording unit {}; additional field answers not persisted",
-                    typeName, recordingUnitDTO.getId());
+                    typeConceptId, recordingUnitDTO.getId());
             return;
         }
 
@@ -117,9 +115,9 @@ public class CustomFieldAnswerService {
         }
 
         Long projectId = recordingUnitDTO.getActionUnit().getId();
-        String typeName = typeNameOf(recordingUnitDTO);
+        Long typeConceptId = recordingUnitDTO.getType() != null ? recordingUnitDTO.getType().getId() : null;
 
-        Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(projectId, ConfigurableTable.UE, typeName);
+        Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(projectId, ConfigurableTable.UE, typeConceptId);
         if (formConfig.isEmpty()) return Map.of();
 
         Set<CustomFieldAnswer> stored = formConfigAnswerService.findFormConfigAnswer(formConfig.get(), recordingUnitDTO)
@@ -164,18 +162,6 @@ public class CustomFieldAnswerService {
         return fields.stream()
                 .map(field -> field.getId() + " (" + field.getLabel() + ")")
                 .collect(Collectors.joining(", ", "[", "]"));
-    }
-
-    private String typeNameOf(RecordingUnitDTO recordingUnitDTO) {
-        return recordingUnitDTO.getType() != null
-                ? labelService.findLabelOf(recordingUnitDTO.getType(), currentLang()).getLabel()
-                : TableFieldConfigService.DEFAULT_TYPE;
-    }
-
-    private String currentLang() {
-        UserInfo info = ExecutionContextHolder.get();
-        assert info != null;
-        return info.getLang();
     }
 
     private void createOrUpdateAnswer(FormConfigAnswer formConfigAnswer, CustomField customField, CustomFieldAnswerViewModel customFieldAnswerViewModel) {

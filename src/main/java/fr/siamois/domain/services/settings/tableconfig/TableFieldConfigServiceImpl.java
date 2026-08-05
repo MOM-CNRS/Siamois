@@ -188,6 +188,25 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        TypeFieldsConfig config = new TypeFieldsConfig();
+        config.setFields(new ArrayList<>(effectiveFields(projectId, table, typeConceptId).values().stream()
+                .map(this::toDto)
+                .toList()));
+        return config;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        return effectiveFields(projectId, table, typeConceptId).values().stream()
+                .filter(field -> !isSystemField(field.field()) && field.active())
+                .map(EffectiveField::field)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public void setFieldActive(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean active) {
         applyFieldChange(projectId, table, typeName, fieldName, config -> config.setActive(active));
@@ -429,7 +448,15 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     private Map<Long, EffectiveField> effectiveFields(Long projectId, ConfigurableTable table, String typeName) {
-        Map<Long, FieldFormConfig> stored = storedFields(projectId, table, typeName);
+        return effectiveFields(table, storedFields(projectId, table, typeName));
+    }
+
+    /** Concept-id-keyed equivalent of {@link #effectiveFields(Long, ConfigurableTable, String)}. */
+    private Map<Long, EffectiveField> effectiveFields(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        return effectiveFields(table, storedFields(projectId, table, typeConceptId));
+    }
+
+    private Map<Long, EffectiveField> effectiveFields(ConfigurableTable table, Map<Long, FieldFormConfig> stored) {
         Map<Long, EffectiveField> fields = new LinkedHashMap<>();
 
         for (FormField formField : systemFields(table)) {
@@ -449,6 +476,16 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             collectFields(findFormConfig(projectId, table, DEFAULT_TYPE), fields);
         }
         collectFields(findFormConfig(projectId, table, typeName), fields);
+        return fields;
+    }
+
+    /** Concept-id-keyed equivalent of {@link #storedFields(Long, ConfigurableTable, String)}. */
+    private Map<Long, FieldFormConfig> storedFields(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        Map<Long, FieldFormConfig> fields = new LinkedHashMap<>();
+        if (typeConceptId != null) {
+            collectFields(findFormConfig(projectId, table, (Long) null), fields);
+        }
+        collectFields(findFormConfig(projectId, table, typeConceptId), fields);
         return fields;
     }
 
@@ -493,6 +530,25 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     @Override
+    public Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
+        if (fieldConcept.isEmpty()) return Optional.empty();
+
+        if (typeConceptId == null) {
+            return formConfigRepository.findDefaultByActionUnitAndField(projectId, fieldConcept.get().getId());
+        }
+        return formConfigRepository.findByActionUnitAndFieldAndValue(projectId, fieldConcept.get().getId(), typeConceptId);
+    }
+
+    /**
+     * Applies a change to the type's configuration of a field. The row is created when the field is
+     * still configured nowhere — a system field the form declares but nobody ever touched — and when
+     * it is only inherited from the default configuration, which must not be edited in place or the
+     * change would leak to every other type.
+     * <p>
+     * A field the institution locked is left untouched: its state can only be changed from the
+     * (not yet implemented) institution-level screens.
+     */
     @Transactional
     public Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, String typeName) {
         Optional<FormConfig> existing = findFormConfig(projectId, table, typeName);
@@ -506,6 +562,19 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             return Optional.empty();
         }
         return Optional.of(createFormConfig(projectId, table, typeName));
+    }
+
+    @Override
+    @Transactional
+    public Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        Optional<FormConfig> existing = findFormConfig(projectId, table, typeConceptId);
+        if (existing.isPresent()) {
+            return existing;
+        }
+        if (findFieldConcept(projectId, table).isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(createFormConfig(projectId, table, typeConceptId));
     }
 
     private void applyFieldChange(Long projectId, ConfigurableTable table, String typeName, String fieldName,
@@ -571,6 +640,25 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             config.setValueConcept(findValueConcept(projectId, fieldConcept, typeName)
                     .orElseThrow(() -> new NoSuchElementException(
                             "Unknown type '" + typeName + "' for table " + table)));
+        }
+        return formConfigRepository.save(config);
+    }
+
+    private FormConfig createFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        ActionUnit project = actionUnitRepository.findById(projectId)
+                .orElseThrow(() -> new NoSuchElementException("Unknown project: " + projectId));
+        Concept fieldConcept = findFieldConcept(projectId, table)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No vocabulary configured for field " + table.getFieldCode() + " of project " + projectId));
+
+        FormConfig config = new FormConfig();
+        config.setActionUnit(project);
+        config.setInstitution(project.getCreatedByInstitution());
+        config.setFieldConcept(fieldConcept);
+        config.setFieldConfigs(new ArrayList<>());
+        if (typeConceptId != null) {
+            config.setValueConcept(conceptRepository.findById(typeConceptId)
+                    .orElseThrow(() -> new NoSuchElementException("Unknown concept id " + typeConceptId)));
         }
         return formConfigRepository.save(config);
     }

@@ -19,16 +19,16 @@ import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMu
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.attributeconverter.CustomFormLayoutConverter;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -69,6 +69,7 @@ import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListRes
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
@@ -100,7 +101,7 @@ public class RecordingUnitOpenApiService {
     private final FieldConfigurationService fieldConfigurationService;
     private final RecordingUnitResponseMapper recordingUnitResponseMapper;
     private final ConversionService conversionService;
-    private final CustomFormLayoutConverter customFormLayoutConverter;
+    private final EffectiveFormResolver effectiveFormResolver;
     private final ConceptMapper conceptMapper;
     private final InstitutionService institutionService;
     private final ConceptRepository conceptRepository;
@@ -144,19 +145,16 @@ public class RecordingUnitOpenApiService {
             return resource;
         }
 
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(dto.getType(), institution);
-        if (customForm == null) {
-            resource.setAnswers(Map.of());
-            return resource;
-        }
-
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-
+        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsWithFallback(dto, fieldSource, locale));
+        Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
+                    dto.getType() != null ? dto.getType().getId() : null);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            return buildFieldsWithFallback(dto, fieldSource, locale);
+        });
 
         resource.setAnswers(fields);
         return resource;
@@ -291,13 +289,13 @@ public class RecordingUnitOpenApiService {
         }
 
         RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(au);
-        RecordingUnitDefaultType defaultType = buildDefaultType(institution, personDto, lang, identifierConfig);
+        RecordingUnitDefaultType defaultType = buildDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
 
         List<Concept> configuredTypes = formService.findConfiguredRecordingUnitTypesByInstitution(institution);
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         List<RecordingUnitType> types = configuredTypes.stream()
-                .map(concept -> buildRecordingUnitType(concept, institution, userInfo, locale, identifierConfig))
+                .map(concept -> buildRecordingUnitType(au.getId(), concept, userInfo, locale, identifierConfig))
                 .toList();
 
         return new ProjectRecordingUnitTypeListResponse(types, defaultType);
@@ -313,15 +311,11 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
         }
 
-        CustomForm systemForm = Specimen.NEW_UNIT_FORM;
+        FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(systemForm.getLayout());
-        FormResource formBundle = new FormResource(
-                systemForm.getId(),
-                systemForm.getName(),
-                systemForm.getDescription() != null ? systemForm.getDescription() : "",
-                layoutJson);
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
+        FormResource formBundle = new FormResource(layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -344,33 +338,25 @@ public class RecordingUnitOpenApiService {
         return config;
     }
 
-    private RecordingUnitDefaultType buildDefaultType(InstitutionDTO institution, PersonDTO personDto, String lang,
+    private RecordingUnitDefaultType buildDefaultType(Long projectId, InstitutionDTO institution, PersonDTO personDto, String lang,
                                                       RecordingUnitIdentifierConfig identifierConfig) {
         RecordingUnitDefaultType defaultType = new RecordingUnitDefaultType();
         defaultType.setIdentifierConfig(identifierConfig);
 
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, institution);
-        if (customForm == null) {
-            defaultType.setFields(Map.of());
-            return defaultType;
-        }
-
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        defaultType.setFormBundle(new FormResource(
-                customForm.getId(), customForm.getName(),
-                customForm.getDescription() != null ? customForm.getDescription() : "", layoutJson));
-
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, null);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            return buildFieldsMetadataOnly(fieldSource, locale);
+        });
         defaultType.setFields(fields);
         return defaultType;
     }
 
-    private RecordingUnitType buildRecordingUnitType(Concept concept, InstitutionDTO institution,
+    private RecordingUnitType buildRecordingUnitType(Long projectId, Concept concept,
                                                      UserInfo userInfo, Locale locale,
                                                      RecordingUnitIdentifierConfig identifierConfig) {
         ConceptDTO typeDto = conceptMapper.convert(concept);
@@ -379,21 +365,13 @@ public class RecordingUnitOpenApiService {
         type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
-        if (customForm == null) {
-            type.setFields(Map.of());
-            return type;
-        }
-
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        type.setFormBundle(new FormResource(
-                customForm.getId(), customForm.getName(),
-                customForm.getDescription() != null ? customForm.getDescription() : "", layoutJson));
-
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, concept.getId());
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            return buildFieldsMetadataOnly(fieldSource, locale);
+        });
         type.setFields(fields);
         return type;
     }
@@ -427,7 +405,7 @@ public class RecordingUnitOpenApiService {
         }
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
-            CustomForm systemForm = ActionUnit.NEW_UNIT_FORM;
+            FormUiDto systemForm = ActionUnit.NEW_UNIT_FORM;
             FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
@@ -439,15 +417,11 @@ public class RecordingUnitOpenApiService {
     private ProjectFormData buildProjectFormBundle(InstitutionDTO institution,
                                                    PersonDTO personDto,
                                                    String lang) {
-        CustomForm systemForm = ActionUnit.NEW_UNIT_FORM;
+        FormUiDto systemForm = ActionUnit.NEW_UNIT_FORM;
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(systemForm.getLayout());
-        FormResource formBundle = new FormResource(
-                systemForm.getId(),
-                systemForm.getName(),
-                systemForm.getDescription() != null ? systemForm.getDescription() : "",
-                layoutJson);
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
+        FormResource formBundle = new FormResource(layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -473,16 +447,10 @@ public class RecordingUnitOpenApiService {
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
         ResolvedConceptResource typeResource = toConceptResource(typeDto, lang);
 
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
-        if (customForm == null) {
-            return new RecordingUnitCreateFormData(typeResource, null, Map.of());
-        }
-
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FormUiDto formUiDto = RecordingUnit.NEW_UNIT_FORM;
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        FormResource formBundle = new FormResource(
-                customForm.getId(), customForm.getName(), customForm.getDescription(), layoutJson);
+        String layoutJson = FormUiDtoLayoutJson.serialize(formUiDto.getLayout());
+        FormResource formBundle = new FormResource(layoutJson);
 
         RecordingUnitDTO shell = new RecordingUnitDTO();
         shell.setType(typeDto);
@@ -513,13 +481,11 @@ public class RecordingUnitOpenApiService {
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
         ResolvedConceptResource typeResource = toConceptResource(typeDto, lang);
 
-        CustomForm customForm = Specimen.NEW_UNIT_FORM;
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
+        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = customFormLayoutConverter.convertToDatabaseColumn(customForm.getLayout());
-        FormResource formBundle = new FormResource(
-                customForm.getId(), customForm.getName(),
-                customForm.getDescription() != null ? customForm.getDescription() : "", layoutJson);
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
+        FormResource formBundle = new FormResource(layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -548,8 +514,8 @@ public class RecordingUnitOpenApiService {
             return resource;
         }
 
-        CustomForm customForm = Specimen.DETAILS_FORM;
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FormUiDto systemForm = Specimen.DETAILS_FORM;
+        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
@@ -800,16 +766,11 @@ public class RecordingUnitOpenApiService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
 
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(typeDto, institution);
-        if (customForm == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Aucun formulaire personnalisé pour ce type d'UE et cette organisation");
-        }
-
         RecordingUnitDTO shell = initRecordingUnitShell(typeDto, au, institution, personDto);
 
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                    RecordingUnit.DETAILS_FORM, au.getId(), ConfigurableTable.UE, typeDto.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
             mergeFieldAnswers(shell, response, fieldSource, request.getFieldAnswers(), lang);
@@ -902,14 +863,12 @@ public class RecordingUnitOpenApiService {
             return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
         }
 
-        CustomForm customForm = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(dto.getType(), institution);
-        if (customForm == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Aucun formulaire personnalisé pour ce type d'UE : impossible d'appliquer fieldAnswers");
-        }
+        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
 
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
+                    dto.getType() != null ? dto.getType().getId() : null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
             mergeFieldAnswers(dto, response, fieldSource, answers, lang);

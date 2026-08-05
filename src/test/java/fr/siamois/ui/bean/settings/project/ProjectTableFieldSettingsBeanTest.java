@@ -43,7 +43,7 @@ class ProjectTableFieldSettingsBeanTest {
                 List.of(new TypeSummary("_default", true), new TypeSummary("Céramique", false)));
         when(tableFieldConfigService.getFormConfig(eq(42L), any(), any())).thenReturn(
                 TypeFormConfig.builder().typeName("Céramique").build());
-        when(tableFieldConfigService.getFieldsConfig(eq(42L), any(), any())).thenReturn(
+        when(tableFieldConfigService.getFieldsConfig(eq(42L), any(), any(String.class))).thenReturn(
                 new TypeFieldsConfig());
     }
 

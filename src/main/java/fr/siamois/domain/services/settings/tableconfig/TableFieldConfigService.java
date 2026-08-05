@@ -105,6 +105,30 @@ public interface TableFieldConfigService {
     List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, String typeName);
 
     /**
+     * Same as {@link #getFieldsConfig(Long, ConfigurableTable, String)}, but keyed directly on the
+     * type's {@link fr.siamois.domain.models.vocabulary.Concept} id instead of its label — avoids the
+     * label round-trip ({@link #findFormConfig(Long, ConfigurableTable, String)} resolving a label
+     * back to a concept), which is fragile for a caller that already holds the concept (e.g. an API
+     * request whose {@code lang} may differ from the label's language).
+     *
+     * @param projectId     the project (action unit) this configuration is scoped to
+     * @param table         the table the type belongs to
+     * @param typeConceptId the type's concept id, or {@code null} for the default configuration
+     * @return a copy of the type's field configuration
+     */
+    TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, Long typeConceptId);
+
+    /**
+     * Concept-id-keyed equivalent of {@link #getActiveAdditionalFields(Long, ConfigurableTable, String)}.
+     *
+     * @param projectId     the project (action unit) this configuration is scoped to
+     * @param table         the table the type belongs to
+     * @param typeConceptId the type's concept id, or {@code null} for the default configuration
+     * @return the active additional fields configured for the type, in display order
+     */
+    List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, Long typeConceptId);
+
+    /**
      * Sets the order the additional fields of a type are displayed in, both on the configuration
      * screen and on the data entry screens that lay them out.
      * <p>
@@ -138,6 +162,18 @@ public interface TableFieldConfigService {
     Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName);
 
     /**
+     * Concept-id-keyed equivalent of {@link #findFormConfig(Long, ConfigurableTable, String)} — see
+     * {@link #getFieldsConfig(Long, ConfigurableTable, Long)} for why a caller that already holds the
+     * concept should prefer this over the label-based overload.
+     *
+     * @param projectId     the project (action unit) this configuration is scoped to
+     * @param table         the table the type belongs to
+     * @param typeConceptId the type's concept id, or {@code null} for the default configuration
+     * @return the type's form configuration, empty if none was ever materialized
+     */
+    Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId);
+
+    /**
      * Same as {@link #findFormConfig}, but materializes the configuration when the type has none —
      * for answers that need something to hang on even though nobody ever opened the settings screen
      * for that type, such as a measurement field created straight from a unit's form.
@@ -149,7 +185,19 @@ public interface TableFieldConfigService {
      * the table's type field, or the type is not one of that field's values — there is then nothing
      * to scope a configuration to
      */
-    Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, String typeName);
+    Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, String typeConceptId);
+
+    /**
+     * Concept-id-keyed equivalent of {@link #createOrGetFormConfig(Long, ConfigurableTable, String)}.
+     *
+     * @param projectId     the project (action unit) this configuration is scoped to
+     * @param table         the table the type belongs to
+     * @param typeConceptId the type's concept id, or {@code null} for the default configuration
+     * @return the type's form configuration, empty when the project has no vocabulary configured for
+     * the table's type field, or the type is not one of that field's values — there is then nothing
+     * to scope a configuration to
+     */
+    Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId);
 
     /**
      * Activates or deactivates a field for a type. No-op when the target field is

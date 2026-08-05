@@ -7,6 +7,7 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
@@ -27,10 +28,8 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ActionSettingsTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
-import fr.siamois.ui.mapper.FormMapper;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
@@ -79,7 +78,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient InstitutionService institutionService;
     private final transient ProfilePermissionService profilePermissionService;
-    private final transient FormMapper formMapper;
+    private final transient EffectiveFormResolver effectiveFormResolver;
 
     // For entering new code
     private ActionCode newCode;
@@ -130,7 +129,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
-        this.formMapper = context.getBean(FormMapper.class);
+        this.effectiveFormResolver = context.getBean(EffectiveFormResolver.class);
     }
 
 
@@ -275,7 +274,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = formContextServices.getConversionService().convert(ActionUnit.DETAILS_FORM, FormUiDto.class);
+        detailsForm = ActionUnit.DETAILS_FORM;
         // Init system form answers
         initFormContext(forceInit);
 
@@ -390,7 +389,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 profilePermissionService,
                 recordingUnitService,
                 langBean,
-                formContextServices
+                formContextServices,
+                effectiveFormResolver
         );
         recordingTabTableModel.setParentPanel(this);
 

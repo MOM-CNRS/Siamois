@@ -1,6 +1,5 @@
 package fr.siamois.domain.models.form.formscope;
 
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
@@ -28,10 +27,6 @@ public class FormScope {
     @Id
     @GeneratedValue
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "fk_custom_form_id", nullable = false)
-    private CustomForm form;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_type_id")
