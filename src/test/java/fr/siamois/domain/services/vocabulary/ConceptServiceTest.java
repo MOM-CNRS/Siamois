@@ -806,4 +806,29 @@ class ConceptServiceTest {
         assertThat(conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "céram")).isEmpty();
     }
 
+    @Test
+    void fetchAutocompleteFromRemoteThesaurus_shouldNotQueryTheThesaurus_whenInputIsNullOrBlank() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+
+        assertThat(conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, null)).isEmpty();
+        assertThat(conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "   ")).isEmpty();
+
+        verifyNoInteractions(conceptApi);
+    }
+
+    @Test
+    void fetchAutocompleteFromRemoteThesaurus_shouldSkipBlankDefinitions_whenLookingForTheConceptDefinition() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
+                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Céramique", false, "   "),
+                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Poterie", true, "Objet en terre cuite")
+        ));
+
+        List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "céram");
+
+        // a blank definition carries no information, the first meaningful one stands for the concept
+        assertThat(results).hasSize(2)
+                .allSatisfy(result -> assertThat(result.getDefinition()).isEqualTo("Objet en terre cuite"));
+    }
+
 }

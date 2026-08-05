@@ -789,6 +789,18 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
+    void fetchAutocompleteOfField_shouldThrow_whenNoExecutionContextIsBound() {
+        // the current user is read from the execution context, there is no other way to know their language
+        ExecutionContextHolder.clear();
+
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        assertThrows(IllegalStateException.class, () -> service.fetchAutocomplete(field, "que", 42L));
+        verifyNoInteractions(fieldFormConfigRepository, autocompleteRepository);
+    }
+
+    @Test
     void fetchAutocompleteOfField_shouldThrow_whenFormConfigHasNeitherBranchNorCollection() {
         CustomFieldSelectOne field = new CustomFieldSelectOne();
         field.setId(7L);

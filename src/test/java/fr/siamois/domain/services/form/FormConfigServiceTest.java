@@ -2,13 +2,16 @@ package fr.siamois.domain.services.form;
 
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.exceptions.vocabulary.VocabularyNotFoundException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.vocabulary.*;
+import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.dto.entity.vocabulary.ConceptCollectionDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
@@ -65,6 +68,9 @@ class FormConfigServiceTest {
 
     @Mock
     private VocabularyMapper vocabularyMapper;
+
+    @Mock
+    private ConceptCollectionService conceptCollectionService;
 
     @Mock
     private ApplicationContext applicationContext;
@@ -354,7 +360,111 @@ class FormConfigServiceTest {
         verifyNoInteractions(conceptHierarchyRepository, conceptRepository);
     }
 
+    // --- Configuration on a collection ---------------------------------------------------------
+
+    @Test
+    void addConceptConfigFor_shouldCreateConfigWithCollectionAndNoTopTerm_whenNoConfigExists() {
+        ConceptCollectionDTO collectionDTO = collectionDTO();
+        ConceptCollection savedCollection = savedCollection();
+
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+
+        formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved.getFormConfig()).isSameAs(formConfig);
+        assertThat(saved.getField()).isSameAs(field);
+        assertThat(saved.getCollection()).isSameAs(savedCollection);
+        assertThat(saved.getBranchTopTerm()).isNull();
+        assertThat(saved.getId().getFormsConfigId()).isEqualTo(100L);
+        assertThat(saved.getId().getCustomFieldId()).isEqualTo(200L);
+        // the collection import is the collection service business, the branch expansion is not used here
+        verifyNoInteractions(conceptApi, vocabularyService, conceptService);
+    }
+
+    @Test
+    void addConceptConfigFor_shouldReuseInstanceAndClearTopTerm_whenConceptConfigAlreadyExists() {
+        ConceptCollectionDTO collectionDTO = collectionDTO();
+        ConceptCollection savedCollection = savedCollection();
+
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+        existing.setMandatory(true);
+        existing.setInstitutionLocked(true);
+        existing.setPosition(3);
+        existing.setBranchTopTerm(branchTopConcept);
+
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+
+        formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved).isSameAs(existing);
+        assertThat(saved.getCollection()).isSameAs(savedCollection);
+        // a field is configured on a branch or on a collection, never on both
+        assertThat(saved.getBranchTopTerm()).isNull();
+        assertThat(saved.isMandatory()).isTrue();
+        assertThat(saved.isInstitutionLocked()).isTrue();
+        assertThat(saved.getPosition()).isEqualTo(3);
+    }
+
+    @Test
+    void addConceptConfigFor_shouldConvertAndKeepAttributes_whenExistingCollectionConfigIsNotConceptTyped() {
+        ConceptCollectionDTO collectionDTO = collectionDTO();
+        ConceptCollection savedCollection = savedCollection();
+
+        FieldFormConfig existing = new FieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+        existing.setActive(false);
+        existing.setPosition(7);
+
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+
+        formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved).isNotSameAs(existing);
+        assertThat(saved.getId()).isSameAs(existing.getId());
+        assertThat(saved.isActive()).isFalse();
+        assertThat(saved.getPosition()).isEqualTo(7);
+        assertThat(saved.getCollection()).isSameAs(savedCollection);
+    }
+
+    @Test
+    void addConceptConfigFor_shouldNotSaveConfig_whenTheCollectionCannotBeImported() {
+        ConceptCollectionDTO collectionDTO = collectionDTO();
+
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO))
+                .thenThrow(new VocabularyNotFoundException("Vocabulary could not be found"));
+
+        assertThatThrownBy(() -> formConfigService.addConceptConfigFor(formConfig, field, collectionDTO))
+                .isInstanceOf(VocabularyNotFoundException.class);
+
+        verify(fieldFormConfigRepository, never()).save(any());
+    }
+
     // --- Helpers -------------------------------------------------------------------------------
+
+    private ConceptCollectionDTO collectionDTO() {
+        ConceptCollectionDTO collectionDTO = new ConceptCollectionDTO();
+        collectionDTO.setExternalId("coll1");
+        collectionDTO.setVocabulary(vocabularyDTO);
+        return collectionDTO;
+    }
+
+    private ConceptCollection savedCollection() {
+        ConceptCollection savedCollection = new ConceptCollection();
+        savedCollection.setId(5L);
+        savedCollection.setExternalId("coll1");
+        savedCollection.setVocabulary(vocabulary);
+        return savedCollection;
+    }
 
     /**
      * The service resolves the vocabulary of the top term before saving it, and hands the resolved
