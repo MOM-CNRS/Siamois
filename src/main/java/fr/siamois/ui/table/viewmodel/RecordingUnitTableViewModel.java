@@ -310,7 +310,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(String.valueOf(ru.getId())))
                             ? "bi bi-bookmark-x-fill"
-                            : "bi bi-bookmark-plus";
+                            : "bi bi-bookmark";
             case DUPLICATE_ROW -> "bi bi-copy";
             case NEW_CHILDREN -> "bi bi-node-plus-fill rotate-90";
             case NEW_PARENT -> "bi bi-node-plus-fill rotate-minus90";
