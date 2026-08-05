@@ -326,6 +326,39 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void findField_shouldResolveASystemFieldByName() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", IDENTIFIER_FIELD);
+
+        assertThat(field).isPresent();
+        assertThat(field.get().getLabel()).isEqualTo(IDENTIFIER_FIELD);
+    }
+
+    @Test
+    void findField_shouldResolveAnAdditionalFieldByName() {
+        CustomField additional = textField(9L, "Couleur", false);
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
+                .thenReturn(List.of(fieldConfig(defaultConfig, additional, true, false)));
+
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", "Couleur");
+
+        assertThat(field).contains(additional);
+    }
+
+    @Test
+    void findField_shouldReturnEmptyWhenNoFieldMatchesTheName() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", "Unknown");
+
+        assertThat(field).isEmpty();
+    }
+
+    @Test
     void setFieldActive_shouldCreateTheRowOfASystemFieldThatWasNeverConfigured() {
         CustomField identifier = givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD).get(IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());

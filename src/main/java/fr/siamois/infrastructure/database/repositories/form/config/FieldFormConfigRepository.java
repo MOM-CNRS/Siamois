@@ -5,8 +5,8 @@ import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface FieldFormConfigRepository extends CrudRepository<FieldFormConfig, FieldFormConfig.FieldFormConfigId> {
+public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig, FieldFormConfig.FieldFormConfigId> {
 
     /**
      * The field configurations of one form configuration. The custom field is fetched along, since

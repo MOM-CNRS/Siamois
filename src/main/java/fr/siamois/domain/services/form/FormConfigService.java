@@ -78,6 +78,48 @@ public class FormConfigService {
         fieldFormConfigRepository.save(conceptFieldFormConfig);
     }
 
+    /**
+     * Reads the branch/collection restriction currently configured for a field, without creating a
+     * row when there is none.
+     *
+     * @param formConfig The FormConfig owning the field's configuration
+     * @param customFieldConcept The field to look up
+     * @return the field's concept configuration, empty if the field carries no {@link ConceptFieldFormConfig} yet
+     */
+    public Optional<ConceptFieldFormConfig> findConceptConfigFor(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept) {
+        return fieldFormConfigRepository.findByFormConfigAndField(formConfig, customFieldConcept)
+                .filter(ConceptFieldFormConfig.class::isInstance)
+                .map(ConceptFieldFormConfig.class::cast);
+    }
+
+    /**
+     * Clears a field's branch/collection restriction, if it has one — e.g. when the field is switched
+     * back to being driven by its own field code. No-op when the field carries no
+     * {@link ConceptFieldFormConfig} yet, since there is then nothing to clear.
+     *
+     * @param formConfig The FormConfig owning the field's configuration
+     * @param customFieldConcept The field to clear
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearConceptConfigFor(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept) {
+        findConceptConfigFor(formConfig, customFieldConcept).ifPresent(config -> {
+            config.setBranchTopTerm(null);
+            config.setCollection(null);
+            fieldFormConfigRepository.save(config);
+        });
+    }
+
+    /**
+     * A field's row is created as a plain {@link FieldFormConfig} (active/mandatory only) the first
+     * time it is added to a type — it only becomes a {@link ConceptFieldFormConfig} the first time a
+     * branch or collection is configured on it. Converting one JOINED-inheritance subtype into another
+     * for the same row can't be done by just building a new object with the same id and saving it: the
+     * old instance is still managed in this session under that identity, and Hibernate refuses to
+     * insert a second, different object under the same key ({@code NonUniqueObjectException}). Deleting
+     * and flushing the old row first removes it from the session's identity map, so the new
+     * {@code ConceptFieldFormConfig} (same id, values copied from the old row) can be saved cleanly by
+     * the caller.
+     */
     private @NonNull ConceptFieldFormConfig createOrGetFieldConfig(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept) {
         Optional<FieldFormConfig> opt = fieldFormConfigRepository.findByFormConfigAndField(formConfig, customFieldConcept);
         ConceptFieldFormConfig conceptFieldFormConfig;
@@ -85,12 +127,12 @@ public class FormConfigService {
             conceptFieldFormConfig = new ConceptFieldFormConfig();
             conceptFieldFormConfig.setFormConfig(formConfig);
             conceptFieldFormConfig.setField(customFieldConcept);
+        } else if (opt.get() instanceof ConceptFieldFormConfig cffc) {
+            conceptFieldFormConfig = cffc;
         } else {
-            if (opt.get() instanceof ConceptFieldFormConfig cffc) {
-                conceptFieldFormConfig = cffc;
-            } else {
-                conceptFieldFormConfig = new ConceptFieldFormConfig(opt.get());
-            }
+            conceptFieldFormConfig = new ConceptFieldFormConfig(opt.get());
+            fieldFormConfigRepository.delete(opt.get());
+            fieldFormConfigRepository.flush();
         }
         return conceptFieldFormConfig;
     }

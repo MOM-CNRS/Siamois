@@ -93,9 +93,9 @@
             .ptc-picker-item-name { font-weight: 600; }
             .ptc-picker-item-desc { font-size: 12.5px; color: #8c8c8c; margin-top: 2px; }
 
-            /* ── field edit drawer ─────────────────────── */
-            .ptc-drawer-scrim { position: fixed; inset: 0; background: rgba(40,40,38,0.28); z-index: 1040; border: 0; padding: 0; appearance: none; -webkit-appearance: none; cursor: default; }
-            .ptc-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.14); z-index: 1041; display: flex; flex-direction: column; }
+            /* ── field edit drawer (p:sidebar) ─────────── */
+            .ui-sidebar.ptc-drawer-sidebar { padding: 0; display: flex; flex-direction: column; }
+            .ptc-drawer { display: flex; flex-direction: column; height: 100%; min-height: 0; }
             .ptc-drawer-header { padding: 18px 22px; border-bottom: 1px solid #ececec; flex: none; }
             .ptc-drawer-title { font-size: 18px; font-weight: 600; }
             .ptc-drawer-system-note { font-size: 12px; color: #8a7d4a; margin-top: 2px; }

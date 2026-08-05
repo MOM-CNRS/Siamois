@@ -7,12 +7,12 @@
     <h:form id="fieldEditForm">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-        <h:panelGroup rendered="#{projectTableFieldSettingsBean.drawerOpen}">
-            <!-- A native button, not a div: the scrim is clickable, so it must be focusable and
-                 keyboard-activatable — which <button> is for free, without role nor key handlers. -->
-            <button type="button" class="ptc-drawer-scrim"
-                    aria-label="#{langBean.msg('projectTables.drawer.close')}"
-                    onclick="document.getElementById('fieldEditForm:cancelBtn').click()"></button>
+        <p:sidebar widgetVar="fieldEditSidebar" visible="#{projectTableFieldSettingsBean.drawerOpen}"
+                   position="right" modal="true" dismissable="true" closeOnEscape="true" blockScroll="true"
+                   styleClass="ptc-drawer-sidebar" style="width:460px;max-width:92vw;">
+            <p:ajax event="close" listener="#{projectTableFieldSettingsBean.closeDrawer()}"
+                    update="@form :projectTablesFormCC:projectTablesForm"/>
+
             <div class="ptc-drawer">
                 <div class="ptc-drawer-header">
                     <div class="ptc-drawer-title">
@@ -112,10 +112,13 @@
                                         <p:autoComplete id="draftBrancheConcept" value="#{projectTableFieldSettingsBean.draftBrancheConcept}"
                                                         completeMethod="#{projectTableFieldSettingsBean.completeBrancheConcepts}"
                                                         var="c" itemLabel="#{c.conceptLabelToDisplay.label}" itemValue="#{c}"
-                                                        converter="#{conceptAutocompleteDTOConverter}"
-                                                        dropdown="true" scrollHeight="220" style="width:100%" forceSelection="true"
-                                                        appendTo="@(body)"
+                                                        converter="#{conceptAutocompleteDetachedDTOConverter}"
+                                                        scrollHeight="220" style="width:100%" forceSelection="true"
+                                                        showEmptyMessage="true"
                                                         placeholder="#{langBean.msg('projectTables.drawer.params.brancheConceptPlaceholder')}"/>
+
+
+
                                     </div>
                                 </h:panelGroup>
 
@@ -141,6 +144,6 @@
                                       actionListener="#{projectTableFieldSettingsBean.saveDrawer()}" update="@form :projectTablesFormCC:projectTablesForm"/>
                 </div>
             </div>
-        </h:panelGroup>
+        </p:sidebar>
     </h:form>
 </ui:fragment>

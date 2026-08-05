@@ -2,17 +2,24 @@ package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptCollectionDetachedDTO;
@@ -53,6 +60,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private final transient ConceptCollectionService conceptCollectionService;
     private final transient VocabularyService vocabularyService;
     private final transient VocabularyMapper vocabularyMapper;
+    private final transient LabelService labelService;
     private final LangBean langBean;
 
     private ActionUnitDTO project;
@@ -101,6 +109,15 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     private transient List<ConceptCollectionDetachedDTO> lastCollectionResults = new ArrayList<>();
 
+    /**
+     * The external id of the branch concept / collection {@link #openDrawerForEdit} prefilled from the
+     * field's existing configuration, if any — lets {@link #saveDraftVocabularyConfig()} tell "the user
+     * left the prefilled value untouched" apart from "the user picked something new", so an unrelated
+     * save (e.g. only the description changed) doesn't re-trigger a redundant remote thesaurus call.
+     */
+    private transient String draftOriginalBrancheConceptKey;
+    private transient String draftOriginalCollectionKey;
+
     private String newTypeName;
 
     public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService,
@@ -109,6 +126,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                                          ConceptCollectionService conceptCollectionService,
                                          VocabularyService vocabularyService,
                                          VocabularyMapper vocabularyMapper,
+                                         LabelService labelService,
                                          LangBean langBean) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.formConfigService = formConfigService;
@@ -116,6 +134,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.conceptCollectionService = conceptCollectionService;
         this.vocabularyService = vocabularyService;
         this.vocabularyMapper = vocabularyMapper;
+        this.labelService = labelService;
         this.langBean = langBean;
     }
 
@@ -300,7 +319,71 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftFieldCode = field.getSourceLabel();
         resetDraftParams();
         draftSource = draftIsSystem && field.getType().isConfigurable() ? "principal" : null;
+        if (isDraftConfigurable()) {
+            prefillVocabularyConfig();
+        }
         drawerOpen = true;
+    }
+
+    /**
+     * Loads the field's current branch/collection restriction, if any, so the drawer shows what is
+     * actually configured instead of always starting blank. Leaves the {@code "principal"} default
+     * from {@link #openDrawerForEdit} untouched when the field carries no restriction.
+     */
+    private void prefillVocabularyConfig() {
+        Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(project.getId(), selectedTable, selectedTypeName);
+        Optional<CustomField> field = tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName);
+        if (formConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept customFieldConcept)) {
+            return;
+        }
+        Optional<ConceptFieldFormConfig> conceptConfig = formConfigService.findConceptConfigFor(formConfig.get(), customFieldConcept);
+        if (conceptConfig.isEmpty() || conceptConfig.get().isNotValid()) {
+            return;
+        }
+        ConceptFieldFormConfig config = conceptConfig.get();
+        if (config.isBranchConfig()) {
+            prefillBranch(config.getBranchTopTerm());
+        } else {
+            prefillCollection(config.getCollection());
+        }
+    }
+
+    private void prefillBranch(Concept branchTopTerm) {
+        draftSource = "branche";
+        draftVocabulary = vocabularyMapper.convert(branchTopTerm.getVocabulary());
+        draftThesaurusUrl = draftVocabulary.completeUri();
+        draftConnectionTested = true;
+
+        String label = labelService.findLabelOf(branchTopTerm, langBean.getLanguageCode()).getLabel();
+        ConceptLabelDTO labelDTO = new ConceptPrefLabelDTO();
+        labelDTO.setLabel(label);
+        labelDTO.setConcept(ConceptDTO.builder()
+                .externalId(branchTopTerm.getExternalId())
+                .vocabulary(draftVocabulary)
+                .deleted(false)
+                .build());
+        draftBrancheConcept = new ConceptAutocompleteDetachedDTO(labelDTO, label, List.of(), "", draftVocabulary.completeUri());
+        draftOriginalBrancheConceptKey = branchTopTerm.getExternalId();
+    }
+
+    /**
+     * {@link ConceptCollection} stores no label of its own (only its external id, vocabulary and
+     * concepts), so the display label is resolved the same way {@link #completeCollections} does — a
+     * live lookup against the thesaurus, matched back by external id.
+     */
+    private void prefillCollection(ConceptCollection collection) {
+        draftSource = "collection";
+        draftVocabulary = vocabularyMapper.convert(collection.getVocabulary());
+        draftThesaurusUrl = draftVocabulary.completeUri();
+        draftConnectionTested = true;
+
+        ConceptCollectionDetachedDTO match = conceptCollectionService.fetchCollectionsFromRemoteThesaurus(draftVocabulary).stream()
+                .filter(c -> c.getExternalId().equals(collection.getExternalId()))
+                .findFirst()
+                .orElseGet(() -> new ConceptCollectionDetachedDTO(collection.getExternalId(), draftVocabulary, collection.getExternalId(), List.of()));
+        lastCollectionResults = List.of(match);
+        draftCollectionName = match.getLabelToDisplay();
+        draftOriginalCollectionKey = match.getExternalId();
     }
 
     public void closeDrawer() {
@@ -318,10 +401,22 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftSource = null;
         draftThesaurusUrl = null;
         draftConnectionTested = false;
+        draftVocabulary = null;
+        clearSourceSelection();
+    }
+
+    /**
+     * Clears the branch/collection selection only, leaving the tested thesaurus connection
+     * ({@link #draftThesaurusUrl}/{@link #draftVocabulary}/{@link #draftConnectionTested}) alone —
+     * used by {@link #selectDraftSource} so switching between "branche" and "collection" doesn't force
+     * retesting the connection to look something up in the same already-loaded thesaurus.
+     */
+    private void clearSourceSelection() {
         draftBrancheConcept = null;
         draftCollectionName = null;
-        draftVocabulary = null;
         lastCollectionResults = new ArrayList<>();
+        draftOriginalBrancheConceptKey = null;
+        draftOriginalCollectionKey = null;
     }
 
     public boolean isDraftConfigurable() {
@@ -329,7 +424,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public void selectDraftSource(String source) {
-        resetDraftParams();
+        clearSourceSelection();
         draftSource = source;
     }
 
@@ -386,44 +481,74 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         saveDraftVocabularyConfig();
         loadConfigs();
         closeDrawer();
+        MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.saveSuccess");
     }
 
     /**
-     * Persists the branch/collection restriction picked in the drawer, if any, onto the field just
-     * saved by {@link #saveDrawer()}. A no-op for the {@code "principal"} source (a system field's
-     * thesaurus is configured elsewhere) and while no branch/collection has actually been selected.
+     * Persists the vocabulary source picked in the drawer onto the field just saved by
+     * {@link #saveDrawer()}: clears any existing branch/collection restriction for
+     * {@code "principal"}, or saves the newly picked branch/collection — a no-op when the source is
+     * unset (non-configurable fields) or when the user left the prefilled selection untouched.
      */
     private void saveDraftVocabularyConfig() {
-        if (!"branche".equals(draftSource) && !"collection".equals(draftSource)) {
+        if ("principal".equals(draftSource)) {
+            clearConceptConfigIfAny();
+        } else if ("branche".equals(draftSource)) {
+            saveBrancheConceptIfChanged();
+        } else if ("collection".equals(draftSource)) {
+            saveCollectionIfChanged();
+        }
+    }
+
+    /**
+     * No-op when the field never had a {@link FormConfig}: nothing was ever configured, so there is
+     * nothing to clear, and materializing one just for this would be pointless.
+     */
+    private void clearConceptConfigIfAny() {
+        tableFieldConfigService.findFormConfig(project.getId(), selectedTable, selectedTypeName)
+                .ifPresent(formConfig -> tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName)
+                        .filter(CustomFieldConcept.class::isInstance)
+                        .map(CustomFieldConcept.class::cast)
+                        .ifPresent(customFieldConcept -> formConfigService.clearConceptConfigFor(formConfig, customFieldConcept)));
+    }
+
+    private void saveBrancheConceptIfChanged() {
+        if (draftBrancheConcept == null || draftBrancheConcept.concept().getExternalId().equals(draftOriginalBrancheConceptKey)) {
             return;
         }
+        resolveConceptFieldTarget().ifPresentOrElse(
+                target -> formConfigService.addConceptConfigFor(target.formConfig(), target.field(), draftBrancheConcept.concept()),
+                this::warnFieldNotResolved);
+    }
 
-        Optional<ConceptAutocompleteDetachedDTO> selectedConcept = "branche".equals(draftSource)
-                ? Optional.ofNullable(draftBrancheConcept)
-                : Optional.empty();
-        Optional<ConceptCollectionDetachedDTO> selectedCollection = "collection".equals(draftSource)
-                ? lastCollectionResults.stream()
-                        .filter(c -> c.getLabelToDisplay().equals(draftCollectionName))
-                        .findFirst()
-                : Optional.empty();
-        if (selectedConcept.isEmpty() && selectedCollection.isEmpty()) {
-            return;
-        }
-
-        Optional<FormConfig> formConfig = tableFieldConfigService.createOrGetFormConfig(project.getId(), selectedTable, selectedTypeName);
-        Optional<CustomField> savedField = tableFieldConfigService.getActiveAdditionalFields(project.getId(), selectedTable, selectedTypeName).stream()
-                .filter(field -> draftName.equals(field.getLabel()))
+    private void saveCollectionIfChanged() {
+        Optional<ConceptCollectionDetachedDTO> selected = lastCollectionResults.stream()
+                .filter(c -> c.getLabelToDisplay().equals(draftCollectionName))
+                .filter(c -> !c.getExternalId().equals(draftOriginalCollectionKey))
                 .findFirst();
-        if (formConfig.isEmpty() || savedField.isEmpty() || !(savedField.get() instanceof CustomFieldConcept customFieldConcept)) {
-            log.warn("Could not resolve the saved field '{}' as a concept field on type '{}' of table {}; " +
-                    "branch/collection selection was not persisted", draftName, selectedTypeName, selectedTable);
+        if (selected.isEmpty()) {
             return;
         }
+        resolveConceptFieldTarget().ifPresentOrElse(
+                target -> formConfigService.addConceptConfigFor(target.formConfig(), target.field(), selected.get()),
+                this::warnFieldNotResolved);
+    }
 
-        selectedConcept.ifPresent(concept ->
-                formConfigService.addConceptConfigFor(formConfig.get(), customFieldConcept, concept.concept()));
-        selectedCollection.ifPresent(collection ->
-                formConfigService.addConceptConfigFor(formConfig.get(), customFieldConcept, collection));
+    private record ConceptFieldTarget(FormConfig formConfig, CustomFieldConcept field) {
+    }
+
+    private Optional<ConceptFieldTarget> resolveConceptFieldTarget() {
+        Optional<FormConfig> formConfig = tableFieldConfigService.createOrGetFormConfig(project.getId(), selectedTable, selectedTypeName);
+        Optional<CustomField> field = tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName);
+        if (formConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept customFieldConcept)) {
+            return Optional.empty();
+        }
+        return Optional.of(new ConceptFieldTarget(formConfig.get(), customFieldConcept));
+    }
+
+    private void warnFieldNotResolved() {
+        log.warn("Could not resolve the saved field '{}' as a concept field on type '{}' of table {}; " +
+                "branch/collection selection was not persisted", draftName, selectedTypeName, selectedTable);
     }
 
     public boolean isDraftCreateMode() {

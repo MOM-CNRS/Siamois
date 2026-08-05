@@ -105,6 +105,20 @@ public interface TableFieldConfigService {
     List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, String typeName);
 
     /**
+     * Resolves a single field of a type by name, system or additional — unlike
+     * {@link #getActiveAdditionalFields(Long, ConfigurableTable, String)}, which deliberately excludes
+     * system fields. Meant for callers that need the entity behind a specific field regardless of its
+     * kind, e.g. to attach a branch/collection restriction to it.
+     *
+     * @param projectId the project (action unit) this configuration is scoped to
+     * @param table     the table the type belongs to
+     * @param typeName  the type's name, or {@code _default}
+     * @param fieldName the name of the field to resolve (system or additional)
+     * @return the field's entity, empty if no field of that name exists on the type
+     */
+    Optional<CustomField> findField(Long projectId, ConfigurableTable table, String typeName, String fieldName);
+
+    /**
      * Same as {@link #getFieldsConfig(Long, ConfigurableTable, String)}, but keyed directly on the
      * type's {@link fr.siamois.domain.models.vocabulary.Concept} id instead of its label — avoids the
      * label round-trip ({@link #findFormConfig(Long, ConfigurableTable, String)} resolving a label
