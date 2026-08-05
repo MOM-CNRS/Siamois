@@ -30,6 +30,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
@@ -90,6 +91,8 @@ class TableFieldConfigServiceImplTest {
     private FieldFormConfigRepository fieldFormConfigRepository;
     @Mock
     private CustomFieldRepository customFieldRepository;
+    @Mock
+    private CustomFieldAnswerRepository customFieldAnswerRepository;
     @Mock
     private PersonRepository personRepository;
 
@@ -698,8 +701,9 @@ class TableFieldConfigServiceImplTest {
                 .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
         when(fieldFormConfigRepository.countByFieldId(5L)).thenReturn(0L);
 
-        service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
 
+        assertThat(deleted).isTrue();
         verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
         verify(customFieldRepository).delete(additional);
     }
@@ -711,8 +715,9 @@ class TableFieldConfigServiceImplTest {
                 .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
         when(fieldFormConfigRepository.countByFieldId(5L)).thenReturn(1L);
 
-        service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
 
+        assertThat(deleted).isTrue();
         verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
         verify(customFieldRepository, never()).delete(any(CustomField.class));
     }
@@ -725,6 +730,40 @@ class TableFieldConfigServiceImplTest {
         service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Identifiant");
 
         verify(fieldFormConfigRepository, never()).delete(any(FieldFormConfig.class));
+        verify(customFieldRepository, never()).delete(any(CustomField.class));
+    }
+
+    @Test
+    void deleteAdditionalField_shouldKeepAFieldTheProjectAlreadyAnswered() {
+        CustomField additional = textField(5L, "Couleur", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
+        when(customFieldAnswerRepository.countByFieldIdAndProjectId(5L, PROJECT_ID)).thenReturn(3L);
+
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        assertThat(deleted).isFalse();
+        verify(fieldFormConfigRepository, never()).delete(any(FieldFormConfig.class));
+        verify(customFieldRepository, never()).delete(any(CustomField.class));
+    }
+
+    /**
+     * Answers of another project keep the custom field alive even once nothing configures it
+     * anymore: dropping the row they point at would break their foreign key.
+     */
+    @Test
+    void deleteAdditionalField_shouldDropTheLinkButKeepAFieldAnsweredInAnotherProject() {
+        CustomField additional = textField(5L, "Couleur", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, additional, true, false)));
+        when(customFieldAnswerRepository.countByFieldIdAndProjectId(5L, PROJECT_ID)).thenReturn(0L);
+        when(fieldFormConfigRepository.countByFieldId(5L)).thenReturn(0L);
+        when(customFieldAnswerRepository.countByFieldId(5L)).thenReturn(2L);
+
+        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        assertThat(deleted).isTrue();
+        verify(fieldFormConfigRepository).delete(any(FieldFormConfig.class));
         verify(customFieldRepository, never()).delete(any(CustomField.class));
     }
 

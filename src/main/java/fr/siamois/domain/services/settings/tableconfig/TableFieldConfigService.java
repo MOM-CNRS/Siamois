@@ -229,14 +229,19 @@ public interface TableFieldConfigService {
     /**
      * Removes an additional field from a type. No-op if the named field is a system field (system
      * fields can be deactivated but never deleted) or doesn't exist.
-     * To be defined: what happens if user try to delete an additional field already in use?
+     * <p>
+     * A field the project already holds answers for is kept: removing it would strand those answers,
+     * which no screen would show anymore. Deactivating it through {@link #setFieldActive} is the way
+     * to retire such a field while keeping what was recorded in it.
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
      * @param typeName  the type's name, or {@code _default}
      * @param fieldName the name of the additional field to remove
+     * @return {@code false} when the field was kept because the project already holds answers for
+     * it, {@code true} otherwise — including when there was nothing to remove
      */
-    void deleteAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName);
+    boolean deleteAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName);
 
     /**
      * Searches the reusable field catalog offered by the "reuse an existing field" picker.

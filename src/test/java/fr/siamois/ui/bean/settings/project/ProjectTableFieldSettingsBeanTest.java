@@ -4,17 +4,20 @@ import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.utils.MessageUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -136,11 +139,36 @@ class ProjectTableFieldSettingsBeanTest {
     @Test
     void deleteAdditionalField_shouldDelegateAndReload() {
         bean.init(project);
+        when(tableFieldConfigService.deleteAdditionalField(42L, ConfigurableTable.UE, "Céramique", "Remontage"))
+                .thenReturn(true);
 
-        bean.deleteAdditionalField("Remontage");
+        try (MockedStatic<MessageUtils> messageUtils = mockStatic(MessageUtils.class)) {
+            bean.deleteAdditionalField("Remontage");
 
-        verify(tableFieldConfigService).deleteAdditionalField(42L, ConfigurableTable.UE, "Céramique", "Remontage");
-        verify(tableFieldConfigService, atLeastOnce()).getFieldsConfig(42L, ConfigurableTable.UE, "Céramique");
+            verify(tableFieldConfigService).deleteAdditionalField(42L, ConfigurableTable.UE, "Céramique", "Remontage");
+            verify(tableFieldConfigService, atLeastOnce()).getFieldsConfig(42L, ConfigurableTable.UE, "Céramique");
+            messageUtils.verifyNoInteractions();
+        }
+    }
+
+    /**
+     * The service keeps a field the project already answered; the row is therefore still on screen
+     * and the user has to be told why.
+     */
+    @Test
+    void deleteAdditionalField_shouldWarnAndNotReloadWhenTheFieldIsAlreadyAnswered() {
+        bean.init(project);
+        clearInvocations(tableFieldConfigService);
+        when(tableFieldConfigService.deleteAdditionalField(42L, ConfigurableTable.UE, "Céramique", "Remontage"))
+                .thenReturn(false);
+
+        try (MockedStatic<MessageUtils> messageUtils = mockStatic(MessageUtils.class)) {
+            bean.deleteAdditionalField("Remontage");
+
+            messageUtils.verify(() -> MessageUtils.displayWarnMessage(
+                    langBean, "projectTables.champs.deleteRefusedInUse", "Remontage"));
+        }
+        verify(tableFieldConfigService, never()).getFieldsConfig(anyLong(), any(), any(String.class));
     }
 
 

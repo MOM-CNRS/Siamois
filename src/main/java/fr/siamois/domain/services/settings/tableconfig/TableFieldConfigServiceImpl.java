@@ -28,6 +28,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
@@ -79,6 +80,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final FormConfigRepository formConfigRepository;
     private final FieldFormConfigRepository fieldFormConfigRepository;
     private final CustomFieldRepository customFieldRepository;
+    private final CustomFieldAnswerRepository customFieldAnswerRepository;
     private final PersonRepository personRepository;
 
     @Override
@@ -235,26 +237,36 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
 
     /**
-     * Unlinks an additional field from the type. The custom field itself is deleted only once no
-     * other configuration references it, since the same field can be configured on several types.
+     * Unlinks an additional field from the type, unless the project already holds answers for it —
+     * those answers would be stranded, so the field is kept and the caller told about it. The custom
+     * field itself is deleted only once nothing references it anymore: no other configuration, since
+     * the same field can be configured on several types, and no answer of any project either.
      */
     @Override
     @Transactional
-    public void deleteAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
+    public boolean deleteAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
         Optional<FormConfig> formConfig = findFormConfig(projectId, table, typeName);
-        if (formConfig.isEmpty()) return;
+        if (formConfig.isEmpty()) return true;
 
-        fieldFormConfigRepository.findAllByFormConfigId(formConfig.get().getId()).stream()
+        Optional<FieldFormConfig> target = fieldFormConfigRepository.findAllByFormConfigId(formConfig.get().getId()).stream()
                 .filter(config -> !isSystemField(config.getField()))
                 .filter(config -> fieldName.equals(config.getField().getLabel()))
-                .findFirst()
-                .ifPresent(config -> {
-                    CustomField field = config.getField();
-                    fieldFormConfigRepository.delete(config);
-                    if (fieldFormConfigRepository.countByFieldId(field.getId()) == 0) {
-                        customFieldRepository.delete(field);
-                    }
-                });
+                .findFirst();
+        if (target.isEmpty()) return true;
+
+        CustomField field = target.get().getField();
+        if (customFieldAnswerRepository.countByFieldIdAndProjectId(field.getId(), projectId) > 0) {
+            log.debug("Field '{}' is answered in project {}; it is kept on type '{}' of table {}",
+                    fieldName, projectId, typeName, table);
+            return false;
+        }
+
+        fieldFormConfigRepository.delete(target.get());
+        if (fieldFormConfigRepository.countByFieldId(field.getId()) == 0
+                && customFieldAnswerRepository.countByFieldId(field.getId()) == 0) {
+            customFieldRepository.delete(field);
+        }
+        return true;
     }
 
     /**
