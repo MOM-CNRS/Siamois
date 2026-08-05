@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SystemFieldInitializerTest {
 
-    private static final String IDENTIFIER_FIELD = "recordingunit.field.identifier";
+    private static final String IDENTIFIER_FIELD = "common.label.identifier";
     private static final String CATEGORY_FIELD = "specimen.field.category";
 
     @Mock
@@ -36,7 +36,7 @@ class SystemFieldInitializerTest {
     private long definedSystemFieldCount() {
         return Arrays.stream(ConfigurableTable.values())
                 .flatMap(table -> SystemFieldCatalog.fieldsOf(table).stream())
-                .map(SystemFieldCatalog::identityOf)
+                .map(CustomField::getId)
                 .distinct()
                 .count();
     }
@@ -71,12 +71,12 @@ class SystemFieldInitializerTest {
     }
 
     /**
-     * The definitions carry ids of their own, local to the class they are declared in, and concepts
-     * that were never persisted. Neither can reach the row: the id is the database's to hand out,
-     * and a transient concept would fail the insert.
+     * The id is kept — {@code AssignedOrSequenceIdGenerator} persists it as-is rather than drawing
+     * one from the sequence — but concepts and authors are transient/meaningless for a system field
+     * and would fail the insert if copied.
      */
     @Test
-    void initialize_shouldSaveRowsWithNeitherTheDefinitionsIdNorItsTransientAssociations() throws DatabaseDataInitException {
+    void initialize_shouldSaveRowsWithTheDefinitionsIdButNotItsTransientAssociations() throws DatabaseDataInitException {
         when(customFieldRepository.findAllSystemFields()).thenReturn(List.of());
         when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
 
@@ -85,7 +85,7 @@ class SystemFieldInitializerTest {
         ArgumentCaptor<CustomField> saved = ArgumentCaptor.forClass(CustomField.class);
         verify(customFieldRepository, atLeastOnce()).save(saved.capture());
         assertThat(saved.getAllValues()).allSatisfy(field -> {
-            assertThat(field.getId()).isNull();
+            assertThat(field.getId()).isNotNull();
             assertThat(field.getConcept()).isNull();
             assertThat(field.getAuthor()).isNull();
         });
@@ -93,8 +93,11 @@ class SystemFieldInitializerTest {
 
     @Test
     void initialize_shouldLeaveTheFieldsThatAlreadyHaveARowAlone() throws DatabaseDataInitException {
+        Long identifierFieldId = SystemFieldCatalog.fieldsOf(ConfigurableTable.UE).stream()
+                .filter(field -> IDENTIFIER_FIELD.equals(field.getLabel()))
+                .findFirst().orElseThrow().getId();
         CustomField existing = CustomFieldText.builder()
-                .id(1L).label(IDENTIFIER_FIELD).valueBinding("fullIdentifier").isSystemField(true).build();
+                .id(identifierFieldId).label(IDENTIFIER_FIELD).valueBinding("fullIdentifier").isSystemField(true).build();
         when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(existing));
         when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
 
@@ -102,7 +105,7 @@ class SystemFieldInitializerTest {
 
         ArgumentCaptor<CustomField> saved = ArgumentCaptor.forClass(CustomField.class);
         verify(customFieldRepository, atLeastOnce()).save(saved.capture());
-        assertThat(saved.getAllValues()).extracting(CustomField::getLabel).doesNotContain(IDENTIFIER_FIELD);
+        assertThat(saved.getAllValues()).extracting(CustomField::getId).doesNotContain(identifierFieldId);
     }
 
     @Test

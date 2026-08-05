@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Gives every system field the application defines a row of its own, once per instance.
@@ -26,6 +27,11 @@ import java.util.Map;
  * The same row serves every project of every institution: a system field is the application's, not
  * an institution's. What each project does with it is what its configurations hold, and those are
  * per project already.
+ * <p>
+ * Each definition carries its own fixed (negative) id, assigned in code and persisted as-is by
+ * {@link fr.siamois.infrastructure.database.id.AssignedOrSequenceIdGenerator} — so this checks and
+ * keys existing rows by id rather than by label/binding: two definitions are the same field
+ * precisely when they share an id, and a definition changing its label no longer orphans its row.
  */
 @Slf4j
 @Service
@@ -38,25 +44,26 @@ public class SystemFieldInitializer implements DatabaseInitializer {
      * units are built in code and were never persisted, and an author is meaningless for a field
      * the application defines. Copying them would make the insert fail on a transient reference.
      */
-    private static final String[] NOT_PERSISTABLE = {"id", "concept", "author", "unit", "measurementNature"};
+    private static final String[] NOT_PERSISTABLE = {"concept", "author", "unit", "measurementNature"};
 
     private final CustomFieldRepository customFieldRepository;
 
     @Override
     @Transactional(rollbackFor = DatabaseDataInitException.class)
     public void initialize() throws DatabaseDataInitException {
-        Map<String, CustomField> existing = new HashMap<>();
+        Map<Long, CustomField> existing = new HashMap<>();
         customFieldRepository.findAllSystemFields()
-                .forEach(field -> existing.putIfAbsent(SystemFieldCatalog.identityOf(field), field));
+                .forEach(field -> existing.putIfAbsent(field.getId(), field));
 
         int created = 0;
         for (ConfigurableTable table : ConfigurableTable.values()) {
             for (CustomField definition : SystemFieldCatalog.fieldsOf(table)) {
-                String identity = SystemFieldCatalog.identityOf(definition);
-                if (existing.containsKey(identity)) {
+                Long id = Objects.requireNonNull(definition.getId(),
+                        () -> "System field '" + definition.getLabel() + "' of table " + table + " has no id");
+                if (existing.containsKey(id)) {
                     continue;
                 }
-                existing.put(identity, customFieldRepository.save(rowFor(definition)));
+                existing.put(id, customFieldRepository.save(rowFor(definition)));
                 created++;
             }
         }
@@ -66,7 +73,9 @@ public class SystemFieldInitializer implements DatabaseInitializer {
     /**
      * A persistable copy of a definition. The subclass is kept — it is what the {@code answer_type}
      * discriminator and every {@code instanceof} dispatch elsewhere read the field's type from — and
-     * so are its own columns, hence the property copy rather than a hand-written field list.
+     * so are its own columns, hence the property copy rather than a hand-written field list. The id
+     * is kept too, so {@link fr.siamois.infrastructure.database.id.AssignedOrSequenceIdGenerator}
+     * persists it as-is instead of drawing a new one from the sequence.
      */
     private CustomField rowFor(CustomField definition) throws DatabaseDataInitException {
         try {

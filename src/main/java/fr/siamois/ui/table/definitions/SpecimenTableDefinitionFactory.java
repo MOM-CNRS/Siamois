@@ -1,18 +1,8 @@
 package fr.siamois.ui.table.definitions;
 
 
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
-import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
-import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
-import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
@@ -20,7 +10,8 @@ import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
 import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.table.definitions.TableDefinitions.column;
+import static fr.siamois.ui.table.definitions.TableDefinitions.systemField;
 
 
 /**
@@ -51,9 +42,7 @@ public final class SpecimenTableDefinitionFactory {
     }
 
     /**
-     * The columns of the table on their own, with no view model to apply them to: the field
-     * configuration screen reads a table's system fields from here, since they are defined in this
-     * factory rather than in the database.
+     * The columns of the table on their own, with no view model to apply them to.
      *
      * @return a fresh definition carrying the table's standard columns
      */
@@ -65,200 +54,23 @@ public final class SpecimenTableDefinitionFactory {
 
     private static void applyTo(TableDefinition definition) {
 
-        // --- Concepts (from SpecimenForm) ---
-        Concept idConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286250")
-                .build();
-        Concept categoryConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4282392")
-                .build();
-        Concept recordingUnitConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290139")
-                .build();
-        Concept isPartOfConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290140")
-                .build();
-        Concept containsConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290141")
-                .build();
-        Concept otherIdConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290142")
-                .build();
-        Concept isolationNumberConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4282391")
-                .build();
-        Concept authorsConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286246")
-                .build();
-        Concept collectorsConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286247")
-                .build();
-        Concept collectionDateConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286249")
-                .build();
-        Concept materialConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290157")
-                .build();
-        Concept materialClassConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290155")
-                .build();
-        Concept normalizedInterpretationConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290156")
-                .build();
-        Concept chronologicalAttributionConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290160")
-                .build();
-        Concept numberOfElementConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4290161")
-                .build();
-
-        // --- Fields ---
-        CustomFieldText idField = CustomFieldText.builder()
-                .label("recordingunit.field.identifier")
-                .isSystemField(true)
-                .isTextArea(false)
-                .id(-451L)
-                .valueBinding("fullIdentifier")
-                .concept(idConcept)
-                .build();
-
-        CustomFieldSelectOneFromFieldCode categoryField = CustomFieldSelectOneFromFieldCode.builder()
-                .label("specimen.field.category")
-                .isSystemField(true)
-                .id(-452L)
-                .valueBinding("category")
-                .concept(categoryConcept)
-                .fieldCode(Specimen.CAT_FIELD)
-                .styleClass("mr-2 specimen-type-chip")
-                .iconClass("bi bi-bucket")
-                .build();
-
-        CustomFieldSelectOneRecordingUnit recordingUnitField = CustomFieldSelectOneRecordingUnit.builder()
-                .label("specimen.field.recordingUnit")
-                .isSystemField(true)
-                .id(-453L)
-                .valueBinding("recordingUnit")
-                .concept(recordingUnitConcept)
-                .build();
-
-        CustomFieldSelectMultipleSpecimen isPartOfField = CustomFieldSelectMultipleSpecimen.builder()
-                .label("specimen.field.isPartOf")
-                .isSystemField(true)
-                .id(-454L)
-                .valueBinding("parents")
-                .concept(isPartOfConcept)
-                .build();
-
-        CustomFieldSelectMultipleSpecimen containsField = CustomFieldSelectMultipleSpecimen.builder()
-                .label("specimen.field.contains")
-                .isSystemField(true)
-                .id(-455L)
-                .valueBinding("children")
-                .concept(containsConcept)
-                .build();
-
-        CustomFieldText otherIdField = CustomFieldText.builder()
-                .label("recordingunit.field.otherIdentifier")
-                .isSystemField(true)
-                .isTextArea(false)
-                .id(-456L)
-                .valueBinding("otherIdentifier")
-                .concept(otherIdConcept)
-                .build();
-
-        CustomFieldText isolationNumberField = CustomFieldText.builder()
-                .label("recordingunit.field.isolationIdentifier")
-                .isSystemField(true)
-                .isTextArea(false)
-                .id(-457L)
-                .valueBinding("isolationNumber")
-                .concept(isolationNumberConcept)
-                .build();
-
-        CustomFieldSelectMultiplePerson authorsField = CustomFieldSelectMultiplePerson.builder()
-                .label("specimen.field.authors")
-                .isSystemField(true)
-                .id(-458L)
-                .valueBinding("authors")
-                .concept(authorsConcept)
-                .build();
-
-        CustomFieldSelectMultiplePerson collectorsField = CustomFieldSelectMultiplePerson.builder()
-                .label("specimen.field.collectors")
-                .isSystemField(true)
-                .id(-459L)
-                .valueBinding("collectors")
-                .concept(collectorsConcept)
-                .build();
-
-        CustomFieldDateTime collectionDateField = CustomFieldDateTime.builder()
-                .label("specimen.field.collectionDate")
-                .isSystemField(true)
-                .id(-460L)
-                .valueBinding("collectionDate")
-                .showTime(false)
-                .concept(collectionDateConcept)
-                .build();
-
-        CustomFieldSelectMultipleFromFieldCode materialField = CustomFieldSelectMultipleFromFieldCode.builder()
-                .label("specimen.field.material")
-                .isSystemField(true)
-                .id(-461L)
-                .fieldCode(Specimen.MATIERE_FIELD)
-                .valueBinding("material")
-                .concept(materialConcept)
-                .build();
-
-        CustomFieldSelectMultipleFromFieldCode materialClassField = CustomFieldSelectMultipleFromFieldCode.builder()
-                .label("specimen.field.materialClass")
-                .isSystemField(true)
-                .id(-462L)
-                .fieldCode(Specimen.CLASS_FIELD)
-                .valueBinding("materialClass")
-                .concept(materialClassConcept)
-                .build();
-
-        CustomFieldSelectOneFromFieldCode normalizedInterpretationField = CustomFieldSelectOneFromFieldCode.builder()
-                .label("specimen.field.normalizedInterpretation")
-                .isSystemField(true)
-                .id(-463L)
-                .fieldCode(Specimen.INTERPRETATION_FIELD)
-                .valueBinding("normalizedInterpretation")
-                .concept(normalizedInterpretationConcept)
-                .build();
-
-        CustomFieldSelectOneFromFieldCode chronologicalAttributionField = CustomFieldSelectOneFromFieldCode.builder()
-                .label("specimen.field.chronologicalAttribution")
-                .isSystemField(true)
-                .id(-464L)
-                .valueBinding("chronologicalAttribution")
-                .concept(chronologicalAttributionConcept)
-                .build();
-
-        CustomFieldInteger numberOfElementField = CustomFieldInteger.builder()
-                .label("specimen.field.numberOfElement")
-                .isSystemField(true)
-                .id(-465L)
-                .maxValue(Integer.MAX_VALUE)
-                .minValue(0)
-                .valueBinding("numberOfElements")
-                .concept(numberOfElementConcept)
-                .build();
+        CustomField idField = systemField(ConfigurableTable.MOBILIER, "fullIdentifier");
+        CustomField categoryField = systemField(ConfigurableTable.MOBILIER, "category");
+        CustomField recordingUnitField = systemField(ConfigurableTable.MOBILIER, "recordingUnit");
+        CustomField isPartOfField = systemField(ConfigurableTable.MOBILIER, "parents");
+        CustomField containsField = systemField(ConfigurableTable.MOBILIER, "children");
+        CustomField otherIdField = systemField(ConfigurableTable.MOBILIER, "otherIdentifier");
+        CustomField isolationNumberField = systemField(ConfigurableTable.MOBILIER, "isolationNumber");
+        CustomField authorsField = systemField(ConfigurableTable.MOBILIER, "authors");
+        CustomField collectorsField = systemField(ConfigurableTable.MOBILIER, "collectors");
+        CustomField collectionDateField = systemField(ConfigurableTable.MOBILIER, "collectionDate");
+        CustomField materialField = systemField(ConfigurableTable.MOBILIER, "material");
+        CustomField materialClassField = systemField(ConfigurableTable.MOBILIER, "materialClass");
+        CustomField normalizedInterpretationField = systemField(ConfigurableTable.MOBILIER, "normalizedInterpretation");
+        CustomField chronologicalAttributionField = systemField(ConfigurableTable.MOBILIER, "chronologicalAttribution");
+        CustomField numberOfElementField = systemField(ConfigurableTable.MOBILIER, "numberOfElements");
+        CustomField phasesField = systemField(ConfigurableTable.MOBILIER, "phases");
+        CustomField actionUnitField = systemField(ConfigurableTable.MOBILIER, "actionUnit");
 
         // --- CommandLink column (non-toggleable identifier chip) ---
         definition.setCommandLinkColumn(
@@ -463,19 +275,6 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        Concept phasesConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("specimen.phases")
-                .build();
-
-        CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
-                .label("specimen.field.phases")
-                .isSystemField(true)
-                .id(-466L)
-                .valueBinding("phases")
-                .concept(phasesConcept)
-                .build();
-
         definition.addColumn(
                 FormFieldColumn.builder()
                         .id("phases")
@@ -488,19 +287,6 @@ public final class SpecimenTableDefinitionFactory {
                         .build()
         );
 
-        Concept actionUnitConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("specimen.actionUnit")
-                .build();
-
-        CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
-                .label("specimen.field.actionUnit")
-                .isSystemField(true)
-                .id(-467L)
-                .valueBinding("actionUnit")
-                .concept(actionUnitConcept)
-                .build();
-
         definition.addColumn(
                 FormFieldColumn.builder()
                         .id("actionUnit")
@@ -511,6 +297,17 @@ public final class SpecimenTableDefinitionFactory {
                         .visible(true)
                         .required(false)
                         .build()
+        );
+
+        // Fields that exist on Specimen.DETAILS_FORM but had no table column of their own yet:
+        // configurable/toggleable, hidden from the table by default so nobody's view changes.
+        TableDefinitions.addColumns(definition,
+                column(systemField(ConfigurableTable.MOBILIER, "description")).build(),
+                column(systemField(ConfigurableTable.MOBILIER, "comments")).build(),
+                column(systemField(ConfigurableTable.MOBILIER, "taq")).build(),
+                column(systemField(ConfigurableTable.MOBILIER, "tpq")).build(),
+                column(systemField(ConfigurableTable.MOBILIER, "weight")).build(),
+                column(systemField(ConfigurableTable.MOBILIER, "containers")).build()
         );
     }
 }

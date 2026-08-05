@@ -258,6 +258,13 @@ public abstract class RecordingUnitForm {
 
     @Transient
     @JsonIgnore
+    protected static final Concept MATRIX_COLOR_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("Couleur de la matrice")
+            .build();
+
+    @Transient
+    @JsonIgnore
     protected static final CustomFieldText FULL_IDENTIFIER_FIELD = CustomFieldText.builder()
             .label("common.label.identifier")
             .isSystemField(true)
@@ -464,6 +471,17 @@ public abstract class RecordingUnitForm {
             .id(-324L)
             .valueBinding("phases")
             .concept(PHASES_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldText MATRIX_COLOR_FIELD = CustomFieldText.builder()
+            .label("recordingunit.field.matrixColor")
+            .isSystemField(true)
+            .isTextArea(false)
+            .id(-325L)
+            .valueBinding("matrixColor")
+            .concept(MATRIX_COLOR_CONCEPT)
             .build();
 
 }

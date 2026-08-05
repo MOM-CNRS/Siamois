@@ -2,11 +2,14 @@ package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+
+import java.util.NoSuchElementException;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 
@@ -86,6 +89,24 @@ final class TableDefinitions {
                 .onstartJs(SHOW_CONTENT_JS)
                 .oncompleteJs(HIDE_CONTENT_JS)
                 .build();
+    }
+
+    /**
+     * The field a table's details form declares for a given binding — the same instance
+     * {@link SystemFieldCatalog} would hand any other caller, so a factory's columns describe
+     * exactly the fields the field-configuration screen and the details form agree exist, instead
+     * of redeclaring their own copy (own label, own literal id) that could drift from it.
+     *
+     * @param table        the table the field belongs to
+     * @param valueBinding the entity property the field binds to
+     * @return the table's system field bound to that property
+     */
+    static CustomField systemField(ConfigurableTable table, String valueBinding) {
+        return SystemFieldCatalog.fieldsOf(table).stream()
+                .filter(field -> valueBinding.equals(field.getValueBinding()))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(
+                        "No system field bound to '" + valueBinding + "' on the details form of " + table));
     }
 
     /**
