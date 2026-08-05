@@ -206,7 +206,7 @@
                             </div>
                         </h:panelGroup>
 
-                        <p:tabView activeIndex="#{projectTableFieldSettingsBean.activeTabIndex}" dynamic="false">
+                        <p:tabView id="fieldsTabs" activeIndex="#{projectTableFieldSettingsBean.activeTabIndex}" dynamic="false">
                             <p:ajax event="tabChange" listener="#{projectTableFieldSettingsBean.onTabChange}"/>
 
                             <!-- Champs -->
@@ -280,7 +280,11 @@
                                         </p:column>
                                         <p:column style="width:80px">
                                             <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(a)}" update="@form :fieldEditForm"/>
-                                            <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.deleteAdditionalField(a.name)}" update="@form"/>
+                                            <!-- Only the table is re-rendered: the tab panel is what scrolls
+                                                 (.ui-tabs-panels), so replacing the whole form would put the user
+                                                 back at the top of it. p:tabView is a NamingContainer, hence the
+                                                 full client id. -->
+                                            <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.deleteAdditionalField(a.name)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:additionalFieldsTable"/>
                                         </p:column>
                                     </p:dataTable>
                                     </div>

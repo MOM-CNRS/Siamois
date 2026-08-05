@@ -261,8 +261,16 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         tableFieldConfigService.setFieldMandatory(project.getId(), selectedTable, selectedTypeName, field.getName(), field.isMandatory());
     }
 
+    /**
+     * Deletes an additional field, unless the project already holds answers for it — the service
+     * then keeps the field and the user is told why the row is still there.
+     */
     public void deleteAdditionalField(String fieldName) {
-        tableFieldConfigService.deleteAdditionalField(project.getId(), selectedTable, selectedTypeName, fieldName);
+        boolean deleted = tableFieldConfigService.deleteAdditionalField(project.getId(), selectedTable, selectedTypeName, fieldName);
+        if (!deleted) {
+            MessageUtils.displayWarnMessage(langBean, "projectTables.champs.deleteRefusedInUse", fieldName);
+            return;
+        }
         loadConfigs();
     }
 
