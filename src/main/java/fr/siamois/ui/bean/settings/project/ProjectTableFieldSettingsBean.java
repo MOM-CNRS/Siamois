@@ -143,7 +143,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                                          VocabularyService vocabularyService,
                                          VocabularyMapper vocabularyMapper,
                                          LabelService labelService,
-                                         LangBean langBean) {
+                                         LangBean langBean, RecordingUnitService recordingUnitService, ActionUnitService actionUnitService) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.formConfigService = formConfigService;
         this.conceptService = conceptService;
