@@ -1,9 +1,22 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.form.config.FormConfig;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptCollectionDetachedDTO;
+import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
@@ -19,7 +32,10 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
 @Slf4j
 @Component
@@ -32,6 +48,11 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public static final int TAB_IDENTIFIANTS = 1;
 
     private final transient TableFieldConfigService tableFieldConfigService;
+    private final transient FormConfigService formConfigService;
+    private final transient ConceptService conceptService;
+    private final transient ConceptCollectionService conceptCollectionService;
+    private final transient VocabularyService vocabularyService;
+    private final transient VocabularyMapper vocabularyMapper;
     private final LangBean langBean;
 
     private ActionUnitDTO project;
@@ -67,19 +88,34 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private String draftSource;
     private String draftThesaurusUrl;
     private boolean draftConnectionTested;
-    private String draftBrancheConcept;
+    private transient ConceptAutocompleteDetachedDTO draftBrancheConcept;
     private String draftCollectionName;
+    private transient VocabularyDTO draftVocabulary;
 
-    private static final List<String> MOCK_CONCEPTS = List.of(
-            "Céramique", "Métal", "Verre", "Lithique", "Os travaillé", "Construction", "Faune");
-    private static final List<String> MOCK_COLLECTIONS = List.of(
-            "Collection céramique gallo-romaine", "Collection numismatique", "Collection lithique",
-            "Collection faune et flore");
+    /**
+     * The results {@link #completeCollections} last returned to the autocomplete widget, kept around
+     * so {@link #saveDrawer()} can resolve the DTO behind the label the user picked — unlike
+     * {@link #draftBrancheConcept}, {@code draftCollectionName}'s {@code p:autoComplete} only
+     * round-trips the label text, since {@link fr.siamois.dto.entity.vocabulary.ConceptCollectionDTO}
+     * isn't {@code Serializable} and so can't be bound directly the way the branch concept is.
+     */
+    private transient List<ConceptCollectionDetachedDTO> lastCollectionResults = new ArrayList<>();
 
     private String newTypeName;
 
-    public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService, LangBean langBean) {
+    public ProjectTableFieldSettingsBean(TableFieldConfigService tableFieldConfigService,
+                                         FormConfigService formConfigService,
+                                         ConceptService conceptService,
+                                         ConceptCollectionService conceptCollectionService,
+                                         VocabularyService vocabularyService,
+                                         VocabularyMapper vocabularyMapper,
+                                         LangBean langBean) {
         this.tableFieldConfigService = tableFieldConfigService;
+        this.formConfigService = formConfigService;
+        this.conceptService = conceptService;
+        this.conceptCollectionService = conceptCollectionService;
+        this.vocabularyService = vocabularyService;
+        this.vocabularyMapper = vocabularyMapper;
         this.langBean = langBean;
     }
 
@@ -284,6 +320,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftConnectionTested = false;
         draftBrancheConcept = null;
         draftCollectionName = null;
+        draftVocabulary = null;
+        lastCollectionResults = new ArrayList<>();
     }
 
     public boolean isDraftConfigurable() {
@@ -296,32 +334,47 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     /**
-     * Backs the refresh button next to the thesaurus URL: meant to both test the connection and
-     * reload the concept/collection catalog from it. Mocked — no external thesaurus is actually
-     * contacted, and the catalog isn't really reloaded, until a real thesaurus-browsing service
-     * exists.
+     * Backs the refresh button next to the thesaurus URL: resolves the typed URL against the real
+     * thesaurus so the branch/collection pickers below can query it, following the same
+     * resolve-then-report convention as {@code ProjectThesaurusSettingsBean#saveConfig}.
      */
     public void testThesaurusConnection() {
         if (draftThesaurusUrl == null || draftThesaurusUrl.isBlank()) {
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "projectTables.drawer.params.connectionMissingUrl");
             return;
         }
-        draftConnectionTested = true;
-        MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.params.connectionOk");
+        try {
+            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(draftThesaurusUrl);
+            draftVocabulary = vocabularyMapper.convert(vocabulary);
+            draftConnectionTested = true;
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.params.connectionOk");
+        } catch (InvalidEndpointException e) {
+            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
+        }
     }
 
-    /** Mocked catalog until a real thesaurus-browsing service exists. */
-    public List<String> completeBrancheConcepts(String query) {
-        return MOCK_CONCEPTS.stream()
-                .filter(c -> query == null || query.isBlank() || c.toLowerCase().contains(query.toLowerCase()))
-                .toList();
+    /** Empty until the thesaurus connection has been tested successfully. */
+    public List<ConceptAutocompleteDetachedDTO> completeBrancheConcepts(String query) {
+        if (draftVocabulary == null) {
+            return List.of();
+        }
+        return conceptService.fetchAutocompleteFromRemoteThesaurus(draftVocabulary, query);
     }
 
-    /** Mocked catalog until a real thesaurus-browsing service exists. */
+    /**
+     * Empty until the thesaurus connection has been tested successfully. Caches its results in
+     * {@link #lastCollectionResults} so {@link #saveDrawer()} can resolve the collection behind the
+     * label the {@code p:autoComplete} round-trips.
+     */
     public List<String> completeCollections(String query) {
-        return MOCK_COLLECTIONS.stream()
-                .filter(c -> query == null || query.isBlank() || c.toLowerCase().contains(query.toLowerCase()))
+        if (draftVocabulary == null) {
+            lastCollectionResults = List.of();
+            return List.of();
+        }
+        lastCollectionResults = conceptCollectionService.fetchCollectionsFromRemoteThesaurus(draftVocabulary).stream()
+                .filter(c -> query == null || query.isBlank() || c.getLabelToDisplay().toLowerCase().contains(query.toLowerCase()))
                 .toList();
+        return lastCollectionResults.stream().map(ConceptCollectionDetachedDTO::getLabelToDisplay).toList();
     }
 
     public void saveDrawer() {
@@ -330,8 +383,47 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         } else {
             tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName, draftName, draftType, draftDescription);
         }
+        saveDraftVocabularyConfig();
         loadConfigs();
         closeDrawer();
+    }
+
+    /**
+     * Persists the branch/collection restriction picked in the drawer, if any, onto the field just
+     * saved by {@link #saveDrawer()}. A no-op for the {@code "principal"} source (a system field's
+     * thesaurus is configured elsewhere) and while no branch/collection has actually been selected.
+     */
+    private void saveDraftVocabularyConfig() {
+        if (!"branche".equals(draftSource) && !"collection".equals(draftSource)) {
+            return;
+        }
+
+        Optional<ConceptAutocompleteDetachedDTO> selectedConcept = "branche".equals(draftSource)
+                ? Optional.ofNullable(draftBrancheConcept)
+                : Optional.empty();
+        Optional<ConceptCollectionDetachedDTO> selectedCollection = "collection".equals(draftSource)
+                ? lastCollectionResults.stream()
+                        .filter(c -> c.getLabelToDisplay().equals(draftCollectionName))
+                        .findFirst()
+                : Optional.empty();
+        if (selectedConcept.isEmpty() && selectedCollection.isEmpty()) {
+            return;
+        }
+
+        Optional<FormConfig> formConfig = tableFieldConfigService.createOrGetFormConfig(project.getId(), selectedTable, selectedTypeName);
+        Optional<CustomField> savedField = tableFieldConfigService.getActiveAdditionalFields(project.getId(), selectedTable, selectedTypeName).stream()
+                .filter(field -> draftName.equals(field.getLabel()))
+                .findFirst();
+        if (formConfig.isEmpty() || savedField.isEmpty() || !(savedField.get() instanceof CustomFieldConcept customFieldConcept)) {
+            log.warn("Could not resolve the saved field '{}' as a concept field on type '{}' of table {}; " +
+                    "branch/collection selection was not persisted", draftName, selectedTypeName, selectedTable);
+            return;
+        }
+
+        selectedConcept.ifPresent(concept ->
+                formConfigService.addConceptConfigFor(formConfig.get(), customFieldConcept, concept.concept()));
+        selectedCollection.ifPresent(collection ->
+                formConfigService.addConceptConfigFor(formConfig.get(), customFieldConcept, collection));
     }
 
     public boolean isDraftCreateMode() {

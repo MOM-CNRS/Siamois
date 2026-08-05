@@ -1,8 +1,24 @@
 package fr.siamois.ui.bean.settings.project;
 
+import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.form.config.FormConfig;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
+import fr.siamois.infrastructure.api.dto.LabelDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptCollectionDetachedDTO;
+import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
@@ -15,6 +31,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,6 +46,21 @@ class ProjectTableFieldSettingsBeanTest {
 
     @Mock
     private TableFieldConfigService tableFieldConfigService;
+
+    @Mock
+    private FormConfigService formConfigService;
+
+    @Mock
+    private ConceptService conceptService;
+
+    @Mock
+    private ConceptCollectionService conceptCollectionService;
+
+    @Mock
+    private VocabularyService vocabularyService;
+
+    @Mock
+    private VocabularyMapper vocabularyMapper;
 
     @Mock
     private LangBean langBean;
@@ -211,7 +243,7 @@ class ProjectTableFieldSettingsBeanTest {
         try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
             bean.testThesaurusConnection();
         }
-        bean.setDraftBrancheConcept("Céramique");
+        bean.setDraftBrancheConcept(conceptResult("Céramique"));
 
         bean.selectDraftSource("collection");
 
@@ -222,7 +254,7 @@ class ProjectTableFieldSettingsBeanTest {
     }
 
     @Test
-    void testThesaurusConnection_shouldSetTestedOnlyWhenUrlIsNotBlank() {
+    void testThesaurusConnection_shouldSetTestedOnlyWhenUrlIsNotBlank() throws InvalidEndpointException {
         bean.init(project);
         bean.selectDraftSource("branche");
 
@@ -233,6 +265,11 @@ class ProjectTableFieldSettingsBeanTest {
                     MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "projectTables.drawer.params.connectionMissingUrl"));
 
             bean.setDraftThesaurusUrl("https://example.org/thesaurus");
+            Vocabulary vocabulary = new Vocabulary();
+            VocabularyDTO vocabularyDTO = VocabularyDTO.builder().build();
+            when(vocabularyService.findOrCreateVocabularyOfUri("https://example.org/thesaurus")).thenReturn(vocabulary);
+            when(vocabularyMapper.convert(vocabulary)).thenReturn(vocabularyDTO);
+
             bean.testThesaurusConnection();
             assertThat(bean.isDraftConnectionTested()).isTrue();
             messageUtilsMock.verify(() ->
@@ -241,12 +278,132 @@ class ProjectTableFieldSettingsBeanTest {
     }
 
     @Test
-    void completeBrancheConcepts_and_completeCollections_shouldFilterTheMockedCatalogCaseInsensitively() {
+    void testThesaurusConnection_shouldReportAnErrorAndLeaveConnectionUntestedWhenTheUriIsInvalid() throws InvalidEndpointException {
         bean.init(project);
+        bean.selectDraftSource("branche");
+        bean.setDraftThesaurusUrl("not-a-uri");
+        when(vocabularyService.findOrCreateVocabularyOfUri("not-a-uri")).thenThrow(new InvalidEndpointException("bad uri"));
 
-        assertThat(bean.completeBrancheConcepts("ramiq")).containsExactly("Céramique");
-        assertThat(bean.completeBrancheConcepts("")).isNotEmpty();
+        try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
+            bean.testThesaurusConnection();
+
+            assertThat(bean.isDraftConnectionTested()).isFalse();
+            messageUtilsMock.verify(() ->
+                    MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.thesaurus.uri.invalid"));
+        }
+    }
+
+    @Test
+    void completeBrancheConcepts_and_completeCollections_shouldBeEmptyUntilTheConnectionIsTested() {
+        bean.init(project);
+        bean.selectDraftSource("branche");
+
+        assertThat(bean.completeBrancheConcepts("ramiq")).isEmpty();
+        assertThat(bean.completeCollections("numismatique")).isEmpty();
+        verifyNoInteractions(conceptService, conceptCollectionService);
+    }
+
+    @Test
+    void completeBrancheConcepts_and_completeCollections_shouldDelegateToTheRealServicesOnceConnected() throws InvalidEndpointException {
+        bean.init(project);
+        bean.selectDraftSource("branche");
+        bean.setDraftThesaurusUrl("https://example.org/thesaurus");
+        Vocabulary vocabulary = new Vocabulary();
+        VocabularyDTO vocabularyDTO = VocabularyDTO.builder().build();
+        when(vocabularyService.findOrCreateVocabularyOfUri("https://example.org/thesaurus")).thenReturn(vocabulary);
+        when(vocabularyMapper.convert(vocabulary)).thenReturn(vocabularyDTO);
+        try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
+            bean.testThesaurusConnection();
+        }
+
+        ConceptAutocompleteDetachedDTO ceramique = conceptResult("Céramique");
+        when(conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "ramiq")).thenReturn(List.of(ceramique));
+        ConceptCollectionDetachedDTO numismatique = collectionResult("Collection numismatique");
+        when(conceptCollectionService.fetchCollectionsFromRemoteThesaurus(vocabularyDTO)).thenReturn(List.of(numismatique));
+
+        assertThat(bean.completeBrancheConcepts("ramiq")).containsExactly(ceramique);
         assertThat(bean.completeCollections("numismatique")).containsExactly("Collection numismatique");
+    }
+
+    private static ConceptAutocompleteDetachedDTO conceptResult(String label) {
+        ConceptLabelDTO labelDTO = new ConceptPrefLabelDTO();
+        labelDTO.setLabel(label);
+        labelDTO.setConcept(ConceptDTO.builder().externalId("c1").vocabulary(VocabularyDTO.builder().build()).build());
+        return new ConceptAutocompleteDetachedDTO(labelDTO, label, List.of(), "", "https://example.org/thesaurus");
+    }
+
+    private static ConceptCollectionDetachedDTO collectionResult(String label) {
+        return new ConceptCollectionDetachedDTO("col1", VocabularyDTO.builder().build(), label, List.of(new LabelDTO("fr", label)));
+    }
+
+    @Test
+    void saveDrawer_shouldPersistTheSelectedBranchConceptViaFormConfigService() throws InvalidEndpointException {
+        bean.init(project);
+        bean.openDrawerForCreate();
+        bean.setDraftName("Matière");
+        bean.selectDraftSource("branche");
+        bean.setDraftThesaurusUrl("https://example.org/thesaurus");
+        Vocabulary vocabulary = new Vocabulary();
+        VocabularyDTO vocabularyDTO = VocabularyDTO.builder().build();
+        when(vocabularyService.findOrCreateVocabularyOfUri("https://example.org/thesaurus")).thenReturn(vocabulary);
+        when(vocabularyMapper.convert(vocabulary)).thenReturn(vocabularyDTO);
+        try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
+            bean.testThesaurusConnection();
+        }
+        ConceptAutocompleteDetachedDTO ceramique = conceptResult("Céramique");
+        bean.setDraftBrancheConcept(ceramique);
+
+        CustomFieldSelectOne savedField = new CustomFieldSelectOne();
+        savedField.setLabel("Matière");
+        FormConfig formConfig = new FormConfig();
+        when(tableFieldConfigService.createOrGetFormConfig(42L, ConfigurableTable.UE, "Céramique")).thenReturn(Optional.of(formConfig));
+        when(tableFieldConfigService.getActiveAdditionalFields(42L, ConfigurableTable.UE, "Céramique")).thenReturn(List.of(savedField));
+
+        bean.saveDrawer();
+
+        verify(formConfigService).addConceptConfigFor(formConfig, savedField, ceramique.concept());
+    }
+
+    @Test
+    void saveDrawer_shouldPersistTheSelectedCollectionViaFormConfigService() throws InvalidEndpointException {
+        bean.init(project);
+        bean.openDrawerForCreate();
+        bean.setDraftName("Matière");
+        bean.selectDraftSource("collection");
+        bean.setDraftThesaurusUrl("https://example.org/thesaurus");
+        Vocabulary vocabulary = new Vocabulary();
+        VocabularyDTO vocabularyDTO = VocabularyDTO.builder().build();
+        when(vocabularyService.findOrCreateVocabularyOfUri("https://example.org/thesaurus")).thenReturn(vocabulary);
+        when(vocabularyMapper.convert(vocabulary)).thenReturn(vocabularyDTO);
+        try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
+            bean.testThesaurusConnection();
+        }
+        ConceptCollectionDetachedDTO numismatique = collectionResult("Collection numismatique");
+        when(conceptCollectionService.fetchCollectionsFromRemoteThesaurus(vocabularyDTO)).thenReturn(List.of(numismatique));
+        bean.completeCollections("numismatique");
+        bean.setDraftCollectionName("Collection numismatique");
+
+        CustomFieldSelectOne savedField = new CustomFieldSelectOne();
+        savedField.setLabel("Matière");
+        FormConfig formConfig = new FormConfig();
+        when(tableFieldConfigService.createOrGetFormConfig(42L, ConfigurableTable.UE, "Céramique")).thenReturn(Optional.of(formConfig));
+        when(tableFieldConfigService.getActiveAdditionalFields(42L, ConfigurableTable.UE, "Céramique")).thenReturn(List.of(savedField));
+
+        bean.saveDrawer();
+
+        verify(formConfigService).addConceptConfigFor(formConfig, savedField, numismatique);
+    }
+
+    @Test
+    void saveDrawer_shouldNotCallFormConfigServiceForThePrincipalSource() {
+        bean.init(project);
+        TypeFieldFormConfig field = TypeFieldFormConfig.builder()
+                .name("Catégorie").type(FieldType.SELECT_ONE).systemField(true).sourceLabel("CATEGORIE").build();
+        bean.openDrawerForEdit(field);
+
+        bean.saveDrawer();
+
+        verifyNoInteractions(formConfigService);
     }
 
     @Test

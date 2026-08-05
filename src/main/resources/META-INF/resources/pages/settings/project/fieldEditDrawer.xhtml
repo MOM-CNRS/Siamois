@@ -111,7 +111,10 @@
                                         <label class="ptc-drawer-label" for="fieldEditForm:draftBrancheConcept">#{langBean.msg('projectTables.drawer.params.brancheConcept')}</label>
                                         <p:autoComplete id="draftBrancheConcept" value="#{projectTableFieldSettingsBean.draftBrancheConcept}"
                                                         completeMethod="#{projectTableFieldSettingsBean.completeBrancheConcepts}"
-                                                        dropdown="true" scrollHeight="220" style="width:100%"
+                                                        var="c" itemLabel="#{c.conceptLabelToDisplay.label}" itemValue="#{c}"
+                                                        converter="#{conceptAutocompleteDTOConverter}"
+                                                        dropdown="true" scrollHeight="220" style="width:100%" forceSelection="true"
+                                                        appendTo="@(body)"
                                                         placeholder="#{langBean.msg('projectTables.drawer.params.brancheConceptPlaceholder')}"/>
                                     </div>
                                 </h:panelGroup>
@@ -122,6 +125,7 @@
                                         <p:autoComplete id="draftCollectionName" value="#{projectTableFieldSettingsBean.draftCollectionName}"
                                                         completeMethod="#{projectTableFieldSettingsBean.completeCollections}"
                                                         dropdown="true" scrollHeight="220" style="width:100%"
+                                                        appendTo="@(body)"
                                                         placeholder="#{langBean.msg('projectTables.drawer.params.collectionPlaceholder')}"/>
                                     </div>
                                 </h:panelGroup>
