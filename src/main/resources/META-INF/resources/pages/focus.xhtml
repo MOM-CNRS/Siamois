@@ -205,7 +205,7 @@
                                         <p:menuitem value="Enregistrer comme nouvelle vue"
                                                     update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
                                                     action="#{focusViewBean.mainPanel.saveAsNewView()}"
-                                                    icon="bi bi-bookmark-plus"/>
+                                                    icon="bi bi-bookmark"/>
                                         <p:menuitem value="Réinitialiser la vue"
                                                     update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
                                                     action="#{focusViewBean.mainPanel.reinitializeView()}"
@@ -216,7 +216,7 @@
                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
                                                    rendered="#{(not focusViewBean.mainPanel.canUserUpdateView()) and focusViewBean.mainPanel.isDirty()}"
                                                    action="#{focusViewBean.mainPanel.saveAsNewView()}"
-                                                   icon="bi bi-bookmark-plus">
+                                                   icon="bi bi-bookmark">
                                         <p:menuitem value="Réinitialiser la vue"
                                                     update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
                                                     action="#{focusViewBean.mainPanel.reinitializeView()}"
