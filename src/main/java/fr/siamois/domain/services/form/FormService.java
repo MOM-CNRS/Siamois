@@ -10,7 +10,6 @@ import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
