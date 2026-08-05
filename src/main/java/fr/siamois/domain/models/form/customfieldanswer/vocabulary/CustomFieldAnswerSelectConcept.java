@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Entity
-public abstract class CustomFieldSelectConcept extends CustomFieldAnswer {
+public abstract class CustomFieldAnswerSelectConcept extends CustomFieldAnswer {
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "custom_field_answer_concept_answers",
@@ -19,7 +19,7 @@ public abstract class CustomFieldSelectConcept extends CustomFieldAnswer {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof CustomFieldSelectConcept that)) return false;
+        if (!(o instanceof CustomFieldAnswerSelectConcept that)) return false;
         if (!super.equals(o)) return false;
         return Objects.equals(concepts, that.concepts);
     }

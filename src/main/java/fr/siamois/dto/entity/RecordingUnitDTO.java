@@ -2,6 +2,7 @@ package fr.siamois.dto.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

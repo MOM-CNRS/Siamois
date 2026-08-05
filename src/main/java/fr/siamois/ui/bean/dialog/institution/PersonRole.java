@@ -1,8 +1,8 @@
 package fr.siamois.ui.bean.dialog.institution;
 
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 
 import java.util.HashSet;
 import java.util.Set;

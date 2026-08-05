@@ -1,7 +1,7 @@
 package fr.siamois.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import fr.siamois.dto.entity.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.Data;
 
 import java.io.Serializable;

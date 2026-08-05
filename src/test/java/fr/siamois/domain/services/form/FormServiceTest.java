@@ -13,6 +13,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.form.FormRepository;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -401,7 +402,7 @@ class FormServiceTest {
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
         createdAtAnswer.setValue(LocalDateTime.of(2023, Month.JANUARY, 1, 12, 0));
 
-        // CustomFieldAnswerSelectOneFromFieldCode: Use uiVal to set the concept
+        // CustomFieldAnswerSelectOneFromFieldAnswerCode: Use uiVal to set the concept
         ConceptDTO concept = mock(ConceptDTO.class);
         ConceptAutocompleteDTO conceptAutocompleteDTO = new ConceptAutocompleteDTO(concept, "Test Label", "fr");
         CustomFieldAnswerSelectOneFromFieldCodeViewModel  conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCodeViewModel ();
@@ -1054,7 +1055,7 @@ class FormServiceTest {
         CustomField field1 = mock(CustomField.class);
 
         EnabledWhenJson.ValueJson vj = new EnabledWhenJson.ValueJson();
-        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode");
+        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode");
         vj.setValue(new ObjectMapper().createObjectNode().put("vocabularyExtId", "voc1").put("conceptExtId", "c1"));
 
         EnabledWhenJson spec = new EnabledWhenJson();

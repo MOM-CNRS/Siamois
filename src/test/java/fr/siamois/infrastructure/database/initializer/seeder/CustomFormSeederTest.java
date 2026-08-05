@@ -3,7 +3,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
-import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode;
 import fr.siamois.domain.models.form.customform.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -244,7 +244,7 @@ class CustomFormSeederTest {
         // DTO "valeur attendue" = réponse de type Concept
         var conceptKey = new fr.siamois.infrastructure.database.initializer.seeder.ConceptSeeder.ConceptKey("extid", "2");
         var expectedValue = new CustomFieldAnswerDTO(
-                CustomFieldAnswerSelectOneFromFieldCode.class,
+                CustomFieldAnswerSelectOneFromFieldAnswerCode.class,
                 condSpec, // IMPORTANT: même champ que la condition
                 conceptKey
         );
@@ -292,7 +292,7 @@ class CustomFormSeederTest {
 
         EnabledWhenJson.ValueJson vj = ew.getValues().get(0);
         assertEquals(
-                CustomFieldAnswerSelectOneFromFieldCode.class.getName(),
+                CustomFieldAnswerSelectOneFromFieldAnswerCode.class.getName(),
                 vj.getAnswerClass()
         );
         assertNotNull(vj.getValue());
@@ -425,7 +425,7 @@ class CustomFormSeederTest {
     private CustomFieldAnswerDTO expectedConceptValue(CustomFieldSeederSpec observedSpec,
                                                       String vocabExtId, String conceptExtId) {
         return new CustomFieldAnswerDTO(
-                CustomFieldAnswerSelectOneFromFieldCode.class,
+                CustomFieldAnswerSelectOneFromFieldAnswerCode.class,
                 observedSpec,
                 new ConceptSeeder.ConceptKey(vocabExtId, conceptExtId)
         );

@@ -1,6 +1,7 @@
 package fr.siamois.dto.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;

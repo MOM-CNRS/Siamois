@@ -1,8 +1,12 @@
 DROP FUNCTION IF EXISTS concept_autocomplete;
 DROP FUNCTION IF EXISTS concept_autocomplete_related;
+DROP FUNCTION IF EXISTS concept_autocomplete_branch;
+DROP FUNCTION IF EXISTS concept_autocomplete_collection;
 DROP FUNCTION IF EXISTS concept_autocomplete_search;
+DROP FUNCTION IF EXISTS concept_branch_concept_ids;
 DROP FUNCTION IF EXISTS concept_autocomplete_get_definition;
 DROP FUNCTION IF EXISTS concept_autocomplete_get_hierarchy;
+DROP FUNCTION IF EXISTS concept_parent_id_in_context;
 DROP FUNCTION IF EXISTS concept_autocomplete_get_alt_labels;
 DROP FUNCTION IF EXISTS concept_get_label;
 DROP TYPE IF EXISTS concept_autocomplete_record;
@@ -124,7 +128,31 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Returns the parents of the concept in a ' > ' separated string
+-- Returns the parent of the concept in the given field context, NULL when it has none.
+-- p_field_concept_id may be NULL, in which case the relations imported outside of any
+-- field context (branch and collection configurations) are followed.
+CREATE OR REPLACE FUNCTION concept_parent_id_in_context(
+    p_concept_id BIGINT,
+    p_field_concept_id BIGINT
+)
+    RETURNS BIGINT AS
+$$
+DECLARE
+    v_parent_concept_id BIGINT;
+BEGIN
+    SELECT ch.fk_parent_concept_id
+    INTO v_parent_concept_id
+    FROM concept_hierarchy ch
+    WHERE ch.fk_child_concept_id = p_concept_id
+      AND ch.fk_parent_field_context_id IS NOT DISTINCT FROM p_field_concept_id
+    LIMIT 1;
+
+    RETURN v_parent_concept_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Returns the parents of the concept in a ' > ' separated string.
+-- p_field_concept_id may be NULL, see concept_parent_id_in_context.
 CREATE OR REPLACE FUNCTION concept_autocomplete_get_hierarchy(
     p_concept_id BIGINT,
     p_field_concept_id BIGINT,
@@ -133,36 +161,62 @@ CREATE OR REPLACE FUNCTION concept_autocomplete_get_hierarchy(
     RETURNS TEXT AS
 $$
 DECLARE
-    v_parent_label  TEXT;
-    v_parents       TEXT[];
-    v_result_record concept_hierarchy%rowtype;
+    -- Guards against a cyclic hierarchy, which would otherwise loop forever
+    c_max_depth CONSTANT INT := 100;
+    v_parents             TEXT[];
+    v_ancestor_concept_id BIGINT := concept_parent_id_in_context(p_concept_id, p_field_concept_id);
+    v_depth               INT    := 0;
 BEGIN
-    SELECT ch.*
-    INTO v_result_record
-    FROM concept_hierarchy ch
-    WHERE ch.fk_child_concept_id = p_concept_id
-      AND ch.fk_parent_field_context_id = p_field_concept_id;
-
-    WHILE v_result_record IS NOT NULL
+    WHILE v_ancestor_concept_id IS NOT NULL AND v_depth < c_max_depth
         LOOP
-            v_parent_label = concept_get_label(v_result_record.fk_parent_concept_id, p_field_concept_id, p_langcode);
-            v_parents := array_prepend(v_parent_label, v_parents);
+            v_parents := array_prepend(
+                    concept_get_label(v_ancestor_concept_id, p_field_concept_id, p_langcode),
+                    v_parents);
 
-            SELECT ch.*
-            INTO v_result_record
-            FROM concept_hierarchy ch
-            WHERE ch.fk_child_concept_id = v_result_record.fk_parent_concept_id
-              AND ch.fk_parent_field_context_id = p_field_concept_id
-            LIMIT 1;
+            v_ancestor_concept_id := concept_parent_id_in_context(v_ancestor_concept_id, p_field_concept_id);
+            v_depth := v_depth + 1;
         END LOOP;
 
     RETURN array_to_string(v_parents, ' > ');
 END;
 $$ LANGUAGE plpgsql;
 
+-- Returns the ids of every child and sub-child of the given concept, following the narrower
+-- relations imported outside of any field context (branch configurations).
+-- The top term itself is not part of the result.
+CREATE OR REPLACE FUNCTION concept_branch_concept_ids(
+    p_top_term_concept_id BIGINT
+)
+    RETURNS BIGINT[] AS
+$$
+DECLARE
+    v_concept_ids BIGINT[];
+BEGIN
+    WITH RECURSIVE descendants AS (SELECT ch.fk_child_concept_id AS concept_id
+                                   FROM concept_hierarchy ch
+                                   WHERE ch.fk_parent_concept_id = p_top_term_concept_id
+                                     AND ch.fk_parent_field_context_id IS NULL
+                                   UNION -- UNION and not UNION ALL, so a cyclic hierarchy terminates
+                                   SELECT ch.fk_child_concept_id
+                                   FROM concept_hierarchy ch
+                                            JOIN descendants d ON ch.fk_parent_concept_id = d.concept_id
+                                   WHERE ch.fk_parent_field_context_id IS NULL)
+    SELECT array_agg(d.concept_id)
+    INTO v_concept_ids
+    FROM descendants d;
+
+    RETURN coalesce(v_concept_ids, ARRAY []::BIGINT[]);
+END;
+$$ LANGUAGE plpgsql;
+
 -- Core autocomplete query, shared by every autocomplete entry point.
+-- The candidates are restricted by the filters that are not NULL:
+--   p_field_concept_id      : only the concepts imported in the context of that field concept
+--   p_concept_ids           : only the concepts of that list (an empty list matches nothing)
+--   p_related_of_concept_id : only the concepts related to that concept
 CREATE OR REPLACE FUNCTION concept_autocomplete_search(
     p_field_concept_id BIGINT,
+    p_concept_ids BIGINT[],
     p_related_of_concept_id BIGINT,
     p_langcode VARCHAR(3),
     p_input TEXT,
@@ -183,7 +237,9 @@ BEGIN
                                  WHERE cl.lang_code = p_langcode
                                    AND cl.label_type = 0
                                    AND NOT c.is_deleted
-                                   AND cl.fk_field_parent_concept_id = p_field_concept_id
+                                   AND (p_field_concept_id IS NULL OR
+                                        cl.fk_field_parent_concept_id = p_field_concept_id)
+                                   AND (p_concept_ids IS NULL OR c.concept_id = ANY (p_concept_ids))
                                    AND (p_related_of_concept_id IS NULL
                                             OR
                                         (p_related_of_concept_id IS NOT NULL AND EXISTS (SELECT 1
@@ -234,7 +290,9 @@ CREATE OR REPLACE FUNCTION concept_autocomplete(
     RETURNS SETOF concept_autocomplete_record AS
 $$
 BEGIN
-    RETURN QUERY SELECT * FROM concept_autocomplete_search(p_field_concept_id, NULL, p_langcode, p_input, p_limit);
+    RETURN QUERY SELECT *
+                 FROM concept_autocomplete_search(p_field_concept_id, NULL::BIGINT[], NULL::BIGINT, p_langcode, p_input,
+                                                  p_limit);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -250,6 +308,49 @@ CREATE OR REPLACE FUNCTION concept_autocomplete_related(
     RETURNS SETOF concept_autocomplete_record AS
 $$
 BEGIN
-    RETURN QUERY SELECT * FROM concept_autocomplete_search(p_field_concept_id, p_base_concept_id, p_langcode, p_input, p_limit);
+    RETURN QUERY SELECT *
+                 FROM concept_autocomplete_search(p_field_concept_id, NULL::BIGINT[], p_base_concept_id, p_langcode,
+                                                  p_input, p_limit);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Autocomplete on every child and sub-child of the given top term.
+-- Used by the form field configurations set up on a thesaurus branch.
+CREATE OR REPLACE FUNCTION concept_autocomplete_branch(
+    p_top_term_concept_id BIGINT,
+    p_langcode VARCHAR(3),
+    p_input TEXT,
+    p_limit INT
+)
+    RETURNS SETOF concept_autocomplete_record AS
+$$
+BEGIN
+    RETURN QUERY SELECT *
+                 FROM concept_autocomplete_search(NULL::BIGINT, concept_branch_concept_ids(p_top_term_concept_id),
+                                                  NULL::BIGINT, p_langcode, p_input, p_limit);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Autocomplete on every concept of the given collection.
+-- Used by the form field configurations set up on a thesaurus collection.
+CREATE OR REPLACE FUNCTION concept_autocomplete_collection(
+    p_collection_id BIGINT,
+    p_langcode VARCHAR(3),
+    p_input TEXT,
+    p_limit INT
+)
+    RETURNS SETOF concept_autocomplete_record AS
+$$
+DECLARE
+    v_concept_ids BIGINT[];
+BEGIN
+    SELECT coalesce(array_agg(cc.fk_concept_id), ARRAY []::BIGINT[])
+    INTO v_concept_ids
+    FROM collection_concept cc
+    WHERE cc.fk_collection_id = p_collection_id;
+
+    RETURN QUERY SELECT *
+                 FROM concept_autocomplete_search(NULL::BIGINT, v_concept_ids, NULL::BIGINT, p_langcode, p_input,
+                                                  p_limit);
 END;
 $$ LANGUAGE plpgsql;

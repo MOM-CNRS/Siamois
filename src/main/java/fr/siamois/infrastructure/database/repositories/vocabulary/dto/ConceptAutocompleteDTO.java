@@ -1,9 +1,9 @@
 package fr.siamois.infrastructure.database.repositories.vocabulary.dto;
 
-import fr.siamois.dto.entity.ConceptDTO;
-import fr.siamois.dto.entity.ConceptLabelDTO;
-import fr.siamois.dto.entity.ConceptPrefLabelDTO;
-import fr.siamois.dto.entity.VocabularyDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
@@ -19,11 +19,11 @@ import java.util.Objects;
 @Data
 public class ConceptAutocompleteDTO implements Serializable {
 
-    private final ConceptLabelDTO conceptLabelToDisplay;
-    private final String originalPrefLabel;
-    private final List<String> altLabels;
-    private final String definition;
-    private final String hierarchyPrefLabels;
+    protected final ConceptLabelDTO conceptLabelToDisplay;
+    protected final String originalPrefLabel;
+    protected final transient List<String> altLabels;
+    protected final String definition;
+    protected final String hierarchyPrefLabels;
 
     public ConceptAutocompleteDTO(
             ConceptLabelDTO conceptLabelToDisplay,
