@@ -1,6 +1,7 @@
 package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.ui.table.TableDefinition;
@@ -65,7 +66,4 @@ public class ContainerTableDefinitionFactory {
                 column(weightField).build());
     }
 
-    private static UnitDefinition centimetres() {
-        return unit(CENTIMETRE, "cm", UnitDefinition.Dimension.LENGTH, 0.01);
-    }
 }
