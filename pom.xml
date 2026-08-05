@@ -41,7 +41,7 @@
         <jts.version>1.20.0</jts.version>
         <mockito.version>5.14.2</mockito.version>
         <jacoco.version>0.8.12</jacoco.version>
-        <jackson.version>2.19.1</jackson.version>
+        <jackson.version>2.21.5</jackson.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
         <org.mapstruct.extensions.spring.version>2.0.0</org.mapstruct.extensions.spring.version>
 
