@@ -5,6 +5,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -122,6 +123,33 @@ public class SpatialUnitFieldBean implements Serializable {
     }
 
     /**
+     * Same as {@link #getUrlForFieldCode(String, Long)}, but safe to call for any concept field —
+     * {@code concept.xhtml} calls this with whatever field it's showing, which can be a plain
+     * {@code CustomFieldSelectOne}/{@code CustomFieldSelectMultiple} additional field with no field
+     * code at all. EL's {@code BeanELResolver} throws {@code PropertyNotFoundException} for a missing
+     * bean property regardless of where the expression is used — plain attribute binding or method-call
+     * argument alike — so the {@code instanceof} check has to happen here instead of in the view.
+     *
+     * @param field        the field to look the edit URL up for
+     * @param actionUnitId the current project's id, or null if the field isn't project-scoped
+     * @return the edit URL, or null if the field isn't field-code-driven or has no configuration
+     */
+    public String getUrlForField(CustomField field, Long actionUnitId) {
+        String fieldCode = resolveFieldCode(field);
+        return fieldCode == null ? null : getUrlForFieldCode(fieldCode, actionUnitId);
+    }
+
+    /**
+     * The field code driving a concept field, or null when the field isn't field-code-driven (e.g. a
+     * plain {@code CustomFieldSelectOne}/{@code CustomFieldSelectMultiple} additional field) — see
+     * {@link #getUrlForField(CustomField, Long)} for why this can't just be a {@code .fieldCode} EL
+     * property access in the view.
+     */
+    public String resolveFieldCode(CustomField field) {
+        return field instanceof CustomFieldConceptFromFieldCode fromFieldCode ? fromFieldCode.getFieldCode() : null;
+    }
+
+    /**
      * Fetch the autocomplete results on API for the selected field and add them to the list of concepts.
      * Optionally sorts the results by root group if the "sortByParent" component attribute is true.
      *
@@ -131,10 +159,11 @@ public class SpatialUnitFieldBean implements Serializable {
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> completeWithFieldCode(String input) {
         String fieldCode = "Undefined";
+        Object fieldAttr = null;
         try {
             FacesContext context = FacesContext.getCurrentInstance();
             fieldCode = (String) UIComponent.getCurrentComponent(context).getAttributes().get("fieldCode");
-            Object fieldAttr = UIComponent.getCurrentComponent(context).getAttributes().get("field");
+            fieldAttr = UIComponent.getCurrentComponent(context).getAttributes().get("field");
 
             // Retrieve the sortByParent attribute from the current UI component
             Boolean sortByParent = Boolean.parseBoolean(
@@ -182,6 +211,15 @@ public class SpatialUnitFieldBean implements Serializable {
         }
         catch (ResourceAccessException e) {
             displayErrorMessage(langBean, "common.error.thesaurus.resourceAccess", fieldCode);
+            return List.of();
+        }
+        catch (IllegalStateException e) {
+            // Thrown by FieldConfigurationService#fetchAutocomplete(CustomFieldConcept, ...) when the
+            // field has neither a branch/collection restriction nor a field code to fall back on —
+            // i.e. an additional concept field nobody has configured a vocabulary source for yet.
+            // It has no field code to identify itself with in the message, so use its label instead.
+            String identifier = fieldAttr instanceof CustomField field ? resolveCustomFieldLabel(field) : fieldCode;
+            displayErrorMessage(langBean, "common.error.thesaurus.field.noVocabulary", identifier);
             return List.of();
         }
         catch (Exception e) {

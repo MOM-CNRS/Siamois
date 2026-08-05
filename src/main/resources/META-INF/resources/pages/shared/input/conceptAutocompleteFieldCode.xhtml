@@ -49,7 +49,7 @@
                         showEmptyMessage="false"
                         maxResults="#{fieldConfigurationService.resultLimit()}"
         >
-            <f:attribute name="fieldCode" value="#{cc.attrs.field.fieldCode}" />
+            <f:attribute name="fieldCode" value="#{spatialUnitFieldBean.resolveFieldCode(cc.attrs.field)}" />
             <f:attribute name="field" value="#{cc.attrs.field}" />
             <f:attribute name="selected" value="#{cc.attrs.selectedConcept}"/>
             <f:attribute name="dependsOnBaseConcept" value="#{cc.attrs.dependsOnBaseConcept}"/>
