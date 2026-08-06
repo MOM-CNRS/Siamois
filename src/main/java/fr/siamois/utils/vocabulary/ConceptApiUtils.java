@@ -73,16 +73,11 @@ public class ConceptApiUtils {
 
     private static void createRelatedConceptsRelations(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, Map.Entry<String, FullInfoDTO> info, @NonNull Map<String, Concept> urlTosavedConcept, @NonNull FullInfoDTO fullInfoDTO) {
         Concept currentConcept = urlTosavedConcept.get(info.getKey());
-        // Only a concept loaded by Hibernate carries the collection, one that was just created has none yet
-        Set<Concept> relatedConcepts = Objects.isNull(currentConcept.getRelatedConcepts())
-                ? new HashSet<>()
-                : currentConcept.getRelatedConcepts();
         for (PurlInfoDTO related : fullInfoDTO.getRelated()) {
             FullInfoDTO relatedInfos = utils.conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
-            relatedConcepts.add(utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null));
+            Concept relatedConcept = utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
+            utils.conceptRepository.addRelatedConceptIfAbsent(currentConcept.getId(), relatedConcept.getId());
         }
-        currentConcept.setRelatedConcepts(relatedConcepts);
-        urlTosavedConcept.put(info.getKey(), utils.conceptRepository.save(currentConcept));
     }
 
     private static void saveAllConceptFromBranch(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO dto, Map<String, Concept> savedConcept) {
