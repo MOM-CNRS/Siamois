@@ -123,6 +123,14 @@
                                     <h:outputText styleClass="bi bi-arrow-clockwise"/>
                                 </p:commandLink>
 
+                                <p:commandLink id="openInProjectSettingsButton"
+                                               rendered="#{panelModel.parentOrOverview.canOpenInProjectSettings()}"
+                                               process="@this"
+                                               styleClass="sideview-topbar-button"
+                                               action="#{navBean.redirectToActionUnitSettings(panelModel.parentOrOverview.unit)}"
+                                               title="Ouvrir le projet dans les paramètres">
+                                    <h:outputText styleClass="bi bi-gear"/>
+                                </p:commandLink>
 
                             </div>
                         </h:form>
