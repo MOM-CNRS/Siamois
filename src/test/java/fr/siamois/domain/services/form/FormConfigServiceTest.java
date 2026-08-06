@@ -340,12 +340,10 @@ class FormConfigServiceTest {
         when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
         when(conceptApi.fetchConceptInfoByUri(vocabulary, RELATED_URL)).thenReturn(relatedInfo);
         when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfo, null)).thenReturn(relatedConcept);
-        when(conceptRepository.save(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        assertThat(branchTopConcept.getRelatedConcepts()).containsExactly(relatedConcept);
-        verify(conceptRepository).save(branchTopConcept);
+        verify(conceptRepository).addRelatedConceptIfAbsent(branchTopConcept.getId(), relatedConcept.getId());
     }
 
     @Test
