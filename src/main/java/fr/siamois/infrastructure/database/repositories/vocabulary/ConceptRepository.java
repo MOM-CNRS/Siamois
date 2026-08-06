@@ -54,7 +54,7 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
                     "JOIN concept_field_config cfc ON cfc.fk_concept_id = c.concept_id " +
                     "WHERE cfc.fk_institution_id = :institutionId " +
                     "AND cfc.field_code = :fieldCode " +
-                    "AND cfc.fk_user_id IS NULL"
+                    "AND cfc.fk_action_unit_id IS NULL"
     )
     Optional<Concept> findTopTermConfigForFieldCodeOfInstitution(Long institutionId, String fieldCode);
 
