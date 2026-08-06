@@ -16,7 +16,7 @@
     <!--@elvariable id="root" type="java.lang.String"-->
     <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
     <!--@elvariable id="hasBeenModified" type="java.lang.Boolean"-->
-    <!--@elvariable id="answer" type="fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer" required="true"-->
+    <!--@elvariable id="answer" type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel"-->
     <!--@elvariable id="onModified" type="javax.el.MethodExpression"-->
     <!--@elvariable id="panelHeaderUpdateId" type="java.lang.String"-->
     <!--@elvariable id="hasAutoGenerationFunction" type="java.lang.Boolean"-->
@@ -83,32 +83,16 @@
         </c:if>
 
 
-        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'}">
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'
+                   or col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'
+                   or col.field['class'].simpleName eq 'CustomFieldSelectOne'
+                   or col.field['class'].simpleName eq 'CustomFieldSelectMultiple'}">
             <!-- CONCEPT -->
             <siaInplace:concept
                     id="concept"
                     hasBeenModified="#{hasBeenModified}"
                     field="#{col.field}"
-                    panelId="#{panelId}"
-                    required="#{col.required}"
-                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
-                    mode="#{mode}"
-                    updateTargetsOnBlur="#{conceptFieldsUpdateTargetsOnBlur} #{updateTargetsOnBlur}"
-                    answer="#{answer}"
-                    panelStyleClass="#{panelStyleClass}"
-                    onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
-                    dependsOnBaseConcept="#{formCtx.getDependsOnBaseConcept(col.field)}"
-                    formCtx="#{formCtx}"
-            />
-        </c:if>
-
-        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'}">
-            <!-- CONCEPT -->
-            <siaInplace:concept
-                    id="conceptMultiple"
-                    hasBeenModified="#{hasBeenModified}"
-                    field="#{col.field}"
-                    multiple="true"
+                    multiple="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode' or col.field['class'].simpleName eq 'CustomFieldSelectMultiple'}"
                     panelId="#{panelId}"
                     required="#{col.required}"
                     label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
@@ -358,6 +342,8 @@
                     hasBeenModified="#{hasBeenModified}"
                     field="#{col.field}"
                     mode="#{mode}"
+                    panelId="#{panelId}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                     onModified="#{formCtx.onFieldAnswerModifiedListener}"
                     updateTargetsOnBlur="#{updateTargetsOnBlur}"
                     required="#{col.required}"

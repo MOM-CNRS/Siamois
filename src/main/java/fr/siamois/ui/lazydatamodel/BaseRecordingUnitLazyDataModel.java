@@ -1,12 +1,12 @@
 package fr.siamois.ui.lazydatamodel;
 
 
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel;

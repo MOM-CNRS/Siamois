@@ -337,6 +337,13 @@
                                                            styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default">
                                                 <h:outputText styleClass="ui-icon bi bi-arrows-angle-expand"/>
                                             </p:commandLink>
+                                            <p:commandLink rendered="#{panel.canOpenInProjectSettings()}"
+                                                           id="openInProjectSettingsButton"
+                                                           action="#{navBean.redirectToActionUnitSettings(panel.unit)}"
+                                                           styleClass="ui-panel-titlebar-icon ui-corner-all ui-state-default"
+                                                           title="Ouvrir le projet dans les paramètres">
+                                                <h:outputText styleClass="ui-icon bi bi-gear"/>
+                                            </p:commandLink>
                                         </div>
 
                                     </h:form>

@@ -22,8 +22,10 @@
             <p:row id="row-#{prefix}-#{statusIndex}-#{rowStatus.index}">
 
                 <c:forEach items="#{row.columns}" var="col" varStatus="colStatus">
+
                     <p:column styleClass="#{col.className}" style="min-width: 250px;"
-                              id="col-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}">
+                              id="col-#{prefix}-#{statusIndex}-#{rowStatus.index}-#{colStatus.index}-#{col.field.id}">
+
                         <ui:include src="/pages/shared/form/customFormFieldContentForPanel.xhtml">
                             <ui:param name="bean" value="#{bean}"/>
                             <ui:param name="col" value="#{col}"/>
@@ -142,8 +144,15 @@
                                 <div>
                                     <p:outputLabel for="fieldUnit" value="Unité"
                                                    style="color:var(--text-light);display:block;"/>
-                                    <p:selectOneMenu id="fieldUnit" style="width:100%">
-                                        <f:selectItem itemLabel="m" itemValue="m"/>
+                                    <p:selectOneMenu id="fieldUnit" style="width:100%"
+                                                     value="#{bean.formContext.newFieldManager.unitId}">
+                                        <f:selectItem itemLabel="" itemValue="#{null}"
+                                                      noSelectionOption="true"/>
+                                        <f:selectItems
+                                                value="#{bean.formContext.newFieldManager.unitOptions}"
+                                                var="unitOption"
+                                                itemValue="#{unitOption.id}"
+                                                itemLabel="#{empty unitOption.symbol ? unitOption.label : unitOption.symbol}"/>
                                     </p:selectOneMenu>
                                 </div>
                             </div>
@@ -154,8 +163,10 @@
                                                  actionListener="#{bean.formContext.newFieldManager.saveNewField}"
                                                  value="Ajouter le champ"
                                                  update="@form"/>
-                                <p:commandButton icon="pi pi-times" actionListener="#{customFormPanel.cancelNewField}"
-                                                 update="@parent"
+                                <p:commandButton icon="pi pi-times"
+                                                 actionListener="#{bean.formContext.newFieldManager.cancelNewField}"
+                                                 process="@this"
+                                                 update="@form"
                                                  styleClass="ui-button-flat ui-button-plain ui-button-danger"/>
                             </div>
                         </div>

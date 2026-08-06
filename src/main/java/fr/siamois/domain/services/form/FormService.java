@@ -1,16 +1,15 @@
 package fr.siamois.domain.services.form;
 
 
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customfieldanswer.*;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
-import fr.siamois.infrastructure.database.repositories.form.FormRepository;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
@@ -34,7 +33,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -51,36 +50,9 @@ import java.util.stream.Collectors;
 public class FormService {
 
     private final LabelBean labelBean;
-    private final FormRepository formRepository;
     private final FormScopeRepository formScopeRepository;
     private final UnitDefinitionMapper unitDefinitionMapper;
-
-
-    /**
-     * Find a form by its ID
-     *
-     * @param id The ID of the form
-     * @return The form having the given ID
-     */
-    @Transactional(readOnly = true)
-    public CustomForm findById(long id) {
-        return formRepository.findById(id).orElse(null);
-    }
-
-    /**
-     * Find the form to display for a given type of recording unit in the context of an institution
-     *
-     * @param recordingUnitType The type of recording unit
-     * @param institution       The institution
-     * @return The form
-     */
-    @Transactional(readOnly = true)
-    public CustomForm findCustomFormByRecordingUnitTypeAndInstitutionId(ConceptDTO recordingUnitType, InstitutionDTO institution) {
-        Optional<CustomForm> optForm = formRepository.findEffectiveFormByTypeAndInstitution(recordingUnitType == null ? null : recordingUnitType.getId(), institution.getId());
-        // If none found, try to find a form without specifying the type
-        // Should we throw an error if none found?
-        return optForm.orElseGet(() -> formRepository.findEffectiveFormByTypeAndInstitution(null, institution.getId()).orElse(null));
-    }
+    private final CustomFieldAnswerService customFieldAnswerService;
 
     @Transactional(readOnly = true)
     public List<Concept> findConfiguredRecordingUnitTypesByInstitution(InstitutionDTO institution) {
@@ -89,69 +61,90 @@ public class FormService {
 
     // --------- Answer creators
 
-    private static final Map<Class<? extends CustomField>, Supplier<? extends CustomFieldAnswer>> ANSWER_CREATORS =
-            Map.ofEntries(
-                    Map.entry(CustomFieldText.class, CustomFieldAnswerText::new),
-                    Map.entry(CustomFieldSelectOneFromFieldCode.class, CustomFieldAnswerSelectOneFromFieldCode::new),
-                    Map.entry(CustomFieldSelectMultiplePerson.class, CustomFieldAnswerSelectMultiplePerson::new),
-                    Map.entry(CustomFieldDateTime.class, CustomFieldAnswerDateTime::new),
-                    Map.entry(CustomFieldSelectOneActionUnit.class, CustomFieldAnswerSelectOneActionUnit::new),
-                    Map.entry(CustomFieldSelectOneSpatialUnit.class, CustomFieldAnswerSelectOneSpatialUnit::new),
-                    Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, CustomFieldAnswerSelectMultipleSpatialUnitTree::new),
-                    Map.entry(CustomFieldSelectOneActionCode.class, CustomFieldAnswerSelectOneActionCode::new),
-                    Map.entry(CustomFieldInteger.class, CustomFieldAnswerInteger::new),
-                    Map.entry(CustomFieldSelectOnePerson.class, CustomFieldAnswerSelectOnePerson::new)
-            );
+    public CustomFormResponseViewModel initOrReuseResponse(
+            CustomFormResponseViewModel existing,
+            Object jpaEntity,
+            FieldSource fieldSource,
+            boolean forceInit) {
 
-    /**
-     * Create or reuse a CustomFormResponse for the given entity + field source.
-     *
-     * @param existing    existing response (may be null)
-     * @param jpaEntity   entity we bind system fields against
-     * @param fieldSource abstraction over fields (single panel or row)
-     * @param forceInit   if true, ignore existing answers and rebuild everything
-     */
-    public CustomFormResponseViewModel initOrReuseResponse(CustomFormResponseViewModel existing,
-                                                           Object jpaEntity,
-                                                           FieldSource fieldSource,
-                                                           boolean forceInit) {
+        boolean onlyInitMissing = existing != null && !forceInit;
 
-        CustomFormResponseViewModel response;
-        Map<CustomField, CustomFieldAnswerViewModel> answers;
+        CustomFormResponseViewModel response =
+                onlyInitMissing ? existing : new CustomFormResponseViewModel();
 
-        if (existing != null && !forceInit) {
-            response = existing;
-            answers = response.getAnswers();
-            if (answers == null) {
-                answers = new HashMap<>();
-            }
-        } else {
-            response = new CustomFormResponseViewModel();
-            answers = new HashMap<>();
-        }
+        Map<CustomField, CustomFieldAnswerViewModel> answers =
+                getOrCreateAnswers(response, onlyInitMissing);
 
-        boolean onlyInitMissing = (existing != null && !forceInit);
         List<String> bindableFields = getBindableFieldNames(jpaEntity);
 
+        Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
+                loadAdditionalAnswers(jpaEntity);
+
         for (CustomField field : fieldSource.getAllFields()) {
-
-            if (field == null ||
-                    (onlyInitMissing && answers.containsKey(field))) {
-                continue;
-            }
-
-            CustomFieldAnswerViewModel answer =
-                    CustomFieldAnswerFactory.instantiateAnswerForField(field);
-
-            if (answer != null) {
-                initializeAnswer(answer, field, jpaEntity, bindableFields);
-                answers.put(field, answer);
-            }
+            initializeFieldIfNeeded(
+                    field,
+                    answers,
+                    additionalAnswers,
+                    jpaEntity,
+                    bindableFields,
+                    onlyInitMissing
+            );
         }
-
 
         response.setAnswers(answers);
         return response;
+    }
+
+    private Map<CustomField, CustomFieldAnswerViewModel> getOrCreateAnswers(
+            CustomFormResponseViewModel response,
+            boolean reuseExisting) {
+
+        if (!reuseExisting || response.getAnswers() == null) {
+            return new HashMap<>();
+        }
+
+        return response.getAnswers();
+    }
+
+    private Map<CustomField, CustomFieldAnswerViewModel> loadAdditionalAnswers(
+            Object jpaEntity) {
+
+        if (jpaEntity instanceof RecordingUnitDTO recordingUnit) {
+            return customFieldAnswerService.loadAdditionalFieldAnswers(recordingUnit);
+        }
+
+        return Map.of();
+    }
+
+    private void initializeFieldIfNeeded(
+            CustomField field,
+            Map<CustomField, CustomFieldAnswerViewModel> answers,
+            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers,
+            Object jpaEntity,
+            List<String> bindableFields,
+            boolean onlyInitMissing) {
+
+        if (field == null || onlyInitMissing && answers.containsKey(field)) {
+            return;
+        }
+
+        CustomFieldAnswerViewModel additionalAnswer = additionalAnswers.get(field);
+
+        if (additionalAnswer != null && !Boolean.TRUE.equals(field.getIsSystemField())) {
+            initializeMeasurement(additionalAnswer, field);
+            answers.put(field, additionalAnswer);
+            return;
+        }
+
+        CustomFieldAnswerViewModel answer =
+                CustomFieldAnswerFactory.instantiateAnswerForField(field);
+
+        if (answer == null) {
+            return;
+        }
+
+        initializeAnswer(answer, field, jpaEntity, bindableFields);
+        answers.put(field, answer);
     }
 
     /**
@@ -218,7 +211,7 @@ public class FormService {
     private ValueMatcher toMatcher(EnabledWhenJson.ValueJson vj) {
         String className = vj.getAnswerClass();
         return switch (className) {
-            case "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode" ->
+            case "fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode" ->
                     ValueMatcherFactory.forSelectOneFromFieldCode(vj);
             default -> ValueMatcherFactory.defaultMatcher();
         };
@@ -263,88 +256,133 @@ public class FormService {
                 && bindableFields.contains(field.getValueBinding());
     }
 
-    private static Object extractValueFromAnswer(CustomFieldAnswerViewModel answer) {
-        if (answer instanceof CustomFieldAnswerDateTimeViewModel a && a.getValue() != null) {
-            return a.getValue().atOffset(ZoneOffset.UTC);
-        } else if (answer instanceof CustomFieldAnswerTextViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOnePersonViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerMeasurementViewModel a) {
-            if (a.getValue() != null && a.getValue().getNumericValue() != null) {
-                return a.getValue();
-            }
+    /**
+     * Collect the answers for all "additional" (non-system) fields in the response, keyed by field.
+     * Used to persist additional-field answers as {@code CustomFieldAnswer} entities.
+     *
+     * @param response the form response
+     * @return a map of additional CustomField to its answer view model (never null)
+     */
+    public Map<CustomField, CustomFieldAnswerViewModel> extractAdditionalFieldAnswers(CustomFormResponseViewModel response) {
+        if (response == null || response.getAnswers() == null) return Map.of();
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = new HashMap<>();
+        for (Map.Entry<CustomField, CustomFieldAnswerViewModel> entry : response.getAnswers().entrySet()) {
+            CustomField field = entry.getKey();
+            if (field == null || Boolean.TRUE.equals(field.getIsSystemField()) || entry.getValue() == null) continue;
+
+            result.put(field, entry.getValue());
+        }
+        return result;
+    }
+
+    private static final Map<Class<? extends CustomFieldAnswerViewModel>, Function<CustomFieldAnswerViewModel, Object>> VALUE_EXTRACTORS =
+            Map.ofEntries(
+                    Map.entry(CustomFieldAnswerDateTimeViewModel.class,
+                            a -> extractDateTime((CustomFieldAnswerDateTimeViewModel) a)),
+                    Map.entry(CustomFieldAnswerTextViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerSelectMultiplePersonViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerSelectOnePersonViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerMeasurementViewModel.class,
+                            a -> extractMeasurement((CustomFieldAnswerMeasurementViewModel) a)),
+                    Map.entry(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class,
+                            a -> extractConceptFromFieldCode((CustomFieldAnswerSelectOneFromFieldCodeViewModel) a)),
+                    Map.entry(CustomFieldAnswerSelectOneActionUnitViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerSelectOneSpatialUnitViewModel.class,
+                            a -> extractSpatialUnit((CustomFieldAnswerSelectOneSpatialUnitViewModel) a)),
+                    Map.entry(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class,
+                            a -> extractSpatialUnitSet((CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel) a)),
+                    Map.entry(CustomFieldAnswerSelectOneActionCodeViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerIntegerViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerSelectOneAddressViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class,
+                            a -> extractRecordingUnitSet((CustomFieldAnswerSelectMultipleRecordingUnitViewModel) a)),
+                    Map.entry(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class,
+                            a -> extractConceptSet((CustomFieldAnswerSelectMultipleFromFieldCodeViewModel) a)),
+                    Map.entry(CustomFieldAnswerSelectMultipleSpecimenViewModel.class,
+                            a -> extractSpecimenSet((CustomFieldAnswerSelectMultipleSpecimenViewModel) a)),
+                    Map.entry(CustomFieldAnswerSelectMultipleContainerViewModel.class,
+                            a -> extractContainerSet((CustomFieldAnswerSelectMultipleContainerViewModel) a)),
+                    Map.entry(CustomFieldAnswerSelectMultiplePhaseViewModel.class,
+                            a -> extractPhaseSet((CustomFieldAnswerSelectMultiplePhaseViewModel) a))
+            );
+
+    static Object extractValueFromAnswer(CustomFieldAnswerViewModel answer) {
+        if (answer == null) return null;
+        Function<CustomFieldAnswerViewModel, Object> extractor = VALUE_EXTRACTORS.get(answer.getClass());
+        return extractor != null ? extractor.apply(answer) : null;
+    }
+
+    private static Object extractDateTime(CustomFieldAnswerDateTimeViewModel a) {
+        return a.getValue() != null ? a.getValue().atOffset(ZoneOffset.UTC) : null;
+    }
+
+    private static Object extractMeasurement(CustomFieldAnswerMeasurementViewModel a) {
+        return (a.getValue() != null && a.getValue().getNumericValue() != null) ? a.getValue() : null;
+    }
+
+    private static Object extractConceptFromFieldCode(CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
+        try {
+            return a.getValue().concept();
+        } catch (NullPointerException e) {
             return null;
-        } else if (answer instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel a) {
-            try {
-                return a.getValue().concept();
-            } catch (NullPointerException e) {
-                return null;
-            }
-        } else if (answer instanceof CustomFieldAnswerSelectOneActionUnitViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
-            if (a.getValue() != null) {
-                // Convert back to place dto (single selection)
-                PlaceSuggestionDTO ans = a.getValue();
-                SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
-                dto.setId(ans.getId());
-                dto.setName(ans.getName());
-                dto.setCode(ans.getCode());
-                dto.setCategory(ans.getCategory());
-                return dto;
-            } else {
-                return null;
-            }
+        }
+    }
 
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
-            // Convert each PlaceSuggestionDTO in the list to SpatialUnitSummaryDTO
-            List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
-            return placeSuggestionList.stream()
-                    .map(place -> {
-                        SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
-                        dto.setId(place.getId());
-                        dto.setName(place.getName());
-                        dto.setCode(place.getCode());
-                        dto.setCategory(place.getCategory());
-                        return dto;
-                    })
-                    .collect(Collectors.toSet());
-        } else if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerIntegerViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectOneAddressViewModel a) {
-            return a.getValue();
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
-            if (a.getValue() == null) {
-                return null;
-            }
-            return new HashSet<>(a.getValue());
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
-            if (a.getValue() == null) {
-                return null;
-            }
-            return a.getValue().stream()
-                    .map(ConceptAutocompleteDTO::concept)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
-        } else if (answer instanceof CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
-            if (a.getValue() == null) {
-                return null;
-            }
-            return new HashSet<>(a.getValue());
-        }
-        if (answer instanceof CustomFieldAnswerSelectMultipleContainerViewModel a) {
-            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
-        }
-        if (answer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel a) {
-            return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
-        }
+    private static Object extractSpatialUnit(CustomFieldAnswerSelectOneSpatialUnitViewModel a) {
+        if (a.getValue() == null) return null;
+        PlaceSuggestionDTO ans = a.getValue();
+        SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+        dto.setId(ans.getId());
+        dto.setName(ans.getName());
+        dto.setCode(ans.getCode());
+        dto.setCategory(ans.getCategory());
+        return dto;
+    }
 
-        return null;
+    private static Object extractSpatialUnitSet(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel a) {
+        List<PlaceSuggestionDTO> placeSuggestionList = a.getValue();
+        return placeSuggestionList.stream()
+                .map(place -> {
+                    SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
+                    dto.setId(place.getId());
+                    dto.setName(place.getName());
+                    dto.setCode(place.getCode());
+                    dto.setCategory(place.getCategory());
+                    return dto;
+                })
+                .collect(Collectors.toSet());
+    }
+
+    private static Object extractRecordingUnitSet(CustomFieldAnswerSelectMultipleRecordingUnitViewModel a) {
+        return a.getValue() == null ? null : new HashSet<>(a.getValue());
+    }
+
+    private static Object extractConceptSet(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel a) {
+        if (a.getValue() == null) return null;
+        return a.getValue().stream()
+                .map(ConceptAutocompleteDTO::concept)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private static Object extractSpecimenSet(CustomFieldAnswerSelectMultipleSpecimenViewModel a) {
+        return a.getValue() == null ? null : new HashSet<>(a.getValue());
+    }
+
+    private static Object extractContainerSet(CustomFieldAnswerSelectMultipleContainerViewModel a) {
+        return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
+    }
+
+    private static Object extractPhaseSet(CustomFieldAnswerSelectMultiplePhaseViewModel a) {
+        return a.getValue() != null ? new HashSet<>(a.getValue()) : null;
     }
 
     /**
@@ -375,9 +413,6 @@ public class FormService {
                                   Object jpaEntity,
                                   List<String> bindableFields) {
 
-        CustomFieldAnswerId answerId = new CustomFieldAnswerId();
-        answerId.setField(field);
-        answer.setPk(answerId);
         answer.setHasBeenModified(false);
 
         if (answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer
@@ -393,20 +428,27 @@ public class FormService {
 
             Object value = getFieldValue(jpaEntity, field.getValueBinding());
             populateSystemFieldValue(answer, value);
+        }
 
-            // POST INIT
-            if (field instanceof CustomFieldMeasurement measField
-                    && answer instanceof CustomFieldAnswerMeasurementViewModel measAnswer
-                    && measAnswer.getValue().getUnit() == null) {
+        // POST INIT
+        initializeMeasurement(answer, field);
+    }
 
-                measAnswer.getValue().setUnit(
-                        unitDefinitionMapper.convert(measField.getUnit())
-                );
-            }
+    public void initializeMeasurement(CustomFieldAnswerViewModel answer, CustomField field) {
+        if (!(field instanceof CustomFieldMeasurement measurementField)
+                || !(answer instanceof CustomFieldAnswerMeasurementViewModel measurementAnswer)) {
+            return;
+        }
 
-
+        if (measurementAnswer.getValue() == null) {
+            measurementAnswer.setValue(new MeasurementAnswerDTO());
+        }
+        if (measurementAnswer.getValue().getUnit() == null) {
+            measurementAnswer.getValue().setUnit(unitDefinitionMapper.convert(measurementField.getUnit()));
         }
     }
+
+
 
 
     /**

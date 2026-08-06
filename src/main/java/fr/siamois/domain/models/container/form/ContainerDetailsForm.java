@@ -1,66 +1,69 @@
 package fr.siamois.domain.models.container.form;
 
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
 
 public class ContainerDetailsForm extends ContainerForm {
 
-    public static CustomForm build() {
-        return new CustomForm.Builder()
-                .name("Details tab form")
-                .description("Contains the main form")
+    public static FormUiDto build() {
+        return new FormUiDto.Builder()
                 .addPanel(
-                        new CustomFormPanel.Builder()
+                        new CustomFormPanelUiDto.Builder()
                                 .name("common.header.general")
                                 .isSystemPanel(true)
                                 .addRow(
-                                        new CustomRow.Builder()
-                                                .addColumn(new CustomCol.Builder()
+                                        new CustomRowUiDto.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(true)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(identifierField)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(typeField)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(spatialUnitField)
+                                                        .build())
+                                                .addColumn(new CustomColUiDto.Builder()
+                                                        .readOnly(true)
+                                                        .className(COLUMN_CLASS_NAME)
+                                                        .field(actionUnitField)
                                                         .build())
                                                 .build()
                                 )
                                 .build()
                 )
                 .addPanel(
-                        new CustomFormPanel.Builder()
+                        new CustomFormPanelUiDto.Builder()
                                 .name("common.header.dimensions")
                                 .isSystemPanel(true)
                                 .canUserAddField(true)
                                 .addRow(
-                                        new CustomRow.Builder()
-                                                .addColumn(new CustomCol.Builder()
+                                        new CustomRowUiDto.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(lengthField)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(widthField)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(heightField)
                                                         .build())
-                                                .addColumn(new CustomCol.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
                                                         .className(COLUMN_CLASS_NAME)
                                                         .field(weightField)

@@ -2,12 +2,16 @@ package fr.siamois.domain.models.form.customfield;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.database.id.AssignedOrSequenceIdGenerator;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Parameter;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -24,8 +28,20 @@ import java.util.Objects;
 @AllArgsConstructor
 public abstract class CustomField implements Serializable {
 
+    /**
+     * System fields (see {@code SystemFieldCatalog}) carry a fixed negative id assigned in code;
+     * {@link AssignedOrSequenceIdGenerator} persists that id as-is instead of generating one, so
+     * every environment refers to the same system field by the same id. Any other field (created
+     * through a project's field configuration screen) has no id of its own and gets the next value
+     * of {@code custom_field_id_seq} instead.
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(generator = "custom_field_id_generator")
+    @GenericGenerator(
+            name = "custom_field_id_generator",
+            type = AssignedOrSequenceIdGenerator.class,
+            parameters = @Parameter(name = SequenceStyleGenerator.SEQUENCE_PARAM, value = "custom_field_id_seq")
+    )
     @Column(name = "custom_field_id", nullable = false)
     private Long id;
 
@@ -53,14 +69,13 @@ public abstract class CustomField implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CustomField that = (CustomField) o;
-        return Objects.equals(concept, that.concept);
+        if (!(o instanceof CustomField that)) return false;
+        return id != null && id.equals(that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(concept);
+        return Objects.hashCode(id);
     }
 
 
@@ -69,6 +84,9 @@ public abstract class CustomField implements Serializable {
     }
 
     public String getConceptUri() {
+        if (concept == null || concept.getVocabulary() == null) {
+            return null;
+        }
         String vocabularyUri = concept.getVocabulary().getUri();
         return vocabularyUri+"&idc="+concept.getExternalId();
     }

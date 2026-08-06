@@ -1,8 +1,11 @@
 package fr.siamois.ui.form;
 
-import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.services.form.CustomFieldMeasurementService;
-import fr.siamois.dto.entity.MeasurementAnswerDTO;
+import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -23,21 +26,35 @@ import java.util.List;
 public class NewFieldManagerBean {
 
     private final CustomFieldMeasurementService customFieldMeasurementService;
+    private final RecordingUnitService recordingUnitService;
+    private final FormService formService;
     private final CustomFormResponseViewModel formResponse;
+    private final AbstractEntityDTO owner; // entity whose form the fields are created from
     private final List<CustomFieldMeasurement> addFieldOptions; // options of existing fields when clicking the split button dropdown
+    private final List<UnitDefinitionDTO> unitOptions; // units a new field can measure in
 
     private boolean showEditor = false;
     private CustomFormPanelUiDto currentPanel;
     private CustomFieldMeasurementDTO newField;
     private ConceptAutocompleteDTO type;
     private ConceptAutocompleteDTO nature;
-    private UnitDefinitionDTO unit;
+    private Long unitId; // the unit picked in the editor, among unitOptions
 
     public void prepareNewField(CustomFormPanelUiDto panel) {
         this.currentPanel = panel;
         this.showEditor = true;
         this.newField = new CustomFieldMeasurementDTO();
+        this.unitId = defaultUnitId();
         newField.setSystemField(false);
+    }
+
+    private Long defaultUnitId() {
+        return unitOptions.stream()
+                .filter(UnitDefinitionDTO::isSystemBase)
+                .findFirst()
+                .or(() -> unitOptions.stream().findFirst())
+                .map(UnitDefinitionDTO::getId)
+                .orElse(null);
     }
 
     public void cancelNewField() {
@@ -53,27 +70,44 @@ public class NewFieldManagerBean {
         // 1. Prepare and persist the new field definition
         newField.setLabel(type.getOriginalPrefLabel() + (nature != null ? " " + nature.getOriginalPrefLabel() : ""));
         newField.setSystemField(false);
-        newField.setUnit(unit);
+        newField.setUnit(selectedUnit());
         newField.setConcept(type.concept());
         newField.setMeasurementNature(nature != null ? nature.concept() : null);
 
         CustomFieldMeasurement created = customFieldMeasurementService.save(newField);
 
-        // 2. Delegate to the common UI update logic
+        // 2. Keep the field attached to the unit that created it, and offer it right away among the
+        // existing measurement fields of the split button dropdown
+        linkToOwner(created);
+        if (!addFieldOptions.contains(created)) {
+            addFieldOptions.add(created);
+        }
+
+        // 3. Delegate to the common UI update logic
         attachFieldToPanel(currentPanel, created);
 
-        // 3. Cleanup
+        // 4. Cleanup
         cancelNewField();
+    }
+
+    private UnitDefinitionDTO selectedUnit() {
+        if (unitId == null) return null;
+        return unitOptions.stream()
+                .filter(option -> unitId.equals(option.getId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void linkToOwner(CustomFieldMeasurement created) {
+        if (owner instanceof RecordingUnitDTO recordingUnit && recordingUnit.getId() != null) {
+            recordingUnitService.addMeasurementField(recordingUnit.getId(), created);
+        }
     }
 
     public void addFieldFromMeasurement(CustomFormPanelUiDto panel, CustomFieldMeasurement field) {
         attachFieldToPanel(panel, field);
     }
 
-    /**
-     * Common logic to inject a field into the UI tree.
-     * Logic: If a row exists, add to last row. Otherwise, create a new row.
-     */
     private void attachFieldToPanel(CustomFormPanelUiDto panel, CustomFieldMeasurement field) {
         if (panel.getRows() == null) {
             panel.setRows(new ArrayList<>());
@@ -100,10 +134,8 @@ public class NewFieldManagerBean {
             lastRow.getColumns().add(newCol);
         }
 
-        // 4. Initialize the placeholder in the answer map
-        // Use putIfAbsent to prevent overwriting if the user clicks the same library item twice
         CustomFieldAnswerMeasurementViewModel answer = new CustomFieldAnswerMeasurementViewModel();
-        answer.setValue(new MeasurementAnswerDTO());
+        formService.initializeMeasurement(answer, field);
         formResponse.getAnswers().putIfAbsent(field, answer);
     }
 
@@ -120,10 +152,6 @@ public class NewFieldManagerBean {
         }
     }
 
-    /**
-     * Helper to handle column removal and row cleanup.
-     * Returns true if the column was found and removed.
-     */
     private boolean processRowRemoval(Iterator<CustomRowUiDto> rowIterator, CustomColUiDto colToRemove) {
         CustomRowUiDto row = rowIterator.next();
 

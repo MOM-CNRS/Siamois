@@ -1,15 +1,17 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
 import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.table.definitions.TableDefinitions.column;
+import static fr.siamois.ui.table.definitions.TableDefinitions.systemField;
 
 
 /**
@@ -38,136 +40,35 @@ public final class RecordingUnitTableDefinitionFactory {
         if (tableModel == null) {
             return;
         }
+        applyTo(tableModel.getTableDefinition());
+    }
 
-        Concept typeConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4287605")
-                .build();
-        Concept openingdateConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286198")
-                .build();
-        Concept authorConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286195")
-                .build();
-        Concept contributorsConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286195")
-                .build();
-        Concept actionConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286244")
-                .build();
-        Concept spatialConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286245")
-                .build();
-        Concept recordingUnitIdConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4286193")
-                .build();
-        Concept matrixColorConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("Couleur de la matrice")
-                .build();
-        Concept isPartOfConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4289277")
-                .build();
-        Concept containsConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4289278")
-                .build();
+    /**
+     * The columns of the table on their own, with no view model to apply them to.
+     *
+     * @return a fresh definition carrying the table's standard columns
+     */
+    public static TableDefinition definition() {
+        TableDefinition definition = new TableDefinition();
+        applyTo(definition);
+        return definition;
+    }
 
-        CustomFieldText recordingUnitIdField =  CustomFieldText.builder()
-                .label("recordingunit.field.identifier")
-                .isSystemField(true)
-                .isTextArea(false)
-                .id(8L)
-                .valueBinding("fullIdentifier")
-                .concept(recordingUnitIdConcept)
-                .build();
+    private static void applyTo(TableDefinition definition) {
 
+        CustomField recordingUnitIdField = systemField(ConfigurableTable.UE, "fullIdentifier");
+        CustomField typeField = systemField(ConfigurableTable.UE, "type");
+        CustomField matrixColor = systemField(ConfigurableTable.UE, "matrixColor");
+        CustomField dateField = systemField(ConfigurableTable.UE, "openingDate");
+        CustomField authorField = systemField(ConfigurableTable.UE, "author");
+        CustomField contributorsField = systemField(ConfigurableTable.UE, "contributors");
+        CustomField actionField = systemField(ConfigurableTable.UE, "actionUnit");
+        CustomField spatialField = systemField(ConfigurableTable.UE, "spatialUnit");
+        CustomField isPartOfField = systemField(ConfigurableTable.UE, "parents");
+        CustomField containsField = systemField(ConfigurableTable.UE, "children");
+        CustomField phasesField = systemField(ConfigurableTable.UE, "phases");
 
-        CustomFieldSelectOneFromFieldCode typeField =  CustomFieldSelectOneFromFieldCode.builder()
-                .label("recordingunit.property.type")
-                .isSystemField(true)
-                .id(1L)
-                .valueBinding("type")
-                .concept(typeConcept)
-                .fieldCode("SIARU.TYPE")
-                .styleClass("mr-2 recording-unit-type-chip")
-                .build();
-
-        CustomFieldText matrixColor =  CustomFieldText.builder()
-                .label("recordingunit.field.matrixColor")
-                .isSystemField(true)
-                .isTextArea(false)
-                .id(9L)
-                .valueBinding("matrixColor")
-                .concept(matrixColorConcept)
-                .build();
-
-        CustomFieldDateTime dateField =  CustomFieldDateTime.builder()
-                .label("recordingunit.field.openingDate")
-                .isSystemField(true)
-                .id(2L)
-                .valueBinding("openingDate")
-                .concept(openingdateConcept)
-                .showTime(false)
-                .build();
-        CustomFieldSelectOnePerson authorField =  CustomFieldSelectOnePerson.builder()
-                .label("recordingunit.field.author")
-                .isSystemField(true)
-                .id(3L)
-                .valueBinding("author")
-                .concept(authorConcept)
-                .build();
-        CustomFieldSelectMultiplePerson contributorsField =  CustomFieldSelectMultiplePerson.builder()
-                .label("recordingunit.field.contributors")
-                .isSystemField(true)
-                .id(4L)
-                .valueBinding("contributors")
-                .concept(contributorsConcept)
-                .build();
-        CustomFieldSelectOneActionUnit actionField = CustomFieldSelectOneActionUnit.builder()
-                .label("recordingunit.field.actionUnit")
-                .isSystemField(true)
-                .id(5L)
-                .valueBinding("actionUnit")
-                .concept(actionConcept)
-                .build();
-        CustomFieldSelectOneSpatialUnit spatialField = CustomFieldSelectOneSpatialUnit.builder()
-                .label("recordingunit.field.spatialUnit")
-                .isSystemField(true)
-                .id(6L)
-                .valueBinding("spatialUnit")
-                .concept(spatialConcept)
-                .build();
-        CustomFieldSelectMultipleRecordingUnit
-                isPartOfField = CustomFieldSelectMultipleRecordingUnit.builder()
-                .label("common.field.parents")
-                .isSystemField(true)
-                .id(10L)
-                .valueBinding("parents")
-                .concept(isPartOfConcept)
-                .build();
-        CustomFieldSelectMultipleRecordingUnit containsField = CustomFieldSelectMultipleRecordingUnit.builder()
-                .label("common.field.children")
-                .isSystemField(true)
-                .id(11L)
-                .valueBinding("children")
-                .concept(containsConcept)
-                .build();
-
-        dateField.setId(2L);
-        typeField.setId(1L);
-        authorField.setId(3L);
-        contributorsField.setId(4L);
-        actionField.setId(5L);
-        spatialField.setId(6L);
-        tableModel.getTableDefinition().setCommandLinkColumn(
+        definition.setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
                         .headerKey("table.recordingunit.column.identifier")
@@ -193,7 +94,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("identifier")
                         .headerKey("recordingunit.field.identifier")
@@ -205,7 +106,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("isPartOf")
                         .headerKey("common.field.parents")
@@ -217,7 +118,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("contains")
                         .headerKey("common.field.children")
@@ -229,7 +130,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("action")
                         .headerKey("recordingunit.field.actionUnit")
@@ -242,7 +143,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("type")
                         .headerKey("recordingunit.property.type")
@@ -254,20 +155,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        Concept phasesConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("recordingunit.phases")
-                .build();
-
-        CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
-                .label("recordingunit.field.phases")
-                .isSystemField(true)
-                .id(20L)
-                .valueBinding("phases")
-                .concept(phasesConcept)
-                .build();
-
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("phases")
                         .headerKey("recordingunit.field.phases")
@@ -279,7 +167,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 RelationColumn.builder()
                         .id("relationships")
                         .headerKey("common.label.ruRelationships")
@@ -304,7 +192,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 RelationColumn.builder()
                         .id("specimen")
                         .headerKey("common.entity.specimen")
@@ -330,27 +218,20 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("spatial")
                         .headerKey("recordingunit.field.spatialUnit")
                         .field(spatialField)
-                        .sortable(false)
-                        .filterable(false)
+                        .sortable(true)
+                        .filterable(true)
                         .visible(true)
                         .readOnly(false)
                         .required(false)
-                        .sortable(true)
-                        .filterable(true)
-
                         .build()
         );
 
-
-
-
-
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("matrixColor")
                         .headerKey("recordingunit.field.matrixColor")
@@ -362,7 +243,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("openingDate")
                         .headerKey("recordingunit.field.openingDate")
@@ -373,7 +254,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(true)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("author")
                         .headerKey("recordingunit.field.author")
@@ -384,7 +265,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .required(true)
                         .build()
         );
-        tableModel.getTableDefinition().addColumn(
+        definition.addColumn(
                 FormFieldColumn.builder()
                         .id("contributors")
                         .headerKey("recordingunit.field.contributors")
@@ -396,8 +277,23 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-
-
-
+        // Fields that exist on RecordingUnit.DETAILS_FORM but had no table column of their own yet:
+        // configurable/toggleable, hidden from the table by default so nobody's view changes.
+        TableDefinitions.addColumns(definition,
+                column(systemField(ConfigurableTable.UE, "geomorphologicalCycle")).build(),
+                column(systemField(ConfigurableTable.UE, "geomorphologicalAgent")).build(),
+                column(systemField(ConfigurableTable.UE, "normalizedInterpretation")).build(),
+                column(systemField(ConfigurableTable.UE, "erosionShape")).build(),
+                column(systemField(ConfigurableTable.UE, "erosionProfile")).build(),
+                column(systemField(ConfigurableTable.UE, "erosionOrientation")).build(),
+                column(systemField(ConfigurableTable.UE, "description")).build(),
+                column(systemField(ConfigurableTable.UE, "comments")).build(),
+                column(systemField(ConfigurableTable.UE, "chronologicalPhase")).build(),
+                column(systemField(ConfigurableTable.UE, "tpq")).build(),
+                column(systemField(ConfigurableTable.UE, "taq")).build(),
+                column(systemField(ConfigurableTable.UE, "zInf")).build(),
+                column(systemField(ConfigurableTable.UE, "zSup")).build(),
+                column(systemField(ConfigurableTable.UE, "closingDate")).build()
+        );
     }
 }

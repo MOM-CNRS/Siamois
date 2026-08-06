@@ -7,28 +7,21 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
-import fr.siamois.infrastructure.database.repositories.form.CustomFormResponseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
@@ -38,6 +31,8 @@ import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
 import fr.siamois.mapper.RecordingUnitSummaryMapper;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -97,9 +92,6 @@ class RecordingUnitServiceTest {
     private DocumentRepository documentRepository;
 
     @Mock
-    private CustomFormResponseRepository customFormResponseRepository;
-
-    @Mock
     private ArkRepository arkRepository;
 
     @Mock
@@ -113,6 +105,9 @@ class RecordingUnitServiceTest {
 
     @Mock
     private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
+
+    @Mock
+    private CustomFieldAnswerService customFieldAnswerService;
 
     @InjectMocks
     private RecordingUnitService recordingUnitService;
@@ -154,6 +149,26 @@ class RecordingUnitServiceTest {
         RecordingUnit savedEntity = entityCaptor.getValue();
         assertNotNull(savedEntity);
 
+    }
+
+    @Test
+    void save_withAdditionalFieldAnswers_delegatesToCustomFieldAnswerServiceWithTheSavedDto() {
+        RecordingUnit recordingUnit = new RecordingUnit();
+        RecordingUnitDTO savedDto = new RecordingUnitDTO();
+        savedDto.setId(1L);
+
+        when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(recordingUnit);
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenReturn(recordingUnit);
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(savedDto);
+
+        CustomField field = mock(CustomField.class);
+        CustomFieldAnswerViewModel answer = new CustomFieldAnswerTextViewModel();
+        Map<CustomField, CustomFieldAnswerViewModel> answers = Map.of(field, answer);
+
+        RecordingUnitDTO result = recordingUnitService.save(new RecordingUnitDTO(), answers);
+
+        assertSame(savedDto, result);
+        verify(customFieldAnswerService).saveAdditionalFieldAnswers(savedDto, answers);
     }
 
     @Test
@@ -1321,10 +1336,6 @@ class RecordingUnitServiceTest {
             StratigraphicRelationship rel = new StratigraphicRelationship();
             ru.setRelationshipsAsUnit1(new HashSet<>(Set.of(rel)));
 
-            CustomFormResponse formResponse = new CustomFormResponse();
-            formResponse.setId(50L);
-            ru.setFormResponse(formResponse);
-
             Ark ark = new Ark();
             ark.setInternalId(99L);
             ru.setArk(ark);
@@ -1345,13 +1356,12 @@ class RecordingUnitServiceTest {
             verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(1L);
             verify(recordingUnitIdCounterRepository).deleteAllByRecordingUnitId(1L);
             verify(recordingUnitIdInfoRepository).deleteById(1L);
-            verify(customFormResponseRepository).deleteById(50L);
             verify(recordingUnitRepository).delete(ru);
             verify(arkRepository).deleteById(99L);
         }
 
         @Test
-        void deleteRecordingUnitById_noFormResponseNoArkNoIdInfo_skipsOptionalDeletes() {
+        void deleteRecordingUnitById_noArkNoIdInfo_skipsOptionalDeletes() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(5L);
             ru.setFullIdentifier("RU-5");
@@ -1366,7 +1376,6 @@ class RecordingUnitServiceTest {
 
             verify(stratigraphicRelationshipRepository, never()).deleteAll(anyList());
             verify(recordingUnitIdInfoRepository, never()).deleteById(any());
-            verify(customFormResponseRepository, never()).deleteById(any());
             verify(arkRepository, never()).deleteById(any());
             verify(recordingUnitRepository).delete(ru);
         }

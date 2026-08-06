@@ -2,7 +2,12 @@ package fr.siamois.domain.models.actionunit.form;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.form.customfield.*;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
 import jakarta.persistence.Transient;
@@ -87,7 +92,7 @@ public abstract class ActionUnitForm {
     public static final CustomFieldSelectOneFromFieldCode ACTION_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
             .isSystemField(true)
-            .id(4L)
+            .id(-101L)
             .valueBinding("type")
             .styleClass("mr-2 action-unit-type-chip")
             .iconClass("bi bi-bucket")
@@ -100,7 +105,7 @@ public abstract class ActionUnitForm {
     public static final CustomFieldText NAME_FIELD = CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
-            .id(2L)
+            .id(-102L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
             .build();
@@ -109,7 +114,7 @@ public abstract class ActionUnitForm {
     @JsonIgnore
     public static final CustomFieldText IDENTIFIER_FIELD = CustomFieldText.builder()
             .label("common.label.identifier")
-            .id(1L)
+            .id(-103L)
             .isSystemField(true)
             .autoGenerationFunction(AbstractSingleEntity::generateRandomActionUnitIdentifier)
             .valueBinding("identifier")
@@ -121,7 +126,7 @@ public abstract class ActionUnitForm {
     public static final CustomFieldSelectMultipleSpatialUnitTree SPATIAL_CONTEXT_FIELD = CustomFieldSelectMultipleSpatialUnitTree.builder()
             .label("common.label.selectedSpatialUnits")
             .isSystemField(true)
-            .id(3L)
+            .id(-104L)
             .valueBinding("spatialContext")
             .source("GEOPLAT")
             .concept(SPATIAL_CONTEXT_CONCEPT)
@@ -133,7 +138,7 @@ public abstract class ActionUnitForm {
             .label("common.field.beginDate")
             .isSystemField(true)
             .valueBinding("beginDate")
-            .id(5L)
+            .id(-105L)
             .showTime(false)
             .concept(BEGIN_DATE_CONCEPT)
             .build();
@@ -144,7 +149,7 @@ public abstract class ActionUnitForm {
             .label("common.field.endDate")
             .isSystemField(true)
             .valueBinding("endDate")
-            .id(7L)
+            .id(-106L)
             .showTime(false)
             .concept(END_DATE_CONCEPT)
             .build();
@@ -154,15 +159,15 @@ public abstract class ActionUnitForm {
     protected static final CustomFieldSelectOneActionCode ACTION_CODE_FIELD = CustomFieldSelectOneActionCode.builder()
             .label("actionunit.field.actionCode")
             .isSystemField(true)
-            .id(8L)
+            .id(-107L)
             .valueBinding("primaryActionCode")
             .concept(ACTION_CODE_CONCEPT)
             .build();
 
-    protected static final  CustomFieldSelectOneSpatialUnit MAIN_LOCATION_FIELD = CustomFieldSelectOneSpatialUnit.builder()
+    protected static final CustomFieldSelectOneSpatialUnit MAIN_LOCATION_FIELD = CustomFieldSelectOneSpatialUnit.builder()
             .label("common.label.mainLocation")
             .isSystemField(true)
-            .id(10L)
+            .id(-108L)
             .source("INSEE")
             .valueBinding("mainLocation")
             .concept(MAIN_LOCATION_CONCEPT)

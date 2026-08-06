@@ -8,17 +8,17 @@ import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneAddress;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.attributeconverter.FullAddressConverter;
 import fr.siamois.dto.entity.FullAddress;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -176,7 +176,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     public static final CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("specimen.field.category")
-            .id(1L)
+            .id(-201L)
             .isSystemField(true)
             .valueBinding("category")
             .styleClass("mr-2 spatial-unit-type-chip")
@@ -192,7 +192,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     public static final CustomFieldText NAME_FIELD =  CustomFieldText.builder()
             .label("common.label.name")
             .isSystemField(true)
-            .id(2L)
+            .id(-202L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
             .build();
@@ -202,7 +202,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     public static final CustomFieldText CODE_FIELD =  CustomFieldText.builder()
             .label("common.label.code")
             .isSystemField(true)
-            .id(9L)
+            .id(-203L)
             .valueBinding("code")
             .concept(CODE_CONCEPT)
             .build();
@@ -214,33 +214,31 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .isSystemField(true)
             .valueBinding("address")
             .concept(ADDRESS_CONCEPT)
-            .id(3L)
+            .id(-204L)
             .build();
 
     @Transient
     @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = new CustomForm.Builder()
-            .name("Details tab form")
-            .description("Contains the main form")
+    public static final FormUiDto NEW_UNIT_FORM = new FormUiDto.Builder()
             .addPanel(
-                    new CustomFormPanel.Builder()
+                    new CustomFormPanelUiDto.Builder()
                             .name("common.header.general")
                             .isSystemPanel(true)
                             .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
+                                    new CustomRowUiDto.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(false)
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(NAME_FIELD)
                                                     .build())
-                                            .addColumn(new CustomCol.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(false)
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(SPATIAL_UNIT_TYPE_FIELD)
                                                     .build())
-                                            .addColumn(new CustomCol.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(false)
                                                     .isRequired(false)
                                                     .className(COLUMN_CLASS_NAME)
@@ -254,34 +252,32 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomForm DETAILS_FORM = new CustomForm.Builder()
-            .name("Details tab form")
-            .description("Contains the main form")
+    public static final FormUiDto DETAILS_FORM = new FormUiDto.Builder()
             .addPanel(
-                    new CustomFormPanel.Builder()
+                    new CustomFormPanelUiDto.Builder()
                             .name("common.header.general")
                             .isSystemPanel(true)
                             .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
+                                    new CustomRowUiDto.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(false)
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(NAME_FIELD)
                                                     .build())
-                                            .addColumn(new CustomCol.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(false)
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(SPATIAL_UNIT_TYPE_FIELD)
                                                     .build())
-                                            .addColumn(new CustomCol.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(true)
                                                     .isRequired(false)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(CODE_FIELD)
                                                     .build())
-                                            .addColumn(new CustomCol.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(false)
                                                     .isRequired(false)
                                                     .className(COLUMN_CLASS_NAME)

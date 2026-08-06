@@ -4,12 +4,13 @@ package fr.siamois.domain.models.container;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.form.ContainerDetailsForm;
 import fr.siamois.domain.models.container.form.ContainerNewUnitForm;
-import fr.siamois.domain.models.form.customform.CustomForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -41,6 +42,10 @@ public class Container extends TraceableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_spatial_unit_id")
     protected SpatialUnit spatialUnit;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_action_unit_id")
+    protected ActionUnit actionUnit;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_parent_id", referencedColumnName = "container_id")
@@ -78,10 +83,10 @@ public class Container extends TraceableEntity {
 
     @Transient
     @JsonIgnore
-    public static final CustomForm DETAILS_FORM = ContainerDetailsForm.build();
+    public static final FormUiDto DETAILS_FORM = ContainerDetailsForm.build();
 
     @Transient
     @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = ContainerNewUnitForm.build();
+    public static final FormUiDto NEW_UNIT_FORM = ContainerNewUnitForm.build();
 
 }

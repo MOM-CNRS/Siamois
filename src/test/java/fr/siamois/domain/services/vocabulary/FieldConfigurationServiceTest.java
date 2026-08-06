@@ -1,31 +1,34 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ConceptDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
-import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +75,9 @@ class FieldConfigurationServiceTest {
     @Mock
     private PersonMapper personMapper;
 
+    @Mock
+    private FieldFormConfigRepository fieldFormConfigRepository;
+
     @InjectMocks
     private FieldConfigurationService service;
 
@@ -107,6 +113,13 @@ class FieldConfigurationServiceTest {
                 .identifier("http://exemple.org/concept/th2/3", "123")
                 .build();
 
+        // fetchAutocomplete(CustomFieldConcept, ...) reads the current user from the execution context
+        ExecutionContextHolder.set(userInfo);
+    }
+
+    @AfterEach
+    void afterEach() {
+        ExecutionContextHolder.clear();
     }
 
     @Test
@@ -675,6 +688,129 @@ class FieldConfigurationServiceTest {
 
         // a null input is forwarded as-is, the SQL function treats it as "no text filter"
         verify(autocompleteRepository).findMatchingConceptsFromRelatedFor(fieldConcept, baseValue, "fr", null, FieldConfigurationService.LIMIT_RESULTS);
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldSearchTheConfiguredBranch_whenFieldIsConfiguredOnATopTerm() throws NoConfigForFieldException {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        Concept topTerm = new Concept();
+        topTerm.setId(99L);
+        topTerm.setVocabulary(vocabulary);
+
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setBranchTopTerm(topTerm);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(config));
+
+        List<ConceptAutocompleteDTO> expectedResults = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"));
+        when(autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "que", FieldConfigurationService.LIMIT_RESULTS))
+                .thenReturn(expectedResults);
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(field, "que", 42L);
+
+        assertThat(results).isEqualTo(expectedResults);
+        verify(autocompleteRepository, never()).findMatchingConceptsInCollection(any(), anyString(), any(), anyInt());
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldSearchTheConfiguredCollection_whenFieldIsConfiguredOnACollection() throws NoConfigForFieldException {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(55L);
+
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setCollection(collection);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(config));
+
+        List<ConceptAutocompleteDTO> expectedResults = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"));
+        when(autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", "que", FieldConfigurationService.LIMIT_RESULTS))
+                .thenReturn(expectedResults);
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(field, "que", 42L);
+
+        assertThat(results).isEqualTo(expectedResults);
+        verify(autocompleteRepository, never()).findMatchingConceptsInBranchOf(any(), anyString(), any(), anyInt());
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldReturnNoSuggestion_whenInputIsBlank() throws NoConfigForFieldException {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        // an empty input matches everything, the configured branch or collection is not searched for it
+        assertThat(service.fetchAutocomplete(field, null, 42L)).isEmpty();
+        assertThat(service.fetchAutocomplete(field, "   ", 42L)).isEmpty();
+
+        verifyNoInteractions(autocompleteRepository, fieldFormConfigRepository);
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldFallBackOnTheFieldCodeConfig_whenFieldHasNoFormConfig() throws NoConfigForFieldException {
+        String fieldCode = "TESTFIELD";
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setId(7L);
+        field.setFieldCode(fieldCode);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        cfc.setConcept(concept);
+        cfc.setFieldCode(fieldCode);
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, 42L)).thenReturn(Optional.of(cfc));
+
+        List<ConceptAutocompleteDTO> expectedResults = List.of(
+                new ConceptAutocompleteDTO(new ConceptDTO(), "Concept 100", "100"));
+        when(autocompleteRepository.findMatchingConceptsFor(concept, "fr", "que", FieldConfigurationService.LIMIT_RESULTS))
+                .thenReturn(expectedResults);
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(field, "que", 42L);
+
+        assertThat(results).isEqualTo(expectedResults);
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldThrow_whenFieldHasNoFormConfig_andNoFieldCode() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> service.fetchAutocomplete(field, "que", 42L));
+        verifyNoInteractions(autocompleteRepository);
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldThrow_whenNoExecutionContextIsBound() {
+        // the current user is read from the execution context, there is no other way to know their language
+        ExecutionContextHolder.clear();
+
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        assertThrows(IllegalStateException.class, () -> service.fetchAutocomplete(field, "que", 42L));
+        verifyNoInteractions(fieldFormConfigRepository, autocompleteRepository);
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldThrow_whenFormConfigHasNeitherBranchNorCollection() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(config));
+
+        assertThrows(IllegalStateException.class, () -> service.fetchAutocomplete(field, "que", 42L));
+        verifyNoInteractions(autocompleteRepository);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Service for managing Containers.
@@ -31,6 +33,7 @@ public class ContainerService {
 
     private final ContainerRepository containerRepository;
     private final ContainerMapper containerMapper;
+    private final UnitDefinitionService unitDefinitionService;
 
     private Specification<Container> userFilterSpecs(FilterDTO filters) {
         Specification<Container> specs = Specification.where(null);
@@ -103,8 +106,16 @@ public class ContainerService {
 
     public ContainerDTO save(ContainerDTO dto) {
         Container entity = containerMapper.invertConvert(dto);
+        resolveUnitsOf(entity);
         entity = containerRepository.save(entity);
         return containerMapper.convert(entity);
+    }
+
+    private void resolveUnitsOf(Container container) {
+        if (container == null) return;
+        Stream.of(container.getLength(), container.getWidth(), container.getHeight(), container.getWeight())
+                .filter(Objects::nonNull)
+                .forEach(measurement -> measurement.setUnit(unitDefinitionService.resolve(measurement.getUnit())));
     }
 
     public ContainerDTO findById(Long id) {

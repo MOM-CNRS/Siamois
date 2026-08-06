@@ -4,16 +4,24 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.CustomFieldInteger;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.FilterDTO;
-import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.bean.NavBean;
@@ -26,6 +34,7 @@ import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.MultiHierarchyTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.SpecimenTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.StratigraphyTab;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
@@ -72,6 +81,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient ProfilePermissionService profilePermissionService;
+    private final transient EffectiveFormResolver effectiveFormResolver;
 
 
     // lazy model for children
@@ -100,6 +110,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
+        this.effectiveFormResolver = context.getBean(EffectiveFormResolver.class);
 
     }
 
@@ -380,11 +391,24 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void initForms(boolean forceInit) {
-        CustomForm form = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(unit.getType(), sessionSettingsBean.getSelectedInstitution());
-        detailsForm = formContextServices.getConversionService().convert(form, FormUiDto.class);
+        Long typeConceptId = unit.getType() != null ? unit.getType().getId() : null;
+        FormUiDto base = effectiveFormResolver.resolveEffectiveForm(
+                RecordingUnit.DETAILS_FORM, unit.getActionUnit().getId(), ConfigurableTable.UE, typeConceptId);
+        detailsForm = CustomFormComposer.withFieldsInPanel(base,
+                RecordingUnitDetailsForm.MEASUREMENTS_PANEL_NAME, measurementFields());
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);
+    }
+
+    private List<CustomColUiDto> measurementFields() {
+        return formContextServices.getCustomFieldMeasurementService()
+                .findByRecordingUnit(unit.getId()).stream()
+                .map(field -> new CustomColUiDto.Builder()
+                        .className("ui-g-12 ui-md-6 ui-lg-6")
+                        .field(field)
+                        .build())
+                .toList();
     }
 
 
@@ -495,7 +519,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 profilePermissionService,
                 recordingUnitService,
                 langBean,
-                formContextServices
+                formContextServices,
+                effectiveFormResolver
         );
         childTableModel.setParentPanel(this);
         RecordingUnitTableDefinitionFactory.applyTo(childTableModel);

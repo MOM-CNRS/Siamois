@@ -1,12 +1,16 @@
 package fr.siamois.ui.form.savestrategy;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.form.EntityFormContext;
 import fr.siamois.ui.form.EntityFormContextSaveStrategy;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.MessageUtils;
+
+import java.util.Map;
 
 public class RecordingUnitSaveStrategy implements EntityFormContextSaveStrategy<RecordingUnitDTO> {
     @Override
@@ -15,6 +19,7 @@ public class RecordingUnitSaveStrategy implements EntityFormContextSaveStrategy<
         context.flushBackToEntity();
         // Custom save logic for RecordingUnit
         RecordingUnitDTO unit = context.getUnit();
+        Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers = context.getAdditionalFieldAnswers();
         RecordingUnitService service = context.getRecordingUnitService();
         LangBean langBean = context.getLangBean();
 
@@ -24,7 +29,7 @@ public class RecordingUnitSaveStrategy implements EntityFormContextSaveStrategy<
         }
 
         try {
-            service.save(unit);
+            service.save(unit, additionalFieldAnswers);
         } catch (FailedRecordingUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit);
             return false;

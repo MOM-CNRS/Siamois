@@ -3,8 +3,14 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -15,6 +21,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -103,9 +110,8 @@ public class FindOpenApiService {
         shell.setValidated(ValidationStatus.INCOMPLETE);
 
         Map<String, Object> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        CustomForm customForm = Specimen.NEW_UNIT_FORM;
-
-        FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+        FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
+        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
         CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
         mergeFieldAnswers(response, fieldSource, fieldAnswers);
@@ -145,10 +151,10 @@ public class FindOpenApiService {
             return findOpenApiMapper.toResource(dto);
         }
 
-        CustomForm customForm = Specimen.DETAILS_FORM;
+        FormUiDto systemForm = Specimen.DETAILS_FORM;
 
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = conversionService.convert(customForm, FormUiDto.class);
+            FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
             mergeFieldAnswers(response, fieldSource, answers);

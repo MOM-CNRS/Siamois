@@ -2,6 +2,7 @@ package fr.siamois.domain.services.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,13 +12,10 @@ import java.util.List;
  * This service provides methods to retrieve custom fields associated with spatial units.
  */
 @Service
+@RequiredArgsConstructor
 public class CustomFieldService {
 
     private final CustomFieldRepository customFieldRepository;
-
-    public CustomFieldService(CustomFieldRepository customFieldRepository) {
-        this.customFieldRepository = customFieldRepository;
-    }
 
     /**
      * Finds all custom fields associated with a given spatial unit ID.

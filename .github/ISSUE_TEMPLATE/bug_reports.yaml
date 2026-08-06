@@ -1,0 +1,108 @@
+name: "Bug Report"
+description: Create a new ticket for a bug.
+title: "[Bug] - <title>"
+labels:
+  - bug
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a clear and concise description of the issue.
+      placeholder: Describe the issue...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Describe what you expected to happen.
+      placeholder: Explain the expected outcome...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Describe what actually happened.
+      placeholder: Explain the observed behavior...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reprod
+    attributes:
+      label: Reproduction steps
+      description: List the steps required to reproduce the issue.
+      value: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Perform '...'
+        4. Observe the issue
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Which version of the software is affected?
+      placeholder: e.g. v1.2.3
+    validations:
+      required: true
+
+  - type: textarea
+    id: api_details
+    attributes:
+      label: API request/response
+      description: If applicable, include the failing endpoint, request body, response, and any relevant headers.
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, drag and drop screenshots here to help explain the issue.
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste any relevant log output. It will automatically be formatted as code.
+      render: bash
+    validations:
+      required: false
+
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: Browsers
+      description: Which browsers are affected?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Safari
+        - Microsoft Edge
+        - Opera
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: Which operating systems are affected?
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - macOS
+    validations:
+      required: false

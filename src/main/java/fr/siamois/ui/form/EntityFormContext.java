@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleSpatialUnitTree;
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customform.DependsOnJson;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.GeoApiService;
@@ -22,6 +22,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;
@@ -48,7 +49,6 @@ import org.primefaces.PrimeFaces;
 import org.primefaces.event.SelectEvent;
 import org.primefaces.model.TreeNode;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
@@ -119,6 +119,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
 
     private CustomFormResponseViewModel formResponse;
+
+    // Answers for non-system ("additional") fields, extracted at flush time and persisted alongside the entity.
+    private Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers = new HashMap<>();
 
     private boolean hasUnsavedModifications = false;
 
@@ -200,14 +203,25 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
 
-        // Prepare new field manager
-        Page<CustomFieldMeasurement> customFieldMeasurements = services.getCustomFieldMeasurementService().find(10);
-        // find all
+        // Prepare new field manager; the list stays mutable so a field created here shows up in the
+        // "existing fields" dropdown without waiting for the next form init
+        List<CustomFieldMeasurement> measurementOptions = new ArrayList<>(
+                services.getCustomFieldMeasurementService()
+                        .findOptionsForRecordingUnit(recordingUnitIdOrNull(), 10));
+
         this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
+                services.getRecordingUnitService(),
+                formService,
                 this.formResponse,
-                customFieldMeasurements.getContent()
+                unit,
+                measurementOptions,
+                services.getUnitDefinitionService().findOptions()
                 );
 
+    }
+
+    private Long recordingUnitIdOrNull() {
+        return unit instanceof RecordingUnitDTO recordingUnit ? recordingUnit.getId() : null;
     }
 
     // -------------------------------------------------------------------------
@@ -277,6 +291,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public void flushBackToEntity() {
         formService.updateJpaEntityFromResponse(formResponse, unit);
+        this.additionalFieldAnswers = formService.extractAdditionalFieldAnswers(formResponse);
     }
 
 
@@ -354,9 +369,6 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return chips;
     }
 
-    /**
-     * Returns all ancestor IDs in the business graph (transitive), with cycle detection.
-     */
     private Set<Long> getAllAncestorIds(long id) {
         Set<Long> res = new HashSet<>();
 
@@ -478,8 +490,6 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         return Collections.emptyList();
     }
 
-    /** * Sous-méthode privée pour isoler les appels API
-     */
     private List<PlaceSuggestionDTO> resolveExternalSuggestions(String query, String source) {
         if (Objects.equals(source, "INSEE")) {
             return geoApiService.fetchCommunes(query);
@@ -732,11 +742,16 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
             return;
         }
+        if (answer.getNewActionUnit() == null) {
+            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "Le projet est obligatoire");
+            return;
+        }
         try {
             PhaseDTO toSave = new PhaseDTO();
             toSave.setIdentifier(answer.getNewIdentifier());
             toSave.setTitle(answer.getNewTitle());
             toSave.setOrderNumber(answer.getNewOrderNumber());
+            toSave.setActionUnit(answer.getNewActionUnit());
             if (answer.getNewType() != null) {
                 toSave.setType(answer.getNewType().getConceptLabelToDisplay().getConcept());
             }
@@ -749,6 +764,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             answer.setNewTitle(null);
             answer.setNewOrderNumber(null);
             answer.setNewType(null);
+            answer.setNewActionUnit(null);
 
             if (unit.getId() != null) {
                 this.save();

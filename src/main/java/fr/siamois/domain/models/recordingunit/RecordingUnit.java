@@ -10,16 +10,18 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customform.CustomCol;
-import fr.siamois.domain.models.form.customform.CustomForm;
-import fr.siamois.domain.models.form.customform.CustomFormPanel;
-import fr.siamois.domain.models.form.customform.CustomRow;
-import fr.siamois.domain.models.form.customformresponse.CustomFormResponse;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
+import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
+import fr.siamois.domain.models.recordingunit.form.RecordingUnitNewForm;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,7 +33,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
 import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
 import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 
@@ -136,7 +137,17 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     )
     @JsonIgnore
     private Set<Document> documents = new HashSet<>();
-    
+
+    @NotAudited
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "recording_unit_on_the_fly_fields",
+            joinColumns = { @JoinColumn(name = "fk_recording_unit_id") },
+            inverseJoinColumns = { @JoinColumn(name = "fk_custom_field_id") }
+    )
+    private Set<CustomFieldOnTheFly> onTheFlyFields = new HashSet<>();
+
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIARU.TYPE";
 
@@ -164,14 +175,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @FieldCode
     public static final String EROSION_ORIENTATION_FIELD_CODE = "SIARU.EROSIONORIENTATION";
 
-    // Setters/Removers
-    @Override
-    public void setFormResponse(CustomFormResponse formResponse) {
-        if (formResponse != null) {
-            formResponse.setRecordingUnit(this);
-        }
-        this.formResponse = formResponse;
-    }
 
     // utils
     public String displayFullIdentifier() {
@@ -204,66 +207,17 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
 
 
+    // Icon/style shared with the field constants centralized in RecordingUnitForm
+    public static final String MR_2_RECORDING_UNIT_TYPE_CHIP = "mr-2 recording-unit-type-chip";
+    public static final String BI_BI_PENCIL_SQUARE = "bi bi-pencil-square";
+
     // ----------- Concepts for system fields
-    // Authors
-    @Transient
-    @JsonIgnore
-    private static Concept authorsConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286194")
-            .build();
-
-
     // Excavators
     @Transient
     @JsonIgnore
     private static Concept excavatorsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
             .externalId("4286195")
-            .build();
-
-    // Recording Unit type
-    @Transient
-    @JsonIgnore
-    private static Concept recordingUnitTypeConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4287605")
-            .build();
-
-
-    // Date
-    @Transient
-    @JsonIgnore
-    private static Concept openingDateConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286198")
-            .build();
-
-
-    // Spatial Unit
-    @Transient
-    @JsonIgnore
-    private static Concept spatialUnitConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286245")
-            .build();
-
-    // Action unit
-    @Transient
-    @JsonIgnore
-    private static Concept actionUnitConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("4286244")
-            .build();
-
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectOnePerson authorField =  CustomFieldSelectOnePerson.builder()
-            .label("recordingunit.field.mainAuthor")
-            .isSystemField(true)
-            .id(1L)
-            .valueBinding("author")
-            .concept(authorsConcept)
             .build();
 
     @Transient
@@ -274,52 +228,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .id(2L)
             .valueBinding("excavators")
             .concept(excavatorsConcept)
-            .build();
-    public static final String MR_2_RECORDING_UNIT_TYPE_CHIP = "mr-2 recording-unit-type-chip";
-    public static final String BI_BI_PENCIL_SQUARE = "bi bi-pencil-square";
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectOneFromFieldCode recordingUnitTypeField = CustomFieldSelectOneFromFieldCode.builder()
-            .label("recordingunit.property.type")
-            .isSystemField(true)
-            .valueBinding("type")
-            .id(3L)
-            .styleClass(MR_2_RECORDING_UNIT_TYPE_CHIP)
-            .iconClass(BI_BI_PENCIL_SQUARE)
-            .fieldCode(RecordingUnit.TYPE_FIELD_CODE)
-            .concept(recordingUnitTypeConcept)
-            .build();
-
-
-    @Transient
-    @JsonIgnore
-    private static CustomFieldDateTime openingDateField = CustomFieldDateTime.builder()
-            .label("recordingunit.field.openingDate")
-            .isSystemField(true)
-            .valueBinding("openingDate")
-            .id(4L)
-            .showTime(false)
-            .concept(openingDateConcept)
-            .build();
-
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectOneSpatialUnit spatialUnitField = CustomFieldSelectOneSpatialUnit.builder()
-            .label("recordingunit.field.spatialUnit")
-            .isSystemField(true)
-            .valueBinding("spatialUnit")
-            .id(5L)
-            .concept(spatialUnitConcept)
-            .build();
-
-    @Transient
-    @JsonIgnore
-    private static CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
-            .label("recordingunit.field.actionUnit")
-            .isSystemField(true)
-            .valueBinding("actionUnit")
-            .id(6L)
-            .concept(actionUnitConcept)
             .build();
 
     // ----------- Concepts for system fields
@@ -419,51 +327,14 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
             .build();
 
     public static final String COMMON_HEADER_GENERAL = "common.header.general";
+
     @Transient
     @JsonIgnore
-    public static final CustomForm NEW_UNIT_FORM = new CustomForm.Builder()
-            .name("Details tab form")
-            .description("Contains the main form")
-            .addPanel(
-                    new CustomFormPanel.Builder()
-                            .name(COMMON_HEADER_GENERAL)
-                            .isSystemPanel(true)
-                            .addRow(
-                                    new CustomRow.Builder()
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(true)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .isRequired(true)
-                                                    .field(actionUnitField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .isRequired(false)
-                                                    .field(spatialUnitField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .isRequired(true)
-                                                    .field(authorField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .isRequired(true)
-                                                    .field(recordingUnitTypeField)
-                                                    .build())
-                                            .addColumn(new CustomCol.Builder()
-                                                    .readOnly(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .isRequired(true)
-                                                    .field(openingDateField)
-                                                    .build())
-                                            .build()
-                            ).build()
-            )
-            .build();
+    public static final FormUiDto NEW_UNIT_FORM = RecordingUnitNewForm.build();
+
+    @Transient
+    @JsonIgnore
+    public static final FormUiDto DETAILS_FORM = RecordingUnitDetailsForm.build();
 
 
 

@@ -223,10 +223,10 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
         PrimeFaces.current().ajax().update(getActiveTableClientId());
     }
 
-    @SuppressWarnings("unchecked")
+
     public void updateRowInTableModel(AbstractEntityDTO entity) {
         if (tableModel != null && entity != null) {
-            tableModel.updateEntityInCurrentPage((T) entity);
+            tableModel.updateIfPresent(entity);
         }
     }
 

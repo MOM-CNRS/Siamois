@@ -42,4 +42,37 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
             @Param("isSystemField" ) Boolean isSystemField,
             @Param("valueBinding" ) String valueBinding,
             @Param("concept" ) Concept concept);
+
+    /**
+     * Every system field of the instance. System fields are defined by the application itself (see
+     * {@code SystemFieldCatalog}) and shared by every project of every institution, so they are read
+     * as a whole and matched against their definition rather than queried one institution at a time.
+     *
+     * @return the system custom fields
+     */
+    @Query("""
+            select f
+            from CustomField f
+            where f.isSystemField = true
+            """)
+    List<CustomField> findAllSystemFields();
+
+    /**
+     * The non-system custom fields an institution can reuse, i.e. the ones at least one of its form
+     * configurations references. A custom field carries no institution of its own, so the
+     * institution it belongs to is the one of the configurations it is linked to; a field linked
+     * nowhere is reachable by nobody and is deliberately left out.
+     *
+     * @param institutionId the institution whose reusable fields are read
+     * @return the institution's non-system custom fields, ordered by label
+     */
+    @Query("""
+            select distinct f
+            from FieldFormConfig ffc
+            join ffc.field f
+            where ffc.formConfig.institution.id = :institutionId
+              and f.isSystemField = false
+            order by f.label
+            """)
+    List<CustomField> findAllReusableByInstitution(@Param("institutionId") Long institutionId);
 }

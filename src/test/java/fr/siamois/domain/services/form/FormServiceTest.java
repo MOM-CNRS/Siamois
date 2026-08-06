@@ -1,15 +1,17 @@
 package fr.siamois.domain.services.form;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.siamois.domain.models.form.customfield.*;
-import fr.siamois.domain.models.form.customform.CustomForm;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
-import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
-import fr.siamois.infrastructure.database.repositories.form.FormRepository;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
@@ -36,15 +38,11 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FormServiceTest {
-
-    @Mock
-    private FormRepository formRepository;
 
     @Mock
     private FormScopeRepository formScopeRepository;
@@ -55,43 +53,11 @@ class FormServiceTest {
     @Mock
     private UnitDefinitionMapper unitDefinitionMapper;
 
+    @Mock
+    private CustomFieldAnswerService customFieldAnswerService;
+
     @InjectMocks
     private FormService formService;
-
-    void setUpForReturnTypeSpecificTests() {
-        Concept recordingUnitType = mock(Concept.class);
-        Institution institution = mock(Institution.class);
-        ConceptDTO recordingUnitTypeDTO = mock(ConceptDTO.class);
-        InstitutionDTO institutionDTO = mock(InstitutionDTO.class);
-
-        // Use deterministic IDs in stubs
-        given(recordingUnitType.getId()).willReturn(101L);  // Add this line
-        given(recordingUnitTypeDTO.getId()).willReturn(101L); // Add this line
-        given(institution.getId()).willReturn(55L);
-        given(institutionDTO.getId()).willReturn(55L);
-    }
-
-
-    @Test
-    void findAllFieldsBySpatialUnitId_success() {
-        when(formRepository.findById(anyLong()))
-                .thenReturn(Optional.of(new CustomForm()));
-
-        CustomForm res = formService.findById(anyLong());
-
-        assertNotNull(res);
-        assertInstanceOf(CustomForm.class, res);
-    }
-
-    @Test
-    void findAllFieldsBySpatialUnitId_null() {
-        when(formRepository.findById(anyLong()))
-                .thenReturn(Optional.empty());
-
-        CustomForm res = formService.findById(anyLong());
-        assertNull(res);
-    }
-
 
 
 
@@ -234,10 +200,30 @@ class FormServiceTest {
             LocalDateTime expectedLocal = entity.getCreatedAt().toLocalDateTime();
             assertEquals(expectedLocal, ((CustomFieldAnswerDateTimeViewModel) res.getAnswers().get(createdAtField)).getValue());
 
-            // also ensure pk set + hasBeenModified false
-            assertNotNull(res.getAnswers().get(titleField).getPk());
+            // also ensure hasBeenModified false
             assertFalse(res.getAnswers().get(titleField).getHasBeenModified());
         }
+    }
+
+    @Test
+    void initOrReuseResponse_populatesAdditionalFieldValues_forRecordingUnit() {
+        FieldSource fieldSource = mock(FieldSource.class);
+        CustomField additionalTextField = mock(CustomField.class);
+        when(fieldSource.getAllFields()).thenReturn(List.of(additionalTextField));
+
+        RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
+        recordingUnit.setId(42L);
+
+        CustomFieldAnswerTextViewModel additionalAnswer = new CustomFieldAnswerTextViewModel();
+        additionalAnswer.setValue("Deux tessons");
+        when(customFieldAnswerService.loadAdditionalFieldAnswers(recordingUnit))
+                .thenReturn(Map.of(additionalTextField, additionalAnswer));
+
+        CustomFormResponseViewModel res = formService.initOrReuseResponse(null, recordingUnit, fieldSource, false);
+
+        assertSame(additionalAnswer, res.getAnswers().get(additionalTextField));
+        assertEquals("Deux tessons",
+                ((CustomFieldAnswerTextViewModel) res.getAnswers().get(additionalTextField)).getValue());
     }
 
     @Test
@@ -374,7 +360,7 @@ class FormServiceTest {
         CustomFieldAnswerDateTimeViewModel  createdAtAnswer = new CustomFieldAnswerDateTimeViewModel ();
         createdAtAnswer.setValue(LocalDateTime.of(2023, Month.JANUARY, 1, 12, 0));
 
-        // CustomFieldAnswerSelectOneFromFieldCode: Use uiVal to set the concept
+        // CustomFieldAnswerSelectOneFromFieldAnswerCode: Use uiVal to set the concept
         ConceptDTO concept = mock(ConceptDTO.class);
         ConceptAutocompleteDTO conceptAutocompleteDTO = new ConceptAutocompleteDTO(concept, "Test Label", "fr");
         CustomFieldAnswerSelectOneFromFieldCodeViewModel  conceptAnswer = new CustomFieldAnswerSelectOneFromFieldCodeViewModel ();
@@ -500,6 +486,71 @@ class FormServiceTest {
         assertEquals("initial", entity.getTitle(), "Title must remain unchanged");
     }
 
+    // -----------------------------------------------------------------------
+    // extractAdditionalFieldAnswers
+    // -----------------------------------------------------------------------
+
+    @Test
+    void extractAdditionalFieldAnswers_returnsEmptyMap_whenResponseIsNull() {
+        Map<CustomField, CustomFieldAnswerViewModel> result = formService.extractAdditionalFieldAnswers(null);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void extractAdditionalFieldAnswers_returnsEmptyMap_whenAnswersIsNull() {
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
+        response.setAnswers(null);
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = formService.extractAdditionalFieldAnswers(response);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void extractAdditionalFieldAnswers_collectsOnlyNonSystemFieldsWithNonNullAnswers() {
+        // non-system field with an answer -> kept
+        CustomField additionalField = mock(CustomField.class);
+        when(additionalField.getIsSystemField()).thenReturn(false);
+        CustomFieldAnswerTextViewModel additionalAnswer = new CustomFieldAnswerTextViewModel();
+        additionalAnswer.setValue("extra value");
+
+        // system field -> ignored regardless of answer
+        CustomField systemField = mock(CustomField.class);
+        when(systemField.getIsSystemField()).thenReturn(true);
+        CustomFieldAnswerTextViewModel systemAnswer = new CustomFieldAnswerTextViewModel();
+        systemAnswer.setValue("system value");
+
+        // isSystemField == null -> treated as non-system, kept
+        CustomField unspecifiedField = mock(CustomField.class);
+        when(unspecifiedField.getIsSystemField()).thenReturn(null);
+        CustomFieldAnswerTextViewModel unspecifiedAnswer = new CustomFieldAnswerTextViewModel();
+        unspecifiedAnswer.setValue("unspecified value");
+
+        // non-system field but the answer view model itself is null -> ignored
+        CustomField additionalNullAnswerField = mock(CustomField.class);
+        when(additionalNullAnswerField.getIsSystemField()).thenReturn(false);
+
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
+        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
+        answers.put(additionalField, additionalAnswer);
+        answers.put(systemField, systemAnswer);
+        answers.put(unspecifiedField, unspecifiedAnswer);
+        answers.put(additionalNullAnswerField, null);
+        answers.put(null, additionalAnswer);
+        response.setAnswers(answers);
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = formService.extractAdditionalFieldAnswers(response);
+
+        assertEquals(2, result.size());
+        assertSame(additionalAnswer, result.get(additionalField));
+        assertSame(unspecifiedAnswer, result.get(unspecifiedField));
+        assertFalse(result.containsKey(systemField));
+        assertFalse(result.containsKey(additionalNullAnswerField));
+    }
+
     @Test
     void buildEnabledEngine_createsEngineWithCorrectRulesAndDependencies() {
         // Arrange
@@ -513,7 +564,7 @@ class FormServiceTest {
         specForField2.setFieldId(1L);
         specForField2.setOp(EnabledWhenJson.Op.EQ);
         EnabledWhenJson.ValueJson valueJson = new EnabledWhenJson.ValueJson();
-        valueJson.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText");
+        valueJson.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText");
         valueJson.setValue(new ObjectMapper().createObjectNode().put("value", "test"));
         specForField2.setValues(List.of(valueJson));
 
@@ -684,10 +735,34 @@ class FormServiceTest {
             assertEquals(1, ((CustomFieldAnswerSelectMultipleFromFieldCodeViewModel) response.getAnswers().get(multipleConceptField)).getValue().size());
             assertEquals(1, ((CustomFieldAnswerSelectMultipleSpecimenViewModel) response.getAnswers().get(specimenSetField)).getValue().size());
 
-            // Also ensure pk set + hasBeenModified false
-            assertNotNull(response.getAnswers().get(titleField).getPk());
+            // Also ensure hasBeenModified false
             assertFalse(response.getAnswers().get(titleField).getHasBeenModified());
         }
+    }
+
+    /**
+     * A measurement field added to a form binds its inputs into {@code answer.value.numericValue}
+     * and shows the unit its definition carries, exactly like the system ones — nothing of that is
+     * stored per answer, so it has to be rebuilt on every form init.
+     */
+    @Test
+    void initOrReuseResponse_shouldGiveAnAddedMeasurementFieldItsValueHolderAndTheFieldsUnit() {
+        UnitDefinition metre = UnitDefinition.builder().id(1L).label("Mètre").symbol("m").build();
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder()
+                .id(1L).isSystemField(false).unit(metre).build();
+        UnitDefinitionDTO metreDto = UnitDefinitionDTO.builder().id(1L).symbol("m").build();
+
+        FieldSource fieldSource = mock(FieldSource.class);
+        when(fieldSource.getAllFields()).thenReturn(List.of(field));
+        when(unitDefinitionMapper.convert(metre)).thenReturn(metreDto);
+
+        CustomFormResponseViewModel response =
+                formService.initOrReuseResponse(null, new DummyEntity(), fieldSource, false);
+
+        CustomFieldAnswerMeasurementViewModel answer =
+                (CustomFieldAnswerMeasurementViewModel) response.getAnswers().get(field);
+        assertNotNull(answer.getValue());
+        assertEquals(metreDto, answer.getValue().getUnit());
     }
 
     // Helper method to create a RecordingUnitDTO with a specific ID
@@ -707,305 +782,11 @@ class FormServiceTest {
         return rel;
     }
 
-    private CustomFormResponseViewModel createResponse(CustomFieldAnswerStratigraphyViewModel stratiAnswer) {
-        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
-
-        CustomFieldStratigraphy field = new CustomFieldStratigraphy();
-
-        Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
-        answers.put(field, stratiAnswer);
-
-        response.setAnswers(answers);
-
-        return response;
-    }
-
-    @Test
-    void updateJpaEntityFromResponse_AddsAnteriorRelationshipsCorrectly() {
-
-        RecordingUnitDTO entity = createRecordingUnitDTO(1L);
-        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
-
-        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
-
-        StratigraphicRelationshipDTO rel1 = createStratigraphicRelationshipDTO(entity, unit2);
-        StratigraphicRelationshipDTO rel2 = createStratigraphicRelationshipDTO(unit2, entity);
-
-        stratiAnswer.getAnteriorRelationships().add(rel1);
-        stratiAnswer.getPosteriorRelationships().add(rel2);
-
-        CustomFormResponseViewModel response = createResponse(stratiAnswer);
-
-        formService.updateJpaEntityFromResponse(response, entity);
-
-        assertEquals(1, entity.getRelationshipsAsUnit1().size());
-        assertTrue(entity.getRelationshipsAsUnit1().contains(rel1));
-
-        assertEquals(1, entity.getRelationshipsAsUnit2().size());
-        assertTrue(entity.getRelationshipsAsUnit2().contains(rel2));
-    }
-
-    @Test
-    void updateJpaEntityFromResponse_AddsPosteriorRelationshipsCorrectly() {
-        // Arrange
-        RecordingUnitDTO entity = createRecordingUnitDTO(1L);
-        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
-
-        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
-
-        StratigraphicRelationshipDTO rel1 = createStratigraphicRelationshipDTO(entity, unit2);
-        StratigraphicRelationshipDTO rel2 = createStratigraphicRelationshipDTO(unit2, entity);
-
-        stratiAnswer.getPosteriorRelationships().add(rel1);
-        stratiAnswer.getAnteriorRelationships().add(rel2);
-
-        CustomFormResponseViewModel response = createResponse(stratiAnswer);
-
-        // Act
-        formService.updateJpaEntityFromResponse(response, entity);
-
-        // Assert
-        assertEquals(1, entity.getRelationshipsAsUnit1().size());
-        assertTrue(entity.getRelationshipsAsUnit1().contains(rel1));
-
-        assertEquals(1, entity.getRelationshipsAsUnit2().size());
-        assertTrue(entity.getRelationshipsAsUnit2().contains(rel2));
-    }
-
-    @Test
-    void updateJpaEntityFromResponse_AddsSynchronousRelationshipsCorrectly() {
-
-        RecordingUnitDTO entity = createRecordingUnitDTO(1L);
-        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
-
-        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
-
-        StratigraphicRelationshipDTO rel1 = createStratigraphicRelationshipDTO(entity, unit2);
-        StratigraphicRelationshipDTO rel2 = createStratigraphicRelationshipDTO(unit2, entity);
-
-        stratiAnswer.getSynchronousRelationships().add(rel1);
-        stratiAnswer.getSynchronousRelationships().add(rel2);
-
-        CustomFormResponseViewModel response = createResponse(stratiAnswer);
-
-        formService.updateJpaEntityFromResponse(response, entity);
-
-        assertEquals(1, entity.getRelationshipsAsUnit1().size());
-        assertTrue(entity.getRelationshipsAsUnit1().contains(rel1));
-
-        assertEquals(1, entity.getRelationshipsAsUnit2().size());
-        assertTrue(entity.getRelationshipsAsUnit2().contains(rel2));
-    }
-
-    @Test
-    void updateJpaEntityFromResponse_ClearsExistingRelationships() {
-
-        RecordingUnitDTO entity = createRecordingUnitDTO(1L);
-        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
-
-        StratigraphicRelationshipDTO existingRel = createStratigraphicRelationshipDTO(entity, unit2);
-        entity.getRelationshipsAsUnit1().add(existingRel);
-
-        CustomFieldAnswerStratigraphyViewModel stratiAnswer = new CustomFieldAnswerStratigraphyViewModel();
-
-        CustomFormResponseViewModel response = createResponse(stratiAnswer);
-
-        formService.updateJpaEntityFromResponse(response, entity);
-
-        assertTrue(entity.getRelationshipsAsUnit1().isEmpty());
-        assertTrue(entity.getRelationshipsAsUnit2().isEmpty());
-    }
-
-    private FieldSource fieldSourceWith(CustomField field) {
-        FieldSource fs = mock(FieldSource.class);
-        when(fs.getAllFields()).thenReturn(List.of(field));
-        return fs;
-    }
-    private StratigraphicRelationshipDTO createRelationship(
-            RecordingUnitDTO u1,
-            RecordingUnitDTO u2,
-            Boolean async
-    ) {
-        StratigraphicRelationshipDTO rel = new StratigraphicRelationshipDTO();
-        rel.setUnit1(new RecordingUnitSummaryDTO(u1));
-        rel.setUnit2(new RecordingUnitSummaryDTO(u2));
-        rel.setIsAsynchronous(async);
-        return rel;
-    }
-    private CustomField createStratigraphyField() {
-        return new CustomFieldStratigraphy();
-    }
-    @Test
-    void initOrReuseResponse_collectsSynchronousRelationships() {
-
-        RecordingUnitDTO unit1 = createRecordingUnitDTO(1L);
-        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
-
-        StratigraphicRelationshipDTO rel1 = createRelationship(unit1, unit2, false);
-        StratigraphicRelationshipDTO rel2 = createRelationship(unit2, unit1, false);
-
-        unit1.getRelationshipsAsUnit1().add(rel1);
-        unit1.getRelationshipsAsUnit2().add(rel2);
-
-        CustomField field = createStratigraphyField();
-        FieldSource fs = fieldSourceWith(field);
-
-        CustomFormResponseViewModel response =
-                formService.initOrReuseResponse(null, unit1, fs, false);
-
-        CustomFieldAnswerStratigraphyViewModel answer =
-                (CustomFieldAnswerStratigraphyViewModel) response.getAnswers().get(field);
-
-        assertEquals(2, answer.getSynchronousRelationships().size());
-        assertTrue(answer.getAnteriorRelationships().isEmpty());
-        assertTrue(answer.getPosteriorRelationships().isEmpty());
-    }
-    @Test
-    void initOrReuseResponse_addsPosteriorRelationships() {
-
-        RecordingUnitDTO unit1 = createRecordingUnitDTO(1L);
-        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
-
-        StratigraphicRelationshipDTO rel = createRelationship(unit1, unit2, true);
-
-        unit1.getRelationshipsAsUnit1().add(rel);
-
-        CustomField field = createStratigraphyField();
-        FieldSource fs = fieldSourceWith(field);
-
-        CustomFormResponseViewModel response =
-                formService.initOrReuseResponse(null, unit1, fs, false);
-
-        CustomFieldAnswerStratigraphyViewModel answer =
-                (CustomFieldAnswerStratigraphyViewModel) response.getAnswers().get(field);
-
-        assertEquals(1, answer.getPosteriorRelationships().size());
-    }
-    @Test
-    void initOrReuseResponse_addsAnteriorRelationships() {
-
-        RecordingUnitDTO unit1 = createRecordingUnitDTO(1L);
-        RecordingUnitDTO unit2 = createRecordingUnitDTO(2L);
-
-        StratigraphicRelationshipDTO rel = createRelationship(unit2, unit1, true);
-
-        unit1.getRelationshipsAsUnit2().add(rel);
-
-        CustomField field = createStratigraphyField();
-        FieldSource fs = fieldSourceWith(field);
-
-        CustomFormResponseViewModel response =
-                formService.initOrReuseResponse(null, unit1, fs, false);
-
-        CustomFieldAnswerStratigraphyViewModel answer =
-                (CustomFieldAnswerStratigraphyViewModel) response.getAnswers().get(field);
-
-        assertEquals(1, answer.getAnteriorRelationships().size());
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithNullRecordingUnitType_ReturnsInstitutionForm() {
-        // Arrange
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(55L);
-
-        CustomForm institutionForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
-                .willReturn(Optional.of(institutionForm));
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(null, institutionDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertSame(institutionForm, result);
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithRecordingUnitType_ReturnsTypeSpecificForm() {
-        // Arrange
-        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
-        recordingUnitTypeDTO.setId(101L);
-
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(55L);
-
-        CustomForm typeSpecificForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.of(typeSpecificForm));
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertSame(typeSpecificForm, result);
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithRecordingUnitType_FallsBackToInstitutionForm() {
-        // Arrange
-        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
-        recordingUnitTypeDTO.setId(101L);
-
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(55L);
-
-        CustomForm institutionForm = new CustomForm();
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.empty());
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
-                .willReturn(Optional.of(institutionForm));
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertSame(institutionForm, result);
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_ReturnsNullWhenNothingFound() {
-        // Arrange
-        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
-        recordingUnitTypeDTO.setId(101L);
-
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(55L);
-
-        given(formRepository.findEffectiveFormByTypeAndInstitution(101L, 55L))
-                .willReturn(Optional.empty());
-        given(formRepository.findEffectiveFormByTypeAndInstitution(null, 55L))
-                .willReturn(Optional.empty());
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO, institutionDTO);
-
-        // Assert
-        assertNull(result);
-    }
-
-    @Test
-    void findCustomFormByRecordingUnitTypeAndInstitutionId_WithNullInstitution_ReturnsNull() {
-        // Arrange
-        ConceptDTO recordingUnitTypeDTO = new ConceptDTO();
-        recordingUnitTypeDTO.setId(101L);
-
-        // Act
-        CustomForm result = formService.findCustomFormByRecordingUnitTypeAndInstitutionId(recordingUnitTypeDTO,
-                new InstitutionDTO());
-
-        // Assert
-        assertNull(result);
-    }
-
     // =====================================================================
     // handlePhaseSet / handleRecordingUnitSet
     // Accessed via the private populateSystemFieldValue dispatcher.
     // =====================================================================
 
-    /** Reflective helper to invoke populateSystemFieldValue(answer, value). */
     private void populate(CustomFieldAnswerViewModel answer, Object value) throws Exception {
         Method m = FormService.class.getDeclaredMethod(
                 "populateSystemFieldValue", CustomFieldAnswerViewModel.class, Object.class);
@@ -1013,7 +794,6 @@ class FormServiceTest {
         m.invoke(formService, answer, value);
     }
 
-    /** Reflective helper to invoke any private static method declared directly on FormService. */
     private static Object invokeStatic(String name, Class<?>[] paramTypes, Object... args) throws Exception {
         Method m = FormService.class.getDeclaredMethod(name, paramTypes);
         m.setAccessible(true);
@@ -1026,12 +806,13 @@ class FormServiceTest {
 
     @Test
     void constructor_assignsAllFinalFields() {
-        FormService service = new FormService(labelBean, formRepository, formScopeRepository, unitDefinitionMapper);
+        FormService service = new FormService(labelBean, formScopeRepository, unitDefinitionMapper,
+                customFieldAnswerService);
 
         assertSame(labelBean, service.getLabelBean());
-        assertSame(formRepository, service.getFormRepository());
         assertSame(formScopeRepository, service.getFormScopeRepository());
         assertSame(unitDefinitionMapper, service.getUnitDefinitionMapper());
+        assertSame(customFieldAnswerService, service.getCustomFieldAnswerService());
     }
 
     // =====================================================================
@@ -1117,7 +898,7 @@ class FormServiceTest {
         spec.setFieldId(999L);
         spec.setOp(EnabledWhenJson.Op.EQ);
         EnabledWhenJson.ValueJson vj = new EnabledWhenJson.ValueJson();
-        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerText");
+        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText");
         spec.setValues(List.of(vj));
 
         when(fieldSource.getAllFields()).thenReturn(List.of(field1));
@@ -1134,7 +915,7 @@ class FormServiceTest {
         CustomField field1 = mock(CustomField.class);
 
         EnabledWhenJson.ValueJson vj = new EnabledWhenJson.ValueJson();
-        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldCode");
+        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode");
         vj.setValue(new ObjectMapper().createObjectNode().put("vocabularyExtId", "voc1").put("conceptExtId", "c1"));
 
         EnabledWhenJson spec = new EnabledWhenJson();

@@ -1,39 +1,59 @@
 package fr.siamois.domain.models.form.customfieldanswer;
 
+import fr.siamois.domain.models.form.config.FormConfigAnswer;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
-
-import java.io.Serializable;
-import java.util.Objects;
+import lombok.NonNull;
 
 @Data
-@Table(name = "custom_field_answer")
 @Entity
-@SuperBuilder
-@NoArgsConstructor
+@Table(name = "custom_field_answer")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "answer_type", discriminatorType = DiscriminatorType.STRING)
-public abstract class CustomFieldAnswer implements Serializable {
+@NoArgsConstructor
+@AllArgsConstructor
+public abstract class CustomFieldAnswer {
 
     @EmbeddedId
-    private CustomFieldAnswerId pk;
+    protected CustomFieldAnswerId id = new CustomFieldAnswerId();
+
+    @NonNull
+    @MapsId("customFieldId")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fk_custom_field_id", nullable = false)
+    protected CustomField customField;
+
+    @NonNull
+    @MapsId("formConfigAnswerId")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fk_form_config_answer_id", nullable = false)
+    protected FormConfigAnswer formConfigAnswer;
 
     // Not persisted, used in UI
-    private Boolean hasBeenModified ;
+    private Boolean hasBeenModified;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CustomFieldAnswer that)) return false;
+    public abstract Object getValue();
 
-        return Objects.equals(pk, that.pk);
+    public abstract void setValue(Object value);
+
+    public void setCustomField(@NonNull CustomField customField) {
+        this.customField = customField;
+        this.id.customFieldId = customField.getId();
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(pk);
+    public void setFormConfigAnswer(@NonNull FormConfigAnswer formConfigAnswer) {
+        this.formConfigAnswer = formConfigAnswer;
+        this.id.formConfigAnswerId = formConfigAnswer.getId();
+    }
+
+    @Embeddable
+    @Data
+    public static class CustomFieldAnswerId {
+        private Long formConfigAnswerId;
+        private Long customFieldId;
     }
 
 }

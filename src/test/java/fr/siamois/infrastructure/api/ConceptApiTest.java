@@ -6,11 +6,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
+import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.infrastructure.api.dto.ConceptBranchDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptApiCollectionDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptRemoteAutocompleteDTO;
 import fr.siamois.infrastructure.database.repositories.FieldRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -27,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,11 +40,17 @@ import static org.mockito.Mockito.*;
 
 class ConceptApiTest {
 
+    private static final URI COLLECTION_BRANCH_URI =
+            URI.create("http://example.com/openapi/v1/group/th223/branch?idGroups=g1");
+
     @Mock
     private RestTemplate restTemplate;
 
     @Mock
     private FieldRepository fieldRepository;
+
+    @Mock
+    private ConceptCollectionRepository conceptCollectionRepository;
 
     @Mock
     private RequestFactory requestFactory;
@@ -54,7 +66,7 @@ class ConceptApiTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         when(requestFactory.buildRestTemplate(true)).thenReturn(restTemplate);
-        conceptApi = new ConceptApi(requestFactory, fieldRepository);
+        conceptApi = new ConceptApi(requestFactory, fieldRepository, conceptCollectionRepository);
 
         vocabulary = new Vocabulary();
         vocabulary.setBaseUri("http://example.com");
@@ -377,6 +389,175 @@ class ConceptApiTest {
         // Assert
         assertNull(result);
         verify(restTemplate, times(1)).exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
+    // --- fetchCollectionBranch -----------------------------------------------------------------
+
+    @Test
+    void fetchCollectionBranch_throws_whenBodyIsNull() {
+        ConceptCollection collection = collection("g1", null);
+
+        when(restTemplate.exchange(eq(COLLECTION_BRANCH_URI), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        assertThrows(ErrorProcessingExpansionException.class, () -> conceptApi.fetchCollectionBranch(vocabulary, collection));
+        verifyNoInteractions(conceptCollectionRepository);
+    }
+
+    @Test
+    void fetchCollectionBranch_returnsNull_whenCollectionHasNotChanged() throws Exception {
+        String body = "{\"k\":{}}";
+        ConceptCollection collection = collection("g1", sha3Hex(body));
+
+        when(restTemplate.exchange(eq(COLLECTION_BRANCH_URI), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
+
+        assertNull(conceptApi.fetchCollectionBranch(vocabulary, collection));
+        verify(conceptCollectionRepository, never()).save(any());
+    }
+
+    @Test
+    void fetchCollectionBranch_updatesChecksumAndReturnsBranch_whenCollectionChanged() throws Exception {
+        String body = "{\"http://example.com/concept/th223/12\":{}}";
+        ConceptCollection collection = collection("g1", "an-outdated-checksum");
+
+        when(restTemplate.exchange(eq(COLLECTION_BRANCH_URI), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
+
+        ConceptBranchDTO result = conceptApi.fetchCollectionBranch(vocabulary, collection);
+
+        assertNotNull(result);
+        assertEquals(1, result.getData().size());
+        assertEquals(sha3Hex(body), collection.getExistingHash());
+        verify(conceptCollectionRepository, times(1)).save(collection);
+    }
+
+    @Test
+    void fetchCollectionBranch_updatesChecksumAndReturnsBranch_whenCollectionWasNeverFetched() throws Exception {
+        String body = "{\"http://example.com/concept/th223/12\":{}}";
+        ConceptCollection collection = collection("g1", null);
+
+        when(restTemplate.exchange(eq(COLLECTION_BRANCH_URI), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
+
+        assertNotNull(conceptApi.fetchCollectionBranch(vocabulary, collection));
+        assertEquals(sha3Hex(body), collection.getExistingHash());
+        verify(conceptCollectionRepository, times(1)).save(collection);
+    }
+
+    @Test
+    void fetchCollectionBranch_throws_whenJsonException() throws Exception {
+        ConceptCollection collection = collection("g1", null);
+
+        when(restTemplate.exchange(eq(COLLECTION_BRANCH_URI), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("invalid json", HttpStatus.OK));
+
+        injectMockedMapper();
+        //noinspection unchecked
+        when(mapper.readValue(anyString(), any(TypeReference.class))).thenThrow(JsonProcessingException.class);
+
+        assertThrows(ErrorProcessingExpansionException.class, () -> conceptApi.fetchCollectionBranch(vocabulary, collection));
+    }
+
+    // --- fetchRemoteAutocomplete ---------------------------------------------------------------
+
+    @Test
+    void fetchRemoteAutocomplete_returnsEveryMatchingLabel() {
+        URI expected = URI.create("http://example.com/openapi/v1/concept/th223/autocomplete/cera?full=true");
+        String body = """
+                [
+                  {"identifier": 12, "uri": "http://example.com/?idc=12&idt=th223", "label": "Céramique", "isAltLabel": false, "definition": "Objet en terre cuite"},
+                  {"identifier": 12, "uri": "http://example.com/?idc=12&idt=th223", "label": "Poterie", "isAltLabel": true, "definition": null}
+                ]""";
+
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
+
+        List<ConceptRemoteAutocompleteDTO> results = conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera");
+
+        assertEquals(2, results.size());
+        assertEquals(12L, results.get(0).identifier());
+        assertEquals("Céramique", results.get(0).label());
+        assertEquals("Objet en terre cuite", results.get(0).definition());
+        assertEquals(Boolean.FALSE, results.get(0).isAltLabel());
+        assertEquals(Boolean.TRUE, results.get(1).isAltLabel());
+    }
+
+    @Test
+    void fetchRemoteAutocomplete_returnsEmptyList_whenJsonException() throws Exception {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{not json}", HttpStatus.OK));
+
+        injectMockedMapper();
+        //noinspection unchecked
+        when(mapper.readValue(anyString(), any(TypeReference.class))).thenThrow(JsonProcessingException.class);
+
+        assertTrue(conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera").isEmpty());
+    }
+
+    // --- fetchPublicCollections ----------------------------------------------------------------
+
+    @Test
+    void fetchPublicCollections_returnsEveryCollectionWithItsLabels() {
+        URI expected = URI.create("http://example.com/openapi/v1/group/th223");
+        String body = """
+                [
+                  {"idGroup": "g1", "labels": [{"lang": "fr", "title": "Céramique"}, {"lang": "en", "title": "Pottery"}]},
+                  {"idGroup": "g2", "labels": []}
+                ]""";
+
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
+
+        VocabularyDTO vocabularyDTO = VocabularyDTO.builder()
+                .baseUri("http://example.com")
+                .externalVocabularyId("th223")
+                .build();
+
+        List<ConceptApiCollectionDTO> results = conceptApi.fetchPublicCollections(vocabularyDTO);
+
+        assertEquals(2, results.size());
+        assertEquals("g1", results.get(0).idGroup());
+        assertEquals(2, results.get(0).labels().size());
+        assertEquals("Céramique", results.get(0).labels().get(0).getTitle());
+        assertEquals("fr", results.get(0).labels().get(0).getLang());
+        assertEquals("g2", results.get(1).idGroup());
+        assertTrue(results.get(1).labels().isEmpty());
+    }
+
+    @Test
+    void fetchPublicCollections_returnsEmptyList_whenJsonException() throws Exception {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{not json}", HttpStatus.OK));
+
+        injectMockedMapper();
+        //noinspection unchecked
+        when(mapper.readValue(anyString(), any(TypeReference.class))).thenThrow(JsonProcessingException.class);
+
+        VocabularyDTO vocabularyDTO = VocabularyDTO.builder()
+                .baseUri("http://example.com")
+                .externalVocabularyId("th223")
+                .build();
+
+        assertTrue(conceptApi.fetchPublicCollections(vocabularyDTO).isEmpty());
+    }
+
+    private ConceptCollection collection(String externalId, String existingHash) {
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(1L);
+        collection.setExternalId(externalId);
+        collection.setVocabulary(vocabulary);
+        collection.setExistingHash(existingHash);
+        return collection;
+    }
+
+    /**
+     * Replaces the mapper built by the constructor, so JSON failures can be simulated.
+     */
+    private void injectMockedMapper() throws NoSuchFieldException, IllegalAccessException {
+        java.lang.reflect.Field mapperField = ConceptApi.class.getDeclaredField("mapper");
+        mapperField.setAccessible(true);
+        mapperField.set(conceptApi, mapper);
     }
 
     private static String sha3Hex(String input) throws NoSuchAlgorithmException {

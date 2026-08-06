@@ -1,6 +1,7 @@
 package fr.siamois.dto.entity;
 
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

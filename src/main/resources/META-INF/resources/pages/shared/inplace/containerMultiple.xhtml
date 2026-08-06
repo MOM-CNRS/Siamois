@@ -11,7 +11,7 @@
                       type="fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerSelectMultipleContainerViewModel"
                       required="true"/>
         <cc:attribute name="hasBeenModified" type="Boolean" required="false" default="false"/>
-        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.CustomFieldSelectMultipleContainer"
+        <cc:attribute name="field" type="fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer"
                       required="true"/>
         <cc:attribute name="label" type="String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="true"/>
@@ -34,7 +34,7 @@
              VIEW MODE
              ═══════════════════════════════════════════════════════════ -->
         <p:outputPanel id="containerView" layout="block" style="display:contents">
-        <div id="rum_v_#{cc.clientId.replace(':','_')}" class="rum-wrapper container #{cc.attrs.mode eq 'input' and empty cc.attrs.answer.value ? 'rum-empty' : ''}">
+        <div id="rum_v_#{cc.clientId.replace(':','_')}" class="rum-wrapper container #{cc.attrs.mode eq 'input' and empty cc.attrs.answer.value ? 'rum-empty' : ''} #{cc.attrs.mode eq 'input' ? 'rum-editable' : ''}" onclick="rumWrapperClick(event, '#{cc.clientId.replace(':','_')}')">
 
             <div class="rum-items #{cc.attrs.compact ? 'compact' : ''}" style="#{cc.attrs.compact ? 'flex-wrap:nowrap' : 'flex-wrap:wrap'}">
 

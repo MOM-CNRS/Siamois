@@ -7,16 +7,20 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
-import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
@@ -336,7 +340,7 @@ class ProjectControllerApiTest {
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
 
         ProjectFormData formData = new ProjectFormData(
-                new FormResource(null, "Details", "", "{}"),
+                new FormResource("{}"),
                 Map.of());
         when(recordingUnitOpenApiService.buildProjectUiForm(100L, personDto, "fr"))
                 .thenReturn(formData);
@@ -345,7 +349,7 @@ class ProjectControllerApiTest {
                         .param("organizationId", "100")
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.form.name").value("Details"))
+                .andExpect(jsonPath("$.data.form.layoutJson").value("{}"))
                 .andExpect(jsonPath("$.data.vocabulariesByFieldCode").doesNotExist());
 
         verify(recordingUnitOpenApiService).buildProjectUiForm(100L, personDto, "fr");

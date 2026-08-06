@@ -1,16 +1,19 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
@@ -30,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +57,7 @@ public class SpecimenService implements ArkEntityService {
     private final ConceptRepository conceptRepository;
     private final InstitutionRepository institutionRepository;
     private final ArkRepository arkRepository;
+    private final UnitDefinitionService unitDefinitionService;
 
 
     @Override
@@ -150,12 +155,12 @@ public class SpecimenService implements ArkEntityService {
         }
     }
 
-    private static void setupOtherFields(Specimen specimen, Specimen managedSpecimen) {
+    private void setupOtherFields(Specimen specimen, Specimen managedSpecimen) {
         managedSpecimen.setArk(specimen.getArk());
         managedSpecimen.setDescription(specimen.getDescription());
         managedSpecimen.setCollectors(specimen.getCollectors());
         managedSpecimen.setCollectionDate(specimen.getCollectionDate());
-        managedSpecimen.setWeight(specimen.getWeight());
+        managedSpecimen.setWeight(withResolvedUnit(specimen.getWeight()));
         managedSpecimen.setNormalizedInterpretation(specimen.getNormalizedInterpretation());
         managedSpecimen.setValidated(specimen.getValidated());
         managedSpecimen.setValidatedAt(specimen.getValidatedAt());
@@ -167,10 +172,18 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setCategory(specimen.getCategory());
         managedSpecimen.setIsolationNumber(specimen.getIsolationNumber());
         managedSpecimen.setNumberOfElements(specimen.getNumberOfElements());
+        managedSpecimen.setActionUnit(specimen.getActionUnit());
         if (managedSpecimen.getCreatedBy() == null) {
             managedSpecimen.setCreatedBy(specimen.getCreatedBy());
         }
         managedSpecimen.setChronologicalAttribution(specimen.getChronologicalAttribution());
+    }
+
+    @Nullable
+    private MeasurementAnswer withResolvedUnit(@Nullable MeasurementAnswer measurement) {
+        if (measurement == null) return null;
+        measurement.setUnit(unitDefinitionService.resolve(measurement.getUnit()));
+        return measurement;
     }
 
     /**
@@ -210,9 +223,6 @@ public class SpecimenService implements ArkEntityService {
         return specimenMapper.convert(savedSpecimen);
     }
 
-    /**
-     * Remplace les associations mappées (instances transientes) par des références JPA managées.
-     */
     private void attachManagedAssociations(Specimen source, Specimen managed) {
         attachRecordingUnit(source, managed);
         if (source.getAuthors() != null) {

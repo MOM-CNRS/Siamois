@@ -12,14 +12,10 @@ public record FormResource(
                 example = "forms",
                 allowableValues = {"forms"})
         String resourceType,
-        @Schema(description = "Identifiant du formulaire (custom_form.form_id)")
-        Long resourceId,
-        String name,
-        String description,
         @Schema(description = "Layout JSON (sections / lignes / colonnes / fieldId), sérialisé comme en base")
         String layoutJson
 ) {
-    public FormResource(Long resourceId, String name, String description, String layoutJson) {
-        this("forms", resourceId, name, description, layoutJson);
+    public FormResource(String layoutJson) {
+        this("forms", layoutJson);
     }
 }

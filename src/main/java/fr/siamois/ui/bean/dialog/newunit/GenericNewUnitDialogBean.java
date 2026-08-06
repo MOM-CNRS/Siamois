@@ -5,7 +5,11 @@ import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldService;
-import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.AbstractEntityDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -139,7 +143,7 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     }
 
     public void initForms(boolean forceInit) {
-        detailsForm = formContextServices.getConversionService().convert(handler.formLayout(), FormUiDto.class);
+        detailsForm = handler.formLayout();
 
         initFormContext(forceInit);
     }

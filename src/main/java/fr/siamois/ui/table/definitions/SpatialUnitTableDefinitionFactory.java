@@ -1,7 +1,7 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.form.customfield.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.customfield.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.SpatialUnitDTO;
@@ -57,7 +57,7 @@ public final class SpatialUnitTableDefinitionFactory {
         // --------------- Fields
         CustomFieldSelectOneFromFieldCode spatialUnitTypeField = CustomFieldSelectOneFromFieldCode.builder()
                 .label("specimen.field.category")
-                .id(1L)
+                .id(-251L)
                 .isSystemField(true)
                 .valueBinding("category")
                 .styleClass("mr-2 spatial-unit-type-chip")
@@ -68,7 +68,7 @@ public final class SpatialUnitTableDefinitionFactory {
 
         CustomFieldText nameField =  CustomFieldText.builder()
                 .label("common.label.name")
-                .id(2L)
+                .id(-252L)
                 .isSystemField(true)
                 .valueBinding("name")
                 .concept(nameConcept)

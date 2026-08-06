@@ -4,9 +4,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
+
 @Setter
+@Getter
 @NoArgsConstructor
 public class CustomFieldAnswerTextViewModel extends CustomFieldAnswerViewModel {
     private String value;
+
 }

@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private List<PersonDTO> authors;
     private List<PersonDTO> collectors;
     private RecordingUnitSummaryDTO recordingUnit;
+    private ActionUnitSummaryDTO actionUnit;
     protected OffsetDateTime collectionDate;
     private Set<SpecimenSummaryDTO> parents;
     private Set<SpecimenSummaryDTO> children;
@@ -45,6 +47,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     public static List<String> getBindableFieldNames() {
         return List.of(
                 "recordingUnit",
+                "actionUnit",
                 "parents",
                 "children",
                 "fullIdentifier",

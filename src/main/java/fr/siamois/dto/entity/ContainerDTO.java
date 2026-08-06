@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,7 @@ public class ContainerDTO extends AbstractEntityDTO {
 
     protected ConceptDTO type;
     protected SpatialUnitSummaryDTO spatialUnit;
+    protected ActionUnitSummaryDTO actionUnit;
     protected String identifier;
     protected MeasurementAnswerDTO length;
     protected MeasurementAnswerDTO width;
@@ -20,7 +22,7 @@ public class ContainerDTO extends AbstractEntityDTO {
     protected MeasurementAnswerDTO weight;
 
     public static List<String> getBindableFieldNames() {
-        return List.of("identifier", "type", "spatialUnit", "length", "width", "height", "weight");
+        return List.of("identifier", "type", "spatialUnit", "actionUnit", "length", "width", "height", "weight");
     }
 
 }
