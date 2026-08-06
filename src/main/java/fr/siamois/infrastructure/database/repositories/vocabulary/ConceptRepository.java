@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
@@ -78,5 +79,19 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
                     "AND unaccent(cl.label) ILIKE unaccent(:label)"
     )
     List<Concept> findAllByFieldContextAndExactLabel(Long fieldConceptId, String lang, String label);
+
+    /**
+     * Idempotently records a {@code skos:related} link between two concepts. Thesaurus subtrees can
+     * overlap across field configs and syncs, so the same pair may be processed more than once across
+     * separate transactions — {@code ON CONFLICT DO NOTHING} avoids a {@code concept_related_pkey}
+     * violation in that case.
+     */
+    @Modifying
+    @Query(
+            nativeQuery = true,
+            value = "INSERT INTO concept_related (fk_concept_id, fk_related_concept_id) " +
+                    "VALUES (:conceptId, :relatedConceptId) ON CONFLICT DO NOTHING"
+    )
+    void addRelatedConceptIfAbsent(@Param("conceptId") Long conceptId, @Param("relatedConceptId") Long relatedConceptId);
 
 }
