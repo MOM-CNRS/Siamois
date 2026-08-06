@@ -38,29 +38,6 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
     )
     List<Concept> findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(String idt, Collection<String> lowerIdcs);
 
-    /**
-     * Find the top term configuration for a field code of a user.
-     * @param fieldCode The code of the field
-     * @return An optional containing the concept if found
-     */
-    @Query(
-            nativeQuery = true,
-            value = "SELECT c.* FROM concept c " +
-                    "JOIN concept_field_config cfc ON cfc.fk_concept_id = c.concept_id " +
-                    "WHERE cfc.fk_institution_id = :institutionId AND " +
-                    "cfc.fk_user_id = :userId AND " +
-                    "cfc.field_code = :fieldCode"
-    )
-    Optional<Concept> findTopTermConfigForFieldCodeOfUser(Long institutionId, Long userId, String fieldCode);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT c.* "+
-                    "FROM spatial_unit su "+
-                    "LEFT JOIN concept c ON su.fk_concept_category_id = c.concept_id "+
-                    "WHERE su.fk_institution_id = :institutionId"
-    )
-    List<Concept> findAllBySpatialUnitOfInstitution(@Param("institutionId") Long institutionId);
 
     @Query(
             nativeQuery = true,
