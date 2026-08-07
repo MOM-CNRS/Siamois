@@ -152,6 +152,8 @@ class RecordingUnitServiceTest {
         verify(entityIdentifierGenerator).generateIdentifierIfRequired(eq(recordingUnit), specCaptor.capture());
         IdentifierGenerationSpec<RecordingUnit> spec = specCaptor.getValue();
         assertThat(spec.table()).isEqualTo(ConfigurableTable.UE);
+        assertThat(spec.generationRequired().test(recordingUnit)).isTrue();
+        assertThat(spec.actionUnit().apply(recordingUnit)).isSameAs(actionUnit);
         assertThat(spec.typeId().apply(recordingUnit)).isEqualTo(42L);
         assertThat(spec.displayValues().get("NUM_PARENT").apply(recordingUnit)).isEqualTo(30);
         assertThat(spec.displayValues().get("ID_PARENT").apply(recordingUnit)).isEqualTo("RU-30");
@@ -159,6 +161,20 @@ class RecordingUnitServiceTest {
         assertThat(spec.displayValues().get("ID_UA").apply(recordingUnit)).isEqualTo("UA-5");
         assertThat(spec.partitionValues().get("PARENT_RU").apply(recordingUnit)).isEqualTo(3L);
         assertThat(spec.partitionValues().get("SPATIAL_PLACE").apply(recordingUnit)).isEqualTo(7);
+
+        RecordingUnit missingRelations = new RecordingUnit();
+        assertThat(spec.typeId().apply(missingRelations)).isNull();
+        assertThat(spec.displayValues().get("NUM_PARENT").apply(missingRelations)).isNull();
+        assertThat(spec.displayValues().get("ID_PARENT").apply(missingRelations)).isNull();
+        assertThat(spec.displayValues().get("NUM_USPATIAL").apply(missingRelations)).isNull();
+        assertThat(spec.partitionValues().get("PARENT_RU").apply(missingRelations)).isNull();
+        assertThat(spec.partitionValues().get("SPATIAL_PLACE").apply(missingRelations)).isNull();
+
+        RecordingUnit conflicting = new RecordingUnit();
+        conflicting.setId(101L);
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("RU-CONFLICT", 5L))
+                .thenReturn(List.of(conflicting));
+        assertThat(spec.identifierAlreadyUsed().test(recordingUnit, "RU-CONFLICT")).isTrue();
     }
 
     @Test

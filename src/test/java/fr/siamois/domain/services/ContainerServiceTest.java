@@ -235,6 +235,8 @@ class ContainerServiceTest {
         verify(identifierGenerator).generateIdentifierIfRequired(eq(newContainer), specCaptor.capture());
         IdentifierGenerationSpec<Container> spec = specCaptor.getValue();
         assertEquals(ConfigurableTable.CONTENANT, spec.table());
+        assertTrue(spec.generationRequired().test(newContainer));
+        assertSame(actionUnit, spec.actionUnit().apply(newContainer));
         assertEquals(42L, spec.typeId().apply(newContainer));
         assertEquals(5, spec.displayValues().get("NUM_PARENT").apply(newContainer));
         assertEquals("CONT-005", spec.displayValues().get("ID_PARENT").apply(newContainer));
@@ -243,6 +245,15 @@ class ContainerServiceTest {
 
         when(containerRepository.existsByActionUnitIdAndIdentifier(7L, "CONT-006")).thenReturn(true);
         assertTrue(spec.identifierAlreadyUsed().test(newContainer, "CONT-006"));
+
+        Container rootContainer = new Container();
+        rootContainer.setActionUnit(actionUnit);
+        assertNull(spec.typeId().apply(rootContainer));
+        assertNull(spec.displayValues().get("NUM_PARENT").apply(rootContainer));
+        assertNull(spec.displayValues().get("ID_PARENT").apply(rootContainer));
+        assertNull(spec.partitionValues().get("PARENT_CONTAINER").apply(rootContainer));
+        rootContainer.setId(99L);
+        assertFalse(spec.generationRequired().test(rootContainer));
     }
 
     @Test

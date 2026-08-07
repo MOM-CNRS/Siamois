@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -154,8 +155,11 @@ class SpecimenServiceTest {
         Specimen specimen = new Specimen();
         RecordingUnit recordingUnit = new RecordingUnit();
         recordingUnit.setId(1L);
+        recordingUnit.setIdentifier(10);
+        recordingUnit.setFullIdentifier("test");
         fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
         actionUnit.setId(7L);
+        actionUnit.setFullIdentifier("UA-7");
         recordingUnit.setActionUnit(actionUnit);
         specimen.setRecordingUnit(recordingUnit);
         when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(recordingUnit));
@@ -184,6 +188,66 @@ class SpecimenServiceTest {
         verify(specimenMapper, times(1)).invertConvert(specimenDTO);
         verify(specimenRepository, times(1)).save(specimen);
         verify(specimenMapper, times(1)).convert(specimen);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<IdentifierGenerationSpec<Specimen>> specCaptor =
+                ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(specimen), specCaptor.capture());
+        IdentifierGenerationSpec<Specimen> spec = specCaptor.getValue();
+
+        Specimen firstParent = new Specimen();
+        firstParent.setId(2L);
+        firstParent.setIdentifier(20);
+        firstParent.setFullIdentifier("M-020");
+        Specimen secondParent = new Specimen();
+        secondParent.setId(5L);
+        secondParent.setIdentifier(50);
+        secondParent.setFullIdentifier("M-050");
+        Concept category = new Concept();
+        category.setId(42L);
+        Specimen specSubject = new Specimen();
+        specSubject.setRecordingUnit(recordingUnit);
+        specSubject.setCategory(category);
+        specSubject.setParents(new HashSet<>(List.of(secondParent, firstParent)));
+
+        assertTrue(spec.generationRequired().test(specSubject));
+        assertSame(actionUnit, spec.actionUnit().apply(specSubject));
+        assertSame(actionUnit, specSubject.getActionUnit());
+        assertEquals(42L, spec.typeId().apply(specSubject));
+        assertEquals(20, spec.displayValues().get("NUM_PARENT").apply(specSubject));
+        assertEquals("M-020", spec.displayValues().get("ID_PARENT").apply(specSubject));
+        assertEquals(recordingUnit.getIdentifier(), spec.displayValues().get("NUM_UE").apply(specSubject));
+        assertEquals("test", spec.displayValues().get("ID_UE").apply(specSubject));
+        assertEquals(actionUnit.getFullIdentifier(), spec.displayValues().get("ID_UA").apply(specSubject));
+        assertEquals(2L, spec.partitionValues().get("PARENT_MOBILIER").apply(specSubject));
+        assertEquals(1L, spec.partitionValues().get("PARENT_RU").apply(specSubject));
+
+        Specimen existing = new Specimen();
+        existing.setId(99L);
+        when(specimenRepository.findByActionUnitIdAndFullIdentifier(7L, "M-021"))
+                .thenReturn(List.of(specSubject, existing));
+        assertTrue(spec.identifierAlreadyUsed().test(specSubject, "M-021"));
+        assertFalse(spec.identifierAlreadyUsed().test(specSubject, "M-022"));
+        spec.numberSetter().accept(specSubject, 21);
+        spec.identifierSetter().accept(specSubject, "M-021");
+        assertEquals(21, specSubject.getIdentifier());
+        assertEquals("M-021", specSubject.getFullIdentifier());
+
+        Specimen missingRelations = new Specimen();
+        missingRelations.setActionUnit(actionUnit);
+        missingRelations.setParents(null);
+        assertNull(spec.typeId().apply(missingRelations));
+        assertNull(spec.displayValues().get("NUM_PARENT").apply(missingRelations));
+        assertNull(spec.displayValues().get("ID_PARENT").apply(missingRelations));
+        assertNull(spec.displayValues().get("NUM_UE").apply(missingRelations));
+        assertNull(spec.displayValues().get("ID_UE").apply(missingRelations));
+        assertNull(spec.partitionValues().get("PARENT_MOBILIER").apply(missingRelations));
+        assertNull(spec.partitionValues().get("PARENT_RU").apply(missingRelations));
+        missingRelations.setFullIdentifier("MANUAL");
+        assertFalse(spec.generationRequired().test(missingRelations));
+        missingRelations.setFullIdentifier(null);
+        missingRelations.setId(100L);
+        assertFalse(spec.generationRequired().test(missingRelations));
     }
 
 
