@@ -5,6 +5,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -29,6 +30,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -136,6 +138,8 @@ class RecordingUnitOpenApiServiceTest {
     private PhaseRepository phaseRepository;
     @Mock
     private PhaseMapper phaseMapper;
+    @Mock
+    private TableFieldConfigService tableFieldConfigService;
 
     @InjectMocks
     private RecordingUnitOpenApiService service;
@@ -147,6 +151,12 @@ class RecordingUnitOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        FormConfig identifierConfig = new FormConfig();
+        identifierConfig.setIdentifierFormat("{NUM_UE}");
+        identifierConfig.setMinCode(0);
+        identifierConfig.setMaxCode(999);
+        lenient().when(tableFieldConfigService.resolveIdentifierConfig(anyLong(), any(), nullable(Long.class)))
+                .thenReturn(identifierConfig);
         lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
 
         lenient().when(langService.localeForApiLang(any())).thenAnswer(inv -> {
@@ -2100,6 +2110,12 @@ class RecordingUnitOpenApiServiceTest {
 
         Concept concept = new Concept();
         concept.setId(42L);
+        FormConfig typedIdentifierConfig = new FormConfig();
+        typedIdentifierConfig.setIdentifierFormat("T-{NUM_UE:000}");
+        typedIdentifierConfig.setMinCode(10);
+        typedIdentifierConfig.setMaxCode(500);
+        when(tableFieldConfigService.resolveIdentifierConfig(5L, ConfigurableTable.UE, 42L))
+                .thenReturn(typedIdentifierConfig);
         when(formService.findConfiguredRecordingUnitTypesByInstitution(inst)).thenReturn(List.of(concept));
         ConceptDTO typeDto = new ConceptDTO();
         typeDto.setId(42L);
@@ -2116,9 +2132,11 @@ class RecordingUnitOpenApiServiceTest {
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
 
         assertThat(response.getDefaultType().getFields()).isEmpty();
-        assertThat(response.getDefaultType().getIdentifierConfig().getRecordingUnitIdentifierFormat()).isEqualTo("RU-%s");
+        assertThat(response.getDefaultType().getIdentifierConfig().getRecordingUnitIdentifierFormat()).isEqualTo("{NUM_UE}");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
+        assertThat(response.getData().get(0).getIdentifierConfig().getRecordingUnitIdentifierFormat())
+                .isEqualTo("T-{NUM_UE:000}");
         assertThat(response.getData().get(0).getFields()).containsKey("43");
     }
 

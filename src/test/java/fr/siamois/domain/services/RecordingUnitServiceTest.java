@@ -10,6 +10,8 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.config.FormConfig;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.institution.Institution;
@@ -22,6 +24,9 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.domain.services.identifier.IdentifierPartitionService;
+import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -37,6 +42,7 @@ import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.identifier.IdentifierCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -50,6 +56,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
@@ -63,6 +70,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -118,6 +127,15 @@ class RecordingUnitServiceTest {
     private UnitDefinitionService unitDefinitionService;
     @Mock
     private CustomFieldAnswerService customFieldAnswerService;
+    @Mock
+    private TableFieldConfigService tableFieldConfigService;
+    @Mock
+    private IdentifierCounterRepository identifierCounterRepository;
+    @Spy
+    private final IdentifierResolverRegistry identifierResolverRegistry = new IdentifierResolverRegistry();
+    @Spy
+    private final IdentifierPartitionService identifierPartitionService =
+            new IdentifierPartitionService(identifierResolverRegistry);
 
 
     @InjectMocks
@@ -1225,8 +1243,8 @@ class RecordingUnitServiceTest {
         }
 
         @Test
-        @DisplayName("should return numerical id when format is null")
-        void generateFullIdentifier_withNullFormat_shouldReturnNumericalId() {
+        @DisplayName("should allocate and persist the raw number from FormConfig")
+        void generateFullIdentifier_shouldUseFormConfigAndGenericCounter() {
             // 1. Arrange - Préparation des entités avec des IDs cohérents
             Long targetRuId = 99L;
             Long targetAuId = 1L;
@@ -1238,7 +1256,7 @@ class RecordingUnitServiceTest {
             // L'unité d'action qui porte le format
             ActionUnit auJpa = new ActionUnit();
             auJpa.setId(targetAuId);
-            auJpa.setRecordingUnitIdentifierFormat(null); // Cas testé
+            FormConfig config = identifierConfig(20L, "{NUM_UE}", 0, 999);
 
             // Mock des mappers : indispensable car le service commence par convertir les DTOs
             when(recordingUnitMapper.invertConvert(recordingUnitToSave)).thenReturn(ruJpa);
@@ -1248,13 +1266,19 @@ class RecordingUnitServiceTest {
             when(recordingUnitIdInfoRepository.findById(targetRuId)).thenReturn(Optional.empty());
             when(recordingUnitIdInfoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            when(recordingUnitIdCounterRepository.ruNextValUnique(anyLong())).thenReturn(10);
+            when(tableFieldConfigService.resolveIdentifierConfig(targetAuId, ConfigurableTable.UE, null))
+                    .thenReturn(config);
+            when(identifierCounterRepository.nextValue(targetAuId, 20L, "v1", 0)).thenReturn(10);
+            when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("10", targetAuId)).thenReturn(List.of());
 
             // 2. Act
             String identifier = recordingUnitService.generateFullIdentifier(actionUnit, recordingUnitToSave);
 
             // 3. Assert
             assertEquals("10", identifier, "Le service devrait retourner la valeur du compteur quand le format est null");
+            assertEquals(10, ruJpa.getIdentifier());
+            assertEquals("10", recordingUnitToSave.getIdentifier());
+            verifyNoInteractions(recordingUnitIdCounterRepository);
         }
 
         @Test
@@ -1262,7 +1286,7 @@ class RecordingUnitServiceTest {
         void generateFullIdentifier_withResolvers_shouldReturnFormattedIdentifier() {
             // Arrange
             RecordingUnitService spiedService = spy(recordingUnitService);
-            actionUnitJpa.setRecordingUnitIdentifierFormat("{MOCK}-{NUM_UE}");
+            FormConfig config = identifierConfig(21L, "{NUM_UE:000}", 0, 999);
 
             RuIdentifierResolver mockResolver = mock(RuIdentifierResolver.class);
 
@@ -1288,13 +1312,15 @@ class RecordingUnitServiceTest {
             resolvers.put("NUM_UE", numResolver);
             doReturn(resolvers).when(spiedService).findAllIdentifierResolver();
 
-            when(recordingUnitIdCounterRepository.ruNextValUnique(anyLong())).thenReturn(42);
+            when(tableFieldConfigService.resolveIdentifierConfig(1L, ConfigurableTable.UE, null)).thenReturn(config);
+            when(identifierCounterRepository.nextValue(1L, 21L, "v1", 0)).thenReturn(42);
+            when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("042", 1L)).thenReturn(List.of());
 
             // Act
             String identifier = spiedService.generateFullIdentifier(actionUnit, recordingUnitToSave);
 
             // Assert
-            assertEquals("RESOLVED-042", identifier);
+            assertEquals("042", identifier);
         }
 
         @Test
@@ -1305,9 +1331,10 @@ class RecordingUnitServiceTest {
 
             RecordingUnit parentRu = new RecordingUnit();
             parentRu.setId(5L);
+            parentRu.setIdentifier(99);
             recordingUnitJpa.getParents().add(parentRu); // Ajout à l'entité JPA utilisée par le service
 
-            actionUnitJpa.setRecordingUnitIdentifierFormat("{NUM_PARENT}-{NUM_UE}");
+            FormConfig config = identifierConfig(22L, "{NUM_PARENT}-{NUM_UE}", 0, 999);
 
             // Mock des resolvers
             RuIdentifierResolver parentRes = mock(RuIdentifierResolver.class);
@@ -1332,15 +1359,83 @@ class RecordingUnitServiceTest {
             resolvers.put("NUM_UE", ueRes);
 
             doReturn(resolvers).when(spiedService).findAllIdentifierResolver();
-            when(recordingUnitIdCounterRepository.ruNextValParent(5L)).thenReturn(7);
+            when(tableFieldConfigService.resolveIdentifierConfig(1L, ConfigurableTable.UE, null)).thenReturn(config);
+            when(identifierCounterRepository.nextValue(eq(1L), eq(22L), anyString(), eq(0))).thenReturn(7);
+            when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("99-7", 1L)).thenReturn(List.of());
 
             // Act
             String identifier = spiedService.generateFullIdentifier(actionUnit, recordingUnitToSave);
 
             // Assert
             assertEquals("99-7", identifier);
-            verify(recordingUnitIdCounterRepository).ruNextValParent(5L);
+            verify(identifierCounterRepository).nextValue(eq(1L), eq(22L), anyString(), eq(0));
+            verifyNoInteractions(recordingUnitIdCounterRepository);
         }
+
+        @Test
+        void generateFullIdentifier_shouldRenderMissingRelationshipValuesAndUseMissingBuckets() {
+            FormConfig config = identifierConfig(
+                    23L, "{NUM_PARENT:000}-{NUM_USPATIAL:00}-{ID_PARENT}-{NUM_UE:000}", 0, 999);
+            when(tableFieldConfigService.resolveIdentifierConfig(1L, ConfigurableTable.UE, null)).thenReturn(config);
+            when(identifierCounterRepository.nextValue(eq(1L), eq(23L), anyString(), eq(0))).thenReturn(1);
+            when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("000-00-XXX-001", 1L))
+                    .thenReturn(List.of());
+
+            String result = recordingUnitService.generateFullIdentifier(actionUnitJpa, recordingUnitJpa);
+
+            assertEquals("000-00-XXX-001", result);
+            ArgumentCaptor<String> key = ArgumentCaptor.forClass(String.class);
+            verify(identifierCounterRepository).nextValue(eq(1L), eq(23L), key.capture(), eq(0));
+            assertThat(key.getValue()).contains("=~");
+        }
+
+        @Test
+        void generateFullIdentifier_shouldUseSmallestParentIdAndSpatialPlaceNumber() {
+            RecordingUnit parent8 = new RecordingUnit();
+            parent8.setId(8L);
+            parent8.setIdentifier(80);
+            parent8.setFullIdentifier("P8");
+            RecordingUnit parent3 = new RecordingUnit();
+            parent3.setId(3L);
+            parent3.setIdentifier(30);
+            parent3.setFullIdentifier("P3");
+            recordingUnitJpa.setParents(new HashSet<>(List.of(parent8, parent3)));
+            SpatialUnit place = new SpatialUnit();
+            place.setId(100L);
+            place.setPlaceNumber(5);
+            recordingUnitJpa.setSpatialUnit(place);
+
+            FormConfig config = identifierConfig(
+                    24L, "{NUM_PARENT:000}-{NUM_USPATIAL:00}-{ID_PARENT}-{NUM_UE:000}", 0, 999);
+            when(tableFieldConfigService.resolveIdentifierConfig(1L, ConfigurableTable.UE, null)).thenReturn(config);
+            when(identifierCounterRepository.nextValue(eq(1L), eq(24L), anyString(), eq(0))).thenReturn(1);
+            when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("030-05-P3-001", 1L))
+                    .thenReturn(List.of());
+
+            assertEquals("030-05-P3-001",
+                    recordingUnitService.generateFullIdentifier(actionUnitJpa, recordingUnitJpa));
+        }
+
+        @Test
+        void generateFullIdentifier_shouldRejectExhaustedRangeWithoutAssigningRawNumber() {
+            FormConfig config = identifierConfig(25L, "{NUM_UE}", 0, 3);
+            when(tableFieldConfigService.resolveIdentifierConfig(1L, ConfigurableTable.UE, null)).thenReturn(config);
+            when(identifierCounterRepository.nextValue(1L, 25L, "v1", 0)).thenReturn(4);
+
+            assertThatThrownBy(() -> recordingUnitService.generateFullIdentifier(actionUnitJpa, recordingUnitJpa))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("range exhausted");
+            assertThat(recordingUnitJpa.getIdentifier()).isNull();
+        }
+    }
+
+    private static FormConfig identifierConfig(Long id, String format, int min, int max) {
+        FormConfig config = new FormConfig();
+        config.setId(id);
+        config.setIdentifierFormat(format);
+        config.setMinCode(min);
+        config.setMaxCode(max);
+        return config;
     }
 
     @Test

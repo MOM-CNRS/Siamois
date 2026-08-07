@@ -9,6 +9,7 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
@@ -22,10 +23,15 @@ import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.domain.services.identifier.IdentifierPartitionService;
+import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
+import fr.siamois.domain.services.identifier.MapIdentifierRenderContext;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
@@ -34,6 +40,7 @@ import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.identifier.IdentifierCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -98,6 +105,10 @@ public class RecordingUnitService implements ArkEntityService {
     private final PhaseMapper phaseMapper;
     private final UnitDefinitionService unitDefinitionService;
     private final CustomFieldAnswerService customFieldAnswerService;
+    private final TableFieldConfigService tableFieldConfigService;
+    private final IdentifierResolverRegistry identifierResolverRegistry;
+    private final IdentifierPartitionService identifierPartitionService;
+    private final IdentifierCounterRepository identifierCounterRepository;
 
 
     /**
@@ -901,6 +912,8 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
+    /** Legacy allocator retained temporarily for rollback; new generation does not call it. */
+    @Deprecated(forRemoval = true)
     public int generatedNextIdentifier(@NonNull ActionUnit actionUnit, @Nullable Concept unitType, @Nullable RecordingUnit parentRu) {
         ActionUnitResolveConfig config = actionUnit.resolveConfig();
 
@@ -1020,13 +1033,17 @@ public class RecordingUnitService implements ArkEntityService {
      * @param recordingUnitDTO The recording unit to generate the identifier for.
      * @return The generated identifier.
      */
+    @Transactional
     public String generateFullIdentifier(@NonNull ActionUnitSummaryDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
         Long ruId = recordingUnitDTO.getId();
         if (ruId == null) {
             // Création non encore persistée (cas UI rares) : mapping DTO → entité.
             RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
             ActionUnit actionUnit = actionUnitSummaryMapper.invertConvert(actionUnitDTO);
-            return generateFullIdentifier(actionUnit, recordingUnit);
+            String generated = generateFullIdentifier(actionUnit, recordingUnit);
+            recordingUnitDTO.setIdentifier(String.valueOf(recordingUnit.getIdentifier()));
+            recordingUnitDTO.setFullIdentifier(generated);
+            return generated;
         }
 
         // Ne pas passer par invertConvert : cela crée une RecordingUnit transient
@@ -1047,7 +1064,10 @@ public class RecordingUnitService implements ArkEntityService {
                 throw new ActionUnitNotFoundException(
                         "Action unit missing for recording unit " + ruId);
             }
-            return generateFullIdentifier(actionUnit, recordingUnit);
+            String generated = generateFullIdentifier(actionUnit, recordingUnit);
+            recordingUnitDTO.setIdentifier(String.valueOf(recordingUnit.getIdentifier()));
+            recordingUnitDTO.setFullIdentifier(generated);
+            return generated;
         } finally {
             if (entityManager != null && previousFlushMode != null) {
                 entityManager.setFlushMode(previousFlushMode);
@@ -1055,12 +1075,29 @@ public class RecordingUnitService implements ArkEntityService {
         }
     }
 
+    @Transactional
     public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
         log.trace("Generating full identifier for recording unit");
-        String format = actionUnit.getRecordingUnitIdentifierFormat();
-        RecordingUnit parent = recordingUnit.getParents() == null
-                ? null
-                : recordingUnit.getParents().stream().findFirst().orElse(null);
+        RecordingUnit parent = deterministicParent(recordingUnit);
+        Long typeConceptId = recordingUnit.getType() == null ? null : recordingUnit.getType().getId();
+        FormConfig config = tableFieldConfigService.resolveIdentifierConfig(
+                actionUnit.getId(), ConfigurableTable.UE, typeConceptId);
+        validateIdentifierRange(config);
+
+        Integer placeNumber = recordingUnit.getSpatialUnit() == null
+                ? null : recordingUnit.getSpatialUnit().getPlaceNumber();
+        Map<String, Object> displayValues = new HashMap<>();
+        displayValues.put("NUM_PARENT", parent == null ? null : parent.getIdentifier());
+        displayValues.put("ID_PARENT", parent == null ? null : parent.getFullIdentifier());
+        displayValues.put("NUM_USPATIAL", placeNumber);
+        displayValues.put("ID_UA", actionUnit.getFullIdentifier());
+
+        Map<String, Object> partitionValues = new HashMap<>();
+        partitionValues.put("PARENT_RU", parent == null ? null : parent.getId());
+        partitionValues.put("SPATIAL_PLACE", placeNumber);
+        MapIdentifierRenderContext context = new MapIdentifierRenderContext(displayValues, partitionValues);
+        String canonicalKey = identifierPartitionService.canonicalKey(
+                ConfigurableTable.UE, config.getIdentifierFormat(), context);
 
         // Les nextval native ne doivent pas forcer un flush du contexte (instances transient).
         jakarta.persistence.FlushModeType previousFlushMode = null;
@@ -1068,33 +1105,51 @@ public class RecordingUnitService implements ArkEntityService {
             previousFlushMode = entityManager.getFlushMode();
             entityManager.setFlushMode(jakarta.persistence.FlushModeType.COMMIT);
         }
-        int numericalId;
         try {
-            numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType(), parent);
+            while (true) {
+                int numericalId = identifierCounterRepository.nextValue(
+                        actionUnit.getId(), config.getId(), canonicalKey, config.getMinCode());
+                if (numericalId > config.getMaxCode()) {
+                    throw new IllegalStateException("Identifier range exhausted for form config " + config.getId());
+                }
+
+                displayValues.put("NUM_UE", numericalId);
+                String fullIdentifier = identifierResolverRegistry.render(
+                        ConfigurableTable.UE,
+                        config.getIdentifierFormat(),
+                        new MapIdentifierRenderContext(displayValues, partitionValues));
+                if (identifierBelongsToAnotherUnit(actionUnit.getId(), recordingUnit.getId(), fullIdentifier)) {
+                    continue;
+                }
+                recordingUnit.setIdentifier(numericalId);
+                recordingUnit.setFullIdentifier(fullIdentifier);
+                return fullIdentifier;
+            }
         } finally {
             if (entityManager != null && previousFlushMode != null) {
                 entityManager.setFlushMode(previousFlushMode);
             }
         }
+    }
 
-        RecordingUnitIdInfo info = createOrGetInfoOf(recordingUnit, parent);
+    private static RecordingUnit deterministicParent(RecordingUnit recordingUnit) {
+        if (recordingUnit.getParents() == null) return null;
+        return recordingUnit.getParents().stream()
+                .filter(Objects::nonNull)
+                .filter(parent -> parent.getId() != null)
+                .min(Comparator.comparing(RecordingUnit::getId))
+                .orElse(null);
+    }
 
-        info.setRuNumber(numericalId);
-
-        if (format == null) {
-            recordingUnitIdInfoRepository.save(info);
-            return String.valueOf(numericalId);
+    private static void validateIdentifierRange(FormConfig config) {
+        if (config.getMinCode() < 0 || config.getMaxCode() < config.getMinCode()) {
+            throw new IllegalArgumentException("Invalid identifier range on form config " + config.getId());
         }
+    }
 
-        info.setRuType(recordingUnit.getType());
-
-        for (RuIdentifierResolver resolver : findAllIdentifierResolver().values()) {
-            if (resolver.formatUsesThisResolver(format)) {
-                format = resolver.resolve(format, info);
-            }
-        }
-
-        return format;
+    private boolean identifierBelongsToAnotherUnit(Long actionUnitId, Long recordingUnitId, String fullIdentifier) {
+        return recordingUnitRepository.findByFullIdentifierAndActionUnitId(fullIdentifier, actionUnitId).stream()
+                .anyMatch(existing -> !Objects.equals(existing.getId(), recordingUnitId));
     }
 
     private static final Map<String, RuIdentifierResolver> IDENTIFIER_RESOLVERS = new HashMap<>();
