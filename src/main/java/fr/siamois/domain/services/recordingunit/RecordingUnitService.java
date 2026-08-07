@@ -1011,7 +1011,8 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     private IdentifierGenerationSpec<RecordingUnit> recordingUnitIdentifierSpec(ActionUnit actionUnit) {
-        return IdentifierGenerationSpec.<RecordingUnit>builder(ConfigurableTable.UE)
+        return IdentifierGenerationSpec.<RecordingUnit>builder()
+                .table(ConfigurableTable.UE)
                 .entityName("recording unit")
                 .generationRequired(recordingUnit -> true)
                 .actionUnit(recordingUnit -> actionUnit)

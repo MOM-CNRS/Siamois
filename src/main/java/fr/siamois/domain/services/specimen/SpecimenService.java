@@ -219,7 +219,8 @@ public class SpecimenService implements ArkEntityService {
     }
 
     private IdentifierGenerationSpec<Specimen> specimenIdentifierSpec() {
-        return IdentifierGenerationSpec.<Specimen>builder(ConfigurableTable.MOBILIER)
+        return IdentifierGenerationSpec.<Specimen>builder()
+                .table(ConfigurableTable.MOBILIER)
                 .entityName("specimen")
                 .generationRequired(specimen -> specimen.getId() == null && specimen.getFullIdentifier() == null)
                 .actionUnit(this::resolveIdentifierActionUnit)

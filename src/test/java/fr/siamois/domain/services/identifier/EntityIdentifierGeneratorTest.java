@@ -231,7 +231,8 @@ class EntityIdentifierGeneratorTest {
     }
 
     private static IdentifierGenerationSpec<TestEntity> testSpec(Predicate<String> collision) {
-        return IdentifierGenerationSpec.<TestEntity>builder(ConfigurableTable.UE)
+        return IdentifierGenerationSpec.<TestEntity>builder()
+                .table(ConfigurableTable.UE)
                 .entityName("test entity")
                 .generationRequired(entity -> entity.number == 0)
                 .actionUnit(entity -> entity.actionUnit)

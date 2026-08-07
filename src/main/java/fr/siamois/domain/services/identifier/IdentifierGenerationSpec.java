@@ -2,6 +2,8 @@ package fr.siamois.domain.services.identifier;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import lombok.Builder;
+import lombok.Singular;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -56,7 +58,8 @@ import java.util.function.Predicate;
  *
  * <h2>Example</h2>
  * <pre>{@code
- * IdentifierGenerationSpec.<Container>builder(ConfigurableTable.CONTENANT)
+ * IdentifierGenerationSpec.<Container>builder()
+ *     .table(ConfigurableTable.CONTENANT)
  *     .entityName("container")
  *     .generationRequired(container -> container.getId() == null)
  *     .actionUnit(Container::getActionUnit)
@@ -87,14 +90,15 @@ import java.util.function.Predicate;
  * @param identifierSetter setter for the rendered identifier
  * @param <E> entity type configured by this specification
  */
+@Builder
 public record IdentifierGenerationSpec<E>(
         ConfigurableTable table,
         String entityName,
         Predicate<E> generationRequired,
         Function<E, ActionUnit> actionUnit,
         Function<E, Long> typeId,
-        Map<String, Function<E, ?>> displayValues,
-        Map<String, Function<E, ?>> partitionValues,
+        @Singular("displayValue") Map<String, Function<E, ?>> displayValues,
+        @Singular("partitionValue") Map<String, Function<E, ?>> partitionValues,
         BiPredicate<E, String> identifierAlreadyUsed,
         ObjIntConsumer<E> numberSetter,
         BiConsumer<E, String> identifierSetter) {
@@ -104,7 +108,7 @@ public record IdentifierGenerationSpec<E>(
         Objects.requireNonNull(entityName, "An entity name is required");
         Objects.requireNonNull(generationRequired, "A generation condition is required");
         Objects.requireNonNull(actionUnit, "An action-unit accessor is required");
-        Objects.requireNonNull(typeId, "A type accessor is required");
+        typeId = typeId == null ? entity -> null : typeId;
         displayValues = Collections.unmodifiableMap(new LinkedHashMap<>(displayValues));
         partitionValues = Collections.unmodifiableMap(new LinkedHashMap<>(partitionValues));
         Objects.requireNonNull(identifierAlreadyUsed, "A collision predicate is required");
@@ -112,85 +116,4 @@ public record IdentifierGenerationSpec<E>(
         Objects.requireNonNull(identifierSetter, "An identifier setter is required");
     }
 
-    public static <E> Builder<E> builder(ConfigurableTable table) {
-        return new Builder<>(table);
-    }
-
-    /** Fluent builder used by entity services to declare their identifier inputs. */
-    public static final class Builder<E> {
-        private final ConfigurableTable table;
-        private String entityName;
-        private Predicate<E> generationRequired;
-        private Function<E, ActionUnit> actionUnit;
-        private Function<E, Long> typeId = entity -> null;
-        private final Map<String, Function<E, ?>> displayValues = new LinkedHashMap<>();
-        private final Map<String, Function<E, ?>> partitionValues = new LinkedHashMap<>();
-        private BiPredicate<E, String> identifierAlreadyUsed;
-        private ObjIntConsumer<E> numberSetter;
-        private BiConsumer<E, String> identifierSetter;
-
-        private Builder(ConfigurableTable table) {
-            this.table = table;
-        }
-
-        /** Sets the singular entity name used in validation messages, for example {@code "container"}. */
-        public Builder<E> entityName(String entityName) {
-            this.entityName = entityName;
-            return this;
-        }
-
-        /** Sets the condition that protects existing or manually assigned identifiers from regeneration. */
-        public Builder<E> generationRequired(Predicate<E> generationRequired) {
-            this.generationRequired = generationRequired;
-            return this;
-        }
-
-        /** Sets the accessor for the persisted action unit owning the configuration and counter namespace. */
-        public Builder<E> actionUnit(Function<E, ActionUnit> actionUnit) {
-            this.actionUnit = actionUnit;
-            return this;
-        }
-
-        /** Sets the optional type/category concept-ID accessor; the default accessor returns {@code null}. */
-        public Builder<E> typeId(Function<E, Long> typeId) {
-            this.typeId = typeId;
-            return this;
-        }
-
-        /** Adds a resolver token accessor. Do not add the table's own numerical token. */
-        public Builder<E> displayValue(String token, Function<E, ?> accessor) {
-            displayValues.put(token, accessor);
-            return this;
-        }
-
-        /** Adds a canonical counter-partition dimension accessor. Prefer stable database IDs for relationships. */
-        public Builder<E> partitionValue(String dimension, Function<E, ?> accessor) {
-            partitionValues.put(dimension, accessor);
-            return this;
-        }
-
-        /** Sets the project-scoped check used to reject an already persisted rendered identifier. */
-        public Builder<E> identifierAlreadyUsed(BiPredicate<E, String> identifierAlreadyUsed) {
-            this.identifierAlreadyUsed = identifierAlreadyUsed;
-            return this;
-        }
-
-        /** Sets the entity setter receiving the raw number allocated by the counter. */
-        public Builder<E> numberSetter(ObjIntConsumer<E> numberSetter) {
-            this.numberSetter = numberSetter;
-            return this;
-        }
-
-        /** Sets the entity setter receiving the fully rendered identifier. */
-        public Builder<E> identifierSetter(BiConsumer<E, String> identifierSetter) {
-            this.identifierSetter = identifierSetter;
-            return this;
-        }
-
-        /** Builds an immutable specification and validates all mandatory attributes. */
-        public IdentifierGenerationSpec<E> build() {
-            return new IdentifierGenerationSpec<>(table, entityName, generationRequired, actionUnit, typeId,
-                    displayValues, partitionValues, identifierAlreadyUsed, numberSetter, identifierSetter);
-        }
-    }
 }

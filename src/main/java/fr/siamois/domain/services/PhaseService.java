@@ -89,7 +89,8 @@ public class PhaseService {
     }
 
     private IdentifierGenerationSpec<Phase> phaseIdentifierSpec() {
-        return IdentifierGenerationSpec.<Phase>builder(ConfigurableTable.PHASE)
+        return IdentifierGenerationSpec.<Phase>builder()
+                .table(ConfigurableTable.PHASE)
                 .entityName("phase")
                 .generationRequired(phase -> phase.getId() == null)
                 .actionUnit(Phase::getActionUnit)

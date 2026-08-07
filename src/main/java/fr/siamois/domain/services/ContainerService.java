@@ -121,7 +121,8 @@ public class ContainerService {
     }
 
     private IdentifierGenerationSpec<Container> containerIdentifierSpec() {
-        return IdentifierGenerationSpec.<Container>builder(ConfigurableTable.CONTENANT)
+        return IdentifierGenerationSpec.<Container>builder()
+                .table(ConfigurableTable.CONTENANT)
                 .entityName("container")
                 .generationRequired(container -> container.getId() == null)
                 .actionUnit(Container::getActionUnit)
