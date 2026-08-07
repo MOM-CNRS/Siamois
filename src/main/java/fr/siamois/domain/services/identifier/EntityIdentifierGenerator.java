@@ -39,7 +39,6 @@ public class EntityIdentifierGenerator {
         this.counterRepository = counterRepository;
     }
 
-    @Transactional
     public GeneratedIdentifier generate(ConfigurableTable table,
                                         ActionUnit actionUnit,
                                         Long typeConceptId,
