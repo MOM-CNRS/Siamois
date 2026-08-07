@@ -23,6 +23,12 @@ public interface IdentifierResolver<C extends IdentifierRenderContext> {
         return null;
     }
 
+    @Nullable
+    default Object resolvePartitionValue(C context) {
+        String dimension = partitionDimensionCode();
+        return dimension == null ? null : context.partitionValue(dimension);
+    }
+
     default boolean isUsedBy(String format) {
         return tokenPattern().matcher(format).find();
     }

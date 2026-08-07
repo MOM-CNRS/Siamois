@@ -7,4 +7,10 @@ import org.springframework.lang.Nullable;
 public interface IdentifierRenderContext {
     @Nullable
     Object value(String tokenCode);
+
+    /** Value used to partition a counter; null represents the reserved missing bucket. */
+    @Nullable
+    default Object partitionValue(String dimensionCode) {
+        return null;
+    }
 }

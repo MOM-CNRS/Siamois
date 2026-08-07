@@ -17,29 +17,29 @@ public class IdentifierResolverRegistry {
     public IdentifierResolverRegistry() {
         catalogs = Map.of(
                 ConfigurableTable.UE, catalog(
-                        numerical("NUM_UE"),
-                        numerical("NUM_PARENT"),
-                        text("ID_PARENT"),
-                        numerical("NUM_USPATIAL"),
-                        text("ID_UA")),
+                        numerical("NUM_UE", null),
+                        numerical("NUM_PARENT", "PARENT_RU"),
+                        text("ID_PARENT", "PARENT_RU"),
+                        numerical("NUM_USPATIAL", "SPATIAL_PLACE"),
+                        text("ID_UA", null)),
                 ConfigurableTable.MOBILIER, catalog(
-                        numerical("NUM_MOBILIER"),
-                        numerical("NUM_PARENT"),
-                        text("ID_PARENT"),
-                        numerical("NUM_UE"),
-                        text("ID_UE"),
-                        text("ID_UA")),
+                        numerical("NUM_MOBILIER", null),
+                        numerical("NUM_PARENT", "PARENT_MOBILIER"),
+                        text("ID_PARENT", "PARENT_MOBILIER"),
+                        numerical("NUM_UE", "PARENT_RU"),
+                        text("ID_UE", "PARENT_RU"),
+                        text("ID_UA", null)),
                 ConfigurableTable.CONTENANT, catalog(
-                        numerical("NUM_CONTAINER"),
-                        numerical("NUM_PARENT"),
-                        text("ID_PARENT"),
-                        text("ID_UA")),
+                        numerical("NUM_CONTAINER", null),
+                        numerical("NUM_PARENT", "PARENT_CONTAINER"),
+                        text("ID_PARENT", "PARENT_CONTAINER"),
+                        text("ID_UA", null)),
                 ConfigurableTable.PHASE, catalog(
-                        numerical("NUM_PHASE"),
-                        numerical("NUM_PARENT"),
-                        text("ID_PARENT"),
-                        numerical("PHASE_ORDER"),
-                        text("ID_UA"))
+                        numerical("NUM_PHASE", null),
+                        numerical("NUM_PARENT", "PARENT_PHASE"),
+                        text("ID_PARENT", "PARENT_PHASE"),
+                        numerical("PHASE_ORDER", "PHASE_ORDER"),
+                        text("ID_UA", null))
         );
     }
 
@@ -117,12 +117,12 @@ public class IdentifierResolverRegistry {
         return Objects.requireNonNull(catalogs.get(table), "No identifier resolver catalog for " + table);
     }
 
-    private static IdentifierResolver<IdentifierRenderContext> numerical(String code) {
-        return new NumericalIdentifierResolver<>(code, titleCode(code), descriptionCode(code), null);
+    private static IdentifierResolver<IdentifierRenderContext> numerical(String code, String dimension) {
+        return new NumericalIdentifierResolver<>(code, titleCode(code), descriptionCode(code), dimension);
     }
 
-    private static IdentifierResolver<IdentifierRenderContext> text(String code) {
-        return new TextIdentifierResolver<>(code, titleCode(code), descriptionCode(code), null);
+    private static IdentifierResolver<IdentifierRenderContext> text(String code, String dimension) {
+        return new TextIdentifierResolver<>(code, titleCode(code), descriptionCode(code), dimension);
     }
 
     private static String titleCode(String code) {

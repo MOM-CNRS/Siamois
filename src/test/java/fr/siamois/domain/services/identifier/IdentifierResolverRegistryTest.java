@@ -61,6 +61,20 @@ class IdentifierResolverRegistryTest {
         assertThat(rendered).isEqualTo("M-007-0000-XXX");
     }
 
+    @Test
+    void relationshipTokens_shouldDeclareTheirPartitionDimensions() {
+        assertThat(registry.resolver(ConfigurableTable.UE, "NUM_PARENT").orElseThrow().partitionDimensionCode())
+                .isEqualTo("PARENT_RU");
+        assertThat(registry.resolver(ConfigurableTable.UE, "ID_PARENT").orElseThrow().partitionDimensionCode())
+                .isEqualTo("PARENT_RU");
+        assertThat(registry.resolver(ConfigurableTable.UE, "NUM_USPATIAL").orElseThrow().partitionDimensionCode())
+                .isEqualTo("SPATIAL_PLACE");
+        assertThat(registry.resolver(ConfigurableTable.PHASE, "PHASE_ORDER").orElseThrow().partitionDimensionCode())
+                .isEqualTo("PHASE_ORDER");
+        assertThat(registry.resolver(ConfigurableTable.UE, "NUM_UE").orElseThrow().partitionDimensionCode())
+                .isNull();
+    }
+
     private java.util.List<String> codes(ConfigurableTable table) {
         return registry.resolvers(table).stream().map(IdentifierResolver::code).toList();
     }
