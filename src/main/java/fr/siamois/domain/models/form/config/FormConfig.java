@@ -53,4 +53,14 @@ public class FormConfig {
     @OneToMany(mappedBy = "formConfig", fetch = FetchType.LAZY)
     private List<FieldFormConfig> fieldConfigs;
 
+    @NonNull
+    @Column(name = "identifier_format", nullable = false)
+    private String identifierFormat;
+
+    @Column(name = "min_code", nullable = false)
+    private int minCode;
+
+    @Column(name = "max_code", nullable = false)
+    private int maxCode;
+
 }

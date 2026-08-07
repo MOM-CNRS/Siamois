@@ -5,8 +5,8 @@ import lombok.*;
 import java.io.Serializable;
 
 /**
- * Read-only summary shown above the field/identifier tabs: the type's name and the definition of
- * the thesaurus concept it represents.
+ * General configuration of a table type: its read-only thesaurus summary and its editable
+ * identifier settings.
  */
 @Getter
 @Setter
@@ -16,4 +16,7 @@ import java.io.Serializable;
 public class TypeFormConfig implements Serializable {
     private String typeName;
     private String definition;
+    private String identifierFormat;
+    private int minCode;
+    private int maxCode;
 }

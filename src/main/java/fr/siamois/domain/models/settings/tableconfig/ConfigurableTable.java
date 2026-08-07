@@ -15,16 +15,18 @@ import lombok.Getter;
  */
 @Getter
 public enum ConfigurableTable {
-    UE("UE", RecordingUnit.TYPE_FIELD_CODE),
-    MOBILIER("Mobilier", Specimen.CATEGORY_FIELD),
-    PHASE("Phase", Phase.TYPE_FIELD),
-    CONTENANT("Contenant", Container.TYPE_FIELD);
+    UE("UE", RecordingUnit.TYPE_FIELD_CODE, "{NUM_UE}"),
+    MOBILIER("Mobilier", Specimen.CATEGORY_FIELD, "{NUM_MOBILIER}"),
+    PHASE("Phase", Phase.TYPE_FIELD, "{NUM_PHASE}"),
+    CONTENANT("Contenant", Container.TYPE_FIELD, "{NUM_CONTAINER}");
 
     private final String label;
     private final String fieldCode;
+    private final String defaultIdentifierFormat;
 
-    ConfigurableTable(String label, String fieldCode) {
+    ConfigurableTable(String label, String fieldCode, String defaultIdentifierFormat) {
         this.label = label;
         this.fieldCode = fieldCode;
+        this.defaultIdentifierFormat = defaultIdentifierFormat;
     }
 }

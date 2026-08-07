@@ -60,7 +60,7 @@ public interface TableFieldConfigService {
     TypeSummary addConfiguration(Long projectId, ConfigurableTable table, String typeName);
 
     /**
-     * Reads the general (non-field) configuration of a type.
+     * Reads the general (non-field) configuration of a type, including effective identifier values.
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
@@ -78,6 +78,12 @@ public interface TableFieldConfigService {
      *                  which type it applies to
      */
     void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config);
+
+    /**
+     * Resolves the persisted identifier configuration for a type. An unconfigured type inherits
+     * the project's default row, which is materialized with table defaults when necessary.
+     */
+    FormConfig resolveIdentifierConfig(Long projectId, ConfigurableTable table, Long typeConceptId);
 
     /**
      * Reads the system and additional fields configured for a type. System fields come in the order

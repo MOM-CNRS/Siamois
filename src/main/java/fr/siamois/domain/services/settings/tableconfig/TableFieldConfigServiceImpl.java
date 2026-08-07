@@ -141,15 +141,20 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional(readOnly = true)
     public TypeFormConfig getFormConfig(Long projectId, ConfigurableTable table, String typeName) {
         boolean isDefault = DEFAULT_TYPE.equals(typeName);
-        Optional<Concept> valueConcept = findFormConfig(projectId, table, typeName)
+        Optional<FormConfig> stored = findFormConfig(projectId, table, typeName);
+        Optional<Concept> valueConcept = stored
                 .map(FormConfig::getValueConcept);
         if (valueConcept.isEmpty() && !isDefault) {
             valueConcept = findFieldConcept(projectId, table)
                     .flatMap(fieldConcept -> findValueConcept(projectId, fieldConcept, typeName));
         }
+        FormConfig identifiers = stored.orElseGet(() -> findFormConfig(projectId, table, DEFAULT_TYPE).orElse(null));
         return TypeFormConfig.builder()
                 .typeName(typeName)
                 .definition(valueConcept.map(this::definitionOf).orElse(""))
+                .identifierFormat(identifiers == null ? table.getDefaultIdentifierFormat() : identifiers.getIdentifierFormat())
+                .minCode(identifiers == null ? 0 : identifiers.getMinCode())
+                .maxCode(identifiers == null ? 999 : identifiers.getMaxCode())
                 .build();
     }
 
@@ -159,7 +164,30 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config) {
-        requireFormConfig(projectId, table, config.getTypeName());
+        FormConfig stored = requireFormConfig(projectId, table, config.getTypeName());
+        // Existing callers use this method only to materialize a row and omit identifier values.
+        if (config.getIdentifierFormat() == null) return;
+        if (config.getIdentifierFormat().isBlank()) {
+            throw new IllegalArgumentException("Identifier format is required");
+        }
+        if (config.getMinCode() < 0 || config.getMaxCode() < config.getMinCode()) {
+            throw new IllegalArgumentException("Invalid identifier range");
+        }
+        stored.setIdentifierFormat(config.getIdentifierFormat());
+        stored.setMinCode(config.getMinCode());
+        stored.setMaxCode(config.getMaxCode());
+        formConfigRepository.save(stored);
+    }
+
+    @Override
+    @Transactional
+    public FormConfig resolveIdentifierConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        if (typeConceptId != null) {
+            Optional<FormConfig> typed = findFormConfig(projectId, table, typeConceptId);
+            if (typed.isPresent()) return typed.get();
+        }
+        return createOrGetFormConfig(projectId, table, (Long) null)
+                .orElseThrow(() -> new IllegalStateException("No type field configured for " + table));
     }
 
     /**
@@ -673,6 +701,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         config.setInstitution(project.getCreatedByInstitution());
         config.setFieldConcept(fieldConcept);
         config.setFieldConfigs(new ArrayList<>());
+        initializeIdentifierConfig(config, table);
         if (!DEFAULT_TYPE.equals(typeName)) {
             config.setValueConcept(findValueConcept(projectId, fieldConcept, typeName)
                     .orElseThrow(() -> new NoSuchElementException(
@@ -693,11 +722,18 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         config.setInstitution(project.getCreatedByInstitution());
         config.setFieldConcept(fieldConcept);
         config.setFieldConfigs(new ArrayList<>());
+        initializeIdentifierConfig(config, table);
         if (typeConceptId != null) {
             config.setValueConcept(conceptRepository.findById(typeConceptId)
                     .orElseThrow(() -> new NoSuchElementException("Unknown concept id " + typeConceptId)));
         }
         return formConfigRepository.save(config);
+    }
+
+    private static void initializeIdentifierConfig(FormConfig config, ConfigurableTable table) {
+        config.setIdentifierFormat(table.getDefaultIdentifierFormat());
+        config.setMinCode(0);
+        config.setMaxCode(999);
     }
 
     private Optional<Concept> findFieldConcept(Long projectId, ConfigurableTable table) {
