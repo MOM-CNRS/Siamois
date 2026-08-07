@@ -61,6 +61,10 @@ public class Container extends TraceableEntity {
     @Column(name = "identifier")
     protected String identifier;
 
+    /** Raw counter value, populated when container generation is implemented. */
+    @Column(name = "generated_number")
+    protected Integer generatedNumber;
+
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "fk_length")
     @NotAudited

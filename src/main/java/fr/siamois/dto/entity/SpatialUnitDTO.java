@@ -20,6 +20,7 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
         recordingUnitList = spatialUnitDTO.getRecordingUnitList();
         relatedActionUnitList = spatialUnitDTO.relatedActionUnitList;
         address = spatialUnitDTO.address;
+        placeNumber = spatialUnitDTO.placeNumber;
     }
 
     private String name;
@@ -30,9 +31,10 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private Set<ActionUnitSummaryDTO> relatedActionUnitList;
     private String code;
+    private Integer placeNumber;
 
     public List<String> getBindableFieldNames() {
-        return List.of("category", "name", "address", "code");
+        return List.of("category", "name", "address", "code", "placeNumber");
     }
 
 

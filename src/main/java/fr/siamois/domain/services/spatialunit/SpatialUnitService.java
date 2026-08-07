@@ -650,6 +650,18 @@ public class SpatialUnitService implements ArkEntityService {
                                       String newName,
                                       ConceptDTO newCategory,
                                       FullAddress newAddress) throws SpatialUnitAlreadyExistsException {
+        return updatePlace(info, placeId, newName, newCategory, newAddress, null, false);
+    }
+
+    @Transactional
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlace(UserInfo info,
+                                      long placeId,
+                                      String newName,
+                                      ConceptDTO newCategory,
+                                      FullAddress newAddress,
+                                      Integer newPlaceNumber,
+                                      boolean updatePlaceNumber) throws SpatialUnitAlreadyExistsException {
         SpatialUnitDTO dto = loadDtoById(placeId);
         Long institutionId = info.getInstitution().getId();
 
@@ -669,6 +681,9 @@ public class SpatialUnitService implements ArkEntityService {
         }
         if (newAddress != null) {
             dto.setAddress(newAddress);
+        }
+        if (updatePlaceNumber) {
+            dto.setPlaceNumber(newPlaceNumber);
         }
         return persistSpatialUnitDto(dto);
     }

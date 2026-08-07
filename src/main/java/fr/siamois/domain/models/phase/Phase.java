@@ -44,6 +44,10 @@ public class Phase extends TraceableEntity {
     @Column(name = "identifier")
     private String identifier;
 
+    /** Raw counter value, populated when phase generation is implemented. */
+    @Column(name = "generated_number")
+    private Integer generatedNumber;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_action_unit_id")
     private ActionUnit actionUnit;

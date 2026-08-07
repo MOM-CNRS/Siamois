@@ -9,6 +9,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -47,6 +48,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
         name = spatialUnit.getName();
         category = spatialUnit.getCategory();
         geom = spatialUnit.getGeom();
+        placeNumber = spatialUnit.getPlaceNumber();
         validated = ValidationStatus.INCOMPLETE;
     }
 
@@ -108,6 +110,10 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "code")
     public String code;
 
+    /** Manually assigned grouping number; deliberately not unique. */
+    @Column(name = "place_number")
+    private Integer placeNumber;
+
     @ManyToMany(mappedBy = "spatialContext")
     @JsonIgnore
     private Set<ActionUnit> relatedActionUnitList = new HashSet<>();
@@ -160,6 +166,13 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .externalId("")
             .build();
 
+    @Transient
+    @JsonIgnore
+    public static final Concept PLACE_NUMBER_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("SIASU.PLACE_NUMBER")
+            .build();
+
     // address
     @Transient
     @JsonIgnore
@@ -209,6 +222,16 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
 
     @Transient
     @JsonIgnore
+    public static final CustomFieldInteger PLACE_NUMBER_FIELD = CustomFieldInteger.builder()
+            .label("spatialUnit.field.placeNumber")
+            .isSystemField(true)
+            .id(-205L)
+            .valueBinding("placeNumber")
+            .concept(PLACE_NUMBER_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
     public static final CustomFieldSelectOneAddress ADDRESS_FIELD =  CustomFieldSelectOneAddress.builder()
             .label("common.label.address")
             .isSystemField(true)
@@ -243,6 +266,12 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(false)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(ADDRESS_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomColUiDto.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(PLACE_NUMBER_FIELD)
                                                     .build())
                                             .build()
                             ).build()
@@ -282,6 +311,12 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(false)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(ADDRESS_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomColUiDto.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(PLACE_NUMBER_FIELD)
                                                     .build())
                                             .build()
                             ).build()

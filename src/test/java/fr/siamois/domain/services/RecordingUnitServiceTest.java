@@ -1179,6 +1179,7 @@ class RecordingUnitServiceTest {
         recordingUnit.setActionUnit(actionUnit2);
         SpatialUnit su = new SpatialUnit();
         su.setId(99L);
+        su.setPlaceNumber(77);
         recordingUnit.setSpatialUnit(su);
 
         RecordingUnit parentUnit = new RecordingUnit();
@@ -1196,7 +1197,7 @@ class RecordingUnitServiceTest {
         assertNotNull(result);
         assertEquals(1L, result.getRecordingUnitId());
         assertSame(recordingUnit, result.getRecordingUnit());
-        assertEquals(99, result.getSpatialUnitNumber());
+        assertEquals(77, result.getSpatialUnitNumber());
         assertSame(actionUnit2, result.getActionUnit());
         assertSame(parentUnit, result.getParent());
         assertSame(parentType, result.getRuParentType());

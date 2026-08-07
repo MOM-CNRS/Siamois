@@ -1002,7 +1002,7 @@ public class RecordingUnitService implements ArkEntityService {
         info.setRecordingUnitId(recordingUnit.getId());
         info.setRecordingUnit(recordingUnit);
         if (recordingUnit.getSpatialUnit() != null) {
-            info.setSpatialUnitNumber(Math.toIntExact(recordingUnit.getSpatialUnit().getId()));
+            info.setSpatialUnitNumber(recordingUnit.getSpatialUnit().getPlaceNumber());
         }
         info.setActionUnit(recordingUnit.getActionUnit());
         if (parentRecordingUnit != null) {
