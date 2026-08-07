@@ -1,5 +1,6 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -35,6 +36,8 @@ class PhaseServiceTest {
     private PhaseRepository phaseRepository;
     @Mock
     private PhaseMapper phaseMapper;
+    @Mock
+    private fr.siamois.domain.services.identifier.EntityIdentifierGenerator identifierGenerator;
 
     @InjectMocks
     private PhaseService phaseService;
@@ -193,6 +196,7 @@ class PhaseServiceTest {
 
         Phase newEntity = new Phase();
         newEntity.setIdentifier("P-NEW");
+        newEntity.setActionUnit(new ActionUnit());
 
         Phase saved = new Phase();
         saved.setId(100L);
@@ -201,6 +205,8 @@ class PhaseServiceTest {
 
         when(phaseMapper.invertConvert(inputDTO)).thenReturn(newEntity);
         when(phaseRepository.findById(-1L)).thenReturn(Optional.empty());
+        when(identifierGenerator.generate(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(1, "P-NEW"));
         when(phaseRepository.save(newEntity)).thenReturn(saved);
         when(phaseMapper.convert(saved)).thenReturn(savedDTO);
 
@@ -221,6 +227,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(999L);
+        entity.setActionUnit(new ActionUnit());
 
         Phase saved = new Phase();
         saved.setId(999L);
@@ -249,6 +256,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(42L);
+        entity.setActionUnit(new ActionUnit());
         entity.setIdentifier("P-UPDATED");
         entity.setTitle("New title");
         entity.setDescription("New desc");
@@ -297,6 +305,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(5L);
+        entity.setActionUnit(new ActionUnit());
         entity.setPeriods(null);   // incoming null → clear
         entity.setKeywords(new HashSet<>());
 
@@ -325,6 +334,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(6L);
+        entity.setActionUnit(new ActionUnit());
         entity.setPeriods(new HashSet<>());   // empty → clear
         entity.setKeywords(new HashSet<>());
 
@@ -361,6 +371,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(7L);
+        entity.setActionUnit(new ActionUnit());
         entity.setPeriods(new HashSet<>(Set.of(kept, added)));
         entity.setKeywords(new HashSet<>());
 
@@ -392,6 +403,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(8L);
+        entity.setActionUnit(new ActionUnit());
         entity.setPeriods(Set.of(c));
         entity.setKeywords(new HashSet<>());
 
@@ -448,6 +460,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(9L);
+        entity.setActionUnit(new ActionUnit());
         entity.setKeywords(new HashSet<>(Set.of(kept, added)));
         entity.setPeriods(new HashSet<>());
 
@@ -478,6 +491,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(10L);
+        entity.setActionUnit(new ActionUnit());
         entity.setType(type);
         entity.setPeriods(new HashSet<>());
         entity.setKeywords(new HashSet<>());

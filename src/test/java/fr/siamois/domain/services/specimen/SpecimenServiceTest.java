@@ -83,6 +83,9 @@ class SpecimenServiceTest {
     @Mock
     private ArkRepository arkRepository;
 
+    @Mock
+    private fr.siamois.domain.services.identifier.EntityIdentifierGenerator identifierGenerator;
+
     @BeforeEach
     void stubManagedAssociationLookups() {
         lenient().when(recordingUnitRepository.findById(anyLong())).thenAnswer(inv -> {
@@ -149,10 +152,15 @@ class SpecimenServiceTest {
         Specimen specimen = new Specimen();
         RecordingUnit recordingUnit = new RecordingUnit();
         recordingUnit.setId(1L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(7L);
+        recordingUnit.setActionUnit(actionUnit);
         specimen.setRecordingUnit(recordingUnit);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(recordingUnit));
 
-        // Mock du repository pour la génération de l'identifiant
-        when(specimenRepository.findMaxUsedIdentifierByRecordingUnit(1L)).thenReturn(5);
+        // Mock de la génération de l'identifiant
+        when(identifierGenerator.generate(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(6, "test_6"));
 
         // Mock du mapper
         when(specimenMapper.invertConvert(specimenDTO)).thenReturn(specimen);
@@ -168,7 +176,8 @@ class SpecimenServiceTest {
         // Vérifications
         assertNotNull(result);
         assertTrue(result instanceof SpecimenDTO);
-        assertEquals(6, specimenDTO.getIdentifier());
+        assertEquals(6, specimen.getIdentifier());
+        assertEquals("test_6", specimen.getFullIdentifier());
 
         // Vérification des appels
         verify(specimenMapper, times(1)).invertConvert(specimenDTO);
@@ -602,6 +611,7 @@ class SpecimenServiceTest {
 
         Specimen specimenEntity = new Specimen();
         specimenEntity.setId(null);
+        specimenEntity.setFullIdentifier("RU-101_SPEC-44");
 
         when(specimenMapper.invertConvert(dto)).thenReturn(specimenEntity);
         when(specimenRepository.save(any(Specimen.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -613,7 +623,7 @@ class SpecimenServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("RU-101_SPEC-44", result.getFullIdentifier());
-        verify(specimenRepository, never()).findMaxUsedIdentifierByRecordingUnit(anyLong());
+        verifyNoInteractions(identifierGenerator);
     }
 
     @Test
@@ -1177,16 +1187,26 @@ class SpecimenServiceTest {
         ru.setId(1L);
         ru.setFullIdentifier("RU-1");
         dto.setRecordingUnit(ru);
+
         Specimen specimen = new Specimen();
-        when(specimenRepository.findMaxUsedIdentifierByRecordingUnit(1L)).thenReturn(null);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(1L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(8L);
+        recordingUnit.setActionUnit(actionUnit);
+        specimen.setRecordingUnit(recordingUnit);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(recordingUnit));
+
+        when(identifierGenerator.generate(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(1, "RU-1_1"));
         when(specimenMapper.invertConvert(dto)).thenReturn(specimen);
         when(specimenRepository.save(specimen)).thenReturn(specimen);
         when(specimenMapper.convert(specimen)).thenReturn(dto);
 
         specimenService.save(dto);
 
-        assertEquals(1, dto.getIdentifier());
-        assertEquals("RU-1_1", dto.getFullIdentifier());
+        assertEquals(1, specimen.getIdentifier());
+        assertEquals("RU-1_1", specimen.getFullIdentifier());
     }
 
     @Test
@@ -1662,15 +1682,24 @@ class SpecimenServiceTest {
         dto.setFullIdentifier(null);
 
         Specimen specimen = new Specimen();
-        when(specimenRepository.findMaxUsedIdentifierByRecordingUnit(3L)).thenReturn(4);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(3L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(9L);
+        recordingUnit.setActionUnit(actionUnit);
+        specimen.setRecordingUnit(recordingUnit);
+        when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(recordingUnit));
+
+        when(identifierGenerator.generate(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(5, "RU-3_5"));
         when(specimenMapper.invertConvert(dto)).thenReturn(specimen);
         when(specimenRepository.save(specimen)).thenReturn(specimen);
         when(specimenMapper.convert(specimen)).thenReturn(dto);
 
         specimenService.save(dto);
 
-        assertEquals(5, dto.getIdentifier());
-        assertEquals("RU-3_5", dto.getFullIdentifier());
+        assertEquals(5, specimen.getIdentifier());
+        assertEquals("RU-3_5", specimen.getFullIdentifier());
     }
 
     @Test

@@ -82,6 +82,10 @@ public class PhaseService {
             synchronizeCollection(managed.getKeywords(), entity.getKeywords());
         }
 
+        if (managed.getActionUnit() == null) {
+            throw new IllegalArgumentException("An action unit is required to save a phase");
+        }
+
         generateIdentifierIfRequired(managed);
 
         return phaseMapper.convert(phaseRepository.save(managed));
@@ -90,9 +94,6 @@ public class PhaseService {
     private void generateIdentifierIfRequired(Phase phase) {
         if (phase.getId() != null) return;
         ActionUnit actionUnit = phase.getActionUnit();
-        if (actionUnit == null) {
-            throw new IllegalArgumentException("An action unit is required to generate a phase identifier");
-        }
         Map<String, Object> values = new HashMap<>();
         values.put("NUM_PARENT", null);
         values.put("ID_PARENT", null);
