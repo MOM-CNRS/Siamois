@@ -27,7 +27,6 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepo
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
@@ -76,7 +75,6 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
     private final ProfileRepository profileRepository;
     private final DocumentRepository documentRepository;
-    private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
     private final ProfileService profileService;
     private final PersonProfileAssignmentService personProfileAssignmentService;
@@ -776,7 +774,6 @@ public class ActionUnitService implements ArkEntityService {
         }
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
-        recordingUnitIdCounterRepository.deleteAllByConfigActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
         actionUnitRepository.deleteFormMappingsForActionUnit(actionUnitId);
         actionUnitRepository.deleteSecondaryActionCodeLinksForActionUnit(actionUnitId);

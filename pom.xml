@@ -25,7 +25,7 @@
 
         <!-- Version des dépendances -->
 
-        <lombok.version>1.18.24</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
         <joinfaces.version>5.5.4</joinfaces.version>
         <commons-validator.version>1.9.0</commons-validator.version>
         <jakarta.websocket-api.version>2.0.0</jakarta.websocket-api.version>

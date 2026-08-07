@@ -44,7 +44,7 @@ public class Phase extends TraceableEntity {
     @Column(name = "identifier")
     private String identifier;
 
-    /** Raw counter value, populated when phase generation is implemented. */
+    /** Raw allocated counter value; kept separately because it cannot be inferred from the format. */
     @Column(name = "generated_number")
     private Integer generatedNumber;
 

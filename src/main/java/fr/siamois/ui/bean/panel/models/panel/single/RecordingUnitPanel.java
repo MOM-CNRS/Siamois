@@ -5,7 +5,6 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundExceptio
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -417,11 +416,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     protected void configureSystemFieldsBeforeInit() {
 
         for (CustomField field : getAllFieldsFrom(detailsForm)) {
-
-            if ("identifier".equals(field.getValueBinding()) && field instanceof CustomFieldInteger cfi) {
-                cfi.setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
-                cfi.setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
-            }
 
             if (field instanceof CustomFieldDateTime dt) {
                 if ("openingDate".equals(field.getValueBinding()) && unit.getClosingDate() != null) {

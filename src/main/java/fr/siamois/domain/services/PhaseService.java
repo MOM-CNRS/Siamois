@@ -1,6 +1,10 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PhaseDTO;
@@ -17,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -27,6 +33,7 @@ public class PhaseService {
 
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
+    private final EntityIdentifierGenerator identifierGenerator;
 
     private Specification<Phase> userFilterSpecs(FilterDTO filters) {
         Specification<Phase> specs = Specification.where(null);
@@ -75,7 +82,31 @@ public class PhaseService {
             synchronizeCollection(managed.getKeywords(), entity.getKeywords());
         }
 
+        generateIdentifierIfRequired(managed);
+
         return phaseMapper.convert(phaseRepository.save(managed));
+    }
+
+    private void generateIdentifierIfRequired(Phase phase) {
+        if (phase.getId() != null) return;
+        ActionUnit actionUnit = phase.getActionUnit();
+        if (actionUnit == null) {
+            throw new IllegalArgumentException("An action unit is required to generate a phase identifier");
+        }
+        Map<String, Object> values = new HashMap<>();
+        values.put("NUM_PARENT", null);
+        values.put("ID_PARENT", null);
+        values.put("PHASE_ORDER", phase.getOrderNumber());
+        values.put("ID_UA", actionUnit.getFullIdentifier());
+        Map<String, Object> partitions = new HashMap<>();
+        partitions.put("PARENT_PHASE", null);
+        partitions.put("PHASE_ORDER", phase.getOrderNumber());
+        Long typeId = phase.getType() == null ? null : phase.getType().getId();
+        GeneratedIdentifier generated = identifierGenerator.generate(
+                ConfigurableTable.PHASE, actionUnit, typeId, values, partitions,
+                candidate -> phaseRepository.existsByActionUnitIdAndIdentifier(actionUnit.getId(), candidate));
+        phase.setGeneratedNumber(generated.number());
+        phase.setIdentifier(generated.value());
     }
 
     public PhaseDTO findById(Long id) {

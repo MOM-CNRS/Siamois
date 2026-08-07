@@ -61,7 +61,7 @@ public class Container extends TraceableEntity {
     @Column(name = "identifier")
     protected String identifier;
 
-    /** Raw counter value, populated when container generation is implemented. */
+    /** Raw allocated counter value; kept separately because it cannot be inferred from the format. */
     @Column(name = "generated_number")
     protected Integer generatedNumber;
 

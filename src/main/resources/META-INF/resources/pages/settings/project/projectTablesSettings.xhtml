@@ -375,10 +375,6 @@
                                             </div>
                                         </div>
 
-                                        <h:panelGroup rendered="#{not projectTableFieldSettingsBean.identifierGenerationAvailable}">
-                                            <div class="ptc-field-hint">#{langBean.msg('projectTables.ident.generationDeferred')}</div>
-                                        </h:panelGroup>
-
                                         <div class="ptc-drawer-field">
                                             <label class="ptc-drawer-label">#{langBean.msg('projectTables.ident.preview')}</label>
                                             <div class="ptc-ident-preview">#{projectTableFieldSettingsBean.identExample}</div>

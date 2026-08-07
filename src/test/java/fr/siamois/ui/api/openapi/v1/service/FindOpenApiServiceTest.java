@@ -364,12 +364,9 @@ class FindOpenApiServiceTest {
         au.setName("Projet");
         au.setIdentifier("P1");
         au.setFullIdentifier("ORG-P1");
-        au.setRecordingUnitIdentifierFormat("%s");
         au.setType(typeDto);
         au.setBeginDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
         au.setEndDate(OffsetDateTime.parse("2024-12-31T00:00:00Z"));
-        au.setMinRecordingUnitCode(1);
-        au.setMaxRecordingUnitCode(99);
         when(actionUnitService.findById(20L)).thenReturn(au);
 
         SpatialUnitDTO su = new SpatialUnitDTO();

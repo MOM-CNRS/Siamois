@@ -234,10 +234,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         return selectedTable != null && formConfig != null;
     }
 
-    public boolean isIdentifierGenerationAvailable() {
-        return selectedTable == ConfigurableTable.UE;
-    }
-
     private void loadIdentConfig() {
         if (!isIdentTabAvailable()) {
             identSegments = new ArrayList<>();

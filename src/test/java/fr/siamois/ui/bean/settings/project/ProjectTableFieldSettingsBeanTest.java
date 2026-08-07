@@ -40,7 +40,6 @@ class ProjectTableFieldSettingsBeanTest {
         bean.selectType("Ceramique");
 
         assertThat(bean.isIdentTabAvailable()).isTrue();
-        assertThat(bean.isIdentifierGenerationAvailable()).isFalse();
         assertThat(bean.getIdentFirst()).isZero();
         assertThat(bean.getIdentLast()).isEqualTo(999);
         assertThat(bean.getIdentifierResolvers()).extracting(IdentifierResolver::code)
@@ -66,7 +65,6 @@ class ProjectTableFieldSettingsBeanTest {
         bean.setSelectedTable(ConfigurableTable.UE);
         bean.selectType("_default");
 
-        assertThat(bean.isIdentifierGenerationAvailable()).isTrue();
         assertThat(bean.getIdentExample()).isEqualTo("142-00-XXX-0000");
     }
 

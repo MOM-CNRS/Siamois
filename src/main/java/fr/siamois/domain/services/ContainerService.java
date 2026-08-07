@@ -1,6 +1,10 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ContainerDTO;
@@ -34,6 +38,7 @@ public class ContainerService {
     private final ContainerRepository containerRepository;
     private final ContainerMapper containerMapper;
     private final UnitDefinitionService unitDefinitionService;
+    private final EntityIdentifierGenerator identifierGenerator;
 
     private Specification<Container> userFilterSpecs(FilterDTO filters) {
         Specification<Container> specs = Specification.where(null);
@@ -106,9 +111,35 @@ public class ContainerService {
 
     public ContainerDTO save(ContainerDTO dto) {
         Container entity = containerMapper.invertConvert(dto);
+        if (dto.getParentId() != null) {
+            entity.setParent(containerRepository.findById(dto.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Container parent not found: " + dto.getParentId())));
+        }
         resolveUnitsOf(entity);
+        generateIdentifierIfRequired(entity);
         entity = containerRepository.save(entity);
         return containerMapper.convert(entity);
+    }
+
+    private void generateIdentifierIfRequired(Container container) {
+        if (container.getId() != null) return;
+        ActionUnit actionUnit = container.getActionUnit();
+        if (actionUnit == null) {
+            throw new IllegalArgumentException("An action unit is required to generate a container identifier");
+        }
+        Container parent = container.getParent();
+        Map<String, Object> values = new HashMap<>();
+        values.put("NUM_PARENT", parent == null ? null : parent.getGeneratedNumber());
+        values.put("ID_PARENT", parent == null ? null : parent.getIdentifier());
+        values.put("ID_UA", actionUnit.getFullIdentifier());
+        Map<String, Object> partitions = new HashMap<>();
+        partitions.put("PARENT_CONTAINER", parent == null ? null : parent.getId());
+        Long typeId = container.getType() == null ? null : container.getType().getId();
+        GeneratedIdentifier generated = identifierGenerator.generate(
+                ConfigurableTable.CONTENANT, actionUnit, typeId, values, partitions,
+                candidate -> containerRepository.existsByActionUnitIdAndIdentifier(actionUnit.getId(), candidate));
+        container.setGeneratedNumber(generated.number());
+        container.setIdentifier(generated.value());
     }
 
     private void resolveUnitsOf(Container container) {

@@ -7,6 +7,7 @@ import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
+import org.mapstruct.Mapping;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.NonNull;
@@ -16,11 +17,12 @@ import org.springframework.lang.NonNull;
 public interface ContainerMapper extends Converter<Container, ContainerDTO> {
 
     @Override
+    @Mapping(target = "parentId", source = "parent.id")
     ContainerDTO convert(@NonNull Container source);
 
     @InheritInverseConfiguration
+    @Mapping(target = "parent", ignore = true)
     @DelegatingConverter
     Container invertConvert(ContainerDTO containerDTO);
 
 }
-

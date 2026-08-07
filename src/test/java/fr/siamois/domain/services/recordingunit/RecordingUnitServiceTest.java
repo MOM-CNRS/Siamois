@@ -14,7 +14,6 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
-import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
@@ -23,8 +22,6 @@ import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
@@ -77,9 +74,6 @@ class RecordingUnitServiceTest {
     private PersonRepository personRepository;
     
     @Mock
-    private ApplicationContext applicationContext;
-
-    @Mock
     private ConversionService conversionService;
 
     @Mock
@@ -99,12 +93,6 @@ class RecordingUnitServiceTest {
 
     @Mock
     private PhaseMapper phaseMapper;
-
-    @Mock
-    private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
-
-    @Mock
-    private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
 
     @Mock
     private CustomFieldAnswerService customFieldAnswerService;
@@ -601,23 +589,6 @@ class RecordingUnitServiceTest {
 
         // Assert
         assertTrue(managed.getRelationshipsAsUnit1().isEmpty());
-    }
-
-    @Mock
-    private RuIdentifierResolver identifierResolver;
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void findAllIdentifierResolver_ShouldReturnCachedResolversIfNotEmpty() {
-        // Arrange
-        doReturn(identifierResolver).when(applicationContext).getBean(any(Class.class));
-
-        when(identifierResolver.getCode()).thenReturn("TEST_CODE");
-
-        // Act
-        Map<String, RuIdentifierResolver> resolversAgain = recordingUnitService.findAllIdentifierResolver();
-
-        assertThat(resolversAgain).hasSize(1);
     }
 
     @Test
@@ -1343,7 +1314,6 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
             when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(rel));
-            when(recordingUnitIdInfoRepository.existsById(1L)).thenReturn(true);
             when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(1L);
@@ -1354,8 +1324,6 @@ class RecordingUnitServiceTest {
             verify(stratigraphicRelationshipRepository).deleteAll(List.of(rel));
             verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(1L);
             verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(1L);
-            verify(recordingUnitIdCounterRepository).deleteAllByRecordingUnitId(1L);
-            verify(recordingUnitIdInfoRepository).deleteById(1L);
             verify(recordingUnitRepository).delete(ru);
             verify(arkRepository).deleteById(99L);
         }
@@ -1369,13 +1337,11 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findById(5L)).thenReturn(Optional.of(ru));
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(5L)).thenReturn(0L);
             when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(5L)).thenReturn(List.of());
-            when(recordingUnitIdInfoRepository.existsById(5L)).thenReturn(false);
             when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(5L);
 
             verify(stratigraphicRelationshipRepository, never()).deleteAll(anyList());
-            verify(recordingUnitIdInfoRepository, never()).deleteById(any());
             verify(arkRepository, never()).deleteById(any());
             verify(recordingUnitRepository).delete(ru);
         }

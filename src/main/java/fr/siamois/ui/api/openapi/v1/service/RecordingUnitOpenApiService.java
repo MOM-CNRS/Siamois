@@ -337,10 +337,9 @@ public class RecordingUnitOpenApiService {
         FormConfig stored = tableFieldConfigService.resolveIdentifierConfig(
                 projectId, ConfigurableTable.UE, typeConceptId);
         RecordingUnitIdentifierConfig config = new RecordingUnitIdentifierConfig();
-        config.setRecordingUnitIdentifierFormat(stored.getIdentifierFormat());
-        config.setRecordingUnitIdentifierLang(null);
-        config.setMaxRecordingUnitCode(stored.getMaxCode());
-        config.setMinRecordingUnitCode(stored.getMinCode());
+        config.setIdentifierFormat(stored.getIdentifierFormat());
+        config.setMaxCode(stored.getMaxCode());
+        config.setMinCode(stored.getMinCode());
         return config;
     }
 
@@ -806,10 +805,7 @@ public class RecordingUnitOpenApiService {
             shell.setSpatialUnit(suOptions.get(0));
         }
         shell.resetFullIdentifier();
-        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) {
-            String fmt = au.getRecordingUnitIdentifierFormat();
-            shell.setFullIdentifier(fmt != null && !fmt.isBlank() ? fmt : "PENDING");
-        }
+        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) shell.setFullIdentifier("PENDING");
         shell.setIdentifier("0");
         return shell;
     }
@@ -919,12 +915,9 @@ public class RecordingUnitOpenApiService {
         s.setName(au.getName());
         s.setFullIdentifier(au.getFullIdentifier());
         s.setIdentifier(au.getIdentifier());
-        s.setRecordingUnitIdentifierFormat(au.getRecordingUnitIdentifierFormat());
         s.setType(au.getType());
         s.setBeginDate(au.getBeginDate());
         s.setEndDate(au.getEndDate());
-        s.setMinRecordingUnitCode(au.getMinRecordingUnitCode());
-        s.setMaxRecordingUnitCode(au.getMaxRecordingUnitCode());
         return s;
     }
 

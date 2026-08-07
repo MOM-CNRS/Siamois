@@ -17,17 +17,13 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private String name;
     private ConceptDTO type;
     private String identifier;
-    private String recordingUnitIdentifierFormat;
     private SpatialUnitSummaryDTO mainLocation ;
     private String fullIdentifier;
     private Set<SpatialUnitSummaryDTO> spatialContext = new HashSet<>();
-    private Integer maxRecordingUnitCode=999;
-    private Integer minRecordingUnitCode=1;
     private Set<ActionUnitSummaryDTO> children;
     private Set<ActionUnitSummaryDTO> parents;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private Set<Document> documents;
-    private String recordingUnitIdentifierLang;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
     private ActionCodeDTO primaryActionCode;
