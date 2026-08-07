@@ -1002,7 +1002,6 @@ public class RecordingUnitService implements ArkEntityService {
         }
     }
 
-    @Transactional
     public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
         log.trace("Generating full identifier for recording unit");
         RecordingUnit parent = deterministicParent(recordingUnit);

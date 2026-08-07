@@ -265,4 +265,16 @@ class ContainerServiceTest {
         assertEquals("An action unit is required to generate a container identifier", exception.getMessage());
         verify(containerRepository, never()).save(any());
     }
+
+    @Test
+    void save_rejectsMissingMappedContainer() {
+        ContainerDTO newContainerDTO = new ContainerDTO();
+        when(containerMapper.invertConvert(newContainerDTO)).thenReturn(null);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> containerService.save(newContainerDTO));
+
+        assertEquals("A container is required to generate an identifier", exception.getMessage());
+        verify(containerRepository, never()).save(any());
+    }
 }

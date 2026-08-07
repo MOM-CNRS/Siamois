@@ -630,7 +630,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     @Override
-    @Transactional
     public Optional<FormConfig> createOrGetFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
         Optional<FormConfig> existing = findFormConfig(projectId, table, typeConceptId);
         if (existing.isPresent()) {

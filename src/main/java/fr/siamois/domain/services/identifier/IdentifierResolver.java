@@ -72,6 +72,11 @@ public interface IdentifierResolver<C extends IdentifierRenderContext> {
             throw new IllegalArgumentException("Numerical token " + code() + " requires a Number");
         }
         if (specifier == null || specifier.isEmpty()) return Long.toString(number.longValue());
-        return String.format("%0" + width + "d", number.longValue());
+        String rendered = Long.toString(number.longValue());
+        int padding = Math.max(0, width - rendered.length());
+        if (rendered.startsWith("-")) {
+            return "-" + "0".repeat(padding) + rendered.substring(1);
+        }
+        return "0".repeat(padding) + rendered;
     }
 }

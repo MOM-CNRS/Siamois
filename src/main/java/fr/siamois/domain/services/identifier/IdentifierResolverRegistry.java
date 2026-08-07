@@ -11,35 +11,40 @@ import java.util.regex.Pattern;
 @Service
 public class IdentifierResolverRegistry {
     private static final Pattern TOKEN_PATTERN = Pattern.compile("\\{([^{}]+)}");
+    public static final String NUM_UE = "NUM_UE";
+    public static final String NUM_PARENT = "NUM_PARENT";
+    public static final String ID_PARENT = "ID_PARENT";
+    public static final String ID_UA = "ID_UA";
+    public static final String PARENT_RU = "PARENT_RU";
 
     private final Map<ConfigurableTable, Map<String, IdentifierResolver<IdentifierRenderContext>>> catalogs;
 
     public IdentifierResolverRegistry() {
         catalogs = Map.of(
                 ConfigurableTable.UE, catalog(
-                        numerical("NUM_UE", null),
-                        numerical("NUM_PARENT", "PARENT_RU"),
-                        text("ID_PARENT", "PARENT_RU"),
+                        numerical(NUM_UE, null),
+                        numerical(NUM_PARENT, PARENT_RU),
+                        text(ID_PARENT, PARENT_RU),
                         numerical("NUM_USPATIAL", "SPATIAL_PLACE"),
-                        text("ID_UA", null)),
+                        text(ID_UA, null)),
                 ConfigurableTable.MOBILIER, catalog(
                         numerical("NUM_MOBILIER", null),
-                        numerical("NUM_PARENT", "PARENT_MOBILIER"),
-                        text("ID_PARENT", "PARENT_MOBILIER"),
-                        numerical("NUM_UE", "PARENT_RU"),
-                        text("ID_UE", "PARENT_RU"),
-                        text("ID_UA", null)),
+                        numerical(NUM_PARENT, "PARENT_MOBILIER"),
+                        text(ID_PARENT, "PARENT_MOBILIER"),
+                        numerical(NUM_UE, PARENT_RU),
+                        text("ID_UE", PARENT_RU),
+                        text(ID_UA, null)),
                 ConfigurableTable.CONTENANT, catalog(
                         numerical("NUM_CONTAINER", null),
-                        numerical("NUM_PARENT", "PARENT_CONTAINER"),
-                        text("ID_PARENT", "PARENT_CONTAINER"),
-                        text("ID_UA", null)),
+                        numerical(NUM_PARENT, "PARENT_CONTAINER"),
+                        text(ID_PARENT, "PARENT_CONTAINER"),
+                        text(ID_UA, null)),
                 ConfigurableTable.PHASE, catalog(
                         numerical("NUM_PHASE", null),
-                        numerical("NUM_PARENT", "PARENT_PHASE"),
-                        text("ID_PARENT", "PARENT_PHASE"),
+                        numerical(NUM_PARENT, "PARENT_PHASE"),
+                        text(ID_PARENT, "PARENT_PHASE"),
                         numerical("PHASE_ORDER", "PHASE_ORDER"),
-                        text("ID_UA", null))
+                        text(ID_UA, null))
         );
     }
 
@@ -96,7 +101,7 @@ public class IdentifierResolverRegistry {
 
     public String ownNumericalToken(ConfigurableTable table) {
         return switch (table) {
-            case UE -> "NUM_UE";
+            case UE -> NUM_UE;
             case MOBILIER -> "NUM_MOBILIER";
             case CONTENANT -> "NUM_CONTAINER";
             case PHASE -> "NUM_PHASE";

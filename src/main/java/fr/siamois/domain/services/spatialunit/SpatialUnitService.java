@@ -653,7 +653,6 @@ public class SpatialUnitService implements ArkEntityService {
         return updatePlace(info, placeId, newName, newCategory, newAddress, null, false);
     }
 
-    @Transactional
     @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
     public SpatialUnitDTO updatePlace(UserInfo info,
                                       long placeId,

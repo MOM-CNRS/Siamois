@@ -122,6 +122,9 @@ public class ContainerService {
     }
 
     private void generateIdentifierIfRequired(Container container) {
+        if (container == null) {
+            throw new IllegalArgumentException("A container is required to generate an identifier");
+        }
         if (container.getId() != null) return;
         ActionUnit actionUnit = container.getActionUnit();
         if (actionUnit == null) {

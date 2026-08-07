@@ -21,6 +21,9 @@ class IdentifierResolverTest {
 
         assertThat(number.render("A-{NUM_TEST}-B", context)).isEqualTo("A-42-B");
         assertThat(number.render("A-{NUM_TEST:0000}-B", context)).isEqualTo("A-0042-B");
+        assertThat(number.render("{NUM_TEST:0}", context)).isEqualTo("42");
+        assertThat(number.render("{NUM_TEST:000}",
+                new MapIdentifierRenderContext(Map.of("NUM_TEST", -5)))).isEqualTo("-05");
     }
 
     @Test

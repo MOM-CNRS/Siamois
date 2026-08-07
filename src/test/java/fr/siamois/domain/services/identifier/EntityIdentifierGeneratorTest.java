@@ -17,6 +17,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,6 +26,9 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class EntityIdentifierGeneratorTest {
+
+    private static final Map<String, Object> NO_VALUES = Map.of();
+    private static final Predicate<String> IDENTIFIER_UNUSED = candidate -> false;
 
     @Mock
     private TableFieldConfigService tableFieldConfigService;
@@ -104,7 +108,7 @@ class EntityIdentifierGeneratorTest {
         when(counterRepository.nextValue(7L, 12L, "v1", 0)).thenReturn(11);
 
         assertThatThrownBy(() -> generator.generate(ConfigurableTable.UE, actionUnit, null,
-                Map.of(), Map.of(), candidate -> false))
+                NO_VALUES, NO_VALUES, IDENTIFIER_UNUSED))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Identifier range exhausted for form config 12");
 
@@ -120,14 +124,14 @@ class EntityIdentifierGeneratorTest {
         when(tableFieldConfigService.resolveIdentifierConfig(7L, ConfigurableTable.UE, null)).thenReturn(config);
 
         assertThatThrownBy(() -> generator.generate(ConfigurableTable.UE, actionUnit, null,
-                Map.of(), Map.of(), candidate -> false))
+                NO_VALUES, NO_VALUES, IDENTIFIER_UNUSED))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid identifier range on form config 12");
 
         config.setMinCode(11);
         config.setMaxCode(10);
         assertThatThrownBy(() -> generator.generate(ConfigurableTable.UE, actionUnit, null,
-                Map.of(), Map.of(), candidate -> false))
+                NO_VALUES, NO_VALUES, IDENTIFIER_UNUSED))
                 .isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(counterRepository);
     }
@@ -135,12 +139,13 @@ class EntityIdentifierGeneratorTest {
     @Test
     void generate_requiresAPersistedActionUnit() {
         assertThatThrownBy(() -> generator.generate(ConfigurableTable.UE, null, null,
-                Map.of(), Map.of(), candidate -> false))
+                NO_VALUES, NO_VALUES, IDENTIFIER_UNUSED))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("An action unit is required to generate an identifier");
 
-        assertThatThrownBy(() -> generator.generate(ConfigurableTable.UE, new ActionUnit(), null,
-                Map.of(), Map.of(), candidate -> false))
+        ActionUnit unpersistedActionUnit = new ActionUnit();
+        assertThatThrownBy(() -> generator.generate(ConfigurableTable.UE, unpersistedActionUnit, null,
+                NO_VALUES, NO_VALUES, IDENTIFIER_UNUSED))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("The action unit must be persisted before identifier generation");
         verifyNoInteractions(tableFieldConfigService, counterRepository);
