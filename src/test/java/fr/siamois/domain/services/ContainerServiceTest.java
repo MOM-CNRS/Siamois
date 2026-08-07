@@ -1,6 +1,12 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -12,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -20,8 +27,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +45,12 @@ class ContainerServiceTest {
 
     @Mock
     private ContainerMapper containerMapper;
+
+    @Mock
+    private UnitDefinitionService unitDefinitionService;
+
+    @Mock
+    private EntityIdentifierGenerator identifierGenerator;
 
     @InjectMocks
     private ContainerService containerService;
@@ -161,5 +176,93 @@ class ContainerServiceTest {
         // Assert
         assertEquals(42, count);
         verify(containerRepository).count(any(Specification.class));
+    }
+
+    @Test
+    void save_existingContainer_savesAndConvertsWithoutGeneratingIdentifier() {
+        when(containerMapper.invertConvert(containerDTO)).thenReturn(container);
+        when(containerRepository.save(container)).thenReturn(container);
+        when(containerMapper.convert(container)).thenReturn(containerDTO);
+
+        ContainerDTO result = containerService.save(containerDTO);
+
+        assertSame(containerDTO, result);
+        verify(containerRepository).save(container);
+        verifyNoInteractions(identifierGenerator);
+    }
+
+    @Test
+    void save_newContainer_resolvesParentAndGeneratesIdentifier() {
+        ContainerDTO newContainerDTO = new ContainerDTO();
+        newContainerDTO.setParentId(3L);
+        Container newContainer = new Container();
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(7L);
+        actionUnit.setFullIdentifier("UA-7");
+        newContainer.setActionUnit(actionUnit);
+        Concept type = new Concept();
+        type.setId(42L);
+        newContainer.setType(type);
+
+        Container parent = new Container();
+        parent.setId(3L);
+        parent.setGeneratedNumber(5);
+        parent.setIdentifier("CONT-005");
+
+        ContainerDTO savedDTO = new ContainerDTO();
+        savedDTO.setId(101L);
+        when(containerMapper.invertConvert(newContainerDTO)).thenReturn(newContainer);
+        when(containerRepository.findById(3L)).thenReturn(java.util.Optional.of(parent));
+        when(identifierGenerator.generate(eq(ConfigurableTable.CONTENANT), eq(actionUnit), eq(42L),
+                anyMap(), anyMap(), any())).thenReturn(new GeneratedIdentifier(6, "CONT-006"));
+        when(containerRepository.save(newContainer)).thenReturn(newContainer);
+        when(containerMapper.convert(newContainer)).thenReturn(savedDTO);
+
+        ContainerDTO result = containerService.save(newContainerDTO);
+
+        assertSame(savedDTO, result);
+        assertSame(parent, newContainer.getParent());
+        assertEquals(6, newContainer.getGeneratedNumber());
+        assertEquals("CONT-006", newContainer.getIdentifier());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> values = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> partitions = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Predicate<String>> collisionCheck = ArgumentCaptor.forClass(Predicate.class);
+        verify(identifierGenerator).generate(eq(ConfigurableTable.CONTENANT), eq(actionUnit), eq(42L),
+                values.capture(), partitions.capture(), collisionCheck.capture());
+        assertEquals(5, values.getValue().get("NUM_PARENT"));
+        assertEquals("CONT-005", values.getValue().get("ID_PARENT"));
+        assertEquals("UA-7", values.getValue().get("ID_UA"));
+        assertEquals(3L, partitions.getValue().get("PARENT_CONTAINER"));
+
+        when(containerRepository.existsByActionUnitIdAndIdentifier(7L, "CONT-006")).thenReturn(true);
+        assertTrue(collisionCheck.getValue().test("CONT-006"));
+    }
+
+    @Test
+    void save_rejectsUnknownParent() {
+        ContainerDTO newContainerDTO = new ContainerDTO();
+        newContainerDTO.setParentId(404L);
+        when(containerMapper.invertConvert(newContainerDTO)).thenReturn(new Container());
+        when(containerRepository.findById(404L)).thenReturn(java.util.Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> containerService.save(newContainerDTO),
+                "Container parent not found: 404");
+        verify(containerRepository, never()).save(any());
+    }
+
+    @Test
+    void save_rejectsNewContainerWithoutActionUnit() {
+        ContainerDTO newContainerDTO = new ContainerDTO();
+        when(containerMapper.invertConvert(newContainerDTO)).thenReturn(new Container());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> containerService.save(newContainerDTO));
+
+        assertEquals("An action unit is required to generate a container identifier", exception.getMessage());
+        verify(containerRepository, never()).save(any());
     }
 }

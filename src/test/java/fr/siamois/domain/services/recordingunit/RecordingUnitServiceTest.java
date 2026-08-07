@@ -12,8 +12,12 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
@@ -97,8 +101,59 @@ class RecordingUnitServiceTest {
     @Mock
     private CustomFieldAnswerService customFieldAnswerService;
 
+    @Mock
+    private EntityIdentifierGenerator entityIdentifierGenerator;
+
     @InjectMocks
     private RecordingUnitService recordingUnitService;
+
+    @Test
+    void generateFullIdentifier_usesDeterministicContextAndUpdatesRecordingUnit() {
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(5L);
+        actionUnit.setFullIdentifier("UA-5");
+
+        RecordingUnit firstParent = new RecordingUnit();
+        firstParent.setId(3L);
+        firstParent.setIdentifier(30);
+        firstParent.setFullIdentifier("RU-30");
+        RecordingUnit secondParent = new RecordingUnit();
+        secondParent.setId(9L);
+        secondParent.setIdentifier(90);
+        secondParent.setFullIdentifier("RU-90");
+
+        SpatialUnit spatialUnit = new SpatialUnit();
+        spatialUnit.setPlaceNumber(7);
+        Concept type = new Concept();
+        type.setId(42L);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(100L);
+        recordingUnit.setType(type);
+        recordingUnit.setSpatialUnit(spatialUnit);
+        recordingUnit.setParents(new HashSet<>(List.of(secondParent, firstParent)));
+
+        when(entityIdentifierGenerator.generate(eq(ConfigurableTable.UE), eq(actionUnit), eq(42L),
+                anyMap(), anyMap(), any())).thenReturn(new GeneratedIdentifier(12, "UA-5-RU-30-007-012"));
+
+        String result = recordingUnitService.generateFullIdentifier(actionUnit, recordingUnit);
+
+        assertThat(result).isEqualTo("UA-5-RU-30-007-012");
+        assertThat(recordingUnit.getIdentifier()).isEqualTo(12);
+        assertThat(recordingUnit.getFullIdentifier()).isEqualTo(result);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> displayValues = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> partitionValues = ArgumentCaptor.forClass(Map.class);
+        verify(entityIdentifierGenerator).generate(eq(ConfigurableTable.UE), eq(actionUnit), eq(42L),
+                displayValues.capture(), partitionValues.capture(), any());
+        assertThat(displayValues.getValue()).containsEntry("NUM_PARENT", 30)
+                .containsEntry("ID_PARENT", "RU-30")
+                .containsEntry("NUM_USPATIAL", 7)
+                .containsEntry("ID_UA", "UA-5");
+        assertThat(partitionValues.getValue()).containsEntry("PARENT_RU", 3L)
+                .containsEntry("SPATIAL_PLACE", 7);
+    }
 
     @Test
     void findWithoutArk() {
