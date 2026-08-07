@@ -428,8 +428,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         newUnit.setFullIdentifier(recordingUnitService.generateFullIdentifier(newUnit.getActionUnit(), newUnit));
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(newUnit)) {
-            throw new IllegalStateException("Generated recording-unit identifier already exists");
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            throw new IllegalStateException("Generated recording-unit identifier already exists");
         }
 
         newUnit = recordingUnitService.save(newUnit);

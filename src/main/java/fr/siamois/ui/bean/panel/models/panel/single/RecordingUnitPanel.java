@@ -154,8 +154,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         RecordingUnitDTO saved = recordingUnitService.save(copy);
         saved.setFullIdentifier(recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved));
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-            throw new IllegalStateException("Generated recording-unit identifier already exists");
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            throw new IllegalStateException("Generated recording-unit identifier already exists");
         }
         saved = recordingUnitService.save(saved);
 
