@@ -6,6 +6,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ContainerDTO;
@@ -30,7 +31,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -188,7 +188,7 @@ class ContainerServiceTest {
 
         assertSame(containerDTO, result);
         verify(containerRepository).save(container);
-        verifyNoInteractions(identifierGenerator);
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(container), any());
     }
 
     @Test
@@ -213,8 +213,13 @@ class ContainerServiceTest {
         savedDTO.setId(101L);
         when(containerMapper.invertConvert(newContainerDTO)).thenReturn(newContainer);
         when(containerRepository.findById(3L)).thenReturn(java.util.Optional.of(parent));
-        when(identifierGenerator.generate(eq(ConfigurableTable.CONTENANT), eq(actionUnit), eq(42L),
-                anyMap(), anyMap(), any())).thenReturn(new GeneratedIdentifier(6, "CONT-006"));
+        when(identifierGenerator.generateIdentifierIfRequired(eq(newContainer), any())).thenAnswer(invocation -> {
+            IdentifierGenerationSpec<Container> spec = invocation.getArgument(1);
+            GeneratedIdentifier generated = new GeneratedIdentifier(6, "CONT-006");
+            spec.numberSetter().accept(newContainer, generated.number());
+            spec.identifierSetter().accept(newContainer, generated.value());
+            return java.util.Optional.of(generated);
+        });
         when(containerRepository.save(newContainer)).thenReturn(newContainer);
         when(containerMapper.convert(newContainer)).thenReturn(savedDTO);
 
@@ -226,20 +231,18 @@ class ContainerServiceTest {
         assertEquals("CONT-006", newContainer.getIdentifier());
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> values = ArgumentCaptor.forClass(Map.class);
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> partitions = ArgumentCaptor.forClass(Map.class);
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Predicate<String>> collisionCheck = ArgumentCaptor.forClass(Predicate.class);
-        verify(identifierGenerator).generate(eq(ConfigurableTable.CONTENANT), eq(actionUnit), eq(42L),
-                values.capture(), partitions.capture(), collisionCheck.capture());
-        assertEquals(5, values.getValue().get("NUM_PARENT"));
-        assertEquals("CONT-005", values.getValue().get("ID_PARENT"));
-        assertEquals("UA-7", values.getValue().get("ID_UA"));
-        assertEquals(3L, partitions.getValue().get("PARENT_CONTAINER"));
+        ArgumentCaptor<IdentifierGenerationSpec<Container>> specCaptor = ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(newContainer), specCaptor.capture());
+        IdentifierGenerationSpec<Container> spec = specCaptor.getValue();
+        assertEquals(ConfigurableTable.CONTENANT, spec.table());
+        assertEquals(42L, spec.typeId().apply(newContainer));
+        assertEquals(5, spec.displayValues().get("NUM_PARENT").apply(newContainer));
+        assertEquals("CONT-005", spec.displayValues().get("ID_PARENT").apply(newContainer));
+        assertEquals("UA-7", spec.displayValues().get("ID_UA").apply(newContainer));
+        assertEquals(3L, spec.partitionValues().get("PARENT_CONTAINER").apply(newContainer));
 
         when(containerRepository.existsByActionUnitIdAndIdentifier(7L, "CONT-006")).thenReturn(true);
-        assertTrue(collisionCheck.getValue().test("CONT-006"));
+        assertTrue(spec.identifierAlreadyUsed().test(newContainer, "CONT-006"));
     }
 
     @Test
@@ -257,7 +260,9 @@ class ContainerServiceTest {
     @Test
     void save_rejectsNewContainerWithoutActionUnit() {
         ContainerDTO newContainerDTO = new ContainerDTO();
-        when(containerMapper.invertConvert(newContainerDTO)).thenReturn(new Container());
+        Container newContainer = new Container();
+        when(containerMapper.invertConvert(newContainerDTO)).thenReturn(newContainer);
+        when(identifierGenerator.generateIdentifierIfRequired(eq(newContainer), any())).thenCallRealMethod();
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> containerService.save(newContainerDTO));
@@ -270,6 +275,7 @@ class ContainerServiceTest {
     void save_rejectsMissingMappedContainer() {
         ContainerDTO newContainerDTO = new ContainerDTO();
         when(containerMapper.invertConvert(newContainerDTO)).thenReturn(null);
+        when(identifierGenerator.generateIdentifierIfRequired(isNull(), any())).thenCallRealMethod();
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> containerService.save(newContainerDTO));

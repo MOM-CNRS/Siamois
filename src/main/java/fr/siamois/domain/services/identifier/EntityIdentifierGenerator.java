@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /** One allocator/rendering transaction shared by every configurable entity table. */
@@ -80,6 +82,42 @@ public class EntityIdentifierGenerator {
                 entityManager.setFlushMode(previousFlushMode);
             }
         }
+    }
+
+    @Transactional
+    public <E> Optional<GeneratedIdentifier> generateIdentifierIfRequired(
+            E entity, IdentifierGenerationSpec<E> spec) {
+        Objects.requireNonNull(spec, "Identifier generation specification is required");
+        if (entity == null) {
+            throw new IllegalArgumentException("A " + spec.entityName() + " is required to generate an identifier");
+        }
+        if (!spec.generationRequired().test(entity)) {
+            return Optional.empty();
+        }
+
+        ActionUnit actionUnit = spec.actionUnit().apply(entity);
+
+        // Entities have to be attached to a project
+        if (actionUnit == null) {
+            throw new IllegalArgumentException(
+                    "An action unit is required to generate a " + spec.entityName() + " identifier");
+        }
+
+        Map<String, Object> displayValues = resolveValues(entity, spec.displayValues());
+        Map<String, Object> partitionValues = resolveValues(entity, spec.partitionValues());
+        GeneratedIdentifier generated = generate(spec.table(), actionUnit, spec.typeId().apply(entity),
+                displayValues, partitionValues,
+                candidate -> spec.identifierAlreadyUsed().test(entity, candidate));
+        spec.numberSetter().accept(entity, generated.number());
+        spec.identifierSetter().accept(entity, generated.value());
+        return Optional.of(generated);
+    }
+
+    private static <E> Map<String, Object> resolveValues(
+            E entity, Map<String, Function<E, ?>> accessors) {
+        Map<String, Object> values = new HashMap<>();
+        accessors.forEach((key, accessor) -> values.put(key, accessor.apply(entity)));
+        return values;
     }
 
     private static void validateRange(FormConfig config) {

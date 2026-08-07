@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -168,6 +169,93 @@ class EntityIdentifierGeneratorTest {
                 .isEqualTo(new GeneratedIdentifier(1, "1"));
 
         verifyNoInteractions(entityManager);
+    }
+
+    @Test
+    void generateIdentifierIfRequired_resolvesSpecAndAssignsResult() {
+        EntityIdentifierGenerator spyGenerator = spy(generator);
+        TestEntity entity = new TestEntity(actionUnit(7L), 42L, "parent");
+        IdentifierGenerationSpec<TestEntity> spec = testSpec(candidate -> candidate.equals("UE-4"));
+        doReturn(new GeneratedIdentifier(4, "UE-4")).when(spyGenerator)
+                .generate(eq(ConfigurableTable.UE), eq(entity.actionUnit), eq(42L),
+                        anyMap(), anyMap(), any());
+
+        assertThat(spyGenerator.generateIdentifierIfRequired(entity, spec))
+                .contains(new GeneratedIdentifier(4, "UE-4"));
+        assertThat(entity.number).isEqualTo(4);
+        assertThat(entity.identifier).isEqualTo("UE-4");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> displayValues = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> partitionValues = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Predicate<String>> collision = ArgumentCaptor.forClass(Predicate.class);
+        verify(spyGenerator).generate(eq(ConfigurableTable.UE), eq(entity.actionUnit), eq(42L),
+                displayValues.capture(), partitionValues.capture(), collision.capture());
+        assertThat(displayValues.getValue()).containsEntry("ID_PARENT", "parent");
+        assertThat(partitionValues.getValue()).containsEntry("PARENT_RU", 31L);
+        assertThat(collision.getValue()).accepts("UE-4").rejects("UE-5");
+    }
+
+    @Test
+    void generateIdentifierIfRequired_skipsIneligibleEntityAndValidatesRequiredInputs() {
+        IdentifierGenerationSpec<TestEntity> spec = testSpec(candidate -> false);
+        TestEntity existing = new TestEntity(actionUnit(7L), 42L, "parent");
+        existing.number = 1;
+        assertThat(generator.generateIdentifierIfRequired(existing, spec)).isEmpty();
+
+        assertThatThrownBy(() -> generator.generateIdentifierIfRequired(null, spec))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("A test entity is required to generate an identifier");
+
+        TestEntity withoutActionUnit = new TestEntity(null, 42L, "parent");
+        assertThatThrownBy(() -> generator.generateIdentifierIfRequired(withoutActionUnit, spec))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("An action unit is required to generate a test entity identifier");
+        verifyNoInteractions(tableFieldConfigService, counterRepository);
+    }
+
+    @Test
+    void generateIdentifierIfRequired_propagatesGenerationFailureWithoutAssigning() {
+        EntityIdentifierGenerator spyGenerator = spy(generator);
+        TestEntity entity = new TestEntity(actionUnit(7L), 42L, "parent");
+        IdentifierGenerationSpec<TestEntity> spec = testSpec(candidate -> false);
+        IllegalStateException failure = new IllegalStateException("range exhausted");
+        doThrow(failure).when(spyGenerator).generate(any(), any(), any(), anyMap(), anyMap(), any());
+
+        assertThatThrownBy(() -> spyGenerator.generateIdentifierIfRequired(entity, spec))
+                .isSameAs(failure);
+        assertThat(entity.number).isZero();
+        assertThat(entity.identifier).isNull();
+    }
+
+    private static IdentifierGenerationSpec<TestEntity> testSpec(Predicate<String> collision) {
+        return IdentifierGenerationSpec.<TestEntity>builder(ConfigurableTable.UE)
+                .entityName("test entity")
+                .generationRequired(entity -> entity.number == 0)
+                .actionUnit(entity -> entity.actionUnit)
+                .typeId(entity -> entity.typeId)
+                .displayValue("ID_PARENT", entity -> entity.parentIdentifier)
+                .partitionValue("PARENT_RU", entity -> 31L)
+                .identifierAlreadyUsed((entity, candidate) -> collision.test(candidate))
+                .numberSetter((entity, number) -> entity.number = number)
+                .identifierSetter((entity, identifier) -> entity.identifier = identifier)
+                .build();
+    }
+
+    private static final class TestEntity {
+        private final ActionUnit actionUnit;
+        private final Long typeId;
+        private final String parentIdentifier;
+        private int number;
+        private String identifier;
+
+        private TestEntity(ActionUnit actionUnit, Long typeId, String parentIdentifier) {
+            this.actionUnit = actionUnit;
+            this.typeId = typeId;
+            this.parentIdentifier = parentIdentifier;
+        }
     }
 
     private static ActionUnit actionUnit(Long id) {

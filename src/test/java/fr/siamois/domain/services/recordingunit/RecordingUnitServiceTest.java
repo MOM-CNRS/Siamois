@@ -18,6 +18,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
@@ -131,8 +132,13 @@ class RecordingUnitServiceTest {
         recordingUnit.setSpatialUnit(spatialUnit);
         recordingUnit.setParents(new HashSet<>(List.of(secondParent, firstParent)));
 
-        when(entityIdentifierGenerator.generate(eq(ConfigurableTable.UE), eq(actionUnit), eq(42L),
-                anyMap(), anyMap(), any())).thenReturn(new GeneratedIdentifier(12, "UA-5-RU-30-007-012"));
+        when(entityIdentifierGenerator.generateIdentifierIfRequired(eq(recordingUnit), any())).thenAnswer(invocation -> {
+            IdentifierGenerationSpec<RecordingUnit> spec = invocation.getArgument(1);
+            GeneratedIdentifier generated = new GeneratedIdentifier(12, "UA-5-RU-30-007-012");
+            spec.numberSetter().accept(recordingUnit, generated.number());
+            spec.identifierSetter().accept(recordingUnit, generated.value());
+            return Optional.of(generated);
+        });
 
         String result = recordingUnitService.generateFullIdentifier(actionUnit, recordingUnit);
 
@@ -141,17 +147,18 @@ class RecordingUnitServiceTest {
         assertThat(recordingUnit.getFullIdentifier()).isEqualTo(result);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> displayValues = ArgumentCaptor.forClass(Map.class);
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> partitionValues = ArgumentCaptor.forClass(Map.class);
-        verify(entityIdentifierGenerator).generate(eq(ConfigurableTable.UE), eq(actionUnit), eq(42L),
-                displayValues.capture(), partitionValues.capture(), any());
-        assertThat(displayValues.getValue()).containsEntry("NUM_PARENT", 30)
-                .containsEntry("ID_PARENT", "RU-30")
-                .containsEntry("NUM_USPATIAL", 7)
-                .containsEntry("ID_UA", "UA-5");
-        assertThat(partitionValues.getValue()).containsEntry("PARENT_RU", 3L)
-                .containsEntry("SPATIAL_PLACE", 7);
+        ArgumentCaptor<IdentifierGenerationSpec<RecordingUnit>> specCaptor =
+                ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(entityIdentifierGenerator).generateIdentifierIfRequired(eq(recordingUnit), specCaptor.capture());
+        IdentifierGenerationSpec<RecordingUnit> spec = specCaptor.getValue();
+        assertThat(spec.table()).isEqualTo(ConfigurableTable.UE);
+        assertThat(spec.typeId().apply(recordingUnit)).isEqualTo(42L);
+        assertThat(spec.displayValues().get("NUM_PARENT").apply(recordingUnit)).isEqualTo(30);
+        assertThat(spec.displayValues().get("ID_PARENT").apply(recordingUnit)).isEqualTo("RU-30");
+        assertThat(spec.displayValues().get("NUM_USPATIAL").apply(recordingUnit)).isEqualTo(7);
+        assertThat(spec.displayValues().get("ID_UA").apply(recordingUnit)).isEqualTo("UA-5");
+        assertThat(spec.partitionValues().get("PARENT_RU").apply(recordingUnit)).isEqualTo(3L);
+        assertThat(spec.partitionValues().get("SPATIAL_PLACE").apply(recordingUnit)).isEqualTo(7);
     }
 
     @Test

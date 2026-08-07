@@ -21,7 +21,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
-import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -1004,29 +1004,41 @@ public class RecordingUnitService implements ArkEntityService {
 
     public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
         log.trace("Generating full identifier for recording unit");
-        RecordingUnit parent = deterministicParent(recordingUnit);
-        Long typeConceptId = recordingUnit.getType() == null ? null : recordingUnit.getType().getId();
-        Integer placeNumber = recordingUnit.getSpatialUnit() == null
-                ? null : recordingUnit.getSpatialUnit().getPlaceNumber();
-        Map<String, Object> displayValues = new HashMap<>();
-        displayValues.put("NUM_PARENT", parent == null ? null : parent.getIdentifier());
-        displayValues.put("ID_PARENT", parent == null ? null : parent.getFullIdentifier());
-        displayValues.put("NUM_USPATIAL", placeNumber);
-        displayValues.put("ID_UA", actionUnit.getFullIdentifier());
+        return entityIdentifierGenerator.generateIdentifierIfRequired(
+                        recordingUnit, recordingUnitIdentifierSpec(actionUnit))
+                .orElseThrow(() -> new IllegalStateException("Recording-unit identifier generation was skipped"))
+                .value();
+    }
 
-        Map<String, Object> partitionValues = new HashMap<>();
-        partitionValues.put("PARENT_RU", parent == null ? null : parent.getId());
-        partitionValues.put("SPATIAL_PLACE", placeNumber);
-        GeneratedIdentifier generated = entityIdentifierGenerator.generate(
-                ConfigurableTable.UE,
-                actionUnit,
-                typeConceptId,
-                displayValues,
-                partitionValues,
-                candidate -> identifierBelongsToAnotherUnit(actionUnit.getId(), recordingUnit.getId(), candidate));
-        recordingUnit.setIdentifier(generated.number());
-        recordingUnit.setFullIdentifier(generated.value());
-        return generated.value();
+    private IdentifierGenerationSpec<RecordingUnit> recordingUnitIdentifierSpec(ActionUnit actionUnit) {
+        return IdentifierGenerationSpec.<RecordingUnit>builder(ConfigurableTable.UE)
+                .entityName("recording unit")
+                .generationRequired(recordingUnit -> true)
+                .actionUnit(recordingUnit -> actionUnit)
+                .typeId(recordingUnit -> recordingUnit.getType() == null
+                        ? null : recordingUnit.getType().getId())
+                .displayValue("NUM_PARENT", recordingUnit -> {
+                    RecordingUnit parent = deterministicParent(recordingUnit);
+                    return parent == null ? null : parent.getIdentifier();
+                })
+                .displayValue("ID_PARENT", recordingUnit -> {
+                    RecordingUnit parent = deterministicParent(recordingUnit);
+                    return parent == null ? null : parent.getFullIdentifier();
+                })
+                .displayValue("NUM_USPATIAL", recordingUnit -> recordingUnit.getSpatialUnit() == null
+                        ? null : recordingUnit.getSpatialUnit().getPlaceNumber())
+                .displayValue("ID_UA", recordingUnit -> actionUnit.getFullIdentifier())
+                .partitionValue("PARENT_RU", recordingUnit -> {
+                    RecordingUnit parent = deterministicParent(recordingUnit);
+                    return parent == null ? null : parent.getId();
+                })
+                .partitionValue("SPATIAL_PLACE", recordingUnit -> recordingUnit.getSpatialUnit() == null
+                        ? null : recordingUnit.getSpatialUnit().getPlaceNumber())
+                .identifierAlreadyUsed((recordingUnit, candidate) ->
+                        identifierBelongsToAnotherUnit(actionUnit.getId(), recordingUnit.getId(), candidate))
+                .numberSetter(RecordingUnit::setIdentifier)
+                .identifierSetter(RecordingUnit::setFullIdentifier)
+                .build();
     }
 
     private static RecordingUnit deterministicParent(RecordingUnit recordingUnit) {

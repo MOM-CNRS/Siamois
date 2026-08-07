@@ -9,6 +9,8 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -159,8 +161,7 @@ class SpecimenServiceTest {
         when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(recordingUnit));
 
         // Mock de la génération de l'identifiant
-        when(identifierGenerator.generate(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(6, "test_6"));
+        mockGeneratedIdentifier(specimen, 6, "test_6");
 
         // Mock du mapper
         when(specimenMapper.invertConvert(specimenDTO)).thenReturn(specimen);
@@ -623,7 +624,8 @@ class SpecimenServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("RU-101_SPEC-44", result.getFullIdentifier());
-        verifyNoInteractions(identifierGenerator);
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(specimenEntity),
+                argThat(spec -> !spec.generationRequired().test(specimenEntity)));
     }
 
     @Test
@@ -1197,8 +1199,7 @@ class SpecimenServiceTest {
         specimen.setRecordingUnit(recordingUnit);
         when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(recordingUnit));
 
-        when(identifierGenerator.generate(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(1, "RU-1_1"));
+        mockGeneratedIdentifier(specimen, 1, "RU-1_1");
         when(specimenMapper.invertConvert(dto)).thenReturn(specimen);
         when(specimenRepository.save(specimen)).thenReturn(specimen);
         when(specimenMapper.convert(specimen)).thenReturn(dto);
@@ -1690,8 +1691,7 @@ class SpecimenServiceTest {
         specimen.setRecordingUnit(recordingUnit);
         when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(recordingUnit));
 
-        when(identifierGenerator.generate(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(5, "RU-3_5"));
+        mockGeneratedIdentifier(specimen, 5, "RU-3_5");
         when(specimenMapper.invertConvert(dto)).thenReturn(specimen);
         when(specimenRepository.save(specimen)).thenReturn(specimen);
         when(specimenMapper.convert(specimen)).thenReturn(dto);
@@ -1746,6 +1746,16 @@ class SpecimenServiceTest {
         specimenService.searchSpecimen(institution, filters, PageRequest.of(0, 10));
 
         verify(specimenRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    private void mockGeneratedIdentifier(Specimen specimen, int number, String identifier) {
+        when(identifierGenerator.generateIdentifierIfRequired(eq(specimen), any())).thenAnswer(invocation -> {
+            IdentifierGenerationSpec<Specimen> spec = invocation.getArgument(1);
+            GeneratedIdentifier generated = new GeneratedIdentifier(number, identifier);
+            spec.numberSetter().accept(specimen, number);
+            spec.identifierSetter().accept(specimen, identifier);
+            return Optional.of(generated);
+        });
     }
 
 }

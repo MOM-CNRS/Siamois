@@ -12,7 +12,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
-import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
@@ -205,7 +205,7 @@ public class SpecimenService implements ArkEntityService {
         setupChilds(specimen, managedSpecimen);
         setupOtherFields(specimen, managedSpecimen);
         attachManagedAssociations(specimen, managedSpecimen);
-        generateIdentifierIfRequired(managedSpecimen);
+        identifierGenerator.generateIdentifierIfRequired(managedSpecimen, specimenIdentifierSpec());
         synchronizeCollection(managedSpecimen.getMaterialClass(), resolveConcepts(specimen.getMaterialClass()));
         synchronizeCollection(managedSpecimen.getMaterial(), resolveConcepts(specimen.getMaterial()));
         synchronizeCollection(managedSpecimen.getContainers(), specimen.getContainers());
@@ -218,35 +218,46 @@ public class SpecimenService implements ArkEntityService {
         return specimenMapper.convert(savedSpecimen);
     }
 
-    private void generateIdentifierIfRequired(Specimen specimen) {
-        if (specimen.getId() != null || specimen.getFullIdentifier() != null) return;
+    private IdentifierGenerationSpec<Specimen> specimenIdentifierSpec() {
+        return IdentifierGenerationSpec.<Specimen>builder(ConfigurableTable.MOBILIER)
+                .entityName("specimen")
+                .generationRequired(specimen -> specimen.getId() == null && specimen.getFullIdentifier() == null)
+                .actionUnit(this::resolveIdentifierActionUnit)
+                .typeId(specimen -> specimen.getCategory() == null ? null : specimen.getCategory().getId())
+                .displayValue("NUM_PARENT", specimen -> {
+                    Specimen parent = deterministicParent(specimen);
+                    return parent == null ? null : parent.getIdentifier();
+                })
+                .displayValue("ID_PARENT", specimen -> {
+                    Specimen parent = deterministicParent(specimen);
+                    return parent == null ? null : parent.getFullIdentifier();
+                })
+                .displayValue("NUM_UE", specimen -> specimen.getRecordingUnit() == null
+                        ? null : specimen.getRecordingUnit().getIdentifier())
+                .displayValue("ID_UE", specimen -> specimen.getRecordingUnit() == null
+                        ? null : specimen.getRecordingUnit().getFullIdentifier())
+                .displayValue("ID_UA", specimen -> specimen.getActionUnit().getFullIdentifier())
+                .partitionValue("PARENT_MOBILIER", specimen -> {
+                    Specimen parent = deterministicParent(specimen);
+                    return parent == null ? null : parent.getId();
+                })
+                .partitionValue("PARENT_RU", specimen -> specimen.getRecordingUnit() == null
+                        ? null : specimen.getRecordingUnit().getId())
+                .identifierAlreadyUsed((specimen, candidate) ->
+                        specimenRepository.findByActionUnitIdAndFullIdentifier(
+                                        specimen.getActionUnit().getId(), candidate).stream()
+                                .anyMatch(existing -> !Objects.equals(existing.getId(), specimen.getId())))
+                .numberSetter(Specimen::setIdentifier)
+                .identifierSetter(Specimen::setFullIdentifier)
+                .build();
+    }
+
+    private ActionUnit resolveIdentifierActionUnit(Specimen specimen) {
         RecordingUnit recordingUnit = specimen.getRecordingUnit();
         ActionUnit actionUnit = specimen.getActionUnit();
         if (actionUnit == null && recordingUnit != null) actionUnit = recordingUnit.getActionUnit();
-        if (actionUnit == null) {
-            throw new IllegalArgumentException("An action unit is required to generate a specimen identifier");
-        }
         specimen.setActionUnit(actionUnit);
-
-        Specimen parent = deterministicParent(specimen);
-        Map<String, Object> values = new HashMap<>();
-        values.put("NUM_PARENT", parent == null ? null : parent.getIdentifier());
-        values.put("ID_PARENT", parent == null ? null : parent.getFullIdentifier());
-        values.put("NUM_UE", recordingUnit == null ? null : recordingUnit.getIdentifier());
-        values.put("ID_UE", recordingUnit == null ? null : recordingUnit.getFullIdentifier());
-        values.put("ID_UA", actionUnit.getFullIdentifier());
-
-        Map<String, Object> partitions = new HashMap<>();
-        partitions.put("PARENT_MOBILIER", parent == null ? null : parent.getId());
-        partitions.put("PARENT_RU", recordingUnit == null ? null : recordingUnit.getId());
-        Long categoryId = specimen.getCategory() == null ? null : specimen.getCategory().getId();
-        ActionUnit scope = actionUnit;
-        GeneratedIdentifier generated = identifierGenerator.generate(
-                ConfigurableTable.MOBILIER, actionUnit, categoryId, values, partitions,
-                candidate -> specimenRepository.findByActionUnitIdAndFullIdentifier(scope.getId(), candidate).stream()
-                        .anyMatch(existing -> !Objects.equals(existing.getId(), specimen.getId())));
-        specimen.setIdentifier(generated.number());
-        specimen.setFullIdentifier(generated.value());
+        return actionUnit;
     }
 
     private static Specimen deterministicParent(Specimen specimen) {

@@ -205,8 +205,8 @@ class PhaseServiceTest {
 
         when(phaseMapper.invertConvert(inputDTO)).thenReturn(newEntity);
         when(phaseRepository.findById(-1L)).thenReturn(Optional.empty());
-        when(identifierGenerator.generate(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(1, "P-NEW"));
+        when(identifierGenerator.generateIdentifierIfRequired(eq(newEntity), any()))
+                .thenReturn(Optional.of(new fr.siamois.domain.services.identifier.GeneratedIdentifier(1, "P-NEW")));
         when(phaseRepository.save(newEntity)).thenReturn(saved);
         when(phaseMapper.convert(saved)).thenReturn(savedDTO);
 
