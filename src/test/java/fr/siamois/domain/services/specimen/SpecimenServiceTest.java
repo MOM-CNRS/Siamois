@@ -9,6 +9,8 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -82,6 +85,9 @@ class SpecimenServiceTest {
 
     @Mock
     private ArkRepository arkRepository;
+
+    @Mock
+    private fr.siamois.domain.services.identifier.EntityIdentifierGenerator identifierGenerator;
 
     @BeforeEach
     void stubManagedAssociationLookups() {
@@ -149,10 +155,17 @@ class SpecimenServiceTest {
         Specimen specimen = new Specimen();
         RecordingUnit recordingUnit = new RecordingUnit();
         recordingUnit.setId(1L);
+        recordingUnit.setIdentifier(10);
+        recordingUnit.setFullIdentifier("test");
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(7L);
+        actionUnit.setFullIdentifier("UA-7");
+        recordingUnit.setActionUnit(actionUnit);
         specimen.setRecordingUnit(recordingUnit);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(recordingUnit));
 
-        // Mock du repository pour la génération de l'identifiant
-        when(specimenRepository.findMaxUsedIdentifierByRecordingUnit(1L)).thenReturn(5);
+        // Mock de la génération de l'identifiant
+        mockGeneratedIdentifier(specimen, 6, "test_6");
 
         // Mock du mapper
         when(specimenMapper.invertConvert(specimenDTO)).thenReturn(specimen);
@@ -168,12 +181,73 @@ class SpecimenServiceTest {
         // Vérifications
         assertNotNull(result);
         assertTrue(result instanceof SpecimenDTO);
-        assertEquals(6, specimenDTO.getIdentifier());
+        assertEquals(6, specimen.getIdentifier());
+        assertEquals("test_6", specimen.getFullIdentifier());
 
         // Vérification des appels
         verify(specimenMapper, times(1)).invertConvert(specimenDTO);
         verify(specimenRepository, times(1)).save(specimen);
         verify(specimenMapper, times(1)).convert(specimen);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<IdentifierGenerationSpec<Specimen>> specCaptor =
+                ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(specimen), specCaptor.capture());
+        IdentifierGenerationSpec<Specimen> spec = specCaptor.getValue();
+
+        Specimen firstParent = new Specimen();
+        firstParent.setId(2L);
+        firstParent.setIdentifier(20);
+        firstParent.setFullIdentifier("M-020");
+        Specimen secondParent = new Specimen();
+        secondParent.setId(5L);
+        secondParent.setIdentifier(50);
+        secondParent.setFullIdentifier("M-050");
+        Concept category = new Concept();
+        category.setId(42L);
+        Specimen specSubject = new Specimen();
+        specSubject.setRecordingUnit(recordingUnit);
+        specSubject.setCategory(category);
+        specSubject.setParents(new HashSet<>(List.of(secondParent, firstParent)));
+
+        assertTrue(spec.generationRequired().test(specSubject));
+        assertSame(actionUnit, spec.actionUnit().apply(specSubject));
+        assertSame(actionUnit, specSubject.getActionUnit());
+        assertEquals(42L, spec.typeId().apply(specSubject));
+        assertEquals(20, spec.displayValues().get("NUM_PARENT").apply(specSubject));
+        assertEquals("M-020", spec.displayValues().get("ID_PARENT").apply(specSubject));
+        assertEquals(recordingUnit.getIdentifier(), spec.displayValues().get("NUM_UE").apply(specSubject));
+        assertEquals("test", spec.displayValues().get("ID_UE").apply(specSubject));
+        assertEquals(actionUnit.getFullIdentifier(), spec.displayValues().get("ID_UA").apply(specSubject));
+        assertEquals(2L, spec.partitionValues().get("PARENT_MOBILIER").apply(specSubject));
+        assertEquals(1L, spec.partitionValues().get("PARENT_RU").apply(specSubject));
+
+        Specimen existing = new Specimen();
+        existing.setId(99L);
+        when(specimenRepository.findByActionUnitIdAndFullIdentifier(7L, "M-021"))
+                .thenReturn(List.of(specSubject, existing));
+        assertTrue(spec.identifierAlreadyUsed().test(specSubject, "M-021"));
+        assertFalse(spec.identifierAlreadyUsed().test(specSubject, "M-022"));
+        spec.numberSetter().accept(specSubject, 21);
+        spec.identifierSetter().accept(specSubject, "M-021");
+        assertEquals(21, specSubject.getIdentifier());
+        assertEquals("M-021", specSubject.getFullIdentifier());
+
+        Specimen missingRelations = new Specimen();
+        missingRelations.setActionUnit(actionUnit);
+        missingRelations.setParents(null);
+        assertNull(spec.typeId().apply(missingRelations));
+        assertNull(spec.displayValues().get("NUM_PARENT").apply(missingRelations));
+        assertNull(spec.displayValues().get("ID_PARENT").apply(missingRelations));
+        assertNull(spec.displayValues().get("NUM_UE").apply(missingRelations));
+        assertNull(spec.displayValues().get("ID_UE").apply(missingRelations));
+        assertNull(spec.partitionValues().get("PARENT_MOBILIER").apply(missingRelations));
+        assertNull(spec.partitionValues().get("PARENT_RU").apply(missingRelations));
+        missingRelations.setFullIdentifier("MANUAL");
+        assertFalse(spec.generationRequired().test(missingRelations));
+        missingRelations.setFullIdentifier(null);
+        missingRelations.setId(100L);
+        assertFalse(spec.generationRequired().test(missingRelations));
     }
 
 
@@ -602,6 +676,7 @@ class SpecimenServiceTest {
 
         Specimen specimenEntity = new Specimen();
         specimenEntity.setId(null);
+        specimenEntity.setFullIdentifier("RU-101_SPEC-44");
 
         when(specimenMapper.invertConvert(dto)).thenReturn(specimenEntity);
         when(specimenRepository.save(any(Specimen.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -613,7 +688,8 @@ class SpecimenServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("RU-101_SPEC-44", result.getFullIdentifier());
-        verify(specimenRepository, never()).findMaxUsedIdentifierByRecordingUnit(anyLong());
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(specimenEntity),
+                argThat(spec -> !spec.generationRequired().test(specimenEntity)));
     }
 
     @Test
@@ -1177,16 +1253,25 @@ class SpecimenServiceTest {
         ru.setId(1L);
         ru.setFullIdentifier("RU-1");
         dto.setRecordingUnit(ru);
+
         Specimen specimen = new Specimen();
-        when(specimenRepository.findMaxUsedIdentifierByRecordingUnit(1L)).thenReturn(null);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(1L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(8L);
+        recordingUnit.setActionUnit(actionUnit);
+        specimen.setRecordingUnit(recordingUnit);
+        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(recordingUnit));
+
+        mockGeneratedIdentifier(specimen, 1, "RU-1_1");
         when(specimenMapper.invertConvert(dto)).thenReturn(specimen);
         when(specimenRepository.save(specimen)).thenReturn(specimen);
         when(specimenMapper.convert(specimen)).thenReturn(dto);
 
         specimenService.save(dto);
 
-        assertEquals(1, dto.getIdentifier());
-        assertEquals("RU-1_1", dto.getFullIdentifier());
+        assertEquals(1, specimen.getIdentifier());
+        assertEquals("RU-1_1", specimen.getFullIdentifier());
     }
 
     @Test
@@ -1662,15 +1747,23 @@ class SpecimenServiceTest {
         dto.setFullIdentifier(null);
 
         Specimen specimen = new Specimen();
-        when(specimenRepository.findMaxUsedIdentifierByRecordingUnit(3L)).thenReturn(4);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(3L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(9L);
+        recordingUnit.setActionUnit(actionUnit);
+        specimen.setRecordingUnit(recordingUnit);
+        when(recordingUnitRepository.findById(3L)).thenReturn(Optional.of(recordingUnit));
+
+        mockGeneratedIdentifier(specimen, 5, "RU-3_5");
         when(specimenMapper.invertConvert(dto)).thenReturn(specimen);
         when(specimenRepository.save(specimen)).thenReturn(specimen);
         when(specimenMapper.convert(specimen)).thenReturn(dto);
 
         specimenService.save(dto);
 
-        assertEquals(5, dto.getIdentifier());
-        assertEquals("RU-3_5", dto.getFullIdentifier());
+        assertEquals(5, specimen.getIdentifier());
+        assertEquals("RU-3_5", specimen.getFullIdentifier());
     }
 
     @Test
@@ -1717,6 +1810,16 @@ class SpecimenServiceTest {
         specimenService.searchSpecimen(institution, filters, PageRequest.of(0, 10));
 
         verify(specimenRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    private void mockGeneratedIdentifier(Specimen specimen, int number, String identifier) {
+        when(identifierGenerator.generateIdentifierIfRequired(eq(specimen), any())).thenAnswer(invocation -> {
+            IdentifierGenerationSpec<Specimen> spec = invocation.getArgument(1);
+            GeneratedIdentifier generated = new GeneratedIdentifier(number, identifier);
+            spec.numberSetter().accept(specimen, number);
+            spec.identifierSetter().accept(specimen, identifier);
+            return Optional.of(generated);
+        });
     }
 
 }

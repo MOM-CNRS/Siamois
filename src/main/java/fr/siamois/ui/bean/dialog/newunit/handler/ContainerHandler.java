@@ -3,6 +3,9 @@ package fr.siamois.ui.bean.dialog.newunit.handler;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.EntityAlreadyExistsException;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -19,10 +22,13 @@ public class ContainerHandler implements INewUnitHandler<ContainerDTO> {
 
     private final ContainerService containerService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final ActionUnitService actionUnitService;
 
-    public ContainerHandler(ContainerService containerService, SessionSettingsBean sessionSettingsBean) {
+    public ContainerHandler(ContainerService containerService, SessionSettingsBean sessionSettingsBean,
+                            ActionUnitService actionUnitService) {
         this.containerService = containerService;
         this.sessionSettingsBean = sessionSettingsBean;
+        this.actionUnitService = actionUnitService;
     }
 
     @Override
@@ -55,6 +61,15 @@ public class ContainerHandler implements INewUnitHandler<ContainerDTO> {
 
         unit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
         unit.setCreatedByInstitution(sessionSettingsBean.getSelectedInstitution());
+        applyActionScope(unit, ctx);
+    }
+
+    private void applyActionScope(ContainerDTO unit, NewUnitContext ctx) throws CannotInitializeNewUnitDialogException {
+        NewUnitContext.Scope scope = ctx.getScope();
+        if (scope == null || !"ACTION".equals(scope.getKey()) || scope.getEntityId() == null) return;
+        ActionUnitDTO actionUnit = actionUnitService.findById(scope.getEntityId());
+        if (actionUnit == null) throw new CannotInitializeNewUnitDialogException("Action unit not found");
+        unit.setActionUnit(new ActionUnitSummaryDTO(actionUnit));
     }
 
     @Override

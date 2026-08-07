@@ -6,6 +6,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -29,6 +30,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -117,6 +119,7 @@ public class RecordingUnitOpenApiService {
     private final UnitDefinitionMapper unitDefinitionMapper;
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
+    private final TableFieldConfigService tableFieldConfigService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -278,7 +281,7 @@ public class RecordingUnitOpenApiService {
         return null;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ProjectRecordingUnitTypeListResponse buildProjectRecordingUnitTypeSettings(
             String projectKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectKey, accessibleInstitutionIds);
@@ -288,14 +291,15 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
         }
 
-        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(au);
+        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(au.getId(), null);
         RecordingUnitDefaultType defaultType = buildDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
 
         List<Concept> configuredTypes = formService.findConfiguredRecordingUnitTypesByInstitution(institution);
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         List<RecordingUnitType> types = configuredTypes.stream()
-                .map(concept -> buildRecordingUnitType(au.getId(), concept, userInfo, locale, identifierConfig))
+                .map(concept -> buildRecordingUnitType(au.getId(), concept, userInfo, locale,
+                        buildIdentifierConfig(au.getId(), concept.getId())))
                 .toList();
 
         return new ProjectRecordingUnitTypeListResponse(types, defaultType);
@@ -329,12 +333,13 @@ public class RecordingUnitOpenApiService {
         return new ProjectFindTypeListResponse(List.of(), defaultType);
     }
 
-    private RecordingUnitIdentifierConfig buildIdentifierConfig(ActionUnitDTO au) {
+    private RecordingUnitIdentifierConfig buildIdentifierConfig(Long projectId, Long typeConceptId) {
+        FormConfig stored = tableFieldConfigService.resolveIdentifierConfig(
+                projectId, ConfigurableTable.UE, typeConceptId);
         RecordingUnitIdentifierConfig config = new RecordingUnitIdentifierConfig();
-        config.setRecordingUnitIdentifierFormat(au.getRecordingUnitIdentifierFormat());
-        config.setRecordingUnitIdentifierLang(au.getRecordingUnitIdentifierLang());
-        config.setMaxRecordingUnitCode(au.getMaxRecordingUnitCode());
-        config.setMinRecordingUnitCode(au.getMinRecordingUnitCode());
+        config.setIdentifierFormat(stored.getIdentifierFormat());
+        config.setMaxCode(stored.getMaxCode());
+        config.setMinCode(stored.getMinCode());
         return config;
     }
 
@@ -800,10 +805,7 @@ public class RecordingUnitOpenApiService {
             shell.setSpatialUnit(suOptions.get(0));
         }
         shell.resetFullIdentifier();
-        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) {
-            String fmt = au.getRecordingUnitIdentifierFormat();
-            shell.setFullIdentifier(fmt != null && !fmt.isBlank() ? fmt : "PENDING");
-        }
+        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) shell.setFullIdentifier("PENDING");
         shell.setIdentifier("0");
         return shell;
     }
@@ -818,7 +820,7 @@ public class RecordingUnitOpenApiService {
         String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
         saved.setFullIdentifier(generated);
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-            saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Generated recording-unit identifier already exists");
         }
         try {
             return recordingUnitService.save(saved);
@@ -913,12 +915,9 @@ public class RecordingUnitOpenApiService {
         s.setName(au.getName());
         s.setFullIdentifier(au.getFullIdentifier());
         s.setIdentifier(au.getIdentifier());
-        s.setRecordingUnitIdentifierFormat(au.getRecordingUnitIdentifierFormat());
         s.setType(au.getType());
         s.setBeginDate(au.getBeginDate());
         s.setEndDate(au.getEndDate());
-        s.setMinRecordingUnitCode(au.getMinRecordingUnitCode());
-        s.setMaxRecordingUnitCode(au.getMaxRecordingUnitCode());
         return s;
     }
 

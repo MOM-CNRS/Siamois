@@ -300,20 +300,18 @@ class RecordingUnitLazyDataModelTest {
 
         BaseRecordingUnitLazyDataModel spyModel = spy(lazyModel);
         doReturn(original).when(spyModel).getRowData();
-        doNothing().when(spyModel).addRowToModel(any());
 
         when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(copied);
         when(recordingUnitService.generateFullIdentifier(any(ActionUnitSummaryDTO.class), any())).thenReturn("RU-Copy-Generated");
         when(recordingUnitService.fullIdentifierAlreadyExistInAction(any())).thenReturn(true); // Provoque le bloc IF
 
         try (MockedStatic<MessageUtils> messageUtilsMock = mockStatic(MessageUtils.class)) {
-            // WHEN
-            spyModel.duplicateRow();
+            // WHEN / THEN
+            assertThrows(IllegalStateException.class, spyModel::duplicateRow);
 
-            // THEN
-            verify(recordingUnitService, times(2)).save(any(RecordingUnitDTO.class));
-            verify(copied).resetFullIdentifier(); // Vérifie que l'identifiant a été réinitialisé
-            verify(spyModel).addRowToModel(copied);
+            verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
+            verify(copied, never()).resetFullIdentifier();
+            verify(spyModel, never()).addRowToModel(any());
 
             // Vérifie que le warning est bien envoyé via MessageUtils
             messageUtilsMock.verify(() ->

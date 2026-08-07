@@ -5,6 +5,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -29,6 +30,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -136,6 +138,8 @@ class RecordingUnitOpenApiServiceTest {
     private PhaseRepository phaseRepository;
     @Mock
     private PhaseMapper phaseMapper;
+    @Mock
+    private TableFieldConfigService tableFieldConfigService;
 
     @InjectMocks
     private RecordingUnitOpenApiService service;
@@ -147,6 +151,12 @@ class RecordingUnitOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        FormConfig identifierConfig = new FormConfig();
+        identifierConfig.setIdentifierFormat("{NUM_UE}");
+        identifierConfig.setMinCode(0);
+        identifierConfig.setMaxCode(999);
+        lenient().when(tableFieldConfigService.resolveIdentifierConfig(anyLong(), any(), nullable(Long.class)))
+                .thenReturn(identifierConfig);
         lenient().when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
 
         lenient().when(langService.localeForApiLang(any())).thenAnswer(inv -> {
@@ -744,7 +754,6 @@ class RecordingUnitOpenApiServiceTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
         au.setCreatedByInstitution(inst);
-        au.setRecordingUnitIdentifierFormat("RU-%s");
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
         when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
@@ -805,13 +814,12 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void createRecordingUnit_duplicateGeneratedIdentifier_fallsBackToActionUnitFormat() {
+    void createRecordingUnit_duplicateGeneratedIdentifier_throwsConflict() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
         au.setCreatedByInstitution(inst);
-        au.setRecordingUnitIdentifierFormat("RU-%s");
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
         when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
@@ -833,27 +841,23 @@ class RecordingUnitOpenApiServiceTest {
         RecordingUnitDTO saved = new RecordingUnitDTO();
         saved.setId(3001L);
         ActionUnitSummaryDTO savedActionUnit = new ActionUnitSummaryDTO(au);
-        savedActionUnit.setRecordingUnitIdentifierFormat("RU-%s");
         saved.setActionUnit(savedActionUnit);
         when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(saved);
         when(recordingUnitService.generateFullIdentifier(any(ActionUnitSummaryDTO.class), any())).thenReturn("RU-3001");
         when(recordingUnitService.fullIdentifierAlreadyExistInAction(saved)).thenReturn(true);
 
-        ruDto.setCreatedByInstitution(inst);
-        ruDto.setType(typeDto);
-        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("3001"), eq(SCOPE), isNull()))
-                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
         request.setProjectId("5");
         request.setTypeId("42");
 
-        service.createRecordingUnit(request, personDto, SCOPE, "fr");
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
 
-        ArgumentCaptor<RecordingUnitDTO> captor = ArgumentCaptor.forClass(RecordingUnitDTO.class);
-        verify(recordingUnitService, times(2)).save(captor.capture());
-        assertThat(captor.getValue().getFullIdentifier()).isEqualTo("RU-%s");
+        verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
+        verify(recordingUnitService).fullIdentifierAlreadyExistInAction(saved);
+        verify(recordingUnitService, never()).findAccessibleRecordingUnitWithEntity(any(), any(), any());
     }
 
     @Test
@@ -2090,9 +2094,6 @@ class RecordingUnitOpenApiServiceTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
         au.setCreatedByInstitution(inst);
-        au.setRecordingUnitIdentifierFormat("RU-%s");
-        au.setMinRecordingUnitCode(1);
-        au.setMaxRecordingUnitCode(99);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
         when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), isNull()))
@@ -2100,6 +2101,12 @@ class RecordingUnitOpenApiServiceTest {
 
         Concept concept = new Concept();
         concept.setId(42L);
+        FormConfig typedIdentifierConfig = new FormConfig();
+        typedIdentifierConfig.setIdentifierFormat("T-{NUM_UE:000}");
+        typedIdentifierConfig.setMinCode(10);
+        typedIdentifierConfig.setMaxCode(500);
+        when(tableFieldConfigService.resolveIdentifierConfig(5L, ConfigurableTable.UE, 42L))
+                .thenReturn(typedIdentifierConfig);
         when(formService.findConfiguredRecordingUnitTypesByInstitution(inst)).thenReturn(List.of(concept));
         ConceptDTO typeDto = new ConceptDTO();
         typeDto.setId(42L);
@@ -2116,9 +2123,11 @@ class RecordingUnitOpenApiServiceTest {
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
 
         assertThat(response.getDefaultType().getFields()).isEmpty();
-        assertThat(response.getDefaultType().getIdentifierConfig().getRecordingUnitIdentifierFormat()).isEqualTo("RU-%s");
+        assertThat(response.getDefaultType().getIdentifierConfig().getIdentifierFormat()).isEqualTo("{NUM_UE}");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
+        assertThat(response.getData().get(0).getIdentifierConfig().getIdentifierFormat())
+                .isEqualTo("T-{NUM_UE:000}");
         assertThat(response.getData().get(0).getFields()).containsKey("43");
     }
 

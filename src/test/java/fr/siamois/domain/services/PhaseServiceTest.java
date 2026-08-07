@@ -1,6 +1,10 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PhaseDTO;
@@ -12,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -35,6 +40,8 @@ class PhaseServiceTest {
     private PhaseRepository phaseRepository;
     @Mock
     private PhaseMapper phaseMapper;
+    @Mock
+    private fr.siamois.domain.services.identifier.EntityIdentifierGenerator identifierGenerator;
 
     @InjectMocks
     private PhaseService phaseService;
@@ -193,6 +200,14 @@ class PhaseServiceTest {
 
         Phase newEntity = new Phase();
         newEntity.setIdentifier("P-NEW");
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(7L);
+        actionUnit.setFullIdentifier("UA-7");
+        newEntity.setActionUnit(actionUnit);
+        newEntity.setOrderNumber(3);
+        Concept type = new Concept();
+        type.setId(42L);
+        newEntity.setType(type);
 
         Phase saved = new Phase();
         saved.setId(100L);
@@ -201,6 +216,8 @@ class PhaseServiceTest {
 
         when(phaseMapper.invertConvert(inputDTO)).thenReturn(newEntity);
         when(phaseRepository.findById(-1L)).thenReturn(Optional.empty());
+        when(identifierGenerator.generateIdentifierIfRequired(eq(newEntity), any()))
+                .thenReturn(Optional.of(new fr.siamois.domain.services.identifier.GeneratedIdentifier(1, "P-NEW")));
         when(phaseRepository.save(newEntity)).thenReturn(saved);
         when(phaseMapper.convert(saved)).thenReturn(savedDTO);
 
@@ -208,6 +225,33 @@ class PhaseServiceTest {
 
         assertSame(savedDTO, result);
         verify(phaseRepository).save(newEntity);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<IdentifierGenerationSpec<Phase>> specCaptor =
+                ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(newEntity), specCaptor.capture());
+        IdentifierGenerationSpec<Phase> spec = specCaptor.getValue();
+        assertEquals(ConfigurableTable.PHASE, spec.table());
+        assertTrue(spec.generationRequired().test(newEntity));
+        assertSame(actionUnit, spec.actionUnit().apply(newEntity));
+        assertEquals(42L, spec.typeId().apply(newEntity));
+        assertNull(spec.displayValues().get("NUM_PARENT").apply(newEntity));
+        assertNull(spec.displayValues().get("ID_PARENT").apply(newEntity));
+        assertEquals(3, spec.displayValues().get("PHASE_ORDER").apply(newEntity));
+        assertEquals("UA-7", spec.displayValues().get("ID_UA").apply(newEntity));
+        assertNull(spec.partitionValues().get("PARENT_PHASE").apply(newEntity));
+        assertEquals(3, spec.partitionValues().get("PHASE_ORDER").apply(newEntity));
+        when(phaseRepository.existsByActionUnitIdAndIdentifier(7L, "P-003")).thenReturn(true);
+        assertTrue(spec.identifierAlreadyUsed().test(newEntity, "P-003"));
+        spec.numberSetter().accept(newEntity, 3);
+        spec.identifierSetter().accept(newEntity, "P-003");
+        assertEquals(3, newEntity.getGeneratedNumber());
+        assertEquals("P-003", newEntity.getIdentifier());
+
+        Phase existingPhase = new Phase();
+        existingPhase.setId(100L);
+        assertFalse(spec.generationRequired().test(existingPhase));
+        assertNull(spec.typeId().apply(existingPhase));
     }
 
     // ------------------------------------------------------------------
@@ -221,6 +265,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(999L);
+        entity.setActionUnit(new ActionUnit());
 
         Phase saved = new Phase();
         saved.setId(999L);
@@ -249,6 +294,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(42L);
+        entity.setActionUnit(new ActionUnit());
         entity.setIdentifier("P-UPDATED");
         entity.setTitle("New title");
         entity.setDescription("New desc");
@@ -297,6 +343,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(5L);
+        entity.setActionUnit(new ActionUnit());
         entity.setPeriods(null);   // incoming null → clear
         entity.setKeywords(new HashSet<>());
 
@@ -325,6 +372,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(6L);
+        entity.setActionUnit(new ActionUnit());
         entity.setPeriods(new HashSet<>());   // empty → clear
         entity.setKeywords(new HashSet<>());
 
@@ -361,6 +409,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(7L);
+        entity.setActionUnit(new ActionUnit());
         entity.setPeriods(new HashSet<>(Set.of(kept, added)));
         entity.setKeywords(new HashSet<>());
 
@@ -392,6 +441,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(8L);
+        entity.setActionUnit(new ActionUnit());
         entity.setPeriods(Set.of(c));
         entity.setKeywords(new HashSet<>());
 
@@ -448,6 +498,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(9L);
+        entity.setActionUnit(new ActionUnit());
         entity.setKeywords(new HashSet<>(Set.of(kept, added)));
         entity.setPeriods(new HashSet<>());
 
@@ -478,6 +529,7 @@ class PhaseServiceTest {
 
         Phase entity = new Phase();
         entity.setId(10L);
+        entity.setActionUnit(new ActionUnit());
         entity.setType(type);
         entity.setPeriods(new HashSet<>());
         entity.setKeywords(new HashSet<>());

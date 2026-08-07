@@ -884,6 +884,9 @@ class TableFieldConfigServiceImplTest {
         assertThat(saved.getValue().getActionUnit()).isEqualTo(project);
         assertThat(saved.getValue().getFieldConcept()).isEqualTo(fieldConcept);
         assertThat(saved.getValue().getValueConcept()).isEqualTo(ceramiqueConcept);
+        assertThat(saved.getValue().getIdentifierFormat()).isEqualTo("{NUM_MOBILIER}");
+        assertThat(saved.getValue().getMinCode()).isZero();
+        assertThat(saved.getValue().getMaxCode()).isEqualTo(999);
     }
 
     @Test
@@ -892,6 +895,57 @@ class TableFieldConfigServiceImplTest {
                 TypeFormConfig.builder().typeName("Céramique").build());
 
         verify(formConfigRepository, never()).save(any(FormConfig.class));
+    }
+
+    @Test
+    void getFormConfig_shouldInheritIdentifierSettingsFromDefaultRow() {
+        FormConfig defaults = formConfig(12L, null);
+        defaults.setIdentifierFormat("M-{NUM_MOBILIER:0000}");
+        defaults.setMinCode(10);
+        defaults.setMaxCode(8000);
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(Optional.of(defaults));
+
+        TypeFormConfig result = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(result.getIdentifierFormat()).isEqualTo("M-{NUM_MOBILIER:0000}");
+        assertThat(result.getMinCode()).isEqualTo(10);
+        assertThat(result.getMaxCode()).isEqualTo(8000);
+    }
+
+    @Test
+    void saveFormConfig_shouldPersistIdentifierSettingsOnExistingType() {
+        TypeFormConfig changes = TypeFormConfig.builder()
+                .typeName("Céramique")
+                .identifierFormat("CER-{NUM_MOBILIER:000}")
+                .minCode(5)
+                .maxCode(500)
+                .build();
+
+        service.saveFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, changes);
+
+        assertThat(ceramiqueConfig.getIdentifierFormat()).isEqualTo("CER-{NUM_MOBILIER:000}");
+        assertThat(ceramiqueConfig.getMinCode()).isEqualTo(5);
+        assertThat(ceramiqueConfig.getMaxCode()).isEqualTo(500);
+        verify(formConfigRepository).save(ceramiqueConfig);
+    }
+
+    @Test
+    void resolveIdentifierConfig_shouldReturnTypedRowBeforeDefault() {
+        FormConfig result = service.resolveIdentifierConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
+
+        assertThat(result).isSameAs(ceramiqueConfig);
+        verify(formConfigRepository, never()).findDefaultByActionUnitAndField(anyLong(), anyLong());
+    }
+
+    @Test
+    void configurableTables_shouldDeclareTheirIdentifierDefaults() {
+        assertThat(ConfigurableTable.UE.getDefaultIdentifierFormat()).isEqualTo("{NUM_UE}");
+        assertThat(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat()).isEqualTo("{NUM_MOBILIER}");
+        assertThat(ConfigurableTable.CONTENANT.getDefaultIdentifierFormat()).isEqualTo("{NUM_CONTAINER}");
+        assertThat(ConfigurableTable.PHASE.getDefaultIdentifierFormat()).isEqualTo("{NUM_PHASE}");
     }
 
     // ========== New Tests ==========
@@ -1679,6 +1733,9 @@ class TableFieldConfigServiceImplTest {
         config.setId(id);
         config.setFieldConcept(fieldConcept);
         config.setValueConcept(valueConcept);
+        config.setIdentifierFormat("{NUM_MOBILIER}");
+        config.setMinCode(0);
+        config.setMaxCode(999);
         return config;
     }
 

@@ -1200,9 +1200,11 @@ class SpatialUnitServiceTest {
         when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
         when(spatialUnitRepository.save(any(SpatialUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        SpatialUnitDTO result = spatialUnitService.updatePlace(userInfo, 5L, "Nouveau", null, null);
+        SpatialUnitDTO result = spatialUnitService.updatePlace(
+                userInfo, 5L, "Nouveau", null, null, 42, true);
 
         assertThat(result.getId()).isEqualTo(5L);
+        assertThat(result.getPlaceNumber()).isEqualTo(42);
         verify(spatialUnitRepository).save(any(SpatialUnit.class));
     }
 

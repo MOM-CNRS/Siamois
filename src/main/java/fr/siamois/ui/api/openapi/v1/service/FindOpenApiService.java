@@ -316,12 +316,9 @@ public class FindOpenApiService {
         s.setName(au.getName());
         s.setFullIdentifier(au.getFullIdentifier());
         s.setIdentifier(au.getIdentifier());
-        s.setRecordingUnitIdentifierFormat(au.getRecordingUnitIdentifierFormat());
         s.setType(au.getType());
         s.setBeginDate(au.getBeginDate());
         s.setEndDate(au.getEndDate());
-        s.setMinRecordingUnitCode(au.getMinRecordingUnitCode());
-        s.setMaxRecordingUnitCode(au.getMaxRecordingUnitCode());
         return s;
     }
 

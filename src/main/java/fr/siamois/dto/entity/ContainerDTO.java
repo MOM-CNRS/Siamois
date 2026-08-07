@@ -15,14 +15,16 @@ public class ContainerDTO extends AbstractEntityDTO {
     protected ConceptDTO type;
     protected SpatialUnitSummaryDTO spatialUnit;
     protected ActionUnitSummaryDTO actionUnit;
+    protected Long parentId;
     protected String identifier;
+    protected Integer generatedNumber;
     protected MeasurementAnswerDTO length;
     protected MeasurementAnswerDTO width;
     protected MeasurementAnswerDTO height;
     protected MeasurementAnswerDTO weight;
 
     public static List<String> getBindableFieldNames() {
-        return List.of("identifier", "type", "spatialUnit", "actionUnit", "length", "width", "height", "weight");
+        return List.of("identifier", "generatedNumber", "type", "spatialUnit", "actionUnit", "parentId", "length", "width", "height", "weight");
     }
 
 }

@@ -21,6 +21,8 @@ import java.util.Set;
 public interface SpecimenRepository extends JpaRepository<Specimen, Long>, RevisionRepository<Specimen, Long, Long>, JpaSpecificationExecutor<Specimen>, SpecimenRepositoryCustom {
     List<Specimen> findAllByArkIsNullAndCreatedByInstitution(@NotNull Institution createdByInstitution);
 
+    List<Specimen> findByActionUnitIdAndFullIdentifier(Long actionUnitId, String fullIdentifier);
+
     <T> Optional<T> findById(Long id, Class<T> type);
 
     long countByCreatedByInstitution(Institution institution);
@@ -327,4 +329,3 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
     @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM specimen_group_attribution WHERE fk_specimen_id = :specimenId")
     long countGroupAttributionsBySpecimenId(@Param("specimenId") long specimenId);
 }
-

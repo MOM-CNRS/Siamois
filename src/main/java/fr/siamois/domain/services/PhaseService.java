@@ -1,6 +1,9 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PhaseDTO;
@@ -27,6 +30,7 @@ public class PhaseService {
 
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
+    private final EntityIdentifierGenerator identifierGenerator;
 
     private Specification<Phase> userFilterSpecs(FilterDTO filters) {
         Specification<Phase> specs = Specification.where(null);
@@ -75,7 +79,34 @@ public class PhaseService {
             synchronizeCollection(managed.getKeywords(), entity.getKeywords());
         }
 
+        if (managed.getActionUnit() == null) {
+            throw new IllegalArgumentException("An action unit is required to save a phase");
+        }
+
+        identifierGenerator.generateIdentifierIfRequired(managed, phaseIdentifierSpec());
+
         return phaseMapper.convert(phaseRepository.save(managed));
+    }
+
+    private IdentifierGenerationSpec<Phase> phaseIdentifierSpec() {
+        return IdentifierGenerationSpec.<Phase>builder()
+                .table(ConfigurableTable.PHASE)
+                .entityName("phase")
+                .generationRequired(phase -> phase.getId() == null)
+                .actionUnit(Phase::getActionUnit)
+                .typeId(phase -> phase.getType() == null ? null : phase.getType().getId())
+                .displayValue("NUM_PARENT", phase -> null)
+                .displayValue("ID_PARENT", phase -> null)
+                .displayValue("PHASE_ORDER", Phase::getOrderNumber)
+                .displayValue("ID_UA", phase -> phase.getActionUnit().getFullIdentifier())
+                .partitionValue("PARENT_PHASE", phase -> null)
+                .partitionValue("PHASE_ORDER", Phase::getOrderNumber)
+                .identifierAlreadyUsed((phase, candidate) ->
+                        phaseRepository.existsByActionUnitIdAndIdentifier(
+                                phase.getActionUnit().getId(), candidate))
+                .numberSetter(Phase::setGeneratedNumber)
+                .identifierSetter(Phase::setIdentifier)
+                .build();
     }
 
     public PhaseDTO findById(Long id) {

@@ -40,8 +40,6 @@ import java.util.stream.Collectors;
 public class ActionUnit extends TraceableEntity implements ArkEntity {
 
     public ActionUnit() {
-        this.maxRecordingUnitCode = Integer.MAX_VALUE;
-        this.minRecordingUnitCode = 1;
     }
 
     @SuppressWarnings("CopyConstructorMissesField")
@@ -100,14 +98,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     )
     private Set<SpatialUnit> spatialContext = new HashSet<>();
 
-    @Nullable
-    @Column(name = "recording_unit_identifier_format")
-    private String recordingUnitIdentifierFormat = "{NUM_UE}";
-
-    @Nullable
-    @Column(name = "recording_unit_identifier_lang")
-    private String recordingUnitIdentifierLang;
-
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIAAU.TYPE";
 
@@ -153,14 +143,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "full_identifier")
     protected String fullIdentifier;
 
-    @NotNull
-    @Column(name = "max_recording_unit_code", nullable = false)
-    protected Integer maxRecordingUnitCode;
-
-    @NotNull
-    @Column(name = "min_recording_unit_code")
-    protected Integer minRecordingUnitCode;
-
 
     /**
      * This field is set to true when the action unit has children in the institution.
@@ -189,28 +171,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
         return String.format("Action Unit %s", displayFullIdentifier());
     }
 
-
-    @JsonIgnore
-    public ActionUnitResolveConfig resolveConfig() {
-        if (recordingUnitIdentifierFormat == null || recordingUnitIdentifierFormat.isEmpty())
-            return ActionUnitResolveConfig.NONE;
-
-        final boolean containsRuNumber = recordingUnitIdentifierFormat.contains("NUM_UE");
-        final boolean containsRuType = recordingUnitIdentifierFormat.contains("TYPE_UE");
-        final boolean containsParentNumber = recordingUnitIdentifierFormat.contains("NUM_PARENT");
-
-        if (containsRuNumber && containsRuType && containsParentNumber) {
-            return ActionUnitResolveConfig.PARENT_TYPE;
-        } else if (containsRuNumber && containsRuType) {
-            return ActionUnitResolveConfig.TYPE_UNIQUE;
-        } else if (containsRuNumber && containsParentNumber) {
-            return ActionUnitResolveConfig.PARENT;
-        } else if (containsRuNumber) {
-            return ActionUnitResolveConfig.UNIQUE;
-        } else {
-            return ActionUnitResolveConfig.NONE;
-        }
-    }
 
     @Transient
     @JsonIgnore

@@ -14,6 +14,7 @@ import java.util.Set;
 public class PhaseDTO extends AbstractEntityDTO {
 
     private String identifier;
+    private Integer generatedNumber;
     private ActionUnitSummaryDTO actionUnit;
     private ConceptDTO type;
     private String title;
@@ -27,6 +28,7 @@ public class PhaseDTO extends AbstractEntityDTO {
     public static List<String> getBindableFieldNames() {
         return List.of(
                 "identifier",
+                "generatedNumber",
                 "actionUnit",
                 "type",
                 "title",

@@ -16,12 +16,14 @@ public class SpatialUnitSummaryDTO implements Serializable {
     private ConceptDTO category;
     private Long id;
     private String code;
+    private Integer placeNumber;
 
     public SpatialUnitSummaryDTO(SpatialUnitDTO spatialUnitDTO) {
         this.id = spatialUnitDTO.getId();
         this.name = spatialUnitDTO.getName();
         this.category = spatialUnitDTO.getCategory();
         this.code = spatialUnitDTO.getCode();
+        this.placeNumber = spatialUnitDTO.getPlaceNumber();
     }
 
 }

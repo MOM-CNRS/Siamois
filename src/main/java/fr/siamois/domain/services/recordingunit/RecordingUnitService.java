@@ -3,7 +3,6 @@ package fr.siamois.domain.services.recordingunit;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.actionunit.ActionUnitResolveConfig;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
@@ -15,17 +14,17 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
-import fr.siamois.domain.models.recordingunit.identifier.RecordingUnitIdInfo;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
-import fr.siamois.domain.services.recordingunit.identifier.generic.RuNumericalIdentifierResolver;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
@@ -34,8 +33,6 @@ import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
@@ -47,11 +44,8 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.reflections.Reflections;
-import org.springframework.beans.BeansException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -60,7 +54,6 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -83,14 +76,11 @@ public class RecordingUnitService implements ArkEntityService {
     private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final ProfilePermissionService profilePermissionService;
-    private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
-    private final RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
     private final RecordingUnitMapper recordingUnitMapper;
     private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
     private final StatigraphicRelationshipMapper stratigraphicRelationshipMapper;
     private final RecordingUnitSummaryMapper recordingUnitSummaryMapper;
     private final ConversionService conversionService;
-    private final ApplicationContext applicationContext;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
     private final DocumentRepository documentRepository;
     private final ArkRepository arkRepository;
@@ -98,10 +88,11 @@ public class RecordingUnitService implements ArkEntityService {
     private final PhaseMapper phaseMapper;
     private final UnitDefinitionService unitDefinitionService;
     private final CustomFieldAnswerService customFieldAnswerService;
+    private final EntityIdentifierGenerator entityIdentifierGenerator;
 
 
     /**
-     * Utilisé pour maîtriser le flush avant les appels native {@code ru_nextval_*},
+     * Controls flushing before the native generic counter allocation,
      * qui sinon forcent un flush Hibernate sur des instances transient issues d'{@code invertConvert}.
      */
     @PersistenceContext
@@ -601,10 +592,6 @@ public class RecordingUnitService implements ArkEntityService {
     private void deleteLinkedData(long recordingUnitId, RecordingUnit ru) {
         recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
         documentRepository.deleteAllRecordingUnitDocumentLinksByRecordingUnitId(recordingUnitId);
-        recordingUnitIdCounterRepository.deleteAllByRecordingUnitId(recordingUnitId);
-        if (recordingUnitIdInfoRepository.existsById(recordingUnitId)) {
-            recordingUnitIdInfoRepository.deleteById(recordingUnitId);
-        }
         if (ru.getContributors() != null) {
             ru.getContributors().clear();
         }
@@ -901,36 +888,6 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
-    public int generatedNextIdentifier(@NonNull ActionUnit actionUnit, @Nullable Concept unitType, @Nullable RecordingUnit parentRu) {
-        ActionUnitResolveConfig config = actionUnit.resolveConfig();
-
-        switch (config) {
-            case UNIQUE, NONE -> {
-                return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
-            }
-            case PARENT -> {
-                if (parentRu == null) {
-                    return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
-                }
-                return recordingUnitIdCounterRepository.ruNextValParent(parentRu.getId());
-            }
-            case TYPE_UNIQUE -> {
-                Long unitTypeId = unitType == null ? null : unitType.getId();
-                return recordingUnitIdCounterRepository.ruNextValTypeUnique(actionUnit.getId(), unitTypeId);
-            }
-            case PARENT_TYPE -> {
-                if (parentRu == null) {
-                    return recordingUnitIdCounterRepository.ruNextValUnique(actionUnit.getId());
-                }
-                Long unitTypeId = unitType == null ? null : unitType.getId();
-                return recordingUnitIdCounterRepository.ruNextValTypeParent(parentRu.getId(), unitTypeId);
-            }
-            default -> {
-                return 0;
-            }
-        }
-    }
-
     public RecordingUnit findByFullIdentifierAndInstitutionIdentifier(String identifier, String institutionIdentifier) {
         return recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier).orElse(null);
     }
@@ -995,23 +952,6 @@ public class RecordingUnitService implements ArkEntityService {
         return dto;
     }
 
-    public RecordingUnitIdInfo createOrGetInfoOf(@NonNull RecordingUnit recordingUnit, @Nullable RecordingUnit parentRecordingUnit) {
-        Optional<RecordingUnitIdInfo> opt = recordingUnitIdInfoRepository.findById(recordingUnit.getId());
-        if (opt.isPresent()) return opt.get();
-        RecordingUnitIdInfo info = new RecordingUnitIdInfo();
-        info.setRecordingUnitId(recordingUnit.getId());
-        info.setRecordingUnit(recordingUnit);
-        if (recordingUnit.getSpatialUnit() != null) {
-            info.setSpatialUnitNumber(Math.toIntExact(recordingUnit.getSpatialUnit().getId()));
-        }
-        info.setActionUnit(recordingUnit.getActionUnit());
-        if (parentRecordingUnit != null) {
-            info.setParent(parentRecordingUnit);
-            info.setRuParentType(parentRecordingUnit.getType());
-        }
-        return recordingUnitIdInfoRepository.save(info);
-    }
-
     /**
      * Generates the identifier for a recording unit that has no parent.
      * Its creation parameters therefore refer directly to the action unit.
@@ -1020,17 +960,21 @@ public class RecordingUnitService implements ArkEntityService {
      * @param recordingUnitDTO The recording unit to generate the identifier for.
      * @return The generated identifier.
      */
+    @Transactional
     public String generateFullIdentifier(@NonNull ActionUnitSummaryDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
         Long ruId = recordingUnitDTO.getId();
         if (ruId == null) {
             // Création non encore persistée (cas UI rares) : mapping DTO → entité.
             RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
             ActionUnit actionUnit = actionUnitSummaryMapper.invertConvert(actionUnitDTO);
-            return generateFullIdentifier(actionUnit, recordingUnit);
+            String generated = generateFullIdentifier(actionUnit, recordingUnit);
+            recordingUnitDTO.setIdentifier(String.valueOf(recordingUnit.getIdentifier()));
+            recordingUnitDTO.setFullIdentifier(generated);
+            return generated;
         }
 
         // Ne pas passer par invertConvert : cela crée une RecordingUnit transient
-        // (même id) qui fait échouer le flush auto déclenché par ru_nextval_*.
+        // (même id) qui ferait échouer le flush auto déclenché par le compteur natif.
         jakarta.persistence.FlushModeType previousFlushMode = null;
         if (entityManager != null) {
             previousFlushMode = entityManager.getFlushMode();
@@ -1047,7 +991,10 @@ public class RecordingUnitService implements ArkEntityService {
                 throw new ActionUnitNotFoundException(
                         "Action unit missing for recording unit " + ruId);
             }
-            return generateFullIdentifier(actionUnit, recordingUnit);
+            String generated = generateFullIdentifier(actionUnit, recordingUnit);
+            recordingUnitDTO.setIdentifier(String.valueOf(recordingUnit.getIdentifier()));
+            recordingUnitDTO.setFullIdentifier(generated);
+            return generated;
         } finally {
             if (entityManager != null && previousFlushMode != null) {
                 entityManager.setFlushMode(previousFlushMode);
@@ -1057,89 +1004,56 @@ public class RecordingUnitService implements ArkEntityService {
 
     public String generateFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
         log.trace("Generating full identifier for recording unit");
-        String format = actionUnit.getRecordingUnitIdentifierFormat();
-        RecordingUnit parent = recordingUnit.getParents() == null
-                ? null
-                : recordingUnit.getParents().stream().findFirst().orElse(null);
-
-        // Les nextval native ne doivent pas forcer un flush du contexte (instances transient).
-        jakarta.persistence.FlushModeType previousFlushMode = null;
-        if (entityManager != null) {
-            previousFlushMode = entityManager.getFlushMode();
-            entityManager.setFlushMode(jakarta.persistence.FlushModeType.COMMIT);
-        }
-        int numericalId;
-        try {
-            numericalId = generatedNextIdentifier(actionUnit, recordingUnit.getType(), parent);
-        } finally {
-            if (entityManager != null && previousFlushMode != null) {
-                entityManager.setFlushMode(previousFlushMode);
-            }
-        }
-
-        RecordingUnitIdInfo info = createOrGetInfoOf(recordingUnit, parent);
-
-        info.setRuNumber(numericalId);
-
-        if (format == null) {
-            recordingUnitIdInfoRepository.save(info);
-            return String.valueOf(numericalId);
-        }
-
-        info.setRuType(recordingUnit.getType());
-
-        for (RuIdentifierResolver resolver : findAllIdentifierResolver().values()) {
-            if (resolver.formatUsesThisResolver(format)) {
-                format = resolver.resolve(format, info);
-            }
-        }
-
-        return format;
+        return entityIdentifierGenerator.generateIdentifierIfRequired(
+                        recordingUnit, recordingUnitIdentifierSpec(actionUnit))
+                .orElseThrow(() -> new IllegalStateException("Recording-unit identifier generation was skipped"))
+                .value();
     }
 
-    private static final Map<String, RuIdentifierResolver> IDENTIFIER_RESOLVERS = new HashMap<>();
-
-    public Map<String, RuIdentifierResolver> findAllIdentifierResolver() {
-        if (!IDENTIFIER_RESOLVERS.isEmpty())
-            return IDENTIFIER_RESOLVERS;
-
-        Reflections reflections = new Reflections("fr.siamois.domain.services.recordingunit.identifier");
-        Set<Class<? extends RuIdentifierResolver>> classes = reflections.getSubTypesOf(RuIdentifierResolver.class);
-
-        for (Class<? extends RuIdentifierResolver> clazz : classes) {
-            if (!clazz.isInterface() && !Modifier.isAbstract(clazz.getModifiers())) {
-                try {
-                    RuIdentifierResolver resolver = applicationContext.getBean(clazz);
-                    IDENTIFIER_RESOLVERS.put(resolver.getCode(), resolver);
-                } catch (BeansException e) {
-                    log.error("Error while scanning identifiers resolver of RecordingUnits");
-                    log.error(e.getMessage(), e);
-                }
-            }
-        }
-
-        return IDENTIFIER_RESOLVERS;
+    private IdentifierGenerationSpec<RecordingUnit> recordingUnitIdentifierSpec(ActionUnit actionUnit) {
+        return IdentifierGenerationSpec.<RecordingUnit>builder()
+                .table(ConfigurableTable.UE)
+                .entityName("recording unit")
+                .generationRequired(recordingUnit -> true)
+                .actionUnit(recordingUnit -> actionUnit)
+                .typeId(recordingUnit -> recordingUnit.getType() == null
+                        ? null : recordingUnit.getType().getId())
+                .displayValue("NUM_PARENT", recordingUnit -> {
+                    RecordingUnit parent = deterministicParent(recordingUnit);
+                    return parent == null ? null : parent.getIdentifier();
+                })
+                .displayValue("ID_PARENT", recordingUnit -> {
+                    RecordingUnit parent = deterministicParent(recordingUnit);
+                    return parent == null ? null : parent.getFullIdentifier();
+                })
+                .displayValue("NUM_USPATIAL", recordingUnit -> recordingUnit.getSpatialUnit() == null
+                        ? null : recordingUnit.getSpatialUnit().getPlaceNumber())
+                .displayValue("ID_UA", recordingUnit -> actionUnit.getFullIdentifier())
+                .partitionValue("PARENT_RU", recordingUnit -> {
+                    RecordingUnit parent = deterministicParent(recordingUnit);
+                    return parent == null ? null : parent.getId();
+                })
+                .partitionValue("SPATIAL_PLACE", recordingUnit -> recordingUnit.getSpatialUnit() == null
+                        ? null : recordingUnit.getSpatialUnit().getPlaceNumber())
+                .identifierAlreadyUsed((recordingUnit, candidate) ->
+                        identifierBelongsToAnotherUnit(actionUnit.getId(), recordingUnit.getId(), candidate))
+                .numberSetter(RecordingUnit::setIdentifier)
+                .identifierSetter(RecordingUnit::setFullIdentifier)
+                .build();
     }
 
-    /**
-     * Returns all available codes for recording units identifiers
-     *
-     * @return The list of available codes
-     */
-    public List<String> findAllIdentifiersCode() {
-        return findAllIdentifierResolver()
-                .keySet()
-                .stream()
-                .toList();
+    private static RecordingUnit deterministicParent(RecordingUnit recordingUnit) {
+        if (recordingUnit.getParents() == null) return null;
+        return recordingUnit.getParents().stream()
+                .filter(Objects::nonNull)
+                .filter(parent -> parent.getId() != null)
+                .min(Comparator.comparing(RecordingUnit::getId))
+                .orElse(null);
     }
 
-    public List<String> findAllNumericalIdentifiersCode() {
-        return findAllIdentifierResolver()
-                .values()
-                .stream()
-                .filter(r -> RuNumericalIdentifierResolver.class.isAssignableFrom(r.getClass()))
-                .map(RuIdentifierResolver::getCode)
-                .toList();
+    private boolean identifierBelongsToAnotherUnit(Long actionUnitId, Long recordingUnitId, String fullIdentifier) {
+        return recordingUnitRepository.findByFullIdentifierAndActionUnitId(fullIdentifier, actionUnitId).stream()
+                .anyMatch(existing -> !Objects.equals(existing.getId(), recordingUnitId));
     }
 
     @NonNull

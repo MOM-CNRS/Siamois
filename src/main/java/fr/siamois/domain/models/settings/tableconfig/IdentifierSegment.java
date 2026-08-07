@@ -9,10 +9,8 @@ import lombok.Setter;
 import java.io.Serializable;
 
 /**
- * One piece of the UE identifier format builder shown on the "Identifiants" tab: either a literal
- * text chunk or a placeholder bound to a {@code RuIdentifierResolver} code (e.g. {@code NUM_UE}).
- * UI-only — {@code ActionUnitDTO.recordingUnitIdentifierFormat} is the string form actually
- * persisted; segments are parsed from and serialized back to that string.
+ * One piece of a table identifier format: either literal text or a registered placeholder.
+ * UI-only — {@code TypeFormConfig.identifierFormat} is the persisted string form.
  */
 @Getter
 @Setter

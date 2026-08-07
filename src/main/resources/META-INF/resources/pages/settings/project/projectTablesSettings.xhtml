@@ -327,11 +327,11 @@
                                         <div class="ptc-ident-numbers">
                                             <div class="ptc-drawer-field" style="flex:1;">
                                                 <label class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.firstNumber')}</label>
-                                                <p:inputNumber value="#{projectTableFieldSettingsBean.identFirst}" inputStyle="width:100%" minValue="1" maxValue="99998"/>
+                                                <p:inputNumber value="#{projectTableFieldSettingsBean.identFirst}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true"/>
                                             </div>
                                             <div class="ptc-drawer-field" style="flex:1;">
                                                 <label class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.lastNumber')}</label>
-                                                <p:inputNumber value="#{projectTableFieldSettingsBean.identLast}" inputStyle="width:100%" minValue="2" maxValue="99999"/>
+                                                <p:inputNumber value="#{projectTableFieldSettingsBean.identLast}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true"/>
                                             </div>
                                         </div>
 

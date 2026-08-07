@@ -13,6 +13,8 @@ import java.util.Set;
 
 @Repository
 public interface PhaseRepository extends CrudRepository<Phase, Long>, JpaSpecificationExecutor<Phase> {
+    boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
+
     Optional<Phase> findByIdentifierAndActionUnitId(String identifier, Long actionUnitId);
 
     List<Phase> findAllByIdentifierInAndActionUnitId(Collection<String> identifiers, Long actionUnitId);

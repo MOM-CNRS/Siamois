@@ -1,6 +1,9 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ContainerDTO;
@@ -34,6 +37,7 @@ public class ContainerService {
     private final ContainerRepository containerRepository;
     private final ContainerMapper containerMapper;
     private final UnitDefinitionService unitDefinitionService;
+    private final EntityIdentifierGenerator identifierGenerator;
 
     private Specification<Container> userFilterSpecs(FilterDTO filters) {
         Specification<Container> specs = Specification.where(null);
@@ -106,9 +110,36 @@ public class ContainerService {
 
     public ContainerDTO save(ContainerDTO dto) {
         Container entity = containerMapper.invertConvert(dto);
+        if (dto.getParentId() != null) {
+            entity.setParent(containerRepository.findById(dto.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Container parent not found: " + dto.getParentId())));
+        }
         resolveUnitsOf(entity);
+        identifierGenerator.generateIdentifierIfRequired(entity, containerIdentifierSpec());
         entity = containerRepository.save(entity);
         return containerMapper.convert(entity);
+    }
+
+    private IdentifierGenerationSpec<Container> containerIdentifierSpec() {
+        return IdentifierGenerationSpec.<Container>builder()
+                .table(ConfigurableTable.CONTENANT)
+                .entityName("container")
+                .generationRequired(container -> container.getId() == null)
+                .actionUnit(Container::getActionUnit)
+                .typeId(container -> container.getType() == null ? null : container.getType().getId())
+                .displayValue("NUM_PARENT", container -> container.getParent() == null
+                        ? null : container.getParent().getGeneratedNumber())
+                .displayValue("ID_PARENT", container -> container.getParent() == null
+                        ? null : container.getParent().getIdentifier())
+                .displayValue("ID_UA", container -> container.getActionUnit().getFullIdentifier())
+                .partitionValue("PARENT_CONTAINER", container -> container.getParent() == null
+                        ? null : container.getParent().getId())
+                .identifierAlreadyUsed((container, candidate) ->
+                        containerRepository.existsByActionUnitIdAndIdentifier(
+                                container.getActionUnit().getId(), candidate))
+                .numberSetter(Container::setGeneratedNumber)
+                .identifierSetter(Container::setIdentifier)
+                .build();
     }
 
     private void resolveUnitsOf(Container container) {

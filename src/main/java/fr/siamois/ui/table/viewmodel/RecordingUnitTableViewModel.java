@@ -3,7 +3,6 @@ package fr.siamois.ui.table.viewmodel;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
@@ -136,18 +135,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         }
 
         for (CustomField field : getAllFieldsFromForm(rowForm)) {
-            configureIdentifierField(ru, field);
             configureDateTimeField(ru, field);
-        }
-    }
-
-    private void configureIdentifierField(RecordingUnitDTO ru, CustomField field) {
-        if (!"identifier".equals(field.getValueBinding()) || !(field instanceof CustomFieldInteger cfi)) {
-            return;
-        }
-        if (ru.getActionUnit() != null) {
-            cfi.setMaxValue(ru.getActionUnit().getMaxRecordingUnitCode());
-            cfi.setMinValue(ru.getActionUnit().getMinRecordingUnitCode());
         }
     }
 
@@ -428,8 +416,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
         newUnit.setFullIdentifier(recordingUnitService.generateFullIdentifier(newUnit.getActionUnit(), newUnit));
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(newUnit)) {
-            newUnit.setFullIdentifier(newUnit.getActionUnit().getRecordingUnitIdentifierFormat());
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            throw new IllegalStateException("Generated recording-unit identifier already exists");
         }
 
         newUnit = recordingUnitService.save(newUnit);

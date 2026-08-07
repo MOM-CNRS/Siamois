@@ -10,6 +10,8 @@ import java.util.List;
 
 public interface ContainerRepository extends JpaRepository<Container, Long>, JpaSpecificationExecutor<Container> {
 
+    boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
+
     @Query(value = """
     WITH RECURSIVE ascend AS (
         /* 1. Start with the IDs provided in the array */

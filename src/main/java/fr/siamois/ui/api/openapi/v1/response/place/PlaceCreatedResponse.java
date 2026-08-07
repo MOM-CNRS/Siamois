@@ -26,10 +26,18 @@ public class PlaceCreatedResponse extends Response<PlaceCreatedResponse.PlaceCre
         @Schema(description = "Code métier du lieu, si présent")
         private String code;
 
+        @Schema(description = "Numéro de regroupement du lieu")
+        private Integer placeNumber;
+
         public PlaceCreatedItem(Long id, String name, String code) {
+            this(id, name, code, null);
+        }
+
+        public PlaceCreatedItem(Long id, String name, String code, Integer placeNumber) {
             this.id = id;
             this.name = name;
             this.code = code;
+            this.placeNumber = placeNumber;
         }
     }
 }

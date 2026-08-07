@@ -99,13 +99,15 @@ public class PlaceOpenApiService {
         SpatialUnitDTO toSave = new SpatialUnitDTO();
         toSave.setName(name);
         toSave.setCategory(category);
+        toSave.setPlaceNumber(request.getPlaceNumber());
         if (request.getAddress() != null) {
             toSave.setAddress(request.getAddress());
         }
 
         try {
             SpatialUnitDTO saved = spatialUnitService.save(userInfo, toSave);
-            return new PlaceCreatedResponse.PlaceCreatedItem(saved.getId(), saved.getName(), saved.getCode());
+            return new PlaceCreatedResponse.PlaceCreatedItem(
+                    saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
@@ -137,9 +139,12 @@ public class PlaceOpenApiService {
         }
 
         try {
-            SpatialUnitDTO saved = spatialUnitService.updatePlace(
-                    userInfo, placeId, patch.getName(), category, patch.getAddress());
-            return new PlaceCreatedResponse.PlaceCreatedItem(saved.getId(), saved.getName(), saved.getCode());
+            SpatialUnitDTO saved = patch.isPlaceNumberPresent()
+                    ? spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress(),
+                            patch.getPlaceNumber(), true)
+                    : spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress());
+            return new PlaceCreatedResponse.PlaceCreatedItem(
+                    saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
