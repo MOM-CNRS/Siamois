@@ -814,7 +814,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void createRecordingUnit_duplicateGeneratedIdentifier_fallsBackToActionUnitFormat() {
+    void createRecordingUnit_duplicateGeneratedIdentifier_throwsConflict() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -846,21 +846,18 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.generateFullIdentifier(any(ActionUnitSummaryDTO.class), any())).thenReturn("RU-3001");
         when(recordingUnitService.fullIdentifierAlreadyExistInAction(saved)).thenReturn(true);
 
-        ruDto.setCreatedByInstitution(inst);
-        ruDto.setType(typeDto);
-        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("3001"), eq(SCOPE), isNull()))
-                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
         request.setProjectId("5");
         request.setTypeId("42");
 
-        service.createRecordingUnit(request, personDto, SCOPE, "fr");
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
 
-        ArgumentCaptor<RecordingUnitDTO> captor = ArgumentCaptor.forClass(RecordingUnitDTO.class);
-        verify(recordingUnitService, times(2)).save(captor.capture());
-        assertThat(captor.getValue().getFullIdentifier()).isEqualTo("RU-%s");
+        verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
+        verify(recordingUnitService).fullIdentifierAlreadyExistInAction(saved);
+        verify(recordingUnitService, never()).findAccessibleRecordingUnitWithEntity(any(), any(), any());
     }
 
     @Test
