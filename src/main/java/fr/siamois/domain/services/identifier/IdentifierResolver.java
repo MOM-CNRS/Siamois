@@ -9,9 +9,22 @@ import java.util.regex.Pattern;
 public interface IdentifierResolver<C extends IdentifierRenderContext> {
     String code();
 
+    /** JavaBean aliases used by JSF EL. */
+    default String getCode() {
+        return code();
+    }
+
     IdentifierValueKind valueKind();
 
+    default IdentifierValueKind getValueKind() {
+        return valueKind();
+    }
+
     String titleCode();
+
+    default String getTitleCode() {
+        return titleCode();
+    }
 
     @Nullable
     default String descriptionCode() {
