@@ -52,8 +52,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static fr.siamois.utils.MessageUtils.displayErrorMessage;
-
 @Slf4j
 @Component
 @Getter
@@ -130,6 +128,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     private transient String draftOriginalBrancheConceptKey;
     private transient String draftOriginalCollectionKey;
+
+    /**
+     * The error shown in the drawer's own message area, at the top of the panel. Anything raised
+     * while the drawer is open goes there rather than to the global growl: the growl is anchored to
+     * the top-right corner of the page, exactly where the drawer sits, and renders under the
+     * sidebar's overlay — so the user never sees it. Null when there is nothing to report.
+     */
+    private String drawerErrorMessage;
 
     private String newTypeName;
 
@@ -451,6 +457,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftThesaurusUrl = null;
         draftConnectionTested = false;
         draftVocabulary = null;
+        drawerErrorMessage = null;
         clearSourceSelection();
     }
 
@@ -483,28 +490,38 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * resolve-then-report convention as {@code ProjectThesaurusSettingsBean#saveConfig}.
      */
     public void testThesaurusConnection() {
+        drawerErrorMessage = null;
         if (draftThesaurusUrl == null || draftThesaurusUrl.isBlank()) {
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "projectTables.drawer.params.connectionMissingUrl");
+            showDrawerError("projectTables.drawer.params.connectionMissingUrl");
             return;
         }
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(draftThesaurusUrl);
             draftVocabulary = vocabularyMapper.convert(vocabulary);
+            // success needs no message of its own : the drawer shows the "✓ connected" line as soon
+            // as the connection is marked as tested
             draftConnectionTested = true;
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.params.connectionOk");
         } catch (InvalidEndpointException e) {
             log.error("Invalid thesaurus URL '{}'", draftThesaurusUrl, e);
             draftConnectionTested = false;
             draftVocabulary = null;
-            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
+            showDrawerError("myProfile.thesaurus.uri.invalid");
         } catch (RuntimeException e) {
             // anything the thesaurus lookup didn't turn into an InvalidEndpointException would
             // otherwise leave the button silent, which reads as "nothing happened"
             log.error("Could not reach the thesaurus at '{}'", draftThesaurusUrl, e);
             draftConnectionTested = false;
             draftVocabulary = null;
-            displayErrorMessage(langBean, "projectTables.drawer.params.connectionFailed");
+            showDrawerError("projectTables.drawer.params.connectionFailed");
         }
+    }
+
+    /**
+     * Fills the drawer's message area. Kept apart from {@link MessageUtils} on purpose: these
+     * messages belong to the panel the user is looking at, not to the page-wide growl.
+     */
+    private void showDrawerError(String messageCode, Object... args) {
+        drawerErrorMessage = langBean.msg(messageCode, args);
     }
 
     /**
@@ -520,7 +537,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             return conceptService.fetchAutocompleteFromRemoteThesaurus(draftVocabulary, query);
         } catch (JsonProcessingException | RuntimeException e) {
             log.error("Could not fetch the concepts matching '{}' in thesaurus {}", query, draftVocabulary.getBaseUri(), e);
-            MessageUtils.displayInternalError(langBean);
+            showDrawerError("common.error.internal");
             return List.of();
         }
     }
@@ -543,7 +560,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         } catch (RuntimeException e) {
             log.error("Could not fetch the collections of thesaurus {}", draftVocabulary.getBaseUri(), e);
             lastCollectionResults = List.of();
-            MessageUtils.displayInternalError(langBean);
+            showDrawerError("common.error.internal");
         }
         return lastCollectionResults.stream().map(ConceptCollectionDetachedDTO::getLabelToDisplay).toList();
     }
@@ -554,28 +571,32 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * message the configuration never got.
      */
     public void saveDrawer() {
+        drawerErrorMessage = null;
         if (draftOriginalName == null) {
             tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription);
         } else {
             tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName, draftName, draftType, draftDescription);
         }
+        // the field now exists under that name : should the vocabulary configuration fail below, the
+        // drawer stays open on the error, and saving again must update that field rather than try to
+        // create a second one — or, after a rename, update from a name that no longer exists
+        draftOriginalName = draftName;
 
-        String errorCode = null;
         try {
             saveDraftVocabularyConfig();
         } catch (FieldVocabularyConfigException e) {
             log.error("Vocabulary configuration of field '{}' on type '{}' of table {} was not saved",
                     draftName, selectedTypeName, selectedTable, e);
-            errorCode = e.getMessageCode();
+            showDrawerError(e.getMessageCode());
+            // the drawer stays open : the message lives in it, and the user is one correction away
+            // from a working configuration
+            loadConfigs();
+            return;
         }
 
         loadConfigs();
         closeDrawer();
-        if (errorCode == null) {
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.saveSuccess");
-        } else {
-            displayErrorMessage(langBean, errorCode);
-        }
+        MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.saveSuccess");
     }
 
     /**

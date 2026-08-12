@@ -23,6 +23,17 @@
                     </h:panelGroup>
                 </div>
 
+                <!-- Always rendered so ajax can reach it, and auto-updated so a message raised outside
+                     this form's own requests (the thesaurus autocompletes) still lands here. -->
+                <h:panelGroup id="drawerMessages" layout="block" styleClass="ptc-drawer-messages">
+                    <p:autoUpdate/>
+                    <h:panelGroup layout="block" styleClass="ptc-drawer-error"
+                                  rendered="#{not empty projectTableFieldSettingsBean.drawerErrorMessage}">
+                        <i class="bi bi-exclamation-triangle-fill"/>
+                        <span>#{projectTableFieldSettingsBean.drawerErrorMessage}</span>
+                    </h:panelGroup>
+                </h:panelGroup>
+
                 <div class="ptc-drawer-body">
                     <div class="ptc-drawer-field">
                         <label class="ptc-drawer-label" for="fieldEditForm:draftName">#{langBean.msg('projectTables.drawer.name')}</label>
@@ -85,7 +96,8 @@
 
                             <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'principal'}">
                                 <div class="ptc-drawer-field">
-                                    <label class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.params.fieldCode')}</label>
+                                    <!-- read-only value, not a form control : a <label> here would have no control to point at -->
+                                    <div class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.params.fieldCode')}</div>
                                     <div class="ptc-readonly-value">#{projectTableFieldSettingsBean.draftFieldCode}</div>
                                     <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.params.fieldCodeHint')}</div>
                                 </div>

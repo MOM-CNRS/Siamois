@@ -71,6 +71,8 @@
             .ptc-section-meta { font-size: 13px; color: #8c8c8c; margin-left: 10px; }
             .ptc-chip { font-size: 12px; color: #777; border: 1px solid #e7e7e3; border-radius: 5px; padding: 1px 7px; background: #f6f6f4; white-space: nowrap; }
             .ptc-hidden-name { text-decoration: line-through; color: #a3a3a0; }
+            /* #a3a3a0 on white is a 2.5:1 ratio; this grey holds 5.3:1 and reads the same at that size */
+            .ptc-lock-icon { font-size: 12px; color: #6b6b66; margin-left: 6px; }
 
             .ptc-ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: #8a7d4a; font-size: 15px; }
 
@@ -85,9 +87,8 @@
             .ptc-ident-digits-box input { width: 18px; border: none; background: transparent; color: #fff; font-size: 12px; font-weight: 600; outline: none; text-align: center; padding: 0; }
             .ptc-ident-arrow.ui-button, .ptc-ident-remove.ui-button { background: transparent !important; border: none !important; color: #909088 !important; font-size: 17px !important; line-height: 1 !important; padding: 0 4px !important; width: auto !important; }
             .ptc-ident-arrow.ui-button { font-weight: 700 !important; }
-            .ptc-ident-remove.ui-button { font-size: 12px !important; }
+            .ptc-ident-remove.ui-button { font-size: 12px !important; border-radius: 50% !important; }
             .ptc-ident-segment-token .ptc-ident-arrow.ui-button, .ptc-ident-segment-token .ptc-ident-remove.ui-button { color: rgba(255,255,255,0.85) !important; }
-            .ptc-ident-remove.ui-button { border-radius: 50% !important; }
             .ptc-ident-add-text.ui-button { font-size: 13px !important; color: #777 !important; border: 1px dashed #cfcfca !important; background: transparent !important; border-radius: 20px !important; padding: 5px 12px !important; }
             .ptc-ident-token-option.ui-button { font-size: 13px !important; color: #3a5a3c !important; background: var(--sia-accent-soft, #eaf3ea) !important; border: 1px solid transparent !important; border-radius: 20px !important; padding: 6px 13px !important; }
             .ptc-ident-preview { font-size: 15px; font-family: 'SFMono-Regular', Consolas, monospace; border: 1px solid #e7e7e3; border-radius: 8px; padding: 10px 13px; background: #f6f6f4; color: #2b2b2b; letter-spacing: .02em; }
@@ -121,6 +122,11 @@
             .ptc-drawer-field { display: flex; flex-direction: column; gap: 7px; }
             .ptc-drawer-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #a3a3a0; }
             .ptc-drawer-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 22px; border-top: 1px solid #ececec; flex: none; }
+            /* the drawer's own message area: growl messages would render under the sidebar overlay.
+               flex: none so the message keeps its height instead of being squeezed by the body. */
+            .ptc-drawer-messages { flex: none; }
+            .ptc-drawer-error { display: flex; align-items: flex-start; gap: 9px; margin: 14px 22px 0; padding: 11px 13px; border: 1px solid #f5c2bd; border-left-width: 4px; border-radius: 8px; background: #fdecea; color: #b3261e; font-size: 13.5px; line-height: 1.4; }
+            .ptc-drawer-error i { font-size: 15px; line-height: 1.3; flex: none; }
             .ptc-native-select { width: 100%; font-size: 14px; font-family: inherit; border: 1px solid #d8d8d2; border-radius: 8px; padding: 8px 11px; background: #fff; color: #2b2b2b; }
 
             /* ── drawer "Paramètres" section ────────────── */
@@ -256,7 +262,7 @@
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
                                             <span class="#{not f.active ? 'ptc-hidden-name' : ''}">#{projectTableFieldSettingsBean.resolveFieldLabel(f)}</span>
                                             <h:panelGroup rendered="#{f.institutionLocked}">
-                                                <span class="bi bi-lock-fill" style="font-size:12px;color:#a3a3a0;margin-left:6px;" title="#{langBean.msg('projectTables.champs.institutionLocked')}"/>
+                                                <span class="bi bi-lock-fill ptc-lock-icon" title="#{langBean.msg('projectTables.champs.institutionLocked')}"/>
                                             </h:panelGroup>
                                         </p:column>
                                         <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:190px">
@@ -326,18 +332,21 @@
 
                                         <div class="ptc-ident-numbers">
                                             <div class="ptc-drawer-field" style="flex:1;">
-                                                <label class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.firstNumber')}</label>
-                                                <p:inputNumber value="#{projectTableFieldSettingsBean.identFirst}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true"/>
+                                                <!-- p:inputNumber renders its editable field as <clientId>_input, which is what the label must point at -->
+                                                <label class="ptc-drawer-label" for="projectTablesFormCC:projectTablesForm:fieldsTabs:identFirst_input">#{langBean.msg('actionUnit.settings.label.firstNumber')}</label>
+                                                <p:inputNumber id="identFirst" value="#{projectTableFieldSettingsBean.identFirst}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true"/>
                                             </div>
                                             <div class="ptc-drawer-field" style="flex:1;">
-                                                <label class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.lastNumber')}</label>
-                                                <p:inputNumber value="#{projectTableFieldSettingsBean.identLast}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true"/>
+                                                <label class="ptc-drawer-label" for="projectTablesFormCC:projectTablesForm:fieldsTabs:identLast_input">#{langBean.msg('actionUnit.settings.label.lastNumber')}</label>
+                                                <p:inputNumber id="identLast" value="#{projectTableFieldSettingsBean.identLast}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true"/>
                                             </div>
                                         </div>
 
                                         <div class="ptc-drawer-field">
-                                            <label class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.format')}</label>
-                                            <div class="ptc-ident-format-box">
+                                            <!-- the format is edited through a group of controls, not a single one :
+                                                 a group labelled by its caption rather than a <label> without a target -->
+                                            <div class="ptc-drawer-label" id="identFormatLabel">#{langBean.msg('actionUnit.settings.label.format')}</div>
+                                            <div class="ptc-ident-format-box" role="group" aria-labelledby="identFormatLabel">
                                                 <ui:repeat value="#{projectTableFieldSettingsBean.identSegments}" var="seg" varStatus="status">
                                                     <h:panelGroup rendered="#{not seg.token}">
                                                         <div class="ptc-ident-segment-text">
@@ -376,7 +385,8 @@
                                         </div>
 
                                         <div class="ptc-drawer-field">
-                                            <label class="ptc-drawer-label">#{langBean.msg('projectTables.ident.preview')}</label>
+                                            <!-- read-only preview, not a form control -->
+                                            <div class="ptc-drawer-label">#{langBean.msg('projectTables.ident.preview')}</div>
                                             <div class="ptc-ident-preview">#{projectTableFieldSettingsBean.identExample}</div>
                                             <div class="ptc-field-hint">#{langBean.msg('projectTables.ident.previewHint')}</div>
                                         </div>
