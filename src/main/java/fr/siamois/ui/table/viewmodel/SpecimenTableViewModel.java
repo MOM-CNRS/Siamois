@@ -2,6 +2,7 @@ package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.SpecimenDTO;
@@ -18,6 +19,7 @@ import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
@@ -41,6 +43,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
     private final BaseSpecimenLazyDataModel specimenLazyDataModel;
     private final FlowBean flowBean;
+    private final SpecimenService specimenService;
 
 
     private final SessionSettingsBean sessionSettingsBean;
@@ -52,6 +55,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
                                   SpatialUnitService spatialUnitService,
                                   NavBean navBean,
                                   FlowBean flowBean,
+                                  SpecimenService specimenService,
                                   GenericNewUnitDialogBean<SpecimenDTO> genericNewUnitDialogBean, FormContextServices formContextServices) {
 
         super(
@@ -71,6 +75,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
         this.setSwitchVisible(false);
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
+        this.specimenService = specimenService;
 
 
     }
@@ -116,6 +121,31 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
         }
 
         return "";
+    }
+
+    @Override
+    public void handleLinkEdit(CommandLinkColumn column, SpecimenDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "specimen.error.identifier.blank");
+            return;
+        }
+
+        String previous = item.getFullIdentifier();
+        item.setFullIdentifier(trimmed);
+
+        if (specimenService.fullIdentifierAlreadyExistInAction(item)) {
+            item.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "specimen.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            specimenService.save(item);
+        } catch (RuntimeException e) {
+            item.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.specimen.updateFailed", item.getFullIdentifier());
+        }
     }
 
     @Override

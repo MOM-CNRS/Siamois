@@ -19,6 +19,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -51,6 +52,10 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     private final transient RedirectBean redirectBean;
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient LabelService labelService;
+
+    // Inline identifier editing (panel header chip)
+    private boolean editingIdentifier;
+    private String editingIdentifierValue;
 
     @Override
     protected boolean documentExistsInUnitByHash(PhaseDTO unit, String hash) {
@@ -101,6 +106,42 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         }
 
         documents = List.of();
+    }
+
+    public void startEditIdentifier() {
+        this.editingIdentifierValue = unit.getIdentifier();
+        this.editingIdentifier = true;
+    }
+
+    public void cancelEditIdentifier() {
+        this.editingIdentifier = false;
+        this.editingIdentifierValue = null;
+    }
+
+    public void applyEditIdentifier() {
+        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.blank");
+            return;
+        }
+
+        String previous = unit.getIdentifier();
+        unit.setIdentifier(trimmed);
+
+        if (phaseService.identifierAlreadyExistInAction(unit)) {
+            unit.setIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            phaseService.save(unit);
+            this.titleCodeOrTitle = unit.getIdentifier();
+            cancelEditIdentifier();
+        } catch (RuntimeException e) {
+            unit.setIdentifier(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.phase.updateFailed", unit.getIdentifier());
+        }
     }
 
     @Override

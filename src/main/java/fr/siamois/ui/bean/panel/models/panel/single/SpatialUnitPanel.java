@@ -93,6 +93,10 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private transient ActionUnitTableViewModel actionTabTableModel;
     private Integer totalActionUnitCount;
 
+    // Inline identifier (name) editing (panel header chip)
+    private boolean editingIdentifier;
+    private String editingIdentifierValue;
+
 
     @Override
     List<SpatialUnitDTO> findDirectParentsOf(Long id) {
@@ -232,6 +236,36 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
         //history = historyAuditService.findAllRevisionForEntity(SpatialUnitDTO.class, unitId);
         documents = documentService.findForSpatialUnit(unit);
+    }
+
+    public void startEditIdentifier() {
+        this.editingIdentifierValue = unit.getName();
+        this.editingIdentifier = true;
+    }
+
+    public void cancelEditIdentifier() {
+        this.editingIdentifier = false;
+        this.editingIdentifierValue = null;
+    }
+
+    public void applyEditIdentifier() {
+        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "spatialunit.error.name.blank");
+            return;
+        }
+
+        String previous = unit.getName();
+        unit.setName(trimmed);
+
+        try {
+            spatialUnitService.save(unit);
+            this.setTitleCodeOrTitle(unit.getName());
+            cancelEditIdentifier();
+        } catch (RuntimeException e) {
+            unit.setName(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.spatialUnit.updateFailed", unit.getName());
+        }
     }
 
 

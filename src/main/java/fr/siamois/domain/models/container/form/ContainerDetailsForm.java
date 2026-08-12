@@ -19,7 +19,7 @@ public class ContainerDetailsForm extends ContainerForm {
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(true)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .className("d-none")
                                                         .field(identifierField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()

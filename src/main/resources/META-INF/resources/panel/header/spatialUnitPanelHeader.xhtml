@@ -1,15 +1,53 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui" xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
+             xmlns:h="http://java.sun.com/jsf/html"
 >
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.SpatialUnitPanel"-->
 
 
 
-    <p:chip label="#{panelModel.titleCodeOrTitle}"
-            styleClass="mr-2 action-unit-chip-alt"
-            icon="#{panelModel.icon}"
-    />
+    <h:panelGroup id="idChipArea" styleClass="mr-2">
+        <h:panelGroup rendered="#{not panelModel.editingIdentifier}" styleClass="chip-cell-wrapper">
+            <p:chip label="#{panelModel.unit != null ? panelModel.unit.name : panelModel.titleCodeOrTitle}"
+                    styleClass="action-unit-chip-alt entity-nav-chip"
+                    icon="#{panelModel.icon}"
+                    id="idChip"
+            />
+            <div class="chip-cell-actions">
+                <p:commandButton id="editIdentifierBtn"
+                                 rendered="#{flowBean.isWriteMode}"
+                                 icon="bi bi-pencil"
+                                 styleClass="rum-edit-id-btn"
+                                 action="#{panelModel.startEditIdentifier()}"
+                                 update="idChipArea"
+                                 process="@this"
+                                 oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
+                <p:tooltip for="editIdentifierBtn" value="Modifier l'identifiant" position="top"/>
+            </div>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{panelModel.editingIdentifier}" styleClass="chip-cell-wrapper">
+            <p:inputText id="editIdentifierInput"
+                         value="#{panelModel.editingIdentifierValue}"
+                         styleClass="rum-edit-link-input"
+                         style="min-width: 8em;"
+                         onkeydown="if(event.key==='Enter'){event.preventDefault();$(this).siblings('.rum-apply-link-edit-btn').trigger('click');}else if(event.key==='Escape'){event.preventDefault();$(this).siblings('.rum-cancel-link-edit-btn').trigger('click');}"/>
+            <p:commandButton id="applyIdentifierBtn"
+                             icon="bi bi-check"
+                             styleClass="rum-action-btn rum-apply-link-edit-btn"
+                             title="Valider"
+                             action="#{panelModel.applyEditIdentifier()}"
+                             update="idChipArea"
+                             process="editIdentifierInput @this"/>
+            <p:commandButton id="cancelIdentifierBtn"
+                             icon="bi bi-x"
+                             styleClass="rum-action-btn rum-cancel-link-edit-btn"
+                             title="Annuler"
+                             action="#{panelModel.cancelEditIdentifier()}"
+                             update="idChipArea"
+                             process="@this"/>
+        </h:panelGroup>
+    </h:panelGroup>
 
     <chip:conceptChip concept="#{panelModel.unit.category}" styleClass="mr-2 spatial-unit-type-chip"/>
 

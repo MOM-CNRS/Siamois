@@ -56,7 +56,6 @@ public final class RecordingUnitTableDefinitionFactory {
 
     private static void applyTo(TableDefinition definition) {
 
-        CustomField recordingUnitIdField = systemField(ConfigurableTable.UE, "fullIdentifier");
         CustomField typeField = systemField(ConfigurableTable.UE, "type");
         CustomField matrixColor = systemField(ConfigurableTable.UE, "matrixColor");
         CustomField dateField = systemField(ConfigurableTable.UE, "openingDate");
@@ -95,18 +94,6 @@ public final class RecordingUnitTableDefinitionFactory {
                         .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("identifier")
-                        .headerKey("recordingunit.field.identifier")
-                        .field(recordingUnitIdField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(true)
-                        .required(true)
-                        .build()
-        );
-
         definition.addColumn(
                 FormFieldColumn.builder()
                         .id("isPartOf")

@@ -190,6 +190,12 @@ public class SpecimenService implements ArkEntityService {
         return measurement;
     }
 
+    public boolean fullIdentifierAlreadyExistInAction(SpecimenDTO specimen) {
+        return specimenRepository.findByActionUnitIdAndFullIdentifier(
+                        specimen.getActionUnit().getId(), specimen.getFullIdentifier()).stream()
+                .anyMatch(existing -> !Objects.equals(existing.getId(), specimen.getId()));
+    }
+
     /**
      * Saves a specimen to the repository.
      *

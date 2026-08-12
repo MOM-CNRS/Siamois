@@ -317,6 +317,14 @@ public class ActionUnitService implements ArkEntityService {
         }
     }
 
+    public boolean fullIdentifierAlreadyExistInInstitution(ActionUnitDTO actionUnit) {
+        return actionUnitRepository.findByFullIdentifier(actionUnit.getFullIdentifier())
+                .filter(existing -> Objects.equals(existing.getCreatedByInstitution().getId(),
+                        actionUnit.getCreatedByInstitution().getId()))
+                .filter(existing -> !Objects.equals(existing.getId(), actionUnit.getId()))
+                .isPresent();
+    }
+
     /**
      * Count the number of ActionUnits created by a specific institution.
      *

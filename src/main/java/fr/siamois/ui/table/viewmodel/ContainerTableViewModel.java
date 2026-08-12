@@ -1,6 +1,7 @@
 package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
@@ -21,6 +22,7 @@ import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
@@ -52,6 +54,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
     private final ActionUnitService  actionUnitService;
     private final ActionUnitMapper actionUnitMapper;
+    private final ContainerService containerService;
 
 
     public ContainerTableViewModel(BaseContainerLazyDataModel containerLazyDataModel,
@@ -62,7 +65,8 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
                                    NavBean navBean,
                                    FlowBean flowBean, GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean,
                                    InstitutionService institutionService,
-                                   FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
+                                   FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper,
+                                   ContainerService containerService) {
 
         super(
                 containerLazyDataModel,
@@ -82,6 +86,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         this.institutionService = institutionService;
         this.actionUnitService = actionUnitService;
         this.actionUnitMapper = actionUnitMapper;
+        this.containerService = containerService;
     }
 
     @Override
@@ -124,6 +129,31 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
 
         return "";
+    }
+
+    @Override
+    public void handleLinkEdit(CommandLinkColumn column, ContainerDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "container.error.identifier.blank");
+            return;
+        }
+
+        String previous = item.getIdentifier();
+        item.setIdentifier(trimmed);
+
+        if (containerService.identifierAlreadyExistInAction(item)) {
+            item.setIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "container.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            containerService.save(item);
+        } catch (RuntimeException e) {
+            item.setIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.container.updateFailed", item.getIdentifier());
+        }
     }
 
     @Override

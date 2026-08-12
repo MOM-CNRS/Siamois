@@ -582,6 +582,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 spatialUnitService,
                 navBean,
                 flowBean,
+                specimenService,
                 (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );

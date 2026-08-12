@@ -4,6 +4,7 @@ import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -85,6 +86,10 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     private transient RecordingUnitTableViewModel recordingTabTableModel;
 
+    // Inline identifier editing (panel header chip)
+    private boolean editingIdentifier;
+    private String editingIdentifierValue;
+
     @Override
     protected boolean documentExistsInUnitByHash(ActionUnitDTO unit, String hash) {
         return documentService.existInActionUnitByHash(unit, hash);
@@ -157,6 +162,41 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
 
         documents = documentService.findForActionUnit(unit);
+    }
+
+    public void startEditIdentifier() {
+        this.editingIdentifierValue = unit.getFullIdentifier();
+        this.editingIdentifier = true;
+    }
+
+    public void cancelEditIdentifier() {
+        this.editingIdentifier = false;
+        this.editingIdentifierValue = null;
+    }
+
+    public void applyEditIdentifier() {
+        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.blank");
+            return;
+        }
+
+        String previous = unit.getFullIdentifier();
+        unit.setFullIdentifier(trimmed);
+
+        if (actionUnitService.fullIdentifierAlreadyExistInInstitution(unit)) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            actionUnitService.save(unit);
+            cancelEditIdentifier();
+        } catch (FailedActionUnitSaveException e) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.actionUnit.updateFailed", unit.getFullIdentifier());
+        }
     }
 
     @Override

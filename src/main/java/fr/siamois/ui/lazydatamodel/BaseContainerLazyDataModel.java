@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -35,6 +36,20 @@ public abstract class BaseContainerLazyDataModel extends BaseLazyDataModel<Conta
     @Override
     public String getRowKey(ContainerDTO containerDTO) {
         return containerDTO != null ? Long.toString(containerDTO.getId()) : null;
+    }
+
+    @Override
+    public ContainerDTO getRowData(String rowKey) {
+        List<ContainerDTO> units = getWrappedData();
+        Long value = Long.valueOf(rowKey);
+
+        for (ContainerDTO unit : units) {
+            if (unit.getId().equals(value)) {
+                return unit;
+            }
+        }
+
+        return null;
     }
 
 }

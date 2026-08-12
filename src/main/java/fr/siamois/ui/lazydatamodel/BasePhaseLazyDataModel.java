@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -35,5 +36,19 @@ public abstract class BasePhaseLazyDataModel extends BaseLazyDataModel<PhaseDTO>
     @Override
     public String getRowKey(PhaseDTO phaseDTO) {
         return phaseDTO != null ? Long.toString(phaseDTO.getId()) : null;
+    }
+
+    @Override
+    public PhaseDTO getRowData(String rowKey) {
+        List<PhaseDTO> units = getWrappedData();
+        Long value = Long.valueOf(rowKey);
+
+        for (PhaseDTO unit : units) {
+            if (unit.getId().equals(value)) {
+                return unit;
+            }
+        }
+
+        return null;
     }
 }
