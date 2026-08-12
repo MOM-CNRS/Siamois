@@ -215,19 +215,72 @@ class ThesaurusApiTest {
     }
 
     @Test
-    void fetchThesaurusInfo_redirectionLoop_stopsInsteadOfHanging() {
-        URI looping = URI.create("https://ark.example/ark:/26678/loop");
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(URI.create("https://ark.example/ark:/26678/loop2"));
-        when(restTemplate.getForEntity(any(URI.class), eq(String.class)))
-                .thenReturn(new ResponseEntity<>(headers, HttpStatus.FOUND));
+    void fetchThesaurusInfo_endlessRedirections_stopInsteadOfHanging() {
+        // every hop hands over to a brand new URL, so the walk only ends on its own bound
+        URI first = URI.create("https://ark.example/ark:/26678/hop0");
+        when(restTemplate.getForEntity(any(URI.class), eq(String.class))).thenAnswer(invocation -> {
+            URI asked = invocation.getArgument(0);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(URI.create(asked + "x"));
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        });
         when(conceptApi.fetchSchemeUriOfArk(anyString(), anyString())).thenReturn(Optional.empty());
         when(restTemplate.getForObject(anyString(), eq(ThesaurusDTO[].class))).thenReturn(new ThesaurusDTO[0]);
 
-        assertThrows(InvalidEndpointException.class, () -> thesaurusApi.fetchThesaurusInfo(looping.toString()));
+        assertThrows(InvalidEndpointException.class, () -> thesaurusApi.fetchThesaurusInfo(first.toString()));
 
-        // the walk is bounded : it does not follow the loop forever
-        verify(restTemplate, atMost(5)).getForEntity(any(URI.class), eq(String.class));
+        verify(restTemplate, atMost(10)).getForEntity(any(URI.class), eq(String.class));
+    }
+
+    @Test
+    void fetchThesaurusInfo_redirectionBackOnItself_stopsThere() throws InvalidEndpointException {
+        URI ark = URI.create("https://ark.example/ark:/26678/self");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(ark);
+        when(restTemplate.getForEntity(ark, String.class)).thenReturn(new ResponseEntity<>(headers, HttpStatus.FOUND));
+        when(conceptApi.fetchSchemeUriOfArk("https://ark.example", "ark:/26678/self")).thenReturn(Optional.empty());
+
+        ThesaurusDTO expected = new ThesaurusDTO("self", List.of(new LabelDTO("fr", "SIAMOIS")), "THESAURUS");
+        when(restTemplate.getForObject("https://ark.example/openapi/v1/thesaurus", ThesaurusDTO[].class))
+                .thenReturn(new ThesaurusDTO[]{expected});
+
+        assertEquals("self", thesaurusApi.fetchThesaurusInfo(ark.toString()).getIdTheso());
+
+        verify(restTemplate, times(1)).getForEntity(ark, String.class);
+    }
+
+    @Test
+    void resolveRedirections_shouldWalkTheChainToItsEnd() {
+        URI ark = URI.create("https://ark.frantiq.fr/ark:/26678/pcrtA40nPyUzoy");
+        URI concept = URI.create("https://pactols.frantiq.fr/?idc=246344&idt=TH_1");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(concept);
+        when(restTemplate.getForEntity(ark, String.class)).thenReturn(new ResponseEntity<>(headers, HttpStatus.FOUND));
+
+        assertEquals(concept.toString(), thesaurusApi.resolveRedirections(ark.toString()));
+    }
+
+    @Test
+    void fetchThesaurusInfo_emptyQueryString_isProbedLikeAnyArk() throws InvalidEndpointException {
+        // "?" alone carries no parameter : that URL still has to be followed
+        URI ark = URI.create("https://thesaurus.example/ark:/26678/x?");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(URI.create("https://thesaurus.example/?idt=th223"));
+        when(restTemplate.getForEntity(ark, String.class)).thenReturn(new ResponseEntity<>(headers, HttpStatus.FOUND));
+
+        ThesaurusDTO expected = new ThesaurusDTO("th223", List.of(new LabelDTO("fr", "SIAMOIS")), "THESAURUS");
+        when(restTemplate.getForObject("https://thesaurus.example/openapi/v1/thesaurus", ThesaurusDTO[].class))
+                .thenReturn(new ThesaurusDTO[]{expected});
+
+        assertEquals("th223", thesaurusApi.fetchThesaurusInfo(ark.toString()).getIdTheso());
+    }
+
+    @Test
+    void resolveRedirections_shouldHandBackWhatItCannotRead() {
+        // not an URI at all : there is nothing to resolve, and nothing to fail on either
+        assertEquals("not an uri at all", thesaurusApi.resolveRedirections("not an uri at all"));
+
+        verifyNoInteractions(restTemplate);
     }
 
     @Test

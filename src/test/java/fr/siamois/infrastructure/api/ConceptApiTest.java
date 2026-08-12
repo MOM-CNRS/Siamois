@@ -23,6 +23,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -492,6 +494,125 @@ class ConceptApiTest {
         assertNotNull(conceptApi.fetchDownExpansion(vocabulary, "4282369"));
 
         verify(restTemplate, times(1)).exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
+    @Test
+    void fetchDownExpansion_arkResolvingToNoConcept_throwsErrorProcessingExpansion() {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{}", HttpStatus.OK));
+
+        assertThrows(ErrorProcessingExpansionException.class,
+                () -> conceptApi.fetchDownExpansion(vocabulary, "ark:/26678/pcrtREVS9rPi7K"));
+    }
+
+    @Test
+    void fetchDownExpansion_nullConceptId_isNotTakenForAnArk() throws Exception {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{}", HttpStatus.OK));
+
+        assertNotNull(conceptApi.fetchDownExpansion(vocabulary, null));
+
+        // no ark to resolve : the expansion is requested straight away
+        verify(restTemplate, times(1)).exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
+    @Test
+    void fetchSchemeUriOfArk_returnsTheSchemeTheConceptBelongsTo() {
+        URI arkUri = URI.create("http://example.com/openapi/v1/concept/ark:/26678/pcrtREVS9rPi7K");
+        String body = """
+                {"https://ark.example/ark:/26678/pcrtREVS9rPi7K": {
+                   "http://www.w3.org/2004/02/skos/core#inScheme": [
+                     {"value": "https://thesaurus.mom.fr/api/ark:/66666/th223", "type": "uri"}]
+                 }}""";
+        when(restTemplate.exchange(eq(arkUri), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
+
+        assertEquals(Optional.of("https://thesaurus.mom.fr/api/ark:/66666/th223"),
+                conceptApi.fetchSchemeUriOfArk("http://example.com", "ark:/26678/pcrtREVS9rPi7K"));
+    }
+
+    @Test
+    void fetchSchemeUriOfArk_isEmpty_whenTheConceptCarriesNoScheme() {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{\"https://ark.example/ark:/26678/x\": {}}", HttpStatus.OK));
+
+        assertTrue(conceptApi.fetchSchemeUriOfArk("http://example.com", "ark:/26678/x").isEmpty());
+    }
+
+    @Test
+    void fetchSchemeUriOfArk_isEmpty_whenTheSchemeListIsEmpty() {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{\"https://ark.example/ark:/26678/x\": {\"http://www.w3.org/2004/02/skos/core#inScheme\": []}}", HttpStatus.OK));
+
+        assertTrue(conceptApi.fetchSchemeUriOfArk("http://example.com", "ark:/26678/x").isEmpty());
+    }
+
+    @Test
+    void fetchGroupIdOfArk_isEmpty_whenTheIdentifierListIsEmpty() {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{\"https://ark.example/ark:/26678/x\": {\"http://purl.org/dc/terms/identifier\": []}}", HttpStatus.OK));
+
+        assertTrue(conceptApi.fetchGroupIdOfArk("http://example.com", "ark:/26678/x").isEmpty());
+    }
+
+    @Test
+    void fetchDownExpansion_arkWithAnEmptyIdentifier_throwsErrorProcessingExpansion() {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{\"https://ark.example/ark:/26678/x\": {\"http://purl.org/dc/terms/identifier\": []}}", HttpStatus.OK));
+
+        assertThrows(ErrorProcessingExpansionException.class,
+                () -> conceptApi.fetchDownExpansion(vocabulary, "ark:/26678/x"));
+    }
+
+    @Test
+    void fetchRemoteAutocomplete_withABlankLanguage_leavesTheParameterOut() throws JsonProcessingException {
+        URI expected = URI.create("http://example.com/openapi/v1/concept/th223/autocomplete/cera?full=true");
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("[]", HttpStatus.OK));
+
+        assertTrue(conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera", "  ").isEmpty());
+    }
+
+    @Test
+    void fetchSchemeUriOfArk_isEmpty_whenTheThesaurusDoesNotKnowThatArk() {
+        // an ark of another naan answers 404 : the caller falls back on its own reading of the ark
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
+
+        assertTrue(conceptApi.fetchSchemeUriOfArk("http://example.com", "ark:/26678/unknown").isEmpty());
+    }
+
+    @Test
+    void fetchGroupIdOfArk_returnsTheIdentifierOfTheGroup() {
+        URI arkUri = URI.create("http://example.com/openapi/v1/group/ark:/26678/pcrt55mxscwskk");
+        String body = """
+                {"https://ark.example/ark:/26678/pcrt55mxscwskk": {
+                   "http://purl.org/dc/terms/identifier": [{"value": "g173", "type": "literal"}]
+                 }}""";
+        when(restTemplate.exchange(eq(arkUri), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
+
+        assertEquals(Optional.of("g173"), conceptApi.fetchGroupIdOfArk("http://example.com", "ark:/26678/pcrt55mxscwskk"));
+    }
+
+    @Test
+    void fetchGroupIdOfArk_isEmpty_whenTheArkDesignatesNoGroup() {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
+
+        assertTrue(conceptApi.fetchGroupIdOfArk("http://example.com", "ark:/26678/unknown").isEmpty());
+    }
+
+    @Test
+    void fetchRemoteAutocomplete_withoutLanguage_leavesTheParameterOut() throws JsonProcessingException {
+        // an unbound user context carries no language : a bare "&lang" would reach the thesaurus
+        URI expected = URI.create("http://example.com/openapi/v1/concept/th223/autocomplete/cera?full=true");
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("[]", HttpStatus.OK));
+
+        assertTrue(conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera", null).isEmpty());
+
+        verify(restTemplate).exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class));
     }
 
     @Test

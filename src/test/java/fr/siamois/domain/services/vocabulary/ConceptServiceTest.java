@@ -11,7 +11,11 @@ import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
+import fr.siamois.domain.models.UserInfo;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptRemoteAutocompleteDTO;
@@ -742,6 +746,38 @@ class ConceptServiceTest {
     }
 
     @Test
+    void fetchConceptDesignatedBy_shouldPreferTheLanguageOfTheUser_andCarryTheOtherLabels() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        FullInfoDTO info = new FullInfoDTO();
+        info.setPrefLabel(new PurlInfoDTO[]{purl("Phase chronologique", "fr"), purl("Chronological phase", "en")});
+        info.setAltLabel(new PurlInfoDTO[]{purl("Période", "fr")});
+        info.setDefinition(new PurlInfoDTO[]{purl("Découpage du temps", "fr")});
+        when(conceptApi.fetchConceptInfoByUri(anyString(), anyString())).thenReturn(info);
+
+        UserInfo userInfo = new UserInfo(new InstitutionDTO(), new PersonDTO(), "en");
+        ExecutionContextHolder.set(userInfo);
+        try {
+            Optional<ConceptAutocompleteDetachedDTO> result =
+                    conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/?idc=12&idt=th1");
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getOriginalPrefLabel()).isEqualTo("Chronological phase");
+            assertThat(result.get().getAltLabels()).containsExactly("Période");
+            // the definition has no english version : the only one the thesaurus returned stands for it
+            assertThat(result.get().getDefinition()).isEqualTo("Découpage du temps");
+        } finally {
+            ExecutionContextHolder.clear();
+        }
+    }
+
+    private PurlInfoDTO purl(String value, String lang) {
+        PurlInfoDTO purl = new PurlInfoDTO();
+        purl.setValue(value);
+        purl.setLang(lang);
+        return purl;
+    }
+
+    @Test
     void fetchConceptDesignatedBy_shouldReadTheConceptOfAnIdcUrl() {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchConceptInfoByUri("http://example.org", "http://example.org/?idc=12&idt=th1"))
@@ -771,6 +807,16 @@ class ConceptServiceTest {
                 .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
 
         assertThat(conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/ark:/26678/unknown")).isEmpty();
+    }
+
+    @Test
+    void fetchConceptDesignatedBy_shouldBeEmpty_whenTheConceptCarriesNoLabel() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        FullInfoDTO info = new FullInfoDTO();
+        info.setPrefLabel(new PurlInfoDTO[0]);
+        when(conceptApi.fetchConceptInfoByUri(anyString(), anyString())).thenReturn(info);
+
+        assertThat(conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/?idc=12&idt=th1")).isEmpty();
     }
 
     @Test

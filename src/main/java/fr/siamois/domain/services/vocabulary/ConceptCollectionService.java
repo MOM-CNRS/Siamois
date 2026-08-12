@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import static fr.siamois.utils.ArkUtils.extractArkOf;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -136,7 +138,16 @@ public class ConceptCollectionService {
         if (arkIndex < 0) {
             return Optional.empty();
         }
-        return conceptApi.fetchGroupIdOfArk(vocabularyDTO.getBaseUri(), uri.substring(arkIndex));
+        return conceptApi.fetchGroupIdOfArk(vocabularyDTO.getBaseUri(), arkOf(uri.substring(arkIndex)));
+    }
+
+    /**
+     * The ark alone : what follows it in the URL — a query string, a fragment — is not part of the
+     * identifier and would be sent to the API as if it were.
+     */
+    @NonNull
+    private static String arkOf(@NonNull String arkAndWhatFollows) {
+        return extractArkOf(arkAndWhatFollows);
     }
 
     /**

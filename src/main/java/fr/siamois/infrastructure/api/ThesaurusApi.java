@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static fr.siamois.utils.ArkUtils.extractArkOf;
+
 /**
  * Service to fetch thesaurus information from the API.
  *
@@ -168,9 +170,14 @@ public class ThesaurusApi {
         return root;
     }
 
+    /**
+     * The ark alone : what follows it in the URL — a query string, a fragment — is not part of the
+     * identifier and would be sent to the API as if it were.
+     */
     private String arkOf(@NotNull URI uriObj) {
         String raw = uriObj.toString();
-        return raw.substring(raw.indexOf(ARK_PREFIX));
+        String ark = raw.substring(raw.indexOf(ARK_PREFIX));
+        return extractArkOf(ark);
     }
 
     private String thesaurusIdOfArk(String apiRoot, String ark) {

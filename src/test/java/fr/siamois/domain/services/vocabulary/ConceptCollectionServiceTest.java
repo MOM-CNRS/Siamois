@@ -181,6 +181,21 @@ class ConceptCollectionServiceTest {
     }
 
     @Test
+    void fetchCollectionDesignatedBy_shouldFallBackOnTheArk_whenTheIdgIsBlank() {
+        when(conceptApi.fetchGroupIdOfArk("http://example.org", "ark:/26678/pcrt55mxscwskk"))
+                .thenReturn(Optional.of("g173"));
+        when(conceptApi.fetchPublicCollections(vocabulary)).thenReturn(List.of(
+                new ConceptApiCollectionDTO("g173", List.of(new LabelDTO("fr", "P2-ENTITÉS NOMMÉES")))
+        ));
+
+        Optional<ConceptCollectionDetachedDTO> result = conceptCollectionService
+                .fetchCollectionDesignatedBy(vocabulary, "http://example.org/ark:/26678/pcrt55mxscwskk?idg=");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getExternalId()).isEqualTo("g173");
+    }
+
+    @Test
     void fetchCollectionDesignatedBy_shouldBeEmpty_whenTheThesaurusFails() {
         when(conceptApi.fetchGroupIdOfArk(anyString(), anyString())).thenThrow(new IllegalStateException("boom"));
 
