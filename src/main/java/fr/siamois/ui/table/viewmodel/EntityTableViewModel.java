@@ -1021,7 +1021,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     public String getSelectedAndTotalCount() {
-        return lazyDataModel.getSelectedUnits().size() + "/" + lazyDataModel.getRowCount();
+        int selectedCount = treeMode
+                ? (checkboxSelectedTreeNodes == null ? 0 : checkboxSelectedTreeNodes.size())
+                : lazyDataModel.getSelectedUnits().size();
+        return selectedCount + "/" + lazyDataModel.getRowCount();
     }
 
     public void handleSelectionChange() {

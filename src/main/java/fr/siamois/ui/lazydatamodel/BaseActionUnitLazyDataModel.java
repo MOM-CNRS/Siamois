@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -38,6 +39,20 @@ public abstract class BaseActionUnitLazyDataModel extends BaseLazyDataModel<Acti
     @Override
     public String getRowKey(ActionUnitDTO actionUnit) {
         return actionUnit != null ? Long.toString(actionUnit.getId()) : null;
+    }
+
+    @Override
+    public ActionUnitDTO getRowData(String rowKey) {
+        List<ActionUnitDTO> units = getWrappedData();
+        Long value = Long.valueOf(rowKey);
+
+        for (ActionUnitDTO unit : units) {
+            if (unit.getId().equals(value)) {
+                return unit;
+            }
+        }
+
+        return null;
     }
 
 }
