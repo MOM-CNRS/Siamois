@@ -26,6 +26,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -712,6 +714,71 @@ class ConceptServiceTest {
                 .baseUri("http://example.org")
                 .externalVocabularyId("th1")
                 .build();
+    }
+
+    // --- the concept a pasted URL designates ----------------------------------------------------
+
+    private FullInfoDTO conceptInfo(String prefLabel) {
+        FullInfoDTO info = new FullInfoDTO();
+        PurlInfoDTO label = new PurlInfoDTO();
+        label.setValue(prefLabel);
+        label.setLang("fr");
+        info.setPrefLabel(new PurlInfoDTO[]{label});
+        return info;
+    }
+
+    @Test
+    void fetchConceptDesignatedBy_shouldReadTheConceptOfAnArkUrl() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchConceptInfoByUri("http://example.org", "http://example.org/ark:/26678/pcrtREVS9rPi7K"))
+                .thenReturn(conceptInfo("Phase chronologique"));
+
+        Optional<ConceptAutocompleteDetachedDTO> result =
+                conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/ark:/26678/pcrtREVS9rPi7K");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().concept().getExternalId()).isEqualTo("ark:/26678/pcrtREVS9rPi7K");
+        assertThat(result.get().getConceptLabelToDisplay().getLabel()).isEqualTo("Phase chronologique");
+    }
+
+    @Test
+    void fetchConceptDesignatedBy_shouldReadTheConceptOfAnIdcUrl() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchConceptInfoByUri("http://example.org", "http://example.org/?idc=12&idt=th1"))
+                .thenReturn(conceptInfo("Céramique"));
+
+        Optional<ConceptAutocompleteDetachedDTO> result =
+                conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/?idc=12&idt=th1");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().concept().getExternalId()).isEqualTo("12");
+    }
+
+    @Test
+    void fetchConceptDesignatedBy_shouldBeEmpty_whenTheUrlDesignatesTheThesaurusOnly() {
+        Optional<ConceptAutocompleteDetachedDTO> result =
+                conceptService.fetchConceptDesignatedBy(remoteVocabulary(), "http://example.org/?idt=th1");
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(conceptApi);
+    }
+
+    @Test
+    void fetchConceptDesignatedBy_shouldBeEmpty_whenTheThesaurusDoesNotKnowThatArk() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        // an ark of another naan, that only its own resolver understands : the thesaurus answers 404
+        when(conceptApi.fetchConceptInfoByUri(anyString(), anyString()))
+                .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
+
+        assertThat(conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/ark:/26678/unknown")).isEmpty();
+    }
+
+    @Test
+    void fetchConceptDesignatedBy_shouldBeEmpty_whenTheThesaurusReturnsNoConcept() {
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        when(conceptApi.fetchConceptInfoByUri(anyString(), anyString())).thenReturn(null);
+
+        assertThat(conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/?idc=12&idt=th1")).isEmpty();
     }
 
     @Test

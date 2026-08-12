@@ -25,6 +25,7 @@ import org.springframework.http.*;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -273,7 +274,30 @@ public class ConceptApi {
         }
     }
 
+    public Optional<String> fetchSchemeUriOfArk(String apiRoot, String ark) {
+        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s", apiRoot, ark));
+        try {
+            ResponseEntity<String> response = sendRequestAcceptJson(uri);
+            TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
+            };
+            Map<String, FullInfoDTO> result = mapper.readValue(response.getBody(), typeReference);
+            return result.values().stream()
+                    .map(FullInfoDTO::getInScheme)
+                    .filter(scheme -> scheme != null && scheme.length > 0)
+                    .map(scheme -> scheme[0].getValue())
+                    .filter(Objects::nonNull)
+                    .findFirst();
+        } catch (JsonProcessingException | RestClientException e) {
+            log.error("Could not resolve the scheme of ark {} on {}", ark, apiRoot, e);
+            return Optional.empty();
+        }
+    }
+
     public FullInfoDTO fetchConceptInfoByUri(Vocabulary vocabulary, String uriStr) {
+        return fetchConceptInfoByUri(vocabulary.getBaseUri(), uriStr);
+    }
+
+    public FullInfoDTO fetchConceptInfoByUri(String baseUri, String uriStr) {
         String identifier = "";
         if (uriStr.contains("ark:")) {
             identifier = uriStr.substring(uriStr.indexOf("ark:"));
@@ -281,7 +305,7 @@ public class ConceptApi {
             MultiValueMap<String, String> params = UriComponentsBuilder.fromUriString(uriStr).build().getQueryParams();
             identifier = params.getFirst("idt") + "/" + params.getFirst("idc");
         }
-        URI uri = URI.create(vocabulary.getBaseUri() + String.format("/openapi/v1/concept/%s", identifier));
+        URI uri = URI.create(baseUri + String.format("/openapi/v1/concept/%s", identifier));
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
 
         TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {

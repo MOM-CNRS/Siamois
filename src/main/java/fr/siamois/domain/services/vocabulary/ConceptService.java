@@ -443,6 +443,72 @@ public class ConceptService {
     }
 
     @NonNull
+    public Optional<ConceptAutocompleteDetachedDTO> fetchConceptDesignatedBy(@NonNull VocabularyDTO vocabularyDTO, @NonNull String uri) {
+        String externalId = ConceptApiUtils.externalIdFromUri(uri);
+        if (externalId == null) {
+            return Optional.empty();
+        }
+        FullInfoDTO info;
+        try {
+            info = conceptApi.fetchConceptInfoByUri(vocabularyDTO.getBaseUri(), uri);
+        } catch (RuntimeException e) {
+            // preselecting is a convenience : an ark the thesaurus does not know (a foreign naan, an
+            // ark the resolver alone understands) answers 404, and must not fail the whole lookup
+            log.warn("Could not read the concept designated by {} on {}", uri, vocabularyDTO.getBaseUri(), e);
+            return Optional.empty();
+        }
+        if (info == null || info.getPrefLabel() == null || info.getPrefLabel().length == 0) {
+            log.warn("The URL {} designates the concept {}, which the thesaurus did not return", uri, externalId);
+            return Optional.empty();
+        }
+
+        ConceptDTO concept = ConceptDTO.builder()
+                .externalId(externalId)
+                .vocabulary(vocabularyDTO)
+                .deleted(false)
+                .build();
+
+        String prefLabel = valueInUserLang(info.getPrefLabel());
+        ConceptLabelDTO labelToDisplay = new ConceptPrefLabelDTO();
+        labelToDisplay.setConcept(concept);
+        labelToDisplay.setVocabulary(vocabularyDTO);
+        labelToDisplay.setLabel(prefLabel);
+
+        return Optional.of(new ConceptAutocompleteDetachedDTO(
+                labelToDisplay,
+                prefLabel,
+                altLabelsOf(info),
+                Objects.requireNonNullElse(valueInUserLang(info.getDefinition()), ""),
+                vocabularyDTO.completeUri()));
+    }
+
+    /**
+     * The value of a multilingual property in the user's language, falling back to the first one the
+     * thesaurus returned — a concept always carries a label, not always in every language.
+     */
+    @Nullable
+    private String valueInUserLang(@Nullable PurlInfoDTO[] values) {
+        if (values == null || values.length == 0) {
+            return null;
+        }
+        UserInfo info = ExecutionContextHolder.get();
+        String lang = Objects.isNull(info) ? null : info.getLang();
+        return Arrays.stream(values)
+                .filter(value -> lang != null && lang.equalsIgnoreCase(value.getLang()))
+                .map(PurlInfoDTO::getValue)
+                .findFirst()
+                .orElseGet(() -> values[0].getValue());
+    }
+
+    @NonNull
+    private List<String> altLabelsOf(@NonNull FullInfoDTO info) {
+        if (info.getAltLabel() == null) {
+            return List.of();
+        }
+        return Arrays.stream(info.getAltLabel()).map(PurlInfoDTO::getValue).toList();
+    }
+
+    @NonNull
     private ConceptLabelDTO labelToDisplay(@NonNull ConceptRemoteAutocompleteDTO remoteLabel, @NonNull ConceptDTO concept) {
         ConceptLabelDTO label = isAltLabel(remoteLabel) ? new ConceptAltLabelDTO() : new ConceptPrefLabelDTO();
         label.setConcept(concept);

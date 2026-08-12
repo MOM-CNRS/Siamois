@@ -6,6 +6,7 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.RequestFactory;
 import fr.siamois.infrastructure.api.ThesaurusApi;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
@@ -43,7 +44,8 @@ class VocabularyServiceIntTest {
 
     @BeforeEach
     void setUp() {
-        ThesaurusApi thesaurusApi = new ThesaurusApi(new RequestFactory(new RestTemplateBuilder()));
+        RequestFactory requestFactory = new RequestFactory(new RestTemplateBuilder());
+        ThesaurusApi thesaurusApi = new ThesaurusApi(requestFactory, new ConceptApi(requestFactory, null, null));
         vocabularyService = new VocabularyService(vocabularyRepository, thesaurusApi, vocabularyTypeRepository, labelService);
     }
 

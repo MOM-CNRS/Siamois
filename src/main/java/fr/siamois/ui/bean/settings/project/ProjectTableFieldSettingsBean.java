@@ -11,16 +11,11 @@ import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.settings.tableconfig.*;
-import fr.siamois.domain.services.identifier.IdentifierFormatException;
-import fr.siamois.domain.services.identifier.IdentifierRenderContext;
-import fr.siamois.domain.services.identifier.IdentifierResolver;
-import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
-import fr.siamois.domain.services.identifier.IdentifierValueKind;
-import fr.siamois.domain.services.identifier.MapIdentifierRenderContext;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
+import fr.siamois.domain.services.identifier.*;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -63,6 +58,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public static final int TAB_IDENTIFIANTS = 1;
     public static final String ID_UA = "ID_UA";
     public static final String NUM_UE = "NUM_UE";
+    public static final String BRANCHE = "branche";
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient FormConfigService formConfigService;
@@ -404,7 +400,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void prefillBranch(Concept branchTopTerm) {
-        draftSource = "branche";
+        draftSource = BRANCHE;
         draftVocabulary = vocabularyMapper.convert(branchTopTerm.getVocabulary());
         draftThesaurusUrl = draftVocabulary.completeUri();
         draftConnectionTested = true;
@@ -496,11 +492,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             return;
         }
         try {
-            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(draftThesaurusUrl);
+            String resolvedUrl = vocabularyService.resolveRedirections(draftThesaurusUrl);
+            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(resolvedUrl);
             draftVocabulary = vocabularyMapper.convert(vocabulary);
             // success needs no message of its own : the drawer shows the "✓ connected" line as soon
             // as the connection is marked as tested
             draftConnectionTested = true;
+            preselectDesignatedConcept(resolvedUrl);
+            draftThesaurusUrl = draftVocabulary.completeUri();
         } catch (InvalidEndpointException e) {
             log.error("Invalid thesaurus URL '{}'", draftThesaurusUrl, e);
             draftConnectionTested = false;
@@ -514,6 +513,16 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             draftVocabulary = null;
             showDrawerError("projectTables.drawer.params.connectionFailed");
         }
+    }
+
+    private void preselectDesignatedConcept(String resolvedUrl) {
+        conceptService.fetchConceptDesignatedBy(draftVocabulary, resolvedUrl).ifPresent(concept -> {
+            draftSource = BRANCHE;
+            draftBrancheConcept = concept;
+            draftCollectionName = null;
+            // a preselection is a new choice, never the untouched prefill saveDrawer() skips
+            draftOriginalBrancheConceptKey = null;
+        });
     }
 
     /**
@@ -611,7 +620,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private void saveDraftVocabularyConfig() {
         if ("principal".equals(draftSource)) {
             clearConceptConfigIfAny();
-        } else if ("branche".equals(draftSource)) {
+        } else if (BRANCHE.equals(draftSource)) {
             saveBrancheConceptIfChanged();
         } else if ("collection".equals(draftSource)) {
             saveCollectionIfChanged();
