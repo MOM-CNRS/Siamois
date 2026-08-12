@@ -73,6 +73,9 @@ public class VocabularyService {
         Optional<Vocabulary> vocabOpt = vocabularyRepository.findVocabularyByBaseUriAndVocabExternalId(vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId());
         return vocabOpt.orElseGet(() -> vocabularyRepository.save(vocabulary));
     }
+    public String resolveRedirections(String uri) {
+        return thesaurusApi.resolveRedirections(uri);
+    }
 
     /**
      * Find or create a vocabulary based on the given URI.

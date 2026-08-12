@@ -51,6 +51,16 @@ class VocabularyServiceTest {
     }
 
     @Test
+    void resolveRedirections_shouldHandOverToTheThesaurusApi() {
+        // one walk of the ark chain, reused for the thesaurus and for what it designates
+        when(thesaurusApi.resolveRedirections("https://ark.frantiq.fr/ark:/26678/pcrtA40nPyUzoy"))
+                .thenReturn("https://pactols.frantiq.fr/?idc=246344&idt=TH_1");
+
+        assertEquals("https://pactols.frantiq.fr/?idc=246344&idt=TH_1",
+                vocabularyService.resolveRedirections("https://ark.frantiq.fr/ark:/26678/pcrtA40nPyUzoy"));
+    }
+
+    @Test
     void findById_Success() {
         when(vocabularyRepository.findById(1L)).thenReturn(Optional.ofNullable(vocabulary));
 

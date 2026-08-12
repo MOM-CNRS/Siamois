@@ -1,22 +1,21 @@
 package fr.siamois.ui.bean.settings.project;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.exceptions.form.FieldVocabularyConfigException;
+import fr.siamois.domain.models.exceptions.form.NoVocabularySelectedException;
+import fr.siamois.domain.models.exceptions.form.VocabularyConfigNotSavedException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.settings.tableconfig.*;
-import fr.siamois.domain.services.identifier.IdentifierFormatException;
-import fr.siamois.domain.services.identifier.IdentifierRenderContext;
-import fr.siamois.domain.services.identifier.IdentifierResolver;
-import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
-import fr.siamois.domain.services.identifier.IdentifierValueKind;
-import fr.siamois.domain.services.identifier.MapIdentifierRenderContext;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
+import fr.siamois.domain.services.identifier.*;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -43,17 +42,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
 @Slf4j
 @Component
@@ -66,6 +58,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public static final int TAB_IDENTIFIANTS = 1;
     public static final String ID_UA = "ID_UA";
     public static final String NUM_UE = "NUM_UE";
+    public static final String BRANCHE = "branche";
+    public static final String COLLECTION = "collection";
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient FormConfigService formConfigService;
@@ -131,6 +125,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     private transient String draftOriginalBrancheConceptKey;
     private transient String draftOriginalCollectionKey;
+
+    /**
+     * The error shown in the drawer's own message area, at the top of the panel. Anything raised
+     * while the drawer is open goes there rather than to the global growl: the growl is anchored to
+     * the top-right corner of the page, exactly where the drawer sits, and renders under the
+     * sidebar's overlay — so the user never sees it. Null when there is nothing to report.
+     */
+    private String drawerErrorMessage;
 
     private String newTypeName;
 
@@ -399,7 +401,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void prefillBranch(Concept branchTopTerm) {
-        draftSource = "branche";
+        draftSource = BRANCHE;
         draftVocabulary = vocabularyMapper.convert(branchTopTerm.getVocabulary());
         draftThesaurusUrl = draftVocabulary.completeUri();
         draftConnectionTested = true;
@@ -422,7 +424,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * live lookup against the thesaurus, matched back by external id.
      */
     private void prefillCollection(ConceptCollection collection) {
-        draftSource = "collection";
+        draftSource = COLLECTION;
         draftVocabulary = vocabularyMapper.convert(collection.getVocabulary());
         draftThesaurusUrl = draftVocabulary.completeUri();
         draftConnectionTested = true;
@@ -452,6 +454,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftThesaurusUrl = null;
         draftConnectionTested = false;
         draftVocabulary = null;
+        drawerErrorMessage = null;
         clearSourceSelection();
     }
 
@@ -484,51 +487,131 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * resolve-then-report convention as {@code ProjectThesaurusSettingsBean#saveConfig}.
      */
     public void testThesaurusConnection() {
+        drawerErrorMessage = null;
         if (draftThesaurusUrl == null || draftThesaurusUrl.isBlank()) {
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "projectTables.drawer.params.connectionMissingUrl");
+            showDrawerError("projectTables.drawer.params.connectionMissingUrl");
             return;
         }
         try {
-            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(draftThesaurusUrl);
+            String resolvedUrl = vocabularyService.resolveRedirections(draftThesaurusUrl);
+            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(resolvedUrl);
             draftVocabulary = vocabularyMapper.convert(vocabulary);
+            // success needs no message of its own : the drawer shows the "✓ connected" line as soon
+            // as the connection is marked as tested
             draftConnectionTested = true;
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.params.connectionOk");
+            preselectDesignatedConcept(resolvedUrl);
+            draftThesaurusUrl = draftVocabulary.completeUri();
         } catch (InvalidEndpointException e) {
-            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
+            log.error("Invalid thesaurus URL '{}'", draftThesaurusUrl, e);
+            draftConnectionTested = false;
+            draftVocabulary = null;
+            showDrawerError("myProfile.thesaurus.uri.invalid");
+        } catch (RuntimeException e) {
+            // anything the thesaurus lookup didn't turn into an InvalidEndpointException would
+            // otherwise leave the button silent, which reads as "nothing happened"
+            log.error("Could not reach the thesaurus at '{}'", draftThesaurusUrl, e);
+            draftConnectionTested = false;
+            draftVocabulary = null;
+            showDrawerError("projectTables.drawer.params.connectionFailed");
         }
     }
 
-    /** Empty until the thesaurus connection has been tested successfully. */
+    private void preselectDesignatedConcept(String resolvedUrl) {
+        Optional<ConceptAutocompleteDetachedDTO> concept = conceptService.fetchConceptDesignatedBy(draftVocabulary, resolvedUrl);
+        if (concept.isPresent()) {
+            draftSource = BRANCHE;
+            draftBrancheConcept = concept.get();
+            draftCollectionName = null;
+            draftOriginalBrancheConceptKey = null;
+            return;
+        }
+        conceptCollectionService.fetchCollectionDesignatedBy(draftVocabulary, resolvedUrl).ifPresent(collection -> {
+            draftSource = COLLECTION;
+            lastCollectionResults = List.of(collection);
+            draftCollectionName = collection.getLabelToDisplay();
+            draftBrancheConcept = null;
+            draftOriginalCollectionKey = null;
+        });
+    }
+
+    /**
+     * Fills the drawer's message area. Kept apart from {@link MessageUtils} on purpose: these
+     * messages belong to the panel the user is looking at, not to the page-wide growl.
+     */
+    private void showDrawerError(String messageCode, Object... args) {
+        drawerErrorMessage = langBean.msg(messageCode, args);
+    }
+
+    /**
+     * Empty until the thesaurus connection has been tested successfully. A thesaurus that answers
+     * with something unparseable, or that stopped answering since the connection was tested, must
+     * not surface as "no result" : the user would read it as "this concept doesn't exist".
+     */
     public List<ConceptAutocompleteDetachedDTO> completeBrancheConcepts(String query) {
         if (draftVocabulary == null) {
             return List.of();
         }
-        return conceptService.fetchAutocompleteFromRemoteThesaurus(draftVocabulary, query);
+        try {
+            return conceptService.fetchAutocompleteFromRemoteThesaurus(draftVocabulary, query);
+        } catch (JsonProcessingException | RuntimeException e) {
+            log.error("Could not fetch the concepts matching '{}' in thesaurus {}", query, draftVocabulary.getBaseUri(), e);
+            showDrawerError("common.error.internal");
+            return List.of();
+        }
     }
 
     /**
      * Empty until the thesaurus connection has been tested successfully. Caches its results in
      * {@link #lastCollectionResults} so {@link #saveDrawer()} can resolve the collection behind the
-     * label the {@code p:autoComplete} round-trips.
+     * label the {@code p:autoComplete} round-trips. Reports a failing thesaurus like
+     * {@link #completeBrancheConcepts} does, and for the same reason.
      */
     public List<String> completeCollections(String query) {
         if (draftVocabulary == null) {
             lastCollectionResults = List.of();
             return List.of();
         }
-        lastCollectionResults = conceptCollectionService.fetchCollectionsFromRemoteThesaurus(draftVocabulary).stream()
-                .filter(c -> query == null || query.isBlank() || c.getLabelToDisplay().toLowerCase().contains(query.toLowerCase()))
-                .toList();
+        try {
+            lastCollectionResults = conceptCollectionService.fetchCollectionsFromRemoteThesaurus(draftVocabulary).stream()
+                    .filter(c -> query == null || query.isBlank() || c.getLabelToDisplay().toLowerCase().contains(query.toLowerCase()))
+                    .toList();
+        } catch (RuntimeException e) {
+            log.error("Could not fetch the collections of thesaurus {}", draftVocabulary.getBaseUri(), e);
+            lastCollectionResults = List.of();
+            showDrawerError("common.error.internal");
+        }
         return lastCollectionResults.stream().map(ConceptCollectionDetachedDTO::getLabelToDisplay).toList();
     }
 
+    /**
+     * The field itself is saved first and stays saved whatever happens next : only the vocabulary
+     * configuration can fail here, and the drawer must then say so instead of closing on a success
+     * message the configuration never got.
+     */
     public void saveDrawer() {
+        drawerErrorMessage = null;
         if (draftOriginalName == null) {
             tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription);
         } else {
             tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName, draftName, draftType, draftDescription);
         }
-        saveDraftVocabularyConfig();
+        // the field now exists under that name : should the vocabulary configuration fail below, the
+        // drawer stays open on the error, and saving again must update that field rather than try to
+        // create a second one — or, after a rename, update from a name that no longer exists
+        draftOriginalName = draftName;
+
+        try {
+            saveDraftVocabularyConfig();
+        } catch (FieldVocabularyConfigException e) {
+            log.error("Vocabulary configuration of field '{}' on type '{}' of table {} was not saved",
+                    draftName, selectedTypeName, selectedTable, e);
+            showDrawerError(e.getMessageCode());
+            // the drawer stays open : the message lives in it, and the user is one correction away
+            // from a working configuration
+            loadConfigs();
+            return;
+        }
+
         loadConfigs();
         closeDrawer();
         MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.saveSuccess");
@@ -539,13 +622,16 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * {@link #saveDrawer()}: clears any existing branch/collection restriction for
      * {@code "principal"}, or saves the newly picked branch/collection — a no-op when the source is
      * unset (non-configurable fields) or when the user left the prefilled selection untouched.
+     *
+     * @throws FieldVocabularyConfigException when the picked branch/collection did not make it onto
+     * the field, carrying the message {@link #saveDrawer()} reports
      */
     private void saveDraftVocabularyConfig() {
         if ("principal".equals(draftSource)) {
             clearConceptConfigIfAny();
-        } else if ("branche".equals(draftSource)) {
+        } else if (BRANCHE.equals(draftSource)) {
             saveBrancheConceptIfChanged();
-        } else if ("collection".equals(draftSource)) {
+        } else if (COLLECTION.equals(draftSource)) {
             saveCollectionIfChanged();
         }
     }
@@ -563,42 +649,71 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void saveBrancheConceptIfChanged() {
-        if (draftBrancheConcept == null || draftBrancheConcept.concept().getExternalId().equals(draftOriginalBrancheConceptKey)) {
+        // the picker has forceSelection, so an empty value means the user asked for a branch without
+        // ever picking one : the field keeps no vocabulary, which is a failed configuration
+        if (draftBrancheConcept == null || draftBrancheConcept.concept() == null) {
+            throw new NoVocabularySelectedException(
+                    String.format("No branch picked for field '%s'", draftName),
+                    "projectTables.drawer.params.brancheMissing");
+        }
+        if (draftBrancheConcept.concept().getExternalId().equals(draftOriginalBrancheConceptKey)) {
             return;
         }
-        resolveConceptFieldTarget().ifPresentOrElse(
-                target -> formConfigService.addConceptConfigFor(target.formConfig(), target.field(), draftBrancheConcept.concept()),
-                this::warnFieldNotResolved);
+        ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.brancheSaveError");
+        try {
+            formConfigService.addConceptConfigFor(target.formConfig(), target.field(), Objects.requireNonNull(draftBrancheConcept.concept()));
+        } catch (RuntimeException e) {
+            throw new VocabularyConfigNotSavedException(
+                    String.format("Could not save the branch '%s' as the vocabulary of field '%s'",
+                            draftBrancheConcept.concept().getExternalId(), draftName),
+                    "projectTables.drawer.params.brancheSaveError", e);
+        }
     }
 
     private void saveCollectionIfChanged() {
         Optional<ConceptCollectionDetachedDTO> selected = lastCollectionResults.stream()
                 .filter(c -> c.getLabelToDisplay().equals(draftCollectionName))
-                .filter(c -> !c.getExternalId().equals(draftOriginalCollectionKey))
                 .findFirst();
+        // unlike the branch picker this one accepts free text : an empty field, or a label matching no
+        // collection of the thesaurus, leaves nothing to configure
         if (selected.isEmpty()) {
+            throw new NoVocabularySelectedException(
+                    String.format("No collection of the thesaurus matches '%s' for field '%s'", draftCollectionName, draftName),
+                    "projectTables.drawer.params.collectionMissing");
+        }
+        if (selected.get().getExternalId().equals(draftOriginalCollectionKey)) {
             return;
         }
-        resolveConceptFieldTarget().ifPresentOrElse(
-                target -> formConfigService.addConceptConfigFor(target.formConfig(), target.field(), selected.get()),
-                this::warnFieldNotResolved);
+        ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.collectionSaveError");
+        try {
+            formConfigService.addConceptConfigFor(target.formConfig(), target.field(), selected.get());
+        } catch (RuntimeException e) {
+            throw new VocabularyConfigNotSavedException(
+                    String.format("Could not save the collection '%s' as the vocabulary of field '%s'",
+                            selected.get().getExternalId(), draftName),
+                    "projectTables.drawer.params.collectionSaveError", e);
+        }
     }
 
     private record ConceptFieldTarget(FormConfig formConfig, CustomFieldConcept field) {
     }
 
-    private Optional<ConceptFieldTarget> resolveConceptFieldTarget() {
+    /**
+     * The field row was just written, so failing to find it back as a concept field leaves the picked
+     * branch/collection nowhere to go — a failed configuration like any other.
+     *
+     * @param messageCode the message to report for that field, branch or collection flavoured
+     */
+    private ConceptFieldTarget resolveConceptFieldTarget(String messageCode) {
         Optional<FormConfig> formConfigLocal = tableFieldConfigService.createOrGetFormConfig(project.getId(), selectedTable, selectedTypeName);
         Optional<CustomField> field = tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName);
         if (formConfigLocal.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept customFieldConcept)) {
-            return Optional.empty();
+            throw new VocabularyConfigNotSavedException(
+                    String.format("Could not resolve the saved field '%s' as a concept field on type '%s' of table %s",
+                            draftName, selectedTypeName, selectedTable),
+                    messageCode);
         }
-        return Optional.of(new ConceptFieldTarget(formConfigLocal.get(), customFieldConcept));
-    }
-
-    private void warnFieldNotResolved() {
-        log.warn("Could not resolve the saved field '{}' as a concept field on type '{}' of table {}; " +
-                "branch/collection selection was not persisted", draftName, selectedTypeName, selectedTable);
+        return new ConceptFieldTarget(formConfigLocal.get(), customFieldConcept);
     }
 
     public boolean isDraftCreateMode() {
