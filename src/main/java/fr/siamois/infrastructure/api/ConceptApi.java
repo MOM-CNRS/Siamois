@@ -95,7 +95,7 @@ public class ConceptApi {
      * @throws ErrorProcessingExpansionException if there is an error processing the expansion
      */
     public ConceptBranchDTO fetchDownExpansion(Vocabulary vocabulary, String idConcept) throws ErrorProcessingExpansionException {
-        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), idConcept));
+        URI uri = expansionUri(vocabulary, idConcept);
 
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
 
@@ -103,6 +103,24 @@ public class ConceptApi {
         };
 
         return processApiResponse(response, typeReference);
+    }
+
+    private URI expansionUri(Vocabulary vocabulary, String idConcept) throws ErrorProcessingExpansionException {
+        return URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down",
+                vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), conceptIdOf(vocabulary, idConcept)));
+    }
+
+    private String conceptIdOf(Vocabulary vocabulary, String externalId) throws ErrorProcessingExpansionException {
+        if (externalId == null || !externalId.startsWith("ark:")) {
+            return externalId;
+        }
+        FullInfoDTO info = fetchConceptInfoByUri(vocabulary, externalId);
+        if (info == null || info.getIdentifier() == null || info.getIdentifier().length == 0) {
+            throw new ErrorProcessingExpansionException("Could not resolve the concept id of ark " + externalId);
+        }
+        String conceptId = info.getIdentifierStr();
+        log.debug("Ark {} resolved to concept id {}", externalId, conceptId);
+        return conceptId;
     }
 
     private ConceptBranchDTO processApiResponse(ResponseEntity<String> response, TypeReference<Map<String, FullInfoDTO>> typeReference) throws ErrorProcessingExpansionException {
@@ -144,7 +162,7 @@ public class ConceptApi {
         Concept concept = config.getConcept();
         Vocabulary vocabulary = concept.getVocabulary();
         String existingChecksum = config.getExistingHash();
-        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), concept.getExternalId()));
+        URI uri = expansionUri(vocabulary, concept.getExternalId());
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
         String body = response.getBody();
         if (body == null) return null;
@@ -195,13 +213,15 @@ public class ConceptApi {
      * {@code vocabularyUri} as a whole would escape its own {@code ://} and {@code /} and leave a
      * relative URI the {@code RestTemplate} refuses.
      */
-    public List<ConceptRemoteAutocompleteDTO> fetchRemoteAutocomplete(String vocabularyUri, String vocabularyExternalId, String input) throws JsonProcessingException {
-        URI uri = UriComponentsBuilder.fromUriString(vocabularyUri)
+    public List<ConceptRemoteAutocompleteDTO> fetchRemoteAutocomplete(String vocabularyUri, String vocabularyExternalId, String input, String lang) throws JsonProcessingException {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(vocabularyUri)
                 .pathSegment("openapi", "v1", "concept", vocabularyExternalId, "autocomplete", input)
-                .queryParam("full", "true")
-                .build()
-                .encode()
-                .toUri();
+                .queryParam("full", "true");
+        // a null lang would still be written out as a bare "&lang" parameter : leave it out instead
+        if (lang != null && !lang.isBlank()) {
+            builder.queryParam("lang", lang);
+        }
+        URI uri = builder.build().encode().toUri();
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
         String body = response.getBody();
 

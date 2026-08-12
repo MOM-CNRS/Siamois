@@ -2,6 +2,7 @@ package fr.siamois.domain.services.vocabulary;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
@@ -23,6 +24,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarc
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.utils.vocabulary.ConceptApiUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -365,7 +367,9 @@ public class ConceptService {
         if (input == null || input.isBlank()) {
             return Collections.emptyList();
         }
-        List<ConceptRemoteAutocompleteDTO> autocompleteDTOS = conceptApi.fetchRemoteAutocomplete(vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId(), input);
+        UserInfo info = ExecutionContextHolder.get();
+        String lang = Objects.isNull(info) ? null : info.getLang();
+        List<ConceptRemoteAutocompleteDTO> autocompleteDTOS = conceptApi.fetchRemoteAutocomplete(vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId(), input, lang);
         Map<Long, List<ConceptRemoteAutocompleteDTO>> conceptIdToResults = new LinkedHashMap<>();
         Map<Long, ConceptRemoteAutocompleteDTO> conceptIdToPrefLabel = new HashMap<>();
         for (ConceptRemoteAutocompleteDTO autocompleteDTO : autocompleteDTOS) {

@@ -459,11 +459,55 @@ class ConceptApiTest {
         assertThrows(ErrorProcessingExpansionException.class, () -> conceptApi.fetchCollectionBranch(vocabulary, collection));
     }
 
+    // --- ark based thesauri ---------------------------------------------------------------------
+
+    @Test
+    void fetchDownExpansion_arkConcept_resolvesItsConceptIdBeforeExpanding() throws Exception {
+        // the ark endpoint carries no thesaurus id, and answers with the concept's dcterms:identifier
+        URI arkUri = URI.create("http://example.com/openapi/v1/concept/ark:/26678/pcrtREVS9rPi7K");
+        String conceptInfo = """
+                {"http://example.com/ark:/26678/pcrtREVS9rPi7K": {
+                   "http://purl.org/dc/terms/identifier": [{"value": "4282369", "type": "literal"}]
+                 }}""";
+        when(restTemplate.exchange(eq(arkUri), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(conceptInfo, HttpStatus.OK));
+
+        // the expansion is then addressed the ordinary way, with that concept id
+        URI expansionUri = URI.create("http://example.com/openapi/v1/concept/th223/4282369/expansion?way=down");
+        when(restTemplate.exchange(eq(expansionUri), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{}", HttpStatus.OK));
+
+        assertNotNull(conceptApi.fetchDownExpansion(vocabulary, "ark:/26678/pcrtREVS9rPi7K"));
+
+        verify(restTemplate).exchange(eq(arkUri), eq(HttpMethod.GET), any(), eq(String.class));
+        verify(restTemplate).exchange(eq(expansionUri), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
+    @Test
+    void fetchDownExpansion_ordinaryConcept_isExpandedWithoutAnyExtraCall() throws Exception {
+        URI expansionUri = URI.create("http://example.com/openapi/v1/concept/th223/4282369/expansion?way=down");
+        when(restTemplate.exchange(eq(expansionUri), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{}", HttpStatus.OK));
+
+        assertNotNull(conceptApi.fetchDownExpansion(vocabulary, "4282369"));
+
+        verify(restTemplate, times(1)).exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class));
+    }
+
+    @Test
+    void fetchDownExpansion_arkWithoutIdentifier_throwsErrorProcessingExpansion() {
+        when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("{\"http://example.com/ark:/26678/pcrtREVS9rPi7K\": {}}", HttpStatus.OK));
+
+        assertThrows(ErrorProcessingExpansionException.class,
+                () -> conceptApi.fetchDownExpansion(vocabulary, "ark:/26678/pcrtREVS9rPi7K"));
+    }
+
     // --- fetchRemoteAutocomplete ---------------------------------------------------------------
 
     @Test
     void fetchRemoteAutocomplete_returnsEveryMatchingLabel() throws JsonProcessingException {
-        URI expected = URI.create("http://example.com/openapi/v1/concept/th223/autocomplete/cera?full=true");
+        URI expected = URI.create("http://example.com/openapi/v1/concept/th223/autocomplete/cera?full=true&lang=fr");
         String body = """
                 [
                   {"identifier": 12, "uri": "http://example.com/?idc=12&idt=th223", "label": "Céramique", "isAltLabel": false, "definition": "Objet en terre cuite"},
@@ -473,7 +517,7 @@ class ConceptApiTest {
         when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
                 .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
 
-        List<ConceptRemoteAutocompleteDTO> results = conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera");
+        List<ConceptRemoteAutocompleteDTO> results = conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera", "fr");
 
         assertEquals(2, results.size());
         assertEquals(12L, results.get(0).identifier());
@@ -495,17 +539,17 @@ class ConceptApiTest {
         // an unreadable answer is not "no match" : it must reach the caller, which turns it into an
         // error message instead of an empty suggestion list
         assertThrows(JsonProcessingException.class,
-                () -> conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera"));
+                () -> conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera", "fr"));
     }
 
     @Test
     void fetchRemoteAutocomplete_encodesWhatTheUserTyped() throws JsonProcessingException {
         // the input reaches the API as typed : a raw space would make URI.create throw
-        URI expected = URI.create("https://thesaurus.example/opentheso/openapi/v1/concept/th223/autocomplete/c%C3%A9ram%20fine?full=true");
+        URI expected = URI.create("https://thesaurus.example/opentheso/openapi/v1/concept/th223/autocomplete/c%C3%A9ram%20fine?full=true&lang=fr");
         when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
                 .thenReturn(new ResponseEntity<>("[]", HttpStatus.OK));
 
-        assertTrue(conceptApi.fetchRemoteAutocomplete("https://thesaurus.example/opentheso", "th223", "céram fine").isEmpty());
+        assertTrue(conceptApi.fetchRemoteAutocomplete("https://thesaurus.example/opentheso", "th223", "céram fine", "fr").isEmpty());
 
         verify(restTemplate).exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class));
     }
