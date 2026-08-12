@@ -140,11 +140,8 @@ public class ThesaurusApi {
         try {
             HttpEntity<String> entity = arkResolvingTemplate.getForEntity(uriObj, String.class);
             URI location = entity.getHeaders().getLocation();
-            // a Location header is allowed to be relative, and is then read against the URI it came from
             return location == null ? null : uriObj.resolve(location);
         } catch (RestClientException | IllegalArgumentException e) {
-            // an ark that answers nothing to a plain GET can still be resolvable through the API,
-            // so this probe failing is not the end of the road : keep the URI as it was typed
             log.warn("Could not follow {} as an ark redirection", uriObj, e);
             return null;
         }

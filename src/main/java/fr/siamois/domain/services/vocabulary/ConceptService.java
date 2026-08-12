@@ -403,8 +403,6 @@ public class ConceptService {
     private List<ConceptAutocompleteDetachedDTO> detachedResultsOfConcept(@NonNull VocabularyDTO vocabularyDTO,
                                                                          @NonNull List<ConceptRemoteAutocompleteDTO> labelsOfConcept,
                                                                          @Nullable ConceptRemoteAutocompleteDTO prefLabel) {
-        // The pref label carries the display name of the concept. When it did not match the input, the
-        // thesaurus only returned alt labels : the first one then stands for the concept.
         ConceptRemoteAutocompleteDTO reference = prefLabel != null ? prefLabel : labelsOfConcept.get(0);
 
         String externalId = ConceptApiUtils.externalIdFromUri(reference.uri());
@@ -452,8 +450,6 @@ public class ConceptService {
         try {
             info = conceptApi.fetchConceptInfoByUri(vocabularyDTO.getBaseUri(), uri);
         } catch (RuntimeException e) {
-            // preselecting is a convenience : an ark the thesaurus does not know (a foreign naan, an
-            // ark the resolver alone understands) answers 404, and must not fail the whole lookup
             log.warn("Could not read the concept designated by {} on {}", uri, vocabularyDTO.getBaseUri(), e);
             return Optional.empty();
         }
@@ -482,10 +478,6 @@ public class ConceptService {
                 vocabularyDTO.completeUri()));
     }
 
-    /**
-     * The value of a multilingual property in the user's language, falling back to the first one the
-     * thesaurus returned — a concept always carries a label, not always in every language.
-     */
     @Nullable
     private String valueInUserLang(@Nullable PurlInfoDTO[] values) {
         if (values == null || values.length == 0) {

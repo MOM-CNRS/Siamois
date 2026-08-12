@@ -218,7 +218,6 @@ public class ConceptApi {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(vocabularyUri)
                 .pathSegment("openapi", "v1", "concept", vocabularyExternalId, "autocomplete", input)
                 .queryParam("full", "true");
-        // a null lang would still be written out as a bare "&lang" parameter : leave it out instead
         if (lang != null && !lang.isBlank()) {
             builder.queryParam("lang", lang);
         }
