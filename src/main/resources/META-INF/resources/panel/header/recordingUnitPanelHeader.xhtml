@@ -44,11 +44,47 @@
         </div>
 
 
-    <p:chip label="#{panelModel.titleCodeOrTitle}"
-            icon="#{panelModel.icon}"
-            id="idChip"
-            styleClass="mr-2 recording-unit-chip-alt"
-    />
+    <h:panelGroup id="idChipArea" styleClass="mr-2">
+        <h:panelGroup rendered="#{not panelModel.editingIdentifier}" styleClass="chip-cell-wrapper">
+            <p:chip label="#{panelModel.unit != null ? panelModel.unit.fullIdentifier : panelModel.titleCodeOrTitle}"
+                    icon="#{panelModel.icon}"
+                    id="idChip"
+                    styleClass="recording-unit-chip-alt entity-nav-chip"
+            />
+            <div class="chip-cell-actions">
+                <p:commandButton id="editIdentifierBtn"
+                                 rendered="#{flowBean.isWriteMode}"
+                                 icon="bi bi-pencil"
+                                 styleClass="rum-edit-id-btn"
+                                 action="#{panelModel.startEditIdentifier()}"
+                                 update="idChipArea"
+                                 process="@this"
+                                 oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
+                <p:tooltip for="editIdentifierBtn" value="Modifier l'identifiant" position="top"/>
+            </div>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{panelModel.editingIdentifier}" styleClass="chip-cell-wrapper">
+            <p:inputText id="editIdentifierInput"
+                         value="#{panelModel.editingIdentifierValue}"
+                         styleClass="rum-edit-link-input"
+                         style="min-width: 8em;"
+                         onkeydown="if(event.key==='Enter'){event.preventDefault();$(this).siblings('.rum-apply-link-edit-btn').trigger('click');}else if(event.key==='Escape'){event.preventDefault();$(this).siblings('.rum-cancel-link-edit-btn').trigger('click');}"/>
+            <p:commandButton id="applyIdentifierBtn"
+                             icon="bi bi-check"
+                             styleClass="rum-action-btn rum-apply-link-edit-btn"
+                             title="Valider"
+                             action="#{panelModel.applyEditIdentifier()}"
+                             update="idChipArea"
+                             process="editIdentifierInput @this"/>
+            <p:commandButton id="cancelIdentifierBtn"
+                             icon="bi bi-x"
+                             styleClass="rum-action-btn rum-cancel-link-edit-btn"
+                             title="Annuler"
+                             action="#{panelModel.cancelEditIdentifier()}"
+                             update="idChipArea"
+                             process="@this"/>
+        </h:panelGroup>
+    </h:panelGroup>
     <h:form id="contextMenuForm" styleClass="sia-settings-form">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
         <p:contextMenu for="idChip">

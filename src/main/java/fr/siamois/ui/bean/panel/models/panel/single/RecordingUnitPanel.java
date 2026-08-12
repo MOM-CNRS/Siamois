@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -92,6 +93,10 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     // Strati
     private CustomFieldAnswerStratigraphyViewModel stratigraphyViewModel;
+
+    // Inline identifier editing (panel header chip)
+    private boolean editingIdentifier;
+    private String editingIdentifierValue;
 
 
 
@@ -245,6 +250,42 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
         //history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, unitId);
         documents = unit != null ? documentService.findForRecordingUnit(unit) : List.of();
+    }
+
+    public void startEditIdentifier() {
+        this.editingIdentifierValue = unit.getFullIdentifier();
+        this.editingIdentifier = true;
+    }
+
+    public void cancelEditIdentifier() {
+        this.editingIdentifier = false;
+        this.editingIdentifierValue = null;
+    }
+
+    public void applyEditIdentifier() {
+        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.blank");
+            return;
+        }
+
+        String previous = unit.getFullIdentifier();
+        unit.setFullIdentifier(trimmed);
+
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(unit)) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            recordingUnitService.save(unit);
+            this.titleCodeOrTitle = unit.getFullIdentifier();
+            cancelEditIdentifier();
+        } catch (FailedRecordingUnitSaveException e) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
+        }
     }
 
     @Override

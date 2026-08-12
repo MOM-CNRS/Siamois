@@ -83,6 +83,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .iconClass("bi bi-pencil-square")
                         .chipColor("var(--ground-main-color)")
                         .valueKey("fullIdentifier")
+                        .editable(true)
 
                         // What to do on click (Pattern A key)
                         .action(TableColumnAction.GO_TO_RECORDING_UNIT)

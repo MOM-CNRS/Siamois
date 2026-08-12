@@ -61,7 +61,6 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(SPATIAL_UNIT_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(PARENTS_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(CHILDREN_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(FULL_IDENTIFIER_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(RECORDING_UNIT_TYPE_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(NATURE_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(GEOMORPHO_AGENT_FIELD).build())
@@ -69,6 +68,7 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                                         .dependsOnSpec(interpretationDependsOnNature).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(MATRIX_COLOR_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className("d-none").readOnly(true).field(ACTION_UNIT_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className("d-none").readOnly(true).field(FULL_IDENTIFIER_FIELD).build())
                                 .build()
                 )
                 .addRow(

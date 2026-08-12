@@ -192,6 +192,31 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     @Override
+    public void handleLinkEdit(CommandLinkColumn column, RecordingUnitDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.blank");
+            return;
+        }
+
+        String previous = item.getFullIdentifier();
+        item.setFullIdentifier(trimmed);
+
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(item)) {
+            item.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            recordingUnitService.save(item);
+        } catch (FailedRecordingUnitSaveException e) {
+            item.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.recordingUnits.updateFailed", item.getFullIdentifier());
+        }
+    }
+
+    @Override
     public Integer resolveCount(TableColumn column, RecordingUnitDTO ru) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
