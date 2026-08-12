@@ -24,6 +24,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -107,6 +108,35 @@ public class ConceptCollectionService {
                         labelToDisplay(collection, lang),
                         labelsOf(collection)))
                 .toList();
+    }
+
+    @NonNull
+    public Optional<ConceptCollectionDetachedDTO> fetchCollectionDesignatedBy(@NonNull VocabularyDTO vocabularyDTO, @NonNull String uri) {
+        try {
+            Optional<String> idGroup = groupIdOf(vocabularyDTO, uri);
+            if (idGroup.isEmpty()) {
+                return Optional.empty();
+            }
+            return fetchCollectionsFromRemoteThesaurus(vocabularyDTO).stream()
+                    .filter(collection -> collection.getExternalId().equalsIgnoreCase(idGroup.get()))
+                    .findFirst();
+        } catch (RuntimeException e) {
+            log.warn("Could not read the collection designated by {} on {}", uri, vocabularyDTO.getBaseUri(), e);
+            return Optional.empty();
+        }
+    }
+
+    @NonNull
+    private Optional<String> groupIdOf(@NonNull VocabularyDTO vocabularyDTO, @NonNull String uri) {
+        String idGroup = UriComponentsBuilder.fromUriString(uri).build().getQueryParams().getFirst("idg");
+        if (idGroup != null && !idGroup.isBlank()) {
+            return Optional.of(idGroup);
+        }
+        int arkIndex = uri.indexOf("ark:");
+        if (arkIndex < 0) {
+            return Optional.empty();
+        }
+        return conceptApi.fetchGroupIdOfArk(vocabularyDTO.getBaseUri(), uri.substring(arkIndex));
     }
 
     /**

@@ -36,6 +36,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -121,6 +122,70 @@ class ConceptCollectionServiceTest {
         assertThat(collection.getVocabulary()).isEqualTo(vocabulary);
         assertThat(collection.getId()).isNull();
         assertThat(collection.getConcepts()).isNull();
+    }
+
+    // --- the collection a pasted URL designates -------------------------------------------------
+
+    @Test
+    void fetchCollectionDesignatedBy_shouldReadTheIdgOfTheUrl() {
+        when(conceptApi.fetchPublicCollections(vocabulary)).thenReturn(List.of(
+                new ConceptApiCollectionDTO("g173", List.of(new LabelDTO("fr", "P2-ENTITÉS NOMMÉES")))
+        ));
+
+        // the collection page of a thesaurus is an ordinary idg/idt URL
+        Optional<ConceptCollectionDetachedDTO> result = conceptCollectionService
+                .fetchCollectionDesignatedBy(vocabulary, "https://thesaurus.mom.fr/?idg=g173&idt=th277");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getExternalId()).isEqualTo("g173");
+        assertThat(result.get().getLabelToDisplay()).isEqualTo("P2-ENTITÉS NOMMÉES");
+        verify(conceptApi, never()).fetchGroupIdOfArk(anyString(), anyString());
+    }
+
+    @Test
+    void fetchCollectionDesignatedBy_shouldIgnoreTheCaseOfTheId() {
+        when(conceptApi.fetchPublicCollections(vocabulary)).thenReturn(List.of(
+                new ConceptApiCollectionDTO("g173", List.of(new LabelDTO("fr", "P2-ENTITÉS NOMMÉES")))
+        ));
+
+        // resolving the ark of a collection lands on a page that hands the id back upper-cased,
+        // while the API lists it lower-cased
+        Optional<ConceptCollectionDetachedDTO> result = conceptCollectionService
+                .fetchCollectionDesignatedBy(vocabulary, "https://pactols.frantiq.fr/?idg=G173&idt=TH_1");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getExternalId()).isEqualTo("g173");
+    }
+
+    @Test
+    void fetchCollectionDesignatedBy_shouldResolveAnArkThroughTheApi() {
+        when(conceptApi.fetchGroupIdOfArk("http://example.org", "ark:/26678/pcrt55mxscwskk"))
+                .thenReturn(Optional.of("g173"));
+        when(conceptApi.fetchPublicCollections(vocabulary)).thenReturn(List.of(
+                new ConceptApiCollectionDTO("g173", List.of(new LabelDTO("fr", "P2-ENTITÉS NOMMÉES")))
+        ));
+
+        Optional<ConceptCollectionDetachedDTO> result = conceptCollectionService
+                .fetchCollectionDesignatedBy(vocabulary, "http://example.org/ark:/26678/pcrt55mxscwskk");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getExternalId()).isEqualTo("g173");
+    }
+
+    @Test
+    void fetchCollectionDesignatedBy_shouldBeEmpty_whenTheUrlDesignatesNoCollection() {
+        assertThat(conceptCollectionService
+                .fetchCollectionDesignatedBy(vocabulary, "https://pactols.frantiq.fr/?idc=246344&idt=TH_1")).isEmpty();
+
+        verifyNoInteractions(conceptApi);
+    }
+
+    @Test
+    void fetchCollectionDesignatedBy_shouldBeEmpty_whenTheThesaurusFails() {
+        when(conceptApi.fetchGroupIdOfArk(anyString(), anyString())).thenThrow(new IllegalStateException("boom"));
+
+        assertThat(conceptCollectionService
+                .fetchCollectionDesignatedBy(vocabulary, "http://example.org/ark:/26678/unknown")).isEmpty();
     }
 
     @Test

@@ -59,6 +59,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public static final String ID_UA = "ID_UA";
     public static final String NUM_UE = "NUM_UE";
     public static final String BRANCHE = "branche";
+    public static final String COLLECTION = "collection";
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient FormConfigService formConfigService;
@@ -423,7 +424,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * live lookup against the thesaurus, matched back by external id.
      */
     private void prefillCollection(ConceptCollection collection) {
-        draftSource = "collection";
+        draftSource = COLLECTION;
         draftVocabulary = vocabularyMapper.convert(collection.getVocabulary());
         draftThesaurusUrl = draftVocabulary.completeUri();
         draftConnectionTested = true;
@@ -516,12 +517,20 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void preselectDesignatedConcept(String resolvedUrl) {
-        conceptService.fetchConceptDesignatedBy(draftVocabulary, resolvedUrl).ifPresent(concept -> {
+        Optional<ConceptAutocompleteDetachedDTO> concept = conceptService.fetchConceptDesignatedBy(draftVocabulary, resolvedUrl);
+        if (concept.isPresent()) {
             draftSource = BRANCHE;
-            draftBrancheConcept = concept;
+            draftBrancheConcept = concept.get();
             draftCollectionName = null;
-            // a preselection is a new choice, never the untouched prefill saveDrawer() skips
             draftOriginalBrancheConceptKey = null;
+            return;
+        }
+        conceptCollectionService.fetchCollectionDesignatedBy(draftVocabulary, resolvedUrl).ifPresent(collection -> {
+            draftSource = COLLECTION;
+            lastCollectionResults = List.of(collection);
+            draftCollectionName = collection.getLabelToDisplay();
+            draftBrancheConcept = null;
+            draftOriginalCollectionKey = null;
         });
     }
 
@@ -622,7 +631,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             clearConceptConfigIfAny();
         } else if (BRANCHE.equals(draftSource)) {
             saveBrancheConceptIfChanged();
-        } else if ("collection".equals(draftSource)) {
+        } else if (COLLECTION.equals(draftSource)) {
             saveCollectionIfChanged();
         }
     }

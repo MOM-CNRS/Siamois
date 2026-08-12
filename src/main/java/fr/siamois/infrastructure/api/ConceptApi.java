@@ -293,6 +293,25 @@ public class ConceptApi {
         }
     }
 
+    public Optional<String> fetchGroupIdOfArk(String apiRoot, String ark) {
+        URI uri = URI.create(String.format("%s/openapi/v1/group/%s", apiRoot, ark));
+        try {
+            ResponseEntity<String> response = sendRequestAcceptJson(uri);
+            TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
+            };
+            Map<String, FullInfoDTO> result = mapper.readValue(response.getBody(), typeReference);
+            return result.values().stream()
+                    .map(FullInfoDTO::getIdentifier)
+                    .filter(identifier -> identifier != null && identifier.length > 0)
+                    .map(identifier -> identifier[0].getValue())
+                    .filter(Objects::nonNull)
+                    .findFirst();
+        } catch (JsonProcessingException | RestClientException e) {
+            log.error("Could not resolve the group of ark {} on {}", ark, apiRoot, e);
+            return Optional.empty();
+        }
+    }
+
     public FullInfoDTO fetchConceptInfoByUri(Vocabulary vocabulary, String uriStr) {
         return fetchConceptInfoByUri(vocabulary.getBaseUri(), uriStr);
     }
