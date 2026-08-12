@@ -46,9 +46,9 @@
                  value="#{tableModel.lazyDataModel}"
                  styleClass="#{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
 
-        <p:ajax event="rowSelectCheckbox" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
-        <p:ajax event="rowUnselectCheckbox" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
-        <p:ajax event="toggleSelect" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="rowSelectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="rowUnselectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="toggleSelect" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
 
         <f:facet name="{RowReport}">
             <span class="ui-paginator-current">

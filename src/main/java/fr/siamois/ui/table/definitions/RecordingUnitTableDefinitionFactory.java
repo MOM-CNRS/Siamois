@@ -251,7 +251,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .sortable(true)
                         .filterable(true)
                         .visible(false)
-                        .required(true)
+                        .required(false)
                         .build()
         );
         definition.addColumn(
