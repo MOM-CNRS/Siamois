@@ -187,19 +187,26 @@ public class ConceptApi {
         return processApiResponse(response, typeReference);
     }
 
-    public List<ConceptRemoteAutocompleteDTO> fetchRemoteAutocomplete(String vocabularyUri, String vocabularyExternalId, String input) {
-        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/autocomplete/%s?full=true", vocabularyUri, vocabularyExternalId, input));
+    /**
+     * The input is what the user is typing, so it reaches this method with spaces, accents or any
+     * other character illegal in a URI : the path segments are built through
+     * {@link UriComponentsBuilder} and encoded, since {@code URI.create} on a raw input would throw
+     * {@link IllegalArgumentException}. Only the segments are encoded — percent-encoding
+     * {@code vocabularyUri} as a whole would escape its own {@code ://} and {@code /} and leave a
+     * relative URI the {@code RestTemplate} refuses.
+     */
+    public List<ConceptRemoteAutocompleteDTO> fetchRemoteAutocomplete(String vocabularyUri, String vocabularyExternalId, String input) throws JsonProcessingException {
+        URI uri = UriComponentsBuilder.fromUriString(vocabularyUri)
+                .pathSegment("openapi", "v1", "concept", vocabularyExternalId, "autocomplete", input)
+                .queryParam("full", "true")
+                .build()
+                .encode()
+                .toUri();
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
         String body = response.getBody();
 
         TypeReference<List<ConceptRemoteAutocompleteDTO>> typeReference = new TypeReference<>() {};
-
-        try {
-            return mapper.readValue(body, typeReference);
-        } catch (JsonProcessingException e) {
-            log.error(ERROR_WHILE_PROCESSING_JSON, e);
-            return new ArrayList<>();
-        }
+        return mapper.readValue(body, typeReference);
     }
 
     public List<ConceptApiCollectionDTO> fetchPublicCollections(VocabularyDTO vocabularyDTO) {

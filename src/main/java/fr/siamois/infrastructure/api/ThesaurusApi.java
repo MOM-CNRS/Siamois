@@ -61,7 +61,10 @@ public class ThesaurusApi {
         try {
             uriObj = URI.create(uri);
             uriObj = findRedirectUriIfArk(uriObj);
-        } catch (IllegalArgumentException e) {
+        } catch (RestClientException | IllegalArgumentException e) {
+            // the ARK probe hits the network, so an unknown host, a refused connection or an error
+            // status must surface as the documented InvalidEndpointException too: callers only catch
+            // that one, and an unchecked RestClientException would escape them silently
             log.error("Invalid URI: {}", uri, e);
             throw new InvalidEndpointException("Invalid URI: " + uri);
         }

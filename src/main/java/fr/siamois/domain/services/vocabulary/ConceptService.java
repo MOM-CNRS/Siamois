@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.vocabulary;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
@@ -360,11 +361,11 @@ public class ConceptService {
      * @return a list of matching ConceptAutocompleteDetachedDTO, one per matching label
      */
     @NonNull
-    public List<ConceptAutocompleteDetachedDTO> fetchAutocompleteFromRemoteThesaurus(VocabularyDTO vocabularyDTO, String input) {
+    public List<ConceptAutocompleteDetachedDTO> fetchAutocompleteFromRemoteThesaurus(VocabularyDTO vocabularyDTO, String input) throws JsonProcessingException {
         if (input == null || input.isBlank()) {
             return Collections.emptyList();
         }
-        List<ConceptRemoteAutocompleteDTO> autocompleteDTOS = conceptApi. fetchRemoteAutocomplete(vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId(), input);
+        List<ConceptRemoteAutocompleteDTO> autocompleteDTOS = conceptApi.fetchRemoteAutocomplete(vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId(), input);
         Map<Long, List<ConceptRemoteAutocompleteDTO>> conceptIdToResults = new LinkedHashMap<>();
         Map<Long, ConceptRemoteAutocompleteDTO> conceptIdToPrefLabel = new HashMap<>();
         for (ConceptRemoteAutocompleteDTO autocompleteDTO : autocompleteDTOS) {

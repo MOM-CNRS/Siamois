@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -158,6 +159,15 @@ class ThesaurusApiTest {
         when(restTemplate.getForEntity(ark, String.class)).thenReturn(ResponseEntity.ok("body"));
 
         assertThrows(InvalidEndpointException.class, () -> thesaurusApi.fetchThesaurusInfo(ark.toString()));
+    }
+
+    @Test
+    void fetchThesaurusInfo_unreachableHost_throwsInvalidEndpoint() {
+        URI unreachable = URI.create("https://thesaurus.invalid/opentheso");
+        when(restTemplate.getForEntity(unreachable, String.class))
+                .thenThrow(new ResourceAccessException("thesaurus.invalid: nodename nor servname provided"));
+
+        assertThrows(InvalidEndpointException.class, () -> thesaurusApi.fetchThesaurusInfo(unreachable.toString()));
     }
 
     @Test

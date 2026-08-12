@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.vocabulary;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
@@ -714,7 +715,7 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldReturnOneResultPerMatchingLabel_sharingTheConceptData() {
+    void fetchAutocompleteFromRemoteThesaurus_shouldReturnOneResultPerMatchingLabel_sharingTheConceptData() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete("http://example.org", "th1", "céram")).thenReturn(List.of(
                 new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Céramique", false, "Objet en terre cuite"),
@@ -740,7 +741,7 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldKeepTheConceptsApart_andPreserveTheRemoteOrder() {
+    void fetchAutocompleteFromRemoteThesaurus_shouldKeepTheConceptsApart_andPreserveTheRemoteOrder() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
                 new ConceptRemoteAutocompleteDTO(2L, "http://example.org/?idc=20&idt=th1", "Verre", false, null),
@@ -758,7 +759,7 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldFallBackOnTheAltLabel_whenThePrefLabelDoesNotMatch() {
+    void fetchAutocompleteFromRemoteThesaurus_shouldFallBackOnTheAltLabel_whenThePrefLabelDoesNotMatch() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
                 new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Poterie", true, null)
@@ -772,7 +773,7 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldReadTheArkIdentifier_whenTheThesaurusIsArkBased() {
+    void fetchAutocompleteFromRemoteThesaurus_shouldReadTheArkIdentifier_whenTheThesaurusIsArkBased() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
                 new ConceptRemoteAutocompleteDTO(1L, "http://example.org/ark:/12345/ab6789", "Céramique", false, null)
@@ -785,7 +786,7 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldIgnoreResults_whenTheConceptCannotBeIdentified() {
+    void fetchAutocompleteFromRemoteThesaurus_shouldIgnoreResults_whenTheConceptCannotBeIdentified() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
                 new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idt=th1", "Sans identifiant", false, null),
@@ -799,7 +800,7 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldReturnEmptyList_whenTheThesaurusReturnsNothing() {
+    void fetchAutocompleteFromRemoteThesaurus_shouldReturnEmptyList_whenTheThesaurusReturnsNothing() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of());
 
@@ -807,7 +808,7 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldNotQueryTheThesaurus_whenInputIsNullOrBlank() {
+    void fetchAutocompleteFromRemoteThesaurus_shouldNotQueryTheThesaurus_whenInputIsNullOrBlank() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
 
         assertThat(conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, null)).isEmpty();
@@ -817,7 +818,7 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldSkipBlankDefinitions_whenLookingForTheConceptDefinition() {
+    void fetchAutocompleteFromRemoteThesaurus_shouldSkipBlankDefinitions_whenLookingForTheConceptDefinition() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString())).thenReturn(List.of(
                 new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idc=12&idt=th1", "Céramique", false, "   "),

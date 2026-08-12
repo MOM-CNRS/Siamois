@@ -462,7 +462,7 @@ class ConceptApiTest {
     // --- fetchRemoteAutocomplete ---------------------------------------------------------------
 
     @Test
-    void fetchRemoteAutocomplete_returnsEveryMatchingLabel() {
+    void fetchRemoteAutocomplete_returnsEveryMatchingLabel() throws JsonProcessingException {
         URI expected = URI.create("http://example.com/openapi/v1/concept/th223/autocomplete/cera?full=true");
         String body = """
                 [
@@ -484,7 +484,7 @@ class ConceptApiTest {
     }
 
     @Test
-    void fetchRemoteAutocomplete_returnsEmptyList_whenJsonException() throws Exception {
+    void fetchRemoteAutocomplete_propagatesJsonException() throws Exception {
         when(restTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(), eq(String.class)))
                 .thenReturn(new ResponseEntity<>("{not json}", HttpStatus.OK));
 
@@ -492,7 +492,22 @@ class ConceptApiTest {
         //noinspection unchecked
         when(mapper.readValue(anyString(), any(TypeReference.class))).thenThrow(JsonProcessingException.class);
 
-        assertTrue(conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera").isEmpty());
+        // an unreadable answer is not "no match" : it must reach the caller, which turns it into an
+        // error message instead of an empty suggestion list
+        assertThrows(JsonProcessingException.class,
+                () -> conceptApi.fetchRemoteAutocomplete("http://example.com", "th223", "cera"));
+    }
+
+    @Test
+    void fetchRemoteAutocomplete_encodesWhatTheUserTyped() throws JsonProcessingException {
+        // the input reaches the API as typed : a raw space would make URI.create throw
+        URI expected = URI.create("https://thesaurus.example/opentheso/openapi/v1/concept/th223/autocomplete/c%C3%A9ram%20fine?full=true");
+        when(restTemplate.exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("[]", HttpStatus.OK));
+
+        assertTrue(conceptApi.fetchRemoteAutocomplete("https://thesaurus.example/opentheso", "th223", "céram fine").isEmpty());
+
+        verify(restTemplate).exchange(eq(expected), eq(HttpMethod.GET), any(), eq(String.class));
     }
 
     // --- fetchPublicCollections ----------------------------------------------------------------
