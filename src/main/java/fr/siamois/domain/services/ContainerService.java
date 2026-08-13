@@ -108,6 +108,15 @@ public class ContainerService {
         return Math.toIntExact(containerRepository.count(specs));
     }
 
+    public boolean identifierAlreadyExistInAction(ContainerDTO container) {
+        if (container.getActionUnit() == null) {
+            return false;
+        }
+        return containerRepository.findByActionUnitIdAndIdentifier(
+                        container.getActionUnit().getId(), container.getIdentifier()).stream()
+                .anyMatch(existing -> !Objects.equals(existing.getId(), container.getId()));
+    }
+
     public ContainerDTO save(ContainerDTO dto) {
         Container entity = containerMapper.invertConvert(dto);
         if (dto.getParentId() != null) {

@@ -1,6 +1,7 @@
 package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -18,6 +19,7 @@ import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 
@@ -32,6 +34,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
     private final FlowBean flowBean;
     private final InstitutionService institutionService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final PhaseService phaseService;
 
     public PhaseTableViewModel(BasePhaseLazyDataModel phaseLazyDataModel,
                                FormService formService,
@@ -42,7 +45,8 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
                                FlowBean flowBean,
                                GenericNewUnitDialogBean<PhaseDTO> genericNewUnitDialogBean,
                                InstitutionService institutionService,
-                               FormContextServices formContextServices) {
+                               FormContextServices formContextServices,
+                               PhaseService phaseService) {
         super(
                 phaseLazyDataModel,
                 genericNewUnitDialogBean,
@@ -59,6 +63,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
         this.institutionService = institutionService;
+        this.phaseService = phaseService;
     }
 
     @Override
@@ -88,6 +93,31 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
             throw new IllegalStateException("Unknown valueKey: " + linkColumn.getValueKey());
         }
         return "";
+    }
+
+    @Override
+    public void handleLinkEdit(CommandLinkColumn column, PhaseDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.blank");
+            return;
+        }
+
+        String previous = item.getIdentifier();
+        item.setIdentifier(trimmed);
+
+        if (phaseService.identifierAlreadyExistInAction(item)) {
+            item.setIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            phaseService.save(item);
+        } catch (RuntimeException e) {
+            item.setIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.phase.updateFailed", item.getIdentifier());
+        }
     }
 
     @Override

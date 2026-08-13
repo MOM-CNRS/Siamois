@@ -234,6 +234,32 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         documents = documentService.findForSpatialUnit(unit);
     }
 
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getName();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "spatialunit.error.name.blank");
+            return false;
+        }
+
+        String previous = unit.getName();
+        unit.setName(trimmed);
+
+        try {
+            spatialUnitService.save(unit);
+            this.setTitleCodeOrTitle(unit.getName());
+            return true;
+        } catch (RuntimeException e) {
+            unit.setName(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.spatialUnit.updateFailed", unit.getName());
+            return false;
+        }
+    }
+
 
     @Override
     public void init() {

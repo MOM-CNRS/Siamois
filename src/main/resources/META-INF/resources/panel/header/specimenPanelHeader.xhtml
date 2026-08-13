@@ -6,10 +6,10 @@
 
 
 
-    <p:chip label="#{panelModel.titleCodeOrTitle}"
-            styleClass="mr-2 specimen-chip-alt"
-            icon="#{panelModel.icon}"
-    />
+    <chip:editableIdentifierChip panel="#{panelModel}"
+                                  value="#{panelModel.unit != null ? panelModel.unit.fullIdentifier : panelModel.titleCodeOrTitle}"
+                                  styleClass="specimen-chip-alt"
+                                  icon="#{panelModel.icon}"/>
 
     <chip:conceptChip concept="#{panelModel.unit.type}" styleClass="mr-2 specimen-type-chip"/>
 

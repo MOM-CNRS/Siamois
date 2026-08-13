@@ -53,18 +53,19 @@ public final class ActionUnitTableDefinitionFactory {
         tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
-                        .headerKey("table.spatialunit.column.name")
+                        .headerKey("table.actionunit.column.identifier")
                         .visible(true)
 
                         // PrimeFaces metadata equivalents
                         .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
-                        .sortField("name")
+                        .sortable(true)
+                        .filterable(true)
+                        .sortField("full_identifier")
 
                         .iconClass("bi bi-arrow-down-square")
                         .chipColor("var(--context-main-color)")
-                        .valueKey("name")
+                        .valueKey("fullIdentifier")
+                        .editable(true)
 
                         // What to do on click (Pattern A key)
                         .action(TableColumnAction.GO_TO_ACTION_UNIT)

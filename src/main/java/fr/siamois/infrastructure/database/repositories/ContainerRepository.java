@@ -12,6 +12,8 @@ public interface ContainerRepository extends JpaRepository<Container, Long>, Jpa
 
     boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
 
+    List<Container> findByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
+
     @Query(value = """
     WITH RECURSIVE ascend AS (
         /* 1. Start with the IDs provided in the array */

@@ -36,7 +36,6 @@ public class PhaseTableDefinitionFactory {
     }
 
     private static void applyTo(TableDefinition definition) {
-        CustomField identifierField = systemField(ConfigurableTable.PHASE, IDENTIFIER);
         CustomField typeField = systemField(ConfigurableTable.PHASE, "type");
         CustomField titleField = systemField(ConfigurableTable.PHASE, "title");
         CustomField orderNumberField = systemField(ConfigurableTable.PHASE, "orderNumber");
@@ -48,10 +47,9 @@ public class PhaseTableDefinitionFactory {
         CustomField actionUnitField = systemField(ConfigurableTable.PHASE, "actionUnit");
 
         definition.setCommandLinkColumn(panelLinkColumn(PHASE_FIELD_IDENTIFIER, "bi bi-layers",
-                "var(--ground-main-color)", TableColumnAction.GO_TO_PHASE));
+                "var(--ground-main-color)", TableColumnAction.GO_TO_PHASE, true));
 
         addColumns(definition,
-                column(identifierField).sortable(true).filterable(true).visible(true).required(true).build(),
                 column(typeField).visible(true).required(true).build(),
                 column(titleField).visible(true).build(),
                 column(orderNumberField).sortable(true).visible(true).build(),

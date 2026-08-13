@@ -74,6 +74,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
                 spatialUnitService,
                 navBean,
                 flowBean,
+                specimenService,
                 genericNewUnitDialogBean,
                 formContextServices
         );

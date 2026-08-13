@@ -24,6 +24,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -136,6 +137,38 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
         //history = historyAuditService.findAllRevisionForEntity(SpecimenDTO.class, unitId);
         documents = documentService.findForSpecimen(unit);
+    }
+
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getFullIdentifier();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "specimen.error.identifier.blank");
+            return false;
+        }
+
+        String previous = unit.getFullIdentifier();
+        unit.setFullIdentifier(trimmed);
+
+        if (specimenService.fullIdentifierAlreadyExistInAction(unit)) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "specimen.error.identifier.alreadyExists");
+            return false;
+        }
+
+        try {
+            specimenService.save(unit);
+            this.titleCodeOrTitle = unit.getFullIdentifier();
+            return true;
+        } catch (RuntimeException e) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.specimen.updateFailed", unit.getFullIdentifier());
+            return false;
+        }
     }
 
 

@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -245,6 +246,38 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
         //history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, unitId);
         documents = unit != null ? documentService.findForRecordingUnit(unit) : List.of();
+    }
+
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getFullIdentifier();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.blank");
+            return false;
+        }
+
+        String previous = unit.getFullIdentifier();
+        unit.setFullIdentifier(trimmed);
+
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(unit)) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            return false;
+        }
+
+        try {
+            recordingUnitService.save(unit);
+            this.titleCodeOrTitle = unit.getFullIdentifier();
+            return true;
+        } catch (FailedRecordingUnitSaveException e) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
+            return false;
+        }
     }
 
     @Override
@@ -541,6 +574,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 spatialUnitService,
                 navBean,
                 flowBean,
+                specimenService,
                 (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );

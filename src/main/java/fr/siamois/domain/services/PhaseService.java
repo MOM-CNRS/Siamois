@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -59,6 +60,15 @@ public class PhaseService {
 
     public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
         return Math.toIntExact(phaseRepository.count(prepareSpecs(institutionDTO, filters)));
+    }
+
+    public boolean identifierAlreadyExistInAction(PhaseDTO phase) {
+        if (phase.getActionUnit() == null) {
+            return false;
+        }
+        return phaseRepository.findByIdentifierAndActionUnitId(phase.getIdentifier(), phase.getActionUnit().getId())
+                .filter(existing -> !Objects.equals(existing.getId(), phase.getId()))
+                .isPresent();
     }
 
     public PhaseDTO save(PhaseDTO dto) {

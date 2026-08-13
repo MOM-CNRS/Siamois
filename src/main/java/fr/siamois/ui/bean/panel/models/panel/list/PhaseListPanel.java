@@ -77,7 +77,8 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
                 flowBean,
                 genericNewUnitDialogBean,
                 institutionService,
-                formContextServices
+                formContextServices,
+                phaseService
         );
         tableModel.setParentPanel(this);
         return lazy;

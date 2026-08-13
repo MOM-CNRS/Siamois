@@ -132,6 +132,25 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     @Override
+    public void handleLinkEdit(CommandLinkColumn column, SpatialUnitDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "spatialunit.error.name.blank");
+            return;
+        }
+
+        String previous = item.getName();
+        item.setName(trimmed);
+
+        try {
+            spatialUnitService.save(item);
+        } catch (FailedRecordingUnitSaveException e) {
+            item.setName(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.spatialUnit.updateFailed", item.getName());
+        }
+    }
+
+    @Override
     public Integer resolveCount(TableColumn column, SpatialUnitDTO su) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {

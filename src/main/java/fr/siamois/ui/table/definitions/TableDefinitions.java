@@ -68,10 +68,11 @@ final class TableDefinitions {
      * @param iconClass  icon shown inside the chip
      * @param chipColor  CSS colour of the chip
      * @param action     what the click opens
+     * @param editable   whether the chip's identifier can be edited inline (pencil icon)
      * @return the link column
      */
     static CommandLinkColumn panelLinkColumn(String headerKey, String iconClass, String chipColor,
-                                             TableColumnAction action) {
+                                             TableColumnAction action, boolean editable) {
         return CommandLinkColumn.builder()
                 .id(IDENTIFIER_COLUMN_ID)
                 .headerKey(headerKey)
@@ -84,6 +85,7 @@ final class TableDefinitions {
                 .chipColor(chipColor)
                 .valueKey(IDENTIFIER)
                 .action(action)
+                .editable(editable)
                 .processExpr(THIS)
                 .updateExpr(FLOW)
                 .onstartJs(SHOW_CONTENT_JS)

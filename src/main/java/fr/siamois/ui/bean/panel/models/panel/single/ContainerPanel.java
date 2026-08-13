@@ -19,6 +19,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -101,6 +102,38 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
         }
 
         documents = List.of();
+    }
+
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getIdentifier();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "container.error.identifier.blank");
+            return false;
+        }
+
+        String previous = unit.getIdentifier();
+        unit.setIdentifier(trimmed);
+
+        if (containerService.identifierAlreadyExistInAction(unit)) {
+            unit.setIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "container.error.identifier.alreadyExists");
+            return false;
+        }
+
+        try {
+            containerService.save(unit);
+            this.titleCodeOrTitle = unit.getIdentifier();
+            return true;
+        } catch (RuntimeException e) {
+            unit.setIdentifier(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.container.updateFailed", unit.getIdentifier());
+            return false;
+        }
     }
 
     @Override

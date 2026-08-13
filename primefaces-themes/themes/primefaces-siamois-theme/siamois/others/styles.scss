@@ -967,18 +967,21 @@ body .view-edit-button.ui-splitbutton {
 .chip-cell-wrapper {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: nowrap;
 }
 .chip-cell-actions {
   visibility: hidden;
+  opacity: 0;
   display: flex;
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
+  transition: opacity 0.12s ease;
 }
 .chip-cell-wrapper:hover .chip-cell-actions {
   visibility: visible;
+  opacity: 1;
 }
 .chip-nav-link {
   text-decoration: none !important;
@@ -989,6 +992,26 @@ body .view-edit-button.ui-splitbutton {
 }
 .entity-nav-chip:hover {
   filter: brightness(0.95);
+}
+
+/* standalone "edit identifier" icon button, sitting right after the chip */
+.rum-edit-id-btn {
+  border: 1px solid var(--surface-border, #dee2e6) !important;
+  background: var(--surface-0, #fff) !important;
+  color: var(--text-secondary, #6c757d) !important;
+  border-radius: 50% !important;
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  flex-shrink: 0;
+}
+.rum-edit-id-btn:hover:not(:disabled) {
+  background: var(--siamois-green-light-100, #E6F0E6) !important;
+  border-color: var(--main-color, #699369) !important;
+  color: var(--main-color, #699369) !important;
 }
 
 /* ── entityDataTable: merged status/id/actions column ── */

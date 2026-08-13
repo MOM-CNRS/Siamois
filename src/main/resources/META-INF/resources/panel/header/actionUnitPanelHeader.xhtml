@@ -3,13 +3,18 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
 >
-    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.ActionUnitPanel"-->
 
 
-    <p:chip label="#{panelModel.titleCodeOrTitle} - (#{panelModel.unit.fullIdentifier})"
+    <p:chip label="#{panelModel.unit != null ? panelModel.unit.name : panelModel.titleCodeOrTitle}"
             styleClass="mr-2 action-unit-chip-alt"
             icon="#{panelModel.icon}"
     />
+
+    <chip:editableIdentifierChip panel="#{panelModel}"
+                                  value="#{panelModel.unit != null ? panelModel.unit.fullIdentifier : ''}"
+                                  styleClass="action-unit-chip-alt"
+                                  icon="bi bi-hash"/>
 
 
     <chip:conceptChip concept="#{panelModel.unit.type}" styleClass="mr-2 action-unit-type-chip"/>

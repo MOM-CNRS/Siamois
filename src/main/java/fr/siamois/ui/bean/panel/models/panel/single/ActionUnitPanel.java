@@ -4,6 +4,7 @@ import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -157,6 +158,37 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
 
         documents = documentService.findForActionUnit(unit);
+    }
+
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getFullIdentifier();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.blank");
+            return false;
+        }
+
+        String previous = unit.getFullIdentifier();
+        unit.setFullIdentifier(trimmed);
+
+        if (actionUnitService.fullIdentifierAlreadyExistInInstitution(unit)) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.alreadyExists");
+            return false;
+        }
+
+        try {
+            actionUnitService.save(unit);
+            return true;
+        } catch (FailedActionUnitSaveException e) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.actionUnit.updateFailed", unit.getFullIdentifier());
+            return false;
+        }
     }
 
     @Override

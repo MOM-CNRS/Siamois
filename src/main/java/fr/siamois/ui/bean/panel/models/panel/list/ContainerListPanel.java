@@ -88,7 +88,8 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
                 institutionService,
                 formContextServices,
                 actionUnitService,
-                actionUnitMapper
+                actionUnitMapper,
+                containerService
         );
         tableModel.setParentPanel(this);
         return lazy;

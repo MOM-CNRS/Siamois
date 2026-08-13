@@ -23,6 +23,8 @@ import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
@@ -128,11 +130,40 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
                 return au.getName();
             }
 
+            if ("fullIdentifier".equals(valueKey)) {
+                return au.getFullIdentifier();
+            }
+
             throw new IllegalStateException("Unknown valueKey: " + valueKey);
         }
 
 
         return "";
+    }
+
+    @Override
+    public void handleLinkEdit(CommandLinkColumn column, ActionUnitDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.blank");
+            return;
+        }
+
+        String previous = item.getFullIdentifier();
+        item.setFullIdentifier(trimmed);
+
+        if (actionUnitService.fullIdentifierAlreadyExistInInstitution(item)) {
+            item.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            actionUnitService.save(item);
+        } catch (FailedActionUnitSaveException e) {
+            item.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.actionUnit.updateFailed", item.getFullIdentifier());
+        }
     }
 
     @Override

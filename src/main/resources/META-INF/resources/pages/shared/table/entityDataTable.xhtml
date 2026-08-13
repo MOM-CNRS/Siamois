@@ -108,13 +108,14 @@
 
                             <div class="chip-cell-actions">
                                 <p:commandButton id="editChipBtn"
-                                                 rendered="#{tableModel.tableDefinition.commandLinkColumn.editable}"
+                                                 rendered="#{tableModel.tableDefinition.commandLinkColumn.editable and tableModel.isRendered(tableModel.tableDefinition.commandLinkColumn, 'writeMode', item)}"
                                                  icon="bi bi-pencil"
-                                                 styleClass="rum-action-btn"
+                                                 styleClass="rum-edit-id-btn"
                                                  action="#{tableModel.startEditLink(item)}"
                                                  update="mergedCell"
                                                  process="@this"
-                                                 title="Modifier"/>
+                                                 oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
+                                <p:tooltip for="editChipBtn" value="Modifier l'identifiant" position="top"/>
                             </div>
 
                             <p:contextMenu for="chipNavigate">
@@ -132,15 +133,19 @@
                                       style="display:flex; align-items:center; gap:4px;">
                             <p:inputText id="editLinkInput"
                                          value="#{tableModel.editingLinkValue}"
-                                         style="min-width: 8em;"/>
-                            <p:commandButton icon="bi bi-check"
-                                             styleClass="rum-action-btn"
+                                         style="min-width: 8em;"
+                                         styleClass="rum-edit-link-input"
+                                         onkeydown="if(event.key==='Enter'){event.preventDefault();$(this).siblings('.rum-apply-link-edit-btn').trigger('click');}else if(event.key==='Escape'){event.preventDefault();$(this).siblings('.rum-cancel-link-edit-btn').trigger('click');}"/>
+                            <p:commandButton id="applyLinkEditBtn"
+                                             icon="bi bi-check"
+                                             styleClass="rum-action-btn rum-apply-link-edit-btn"
                                              title="Valider"
                                              action="#{tableModel.applyLinkEdit(item)}"
                                              update="mergedCell"
                                              process="editLinkInput @this"/>
-                            <p:commandButton icon="bi bi-x"
-                                             styleClass="rum-action-btn"
+                            <p:commandButton id="cancelLinkEditBtn"
+                                             icon="bi bi-x"
+                                             styleClass="rum-action-btn rum-cancel-link-edit-btn"
                                              title="Annuler"
                                              action="#{tableModel.cancelEditLink()}"
                                              update="mergedCell"
