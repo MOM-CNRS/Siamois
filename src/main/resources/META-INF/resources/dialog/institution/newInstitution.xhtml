@@ -6,6 +6,50 @@
 >
 
 
+    <script>
+        const institutionFunnyMessages = [
+            "#{langBean.msg('organisationManagement.creating.funny.1')}",
+            "#{langBean.msg('organisationManagement.creating.funny.2')}",
+            "#{langBean.msg('organisationManagement.creating.funny.3')}",
+            "#{langBean.msg('organisationManagement.creating.funny.4')}",
+            "#{langBean.msg('organisationManagement.creating.funny.5')}",
+            "#{langBean.msg('organisationManagement.creating.funny.6')}",
+            "#{langBean.msg('organisationManagement.creating.funny.7')}",
+            "#{langBean.msg('organisationManagement.creating.funny.8')}",
+            "#{langBean.msg('organisationManagement.creating.funny.9')}",
+            "#{langBean.msg('organisationManagement.creating.funny.10')}"
+        ];
+        let institutionFunnyMessageInterval = null;
+
+        function nextInstitutionFunnyMessage() {
+            const label = document.getElementById('institutionFunnyMessage');
+            if (!label) return;
+            const choices = institutionFunnyMessages.filter(msg => msg !== label.dataset.current);
+            const next = choices[Math.floor(Math.random() * choices.length)];
+            label.dataset.current = next;
+            label.textContent = next;
+        }
+
+        function startInstitutionProgressBar() {
+            const bars = document.getElementsByClassName('institution-progress-bar');
+            for (const bar of bars) {
+                bar.style.visibility = 'visible';
+            }
+            PF('pbAjaxInstitutionCreateWidget').start();
+            nextInstitutionFunnyMessage();
+            institutionFunnyMessageInterval = setInterval(nextInstitutionFunnyMessage, 5000);
+        }
+
+        function endInstitutionProgressBar() {
+            const bars = document.getElementsByClassName('institution-progress-bar');
+            for (const bar of bars) {
+                bar.style.visibility = 'collapse';
+            }
+            PF('pbAjaxInstitutionCreateWidget').cancel();
+            clearInterval(institutionFunnyMessageInterval);
+        }
+    </script>
+
     <p:dialog
             widgetVar="newInstitutionDialog"
             id="newInstitutionDialog"
@@ -110,6 +154,23 @@
                         </div>
                     </div>
                 </div>
+
+                <p id="institutionFunnyMessage"
+                   class="institution-progress-bar text-muted"
+                   style="visibility: collapse; font-style: italic; margin-top: 0.5rem; margin-bottom: 0;"
+                />
+
+                <p:progressBar widgetVar="pbAjaxInstitutionCreateWidget"
+                               id="pbAjaxInstitutionCreate"
+                               ajax="true"
+                               value="#{institutionDialogBean.progressWrapper.progressPercentage}"
+                               labelTemplate="{value}%"
+                               styleClass="mt-3 institution-progress-bar"
+                               global="true"
+                               interval="500"
+                               style="visibility: collapse"
+                />
+
                 <hr/>
 
                 <p:toolbar class="dialog-buttons">
@@ -119,7 +180,9 @@
                                          immediate="true" action="#{institutionDialogBean.exit()}" update="@form"/>
                         <p:commandButton value="#{institutionDialogBean.buttonLabel}"
                                          action="#{institutionDialogBean.save()}"
-                                         update="@form institutionManagerDatatable:formCC:institutionManagerForm"/>
+                                         update="@form institutionManagerDatatable:formCC:institutionManagerForm"
+                                         onstart="startInstitutionProgressBar()"
+                                         oncomplete="endInstitutionProgressBar()"/>
                     </p:toolbarGroup>
                 </p:toolbar>
             </div>

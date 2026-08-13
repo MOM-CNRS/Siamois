@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
@@ -117,6 +118,19 @@ public class InstitutionService {
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
     public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
+        return createInstitution(institution, thesaurusUrl, new ProgressWrapper());
+    }
+
+    /**
+     * Creates a new institution, reporting thesaurus configuration progress through the given wrapper.
+     *
+     * @param institution     the institution to create
+     * @param progressWrapper the wrapper to update with the progress of the thesaurus configuration
+     * @return the created institution
+     * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
+     * @throws FailedInstitutionSaveException   if there is an error while saving the institution
+     */
+    public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl, ProgressWrapper progressWrapper) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
         institution.setCreationDate(OffsetDateTime.now(ZoneOffset.UTC));
         if (existing.isPresent())
@@ -130,7 +144,7 @@ public class InstitutionService {
             // Verifier que le thesaurus soit compatible
 
             Institution i = institutionRepository.save(Objects.requireNonNull(institutionMapper.invertConvert(institution)));
-            fieldConfigurationService.setupFieldConfigurationForInstitution(Objects.requireNonNull(institutionMapper.convert(i)), vocabulary);
+            fieldConfigurationService.setupFieldConfigurationForInstitution(Objects.requireNonNull(institutionMapper.convert(i)), vocabulary, progressWrapper);
             InstitutionDTO institutionDTO = institutionMapper.convert(i);
             createInstitutionProfiles(institutionDTO);
             return  institutionDTO;
