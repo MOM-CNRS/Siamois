@@ -53,10 +53,6 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient LabelService labelService;
 
-    // Inline identifier editing (panel header chip)
-    private boolean editingIdentifier;
-    private String editingIdentifierValue;
-
     @Override
     protected boolean documentExistsInUnitByHash(PhaseDTO unit, String hash) {
         return false;
@@ -108,21 +104,16 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         documents = List.of();
     }
 
-    public void startEditIdentifier() {
-        this.editingIdentifierValue = unit.getIdentifier();
-        this.editingIdentifier = true;
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getIdentifier();
     }
 
-    public void cancelEditIdentifier() {
-        this.editingIdentifier = false;
-        this.editingIdentifierValue = null;
-    }
-
-    public void applyEditIdentifier() {
-        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
         if (trimmed.isEmpty()) {
             MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.blank");
-            return;
+            return false;
         }
 
         String previous = unit.getIdentifier();
@@ -131,16 +122,17 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         if (phaseService.identifierAlreadyExistInAction(unit)) {
             unit.setIdentifier(previous);
             MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.alreadyExists");
-            return;
+            return false;
         }
 
         try {
             phaseService.save(unit);
             this.titleCodeOrTitle = unit.getIdentifier();
-            cancelEditIdentifier();
+            return true;
         } catch (RuntimeException e) {
             unit.setIdentifier(previous);
             MessageUtils.displayErrorMessage(langBean, "common.entity.phase.updateFailed", unit.getIdentifier());
+            return false;
         }
     }
 

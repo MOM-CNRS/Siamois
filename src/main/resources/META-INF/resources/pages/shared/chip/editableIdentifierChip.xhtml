@@ -1,0 +1,77 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://java.sun.com/jsf/composite"
+        xmlns:p="http://primefaces.org/ui"
+        xmlns:h="http://java.sun.com/jsf/html"
+>
+
+    <!--
+        Read/edit toggle for an entity's identifying chip in a panel header: plain chip with a
+        pencil on hover, turning into an input (Enter saves, Escape cancels) when clicked.
+        The panel bean must extend AbstractSingleEntityPanel, which owns the editing state
+        (editingIdentifier / editingIdentifierValue) and the start/cancel/apply actions —
+        this component only renders the UI and wires the clicks, it holds no state of its own.
+    -->
+    <cc:interface>
+        <cc:attribute name="panel"
+                      shortDescription="The panel bean, extending AbstractSingleEntityPanel"
+                      required="true"/>
+        <cc:attribute name="value"
+                      type="java.lang.String"
+                      shortDescription="The identifying value to show in read mode"
+                      required="true"/>
+        <cc:attribute name="styleClass"
+                      type="java.lang.String"
+                      shortDescription="Style class applied to the chip in read mode"
+                      required="false"/>
+        <cc:attribute name="icon"
+                      type="java.lang.String"
+                      shortDescription="Bootstrap icon class for the chip"
+                      required="false"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <h:panelGroup id="idChipArea" styleClass="mr-2">
+            <h:panelGroup rendered="#{not cc.attrs.panel.editingIdentifier}" styleClass="chip-cell-wrapper">
+                <p:chip label="#{cc.attrs.value}"
+                        styleClass="#{cc.attrs.styleClass} entity-nav-chip"
+                        icon="#{cc.attrs.icon}"
+                        id="idChip"
+                />
+                <div class="chip-cell-actions">
+                    <p:commandButton id="editIdentifierBtn"
+                                     rendered="#{flowBean.isWriteMode}"
+                                     icon="bi bi-pencil"
+                                     styleClass="rum-edit-id-btn"
+                                     action="#{cc.attrs.panel.startEditIdentifier()}"
+                                     update="idChipArea"
+                                     process="@this"
+                                     oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
+                    <p:tooltip for="editIdentifierBtn" value="Modifier l'identifiant" position="top"/>
+                </div>
+            </h:panelGroup>
+            <h:panelGroup rendered="#{cc.attrs.panel.editingIdentifier}" styleClass="chip-cell-wrapper">
+                <p:inputText id="editIdentifierInput"
+                             value="#{cc.attrs.panel.editingIdentifierValue}"
+                             styleClass="rum-edit-link-input"
+                             style="min-width: 8em;"
+                             onkeydown="if(event.key==='Enter'){event.preventDefault();$(this).siblings('.rum-apply-link-edit-btn').trigger('click');}else if(event.key==='Escape'){event.preventDefault();$(this).siblings('.rum-cancel-link-edit-btn').trigger('click');}"/>
+                <p:commandButton id="applyIdentifierBtn"
+                                 icon="bi bi-check"
+                                 styleClass="rum-action-btn rum-apply-link-edit-btn"
+                                 title="Valider"
+                                 action="#{cc.attrs.panel.applyEditIdentifier()}"
+                                 update="idChipArea"
+                                 process="editIdentifierInput @this"/>
+                <p:commandButton id="cancelIdentifierBtn"
+                                 icon="bi bi-x"
+                                 styleClass="rum-action-btn rum-cancel-link-edit-btn"
+                                 title="Annuler"
+                                 action="#{cc.attrs.panel.cancelEditIdentifier()}"
+                                 update="idChipArea"
+                                 process="@this"/>
+            </h:panelGroup>
+        </h:panelGroup>
+    </cc:implementation>
+</ui:composition>

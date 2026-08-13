@@ -109,6 +109,9 @@ public class ContainerService {
     }
 
     public boolean identifierAlreadyExistInAction(ContainerDTO container) {
+        if (container.getActionUnit() == null) {
+            return false;
+        }
         return containerRepository.findByActionUnitIdAndIdentifier(
                         container.getActionUnit().getId(), container.getIdentifier()).stream()
                 .anyMatch(existing -> !Objects.equals(existing.getId(), container.getId()));

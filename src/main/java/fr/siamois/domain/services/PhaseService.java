@@ -63,6 +63,9 @@ public class PhaseService {
     }
 
     public boolean identifierAlreadyExistInAction(PhaseDTO phase) {
+        if (phase.getActionUnit() == null) {
+            return false;
+        }
         return phaseRepository.findByIdentifierAndActionUnitId(phase.getIdentifier(), phase.getActionUnit().getId())
                 .filter(existing -> !Objects.equals(existing.getId(), phase.getId()))
                 .isPresent();

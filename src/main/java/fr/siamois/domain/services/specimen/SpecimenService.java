@@ -191,8 +191,13 @@ public class SpecimenService implements ArkEntityService {
     }
 
     public boolean fullIdentifierAlreadyExistInAction(SpecimenDTO specimen) {
-        return specimenRepository.findByActionUnitIdAndFullIdentifier(
-                        specimen.getActionUnit().getId(), specimen.getFullIdentifier()).stream()
+        Long actionUnitId = specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null;
+        if (actionUnitId == null) {
+            // No action unit resolved on the DTO (e.g. only linked via a recording unit summary
+            // that doesn't carry it) — nothing to scope the uniqueness check against.
+            return false;
+        }
+        return specimenRepository.findByActionUnitIdAndFullIdentifier(actionUnitId, specimen.getFullIdentifier()).stream()
                 .anyMatch(existing -> !Objects.equals(existing.getId(), specimen.getId()));
     }
 

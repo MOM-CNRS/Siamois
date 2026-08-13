@@ -62,10 +62,6 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient LabelService labelService;
 
-    // Inline identifier editing (panel header chip)
-    private boolean editingIdentifier;
-    private String editingIdentifierValue;
-
     @Override
     protected boolean documentExistsInUnitByHash(SpecimenDTO unit, String hash) {
         return documentService.existInSpecimenByHash(unit, hash);
@@ -143,21 +139,16 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         documents = documentService.findForSpecimen(unit);
     }
 
-    public void startEditIdentifier() {
-        this.editingIdentifierValue = unit.getFullIdentifier();
-        this.editingIdentifier = true;
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getFullIdentifier();
     }
 
-    public void cancelEditIdentifier() {
-        this.editingIdentifier = false;
-        this.editingIdentifierValue = null;
-    }
-
-    public void applyEditIdentifier() {
-        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
         if (trimmed.isEmpty()) {
             MessageUtils.displayWarnMessage(langBean, "specimen.error.identifier.blank");
-            return;
+            return false;
         }
 
         String previous = unit.getFullIdentifier();
@@ -166,16 +157,17 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         if (specimenService.fullIdentifierAlreadyExistInAction(unit)) {
             unit.setFullIdentifier(previous);
             MessageUtils.displayWarnMessage(langBean, "specimen.error.identifier.alreadyExists");
-            return;
+            return false;
         }
 
         try {
             specimenService.save(unit);
             this.titleCodeOrTitle = unit.getFullIdentifier();
-            cancelEditIdentifier();
+            return true;
         } catch (RuntimeException e) {
             unit.setFullIdentifier(previous);
             MessageUtils.displayErrorMessage(langBean, "common.entity.specimen.updateFailed", unit.getFullIdentifier());
+            return false;
         }
     }
 

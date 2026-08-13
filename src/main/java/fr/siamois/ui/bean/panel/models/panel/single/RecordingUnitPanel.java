@@ -94,10 +94,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     // Strati
     private CustomFieldAnswerStratigraphyViewModel stratigraphyViewModel;
 
-    // Inline identifier editing (panel header chip)
-    private boolean editingIdentifier;
-    private String editingIdentifierValue;
-
 
 
 
@@ -252,21 +248,16 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         documents = unit != null ? documentService.findForRecordingUnit(unit) : List.of();
     }
 
-    public void startEditIdentifier() {
-        this.editingIdentifierValue = unit.getFullIdentifier();
-        this.editingIdentifier = true;
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getFullIdentifier();
     }
 
-    public void cancelEditIdentifier() {
-        this.editingIdentifier = false;
-        this.editingIdentifierValue = null;
-    }
-
-    public void applyEditIdentifier() {
-        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
         if (trimmed.isEmpty()) {
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.blank");
-            return;
+            return false;
         }
 
         String previous = unit.getFullIdentifier();
@@ -275,16 +266,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(unit)) {
             unit.setFullIdentifier(previous);
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
-            return;
+            return false;
         }
 
         try {
             recordingUnitService.save(unit);
             this.titleCodeOrTitle = unit.getFullIdentifier();
-            cancelEditIdentifier();
+            return true;
         } catch (FailedRecordingUnitSaveException e) {
             unit.setFullIdentifier(previous);
             MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
+            return false;
         }
     }
 

@@ -86,10 +86,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     private transient RecordingUnitTableViewModel recordingTabTableModel;
 
-    // Inline identifier editing (panel header chip)
-    private boolean editingIdentifier;
-    private String editingIdentifierValue;
-
     @Override
     protected boolean documentExistsInUnitByHash(ActionUnitDTO unit, String hash) {
         return documentService.existInActionUnitByHash(unit, hash);
@@ -164,21 +160,16 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         documents = documentService.findForActionUnit(unit);
     }
 
-    public void startEditIdentifier() {
-        this.editingIdentifierValue = unit.getFullIdentifier();
-        this.editingIdentifier = true;
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getFullIdentifier();
     }
 
-    public void cancelEditIdentifier() {
-        this.editingIdentifier = false;
-        this.editingIdentifierValue = null;
-    }
-
-    public void applyEditIdentifier() {
-        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
         if (trimmed.isEmpty()) {
             MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.blank");
-            return;
+            return false;
         }
 
         String previous = unit.getFullIdentifier();
@@ -187,15 +178,16 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         if (actionUnitService.fullIdentifierAlreadyExistInInstitution(unit)) {
             unit.setFullIdentifier(previous);
             MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.alreadyExists");
-            return;
+            return false;
         }
 
         try {
             actionUnitService.save(unit);
-            cancelEditIdentifier();
+            return true;
         } catch (FailedActionUnitSaveException e) {
             unit.setFullIdentifier(previous);
             MessageUtils.displayErrorMessage(langBean, "common.entity.actionUnit.updateFailed", unit.getFullIdentifier());
+            return false;
         }
     }
 
