@@ -189,7 +189,7 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         // not yet supported
     }
 

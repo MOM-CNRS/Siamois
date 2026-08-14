@@ -250,7 +250,14 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
         return targets;
     }
 
-    private void handlePostSave() {
+    /**
+     * Pushes the current {@link #unit} into whatever row/table is watching it and issues the
+     * matching row-scoped AJAX update. Registered as the form's post-save callback, but also
+     * called directly by header actions that mutate and persist the unit outside the normal
+     * form-save flow (validation toggle, inline identifier edit), which need the exact same
+     * row sync.
+     */
+    protected void handlePostSave() {
         if (isRoot || parentOrOverview == null) return;
         if (parentOrOverview instanceof AbstractListPanel<?> listPanel) {
             listPanel.updateRowInTableModel(unit);

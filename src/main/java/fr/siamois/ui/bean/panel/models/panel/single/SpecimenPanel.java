@@ -228,7 +228,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         unit = specimenService.toggleValidated(unit.getId());
     }
 

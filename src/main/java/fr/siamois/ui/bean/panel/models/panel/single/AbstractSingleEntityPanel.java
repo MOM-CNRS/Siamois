@@ -117,6 +117,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
         String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
         if (persistIdentifierEdit(trimmed)) {
             cancelEditIdentifier();
+            handlePostSave();
         }
     }
 
@@ -209,7 +210,16 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-    public abstract void toggleValidate();
+    /**
+     * Toggles the unit's validation status and syncs the row wherever it's currently shown
+     * (main list panel, entity-list tab), same as a regular field save.
+     */
+    public final void toggleValidate() {
+        doToggleValidate();
+        handlePostSave();
+    }
+
+    protected abstract void doToggleValidate();
 
     /*
         Find unit by its ID

@@ -264,7 +264,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         unit = actionUnitService.toggleValidated(unit.getId());
     }
 

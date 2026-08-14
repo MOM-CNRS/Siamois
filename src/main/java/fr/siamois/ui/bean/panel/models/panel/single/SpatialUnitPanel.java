@@ -176,7 +176,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         unit = spatialUnitService.toggleValidated(unit.getId());
     }
 

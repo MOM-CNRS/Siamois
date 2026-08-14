@@ -416,7 +416,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         unit = recordingUnitService.toggleValidated(unit.getId());
     }
 

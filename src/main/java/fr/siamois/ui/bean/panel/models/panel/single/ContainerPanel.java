@@ -189,7 +189,7 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         // not yet supported for containers
     }
 
