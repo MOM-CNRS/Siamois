@@ -787,7 +787,6 @@ public class ActionUnitService implements ArkEntityService {
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
-        actionUnitRepository.deleteFormMappingsForActionUnit(actionUnitId);
         actionUnitRepository.deleteSecondaryActionCodeLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);
