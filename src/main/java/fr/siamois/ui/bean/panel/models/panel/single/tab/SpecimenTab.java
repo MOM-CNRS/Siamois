@@ -16,4 +16,9 @@ public class SpecimenTab extends EntityListTab<SpecimenDTO> {
         return "/panel/tab/specimenTab.xhtml";
     }
 
+    @Override
+    protected String getTableCompositeId() {
+        return "specimenList";
+    }
+
 }

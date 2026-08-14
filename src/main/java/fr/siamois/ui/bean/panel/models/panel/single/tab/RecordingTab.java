@@ -17,4 +17,9 @@ public class RecordingTab extends EntityListTab<RecordingUnitDTO> {
         return "/panel/tab/recordingUnitsTab.xhtml";
     }
 
+    @Override
+    protected String getTableCompositeId() {
+        return "recordingList";
+    }
+
 }
