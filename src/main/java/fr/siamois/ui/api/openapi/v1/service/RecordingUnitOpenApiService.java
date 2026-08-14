@@ -474,7 +474,14 @@ public class RecordingUnitOpenApiService {
 
     /**
      * Formulaire de création d'une UE : même résolution que le détail (type + institution), sans entité persistée.
+     *
+     * @deprecated Scopé uniquement par institution (`organizationId`), sans notion de projet — le
+     * formulaire retourné est donc toujours {@link RecordingUnit#NEW_UNIT_FORM} tel quel, sans passer
+     * par {@link fr.siamois.domain.services.form.EffectiveFormResolver}, contrairement aux autres
+     * méthodes de résolution de formulaire de ce service. À remplacer par un formulaire de création
+     * scopé par projet, probablement intégré à {@link #buildProjectRecordingUnitTypeSettings}.
      */
+    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public RecordingUnitCreateFormData buildRecordingUnitCreateForm(long organizationId,
                                                                     long recordingUnitTypeConceptId,
