@@ -291,15 +291,16 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
         }
 
-        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(au.getId(), null);
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(userInfo, au.getId(), null);
         RecordingUnitDefaultType defaultType = buildDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
 
-        List<Concept> configuredTypes = formService.findConfiguredRecordingUnitTypesByInstitution(institution);
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.UE));
         Locale locale = langService.localeForApiLang(lang);
         List<RecordingUnitType> types = configuredTypes.stream()
                 .map(concept -> buildRecordingUnitType(au.getId(), concept, userInfo, locale,
-                        buildIdentifierConfig(au.getId(), concept.getId())))
+                        buildIdentifierConfig(userInfo, au.getId(), concept.getId())))
                 .toList();
 
         return new ProjectRecordingUnitTypeListResponse(types, defaultType);
@@ -333,9 +334,9 @@ public class RecordingUnitOpenApiService {
         return new ProjectFindTypeListResponse(List.of(), defaultType);
     }
 
-    private RecordingUnitIdentifierConfig buildIdentifierConfig(Long projectId, Long typeConceptId) {
-        FormConfig stored = tableFieldConfigService.resolveIdentifierConfig(
-                projectId, ConfigurableTable.UE, typeConceptId);
+    private RecordingUnitIdentifierConfig buildIdentifierConfig(UserInfo userInfo, Long projectId, Long typeConceptId) {
+        FormConfig stored = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> tableFieldConfigService.resolveIdentifierConfig(
+                projectId, ConfigurableTable.UE, typeConceptId));
         RecordingUnitIdentifierConfig config = new RecordingUnitIdentifierConfig();
         config.setIdentifierFormat(stored.getIdentifierFormat());
         config.setMaxCode(stored.getMaxCode());

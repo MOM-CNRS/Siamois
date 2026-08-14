@@ -124,15 +124,25 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return new TypeSummary(typeName, false);
     }
 
-    private Set<String> configuredTypeNames(Long projectId, ConfigurableTable table) {
+    @Override
+    @Transactional(readOnly = true)
+    public List<Concept> listConfiguredTypeConcepts(Long projectId, ConfigurableTable table) {
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
-        if (fieldConcept.isEmpty()) return Set.of();
+        if (fieldConcept.isEmpty()) return List.of();
 
-        Set<String> names = new LinkedHashSet<>();
+        List<Concept> concepts = new ArrayList<>();
         for (FormConfig config : formConfigRepository.findAllByActionUnitAndField(projectId, fieldConcept.get().getId())) {
             if (config.getValueConcept() != null) {
-                names.add(labelOf(config.getValueConcept()));
+                concepts.add(config.getValueConcept());
             }
+        }
+        return concepts;
+    }
+
+    private Set<String> configuredTypeNames(Long projectId, ConfigurableTable table) {
+        Set<String> names = new LinkedHashSet<>();
+        for (Concept concept : listConfiguredTypeConcepts(projectId, table)) {
+            names.add(labelOf(concept));
         }
         return names;
     }

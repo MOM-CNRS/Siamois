@@ -2107,7 +2107,7 @@ class RecordingUnitOpenApiServiceTest {
         typedIdentifierConfig.setMaxCode(500);
         when(tableFieldConfigService.resolveIdentifierConfig(5L, ConfigurableTable.UE, 42L))
                 .thenReturn(typedIdentifierConfig);
-        when(formService.findConfiguredRecordingUnitTypesByInstitution(inst)).thenReturn(List.of(concept));
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of(concept));
         ConceptDTO typeDto = new ConceptDTO();
         typeDto.setId(42L);
         when(conceptMapper.convert(concept)).thenReturn(typeDto);
@@ -2148,7 +2148,7 @@ class RecordingUnitOpenApiServiceTest {
         when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), isNull()))
                 .thenReturn(formUiDtoWithOneField(defaultField));
 
-        when(formService.findConfiguredRecordingUnitTypesByInstitution(inst)).thenReturn(List.of());
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of());
 
         ProjectRecordingUnitTypeListResponse response =
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
