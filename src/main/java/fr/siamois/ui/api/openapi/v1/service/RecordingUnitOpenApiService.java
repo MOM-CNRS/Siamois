@@ -515,7 +515,14 @@ public class RecordingUnitOpenApiService {
 
     /**
      * Gabarit UI pour création d'un mobilier : layout et métadonnées ({@link Specimen#NEW_UNIT_FORM}, comme le dialog web).
+     *
+     * @deprecated Scopé uniquement par institution (`organizationId`), sans notion de projet — le
+     * formulaire retourné est donc toujours {@link Specimen#NEW_UNIT_FORM} tel quel, sans passer par
+     * {@link fr.siamois.domain.services.form.EffectiveFormResolver}, contrairement aux autres méthodes
+     * de résolution de formulaire de ce service. À remplacer par un formulaire de création scopé par
+     * projet, probablement intégré à {@link #buildProjectFindTypeSettings}.
      */
+    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public FindCreateFormData buildFindCreateForm(long organizationId,
                                                   long findTypeConceptId,
