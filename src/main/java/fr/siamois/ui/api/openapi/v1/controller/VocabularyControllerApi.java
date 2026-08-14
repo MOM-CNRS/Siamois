@@ -28,11 +28,22 @@ public class VocabularyControllerApi {
     private final ProjectApiService projectApiService;
     private final VocabularyOpenApiService vocabularyOpenApiService;
 
+    /**
+     * @deprecated Non scopé par projet et renvoie tous les field_codes configurés pour l'institution en
+     * une seule réponse (pas de pagination/suggestion). À remplacer par
+     * {@code GET /api/v1/projects/{id}/field-codes} (liste des field_codes d'un projet) combiné à
+     * {@code GET /api/v1/projects/{id}/concepts?fieldCode=…} (vocabulaire pour un field_code donné,
+     * paginé pour la synchronisation ou en mode suggestion selon l'usage du paramètre `q`).
+     */
+    @Deprecated(forRemoval = true)
     @GetMapping
     @Operation(
             summary = "Vocabulaires d'une organisation pour les formulaires",
             description = "Alias de GET /api/v1/organizations/{organizationId}/vocabularies. "
-                    + "Retourne le catalogue des thésaurus et les listes de concepts par field_code."
+                    + "Retourne le catalogue des thésaurus et les listes de concepts par field_code. "
+                    + "**Déprécié** : non scopé par projet — remplacé par "
+                    + "`GET /api/v1/projects/{id}/field-codes` et `GET /api/v1/projects/{id}/concepts?fieldCode=…`.",
+            deprecated = true
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),

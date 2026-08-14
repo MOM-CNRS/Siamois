@@ -3,6 +3,7 @@ package fr.siamois.domain.services.settings.tableconfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.models.vocabulary.Concept;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,18 @@ public interface TableFieldConfigService {
      * @return the table's configured types, {@code _default} first
      */
     List<TypeSummary> listTypes(Long projectId, ConfigurableTable table);
+
+    /**
+     * Lists the {@link fr.siamois.domain.models.vocabulary.Concept}s a table is configured for —
+     * the concept-keyed equivalent of {@link #listTypes(Long, ConfigurableTable)}, minus the
+     * {@code _default} entry (which has no concept of its own).
+     *
+     * @param projectId the project (action unit) these types are scoped to
+     * @param table     the table whose configured types are listed
+     * @return the concepts every type explicitly configured through
+     * {@link #addConfiguration(Long, ConfigurableTable, String)} resolves to
+     */
+    List<Concept> listConfiguredTypeConcepts(Long projectId, ConfigurableTable table);
 
     /**
      * Lists the values of the table's type field that could still be given a configuration, i.e.

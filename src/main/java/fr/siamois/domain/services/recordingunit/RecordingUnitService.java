@@ -895,46 +895,6 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.findByFullIdentifierAndInstitutionIdentifier(identifier, institutionIdentifier).orElse(null);
     }
 
-    public RecordingUnit findByFullIdentifierAndInstitutionId(
-            String fullIdentifier,
-            Long institutionIdentifier) {
-
-        return recordingUnitRepository
-                .findByFullIdentifierAndInstitutionId(fullIdentifier, institutionIdentifier)
-                .orElseThrow(() ->
-                        new RecordingUnitNotFoundException(
-                                "RecordingUnit not found with fullIdentifier="
-                                        + fullIdentifier +
-                                        " and institutionIdentifier="
-                                        + institutionIdentifier));
-    }
-
-    public RecordingUnitDTO findByFullIdentifierAndInstitutionIdDTO(
-            String fullIdentifier,
-            Long institutionId,
-            List<String> counts) {
-
-        RecordingUnit entity = recordingUnitRepository
-                .findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId)
-                .orElseThrow(() ->
-                        new RecordingUnitNotFoundException(
-                                "RecordingUnit not found with fullIdentifier="
-                                        + fullIdentifier +
-                                        " and institutionId=" + institutionId));
-
-
-        RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
-
-        // If "specimen" is in counts, fetch and set the specimen count
-        if (counts != null && counts.contains("specimen") && dto != null) {
-            Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(entity.getId());
-            dto.setSpecimenCount(specimenCount);
-        }
-
-        return dto;
-    }
-
-
     public Page<RecordingUnitDTO> findByActionUnitId(Long actionUnitId, int limit, int offset, Sort sort) {
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit, sort);

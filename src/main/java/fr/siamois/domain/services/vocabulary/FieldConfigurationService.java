@@ -118,6 +118,7 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     @NonNull
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfiguration(institution, vocabulary, new ProgressWrapper());
     }

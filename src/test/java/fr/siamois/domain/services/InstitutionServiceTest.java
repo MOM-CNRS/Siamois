@@ -8,6 +8,7 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
@@ -163,7 +164,7 @@ class InstitutionServiceTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString()))
                 .thenReturn(fakeVocabulary);
         when(fieldConfigurationService
-                .setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class))).thenReturn(
+                .setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class), any(ProgressWrapper.class))).thenReturn(
                         Optional.of(mock(FeedbackFieldConfig.class)));
         when(institutionMapper.convert(any(Institution.class))).thenReturn(new InstitutionDTO());
         when(institutionRepository.save(any(Institution.class))).thenReturn(mock(Institution.class));

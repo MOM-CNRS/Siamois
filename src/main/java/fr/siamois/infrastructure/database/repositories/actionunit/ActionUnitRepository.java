@@ -210,11 +210,6 @@ WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND actio
 
     @Modifying
     @Transactional
-    @Query(nativeQuery = true, value = "DELETE FROM action_unit_form_mapping WHERE fk_action_unit = :actionUnitId")
-    void deleteFormMappingsForActionUnit(@Param("actionUnitId") Long actionUnitId);
-
-    @Modifying
-    @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM action_action_code WHERE fk_action_id = :actionUnitId")
     void deleteSecondaryActionCodeLinksForActionUnit(@Param("actionUnitId") Long actionUnitId);
 

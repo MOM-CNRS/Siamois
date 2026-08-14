@@ -18,7 +18,7 @@ public interface ConceptFieldConfigRepository extends CrudRepository<ConceptFiel
     Optional<ConceptFieldConfig> findOneByFieldCodeForInstitution(Long institutionId, String fieldCode);
 
 
-    @Query("SELECT DISTINCT cfc " +
+    @Query("SELECT DISTINCT cfc.fieldCode " +
             "FROM ConceptFieldConfig cfc " +
             "WHERE cfc.institution.id = :institutionId " +
             "ORDER BY cfc.fieldCode")

@@ -5,12 +5,10 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.customform.ValueMatcher;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
@@ -50,14 +48,8 @@ import java.util.stream.Collectors;
 public class FormService {
 
     private final LabelBean labelBean;
-    private final FormScopeRepository formScopeRepository;
     private final UnitDefinitionMapper unitDefinitionMapper;
     private final CustomFieldAnswerService customFieldAnswerService;
-
-    @Transactional(readOnly = true)
-    public List<Concept> findConfiguredRecordingUnitTypesByInstitution(InstitutionDTO institution) {
-        return formScopeRepository.findConfiguredTypesByInstitution();
-    }
 
     // --------- Answer creators
 

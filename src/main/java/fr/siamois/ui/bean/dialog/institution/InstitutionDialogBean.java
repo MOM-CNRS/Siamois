@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
@@ -49,6 +50,8 @@ public class InstitutionDialogBean implements Serializable {
     private ThesaurusInfo selected = new ThesaurusInfo("", "", "", "");
     private transient List<ThesaurusInfo> publicThesaurus = new ArrayList<>();
 
+    private ProgressWrapper progressWrapper = new ProgressWrapper();
+
     @EventListener(LoginEvent.class)
     public void reset() {
         log.trace("Reset called");
@@ -62,6 +65,7 @@ public class InstitutionDialogBean implements Serializable {
         publicThesaurus = new ArrayList<>();
         thesaurusServerUrl = "https://thesaurus.mom.fr";
         selected = new ThesaurusInfo("", "", "", "");
+        progressWrapper.reset();
         reloadThesaurusInfoList();
     }
 
@@ -71,9 +75,13 @@ public class InstitutionDialogBean implements Serializable {
         institution.setIdentifier(identifier);
         institution.setDescription(description);
 
-        InstitutionDTO created = institutionService.createInstitution(institution, selected.completeThesaurusUrl());
-        institutionService.addToManagers(created, sessionSettingsBean.getAuthenticatedUser());
-        return created;
+        try {
+            InstitutionDTO created = institutionService.createInstitution(institution, selected.completeThesaurusUrl(), progressWrapper);
+            institutionService.addToManagers(created, sessionSettingsBean.getAuthenticatedUser());
+            return created;
+        } finally {
+            progressWrapper.reset();
+        }
     }
 
     public void save() {

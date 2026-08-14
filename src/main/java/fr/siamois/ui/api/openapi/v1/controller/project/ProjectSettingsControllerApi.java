@@ -1,6 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
-import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -21,7 +20,6 @@ import static fr.siamois.ui.api.openapi.v1.OpenApiTags.PROJECT_CONFIG;
 
 @RestController
 @RequestMapping("/api/v1/projects")
-@Tag(name = OpenApiTags.PROJECT)
 @Tag(name = PROJECT_CONFIG)
 @Tag(name = MOBILE_APP)
 @RequiredArgsConstructor

@@ -472,66 +472,6 @@ class OrganizationControllerApiTest {
 
 
     @Test
-    void getRecordingUnitByFullIdentifier_success() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-
-        InstitutionDTO org = new InstitutionDTO();
-        org.setId(10L);
-        org.setName("Org");
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(org));
-
-        RecordingUnitDTO ru = new RecordingUnitDTO();
-        ru.setId(100L);
-        ru.setFullIdentifier("RU-100");
-        when(recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(eq("RU-100"), eq(10L), isNull()))
-                .thenReturn(ru);
-
-        RecordingUnitResource resource = new RecordingUnitResource();
-        resource.setId("100");
-        resource.setFullIdentifier("RU-100");
-        when(recordingUnitResponseMapper.convert(ru)).thenReturn(resource);
-
-        mockMvc.perform(get("/api/v1/organizations/10/recording-units/RU-100"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fullIdentifier").value("RU-100"));
-    }
-
-    @Test
-    void getRecordingUnitByFullIdentifier_withCounts() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-
-        InstitutionDTO org = new InstitutionDTO();
-        org.setId(10L);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(org));
-
-        RecordingUnitDTO ru = new RecordingUnitDTO();
-        ru.setId(100L);
-        when(recordingUnitService.findByFullIdentifierAndInstitutionIdDTO("RU-100", 10L, List.of("specimen")))
-                .thenReturn(ru);
-        when(recordingUnitResponseMapper.convert(ru)).thenReturn(new RecordingUnitResource());
-
-        mockMvc.perform(get("/api/v1/organizations/10/recording-units/RU-100").param("counts", "specimen"))
-                .andExpect(status().isOk());
-
-        verify(recordingUnitService).findByFullIdentifierAndInstitutionIdDTO("RU-100", 10L, List.of("specimen"));
-    }
-
-    @Test
-    void getRecordingUnitByFullIdentifier_outOfScope_returns403() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-
-        InstitutionDTO org = new InstitutionDTO();
-        org.setId(10L);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(org));
-
-        mockMvc.perform(get("/api/v1/organizations/99/recording-units/RU-100"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     void getRecordingUnits_success() throws Exception {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);

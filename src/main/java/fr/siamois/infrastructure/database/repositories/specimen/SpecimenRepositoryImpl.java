@@ -30,12 +30,12 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
             + ") ";
 
     private static final String FROM_WHERE = "FROM specimen s "
-            + "LEFT JOIN concept c ON s.fk_specimen_type = c.concept_id "
+            + "LEFT JOIN concept c ON s.fk_specimen_category = c.concept_id "
             + "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 "
             + "WHERE s.fk_institution_id = :institutionId "
             + "  AND s.fk_recording_unit_id = :recordingUnitId "
             + "  AND (CAST(:fullIdentifier AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:fullIdentifier AS TEXT), '%'))) "
-            + "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR s.fk_specimen_type IN (:categoryIds)) "
+            + "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR s.fk_specimen_category IN (:categoryIds)) "
             + "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  "
             + "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))) ";
     public static final String SELECT_S_RL_LABEL_VALUE_AS_C_LABEL = "SELECT s.*, rl.label_value AS c_label ";

@@ -7,8 +7,8 @@ public final class OpenApiTags {
 
     public static final String AUTH = "Authentification";
     public static final String ORGANISATION = "Organisations";
-    public static final String PROJECT = "Projets";
-    public static final String PROJECT_CONFIG = "Configuration des projets";
+    public static final String PROJECT = "Projets - Données";
+    public static final String PROJECT_CONFIG = "Projets - Configuration";
     public static final String MOBILE_APP = "Application mobile";
     public static final String RECORDING_UNIT = "Unités d'enregistrement";
     public static final String FIND = "Mobiliers";
