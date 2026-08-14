@@ -39,7 +39,12 @@ public class VocabularyOpenApiService {
     /**
      * Vocabulaires complets pour une organisation : catalogue des thésaurus et concepts par field_code
      * (configuration institution / utilisateur), pour alimenter les formulaires.
+     *
+     * @deprecated Non scopé par projet, sans pagination/suggestion. À remplacer par
+     * {@link #getAvailableFieldCodesForOrganization} et {@link #getConceptsForOrganization}, utilisés
+     * par {@code GET /api/v1/projects/{id}/field-codes} et {@code GET /api/v1/projects/{id}/concepts}.
      */
+    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public VocabulariesResponse listOrganizationVocabularies(ProjectApiCaller caller,
                                                              long organizationId,
