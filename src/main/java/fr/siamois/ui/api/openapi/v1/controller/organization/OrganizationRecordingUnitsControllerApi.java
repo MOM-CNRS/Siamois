@@ -57,7 +57,7 @@ public class OrganizationRecordingUnitsControllerApi {
         int pageNumber = limit > 0 ? offset / limit : 0;
         Pageable pageable = PageRequest.of(pageNumber, limit);
 
-        Page<RecordingUnitDTO> page = recordingUnitService.searchRecordingUnit(institution, new FilterDTO(), pageable);
+        Page<RecordingUnitDTO> page = recordingUnitService.searchRecordingUnit(institution, new FilterDTO(), pageable, false);
 
         List<RecordingUnitResource> resources = page.getContent().stream()
                 .map(recordingUnitResourceMapper::convert)

@@ -48,6 +48,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.*;
@@ -1908,7 +1909,7 @@ class RecordingUnitServiceTest {
     class SearchAndCountFamilyTests {
 
         @Test
-        void searchRecordingUnit_populatesParentsChildrenAndPhases() {
+        void searchRecordingUnit_populatesParentsChildrenAndPhases_batchedNotPerRow() {
             InstitutionDTO institution = new InstitutionDTO();
             institution.setId(1L);
             FilterDTO filters = new FilterDTO(false);
@@ -1933,9 +1934,15 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
                     .thenReturn(new PageImpl<>(List.of(ru)));
             when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
-            when(recordingUnitRepository.findParentsOf(7L)).thenReturn(Set.of(parent));
-            when(recordingUnitRepository.findChildrensOf(7L)).thenReturn(List.of(child));
-            when(phaseRepository.findByRecordingUnitId(7L)).thenReturn(Set.of(phase));
+            when(recordingUnitRepository.findParentEdges(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 8L}));
+            when(recordingUnitRepository.findChildEdges(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 9L}));
+            when(phaseRepository.findPhaseEdges(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 11L}));
+            when(recordingUnitRepository.findAllById(List.of(8L))).thenReturn(List.of(parent));
+            when(recordingUnitRepository.findAllById(List.of(9L))).thenReturn(List.of(child));
+            when(phaseRepository.findAllById(List.of(11L))).thenReturn(List.of(phase));
 
             RecordingUnitSummaryDTO parentSummary = new RecordingUnitSummaryDTO();
             parentSummary.setId(8L);
@@ -1952,6 +1959,73 @@ class RecordingUnitServiceTest {
             assertEquals(Set.of(parentSummary), dto.getParents());
             assertEquals(Set.of(childSummary), dto.getChildren());
             assertEquals(Set.of(phaseDto), dto.getPhases());
+            verify(recordingUnitRepository, never()).findParentsOf(any());
+            verify(recordingUnitRepository, never()).findChildrensOf(any());
+            verify(phaseRepository, never()).findByRecordingUnitId(any());
+        }
+
+        @Test
+        void searchRecordingUnit_countsOnly_populatesCountsNotFullCollections() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable pageable = PageRequest.of(0, 10);
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+            when(recordingUnitRepository.countParentsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 2L}));
+            when(recordingUnitRepository.countChildrenByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 3L}));
+            when(recordingUnitRepository.countSpecimensByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 4L}));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable, false);
+
+            RecordingUnitDTO dto = result.getContent().get(0);
+            assertEquals(2, dto.getParentsCount());
+            assertEquals(3, dto.getChildrenCount());
+            assertEquals(4L, dto.getSpecimenCount());
+            assertNull(dto.getParents());
+            assertNull(dto.getChildren());
+            assertNull(dto.getPhases());
+            verify(recordingUnitRepository, never()).findParentEdges(any());
+            verify(recordingUnitRepository, never()).findChildEdges(any());
+            verify(phaseRepository, never()).findPhaseEdges(any());
+        }
+
+        @Test
+        void findByActionUnitId_batchesCountsInsteadOfPerRowEnrichment() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+            when(recordingUnitRepository.countParentsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 1L}));
+            when(recordingUnitRepository.countChildrenByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 0L}));
+            when(recordingUnitRepository.countSpecimensByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 5L}));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findByActionUnitId(20L, 10, 0, Sort.unsorted());
+
+            RecordingUnitDTO dto = result.getContent().get(0);
+            assertEquals(1, dto.getParentsCount());
+            assertEquals(0, dto.getChildrenCount());
+            assertEquals(5L, dto.getSpecimenCount());
+            verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
+            verify(recordingUnitRepository, never()).countSpecimensByRecordingUnitId(any());
+            verify(recordingUnitRepository, never()).countStratigraphicRelationshipsByRecordingUnitId(any());
         }
 
         @Test
