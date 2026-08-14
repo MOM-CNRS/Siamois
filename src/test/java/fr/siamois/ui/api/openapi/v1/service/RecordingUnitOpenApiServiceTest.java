@@ -24,6 +24,7 @@ import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -2184,13 +2185,58 @@ class RecordingUnitOpenApiServiceTest {
         field.setId(44L);
         field.setLabel("Champ mobilier");
         field.setIsSystemField(true);
-        when(conversionService.convert(fr.siamois.domain.models.specimen.Specimen.NEW_UNIT_FORM, FormUiDto.class))
+        when(effectiveFormResolver.resolveEffectiveForm(eq(Specimen.DETAILS_FORM), eq(5L), eq(ConfigurableTable.MOBILIER), isNull()))
                 .thenReturn(formUiDtoWithOneField(field));
+
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.MOBILIER)).thenReturn(List.of());
 
         ProjectFindTypeListResponse response = service.buildProjectFindTypeSettings("5", personDto, SCOPE, "fr");
 
         assertThat(response.getDefaultType().getFields()).containsKey("44");
         assertThat(response.getData()).isEmpty();
+    }
+
+    @Test
+    void buildProjectFindTypeSettings_returnsDefaultTypeAndConfiguredTypeWithForm() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(effectiveFormResolver.resolveEffectiveForm(eq(Specimen.DETAILS_FORM), eq(5L), eq(ConfigurableTable.MOBILIER), isNull()))
+                .thenReturn(new FormUiDto());
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        FormConfig typedIdentifierConfig = new FormConfig();
+        typedIdentifierConfig.setIdentifierFormat("M-{NUM_MOBILIER:000}");
+        typedIdentifierConfig.setMinCode(10);
+        typedIdentifierConfig.setMaxCode(500);
+        when(tableFieldConfigService.resolveIdentifierConfig(5L, ConfigurableTable.MOBILIER, 42L))
+                .thenReturn(typedIdentifierConfig);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.MOBILIER)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+
+        CustomFieldText field = new CustomFieldText();
+        field.setId(46L);
+        field.setLabel("Champ mobilier");
+        field.setIsSystemField(false);
+        when(effectiveFormResolver.resolveEffectiveForm(Specimen.DETAILS_FORM, 5L, ConfigurableTable.MOBILIER, 42L))
+                .thenReturn(formUiDtoWithOneField(field));
+
+        ProjectFindTypeListResponse response = service.buildProjectFindTypeSettings("5", personDto, SCOPE, "fr");
+
+        assertThat(response.getDefaultType().getFields()).isEmpty();
+        assertThat(response.getDefaultType().getIdentifierConfig().getIdentifierFormat()).isEqualTo("{NUM_UE}");
+        assertThat(response.getData()).hasSize(1);
+        assertThat(response.getData().get(0).getId()).isEqualTo("42");
+        assertThat(response.getData().get(0).getIdentifierConfig().getIdentifierFormat())
+                .isEqualTo("M-{NUM_MOBILIER:000}");
+        assertThat(response.getData().get(0).getFields()).containsKey("46");
     }
 
     @Test
