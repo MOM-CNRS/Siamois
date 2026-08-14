@@ -80,7 +80,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
     protected void handleCommandLink(CommandLinkColumn column, PhaseDTO phase) {
         if (column.getAction() == GO_TO_PHASE) {
             setOverviewEntityId(phase.getId());
-            flowBean.addPhaseToOverview(phase.getId(), parentPanel, null);
+            flowBean.addPhaseToOverview(phase.getId(), parentPanel, null, false);
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
         }

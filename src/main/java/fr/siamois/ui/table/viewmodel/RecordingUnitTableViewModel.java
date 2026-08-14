@@ -163,7 +163,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
             flowBean.addRecordingUnitToOverview(
                     ru.getId(),
                     parentPanel,
-                    null
+                    null,
+                    false
             );
 
 

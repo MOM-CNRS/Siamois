@@ -104,7 +104,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
                                      ContainerDTO au) {
 
         if (column.getAction() == GO_TO_CONTAINER) {
-            flowBean.addContainerToOverview(au.getId(), parentPanel, null);
+            flowBean.addContainerToOverview(au.getId(), parentPanel, null, false);
         } else {
             throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
