@@ -898,22 +898,10 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> findByActionUnitId(Long actionUnitId, int limit, int offset, Sort sort) {
         int pageNumber = offset / limit;
         Pageable pageable = PageRequest.of(pageNumber, limit, sort);
-        Page<RecordingUnit> page = recordingUnitRepository.findAllByActionUnitId(actionUnitId, pageable);
-        List<RecordingUnitDTO> content = page.getContent().stream()
-                .map(recordingUnitMapper::convert)
-                .map(this::enrichRecordingUnitDtoForProjectList)
-                .toList();
-        return new PageImpl<>(content, pageable, page.getTotalElements());
+        Specification<RecordingUnit> specs = Specification.where(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitId));
+        return pageAndEnrich(specs, pageable, false);
     }
 
-    private RecordingUnitDTO enrichRecordingUnitDtoForProjectList(RecordingUnitDTO dto) {
-        if (dto.getId() == null) {
-            return dto;
-        }
-        dto.setSpecimenCount(recordingUnitRepository.countSpecimensByRecordingUnitId(dto.getId()));
-        dto.setRelationshipCount(recordingUnitRepository.countStratigraphicRelationshipsByRecordingUnitId(dto.getId()));
-        return dto;
-    }
 
     /**
      * Generates the identifier for a recording unit that has no parent.
@@ -1136,34 +1124,127 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable) {
+        return searchRecordingUnit(institution, filters, pageable, true);
+    }
+
+    public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable,
+                                                       boolean includeFullRelations) {
         Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+        return pageAndEnrich(specs, pageable, includeFullRelations);
+    }
+
+    /**
+     * Pages recording units for a given {@link Specification} and enriches each row with either the
+     * full {@code parents}/{@code children}/{@code phases} collections (JSF list, which renders them as
+     * clickable chips) or plain counts (REST API, which only ever reads
+     * {@code parentsCount}/{@code childrenCount}/{@code specimenCount}) — batched for the whole page
+     * (a handful of queries total) rather than once per row.
+     */
+    private Page<RecordingUnitDTO> pageAndEnrich(Specification<RecordingUnit> specs, Pageable pageable,
+                                                 boolean includeFullRelations) {
         Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, pageable)
                 .map(recordingUnitMapper::toLightDto);
 
-        page.getContent().forEach(dto -> {
-            dto.setParents(
-                    recordingUnitRepository
-                            .findParentsOf(dto.getId())
-                            .stream()
-                            .map(recordingUnitSummaryMapper::convert)
-                            .collect(Collectors.toSet())
-            );
-            dto.setChildren(
-                    recordingUnitRepository
-                            .findChildrensOf(dto.getId())
-                            .stream()
-                            .map(recordingUnitSummaryMapper::convert)
-                            .collect(Collectors.toSet())
-            );
-            dto.setPhases(
-                    phaseRepository.findByRecordingUnitId(dto.getId())
-                            .stream()
-                            .map(phaseMapper::convert)
-                            .collect(Collectors.toSet())
-            );
-        });
+        List<Long> ids = page.getContent().stream()
+                .map(RecordingUnitDTO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (ids.isEmpty()) {
+            return page;
+        }
+
+        if (includeFullRelations) {
+            hydrateFullRelations(page.getContent(), ids);
+        } else {
+            hydrateCounts(page.getContent(), ids);
+        }
 
         return page;
+    }
+
+    private void hydrateFullRelations(List<RecordingUnitDTO> rows, List<Long> ids) {
+        Map<Long, Set<RecordingUnitSummaryDTO>> parentsByOwner = groupRecordingUnitsByOwner(
+                recordingUnitRepository.findParentEdges(ids));
+        Map<Long, Set<RecordingUnitSummaryDTO>> childrenByOwner = groupRecordingUnitsByOwner(
+                recordingUnitRepository.findChildEdges(ids));
+        Map<Long, Set<PhaseDTO>> phasesByOwner = groupPhasesByOwner(phaseRepository.findPhaseEdges(ids));
+
+        for (RecordingUnitDTO dto : rows) {
+            dto.setParents(parentsByOwner.getOrDefault(dto.getId(), Set.of()));
+            dto.setChildren(childrenByOwner.getOrDefault(dto.getId(), Set.of()));
+            dto.setPhases(phasesByOwner.getOrDefault(dto.getId(), Set.of()));
+        }
+    }
+
+    private Map<Long, Set<RecordingUnitSummaryDTO>> groupRecordingUnitsByOwner(List<Object[]> edges) {
+        List<Long> relatedIds = edges.stream()
+                .map(row -> ((Number) row[1]).longValue())
+                .distinct()
+                .toList();
+        if (relatedIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, RecordingUnitSummaryDTO> relatedById = new HashMap<>();
+        for (RecordingUnit related : recordingUnitRepository.findAllById(relatedIds)) {
+            relatedById.put(related.getId(), recordingUnitSummaryMapper.convert(related));
+        }
+
+        Map<Long, Set<RecordingUnitSummaryDTO>> byOwner = new HashMap<>();
+        for (Object[] edge : edges) {
+            Long ownerId = ((Number) edge[0]).longValue();
+            Long relatedId = ((Number) edge[1]).longValue();
+            RecordingUnitSummaryDTO related = relatedById.get(relatedId);
+            if (related != null) {
+                byOwner.computeIfAbsent(ownerId, k -> new HashSet<>()).add(related);
+            }
+        }
+        return byOwner;
+    }
+
+    private Map<Long, Set<PhaseDTO>> groupPhasesByOwner(List<Object[]> edges) {
+        List<Long> phaseIds = edges.stream()
+                .map(row -> ((Number) row[1]).longValue())
+                .distinct()
+                .toList();
+        if (phaseIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, PhaseDTO> phaseById = new HashMap<>();
+        for (var phase : phaseRepository.findAllById(phaseIds)) {
+            phaseById.put(phase.getId(), phaseMapper.convert(phase));
+        }
+
+        Map<Long, Set<PhaseDTO>> byOwner = new HashMap<>();
+        for (Object[] edge : edges) {
+            Long ownerId = ((Number) edge[0]).longValue();
+            Long phaseId = ((Number) edge[1]).longValue();
+            PhaseDTO phase = phaseById.get(phaseId);
+            if (phase != null) {
+                byOwner.computeIfAbsent(ownerId, k -> new HashSet<>()).add(phase);
+            }
+        }
+        return byOwner;
+    }
+
+    private void hydrateCounts(List<RecordingUnitDTO> rows, List<Long> ids) {
+        Map<Long, Integer> parentsCount = toCountMap(recordingUnitRepository.countParentsByIds(ids));
+        Map<Long, Integer> childrenCount = toCountMap(recordingUnitRepository.countChildrenByIds(ids));
+        Map<Long, Long> specimenCount = recordingUnitRepository.countSpecimensByIds(ids).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).longValue()));
+
+        for (RecordingUnitDTO dto : rows) {
+            dto.setParentsCount(parentsCount.getOrDefault(dto.getId(), 0));
+            dto.setChildrenCount(childrenCount.getOrDefault(dto.getId(), 0));
+            dto.setSpecimenCount(specimenCount.getOrDefault(dto.getId(), 0L));
+        }
+    }
+
+    private static Map<Long, Integer> toCountMap(List<Object[]> rows) {
+        return rows.stream().collect(Collectors.toMap(
+                row -> ((Number) row[0]).longValue(),
+                row -> ((Number) row[1]).intValue()));
     }
 
     public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {

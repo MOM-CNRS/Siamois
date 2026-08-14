@@ -483,7 +483,7 @@ class OrganizationControllerApiTest {
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setId(1L);
         ru.setFullIdentifier("RU-1");
-        when(recordingUnitService.searchRecordingUnit(any(InstitutionDTO.class), any(FilterDTO.class), any(Pageable.class)))
+        when(recordingUnitService.searchRecordingUnit(any(InstitutionDTO.class), any(FilterDTO.class), any(Pageable.class), eq(false)))
                 .thenReturn(new PageImpl<>(List.of(ru), PageRequest.of(0, 10), 1));
 
         RecordingUnitResource resource = new RecordingUnitResource();

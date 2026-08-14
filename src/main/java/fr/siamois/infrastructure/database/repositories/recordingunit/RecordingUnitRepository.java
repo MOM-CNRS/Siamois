@@ -41,6 +41,44 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
         """, nativeQuery = true)
     List<Object[]> countRelationshipsByIds(@Param("ids") List<Long> ids);
 
+    /**
+     * Parent/child edges of a whole page of units in a single query, for in-memory grouping — avoids
+     * one {@link #findParentsOf} call per row.
+     */
+    @Query(value = """
+        SELECT h.fk_child_id AS owner_id, h.fk_parent_id AS related_id
+        FROM recording_unit_hierarchy h
+        WHERE h.fk_child_id IN (:childIds)
+        """, nativeQuery = true)
+    List<Object[]> findParentEdges(@Param("childIds") Collection<Long> childIds);
+
+    /**
+     * Parent/child edges of a whole page of units in a single query, for in-memory grouping — avoids
+     * one {@link #findChildrensOf} call per row.
+     */
+    @Query(value = """
+        SELECT h.fk_parent_id AS owner_id, h.fk_child_id AS related_id
+        FROM recording_unit_hierarchy h
+        WHERE h.fk_parent_id IN (:parentIds)
+        """, nativeQuery = true)
+    List<Object[]> findChildEdges(@Param("parentIds") Collection<Long> parentIds);
+
+    @Query(value = """
+        SELECT h.fk_child_id, COUNT(*)
+        FROM recording_unit_hierarchy h
+        WHERE h.fk_child_id IN (:ids)
+        GROUP BY h.fk_child_id
+        """, nativeQuery = true)
+    List<Object[]> countParentsByIds(@Param("ids") Collection<Long> ids);
+
+    @Query(value = """
+        SELECT h.fk_parent_id, COUNT(*)
+        FROM recording_unit_hierarchy h
+        WHERE h.fk_parent_id IN (:ids)
+        GROUP BY h.fk_parent_id
+        """, nativeQuery = true)
+    List<Object[]> countChildrenByIds(@Param("ids") Collection<Long> ids);
+
     @Query(
             value = "UPDATE recording_unit SET fk_type = :type WHERE recording_unit.recording_unit_id IN (:ids)",
             nativeQuery = true
