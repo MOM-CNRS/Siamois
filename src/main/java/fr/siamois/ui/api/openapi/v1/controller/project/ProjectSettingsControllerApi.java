@@ -21,7 +21,6 @@ import static fr.siamois.ui.api.openapi.v1.OpenApiTags.PROJECT_CONFIG;
 
 @RestController
 @RequestMapping("/api/v1/projects")
-@Tag(name = OpenApiTags.PROJECT)
 @Tag(name = PROJECT_CONFIG)
 @Tag(name = MOBILE_APP)
 @RequiredArgsConstructor
