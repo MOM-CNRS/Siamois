@@ -162,7 +162,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
-        flowBean.addSpatialUnitToOverview(id,parentOrOverview, activeTabIndex);
+        flowBean.addSpatialUnitToOverview(id, parentOrOverview, activeTabIndex, false);
     }
 
     @Override

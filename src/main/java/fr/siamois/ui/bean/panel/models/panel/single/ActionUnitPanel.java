@@ -249,7 +249,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
-        flowBean.addActionUnitToOverview(id,parentOrOverview, activeTabIndex);
+        flowBean.addActionUnitToOverview(id, parentOrOverview, activeTabIndex, false);
     }
 
     @Override
