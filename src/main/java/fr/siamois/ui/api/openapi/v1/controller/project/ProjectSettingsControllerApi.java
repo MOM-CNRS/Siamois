@@ -1,6 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
-import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;

@@ -125,7 +125,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Concept> listConfiguredTypeConcepts(Long projectId, ConfigurableTable table) {
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
         if (fieldConcept.isEmpty()) return List.of();
