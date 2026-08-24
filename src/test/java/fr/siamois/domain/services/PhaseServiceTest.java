@@ -269,6 +269,40 @@ class PhaseServiceTest {
         assertNull(spec.typeId().apply(existingPhase));
     }
 
+    @Test
+    void save_throwsForbidden_whenNoExecutionContext() {
+        PhaseDTO inputDTO = new PhaseDTO();
+        Phase newEntity = new Phase();
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(7L);
+        newEntity.setActionUnit(actionUnit);
+        when(phaseMapper.invertConvert(inputDTO)).thenReturn(newEntity);
+        when(phaseRepository.findById(-1L)).thenReturn(Optional.empty());
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> phaseService.save(inputDTO));
+
+        verify(phaseRepository, never()).save(any(Phase.class));
+    }
+
+    @Test
+    void save_throwsForbidden_whenPermissionDenied() {
+        PhaseDTO inputDTO = new PhaseDTO();
+        Phase newEntity = new Phase();
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(7L);
+        newEntity.setActionUnit(actionUnit);
+        when(phaseMapper.invertConvert(inputDTO)).thenReturn(newEntity);
+        when(phaseRepository.findById(-1L)).thenReturn(Optional.empty());
+        when(profilePermissionService.hasProjectPermission(any(), eq(7L), anyString())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> phaseService.save(inputDTO));
+
+        verify(phaseRepository, never()).save(any(Phase.class));
+    }
+
     // ------------------------------------------------------------------
     // save — id provided but not found (treated as new)
     // ------------------------------------------------------------------

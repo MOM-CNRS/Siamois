@@ -33,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.*;
 
@@ -65,6 +66,8 @@ class InstitutionServiceTest {
     private PersonProfileAssignmentRepository personProfileAssignmentRepository;
     @Mock
     private ProfileMapper profileMapper;
+    @Mock
+    private ObjectProvider<InstitutionService> selfProvider;
 
     @InjectMocks
     private InstitutionService institutionService;
@@ -112,6 +115,8 @@ class InstitutionServiceTest {
         actionUnit.setId(1L);
         actionUnit.setCreatedBy(manager);
         actionUnit.setCreatedByInstitution(institution1);
+
+        lenient().when(selfProvider.getObject()).thenReturn(institutionService);
     }
 
     @Test

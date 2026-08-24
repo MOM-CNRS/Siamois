@@ -237,6 +237,26 @@ class RecordingUnitServiceTest {
     }
 
     @Test
+    void save_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> recordingUnitService.save(new RecordingUnitDTO()));
+
+        verify(recordingUnitRepository, never()).save(any(RecordingUnit.class));
+    }
+
+    @Test
+    void save_throwsForbidden_whenPermissionDenied() {
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> recordingUnitService.save(new RecordingUnitDTO()));
+
+        verify(recordingUnitRepository, never()).save(any(RecordingUnit.class));
+    }
+
+    @Test
     void save_withAdditionalFieldAnswers_delegatesToCustomFieldAnswerServiceWithTheSavedDto() {
         RecordingUnit recordingUnit = new RecordingUnit();
         RecordingUnitDTO savedDto = new RecordingUnitDTO();
@@ -479,6 +499,26 @@ class RecordingUnitServiceTest {
 
         // Act & Assert
         assertThrows(NullPointerException.class, () -> recordingUnitService.save((AbstractEntityDTO) inputDto));
+    }
+
+    @Test
+    void save_withAbstractEntityDTO_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> recordingUnitService.save((AbstractEntityDTO) new RecordingUnitDTO()));
+
+        verify(recordingUnitRepository, never()).save(any(RecordingUnit.class));
+    }
+
+    @Test
+    void save_withAbstractEntityDTO_throwsForbidden_whenPermissionDenied() {
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> recordingUnitService.save((AbstractEntityDTO) new RecordingUnitDTO()));
+
+        verify(recordingUnitRepository, never()).save(any(RecordingUnit.class));
     }
 
     @Test
@@ -1245,6 +1285,32 @@ class RecordingUnitServiceTest {
 
             assertThrows(RecordingUnitNotFoundException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(1L));
+        }
+
+        @Test
+        void deleteRecordingUnitById_throwsForbidden_whenNoExecutionContext() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
+            ExecutionContextHolder.clear();
+
+            assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(1L));
+
+            verify(recordingUnitRepository, never()).delete(any(RecordingUnit.class));
+        }
+
+        @Test
+        void deleteRecordingUnitById_throwsForbidden_whenPermissionDenied() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
+            when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+
+            assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(1L));
+
+            verify(recordingUnitRepository, never()).delete(any(RecordingUnit.class));
         }
 
         @Test
