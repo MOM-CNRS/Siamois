@@ -37,7 +37,7 @@ public class ProjectDetailsBean {
     private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final RedirectBean redirectBean;
-    private final transient ProfilePermissionService profilePermissionService;
+    private final ProfilePermissionService profilePermissionService;
 
     // LOCALS
     private ActionUnitDTO project;

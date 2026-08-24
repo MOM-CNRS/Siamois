@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 @Getter
@@ -42,6 +43,6 @@ public class ToolbarCreateConfig implements Serializable {
      * server-side permission check performed at save time.
      */
     @Builder.Default
-    private final transient Supplier<Boolean> createAllowedSupplier = () -> true;
+    private final transient BooleanSupplier createAllowedSupplier = () -> true;
 }
 

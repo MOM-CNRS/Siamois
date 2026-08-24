@@ -39,6 +39,7 @@ import static fr.siamois.utils.MessageUtils.displayWarnMessage;
 @Setter
 public class ProjectMembersListBean extends AbstractMembersListBean {
 
+    public static final String PROJECT_SETTINGS_ERROR_NOT_MANAGER = "projectSettings.error.notManager";
     private final transient ProjectMembersServiceInterface projectMembersService;
     private final NewProjectMemberDialogBean newProjectMemberDialogBean;
     private final transient ProfilePermissionService profilePermissionService;
@@ -114,7 +115,7 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
     public void removeMember(ProjectMemberDTO member) {
         log.trace("Removing project member {}", member.displayName());
         if (isNotProjectManager(project)) {
-            displayWarnMessage(langBean, "projectSettings.error.notManager");
+            displayWarnMessage(langBean, PROJECT_SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
         projectMembersService.removeMemberFromProject(project, member);
@@ -148,7 +149,7 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
     public void onProfileSelect(SelectEvent<ProfileDTO> event) {
         ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
         if (isNotProjectManager(project)) {
-            displayWarnMessage(langBean, "projectSettings.error.notManager");
+            displayWarnMessage(langBean, PROJECT_SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
         projectMembersService.addProfileToMember(project, member, event.getObject());
@@ -158,7 +159,7 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
     public void onProfileUnselect(UnselectEvent<ProfileDTO> event) {
         ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
         if (isNotProjectManager(project)) {
-            displayWarnMessage(langBean, "projectSettings.error.notManager");
+            displayWarnMessage(langBean, PROJECT_SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
         ProfileDTO profile = event.getObject();
@@ -178,7 +179,7 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
     private Boolean processPerson(PersonRole saved) {
         try {
             if (isNotProjectManager(project)) {
-                displayWarnMessage(langBean, "projectSettings.error.notManager");
+                displayWarnMessage(langBean, PROJECT_SETTINGS_ERROR_NOT_MANAGER);
                 return false;
             }
             ProjectMemberDTO member = projectMembersService.addMemberToProject(

@@ -872,10 +872,11 @@ class ActionUnitServiceTest {
     @Test
     void save_withUserInfo_throwsForbidden_whenCreatingWithoutOrganizationPermission() {
         ActionUnitDTO newActionUnit = new ActionUnitDTO();
+        ConceptDTO conceptDto = new ConceptDTO();
         when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
 
         assertThrows(ForbiddenOperationException.class,
-                () -> actionUnitService.save(info, newActionUnit, new ConceptDTO()));
+                () -> actionUnitService.save(info, newActionUnit, conceptDto));
 
         verify(actionUnitRepository, never()).save(any());
     }
@@ -884,10 +885,11 @@ class ActionUnitServiceTest {
     void save_withUserInfo_throwsForbidden_whenUpdatingWithoutActionUnitWritePermission() {
         ActionUnitDTO existingActionUnit = new ActionUnitDTO();
         existingActionUnit.setId(7L);
+        ConceptDTO conceptDto = new ConceptDTO();
         when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(false);
 
         assertThrows(ForbiddenOperationException.class,
-                () -> actionUnitService.save(info, existingActionUnit, new ConceptDTO()));
+                () -> actionUnitService.save(info, existingActionUnit, conceptDto));
 
         verify(actionUnitRepository, never()).save(any());
     }

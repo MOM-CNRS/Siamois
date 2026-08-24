@@ -87,7 +87,7 @@
         <p:toolbarGroup align="right">
             <p:commandButton
                     value="#{langBean.msg('common.action.create')}"
-                    rendered="#{not empty tableModel.toolbarCreateConfig and flowBean.isWriteMode and tableModel.toolbarCreateConfig.createAllowedSupplier.get()}"
+                    rendered="#{not empty tableModel.toolbarCreateConfig and flowBean.isWriteMode and tableModel.toolbarCreateConfig.createAllowedSupplier.asBoolean}"
                     icon="bi bi-plus-square"
                     immediate="true"
                     action="#{tableModel.openCreateFromToolbar(genericNewUnitDialogBean,

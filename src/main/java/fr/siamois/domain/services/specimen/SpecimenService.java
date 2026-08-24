@@ -701,8 +701,12 @@ public class SpecimenService implements ArkEntityService {
                 .orElseThrow(() -> new IllegalArgumentException("Mobilier introuvable: " + specimenId));
 
         UserInfo info = ExecutionContextHolder.get();
-        ActionUnit actionUnit = specimen.getActionUnit() != null ? specimen.getActionUnit()
-                : (specimen.getRecordingUnit() != null ? specimen.getRecordingUnit().getActionUnit() : null);
+        ActionUnit actionUnit;
+        if (specimen.getActionUnit() != null) {
+            actionUnit = specimen.getActionUnit();
+        } else {
+            actionUnit = specimen.getRecordingUnit() != null ? specimen.getRecordingUnit().getActionUnit() : null;
+        }
         Long actionUnitId = actionUnit != null ? actionUnit.getId() : null;
         if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS)) {
             throw new ForbiddenOperationException("You are not allowed to delete this specimen");
