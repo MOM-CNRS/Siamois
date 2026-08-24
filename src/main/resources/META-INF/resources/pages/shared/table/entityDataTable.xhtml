@@ -158,7 +158,8 @@
                     <div class="mca-row-actions">
                         <ui:repeat value="#{tableModel.rowActions}" var="action">
                             <p:commandButton
-                                    rendered="#{tableModel.isRendered(action, item)}"
+                                    disabled="#{not tableModel.isRendered(action, item)}"
+                                    style="#{tableModel.isRendered(action, item) ? '' : 'visibility:hidden'}"
                                     icon="#{tableModel.resolveIcon(action, item)}"
                                     action="#{tableModel.handleRowAction(action, item)}"
                                     process="#{empty action.processExpr ? '@this' : action.processExpr}"

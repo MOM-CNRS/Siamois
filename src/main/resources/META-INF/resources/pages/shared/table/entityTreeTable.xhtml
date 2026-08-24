@@ -150,7 +150,8 @@
                         <ui:repeat value="#{tableModel.rowActions}" var="action" varStatus="status">
                             <p:commandButton
                                     id="btnAction"
-                                    rendered="#{tableModel.isRendered(action, item)}"
+                                    disabled="#{not tableModel.isRendered(action, item)}"
+                                    style="#{tableModel.isRendered(action, item) ? '' : 'visibility:hidden'}"
                                     icon="#{tableModel.resolveIcon(action, item)}"
                                     action="#{tableModel.handleRowAction(action, node)}"
                                     process="#{empty action.processExpr ? '@this' : action.processExpr}"
