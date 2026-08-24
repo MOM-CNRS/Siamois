@@ -107,7 +107,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
             flowBean.addActionUnitToOverview(
                     au.getId(),
                     parentPanel,
-                    null
+                    null,
+                    false
             );
 
 

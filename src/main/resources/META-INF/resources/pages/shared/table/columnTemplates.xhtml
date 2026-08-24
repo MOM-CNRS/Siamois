@@ -23,6 +23,15 @@
     <ui:param name="rowContext" value="#{tableModel.getRowContext(item)}"/>
 
 
+    <!--
+        One unconditionally-rendered marker wrapper per column, regardless of which branch
+        below is active — RowAjaxUpdateResolver stops descending as soon as it finds a marked
+        component, so marking deep inside a conditionally-rendered branch (e.g. the FORM_FIELD
+        output panel's own "rendered" is data-dependent) risks matching nothing at all when
+        that inner condition happens to be false.
+    -->
+    <p:outputPanel layout="block" styleClass="siamois-row-ajax-target">
+
     <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}" >
         <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
             <ui:param name="panelId" value="#{panelId}"/>
@@ -67,4 +76,6 @@
                     title="Ouvrir dans l'aperçu"/>
         </div>
     </ui:fragment>
+
+    </p:outputPanel>
 </ui:composition>

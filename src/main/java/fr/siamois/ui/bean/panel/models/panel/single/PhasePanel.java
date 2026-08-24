@@ -170,7 +170,7 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
-        flowBean.addPhaseToOverview(id, parentOrOverview, activeTabIndex);
+        flowBean.addPhaseToOverview(id, parentOrOverview, activeTabIndex, false);
     }
 
     @Override
@@ -189,7 +189,7 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         // not yet supported
     }
 

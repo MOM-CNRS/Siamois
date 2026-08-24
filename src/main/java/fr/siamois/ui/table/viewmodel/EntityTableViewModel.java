@@ -680,7 +680,8 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     /**
      * Index (0-based) of {@code entityId} in the current page's cached result, or -1 if absent.
-     * Used to build a PrimeFaces {@code :@row(n)} AJAX update target.
+     * Used together with {@link fr.siamois.ui.table.RowAjaxUpdateResolver} to build a row-scoped
+     * PrimeFaces AJAX update target.
      */
     public int getRowIndexInCurrentPage(Long entityId) {
         if (lazyDataModel == null || entityId == null) return -1;

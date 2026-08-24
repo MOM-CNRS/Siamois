@@ -402,7 +402,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
-        flowBean.addRecordingUnitToOverview(id,parentOrOverview, activeTabIndex);
+        flowBean.addRecordingUnitToOverview(id, parentOrOverview, activeTabIndex, false);
     }
 
     @Override
@@ -416,7 +416,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         unit = recordingUnitService.toggleValidated(unit.getId());
     }
 
