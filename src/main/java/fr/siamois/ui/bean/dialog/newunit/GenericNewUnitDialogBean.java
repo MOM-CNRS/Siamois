@@ -214,6 +214,15 @@ public class GenericNewUnitDialogBean<T extends AbstractEntityDTO>
     }
 
     /**
+     * The creation dialog's fields are always editable: reaching this dialog already requires the
+     * toolbar/row "create" action to have been permission-gated, and the actual save is re-checked
+     * server-side regardless.
+     */
+    public boolean canUserEditUnit() {
+        return true;
+    }
+
+    /**
      * Expose "has unsaved modifications" via the context.
      */
     public boolean isHasUnsavedModifications() {

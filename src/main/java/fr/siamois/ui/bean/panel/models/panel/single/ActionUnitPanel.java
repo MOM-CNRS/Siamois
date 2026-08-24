@@ -125,6 +125,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return String.format("/action-unit/%s", unit.getId());
     }
 
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasActionUnitWritePermission(sessionSettingsBean.getUserInfo(), unit);
+    }
+
 
 
     public void refreshUnit() {
@@ -425,6 +430,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                                         .entityId(unit.getId())
                                         .build()
                         )
+                        .createAllowedSupplier(() -> profilePermissionService.hasProjectPermission(
+                                sessionSettingsBean.getUserInfo(), unit.getId(), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))
                         .build()
         );
     }

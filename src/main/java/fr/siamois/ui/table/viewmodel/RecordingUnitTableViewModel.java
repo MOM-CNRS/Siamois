@@ -310,12 +310,10 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     public boolean isRendered(RowAction action, RecordingUnitDTO ru) {
-        return switch (action.getAction()) {
-            case DUPLICATE_ROW -> flowBean.getIsWriteMode();
-            case TOGGLE_BOOKMARK -> true;
-            case NEW_ACTION -> flowBean.getIsWriteMode();
-            default -> true;
-        };
+        if (action.getAction() == TableColumnAction.TOGGLE_BOOKMARK) {
+            return true;
+        }
+        return canUserEditRow(ru);
     }
 
 

@@ -8,6 +8,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
@@ -61,6 +62,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     private final transient SpecimenService specimenService;
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient LabelService labelService;
+    private final transient ProfilePermissionService profilePermissionService;
 
     @Override
     protected boolean documentExistsInUnitByHash(SpecimenDTO unit, String hash) {
@@ -86,10 +88,16 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         this.redirectBean = context.getBean(RedirectBean.class);
         this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
         this.labelService = context.getBean(LabelService.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     public String entityRessourceUri() {
         return "/specimen/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasSpecimenWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override

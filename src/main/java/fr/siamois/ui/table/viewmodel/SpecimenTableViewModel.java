@@ -200,11 +200,10 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     }
 
     public boolean isRendered(RowAction action, SpecimenDTO s) {
-        return switch (action.getAction()) {
-            case DUPLICATE_ROW -> flowBean.getIsWriteMode();
-            case TOGGLE_BOOKMARK -> true;
-            default -> true;
-        };
+        if (action.getAction() == TableColumnAction.TOGGLE_BOOKMARK) {
+            return true;
+        }
+        return canUserEditRow(s);
     }
 
 

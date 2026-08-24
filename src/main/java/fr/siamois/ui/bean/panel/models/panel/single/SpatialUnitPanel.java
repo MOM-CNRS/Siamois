@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.form.CustomFieldService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -134,6 +135,12 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     public String entityRessourceUri() {
         return "/spatial-unit/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasOrganizationPermission(
+                sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES);
     }
 
     @Override
@@ -415,6 +422,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                                         .entityId(unit.getId())
                                         .build()
                         )
+                        .createAllowedSupplier(() -> profilePermissionService.hasOrganizationPermission(
+                                sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
                         .build()
         );
     }
@@ -456,6 +465,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.ROOT)
                                 .build())
+                        .createAllowedSupplier(() -> profilePermissionService.hasOrganizationPermission(
+                                sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES))
                         .build()
         );
 

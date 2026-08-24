@@ -158,7 +158,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
     public boolean isRendered(RowAction action, PhaseDTO phase) {
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> false;
-            default -> true;
+            default -> canUserEditRow(phase);
         };
     }
 

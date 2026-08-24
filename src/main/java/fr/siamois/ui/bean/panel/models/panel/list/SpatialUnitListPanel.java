@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -196,6 +197,8 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.ROOT)
                                 .build())
+                        .createAllowedSupplier(() -> profilePermissionService.hasOrganizationPermission(
+                                sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES))
                         .build()
         );
     }

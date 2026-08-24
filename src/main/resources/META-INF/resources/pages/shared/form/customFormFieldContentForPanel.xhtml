@@ -69,7 +69,7 @@
                               value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
                     <ui:param name="updateTargetsOnBlur" value="#{bean.getPanelHeaderUpdateId()}"/>
                     <ui:param name="spatialUnitOptions" value="#{bean.formContext.getSpatialUnitOptions('')}"/>
-                    <ui:param name="mode" value="#{(col.readOnly) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
+                    <ui:param name="mode" value="#{(col.readOnly or not bean.canUserEditUnit()) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
                     <ui:param name="compact" value="false"/>
                 </ui:include>
             </div>

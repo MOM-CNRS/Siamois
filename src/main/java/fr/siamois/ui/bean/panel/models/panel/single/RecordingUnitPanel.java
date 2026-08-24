@@ -8,6 +8,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -117,6 +118,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     public String entityRessourceUri() {
         return "/recording-unit/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasRecordingUnitWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override
@@ -570,6 +576,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                                         .key("ACTION")
                                         .entityId(unit.getActionUnit().getId())
                                         .build())
+                        .createAllowedSupplier(() -> profilePermissionService.hasProjectPermission(
+                                sessionSettingsBean.getUserInfo(), unit.getActionUnit().getId(), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))
                         .build());
     }
 
@@ -603,6 +611,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                                         .entityId(unit.getId())
                                         .build()
                         )
+                        .createAllowedSupplier(() -> unit.getActionUnit() != null && profilePermissionService.hasProjectPermission(
+                                sessionSettingsBean.getUserInfo(), unit.getActionUnit().getId(), PermissionConstants.PROJECT_EDIT_FINDS))
                         .build()
         );
     }

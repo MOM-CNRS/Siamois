@@ -220,6 +220,13 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
     protected abstract void setFormScopePropertyValue(ConceptDTO concept);
 
     /**
+     * Checks if the current user has the permission to edit this unit's fields.
+     * Used to force the form fields into read-only mode when the permission is missing,
+     * so a denied save is never even attempted.
+     */
+    public abstract boolean canUserEditUnit();
+
+    /**
      * In list panels children may override this to provide options.
      */
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {

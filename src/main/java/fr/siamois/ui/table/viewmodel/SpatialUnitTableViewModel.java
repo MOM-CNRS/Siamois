@@ -272,15 +272,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     public boolean isRendered(RowAction action, SpatialUnitDTO su) {
-        // todo: display based on permissions
-        return switch (action.getAction()) {
-            case DUPLICATE_ROW, NEW_CHILDREN, NEW_PARENT -> flowBean.getIsWriteMode() && // perm to create spatial unit in orga and app is in write mode
-                    spatialUnitService.hasCreatePermission(sessionSettingsBean.getUserInfo());
-            case TOGGLE_BOOKMARK -> true; // Anyone can add to fav
-            case NEW_ACTION -> flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
-                    profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
-            default -> true;
-        };
+        if (action.getAction() == TableColumnAction.TOGGLE_BOOKMARK) {
+            return true; // Anyone can add to fav
+        }
+        return canUserEditRow(su);
     }
 
 

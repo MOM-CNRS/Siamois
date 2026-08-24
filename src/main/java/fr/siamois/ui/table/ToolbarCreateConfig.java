@@ -34,5 +34,14 @@ public class ToolbarCreateConfig implements Serializable {
      */
     @Builder.Default
     private final transient Supplier<NewUnitContext.Trigger> triggerSupplier = NewUnitContext.Trigger::toolbar;
+
+    /**
+     * Whether the current user is allowed to create this entity from this toolbar (optional).
+     * Defaults to true when the target scope isn't known yet at click time (e.g. a home-page-level
+     * list where the target project is picked later in the dialog) — the real gate is then the
+     * server-side permission check performed at save time.
+     */
+    @Builder.Default
+    private final transient Supplier<Boolean> createAllowedSupplier = () -> true;
 }
 

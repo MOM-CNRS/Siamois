@@ -266,7 +266,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> false;
             case TOGGLE_BOOKMARK -> false;
-            default -> true;
+            default -> canUserEditRow(au);
         };
     }
 
