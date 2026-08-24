@@ -3,6 +3,7 @@ package fr.siamois.ui.table.viewmodel;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.PhaseDTO;
@@ -35,6 +36,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
     private final InstitutionService institutionService;
     private final SessionSettingsBean sessionSettingsBean;
     private final PhaseService phaseService;
+    private final ProfilePermissionService profilePermissionService;
 
     public PhaseTableViewModel(BasePhaseLazyDataModel phaseLazyDataModel,
                                FormService formService,
@@ -46,7 +48,8 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
                                GenericNewUnitDialogBean<PhaseDTO> genericNewUnitDialogBean,
                                InstitutionService institutionService,
                                FormContextServices formContextServices,
-                               PhaseService phaseService) {
+                               PhaseService phaseService,
+                               ProfilePermissionService profilePermissionService) {
         super(
                 phaseLazyDataModel,
                 genericNewUnitDialogBean,
@@ -64,6 +67,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
         this.flowBean = flowBean;
         this.institutionService = institutionService;
         this.phaseService = phaseService;
+        this.profilePermissionService = profilePermissionService;
     }
 
     @Override
@@ -164,7 +168,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
 
     @Override
     public boolean canUserEditRow(PhaseDTO unit) {
-        return true;
+        return profilePermissionService.hasPhaseWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override

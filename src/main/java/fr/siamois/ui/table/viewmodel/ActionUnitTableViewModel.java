@@ -1,8 +1,9 @@
 package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -50,7 +51,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     private final BaseActionUnitLazyDataModel actionUnitLazyDataModel;
     private final FlowBean flowBean;
 
-    private final InstitutionService institutionService;
+    private final ProfilePermissionService profilePermissionService;
 
     private final SessionSettingsBean sessionSettingsBean;
 
@@ -65,7 +66,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
                                     SpatialUnitService spatialUnitService,
                                     NavBean navBean,
                                     FlowBean flowBean, GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean,
-                                    InstitutionService institutionService,
+                                    ProfilePermissionService profilePermissionService,
                                     FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
 
         super(
@@ -83,7 +84,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         this.actionUnitLazyDataModel = actionUnitLazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
-        this.institutionService = institutionService;
+        this.profilePermissionService = profilePermissionService;
         this.actionUnitService = actionUnitService;
         this.actionUnitMapper = actionUnitMapper;
     }
@@ -184,9 +185,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     public boolean isRendered(TableColumn column, String key, ActionUnitDTO au) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
-                    flowBean.getSessionSettings().getUserInfo().getUser(),
-                    flowBean.getSessionSettings().getSelectedInstitution());
+            case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(
+                    flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
             default -> false;
         };
     }
@@ -298,7 +298,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
     @Override
     public boolean canUserEditRow(ActionUnitDTO unit) {
-        return true; // todo: implement permission
+        return profilePermissionService.hasActionUnitWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override

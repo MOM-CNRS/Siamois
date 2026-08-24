@@ -429,8 +429,8 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
     @Override
     public boolean canUserEditRow(SpatialUnitDTO unit) {
-        return flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
-                profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+        return flowBean.getIsWriteMode() && // perm to edit spatial units in orga and app is in write mode
+                profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES);
     }
 
     @Override

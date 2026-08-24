@@ -146,6 +146,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void duplicate() {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(sessionSettingsBean.getUserInfo(), unit)) {
+            MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");
+            return;
+        }
+
         RecordingUnitDTO copy = new RecordingUnitDTO(unit);
         copy.setParents(new HashSet<>());
         copy.setAuthor(sessionSettingsBean.getAuthenticatedUser());
@@ -375,6 +380,12 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 return;
             }
 
+            if (!profilePermissionService.canViewRecordingUnit(sessionSettingsBean.getUserInfo().getUser(), unit)) {
+                log.warn("Person {} tried to access recording unit {} without permission", sessionSettingsBean.getUserInfo().getUser(), unitId);
+                redirectBean.redirectTo(HttpStatus.FORBIDDEN);
+                return;
+            }
+
             ensureTabsInitialized();
 
 
@@ -575,6 +586,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 navBean,
                 flowBean,
                 specimenService,
+                profilePermissionService,
                 (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );

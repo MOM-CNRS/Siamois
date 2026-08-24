@@ -6,6 +6,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
@@ -208,6 +209,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 return;
             }
 
+            if (!profilePermissionService.canViewProject(sessionSettingsBean.getUserInfo().getUser(), unit.getCreatedByInstitution(), unit.getId())) {
+                log.warn("Person {} tried to access action unit {} without permission", sessionSettingsBean.getUserInfo().getUser(), unitId);
+                redirectBean.redirectTo(HttpStatus.FORBIDDEN);
+                return;
+            }
+
             initRecordingTab();
 
             SpecimenLazyDataModel specimenLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
@@ -316,7 +323,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     public boolean canOpenInProjectSettings() {
-        return true;
+        return profilePermissionService.hasProjectPermission(
+                sessionSettingsBean.getUserInfo(), unit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
     @Override

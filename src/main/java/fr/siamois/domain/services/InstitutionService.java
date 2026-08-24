@@ -292,40 +292,6 @@ public class InstitutionService {
     }
 
     /**
-     * Checks if a person is an institution manager.
-     *
-     * @param person      the person to check
-     * @param institution the institution to check against
-     * @return true if the person is an institution manager, false otherwise
-     */
-    public boolean personIsInstitutionManager(PersonDTO person, InstitutionDTO institution) {
-        return institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId());
-    }
-
-    /**
-     * Checks if a person is an action manager for a given institution.
-     *
-     * @param person      the person to check
-     * @param institution the institution to check against
-     * @return true if the person is an action manager, false otherwise
-     */
-    public boolean personIsActionManager(PersonDTO person, InstitutionDTO institution) {
-        return personProfileAssignmentRepository.personHasProfileWithCodeInInstitution(
-                person.getId(), institution.getId(), ProfileConstants.ORGANIZATION_PROJECT_MANAGER);
-    }
-
-    /**
-     * Checks if a person is either an institution manager or an action manager for a given institution.
-     *
-     * @param person      the person to check
-     * @param institution the institution to check against
-     * @return true if the person is either an institution manager or an action manager, false otherwise
-     */
-    public boolean personIsInstitutionManagerOrActionManager(PersonDTO person, InstitutionDTO institution) {
-        return personIsInstitutionManager(person, institution) || personIsActionManager(person, institution);
-    }
-
-    /**
      * Adds a person to the action manager of a given institution.
      *
      * @param institution the institution to which the person will be added as an action manager

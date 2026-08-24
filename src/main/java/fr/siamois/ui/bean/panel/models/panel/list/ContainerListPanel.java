@@ -2,7 +2,7 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.ContainerService;
-import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.ContainerDTO;
@@ -47,7 +47,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean;
     private final transient NavBean navBean;
-    private final transient InstitutionService institutionService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient FormContextServices formContextServices;
     private final transient ActionUnitMapper actionUnitMapper;
     private final transient ContainerService containerService;
@@ -85,7 +85,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
                 navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                institutionService,
+                profilePermissionService,
                 formContextServices,
                 actionUnitService,
                 actionUnitMapper,
@@ -111,7 +111,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.navBean = context.getBean(NavBean.class);
-        this.institutionService = context.getBean(InstitutionService.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.actionUnitMapper = actionUnitMapper;
         this.containerService = containerService;

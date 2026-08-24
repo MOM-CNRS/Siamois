@@ -401,7 +401,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     public boolean canUserEditRow(RecordingUnitDTO unit) {
-        return true; // todo: implement permission
+        return profilePermissionService.hasRecordingUnitWritePermission(flowBean.getSessionSettings().getUserInfo(), unit);
     }
 
     @Override

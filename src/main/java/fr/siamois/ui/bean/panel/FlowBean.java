@@ -690,7 +690,7 @@ public class FlowBean implements Serializable {
 
     public boolean userHasAddSpatialOrActionUnitPermission() {
         UserInfo info = sessionSettings.getUserInfo();
-        return profilePermissionService.isSuperAdmin(info.getUser())
+        return profilePermissionService.hasInstancePermission(info.getUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS)
                 || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_PLACES)
                 || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
     }
@@ -731,7 +731,7 @@ public class FlowBean implements Serializable {
 
         if (selectedInstitution != null
                 && (institutionService.personIsInInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)
-                || institutionService.isManagerOf(selectedInstitution, sessionSettings.getUserInfo().getUser()))) {
+                || profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo().getUser(), selectedInstitution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))) {
             sessionSettings.setSelectedInstitution(selectedInstitution);
             PrimeFaces.current().ajax().update("navBar", "flow");
             institutionChangeEventPublisher.publishInstitutionChangeEvent();

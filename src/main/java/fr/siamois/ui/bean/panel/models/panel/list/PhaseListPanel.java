@@ -4,6 +4,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.ui.bean.NavBean;
@@ -47,6 +48,7 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
     private final transient InstitutionService institutionService;
     private final transient FormContextServices formContextServices;
     private final transient PhaseService phaseService;
+    private final transient ProfilePermissionService profilePermissionService;
 
     @Override
     public String getPrefixPanelIndex() {
@@ -78,7 +80,8 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
                 genericNewUnitDialogBean,
                 institutionService,
                 formContextServices,
-                phaseService
+                phaseService,
+                profilePermissionService
         );
         tableModel.setParentPanel(this);
         return lazy;
@@ -102,6 +105,7 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
         this.institutionService = context.getBean(InstitutionService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.phaseService = phaseService;
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     @Override

@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.SpecimenDTO;
@@ -43,6 +44,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
     private final transient GenericNewUnitDialogBean<SpecimenDTO> genericNewUnitDialogBean;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
+    private final transient ProfilePermissionService profilePermissionService;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -75,6 +77,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
                 navBean,
                 flowBean,
                 specimenService,
+                profilePermissionService,
                 genericNewUnitDialogBean,
                 formContextServices
         );
@@ -102,6 +105,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.navBean = context.getBean(NavBean.class);
         this.formContextServices = context.getBean(FormContextServices.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     @Override

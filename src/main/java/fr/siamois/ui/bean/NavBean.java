@@ -4,8 +4,10 @@ import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.Bookmark;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.converter.InstitutionConverter;
 import fr.siamois.ui.bean.panel.FlowBean;
@@ -25,6 +27,7 @@ import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -59,6 +62,7 @@ public class NavBean implements Serializable {
     private final LangBean langBean;
     private final transient ProjectDetailsBean projectDetailsBean;
     private final ApplicationMembersListBean applicationMembersListBean;
+    private final transient ProfilePermissionService profilePermissionService;
 
     private String urlToGoBack; // URL to go back from settings
 
@@ -80,7 +84,7 @@ public class NavBean implements Serializable {
                    InstitutionConverter converter,
                    InstitutionService institutionService,
                    RedirectBean redirectBean,
-                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean, ProjectDetailsBean projectDetailsBean, ApplicationMembersListBean applicationMembersListBean) {
+                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean, ProjectDetailsBean projectDetailsBean, ApplicationMembersListBean applicationMembersListBean, ProfilePermissionService profilePermissionService) {
         this.sessionSettingsBean = sessionSettingsBean;
         this.institutionChangeEventPublisher = institutionChangeEventPublisher;
         this.converter = converter;
@@ -93,6 +97,12 @@ public class NavBean implements Serializable {
         this.langBean = langBean;
         this.projectDetailsBean = projectDetailsBean;
         this.applicationMembersListBean = applicationMembersListBean;
+        this.profilePermissionService = profilePermissionService;
+    }
+
+    public boolean isAdministrationVisible() {
+        return profilePermissionService.hasInstancePermission(
+                sessionSettingsBean.getAuthenticatedUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS);
     }
 
     public InstitutionDTO getSelectedInstitution() {
@@ -378,6 +388,10 @@ public class NavBean implements Serializable {
         setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         projectListBean.init();
         String path = projectListBean.redirectToProject(actionUnit);
+        if (path == null) {
+            redirectBean.redirectTo(HttpStatus.FORBIDDEN);
+            return;
+        }
         FacesContext facesContext = FacesContext.getCurrentInstance();
         String contextPath = facesContext.getExternalContext().getRequestContextPath();
         facesContext.getExternalContext().redirect(contextPath + path);

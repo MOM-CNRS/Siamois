@@ -5,6 +5,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -17,7 +18,6 @@ import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
@@ -39,6 +39,7 @@ import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.NotNull;
@@ -73,7 +74,6 @@ public class RecordingUnitService implements ArkEntityService {
     public static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
     private final RecordingUnitRepository recordingUnitRepository;
     private final PersonRepository personRepository;
-    private final InstitutionService institutionService;
     private final ActionUnitService actionUnitService;
     private final ProfilePermissionService profilePermissionService;
     private final RecordingUnitMapper recordingUnitMapper;
@@ -131,6 +131,7 @@ public class RecordingUnitService implements ArkEntityService {
             "ActionHasRootChildrenRU"
     })
     public RecordingUnitDTO save(RecordingUnitDTO recordingUnitDTO) {
+        assertWritePermission(recordingUnitDTO);
         try {
             RecordingUnit recordingUnit =
                     recordingUnitMapper.invertConvert(recordingUnitDTO);
@@ -540,6 +541,12 @@ public class RecordingUnitService implements ArkEntityService {
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
                         RECORDING_UNIT_NOT_FOUND_WITH_ID + recordingUnitId));
 
+        UserInfo info = ExecutionContextHolder.get();
+        Long actionUnitId = ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)) {
+            throw new ForbiddenOperationException("You are not allowed to delete this recording unit");
+        }
+
         validateDeletable(ru, recordingUnitId);
         unlinkParentChildRelations(ru);
         clearStratigraphicRelationships(ru, recordingUnitId);
@@ -763,8 +770,16 @@ public class RecordingUnitService implements ArkEntityService {
 
     @Override
     public RecordingUnitDTO save(AbstractEntityDTO toSave) {
+        assertWritePermission((RecordingUnitDTO) toSave);
         RecordingUnit toReturn = recordingUnitRepository.save(Objects.requireNonNull(recordingUnitMapper.invertConvert((RecordingUnitDTO) toSave)));
         return recordingUnitMapper.convert(toReturn);
+    }
+
+    private void assertWritePermission(RecordingUnitDTO recordingUnitDTO) {
+        UserInfo info = ExecutionContextHolder.get();
+        if (info == null || !profilePermissionService.hasRecordingUnitWritePermission(info, recordingUnitDTO)) {
+            throw new ForbiddenOperationException("You are not allowed to edit this recording unit");
+        }
     }
 
     /**
@@ -788,7 +803,8 @@ public class RecordingUnitService implements ArkEntityService {
      */
     public boolean canCreateSpecimen(UserInfo user, RecordingUnitDTO ru) {
         ActionUnitSummaryDTO action = ru.getActionUnit();
-        return institutionService.isManagerOf(action.getCreatedByInstitution(), user.getUser()) ||
+        return profilePermissionService.hasOrganizationPermission(
+                user.getUser(), action.getCreatedByInstitution(), PermissionConstants.ORGANIZATION_MANAGE_SETTINGS) ||
                 actionUnitService.isManagerOf(action, user.getUser()) ||
                 (profilePermissionService.hasProjectPermission(user, action.getId(), PermissionConstants.PROJECT_EDIT_FINDS)
                         && actionUnitService.isActionUnitStillOngoing(action));

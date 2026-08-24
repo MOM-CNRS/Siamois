@@ -1,10 +1,11 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
-import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.ProfileDTO;
@@ -40,7 +41,7 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
 
     private final transient ProjectMembersServiceInterface projectMembersService;
     private final NewProjectMemberDialogBean newProjectMemberDialogBean;
-    private final transient PersonProfileAssignmentService personProfileAssignmentService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final SessionSettingsBean sessionSettingsBean;
 
     private ActionUnitDTO project;
@@ -52,14 +53,19 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
 
     public ProjectMembersListBean(ProjectMembersServiceInterface projectMembersService,
                                   NewProjectMemberDialogBean newProjectMemberDialogBean,
-                                  LangBean langBean, PersonProfileAssignmentService personProfileAssignmentService,
+                                  LangBean langBean, ProfilePermissionService profilePermissionService,
                                   SessionSettingsBean sessionSettingsBean, PendingPersonService pendingPersonService,
                                   InvitationMailer invitationMailer) {
         super(pendingPersonService, invitationMailer, langBean);
         this.projectMembersService = projectMembersService;
         this.newProjectMemberDialogBean = newProjectMemberDialogBean;
-        this.personProfileAssignmentService = personProfileAssignmentService;
+        this.profilePermissionService = profilePermissionService;
         this.sessionSettingsBean = sessionSettingsBean;
+    }
+
+    private boolean isNotProjectManager(ActionUnitDTO project) {
+        return !profilePermissionService.hasProjectPermission(
+                sessionSettingsBean.getUserInfo(), project.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
     /**
@@ -107,6 +113,10 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
     /** Removes the given member from the current project. */
     public void removeMember(ProjectMemberDTO member) {
         log.trace("Removing project member {}", member.displayName());
+        if (isNotProjectManager(project)) {
+            displayWarnMessage(langBean, "projectSettings.error.notManager");
+            return;
+        }
         projectMembersService.removeMemberFromProject(project, member);
         refMembers.remove(member);
         filter();
@@ -137,12 +147,20 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
     /** Assigns the newly checked profile to the given member. */
     public void onProfileSelect(SelectEvent<ProfileDTO> event) {
         ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
+        if (isNotProjectManager(project)) {
+            displayWarnMessage(langBean, "projectSettings.error.notManager");
+            return;
+        }
         projectMembersService.addProfileToMember(project, member, event.getObject());
     }
 
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(UnselectEvent<ProfileDTO> event) {
         ProjectMemberDTO member = (ProjectMemberDTO) event.getComponent().getAttributes().get("member");
+        if (isNotProjectManager(project)) {
+            displayWarnMessage(langBean, "projectSettings.error.notManager");
+            return;
+        }
         ProfileDTO profile = event.getObject();
         boolean removed = projectMembersService.removeProfileFromMember(project, member, profile);
         if (!removed) {
@@ -159,7 +177,7 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
 
     private Boolean processPerson(PersonRole saved) {
         try {
-            if (personProfileAssignmentService.isNotProjectManager(project, sessionSettingsBean.getAuthenticatedUser())) {
+            if (isNotProjectManager(project)) {
                 displayWarnMessage(langBean, "projectSettings.error.notManager");
                 return false;
             }
