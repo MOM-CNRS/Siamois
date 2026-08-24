@@ -7,7 +7,7 @@ package fr.siamois.domain.models.permissions;
 public final class PermissionConstants {
 
     // Instance SCOPE
-    public static final String INSTANCE_MANAGE_MEMBERS = "INSTANCE_MANAGE_MEMBERS";
+    public static final String INSTANCE_MANAGE_SETTINGS = "INSTANCE_MANAGE_SETTINGS";
 
     // ORGANIZATION SCOPE
     /**
@@ -16,14 +16,10 @@ public final class PermissionConstants {
     public static final String ORGANIZATION_CREATE = "ORGANIZATION_CREATE";
 
     /**
-     * Allows the user to see the list of all {@link fr.siamois.domain.models.institution.Institution}
+     * Allows the user to manage the settings of the specified {@link fr.siamois.domain.models.institution.Institution}:
+     * its {@link fr.siamois.domain.models.auth.Person} members, name, thesaurus configuration, etc.
      */
-    public static final String ORGANIZATION_LIST_ACCESS = "ORGANIZATION_LIST_ACCESS";
-
-    /**
-     * Allows the user to manage the {@link fr.siamois.domain.models.auth.Person} of the specified {@link fr.siamois.domain.models.institution.Institution}
-     */
-    public static final String ORGANIZATION_MANAGE_MEMBERS = "ORGANIZATION_MANAGE_MEMBERS";
+    public static final String ORGANIZATION_MANAGE_SETTINGS = "ORGANIZATION_MANAGE_SETTINGS";
 
     /**
      * Allows the user to manage new {@link fr.siamois.domain.models.actionunit.ActionUnit} in specified {@link fr.siamois.domain.models.institution.Institution}
@@ -42,7 +38,11 @@ public final class PermissionConstants {
 
     // Project SCOPE
 
-    public static final String PROJECT_MANAGE_MEMBERS = "PROJET_MANAGE_MEMBERS";
+    /**
+     * Allows the user to manage the settings of the specified {@link fr.siamois.domain.models.actionunit.ActionUnit}:
+     * its members, thesaurus configuration, table fields/types, identifier format, etc.
+     */
+    public static final String PROJECT_MANAGE_SETTINGS = "PROJECT_MANAGE_SETTINGS";
     public static final String PROJECT_EDIT_RECORDING_UNITS = "PROJECT_EDIT_RECORDING_UNITS";
     public static final String PROJECT_EDIT_PHASES = "PROJECT_EDIT_PHASES";
     public static final String PROJECT_EDIT_FINDS = "PROJECT_EDIT_FINDS";

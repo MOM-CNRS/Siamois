@@ -2,6 +2,7 @@ package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -44,6 +45,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     private final BaseSpecimenLazyDataModel specimenLazyDataModel;
     private final FlowBean flowBean;
     private final SpecimenService specimenService;
+    private final ProfilePermissionService profilePermissionService;
 
 
     private final SessionSettingsBean sessionSettingsBean;
@@ -56,6 +58,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
                                   NavBean navBean,
                                   FlowBean flowBean,
                                   SpecimenService specimenService,
+                                  ProfilePermissionService profilePermissionService,
                                   GenericNewUnitDialogBean<SpecimenDTO> genericNewUnitDialogBean, FormContextServices formContextServices) {
 
         super(
@@ -76,6 +79,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
         this.specimenService = specimenService;
+        this.profilePermissionService = profilePermissionService;
 
 
     }
@@ -196,11 +200,10 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     }
 
     public boolean isRendered(RowAction action, SpecimenDTO s) {
-        return switch (action.getAction()) {
-            case DUPLICATE_ROW -> flowBean.getIsWriteMode();
-            case TOGGLE_BOOKMARK -> true;
-            default -> true;
-        };
+        if (action.getAction() == TableColumnAction.TOGGLE_BOOKMARK) {
+            return true;
+        }
+        return canUserEditRow(s);
     }
 
 
@@ -234,7 +237,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
     @Override
     public boolean canUserEditRow(SpecimenDTO unit) {
-        return true; // todo: implement permission
+        return profilePermissionService.hasSpecimenWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override

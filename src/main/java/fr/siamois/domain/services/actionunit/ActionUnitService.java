@@ -9,12 +9,15 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
@@ -34,6 +37,7 @@ import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -79,6 +83,7 @@ public class ActionUnitService implements ArkEntityService {
     private final ProfileService profileService;
     private final PersonProfileAssignmentService personProfileAssignmentService;
     private final ProfileMapper profileMapper;
+    private final ProfilePermissionService profilePermissionService;
 
 
     /**
@@ -236,9 +241,19 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
+        assertWritePermission(info, actionUnit);
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
         assignRoles(info, savedDTO);
         return savedDTO;
+    }
+
+    private void assertWritePermission(UserInfo info, ActionUnitDTO actionUnit) {
+        boolean allowed = actionUnit.getId() == null
+                ? profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                : profilePermissionService.hasActionUnitWritePermission(info, actionUnit);
+        if (!allowed) {
+            throw new ForbiddenOperationException("You are not allowed to save this action unit");
+        }
     }
 
     private void assignRoles(UserInfo info, ActionUnitDTO savedDTO) {
@@ -308,6 +323,11 @@ public class ActionUnitService implements ArkEntityService {
             @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
+        UserInfo info = ExecutionContextHolder.get();
+        if (info == null) {
+            throw new ForbiddenOperationException("You are not allowed to save this action unit");
+        }
+        assertWritePermission(info, (ActionUnitDTO) toSave);
         try {
             return actionUnitMapper.convert(
                     actionUnitRepository.save(Objects.requireNonNull(
@@ -776,6 +796,13 @@ public class ActionUnitService implements ArkEntityService {
             @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
     public void deleteProjectWhenEmpty(long actionUnitId) {
+        UserInfo info = ExecutionContextHolder.get();
+        boolean allowed = info != null
+                && (profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                || profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_MANAGE_SETTINGS));
+        if (!allowed) {
+            throw new ForbiddenOperationException("You are not allowed to delete this action unit");
+        }
         if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des unités d'enregistrement");
         }

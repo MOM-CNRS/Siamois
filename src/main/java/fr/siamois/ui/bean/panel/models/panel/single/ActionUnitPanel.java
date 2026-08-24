@@ -6,6 +6,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
@@ -124,6 +125,11 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return String.format("/action-unit/%s", unit.getId());
     }
 
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasActionUnitWritePermission(sessionSettingsBean.getUserInfo(), unit);
+    }
+
 
 
     public void refreshUnit() {
@@ -205,6 +211,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
             if (this.unit == null) {
                 log.error("The Action Unit page should not be accessed without ID or by direct page path");
                 errorMessage = "The Action Unit page should not be accessed without ID or by direct page path";
+                return;
+            }
+
+            if (!profilePermissionService.canViewProject(sessionSettingsBean.getUserInfo().getUser(), unit.getCreatedByInstitution(), unit.getId())) {
+                log.warn("Person {} tried to access action unit {} without permission", sessionSettingsBean.getUserInfo().getUser(), unitId);
+                redirectBean.redirectTo(HttpStatus.FORBIDDEN);
                 return;
             }
 
@@ -316,7 +328,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     public boolean canOpenInProjectSettings() {
-        return true;
+        return profilePermissionService.hasProjectPermission(
+                sessionSettingsBean.getUserInfo(), unit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
     @Override
@@ -417,6 +430,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                                         .entityId(unit.getId())
                                         .build()
                         )
+                        .createAllowedSupplier(() -> profilePermissionService.hasProjectPermission(
+                                sessionSettingsBean.getUserInfo(), unit.getId(), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))
                         .build()
         );
     }

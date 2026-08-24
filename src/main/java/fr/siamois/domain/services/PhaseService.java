@@ -1,9 +1,13 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PhaseDTO;
@@ -11,6 +15,7 @@ import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
 import fr.siamois.mapper.PhaseMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,6 +37,7 @@ public class PhaseService {
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
     private final EntityIdentifierGenerator identifierGenerator;
+    private final ProfilePermissionService profilePermissionService;
 
     private Specification<Phase> userFilterSpecs(FilterDTO filters) {
         Specification<Phase> specs = Specification.where(null);
@@ -91,6 +97,12 @@ public class PhaseService {
 
         if (managed.getActionUnit() == null) {
             throw new IllegalArgumentException("An action unit is required to save a phase");
+        }
+
+        UserInfo info = ExecutionContextHolder.get();
+        if (info == null || !profilePermissionService.hasProjectPermission(
+                info, managed.getActionUnit().getId(), PermissionConstants.PROJECT_EDIT_PHASES)) {
+            throw new ForbiddenOperationException("You are not allowed to edit this phase");
         }
 
         identifierGenerator.generateIdentifierIfRequired(managed, phaseIdentifierSpec());

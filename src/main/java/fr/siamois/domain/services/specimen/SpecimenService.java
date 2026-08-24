@@ -1,11 +1,14 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -14,6 +17,7 @@ import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -29,6 +33,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -62,6 +67,7 @@ public class SpecimenService implements ArkEntityService {
     private final ArkRepository arkRepository;
     private final UnitDefinitionService unitDefinitionService;
     private final EntityIdentifierGenerator identifierGenerator;
+    private final ProfilePermissionService profilePermissionService;
 
 
     @Override
@@ -208,6 +214,7 @@ public class SpecimenService implements ArkEntityService {
      * @return the saved specimen
      */
     public SpecimenDTO save(SpecimenDTO toSave) {
+        assertWritePermission(toSave);
         // Convertir SpecimenDTO en Specimen
         Specimen specimen = specimenMapper.invertConvert(toSave);
 
@@ -355,9 +362,28 @@ public class SpecimenService implements ArkEntityService {
 
     @Override
     public AbstractEntityDTO save(AbstractEntityDTO abstractEntityDTO) {
+        assertWritePermission((SpecimenDTO) abstractEntityDTO);
         Specimen specimen = specimenMapper.invertConvert((SpecimenDTO) abstractEntityDTO);
         Specimen saved = specimenRepository.save(specimen);
         return specimenMapper.convert(saved);
+    }
+
+    /**
+     * Checks that the current user can write the given specimen, resolving its action unit
+     * through the related recording unit if it isn't directly set (mirrors {@link #resolveIdentifierActionUnit}).
+     */
+    private void assertWritePermission(SpecimenDTO toSave) {
+        UserInfo info = ExecutionContextHolder.get();
+        Long actionUnitId = toSave.getActionUnit() != null ? toSave.getActionUnit().getId() : null;
+        if (actionUnitId == null && toSave.getRecordingUnit() != null && toSave.getRecordingUnit().getId() != null) {
+            actionUnitId = recordingUnitRepository.findById(toSave.getRecordingUnit().getId())
+                    .map(RecordingUnit::getActionUnit)
+                    .map(ActionUnit::getId)
+                    .orElse(null);
+        }
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS)) {
+            throw new ForbiddenOperationException("You are not allowed to edit this specimen");
+        }
     }
 
     /**
@@ -673,6 +699,18 @@ public class SpecimenService implements ArkEntityService {
     public void deleteSpecimenById(long specimenId) {
         Specimen specimen = specimenRepository.findById(specimenId)
                 .orElseThrow(() -> new IllegalArgumentException("Mobilier introuvable: " + specimenId));
+
+        UserInfo info = ExecutionContextHolder.get();
+        ActionUnit actionUnit;
+        if (specimen.getActionUnit() != null) {
+            actionUnit = specimen.getActionUnit();
+        } else {
+            actionUnit = specimen.getRecordingUnit() != null ? specimen.getRecordingUnit().getActionUnit() : null;
+        }
+        Long actionUnitId = actionUnit != null ? actionUnit.getId() : null;
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS)) {
+            throw new ForbiddenOperationException("You are not allowed to delete this specimen");
+        }
 
         if (specimenRepository.countMovementsBySpecimenId(specimenId) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le mobilier a des mouvements associés");

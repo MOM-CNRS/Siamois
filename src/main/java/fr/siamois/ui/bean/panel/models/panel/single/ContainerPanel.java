@@ -8,6 +8,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ContainerDTO;
@@ -52,6 +53,7 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
     private final transient RedirectBean redirectBean;
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient LabelService labelService;
+    private final transient ProfilePermissionService profilePermissionService;
 
     @Override
     protected boolean documentExistsInUnitByHash(ContainerDTO unit, String hash) {
@@ -72,10 +74,16 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
         this.redirectBean = context.getBean(RedirectBean.class);
         this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
         this.labelService = context.getBean(LabelService.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     public String entityRessourceUri() {
         return "/container/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasContainerWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override

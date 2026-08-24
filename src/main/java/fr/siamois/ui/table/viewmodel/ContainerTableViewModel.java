@@ -1,9 +1,10 @@
 package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ContainerService;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -48,7 +49,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     private final BaseContainerLazyDataModel containerLazyDataModel;
     private final FlowBean flowBean;
 
-    private final InstitutionService institutionService;
+    private final ProfilePermissionService profilePermissionService;
 
     private final SessionSettingsBean sessionSettingsBean;
 
@@ -64,7 +65,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
                                    SpatialUnitService spatialUnitService,
                                    NavBean navBean,
                                    FlowBean flowBean, GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean,
-                                   InstitutionService institutionService,
+                                   ProfilePermissionService profilePermissionService,
                                    FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper,
                                    ContainerService containerService) {
 
@@ -83,7 +84,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         this.containerLazyDataModel = containerLazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
-        this.institutionService = institutionService;
+        this.profilePermissionService = profilePermissionService;
         this.actionUnitService = actionUnitService;
         this.actionUnitMapper = actionUnitMapper;
         this.containerService = containerService;
@@ -165,9 +166,8 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     public boolean isRendered(TableColumn column, String key, ContainerDTO au) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
-                    flowBean.getSessionSettings().getUserInfo().getUser(),
-                    flowBean.getSessionSettings().getSelectedInstitution());
+            case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(
+                    flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
             default -> false;
         };
     }
@@ -218,7 +218,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> false;
             case TOGGLE_BOOKMARK -> false;
-            default -> true;
+            default -> canUserEditRow(au);
         };
     }
 
@@ -250,7 +250,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
     @Override
     public boolean canUserEditRow(ContainerDTO unit) {
-        return true; // todo: implement permission
+        return profilePermissionService.hasContainerWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override

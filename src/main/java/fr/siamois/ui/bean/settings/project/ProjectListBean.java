@@ -1,15 +1,20 @@
 package fr.siamois.ui.bean.settings.project;
 
 
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
@@ -18,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Getter
 @Setter
 @Component
@@ -30,6 +36,8 @@ public class ProjectListBean implements SettingsDatatableBean {
     private final transient SessionSettingsBean sessionSettingsBean;
     private final transient ProjectDetailsBean projectDetailsBean;
     private final transient InstitutionService institutionService;
+    private final transient ProfilePermissionService profilePermissionService;
+    private final LangBean langBean;
     private String searchInput;
 
     private Set<ActionUnitDTO> actionUnits;
@@ -73,6 +81,13 @@ public class ProjectListBean implements SettingsDatatableBean {
 
 
     public String redirectToProject(ActionUnitDTO actionUnit) {
+        if (!profilePermissionService.hasProjectPermission(
+                sessionSettingsBean.getUserInfo(), actionUnit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS)) {
+            log.warn("Person {} tried to access settings of project {} without permission",
+                    sessionSettingsBean.getUserInfo().getUser(), actionUnit.getId());
+            MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");
+            return null;
+        }
         projectDetailsBean.setProject(actionUnit);
         projectDetailsBean.init();
          return "/pages/settings/project/projectSettings.xhtml?faces-redirect=true";

@@ -2,11 +2,12 @@ package fr.siamois.ui.bean.settings.institution;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.OrganizationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
-import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.InstitutionMemberDTO;
@@ -48,7 +49,7 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
     private final transient OrganizationMembersServiceInterface organizationMembersService;
     private final NewOrganizationMemberDialogBean newOrganizationMemberDialogBean;
     private final SessionSettingsBean sessionSettingsBean;
-    private final transient PersonProfileAssignmentService personProfileAssignmentService;
+    private final transient ProfilePermissionService profilePermissionService;
     private InstitutionDTO institution;
     private transient Map<Person, String> roles;
 
@@ -65,14 +66,19 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
                                       PendingPersonService pendingPersonService,
                                       InvitationMailer invitationMailer,
                                       SessionSettingsBean sessionSettingsBean,
-                                      PersonProfileAssignmentService personProfileAssignmentService) {
+                                      ProfilePermissionService profilePermissionService) {
         super(pendingPersonService, invitationMailer, langBean);
         this.institutionService = institutionService;
         this.personService = personService;
         this.organizationMembersService = organizationMembersService;
         this.newOrganizationMemberDialogBean = newOrganizationMemberDialogBean;
         this.sessionSettingsBean = sessionSettingsBean;
-        this.personProfileAssignmentService = personProfileAssignmentService;
+        this.profilePermissionService = profilePermissionService;
+    }
+
+    private boolean isNotOrganisationManager(InstitutionDTO institution) {
+        return !profilePermissionService.hasOrganizationPermission(
+                sessionSettingsBean.getAuthenticatedUser(), institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
     }
 
     /**
@@ -121,7 +127,7 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
     /** Removes the given member from the current institution. */
     public void removeMember(InstitutionMemberDTO member) {
         log.trace("Removing institution member {}", member.displayName());
-        if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution() ,sessionSettingsBean.getAuthenticatedUser())) {
+        if (isNotOrganisationManager(member.getCreatedByInstitution())) {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
@@ -153,7 +159,7 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
     /** Assigns the newly checked profile to the given member. */
     public void onProfileSelect(SelectEvent<ProfileDTO> event) {
         InstitutionMemberDTO member = (InstitutionMemberDTO) event.getComponent().getAttributes().get("member");
-        if (personProfileAssignmentService.isNotOrganisationManager(member.getCreatedByInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
+        if (isNotOrganisationManager(member.getCreatedByInstitution())) {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
@@ -163,7 +169,7 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(UnselectEvent<ProfileDTO> event) {
         InstitutionMemberDTO member = (InstitutionMemberDTO) event.getComponent().getAttributes().get("member");
-        if (personProfileAssignmentService.isNotOrganisationManager(member.getInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
+        if (isNotOrganisationManager(member.getInstitution())) {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
@@ -183,7 +189,7 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
 
     private Boolean processPerson(PersonRole saved) {
         try {
-            if (personProfileAssignmentService.isNotOrganisationManager(sessionSettingsBean.getSelectedInstitution(), sessionSettingsBean.getAuthenticatedUser())) {
+            if (isNotOrganisationManager(sessionSettingsBean.getSelectedInstitution())) {
                 displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
                 return false;
             }

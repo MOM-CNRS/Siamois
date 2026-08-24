@@ -2,8 +2,8 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.form.CustomFieldService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -18,6 +18,7 @@ import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.ui.bean.NavBean;
+import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
@@ -44,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -75,8 +77,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     private final transient PersonService personService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
-    private final transient InstitutionService institutionService;
     private final transient ProfilePermissionService profilePermissionService;
+    private final RedirectBean redirectBean;
 
 
     private String spatialUnitErrorMessage;
@@ -119,8 +121,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
-        this.institutionService = context.getBean(InstitutionService.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
+        this.redirectBean = context.getBean(RedirectBean.class);
     }
 
 
@@ -133,6 +135,12 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     public String entityRessourceUri() {
         return "/spatial-unit/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasOrganizationPermission(
+                sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES);
     }
 
     @Override
@@ -271,6 +279,13 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
         refreshUnit();
 
+        if (this.unit != null
+                && !profilePermissionService.canViewInstitutionData(sessionSettings.getUserInfo().getUser(), unit.getCreatedByInstitution())) {
+            log.warn("Person {} tried to access spatial unit {} without permission", sessionSettings.getUserInfo().getUser(), unitId);
+            redirectBean.redirectTo(HttpStatus.FORBIDDEN);
+            return;
+        }
+
         super.init();
 
         ActionTab actionTab = new ActionTab(
@@ -390,7 +405,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                 navBean,
                 flowBean,
                 (GenericNewUnitDialogBean<ActionUnitDTO>) genericNewUnitDialogBean,
-                institutionService,
+                profilePermissionService,
                 formContextServices,
                 actionUnitService, null);
         actionTabTableModel.setParentPanel(this);
@@ -407,6 +422,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                                         .entityId(unit.getId())
                                         .build()
                         )
+                        .createAllowedSupplier(() -> profilePermissionService.hasOrganizationPermission(
+                                sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
                         .build()
         );
     }
@@ -448,6 +465,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.ROOT)
                                 .build())
+                        .createAllowedSupplier(() -> profilePermissionService.hasOrganizationPermission(
+                                sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES))
                         .build()
         );
 

@@ -43,7 +43,7 @@ public class ProfileService {
         if (profile.isPresent()) return profile.get();
 
         Set<Permission> profilePermission = new HashSet<>();
-        profilePermission.add(findOrThrowPermission(PermissionConstants.INSTANCE_MANAGE_MEMBERS));
+        profilePermission.add(findOrThrowPermission(PermissionConstants.INSTANCE_MANAGE_SETTINGS));
         profilePermission.add(findOrThrowPermission(PermissionConstants.ORGANIZATION_CREATE));
         profilePermission.add(findOrThrowPermission(PermissionConstants.ORGANIZATION_ACCESS));
 
@@ -82,7 +82,7 @@ public class ProfileService {
     @NonNull
     public Profile createOrGetOrganizationManagerProfile(@NonNull InstitutionDTO institutionDTO) {
         return createOrGetOrganizationProfile("Gestionnaire de l'organisation", ProfileConstants.ORGANIZATION_MANAGER, List.of(
-                PermissionConstants.ORGANIZATION_MANAGE_MEMBERS,
+                PermissionConstants.ORGANIZATION_MANAGE_SETTINGS,
                 PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
                 PermissionConstants.ORGANIZATION_MANAGE_PLACES,
                 PermissionConstants.ORGANIZATION_ACCESS
@@ -131,7 +131,7 @@ public class ProfileService {
     @NonNull
     public Profile createOrGetProjectManagerProfile(@NonNull ActionUnitDTO actionUnitDTO) {
         return createOrGetProjectProfile("Gestionnaire du projet", ProfileConstants.PROJECT_MANAGER, List.of(
-                PermissionConstants.PROJECT_MANAGE_MEMBERS,
+                PermissionConstants.PROJECT_MANAGE_SETTINGS,
                 PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
                 PermissionConstants.PROJECT_EDIT_FINDS,
                 PermissionConstants.PROJECT_EDIT_PHASES,

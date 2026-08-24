@@ -1,6 +1,8 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -14,6 +16,7 @@ import org.primefaces.model.StreamedContent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -34,6 +37,7 @@ public class ProjectDetailsBean {
     private final LangBean langBean;
     private final SessionSettingsBean sessionSettingsBean;
     private final RedirectBean redirectBean;
+    private final ProfilePermissionService profilePermissionService;
 
     // LOCALS
     private ActionUnitDTO project;
@@ -75,6 +79,11 @@ public class ProjectDetailsBean {
     public void checkProjectOrRedirect() {
         if (project == null) {
             redirectBean.redirectTo("/settings/project");
+            return;
+        }
+        if (!profilePermissionService.hasProjectPermission(
+                sessionSettingsBean.getUserInfo(), project.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS)) {
+            redirectBean.redirectTo(HttpStatus.NOT_FOUND);
             return;
         }
         // projectUploadSettingsBean.project is only set via its own .init(project) call (wired to the

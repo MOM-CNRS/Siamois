@@ -1,16 +1,19 @@
 package fr.siamois.domain.services.specimen;
 
 import fr.siamois.domain.models.ArkEntity;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -25,6 +28,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -89,8 +94,13 @@ class SpecimenServiceTest {
     @Mock
     private fr.siamois.domain.services.identifier.EntityIdentifierGenerator identifierGenerator;
 
+    @Mock
+    private ProfilePermissionService profilePermissionService;
+
     @BeforeEach
     void stubManagedAssociationLookups() {
+        ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
         lenient().when(recordingUnitRepository.findById(anyLong())).thenAnswer(inv -> {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(inv.getArgument(0));
@@ -124,6 +134,11 @@ class SpecimenServiceTest {
             i.setId(inv.getArgument(0));
             return Optional.of(i);
         });
+    }
+
+    @AfterEach
+    void clearExecutionContext() {
+        ExecutionContextHolder.clear();
     }
 
     @Test
@@ -250,6 +265,49 @@ class SpecimenServiceTest {
         assertFalse(spec.generationRequired().test(missingRelations));
     }
 
+    @Test
+    void save_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> specimenService.save(new SpecimenDTO()));
+
+        verify(specimenRepository, never()).save(any(Specimen.class));
+    }
+
+    @Test
+    void save_throwsForbidden_whenPermissionDenied() {
+        when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> specimenService.save(new SpecimenDTO()));
+
+        verify(specimenRepository, never()).save(any(Specimen.class));
+    }
+
+    @Test
+    void save_resolvesActionUnitThroughRecordingUnit_whenNotDirectlySet() {
+        SpecimenDTO specimenDTO = new SpecimenDTO();
+        RecordingUnitSummaryDTO recordingUnitDTO = new RecordingUnitSummaryDTO();
+        recordingUnitDTO.setId(42L);
+        specimenDTO.setRecordingUnit(recordingUnitDTO);
+
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(42L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(9L);
+        recordingUnit.setActionUnit(actionUnit);
+        when(recordingUnitRepository.findById(42L)).thenReturn(Optional.of(recordingUnit));
+
+        Specimen specimen = new Specimen();
+        when(specimenMapper.invertConvert(specimenDTO)).thenReturn(specimen);
+        when(specimenRepository.save(specimen)).thenReturn(specimen);
+        when(specimenMapper.convert(specimen)).thenReturn(new SpecimenDTO());
+
+        specimenService.save(specimenDTO);
+
+        verify(profilePermissionService).hasProjectPermission(any(), eq(9L), eq(PermissionConstants.PROJECT_EDIT_FINDS));
+    }
 
     @Test
     void testFindById_found() {
@@ -913,6 +971,30 @@ class SpecimenServiceTest {
     }
 
     @Test
+    void save_AbstractEntityDTO_throwsForbidden_whenNoExecutionContext() {
+        SpecimenDTO dto = new SpecimenDTO();
+        dto.setId(1L);
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> specimenService.save((AbstractEntityDTO) dto));
+
+        verify(specimenRepository, never()).save(any(Specimen.class));
+    }
+
+    @Test
+    void save_AbstractEntityDTO_throwsForbidden_whenPermissionDenied() {
+        SpecimenDTO dto = new SpecimenDTO();
+        dto.setId(1L);
+        when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> specimenService.save((AbstractEntityDTO) dto));
+
+        verify(specimenRepository, never()).save(any(Specimen.class));
+    }
+
+    @Test
     void generateNextIdentifier_whenMaxNull_returnsOne() {
         SpecimenDTO dto = new SpecimenDTO();
         RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
@@ -1101,6 +1183,52 @@ class SpecimenServiceTest {
     void deleteSpecimenById_notFound_throws() {
         when(specimenRepository.findById(404L)).thenReturn(Optional.empty());
         assertThrows(IllegalArgumentException.class, () -> specimenService.deleteSpecimenById(404L));
+    }
+
+    @Test
+    void deleteSpecimenById_throwsForbidden_whenNoExecutionContext() {
+        Specimen specimen = new Specimen();
+        specimen.setId(5L);
+        when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> specimenService.deleteSpecimenById(5L));
+
+        verify(specimenRepository, never()).delete(any(Specimen.class));
+    }
+
+    @Test
+    void deleteSpecimenById_throwsForbidden_whenPermissionDenied() {
+        Specimen specimen = new Specimen();
+        specimen.setId(5L);
+        when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
+        when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> specimenService.deleteSpecimenById(5L));
+
+        verify(specimenRepository, never()).delete(any(Specimen.class));
+    }
+
+    @Test
+    void deleteSpecimenById_resolvesActionUnitThroughRecordingUnit_whenNotDirectlySet() {
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(42L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(9L);
+        recordingUnit.setActionUnit(actionUnit);
+
+        Specimen specimen = new Specimen();
+        specimen.setId(5L);
+        specimen.setRecordingUnit(recordingUnit);
+        when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
+        when(specimenRepository.countMovementsBySpecimenId(5L)).thenReturn(0L);
+        when(specimenRepository.countGroupAttributionsBySpecimenId(5L)).thenReturn(0L);
+
+        specimenService.deleteSpecimenById(5L);
+
+        verify(profilePermissionService).hasProjectPermission(any(), eq(9L), eq(PermissionConstants.PROJECT_EDIT_FINDS));
     }
 
     @Test

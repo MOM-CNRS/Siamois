@@ -2,9 +2,13 @@ package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import org.springframework.stereotype.Service;
 
@@ -26,19 +30,6 @@ public class ProfilePermissionService {
 
     public ProfilePermissionService(PersonProfileAssignmentRepository assignmentRepository) {
         this.assignmentRepository = assignmentRepository;
-    }
-
-    /**
-     * Checks if the person holds the SUPERADMIN profile.
-     *
-     * @param person the person to check
-     * @return true if the SUPERADMIN profile is assigned to the person
-     */
-    public boolean isSuperAdmin(PersonDTO person) {
-        if (person == null || person.getId() == null) {
-            return false;
-        }
-        return assignmentRepository.personIsSuperAdmin(person.getId());
     }
 
     /**
@@ -118,6 +109,61 @@ public class ProfilePermissionService {
     public boolean hasRecordingUnitWritePermission(UserInfo user, RecordingUnitDTO recordingUnit) {
         Long actionUnitId = recordingUnit.getActionUnit() != null ? recordingUnit.getActionUnit().getId() : null;
         return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
+    }
+
+    /**
+     * Checks if the user can write the given specimen, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_FINDS} on the specimen's action unit.
+     *
+     * @param user     the user information
+     * @param specimen the specimen to write
+     * @return true if the user can write the specimen
+     */
+    public boolean hasSpecimenWritePermission(UserInfo user, SpecimenDTO specimen) {
+        Long actionUnitId = specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS);
+    }
+
+    /**
+     * Checks if the user can write the given phase, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_PHASES} on the phase's action unit.
+     *
+     * @param user  the user information
+     * @param phase the phase to write
+     * @return true if the user can write the phase
+     */
+    public boolean hasPhaseWritePermission(UserInfo user, PhaseDTO phase) {
+        Long actionUnitId = phase.getActionUnit() != null ? phase.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_PHASES);
+    }
+
+    /**
+     * Checks if the user can write the given container, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_CONTAINERS} on the container's action unit.
+     *
+     * @param user      the user information
+     * @param container the container to write
+     * @return true if the user can write the container
+     */
+    public boolean hasContainerWritePermission(UserInfo user, ContainerDTO container) {
+        Long actionUnitId = container.getActionUnit() != null ? container.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_CONTAINERS);
+    }
+
+    /**
+     * Checks if the user can write the given action unit's own fields, i.e. holds
+     * {@link PermissionConstants#PROJECT_MANAGE_SETTINGS} on the action unit itself, or
+     * {@link PermissionConstants#ORGANIZATION_MANAGE_ACTIONS} on the user's institution.
+     *
+     * @param user       the user information
+     * @param actionUnit the action unit to write; its id may be null for a not-yet-created action unit
+     * @return true if the user can write the action unit
+     */
+    public boolean hasActionUnitWritePermission(UserInfo user, ActionUnitDTO actionUnit) {
+        if (hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+            return true;
+        }
+        return actionUnit != null && hasProjectPermission(user, actionUnit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
     /**

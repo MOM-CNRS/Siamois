@@ -36,6 +36,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.List;
 import java.util.Optional;
@@ -78,6 +79,9 @@ class FieldConfigurationServiceTest {
     @Mock
     private FieldFormConfigRepository fieldFormConfigRepository;
 
+    @Mock
+    private ObjectProvider<FieldConfigurationService> selfProvider;
+
     @InjectMocks
     private FieldConfigurationService service;
 
@@ -115,6 +119,8 @@ class FieldConfigurationServiceTest {
 
         // fetchAutocomplete(CustomFieldConcept, ...) reads the current user from the execution context
         ExecutionContextHolder.set(userInfo);
+
+        lenient().when(selfProvider.getObject()).thenReturn(service);
     }
 
     @AfterEach

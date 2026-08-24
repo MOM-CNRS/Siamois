@@ -3,6 +3,7 @@ package fr.siamois.ui.bean;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LangageChangeEvent;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
@@ -97,7 +98,7 @@ public class SessionSettingsBean implements Serializable {
 
     private Set<InstitutionDTO> findReferencedInstitutions() {
         PersonDTO person = getAuthenticatedUser();
-        if (profilePermissionService.isSuperAdmin(person)) {
+        if (profilePermissionService.hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)) {
             return institutionService.findAll();
         } else {
             return institutionService.findInstitutionsOfPerson(person);

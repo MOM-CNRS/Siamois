@@ -31,6 +31,7 @@ import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -60,6 +61,7 @@ public class FieldConfigurationService {
     private final InstitutionMapper institutionMapper;
     private final ActionUnitMapper actionUnitMapper;
     private final FieldFormConfigRepository fieldFormConfigRepository;
+    private final ObjectProvider<FieldConfigurationService> selfProvider;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();
@@ -77,7 +79,7 @@ public class FieldConfigurationService {
     public void setupFieldConfigurationForInstitution(UserInfo info,
                                                       Vocabulary vocabulary,
                                                       ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, progressWrapper);
+        selfProvider.getObject().setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, progressWrapper);
     }
 
     /**
@@ -89,6 +91,7 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(InstitutionDTO institution, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfiguration(institution, vocabulary, progressWrapper);
     }
@@ -105,7 +108,7 @@ public class FieldConfigurationService {
     @NonNull
     @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull UserInfo info, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, new ProgressWrapper());
+        return selfProvider.getObject().setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, new ProgressWrapper());
     }
 
     /**

@@ -1,19 +1,25 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ContainerMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +39,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -50,6 +57,9 @@ class ContainerServiceTest {
 
     @Mock
     private EntityIdentifierGenerator identifierGenerator;
+
+    @Mock
+    private ProfilePermissionService profilePermissionService;
 
     @InjectMocks
     private ContainerService containerService;
@@ -71,6 +81,14 @@ class ContainerServiceTest {
 
         containerDTO = new ContainerDTO();
         containerDTO.setId(100L);
+
+        ExecutionContextHolder.set(new UserInfo(institutionDTO, new PersonDTO(), "fr"));
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+    }
+
+    @AfterEach
+    void clearExecutionContext() {
+        ExecutionContextHolder.clear();
     }
 
     @Test
@@ -188,6 +206,44 @@ class ContainerServiceTest {
         assertSame(containerDTO, result);
         verify(containerRepository).save(container);
         verify(identifierGenerator).generateIdentifierIfRequired(eq(container), any());
+    }
+
+    @Test
+    void save_throwsForbidden_whenNoExecutionContext() {
+        when(containerMapper.invertConvert(containerDTO)).thenReturn(container);
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> containerService.save(containerDTO));
+
+        verify(containerRepository, never()).save(any(Container.class));
+    }
+
+    @Test
+    void save_throwsForbidden_whenPermissionDenied() {
+        when(containerMapper.invertConvert(containerDTO)).thenReturn(container);
+        when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> containerService.save(containerDTO));
+
+        verify(containerRepository, never()).save(any(Container.class));
+    }
+
+    @Test
+    void save_checksPermissionOnTheContainerActionUnit() {
+        ContainerDTO newContainerDTO = new ContainerDTO();
+        Container newContainer = new Container();
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(7L);
+        newContainer.setActionUnit(actionUnit);
+        when(containerMapper.invertConvert(newContainerDTO)).thenReturn(newContainer);
+        when(containerRepository.save(newContainer)).thenReturn(newContainer);
+        when(containerMapper.convert(newContainer)).thenReturn(new ContainerDTO());
+
+        containerService.save(newContainerDTO);
+
+        verify(profilePermissionService).hasProjectPermission(any(), eq(7L), eq(PermissionConstants.PROJECT_EDIT_CONTAINERS));
     }
 
     @Test

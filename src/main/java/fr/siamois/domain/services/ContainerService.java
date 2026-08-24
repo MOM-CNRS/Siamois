@@ -1,10 +1,14 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -12,6 +16,7 @@ import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
 import fr.siamois.mapper.ContainerMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -38,6 +43,7 @@ public class ContainerService {
     private final ContainerMapper containerMapper;
     private final UnitDefinitionService unitDefinitionService;
     private final EntityIdentifierGenerator identifierGenerator;
+    private final ProfilePermissionService profilePermissionService;
 
     private Specification<Container> userFilterSpecs(FilterDTO filters) {
         Specification<Container> specs = Specification.where(null);
@@ -119,6 +125,13 @@ public class ContainerService {
 
     public ContainerDTO save(ContainerDTO dto) {
         Container entity = containerMapper.invertConvert(dto);
+
+        UserInfo info = ExecutionContextHolder.get();
+        Long actionUnitId = entity != null && entity.getActionUnit() != null ? entity.getActionUnit().getId() : null;
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_CONTAINERS)) {
+            throw new ForbiddenOperationException("You are not allowed to edit this container");
+        }
+
         if (dto.getParentId() != null) {
             entity.setParent(containerRepository.findById(dto.getParentId())
                     .orElseThrow(() -> new IllegalArgumentException("Container parent not found: " + dto.getParentId())));
