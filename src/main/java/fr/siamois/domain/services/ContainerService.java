@@ -127,7 +127,7 @@ public class ContainerService {
         Container entity = containerMapper.invertConvert(dto);
 
         UserInfo info = ExecutionContextHolder.get();
-        Long actionUnitId = entity.getActionUnit() != null ? entity.getActionUnit().getId() : null;
+        Long actionUnitId = entity != null && entity.getActionUnit() != null ? entity.getActionUnit().getId() : null;
         if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_CONTAINERS)) {
             throw new ForbiddenOperationException("You are not allowed to edit this container");
         }

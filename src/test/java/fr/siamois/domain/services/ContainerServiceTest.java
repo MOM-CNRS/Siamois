@@ -1,5 +1,6 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -8,12 +9,16 @@ import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ContainerMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +38,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -50,6 +56,9 @@ class ContainerServiceTest {
 
     @Mock
     private EntityIdentifierGenerator identifierGenerator;
+
+    @Mock
+    private ProfilePermissionService profilePermissionService;
 
     @InjectMocks
     private ContainerService containerService;
@@ -71,6 +80,14 @@ class ContainerServiceTest {
 
         containerDTO = new ContainerDTO();
         containerDTO.setId(100L);
+
+        ExecutionContextHolder.set(new UserInfo(institutionDTO, new PersonDTO(), "fr"));
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+    }
+
+    @AfterEach
+    void clearExecutionContext() {
+        ExecutionContextHolder.clear();
     }
 
     @Test

@@ -1,16 +1,21 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.PhaseMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +47,8 @@ class PhaseServiceTest {
     private PhaseMapper phaseMapper;
     @Mock
     private fr.siamois.domain.services.identifier.EntityIdentifierGenerator identifierGenerator;
+    @Mock
+    private ProfilePermissionService profilePermissionService;
 
     @InjectMocks
     private PhaseService phaseService;
@@ -65,6 +72,14 @@ class PhaseServiceTest {
         phaseDTO = new PhaseDTO();
         phaseDTO.setId(42L);
         phaseDTO.setIdentifier("P-01");
+
+        ExecutionContextHolder.set(new UserInfo(institution, new PersonDTO(), "fr"));
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+    }
+
+    @AfterEach
+    void clearExecutionContext() {
+        ExecutionContextHolder.clear();
     }
 
     // ------------------------------------------------------------------

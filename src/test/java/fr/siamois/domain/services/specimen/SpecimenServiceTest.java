@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.specimen;
 
 import fr.siamois.domain.models.ArkEntity;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
@@ -11,6 +12,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -25,6 +27,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -89,8 +93,13 @@ class SpecimenServiceTest {
     @Mock
     private fr.siamois.domain.services.identifier.EntityIdentifierGenerator identifierGenerator;
 
+    @Mock
+    private ProfilePermissionService profilePermissionService;
+
     @BeforeEach
     void stubManagedAssociationLookups() {
+        ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
         lenient().when(recordingUnitRepository.findById(anyLong())).thenAnswer(inv -> {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(inv.getArgument(0));
@@ -124,6 +133,11 @@ class SpecimenServiceTest {
             i.setId(inv.getArgument(0));
             return Optional.of(i);
         });
+    }
+
+    @AfterEach
+    void clearExecutionContext() {
+        ExecutionContextHolder.clear();
     }
 
     @Test
