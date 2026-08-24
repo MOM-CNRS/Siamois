@@ -28,6 +28,7 @@ import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +56,7 @@ public class InstitutionService {
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
     private final ProfileService profileService;
     private final ProfileMapper profileMapper;
+    private final ObjectProvider<InstitutionService> selfProvider;
 
     /**
      * Finds an institution by its identifier.
@@ -117,9 +119,8 @@ public class InstitutionService {
      * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
-    @Transactional(rollbackFor = Exception.class)
     public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
-        return createInstitution(institution, thesaurusUrl, new ProgressWrapper());
+        return selfProvider.getObject().createInstitution(institution, thesaurusUrl, new ProgressWrapper());
     }
 
     /**
