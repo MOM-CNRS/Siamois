@@ -117,6 +117,7 @@ public class InstitutionService {
      * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
+    @Transactional(rollbackFor = Exception.class)
     public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         return createInstitution(institution, thesaurusUrl, new ProgressWrapper());
     }
@@ -130,6 +131,7 @@ public class InstitutionService {
      * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
+    @Transactional(rollbackFor = Exception.class)
     public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl, ProgressWrapper progressWrapper) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
         institution.setCreationDate(OffsetDateTime.now(ZoneOffset.UTC));
