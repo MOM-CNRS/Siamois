@@ -11,6 +11,7 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -842,6 +843,118 @@ class ActionUnitServiceTest {
 
         assertThrows(FailedActionUnitSaveException.class,
                 () -> actionUnitService.save(actionUnit1dto));
+    }
+
+    @Test
+    void save_AbstractEntity_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.save(actionUnit1dto));
+
+        verify(actionUnitRepository, never()).save(any());
+    }
+
+    @Test
+    void save_AbstractEntity_throwsForbidden_whenPermissionDenied() {
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.save(actionUnit1dto));
+
+        verify(actionUnitRepository, never()).save(any());
+    }
+
+    // ------------------------------------------------------------------
+    // permission checks on save(UserInfo, ActionUnitDTO, ConceptDTO)
+    // ------------------------------------------------------------------
+
+    @Test
+    void save_withUserInfo_throwsForbidden_whenCreatingWithoutOrganizationPermission() {
+        ActionUnitDTO newActionUnit = new ActionUnitDTO();
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.save(info, newActionUnit, new ConceptDTO()));
+
+        verify(actionUnitRepository, never()).save(any());
+    }
+
+    @Test
+    void save_withUserInfo_throwsForbidden_whenUpdatingWithoutActionUnitWritePermission() {
+        ActionUnitDTO existingActionUnit = new ActionUnitDTO();
+        existingActionUnit.setId(7L);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(false);
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.save(info, existingActionUnit, new ConceptDTO()));
+
+        verify(actionUnitRepository, never()).save(any());
+    }
+
+    // ------------------------------------------------------------------
+    // deleteProjectWhenEmpty
+    // ------------------------------------------------------------------
+
+    @Test
+    void deleteProjectWhenEmpty_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_throwsForbidden_whenNeitherOrganizationNorProjectGrantsIt() {
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(), anyLong(), anyString())).thenReturn(false);
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_throwsIllegalState_whenRecordingUnitsExist() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(2L);
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_throwsIllegalState_whenChildActionUnitsExist() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
+                .thenReturn(Collections.singletonList(new Object[]{1L, 3L}));
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_happyPath_deletesEverything() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
+                .thenReturn(List.of());
+
+        actionUnitService.deleteProjectWhenEmpty(1L);
+
+        verify(personProfileAssignmentRepository).deleteAllByProfileActionUnitId(1L);
+        verify(profileRepository).deleteAllByActionUnitId(1L);
+        verify(recordingUnitIdLabelRepository).deleteAllByActionUnitId(1L);
+        verify(actionUnitRepository).deleteSecondaryActionCodeLinksForActionUnit(1L);
+        verify(actionUnitRepository).deleteHierarchyLinksForActionUnit(1L);
+        verify(actionUnitRepository).deleteSpatialContextLinksForActionUnit(1L);
+        verify(documentRepository).deleteAllActionUnitDocumentLinksByActionUnitId(1L);
+        verify(actionUnitRepository).deleteById(1L);
     }
 
     // ------------------------------------------------------------------
