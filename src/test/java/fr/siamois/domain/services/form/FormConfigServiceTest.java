@@ -372,7 +372,7 @@ class FormConfigServiceTest {
         ConceptCollection savedCollection = savedCollection();
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
-        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any())).thenReturn(savedCollection);
 
         formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
 
@@ -401,7 +401,7 @@ class FormConfigServiceTest {
         existing.setBranchTopTerm(branchTopConcept);
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
-        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any())).thenReturn(savedCollection);
 
         formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
 
@@ -427,7 +427,7 @@ class FormConfigServiceTest {
         existing.setPosition(7);
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
-        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any())).thenReturn(savedCollection);
 
         formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
 
@@ -446,7 +446,7 @@ class FormConfigServiceTest {
         ConceptCollectionDTO collectionDTO = collectionDTO();
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
-        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO))
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any()))
                 .thenThrow(new VocabularyNotFoundException("Vocabulary could not be found"));
 
         assertThatThrownBy(() -> formConfigService.addConceptConfigFor(formConfig, field, collectionDTO))

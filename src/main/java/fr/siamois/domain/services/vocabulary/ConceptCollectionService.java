@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.vocabulary.VocabularyNotFoundException;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,6 +52,19 @@ public class ConceptCollectionService {
      */
     @Transactional
     public ConceptCollection createOrUpdateConceptCollection(@NonNull ConceptCollectionDTO collection) {
+        return createOrUpdateConceptCollection(collection, null);
+    }
+
+    /**
+     * Same as {@link #createOrUpdateConceptCollection(ConceptCollectionDTO)}, reporting the collection's
+     * import progress on {@code progressWrapper} — a large collection resolves hundreds of related-concept
+     * links one HTTP call at a time (see {@link ConceptApiUtils#saveAllConceptsOfBranch}), so this can
+     * take long enough that the caller wants to show a progress bar.
+     *
+     * @param progressWrapper where to report progress, or null when nobody is watching
+     */
+    @Transactional
+    public ConceptCollection createOrUpdateConceptCollection(@NonNull ConceptCollectionDTO collection, @Nullable ProgressWrapper progressWrapper) {
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(collection.getVocabulary().completeUri());
             Optional<ConceptCollection> opt = conceptCollectionRepository.findByVocabularyAndExternalId(vocabulary, collection.getExternalId());
@@ -62,7 +77,7 @@ public class ConceptCollectionService {
                 savedCollection.setVocabulary(vocabulary);
                 savedCollection = conceptCollectionRepository.save(savedCollection);
             }
-            saveAllThesaurusInfoOfCollection(savedCollection);
+            saveAllThesaurusInfoOfCollection(savedCollection, progressWrapper);
             return savedCollection;
         } catch (InvalidEndpointException e) {
             log.error("Vocabulary could not be found", e);
@@ -70,7 +85,7 @@ public class ConceptCollectionService {
         }
     }
 
-    private void saveAllThesaurusInfoOfCollection(@NonNull ConceptCollection savedCollection) {
+    private void saveAllThesaurusInfoOfCollection(@NonNull ConceptCollection savedCollection, @Nullable ProgressWrapper progressWrapper) {
         ConceptBranchDTO branchDTO;
         try {
             branchDTO = conceptApi.fetchCollectionBranch(savedCollection.getVocabulary(), savedCollection);
@@ -82,7 +97,7 @@ public class ConceptCollectionService {
             return;
         }
         ConceptApiUtils.BranchLoadComponents components = new ConceptApiUtils.BranchLoadComponents(applicationContext);
-        Map<String, Concept> savedConcepts = ConceptApiUtils.saveAllConceptsOfBranch(components, savedCollection.getVocabulary(), branchDTO);
+        Map<String, Concept> savedConcepts = ConceptApiUtils.saveAllConceptsOfBranch(components, savedCollection.getVocabulary(), branchDTO, new HashMap<>(), progressWrapper);
         for (Concept concept : savedConcepts.values()) {
             savedCollection.getConcepts().add(concept);
         }

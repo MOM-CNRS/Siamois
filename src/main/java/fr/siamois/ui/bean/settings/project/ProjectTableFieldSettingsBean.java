@@ -10,6 +10,7 @@ import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
@@ -107,6 +108,15 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private transient ConceptAutocompleteDetachedDTO draftBrancheConcept;
     private String draftCollectionName;
     private transient VocabularyDTO draftVocabulary;
+
+    /**
+     * Progress of the branch/collection import {@link #saveDrawer()} triggers when saving a branch or
+     * collection source — a large collection resolves its concepts one HTTP call at a time (see
+     * {@code ConceptApiUtils#saveAllConceptsOfBranch}) and can take long enough to warrant a progress
+     * bar, following the same session-scoped-bean + PrimeFaces-self-polling pattern as
+     * {@code InstitutionDialogBean}.
+     */
+    private final ProgressWrapper progressWrapper = new ProgressWrapper();
 
     /**
      * The results {@link #completeCollections} last returned to the autocomplete widget, kept around
@@ -672,10 +682,18 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             // from a working configuration
             loadConfigs();
             return;
+        } finally {
+            progressWrapper.reset();
         }
 
         loadConfigs();
-        closeDrawer();
+        // the drawer stays open : the user can keep editing (or check what the vocabulary config
+        // resolved to) without reopening it — re-reading it mirrors openDrawerForEdit's initial load,
+        // so draftOriginalBrancheConceptKey/draftOriginalCollectionKey track what was just persisted
+        // rather than the value the drawer was first opened with
+        if (isDraftConfigurable()) {
+            prefillVocabularyConfig();
+        }
         MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.saveSuccess");
     }
 
@@ -723,7 +741,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         }
         ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.brancheSaveError");
         try {
-            formConfigService.addConceptConfigFor(target.formConfig(), target.field(), Objects.requireNonNull(draftBrancheConcept.concept()));
+            formConfigService.addConceptConfigFor(target.formConfig(), target.field(), Objects.requireNonNull(draftBrancheConcept.concept()), progressWrapper);
         } catch (RuntimeException e) {
             throw new VocabularyConfigNotSavedException(
                     String.format("Could not save the branch '%s' as the vocabulary of field '%s'",
@@ -746,7 +764,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         }
         ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.collectionSaveError");
         try {
-            formConfigService.addConceptConfigFor(target.formConfig(), target.field(), selected.get());
+            formConfigService.addConceptConfigFor(target.formConfig(), target.field(), selected.get(), progressWrapper);
         } catch (RuntimeException e) {
             throw new VocabularyConfigNotSavedException(
                     String.format("Could not save the collection '%s' as the vocabulary of field '%s'",

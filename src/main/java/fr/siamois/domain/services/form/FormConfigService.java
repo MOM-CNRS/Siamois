@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -23,9 +24,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Optional;
 
 @Slf4j
@@ -51,6 +54,20 @@ public class FormConfigService {
     public void addConceptConfigFor(@NonNull FormConfig formConfig,
                                     @NonNull CustomFieldConcept customFieldConcept,
                                     @NonNull ConceptDTO branchTopConcept) {
+        addConceptConfigFor(formConfig, customFieldConcept, branchTopConcept, null);
+    }
+
+    /**
+     * Same as {@link #addConceptConfigFor(FormConfig, CustomFieldConcept, ConceptDTO)}, reporting the
+     * branch's down-expansion progress on {@code progressWrapper}.
+     *
+     * @param progressWrapper where to report progress, or null when nobody is watching
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void addConceptConfigFor(@NonNull FormConfig formConfig,
+                                    @NonNull CustomFieldConcept customFieldConcept,
+                                    @NonNull ConceptDTO branchTopConcept,
+                                    @Nullable ProgressWrapper progressWrapper) {
         ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);
         Concept concept;
         try {
@@ -60,7 +77,7 @@ public class FormConfigService {
             conceptFieldFormConfig.setBranchTopTerm(concept);
             conceptFieldFormConfig.setCollection(null);
 
-            loadDownExpansion(concept);
+            loadDownExpansion(concept, progressWrapper);
 
             fieldFormConfigRepository.save(conceptFieldFormConfig);
         } catch (InvalidEndpointException e) {
@@ -71,8 +88,19 @@ public class FormConfigService {
 
     @Transactional(rollbackFor = Exception.class)
     public void addConceptConfigFor(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept, @NonNull ConceptCollectionDTO collectionDTO) {
+        addConceptConfigFor(formConfig, customFieldConcept, collectionDTO, null);
+    }
+
+    /**
+     * Same as {@link #addConceptConfigFor(FormConfig, CustomFieldConcept, ConceptCollectionDTO)},
+     * reporting the collection's import progress on {@code progressWrapper}.
+     *
+     * @param progressWrapper where to report progress, or null when nobody is watching
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void addConceptConfigFor(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept, @NonNull ConceptCollectionDTO collectionDTO, @Nullable ProgressWrapper progressWrapper) {
         ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);
-        ConceptCollection savedCollection = conceptCollectionService.createOrUpdateConceptCollection(collectionDTO);
+        ConceptCollection savedCollection = conceptCollectionService.createOrUpdateConceptCollection(collectionDTO, progressWrapper);
         conceptFieldFormConfig.setCollection(savedCollection);
         conceptFieldFormConfig.setBranchTopTerm(null);
         fieldFormConfigRepository.save(conceptFieldFormConfig);
@@ -137,11 +165,11 @@ public class FormConfigService {
         return conceptFieldFormConfig;
     }
 
-    private void loadDownExpansion(@NonNull Concept concept) {
+    private void loadDownExpansion(@NonNull Concept concept, @Nullable ProgressWrapper progressWrapper) {
         try {
             ConceptBranchDTO dto = conceptApi.fetchDownExpansion(concept.getVocabulary(), concept.getExternalId());
             ConceptApiUtils.BranchLoadComponents components = new ConceptApiUtils.BranchLoadComponents(applicationContext);
-            ConceptApiUtils.saveAllConceptsOfBranch(components, concept.getVocabulary(), dto);
+            ConceptApiUtils.saveAllConceptsOfBranch(components, concept.getVocabulary(), dto, new HashMap<>(), progressWrapper);
         } catch (ErrorProcessingExpansionException e) {
             log.error("Error while fetching down expansion for branch config {} ", concept.getExternalId(), e);
         }
