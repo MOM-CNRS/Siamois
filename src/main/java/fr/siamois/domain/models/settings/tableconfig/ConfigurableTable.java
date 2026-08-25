@@ -16,7 +16,7 @@ import lombok.Getter;
 @Getter
 public enum ConfigurableTable {
     UE("UE", RecordingUnit.TYPE_FIELD_CODE, "{NUM_UE}"),
-    MOBILIER("Mobilier", Specimen.CATEGORY_FIELD, "{NUM_MOBILIER}"),
+    MOBILIER("Mobilier", Specimen.CAT_FIELD, "{NUM_MOBILIER}"),
     PHASE("Phase", Phase.TYPE_FIELD, "{NUM_PHASE}"),
     CONTENANT("Contenant", Container.TYPE_FIELD, "{NUM_CONTAINER}");
 

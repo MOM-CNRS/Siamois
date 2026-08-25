@@ -265,12 +265,28 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public long getHiddenSystemFieldCount() {
         if (fieldsConfig == null) return 0;
-        return fieldsConfig.getFields().stream().filter(f -> f.isSystemField() && !f.isActive()).count();
+        return fieldsConfig.getFields().stream()
+                .filter(f -> f.isSystemField() && !f.isActive() && !isPivotField(f))
+                .count();
     }
 
     public List<TypeFieldFormConfig> getSystemFields() {
         if (fieldsConfig == null) return List.of();
-        return fieldsConfig.getFields().stream().filter(TypeFieldFormConfig::isSystemField).toList();
+        return fieldsConfig.getFields().stream()
+                .filter(TypeFieldFormConfig::isSystemField)
+                .filter(f -> !isPivotField(f))
+                .toList();
+    }
+
+    /**
+     * The table's own "type" field — the pivot whose value picks which {@link FormConfig} applies —
+     * has no business being toggled active/mandatory or reordered here: it isn't an optional field of
+     * the form, it's what selects the form. It stays a real, active system field of the table/entity
+     * form ({@link TableFieldConfigService#getFieldsConfig} is untouched), only hidden from this
+     * settings screen.
+     */
+    private boolean isPivotField(TypeFieldFormConfig field) {
+        return selectedTable != null && selectedTable.getFieldCode().equals(field.getSourceLabel());
     }
 
     /**

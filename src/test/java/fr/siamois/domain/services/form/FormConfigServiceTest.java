@@ -303,7 +303,10 @@ class FormConfigServiceTest {
     }
 
     @Test
-    void addConceptConfigFor_shouldThrowIllegalState_whenNarrowerConceptIsNotPartOfTheBranch() throws Exception {
+    void addConceptConfigFor_shouldSkipTheNarrowerRelation_whenTheChildConceptIsNotPartOfTheBranch() throws Exception {
+        // a branch/collection is a subset of the thesaurus : a fetched concept can have a narrower
+        // concept that belongs outside that subset, so it is simply absent from the response — not a
+        // sign of corrupt data, and it must not abort saving the rest of the (still valid) branch
         ConceptBranchDTO branch = new ConceptBranchDTO.ConceptBranchDTOBuilder()
                 .identifier(PARENT_URL, "parent")
                 .build();
@@ -313,11 +316,10 @@ class FormConfigServiceTest {
         stubDownExpansion(branch);
         when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
 
-        assertThatThrownBy(() -> formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(UNKNOWN_URL);
+        formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        verify(fieldFormConfigRepository, never()).save(any());
+        verify(conceptHierarchyRepository, never()).save(any());
+        verify(fieldFormConfigRepository).save(any());
     }
 
     @Test

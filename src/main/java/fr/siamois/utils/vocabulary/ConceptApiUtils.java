@@ -10,12 +10,14 @@ import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import java.util.*;
 
+@Slf4j
 public class ConceptApiUtils {
 
     public static final String IDC = "idc=";
@@ -71,11 +73,22 @@ public class ConceptApiUtils {
         return saveAllConceptsOfBranch(components, vocabulary, branchDTO, new HashMap<>());
     }
 
+    /**
+     * A "related" link almost always points at a concept the branch/collection already fetched for
+     * another reason — either it's one of the branch's own concepts ({@code urlTosavedConcept} already
+     * holds it), or an earlier "related" link elsewhere in the same branch already resolved it. Reusing
+     * {@code urlTosavedConcept} as the cache for both cases turns what would otherwise be one remote
+     * fetch per related link (in the hundreds for a large collection, since the same handful of
+     * concepts are typically related from many sides) into one fetch per concept actually new to this
+     * import.
+     */
     private static void createRelatedConceptsRelations(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, Map.Entry<String, FullInfoDTO> info, @NonNull Map<String, Concept> urlTosavedConcept, @NonNull FullInfoDTO fullInfoDTO) {
         Concept currentConcept = urlTosavedConcept.get(info.getKey());
         for (PurlInfoDTO related : fullInfoDTO.getRelated()) {
-            FullInfoDTO relatedInfos = utils.conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
-            Concept relatedConcept = utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
+            Concept relatedConcept = urlTosavedConcept.computeIfAbsent(related.getValue(), url -> {
+                FullInfoDTO relatedInfos = utils.conceptApi.fetchConceptInfoByUri(vocabulary, url);
+                return utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
+            });
             utils.conceptRepository.addRelatedConceptIfAbsent(currentConcept.getId(), relatedConcept.getId());
         }
     }
@@ -94,7 +107,13 @@ public class ConceptApiUtils {
                 throw new IllegalStateException("No concept found in cache map for URL " + info.getKey());
             }
             if (child == null) {
-                throw new IllegalStateException("No concept found in cache map for URL " + purlInfoDTO.getValue());
+                // The thesaurus's hierarchy can point outside the fetched set : a collection is a
+                // curated subset of the thesaurus, and one of its concepts can have a narrower concept
+                // that belongs to a different collection, so it isn't part of this response at all.
+                // There's nothing local to attach the relation to — that's expected, not corrupt data.
+                log.debug("Skipping narrower relation {} -> {} : the child concept was not returned by this branch/collection fetch",
+                        info.getKey(), purlInfoDTO.getValue());
+                continue;
             }
             if (!parent.equals(child)) {
                 ConceptHierarchy relation = new ConceptHierarchy(parent, child, null);

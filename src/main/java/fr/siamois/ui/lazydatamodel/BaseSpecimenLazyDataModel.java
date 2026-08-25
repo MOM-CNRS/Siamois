@@ -3,6 +3,7 @@ package fr.siamois.ui.lazydatamodel;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -34,7 +35,7 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
     BaseSpecimenLazyDataModel(SpecimenService specimenService, LangBean langBean) {
         this.specimenService = specimenService;
         this.langBean = langBean;
-        typeField.setFieldCode("SIAS.CATEGORY");
+        typeField.setFieldCode(Specimen.CAT_FIELD);
     }
 
     static {

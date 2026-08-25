@@ -1,6 +1,8 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
+import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.identifier.IdentifierResolver;
@@ -15,11 +17,45 @@ import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.ui.bean.LangBean;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ProjectTableFieldSettingsBeanTest {
+
+    @Test
+    void getSystemFields_shouldHideThePivotTypeField_butKeepOtherSystemFields() {
+        TableFieldConfigService tableService = mock(TableFieldConfigService.class);
+        TypeFieldFormConfig pivot = TypeFieldFormConfig.builder()
+                .name("recordingunit.property.type")
+                .systemField(true)
+                .active(false)
+                .sourceLabel(ConfigurableTable.UE.getFieldCode())
+                .build();
+        TypeFieldFormConfig otherSystemField = TypeFieldFormConfig.builder()
+                .name("recordingunit.field.description")
+                .systemField(true)
+                .active(false)
+                .sourceLabel("common.action.noSource")
+                .build();
+        TypeFieldsConfig fieldsConfig = new TypeFieldsConfig();
+        fieldsConfig.setFields(List.of(pivot, otherSystemField));
+        when(tableService.getFieldsConfig(42L, ConfigurableTable.UE, "Creusement")).thenReturn(fieldsConfig);
+
+        ProjectTableFieldSettingsBean bean = bean(tableService);
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(42L);
+        bean.setProject(project);
+        bean.setSelectedTable(ConfigurableTable.UE);
+        bean.selectType("Creusement");
+
+        assertThat(bean.getSystemFields()).containsExactly(otherSystemField);
+        // the pivot is inactive-looking to the caller building the "hidden fields" badge too : it's
+        // not merely filtered out of the visible rows, it must never count towards that number either
+        assertThat(bean.getHiddenSystemFieldCount()).isEqualTo(1);
+    }
 
     @Test
     void identifierTab_shouldLoadSelectedTypeConfigAndUseItsTableCatalog() {

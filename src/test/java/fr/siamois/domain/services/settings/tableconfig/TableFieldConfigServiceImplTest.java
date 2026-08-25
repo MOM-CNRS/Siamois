@@ -145,7 +145,7 @@ class TableFieldConfigServiceImplTest {
     void listTables_shouldExposeTheFourTablesWithTheirTypeFieldCode() {
         assertThat(service.listTables()).containsExactly(
                 ConfigurableTable.UE, ConfigurableTable.MOBILIER, ConfigurableTable.PHASE, ConfigurableTable.CONTENANT);
-        assertThat(ConfigurableTable.MOBILIER.getFieldCode()).isEqualTo("SIAS.CATEGORY");
+        assertThat(ConfigurableTable.MOBILIER.getFieldCode()).isEqualTo("SIAS.CAT");
     }
 
     @Test
@@ -170,7 +170,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void listConfigurableTypes_shouldOfferTheVocabularyValuesThatAreNotConfiguredYet() throws Exception {
-        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CATEGORY"), eq("é"), eq(PROJECT_ID)))
+        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CAT"), eq("é"), eq(PROJECT_ID)))
                 .thenReturn(List.of(autocomplete("Céramique"), autocomplete("Métal"), autocomplete("Céramique")));
         when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
                 .thenReturn(List.of(ceramiqueConfig));
@@ -684,7 +684,7 @@ class TableFieldConfigServiceImplTest {
     @Test
     void getFieldsConfig_shouldMapVocabularyFieldsToTheirTypeAndSource() {
         CustomFieldSelectOneFromFieldCode vocabularyField = CustomFieldSelectOneFromFieldCode.builder()
-                .id(3L).label("Catégorie").isSystemField(true).fieldCode("SIAS.CATEGORY").build();
+                .id(3L).label("Catégorie").isSystemField(true).fieldCode("SIAS.CAT").build();
         when(fieldFormConfigRepository.findAllByFormConfigId(10L))
                 .thenReturn(List.of(fieldConfig(defaultConfig, vocabularyField, true, false)));
 
@@ -693,7 +693,7 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(field.getType()).isEqualTo(FieldType.SELECT_ONE);
         assertThat(field.isConfigurable()).isTrue();
-        assertThat(field.getSourceLabel()).isEqualTo("SIAS.CATEGORY");
+        assertThat(field.getSourceLabel()).isEqualTo("SIAS.CAT");
     }
 
     @Test
@@ -953,7 +953,7 @@ class TableFieldConfigServiceImplTest {
     // --- listConfigurableTypes ---
     @Test
     void listConfigurableTypes_shouldReturnEmptyListWhenNoMatches() throws NoConfigForFieldException {
-        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CATEGORY"), eq("xyz"), eq(PROJECT_ID)))
+        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CAT"), eq("xyz"), eq(PROJECT_ID)))
                 .thenReturn(List.of());
         when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
                 .thenReturn(List.of());
@@ -964,7 +964,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void listConfigurableTypes_shouldReturnEmptyListWhenInputIsNull() throws NoConfigForFieldException {
-        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CATEGORY"), isNull(), eq(PROJECT_ID)))
+        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CAT"), isNull(), eq(PROJECT_ID)))
                 .thenReturn(List.of());
         when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
                 .thenReturn(List.of());
@@ -975,7 +975,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void listConfigurableTypes_shouldHandleDuplicatesInAutocomplete() throws NoConfigForFieldException {
-        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CATEGORY"), eq("é"), eq(PROJECT_ID)))
+        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CAT"), eq("é"), eq(PROJECT_ID)))
                 .thenReturn(List.of(autocomplete("Céramique"), autocomplete("Céramique"), autocomplete("Métal")));
         when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
                 .thenReturn(List.of(ceramiqueConfig));
@@ -1394,7 +1394,7 @@ class TableFieldConfigServiceImplTest {
     // --- listConfigurableTypes / fieldValues ---
     @Test
     void listConfigurableTypes_shouldReturnEmptyListWhenProjectHasNoFieldConfiguration() throws Exception {
-        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CATEGORY"), any(), eq(PROJECT_ID)))
+        when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CAT"), any(), eq(PROJECT_ID)))
                 .thenThrow(new NoConfigForFieldException("no config"));
 
         assertThat(service.listConfigurableTypes(PROJECT_ID, ConfigurableTable.MOBILIER, "é")).isEmpty();
@@ -1672,7 +1672,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void listTypes_shouldHoldOnlyTheDefaultTypeWhenTheProjectHasNoVocabularyForTheTableField() throws Exception {
-        when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAS.CATEGORY"), eq(PROJECT_ID)))
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAS.CAT"), eq(PROJECT_ID)))
                 .thenThrow(new NoConfigForFieldException("no config"));
 
         assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER))
@@ -1681,7 +1681,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void findFormConfig_shouldReturnEmptyWhenTheProjectHasNoVocabularyForTheTableField() throws Exception {
-        when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAS.CATEGORY"), eq(PROJECT_ID)))
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAS.CAT"), eq(PROJECT_ID)))
                 .thenThrow(new NoConfigForFieldException("no config"));
 
         assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default")).isEmpty();
