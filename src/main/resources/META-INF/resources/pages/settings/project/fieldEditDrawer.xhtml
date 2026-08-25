@@ -106,42 +106,65 @@
                             <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche' or projectTableFieldSettingsBean.draftSource eq 'collection'}">
                                 <div class="ptc-drawer-field">
                                     <label class="ptc-drawer-label" for="fieldEditForm:draftThesaurusUrl">#{langBean.msg('projectTables.drawer.params.thesaurusUrl')}</label>
-                                    <div class="ptc-params-url-row">
-                                        <p:inputText id="draftThesaurusUrl" value="#{projectTableFieldSettingsBean.draftThesaurusUrl}"
-                                                     placeholder="#{langBean.msg('projectTables.drawer.params.thesaurusUrlPlaceholder')}"/>
-                                        <p:commandButton icon="bi bi-arrow-clockwise" styleClass="ui-button-secondary ui-button-sm ptc-params-refresh"
+                                    <p:inputText id="draftThesaurusUrl" value="#{projectTableFieldSettingsBean.draftThesaurusUrl}"
+                                                 placeholder="#{langBean.msg('projectTables.drawer.params.thesaurusUrlPlaceholder')}" style="width:100%"/>
+                                    <div class="ptc-params-action-row">
+                                        <p:commandButton value="#{projectTableFieldSettingsBean.draftConnectionTested ? langBean.msg('projectTables.drawer.params.refresh') : langBean.msg('projectTables.drawer.params.load')}"
+                                                          icon="bi bi-arrow-clockwise"
+                                                          styleClass="ui-button-sm"
                                                           title="#{langBean.msg('projectTables.drawer.params.testConnection')}"
                                                           actionListener="#{projectTableFieldSettingsBean.testThesaurusConnection()}" update="@form" process="@this draftThesaurusUrl"/>
+                                        <h:outputLink value="#{projectTableFieldSettingsBean.draftVocabularyUrl}" target="_blank"
+                                                      disabled="#{not projectTableFieldSettingsBean.draftConnectionTested}"
+                                                      styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-sm">
+                                            <span class="ui-button-text">#{langBean.msg('projectTables.drawer.params.view')}</span>
+                                        </h:outputLink>
                                     </div>
                                     <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConnectionTested}">
                                         <div class="ptc-params-connection-ok">✓ #{langBean.msg('projectTables.drawer.params.connectionOk')}</div>
                                     </h:panelGroup>
                                 </div>
 
-                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche'}">
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche' and projectTableFieldSettingsBean.draftConnectionTested}">
                                     <div class="ptc-drawer-field">
                                         <label class="ptc-drawer-label" for="fieldEditForm:draftBrancheConcept">#{langBean.msg('projectTables.drawer.params.brancheConcept')}</label>
-                                        <p:autoComplete id="draftBrancheConcept" value="#{projectTableFieldSettingsBean.draftBrancheConcept}"
-                                                        completeMethod="#{projectTableFieldSettingsBean.completeBrancheConcepts}"
-                                                        var="c" itemLabel="#{c.conceptLabelToDisplay.label}" itemValue="#{c}"
-                                                        converter="#{conceptAutocompleteDetachedDTOConverter}"
-                                                        scrollHeight="220" style="width:100%" forceSelection="true"
-                                                        showEmptyMessage="true"
-                                                        placeholder="#{langBean.msg('projectTables.drawer.params.brancheConceptPlaceholder')}"/>
-
-
-
+                                        <h:panelGroup id="brancheRow" layout="block" styleClass="ptc-params-url-row">
+                                            <p:autoComplete id="draftBrancheConcept" value="#{projectTableFieldSettingsBean.draftBrancheConcept}"
+                                                            completeMethod="#{projectTableFieldSettingsBean.completeBrancheConcepts}"
+                                                            var="c" itemLabel="#{c.conceptLabelToDisplay.label}" itemValue="#{c}"
+                                                            converter="#{conceptAutocompleteDetachedDTOConverter}"
+                                                            scrollHeight="220" style="width:100%" forceSelection="true"
+                                                            showEmptyMessage="true"
+                                                            placeholder="#{langBean.msg('projectTables.drawer.params.brancheConceptPlaceholder')}">
+                                                <p:ajax event="itemSelect" update=":fieldEditForm:brancheRow" process="@this"/>
+                                                <p:ajax event="clear" update=":fieldEditForm:brancheRow" process="@this"/>
+                                            </p:autoComplete>
+                                            <h:outputLink value="#{projectTableFieldSettingsBean.draftBrancheConceptUrl}" target="_blank"
+                                                          disabled="#{not projectTableFieldSettingsBean.draftBrancheConceptSelected}"
+                                                          styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-sm">
+                                                <span class="ui-button-text">#{langBean.msg('projectTables.drawer.params.view')}</span>
+                                            </h:outputLink>
+                                        </h:panelGroup>
                                     </div>
                                 </h:panelGroup>
 
-                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'collection'}">
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'collection' and projectTableFieldSettingsBean.draftConnectionTested}">
                                     <div class="ptc-drawer-field">
                                         <label class="ptc-drawer-label" for="fieldEditForm:draftCollectionName">#{langBean.msg('projectTables.drawer.params.collection')}</label>
-                                        <p:autoComplete id="draftCollectionName" value="#{projectTableFieldSettingsBean.draftCollectionName}"
-                                                        completeMethod="#{projectTableFieldSettingsBean.completeCollections}"
-                                                        scrollHeight="220" style="width:100%"
-                                                        appendTo="@(body)"
-                                                        placeholder="#{langBean.msg('projectTables.drawer.params.collectionPlaceholder')}"/>
+                                        <h:panelGroup id="collectionRow" layout="block" styleClass="ptc-params-url-row">
+                                            <p:autoComplete id="draftCollectionName" value="#{projectTableFieldSettingsBean.draftCollectionName}"
+                                                            completeMethod="#{projectTableFieldSettingsBean.completeCollections}"
+                                                            scrollHeight="220" style="width:100%"
+                                                            appendTo="@(body)"
+                                                            placeholder="#{langBean.msg('projectTables.drawer.params.collectionPlaceholder')}">
+                                                <p:ajax event="itemSelect" update=":fieldEditForm:collectionRow" process="@this"/>
+                                            </p:autoComplete>
+                                            <h:outputLink value="#{projectTableFieldSettingsBean.draftCollectionUrl}" target="_blank"
+                                                          disabled="#{not projectTableFieldSettingsBean.draftCollectionSelected}"
+                                                          styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-sm">
+                                                <span class="ui-button-text">#{langBean.msg('projectTables.drawer.params.view')}</span>
+                                            </h:outputLink>
+                                        </h:panelGroup>
                                     </div>
                                 </h:panelGroup>
                             </h:panelGroup>

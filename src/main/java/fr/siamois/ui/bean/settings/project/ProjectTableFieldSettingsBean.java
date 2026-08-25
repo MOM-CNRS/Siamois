@@ -543,6 +543,52 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     /**
+     * The OpenTheso URL of the whole thesaurus currently loaded, for the "view" button next to the
+     * load/refresh button — null (and the button disabled) until {@link #testThesaurusConnection()}
+     * has resolved one.
+     */
+    public String getDraftVocabularyUrl() {
+        return draftVocabulary == null ? null : draftVocabulary.completeUri();
+    }
+
+    public boolean isDraftBrancheConceptSelected() {
+        return draftBrancheConcept != null && draftBrancheConcept.concept() != null;
+    }
+
+    /**
+     * The OpenTheso URL of the branch's root concept, for the "view" button next to the branch picker —
+     * null (and the button disabled) until a concept has been picked.
+     */
+    public String getDraftBrancheConceptUrl() {
+        if (!isDraftBrancheConceptSelected()) {
+            return null;
+        }
+        ConceptDTO concept = draftBrancheConcept.concept();
+        VocabularyDTO vocabulary = concept.getVocabulary();
+        return vocabulary.getBaseUri() + "/?idc=" + concept.getExternalId() + "&idt=" + vocabulary.getExternalVocabularyId();
+    }
+
+    public boolean isDraftCollectionSelected() {
+        return selectedCollection().isPresent();
+    }
+
+    /**
+     * The OpenTheso URL of the selected collection, for the "view" button next to the collection picker
+     * — null (and the button disabled) until the typed label matches one of {@link #lastCollectionResults}.
+     */
+    public String getDraftCollectionUrl() {
+        return selectedCollection()
+                .map(c -> c.getVocabulary().getBaseUri() + "/?idg=" + c.getExternalId() + "&idt=" + c.getVocabulary().getExternalVocabularyId())
+                .orElse(null);
+    }
+
+    private Optional<ConceptCollectionDetachedDTO> selectedCollection() {
+        return lastCollectionResults.stream()
+                .filter(c -> c.getLabelToDisplay().equals(draftCollectionName))
+                .findFirst();
+    }
+
+    /**
      * Empty until the thesaurus connection has been tested successfully. A thesaurus that answers
      * with something unparseable, or that stopped answering since the connection was tested, must
      * not surface as "no result" : the user would read it as "this concept doesn't exist".
@@ -671,9 +717,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void saveCollectionIfChanged() {
-        Optional<ConceptCollectionDetachedDTO> selected = lastCollectionResults.stream()
-                .filter(c -> c.getLabelToDisplay().equals(draftCollectionName))
-                .findFirst();
+        Optional<ConceptCollectionDetachedDTO> selected = selectedCollection();
         // unlike the branch picker this one accepts free text : an empty field, or a label matching no
         // collection of the thesaurus, leaves nothing to configure
         if (selected.isEmpty()) {

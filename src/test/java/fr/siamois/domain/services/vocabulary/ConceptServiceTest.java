@@ -732,7 +732,10 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchConceptDesignatedBy_shouldReadTheConceptOfAnArkUrl() {
+    void fetchConceptDesignatedBy_shouldBeEmpty_whenTheArkResolvesToNoCanonicalId() {
+        // the ark itself does not encode the thesaurus's numeric id (e.g. ark:/26678/pcrtp9tsh62g34
+        // resolves to 266341 on Pactols) : it must never be saved as external_id, or the same concept
+        // designated once by ark and once by idc ends up as two different local Concept rows
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchConceptInfoByUri("http://example.org", "http://example.org/ark:/26678/pcrtREVS9rPi7K"))
                 .thenReturn(conceptInfo("Phase chronologique"));
@@ -740,9 +743,24 @@ class ConceptServiceTest {
         Optional<ConceptAutocompleteDetachedDTO> result =
                 conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/ark:/26678/pcrtREVS9rPi7K");
 
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void fetchConceptDesignatedBy_shouldResolveTheArkToTheThesaurusCanonicalId_whenOneIsReturned() {
+        // a concept already known locally under its numeric id must be found again when designated by
+        // its ark, instead of creating a second, unrelated Concept for the same real-world concept
+        VocabularyDTO vocabularyDTO = remoteVocabulary();
+        FullInfoDTO info = conceptInfo("Phase chronologique");
+        info.setIdentifier(new PurlInfoDTO[]{purl("266341", "")});
+        when(conceptApi.fetchConceptInfoByUri("http://example.org", "http://example.org/ark:/26678/pcrtREVS9rPi7K"))
+                .thenReturn(info);
+
+        Optional<ConceptAutocompleteDetachedDTO> result =
+                conceptService.fetchConceptDesignatedBy(vocabularyDTO, "http://example.org/ark:/26678/pcrtREVS9rPi7K");
+
         assertThat(result).isPresent();
-        assertThat(result.get().concept().getExternalId()).isEqualTo("ark:/26678/pcrtREVS9rPi7K");
-        assertThat(result.get().getConceptLabelToDisplay().getLabel()).isEqualTo("Phase chronologique");
+        assertThat(result.get().concept().getExternalId()).isEqualTo("266341");
     }
 
     @Test
@@ -844,7 +862,7 @@ class ConceptServiceTest {
             assertThat(result.getDefinition()).isEqualTo("Objet en terre cuite");
             assertThat(result.getHierarchyPrefLabels()).isEmpty();
             assertThat(result.getVocabularyUri()).isEqualTo("http://example.org?idt=th1");
-            assertThat(result.concept().getExternalId()).isEqualTo("12");
+            assertThat(result.concept().getExternalId()).isEqualTo("1");
             assertThat(result.concept().getVocabulary()).isEqualTo(vocabularyDTO);
         });
         assertThat(results.get(0).getConceptLabelToDisplay().isAltLabel()).isFalse();
@@ -864,11 +882,11 @@ class ConceptServiceTest {
         List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "e");
 
         assertThat(results).hasSize(2);
-        assertThat(results.get(0).concept().getExternalId()).isEqualTo("20");
+        assertThat(results.get(0).concept().getExternalId()).isEqualTo("2");
         assertThat(results.get(0).getAltLabels()).isEmpty();
         // a missing definition becomes an empty string, as the local autocomplete does
         assertThat(results.get(0).getDefinition()).isEmpty();
-        assertThat(results.get(1).concept().getExternalId()).isEqualTo("12");
+        assertThat(results.get(1).concept().getExternalId()).isEqualTo("1");
     }
 
     @Test
@@ -886,30 +904,33 @@ class ConceptServiceTest {
     }
 
     @Test
-    void fetchAutocompleteFromRemoteThesaurus_shouldReadTheArkIdentifier_whenTheThesaurusIsArkBased() throws JsonProcessingException {
+    void fetchAutocompleteFromRemoteThesaurus_shouldUseTheNumericIdentifier_regardlessOfTheUriFormat() throws JsonProcessingException {
+        // the thesaurus's "identifier" field is the canonical numeric id : it must be used even when
+        // the concept's uri is an ark, which does not encode that id (ark:/26678/pcrtp9tsh62g34
+        // resolves to 266341 on Pactols, nothing in the ark string itself says so)
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString(), nullable(String.class))).thenReturn(List.of(
-                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/ark:/12345/ab6789", "Céramique", false, null)
+                new ConceptRemoteAutocompleteDTO(266341L, "http://example.org/ark:/12345/ab6789", "Céramique", false, null)
         ));
 
         List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "céram");
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).concept().getExternalId()).isEqualTo("ark:/12345/ab6789");
+        assertThat(results.get(0).concept().getExternalId()).isEqualTo("266341");
     }
 
     @Test
     void fetchAutocompleteFromRemoteThesaurus_shouldIgnoreResults_whenTheConceptCannotBeIdentified() throws JsonProcessingException {
         VocabularyDTO vocabularyDTO = remoteVocabulary();
         when(conceptApi.fetchRemoteAutocomplete(anyString(), anyString(), anyString(), nullable(String.class))).thenReturn(List.of(
-                new ConceptRemoteAutocompleteDTO(1L, "http://example.org/?idt=th1", "Sans identifiant", false, null),
+                new ConceptRemoteAutocompleteDTO(null, "http://example.org/?idt=th1", "Sans identifiant", false, null),
                 new ConceptRemoteAutocompleteDTO(2L, "http://example.org/?idc=20&idt=th1", "Verre", false, null)
         ));
 
         List<ConceptAutocompleteDetachedDTO> results = conceptService.fetchAutocompleteFromRemoteThesaurus(vocabularyDTO, "e");
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).concept().getExternalId()).isEqualTo("20");
+        assertThat(results.get(0).concept().getExternalId()).isEqualTo("2");
     }
 
     @Test
