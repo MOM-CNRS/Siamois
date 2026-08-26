@@ -47,7 +47,7 @@ public class ActionUnitSpec {
         return ((root, query, criteriaBuilder) -> {
             if (value == null || value.isBlank())
                 return null;
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get("fullIdentifier")), "%" + value.toLowerCase() + "%");
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get(FULL_IDENTIFIER_FILTER)), "%" + value.toLowerCase() + "%");
         });
     }
 

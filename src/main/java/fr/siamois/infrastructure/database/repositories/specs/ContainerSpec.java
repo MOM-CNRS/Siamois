@@ -29,7 +29,7 @@ public class ContainerSpec {
         return ((root, query, criteriaBuilder) -> {
             if (name == null || name.isBlank())
                 return null;
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get("identifier")), "%" + name.toLowerCase() + "%");
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get(IDENTIFIER_FILTER)), "%" + name.toLowerCase() + "%");
         });
     }
 

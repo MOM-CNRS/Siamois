@@ -29,7 +29,7 @@ public class SpecimenSpec {
         return (root, query, cb) -> {
             if (value == null || value.isBlank())
                 return null;
-            return cb.like(cb.lower(root.get("fullIdentifier")), "%" + value.toLowerCase() + "%");
+            return cb.like(cb.lower(root.get(FULL_IDENTIFIER_FILTER)), "%" + value.toLowerCase() + "%");
         };
     }
 

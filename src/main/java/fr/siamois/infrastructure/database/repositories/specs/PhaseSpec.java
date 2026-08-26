@@ -32,7 +32,7 @@ public class PhaseSpec {
     public static Specification<Phase> identifierContaining(@Nullable String value) {
         return (root, query, cb) -> {
             if (value == null || value.isBlank()) return null;
-            return cb.like(cb.lower(root.get("identifier")), "%" + value.toLowerCase() + "%");
+            return cb.like(cb.lower(root.get(IDENTIFIER_FILTER)), "%" + value.toLowerCase() + "%");
         };
     }
 
