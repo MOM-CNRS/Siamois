@@ -2,6 +2,7 @@ package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -235,8 +236,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public boolean isRendered(TableColumn column, String key, RecordingUnitDTO ru) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "recordingUnitCreateAllowed" -> profilePermissionService.hasRecordingUnitWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
-            case "specimenCreateAllowed" -> profilePermissionService.hasRecordingUnitWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
+            case "recordingUnitCreateAllowed" -> canUserEditRow(ru);
+            case "specimenCreateAllowed" -> canUserEditRow(ru);
             default -> false;
         };
     }
@@ -399,7 +400,10 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     public boolean canUserEditRow(RecordingUnitDTO unit) {
-        return profilePermissionService.hasRecordingUnitWritePermission(flowBean.getSessionSettings().getUserInfo(), unit);
+        Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
+        return canEditByActionUnit(profilePermissionService, flowBean.getSessionSettings().getUserInfo(),
+                PermissionConstants.PROJECT_EDIT_RECORDING_UNITS, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
+                ru -> ru.getActionUnit() != null ? ru.getActionUnit().getId() : null, actionUnitId);
     }
 
     @Override

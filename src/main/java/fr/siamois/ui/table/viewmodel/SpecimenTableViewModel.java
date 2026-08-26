@@ -1,5 +1,6 @@
 package fr.siamois.ui.table.viewmodel;
 
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -237,7 +238,10 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
     @Override
     public boolean canUserEditRow(SpecimenDTO unit) {
-        return profilePermissionService.hasSpecimenWritePermission(sessionSettingsBean.getUserInfo(), unit);
+        Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
+        return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
+                PermissionConstants.PROJECT_EDIT_FINDS, PermissionConstants.PROJECT_EDIT_FINDS,
+                s -> s.getActionUnit() != null ? s.getActionUnit().getId() : null, actionUnitId);
     }
 
     @Override

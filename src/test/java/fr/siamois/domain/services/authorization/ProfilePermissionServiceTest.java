@@ -19,6 +19,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -257,5 +261,67 @@ class ProfilePermissionServiceTest {
         when(assignmentRepository.personHasPermissionInActionUnit(1L, 5L, PermissionConstants.PROJECT_MANAGE_SETTINGS)).thenReturn(false);
 
         assertFalse(service.hasActionUnitWritePermission(userInfo, actionUnit));
+    }
+
+    // ------------------------------------------------------------------
+    // actionUnitIdsWithPermission
+    // ------------------------------------------------------------------
+
+    @Test
+    void actionUnitIdsWithPermission_returnsEmpty_whenNoIdsGiven() {
+        Set<Long> result = service.actionUnitIdsWithPermission(userInfo, List.of(), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void actionUnitIdsWithPermission_returnsEveryId_whenOrganizationGrantsIt() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(true);
+
+        Set<Long> result = service.actionUnitIdsWithPermission(userInfo, List.of(5L, 6L, 7L), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
+
+        assertThat(result).containsExactlyInAnyOrder(5L, 6L, 7L);
+        verify(assignmentRepository, never()).findActionUnitIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void actionUnitIdsWithPermission_batchesTheProjectScopedQuery_whenNoOrganizationGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.findActionUnitIdsWithPermission(1L, Set.of(5L, 6L), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))
+                .thenReturn(Set.of(5L));
+
+        Set<Long> result = service.actionUnitIdsWithPermission(userInfo, List.of(5L, 6L), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
+
+        assertThat(result).containsExactly(5L);
+        // exactly one query for the whole batch, not one per action unit
+        verify(assignmentRepository, times(1)).findActionUnitIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void actionUnitIdsWithPermission_returnsEmpty_whenPersonIsNull() {
+        UserInfo anonymous = new UserInfo(institution, null, "fr");
+
+        Set<Long> result = service.actionUnitIdsWithPermission(anonymous, List.of(5L), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void actionUnitIdsWithPermission_twoCodes_shortCircuitsOnEitherOrganizationGrant() {
+        // hasActionUnitWritePermission's shape : an org-wide PROJECT_MANAGE_SETTINGS grant must short
+        // circuit just like ORGANIZATION_MANAGE_ACTIONS would, even though it's the "project" code here
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_MANAGE_SETTINGS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_MANAGE_SETTINGS)).thenReturn(true);
+
+        Set<Long> result = service.actionUnitIdsWithPermission(userInfo, List.of(5L, 6L),
+                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS, PermissionConstants.PROJECT_MANAGE_SETTINGS);
+
+        assertThat(result).containsExactlyInAnyOrder(5L, 6L);
+        verify(assignmentRepository, never()).findActionUnitIdsWithPermission(anyLong(), any(), anyString());
     }
 }

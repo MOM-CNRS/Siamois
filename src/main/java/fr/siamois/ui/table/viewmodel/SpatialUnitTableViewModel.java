@@ -424,8 +424,11 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
     @Override
     public boolean canUserEditRow(SpatialUnitDTO unit) {
-        return flowBean.getIsWriteMode() && // perm to edit spatial units in orga and app is in write mode
-                profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES);
+        // perm to edit spatial units in orga and app is in write mode — doesn't vary by row, so it's
+        // evaluated once per page (canEditFlat) instead of once per row like hasOrganizationPermission
+        // used to be called here
+        return flowBean.getIsWriteMode() &&
+                canEditFlat(() -> profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES));
     }
 
     @Override
