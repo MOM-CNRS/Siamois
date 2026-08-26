@@ -85,7 +85,7 @@ public class ActionUnitSpec {
             return cb.or(
                     cb.like(cb.lower(root.get("name")), pattern),
                     cb.like(cb.lower(cb.coalesce(root.get("identifier"), "")), pattern),
-                    cb.like(cb.lower(cb.coalesce(root.get("fullIdentifier"), "")), pattern)
+                    cb.like(cb.lower(cb.coalesce(root.get(FULL_IDENTIFIER_FILTER), "")), pattern)
             );
         };
     }
