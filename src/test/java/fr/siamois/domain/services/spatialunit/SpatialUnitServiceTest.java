@@ -599,7 +599,7 @@ class SpatialUnitServiceTest {
         SpatialUnit nextEntity = new SpatialUnit();
         SpatialUnitDTO nextDTO = new SpatialUnitDTO();
 
-        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(1L), any()))
+        when(spatialUnitRepository.findNext(eq(1L), any(), any()))
                 .thenReturn(Optional.of(nextEntity));
         when(spatialUnitMapper.convert(nextEntity)).thenReturn(nextDTO);
 
@@ -623,7 +623,7 @@ class SpatialUnitServiceTest {
         SpatialUnitDTO oldestDTO = new SpatialUnitDTO();
 
         // No "next" found
-        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(anyLong(), any()))
+        when(spatialUnitRepository.findNext(anyLong(), any(), any()))
                 .thenReturn(Optional.empty());
         // Should trigger the wrap around call
         when(spatialUnitRepository.findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(1L))
@@ -648,7 +648,7 @@ class SpatialUnitServiceTest {
         SpatialUnit prevEntity = new SpatialUnit();
         SpatialUnitDTO prevDTO = new SpatialUnitDTO();
 
-        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(1L), any()))
+        when(spatialUnitRepository.findPrevious(eq(1L), any(), any()))
                 .thenReturn(Optional.of(prevEntity));
         when(spatialUnitMapper.convert(prevEntity)).thenReturn(prevDTO);
 
@@ -671,7 +671,7 @@ class SpatialUnitServiceTest {
         SpatialUnitDTO mostRecentDTO = new SpatialUnitDTO();
 
         // No "previous" found
-        when(spatialUnitRepository.findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(anyLong(), any()))
+        when(spatialUnitRepository.findPrevious(anyLong(), any(), any()))
                 .thenReturn(Optional.empty());
         // Should trigger the wrap around call
         when(spatialUnitRepository.findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(1L))

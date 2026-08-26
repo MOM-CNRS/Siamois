@@ -349,4 +349,90 @@ class ContainerServiceTest {
         assertEquals("A container is required to generate an identifier", exception.getMessage());
         verify(containerRepository, never()).save(any());
     }
+
+    @Test
+    void findNextByActionUnit_hasNext_returnsConvertedNext() {
+        fr.siamois.dto.entity.ActionUnitSummaryDTO action = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        action.setId(10L);
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        containerDTO.setCreationTime(now);
+
+        Container next = new Container();
+        next.setId(2L);
+        ContainerDTO nextDto = new ContainerDTO();
+
+        when(containerRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(10L, now))
+                .thenReturn(java.util.Optional.of(next));
+        when(containerMapper.convert(next)).thenReturn(nextDto);
+
+        ContainerDTO result = containerService.findNextByActionUnit(action, containerDTO);
+
+        assertSame(nextDto, result);
+        verify(containerRepository, never()).findFirstByActionUnitIdOrderByCreationTimeAsc(anyLong());
+    }
+
+    @Test
+    void findNextByActionUnit_noNext_wrapsToOldest() {
+        fr.siamois.dto.entity.ActionUnitSummaryDTO action = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        action.setId(10L);
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        containerDTO.setCreationTime(now);
+
+        Container oldest = new Container();
+        oldest.setId(3L);
+        ContainerDTO oldestDto = new ContainerDTO();
+
+        when(containerRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(10L, now))
+                .thenReturn(java.util.Optional.empty());
+        when(containerRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L))
+                .thenReturn(java.util.Optional.of(oldest));
+        when(containerMapper.convert(oldest)).thenReturn(oldestDto);
+
+        ContainerDTO result = containerService.findNextByActionUnit(action, containerDTO);
+
+        assertSame(oldestDto, result);
+    }
+
+    @Test
+    void findPreviousByActionUnit_hasPrevious_returnsConvertedPrevious() {
+        fr.siamois.dto.entity.ActionUnitSummaryDTO action = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        action.setId(10L);
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        containerDTO.setCreationTime(now);
+
+        Container previous = new Container();
+        previous.setId(4L);
+        ContainerDTO previousDto = new ContainerDTO();
+
+        when(containerRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(10L, now))
+                .thenReturn(java.util.Optional.of(previous));
+        when(containerMapper.convert(previous)).thenReturn(previousDto);
+
+        ContainerDTO result = containerService.findPreviousByActionUnit(action, containerDTO);
+
+        assertSame(previousDto, result);
+        verify(containerRepository, never()).findFirstByActionUnitIdOrderByCreationTimeDesc(anyLong());
+    }
+
+    @Test
+    void findPreviousByActionUnit_noPrevious_wrapsToMostRecent() {
+        fr.siamois.dto.entity.ActionUnitSummaryDTO action = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        action.setId(10L);
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        containerDTO.setCreationTime(now);
+
+        Container mostRecent = new Container();
+        mostRecent.setId(5L);
+        ContainerDTO mostRecentDto = new ContainerDTO();
+
+        when(containerRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(10L, now))
+                .thenReturn(java.util.Optional.empty());
+        when(containerRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L))
+                .thenReturn(java.util.Optional.of(mostRecent));
+        when(containerMapper.convert(mostRecent)).thenReturn(mostRecentDto);
+
+        ContainerDTO result = containerService.findPreviousByActionUnit(action, containerDTO);
+
+        assertSame(mostRecentDto, result);
+    }
 }
