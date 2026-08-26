@@ -236,8 +236,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public boolean isRendered(TableColumn column, String key, RecordingUnitDTO ru) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "recordingUnitCreateAllowed" -> profilePermissionService.hasRecordingUnitWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
-            case "specimenCreateAllowed" -> profilePermissionService.hasRecordingUnitWritePermission(flowBean.getSessionSettings().getUserInfo(), ru);
+            case "recordingUnitCreateAllowed" -> canUserEditRow(ru);
+            case "specimenCreateAllowed" -> canUserEditRow(ru);
             default -> false;
         };
     }
