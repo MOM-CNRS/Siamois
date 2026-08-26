@@ -15,11 +15,14 @@
 
 <h:body class="h-100">
 
-    <h1>Erreur 403</h1>
-    <p>Vous n'avez pas les permissions nécessaires pour accéder à la ressource demandée.</p>
-    <a href="#{redirectBean.redirectUrl('/')}">
-        <p>Retour à l'écran principal</p>
-    </a>
+    <div style="text-align: center; margin-top: 3em;">
+        <h:graphicImage width="220px" style="margin-bottom: 1em;" library="img" name="logo.png" styleClass="logo"/>
+        <h1>Erreur 403</h1>
+        <p>Vous n'avez pas les permissions nécessaires pour accéder à la ressource demandée.</p>
+        <a href="#{redirectBean.redirectUrl('/')}">
+            <p>Retour à l'écran principal</p>
+        </a>
+    </div>
 
 </h:body>
 </html>
