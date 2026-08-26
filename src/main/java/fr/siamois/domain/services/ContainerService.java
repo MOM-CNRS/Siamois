@@ -11,6 +11,7 @@ import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -57,6 +58,10 @@ public class ContainerService {
             specs = specs.and(ContainerSpec.nameContaining(nameFilter.valueAsString()));
         } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(ContainerSpec.nameContaining(globalFilter.valueAsString()));
+        }
+
+        if (filters.containsColumn(ContainerSpec.ACTION_UNIT_FILTER)) {
+            specs = specs.and(ContainerSpec.isInActionUnit(filters.valueAsIdListOf(ContainerSpec.ACTION_UNIT_FILTER)));
         }
 
         return specs;
@@ -114,6 +119,10 @@ public class ContainerService {
     public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
         Specification<Container> specs = prepareSpecs(institutionDTO, filters);
         return Math.toIntExact(containerRepository.count(specs));
+    }
+
+    public int countByActionContext(ActionUnitDTO actionUnit) {
+        return containerRepository.countByActionUnitId(actionUnit.getId());
     }
 
     public boolean identifierAlreadyExistInAction(ContainerDTO container) {

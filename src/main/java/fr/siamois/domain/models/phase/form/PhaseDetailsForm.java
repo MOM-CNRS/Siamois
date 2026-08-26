@@ -33,7 +33,7 @@ public class PhaseDetailsForm extends PhaseForm {
                                                 .build())
                                         .addColumn(new CustomColUiDto.Builder()
                                                 .readOnly(true)
-                                                .className(COLUMN_CLASS_NAME)
+                                                .className("d-none")
                                                 .field(actionUnitField)
                                                 .build())
                                         .build())

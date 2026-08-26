@@ -14,6 +14,8 @@ public interface ContainerRepository extends JpaRepository<Container, Long>, Jpa
 
     boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
 
+    int countByActionUnitId(Long actionUnitId);
+
     List<Container> findByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
 
     Optional<Container> findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(Long actionUnitId, OffsetDateTime createdAt);

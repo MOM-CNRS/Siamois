@@ -8,7 +8,9 @@ import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveExcept
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -16,10 +18,15 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
+import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
@@ -27,11 +34,19 @@ import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.ContainerTab;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.PhaseTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
+import fr.siamois.ui.lazydatamodel.ContainerLazyDataModel;
+import fr.siamois.ui.lazydatamodel.PhaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
+import fr.siamois.ui.table.definitions.ContainerTableDefinitionFactory;
+import fr.siamois.ui.table.definitions.PhaseTableDefinitionFactory;
 import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
+import fr.siamois.ui.table.viewmodel.ContainerTableViewModel;
+import fr.siamois.ui.table.viewmodel.PhaseTableViewModel;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
 import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
@@ -66,6 +81,7 @@ import static fr.siamois.infrastructure.database.repositories.specs.RecordingUni
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> implements Serializable {
 
+    public static final String ACTION = "ACTION";
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
     private final transient RecordingUnitService recordingUnitService;
@@ -75,6 +91,9 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private final transient InstitutionService institutionService;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient EffectiveFormResolver effectiveFormResolver;
+    private final transient ContainerService containerService;
+    private final transient PhaseService phaseService;
+    private final transient ActionUnitMapper actionUnitMapper;
 
     // For entering new code
     private ActionCode newCode;
@@ -86,6 +105,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private Concept fType;
 
     private transient RecordingUnitTableViewModel recordingTabTableModel;
+    private transient ContainerTableViewModel containerTabTableModel;
+    private transient PhaseTableViewModel phaseTabTableModel;
 
     @Override
     protected boolean documentExistsInUnitByHash(ActionUnitDTO unit, String hash) {
@@ -103,6 +124,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     // Linked recording units
     private Integer totalRecordingUnitCount;
     private Integer totalSpecimenCount;
+    private Integer totalContainerCount;
+    private Integer totalPhaseCount;
 
 
     public ActionUnitPanel(ApplicationContext context) {
@@ -118,6 +141,9 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         this.institutionService = context.getBean(InstitutionService.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.effectiveFormResolver = context.getBean(EffectiveFormResolver.class);
+        this.containerService = context.getBean(ContainerService.class);
+        this.phaseService = context.getBean(PhaseService.class);
+        this.actionUnitMapper = context.getBean(ActionUnitMapper.class);
     }
 
 
@@ -221,6 +247,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
             }
 
             initRecordingTab();
+            initContainerTab();
+            initPhaseTab();
 
             SpecimenLazyDataModel specimenLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
             specimenLazyDataModel.withConstantFilter(SpecimenSpec.ACTION_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
@@ -236,6 +264,24 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                     totalRecordingUnitCount);
 
             tabs.add(recordingTab);
+
+            ContainerTab containerTab = new ContainerTab(
+                    "common.entity.containers",
+                    "bi bi-box-seam",
+                    "containerTab",
+                    containerTabTableModel,
+                    totalContainerCount);
+
+            tabs.add(containerTab);
+
+            PhaseTab phaseTab = new PhaseTab(
+                    "common.entity.phases",
+                    "bi bi-layers",
+                    "phaseTab",
+                    phaseTabTableModel,
+                    totalPhaseCount);
+
+            tabs.add(phaseTab);
 
 
         } catch (
@@ -426,12 +472,95 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                         .kindToCreate(UnitKind.RECORDING)
                         .scopeSupplier(() ->
                                 NewUnitContext.Scope.builder()
-                                        .key("ACTION")
+                                        .key(ACTION)
                                         .entityId(unit.getId())
                                         .build()
                         )
                         .createAllowedSupplier(() -> profilePermissionService.hasProjectPermission(
                                 sessionSettingsBean.getUserInfo(), unit.getId(), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))
+                        .build()
+        );
+    }
+
+    public void initContainerTab() {
+        ContainerLazyDataModel actionLazyDataModel = new ContainerLazyDataModel(containerService, sessionSettingsBean);
+
+        actionLazyDataModel.withConstantFilter(ContainerSpec.ACTION_UNIT_FILTER, List.of(unit.getId()), CONTAINS);
+
+        totalContainerCount = containerService.countByActionContext(unit);
+
+        containerTabTableModel = new ContainerTableViewModel(
+                actionLazyDataModel,
+                formService,
+                sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                (GenericNewUnitDialogBean<ContainerDTO>) genericNewUnitDialogBean,
+                profilePermissionService,
+                formContextServices,
+                actionUnitService,
+                actionUnitMapper,
+                containerService
+        );
+        containerTabTableModel.setParentPanel(this);
+
+        ContainerTableDefinitionFactory.applyTo(containerTabTableModel);
+
+        // configuration du bouton creer
+        containerTabTableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.CONTAINER)
+                        .scopeSupplier(() ->
+                                NewUnitContext.Scope.builder()
+                                        .key(ACTION)
+                                        .entityId(unit.getId())
+                                        .build()
+                        )
+                        .createAllowedSupplier(() -> profilePermissionService.hasProjectPermission(
+                                sessionSettingsBean.getUserInfo(), unit.getId(), PermissionConstants.PROJECT_EDIT_CONTAINERS))
+                        .build()
+        );
+    }
+
+    public void initPhaseTab() {
+        PhaseLazyDataModel actionLazyDataModel = new PhaseLazyDataModel(phaseService, sessionSettingsBean);
+
+        actionLazyDataModel.withConstantFilter(PhaseSpec.ACTION_UNIT_FILTER, List.of(unit.getId()), CONTAINS);
+
+        totalPhaseCount = phaseService.countByActionContext(unit);
+
+        phaseTabTableModel = new PhaseTableViewModel(
+                actionLazyDataModel,
+                formService,
+                sessionSettingsBean,
+                spatialUnitTreeService,
+                spatialUnitService,
+                navBean,
+                flowBean,
+                (GenericNewUnitDialogBean<PhaseDTO>) genericNewUnitDialogBean,
+                institutionService,
+                formContextServices,
+                phaseService,
+                profilePermissionService
+        );
+        phaseTabTableModel.setParentPanel(this);
+
+        PhaseTableDefinitionFactory.applyTo(phaseTabTableModel);
+
+        // configuration du bouton creer
+        phaseTabTableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.PHASE)
+                        .scopeSupplier(() ->
+                                NewUnitContext.Scope.builder()
+                                        .key(ACTION)
+                                        .entityId(unit.getId())
+                                        .build()
+                        )
+                        .createAllowedSupplier(() -> profilePermissionService.hasProjectPermission(
+                                sessionSettingsBean.getUserInfo(), unit.getId(), PermissionConstants.PROJECT_EDIT_PHASES))
                         .build()
         );
     }

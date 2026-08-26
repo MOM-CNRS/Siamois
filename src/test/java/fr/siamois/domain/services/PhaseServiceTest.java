@@ -8,11 +8,13 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
 import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
@@ -177,6 +179,48 @@ class PhaseServiceTest {
         when(phaseRepository.count(any(Specification.class))).thenReturn(0L);
 
         assertEquals(0, phaseService.countSearchResults(institution, filters));
+    }
+
+    @Test
+    void searchPhases_withActionUnitFilter_stillDelegatesToRepository() {
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(PhaseSpec.ACTION_UNIT_FILTER, List.of(7L), FilterDTO.FilterType.CONTAINS);
+        Page<Phase> repoPage = new PageImpl<>(List.of(phase));
+
+        when(phaseRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(repoPage);
+        when(phaseMapper.convert(phase)).thenReturn(phaseDTO);
+
+        Page<PhaseDTO> result = phaseService.searchPhases(institution, filters, pageable);
+
+        assertEquals(1, result.getTotalElements());
+        verify(phaseRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void countSearchResults_withActionUnitFilter_returnsRepositoryCount() {
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(PhaseSpec.ACTION_UNIT_FILTER, List.of(7L), FilterDTO.FilterType.CONTAINS);
+        when(phaseRepository.count(any(Specification.class))).thenReturn(2L);
+
+        int count = phaseService.countSearchResults(institution, filters);
+
+        assertEquals(2, count);
+    }
+
+    // ------------------------------------------------------------------
+    // countByActionContext
+    // ------------------------------------------------------------------
+
+    @Test
+    void countByActionContext_delegatesToRepository() {
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(9L);
+        when(phaseRepository.countByActionUnitId(9L)).thenReturn(4);
+
+        int count = phaseService.countByActionContext(actionUnit);
+
+        assertEquals(4, count);
+        verify(phaseRepository).countByActionUnitId(9L);
     }
 
     // ------------------------------------------------------------------

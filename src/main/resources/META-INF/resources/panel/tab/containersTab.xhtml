@@ -1,0 +1,19 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:table="http://xmlns.jcp.org/jsf/composite/pages/shared/table"
+
+>
+
+    <!--@elvariable id="tabModel" type="fr.siamois.ui.bean.panel.models.panel.single.tab.ContainerTab"-->
+    <!--@elvariable id="panelIndex" type="java.lang.Integer"-->
+
+    <div class="container-tab-panel">
+        <table:entityTable
+                tableModel="#{tabModel.tableModel}"
+                panelIndex="#{panelIndex}"
+                id="containerList"
+        />
+    </div>
+
+
+</ui:fragment>
