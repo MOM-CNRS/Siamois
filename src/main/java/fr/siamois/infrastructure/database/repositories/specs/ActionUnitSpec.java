@@ -17,6 +17,7 @@ public class ActionUnitSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
+    public static final String FULL_IDENTIFIER_FILTER = "fullIdentifier";
     public static final String ID_FILTER = "id";
     public static final String SPATIAL_UNIT_FILTER = "mainLocation";
     public static final String CREATED_BY_INSTITUTION = "createdByInstitution";
@@ -38,6 +39,15 @@ public class ActionUnitSpec {
             if (name == null || name.isBlank())
                 return null;
             return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+        });
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> fullIdentifierContaining(@Nullable String value) {
+        return ((root, query, criteriaBuilder) -> {
+            if (value == null || value.isBlank())
+                return null;
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get("fullIdentifier")), "%" + value.toLowerCase() + "%");
         });
     }
 

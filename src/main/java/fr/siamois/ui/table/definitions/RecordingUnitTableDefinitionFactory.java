@@ -77,7 +77,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .toggleable(false)
                         .sortable(true)
                         .filterable(true)
-                        .sortField("full_identifier")
+                        .sortField("fullIdentifier")
 
                         .iconClass("bi bi-pencil-square")
                         .chipColor("var(--ground-main-color)")

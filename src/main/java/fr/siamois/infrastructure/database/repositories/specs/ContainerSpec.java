@@ -11,6 +11,7 @@ public class ContainerSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
+    public static final String IDENTIFIER_FILTER = "identifier";
     public static final String ID_FILTER = "id";
     public static final String ACTION_UNIT_FILTER = "actionUnit";
 

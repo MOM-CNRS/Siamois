@@ -52,7 +52,7 @@ public class ContainerService {
         Specification<Container> specs = Specification.where(null);
 
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
-        FilterDTO.FilterInfo nameFilter = filters.filterOf(ActionUnitSpec.NAME_FILTER);
+        FilterDTO.FilterInfo nameFilter = filters.filterOf(ContainerSpec.IDENTIFIER_FILTER);
 
         if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(ContainerSpec.nameContaining(nameFilter.valueAsString()));
@@ -107,8 +107,8 @@ public class ContainerService {
 
         Page<Container> res = containerRepository.findAll(specs, pageable);
 
-        if (filters.containsColumn("name")) {
-            String nameContains = filters.valueOfAsString("name");
+        if (filters.containsColumn(ContainerSpec.IDENTIFIER_FILTER)) {
+            String nameContains = filters.valueOfAsString(ContainerSpec.IDENTIFIER_FILTER);
             log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), nameContains,res.getNumber() + 1, res.getTotalPages());
         }
 

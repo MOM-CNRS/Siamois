@@ -41,11 +41,18 @@ public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
         String localNameFilter;
         String localGlobalFilter;
+        String localFullIdentifierFilter;
         if (filterBy != null && !filterBy.isEmpty()) {
             FilterMeta nameMeta = filterBy.get(ActionUnitSpec.NAME_FILTER);
             if (nameMeta != null && nameMeta.getFilterValue() != null) {
                 localNameFilter = nameMeta.getFilterValue().toString();
                 filterDTO.add(ActionUnitSpec.NAME_FILTER, localNameFilter, FilterDTO.FilterType.CONTAINS);
+            }
+
+            FilterMeta fullIdentifierMeta = filterBy.get(ActionUnitSpec.FULL_IDENTIFIER_FILTER);
+            if (fullIdentifierMeta != null && fullIdentifierMeta.getFilterValue() != null) {
+                localFullIdentifierFilter = fullIdentifierMeta.getFilterValue().toString();
+                filterDTO.add(ActionUnitSpec.FULL_IDENTIFIER_FILTER, localFullIdentifierFilter, FilterDTO.FilterType.CONTAINS);
             }
 
             FilterMeta globalMeta = filterBy.get(ActionUnitSpec.GLOBAL_FILTER);
@@ -62,6 +69,11 @@ public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {
             SortMeta sortMeta = sortBy.get(ActionUnitSpec.NAME_FILTER);
             if (sortMeta != null) {
                 sortDTO.add(ActionUnitSpec.NAME_FILTER, sortMeta.getOrder());
+            }
+
+            SortMeta fullIdentifierSortMeta = sortBy.get(ActionUnitSpec.FULL_IDENTIFIER_FILTER);
+            if (fullIdentifierSortMeta != null) {
+                sortDTO.add(ActionUnitSpec.FULL_IDENTIFIER_FILTER, fullIdentifierSortMeta.getOrder());
             }
         }
     }

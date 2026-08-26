@@ -107,7 +107,7 @@ class PhaseServiceTest {
     @Test
     void searchPhases_withNameFilter_stillDelegatesToRepository() {
         FilterDTO filters = new FilterDTO(false);
-        filters.add(ActionUnitSpec.NAME_FILTER, "fouille", FilterDTO.FilterType.CONTAINS);
+        filters.add(PhaseSpec.IDENTIFIER_FILTER, "fouille", FilterDTO.FilterType.CONTAINS);
         Page<Phase> repoPage = new PageImpl<>(List.of(phase));
 
         when(phaseRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(repoPage);
@@ -165,7 +165,7 @@ class PhaseServiceTest {
     @Test
     void countSearchResults_withNameFilter_returnsRepositoryCount() {
         FilterDTO filters = new FilterDTO(false);
-        filters.add(ActionUnitSpec.NAME_FILTER, "P", FilterDTO.FilterType.CONTAINS);
+        filters.add(PhaseSpec.IDENTIFIER_FILTER, "P", FilterDTO.FilterType.CONTAINS);
         when(phaseRepository.count(any(Specification.class))).thenReturn(3L);
 
         int count = phaseService.countSearchResults(institution, filters);
