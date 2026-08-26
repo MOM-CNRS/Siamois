@@ -79,6 +79,17 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     public int defaultPageSize = 20;
 
     /**
+     * The row list {@link #canEditByActionUnit}/{@link #canEditFlat} last computed their permission
+     * cache for — its identity (not content) is the invalidation signal: {@link BaseLazyDataModel#load}
+     * hands back the very same list instance across repeated renders of an unchanged page, and only a
+     * real page/sort/filter change produces a new one (see its cache check).
+     */
+    private List<T> permissionCacheRows;
+    private Map<Long, Boolean> permissionCacheByActionUnit;
+    private Boolean permissionCacheFlatResult;
+
+
+    /**
      * Services nécessaires pour la logique formulaire de ligne
      */
     protected final FormService formService;
@@ -561,15 +572,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      */
     public abstract boolean canUserEditRow(T unit);
 
-    /**
-     * The row list {@link #canEditByActionUnit}/{@link #canEditFlat} last computed their permission
-     * cache for — its identity (not content) is the invalidation signal: {@link BaseLazyDataModel#load}
-     * hands back the very same list instance across repeated renders of an unchanged page, and only a
-     * real page/sort/filter change produces a new one (see its cache check).
-     */
-    private transient List<T> permissionCacheRows;
-    private transient Map<Long, Boolean> permissionCacheByActionUnit;
-    private transient Boolean permissionCacheFlatResult;
+
 
     private void resetPermissionCacheIfPageChanged() {
         List<T> currentRows = getLazyDataModel().getQueryResult();
