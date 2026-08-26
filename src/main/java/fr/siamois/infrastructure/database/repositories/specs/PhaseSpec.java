@@ -24,7 +24,7 @@ public class PhaseSpec {
 
     @NonNull
     public static Specification<Phase> belongsToActionUnit(long actionUnitId) {
-        return (root, query, cb) -> cb.equal(root.get("actionUnit").get("id"), actionUnitId);
+        return (root, query, cb) -> cb.equal(root.get(ACTION_UNIT_FILTER).get("id"), actionUnitId);
     }
 
     @NonNull

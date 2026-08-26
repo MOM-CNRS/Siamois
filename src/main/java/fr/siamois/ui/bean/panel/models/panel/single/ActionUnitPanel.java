@@ -81,6 +81,7 @@ import static fr.siamois.infrastructure.database.repositories.specs.RecordingUni
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> implements Serializable {
 
+    public static final String ACTION = "ACTION";
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
     private final transient RecordingUnitService recordingUnitService;
@@ -471,7 +472,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                         .kindToCreate(UnitKind.RECORDING)
                         .scopeSupplier(() ->
                                 NewUnitContext.Scope.builder()
-                                        .key("ACTION")
+                                        .key(ACTION)
                                         .entityId(unit.getId())
                                         .build()
                         )
@@ -513,7 +514,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                         .kindToCreate(UnitKind.CONTAINER)
                         .scopeSupplier(() ->
                                 NewUnitContext.Scope.builder()
-                                        .key("ACTION")
+                                        .key(ACTION)
                                         .entityId(unit.getId())
                                         .build()
                         )
@@ -554,7 +555,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                         .kindToCreate(UnitKind.PHASE)
                         .scopeSupplier(() ->
                                 NewUnitContext.Scope.builder()
-                                        .key("ACTION")
+                                        .key(ACTION)
                                         .entityId(unit.getId())
                                         .build()
                         )

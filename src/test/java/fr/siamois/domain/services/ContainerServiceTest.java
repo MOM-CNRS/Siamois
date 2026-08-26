@@ -12,11 +12,13 @@ import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
 import fr.siamois.mapper.ContainerMapper;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
@@ -193,6 +195,56 @@ class ContainerServiceTest {
         // Assert
         assertEquals(42, count);
         verify(containerRepository).count(any(Specification.class));
+    }
+
+    @Test
+    void searchContainers_WithActionUnitFilter_ShouldApplySpecAndDelegateToRepository() {
+        // Arrange
+        FilterDTO filters = new FilterDTO();
+        filters.add(ContainerSpec.ACTION_UNIT_FILTER, List.of(7L), FilterDTO.FilterType.CONTAINS);
+
+        Page<Container> containerPage = new PageImpl<>(List.of(container));
+        when(containerRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(containerPage);
+        when(containerMapper.convert(container)).thenReturn(containerDTO);
+
+        // Act
+        Page<ContainerDTO> result = containerService.searchContainers(institutionDTO, filters, pageable);
+
+        // Assert
+        assertEquals(1, result.getTotalElements());
+        assertSame(containerDTO, result.getContent().get(0));
+        verify(containerRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void countSearchResults_WithActionUnitFilter_ShouldApplySpecAndReturnCount() {
+        // Arrange
+        FilterDTO filters = new FilterDTO();
+        filters.add(ContainerSpec.ACTION_UNIT_FILTER, List.of(7L), FilterDTO.FilterType.CONTAINS);
+
+        when(containerRepository.count(any(Specification.class))).thenReturn(3L);
+
+        // Act
+        int count = containerService.countSearchResults(institutionDTO, filters);
+
+        // Assert
+        assertEquals(3, count);
+        verify(containerRepository).count(any(Specification.class));
+    }
+
+    @Test
+    void countByActionContext_delegatesToRepository() {
+        // Arrange
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(9L);
+        when(containerRepository.countByActionUnitId(9L)).thenReturn(5);
+
+        // Act
+        int count = containerService.countByActionContext(actionUnit);
+
+        // Assert
+        assertEquals(5, count);
+        verify(containerRepository).countByActionUnitId(9L);
     }
 
     @Test
