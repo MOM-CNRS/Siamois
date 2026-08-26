@@ -5,6 +5,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -42,10 +43,10 @@ public class ContainerLazyDataModel extends BaseContainerLazyDataModel {
         String localNameFilter;
         String localGlobalFilter;
         if (filterBy != null && !filterBy.isEmpty()) {
-            FilterMeta nameMeta = filterBy.get(ActionUnitSpec.NAME_FILTER);
+            FilterMeta nameMeta = filterBy.get(ContainerSpec.IDENTIFIER_FILTER);
             if (nameMeta != null && nameMeta.getFilterValue() != null) {
                 localNameFilter = nameMeta.getFilterValue().toString();
-                filterDTO.add(ActionUnitSpec.NAME_FILTER, localNameFilter, FilterDTO.FilterType.CONTAINS);
+                filterDTO.add(ContainerSpec.IDENTIFIER_FILTER, localNameFilter, FilterDTO.FilterType.CONTAINS);
             }
 
             FilterMeta globalMeta = filterBy.get(ActionUnitSpec.GLOBAL_FILTER);
@@ -59,9 +60,9 @@ public class ContainerLazyDataModel extends BaseContainerLazyDataModel {
     @Override
     protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
         if (sortBy != null && !sortBy.isEmpty()) {
-            SortMeta sortMeta = sortBy.get(ActionUnitSpec.NAME_FILTER);
+            SortMeta sortMeta = sortBy.get(ContainerSpec.IDENTIFIER_FILTER);
             if (sortMeta != null) {
-                sortDTO.add(ActionUnitSpec.NAME_FILTER, sortMeta.getOrder());
+                sortDTO.add(ContainerSpec.IDENTIFIER_FILTER, sortMeta.getOrder());
             }
         }
     }

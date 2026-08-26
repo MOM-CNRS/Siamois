@@ -5,13 +5,20 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.primefaces.event.RowEditEvent;
+import org.primefaces.model.FilterMeta;
+import org.primefaces.model.SortMeta;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,6 +57,27 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
     @Override
     protected Map<String, String> getFieldMapping() {
         return FIELD_MAPPING;
+    }
+
+    @Override
+    protected void prepareFilterDTO(@Nullable Map<String, FilterMeta> filterBy, @NonNull FilterDTO filterDTO) {
+        if (filterBy != null && !filterBy.isEmpty()) {
+            FilterMeta fullIdentifierMeta = filterBy.get(SpecimenSpec.FULL_IDENTIFIER_FILTER);
+            if (fullIdentifierMeta != null && fullIdentifierMeta.getFilterValue() != null) {
+                filterDTO.add(SpecimenSpec.FULL_IDENTIFIER_FILTER,
+                        fullIdentifierMeta.getFilterValue().toString(), FilterDTO.FilterType.CONTAINS);
+            }
+        }
+    }
+
+    @Override
+    protected void prepareSortDTO(@Nullable Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
+        if (sortBy != null && !sortBy.isEmpty()) {
+            SortMeta fullIdentifierSortMeta = sortBy.get(SpecimenSpec.FULL_IDENTIFIER_FILTER);
+            if (fullIdentifierSortMeta != null) {
+                sortDTO.add(SpecimenSpec.FULL_IDENTIFIER_FILTER, fullIdentifierSortMeta.getOrder());
+            }
+        }
     }
 
     @Override

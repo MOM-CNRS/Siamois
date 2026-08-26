@@ -46,7 +46,7 @@ public class PhaseService {
         Specification<Phase> specs = Specification.where(null);
 
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
-        FilterDTO.FilterInfo nameFilter = filters.filterOf(ActionUnitSpec.NAME_FILTER);
+        FilterDTO.FilterInfo nameFilter = filters.filterOf(PhaseSpec.IDENTIFIER_FILTER);
 
         if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(PhaseSpec.identifierContaining(nameFilter.valueAsString()));

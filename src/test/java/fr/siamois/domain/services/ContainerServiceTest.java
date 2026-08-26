@@ -117,7 +117,7 @@ class ContainerServiceTest {
         // Arrange
         FilterDTO filters = new FilterDTO();
         filters.setRootOnly(true);
-        filters.add(ActionUnitSpec.NAME_FILTER, "Box", FilterDTO.FilterType.CONTAINS);
+        filters.add(ContainerSpec.IDENTIFIER_FILTER, "Box", FilterDTO.FilterType.CONTAINS);
         filters.setAncestorClosure(Set.of(100L, 200L));
 
         Page<Container> containerPage = new PageImpl<>(List.of(container));
@@ -138,7 +138,7 @@ class ContainerServiceTest {
         // Arrange
         FilterDTO filters = new FilterDTO();
         filters.setRootOnly(true);
-        filters.add(ActionUnitSpec.NAME_FILTER, "NonExistentName", FilterDTO.FilterType.CONTAINS);
+        filters.add(ContainerSpec.IDENTIFIER_FILTER, "NonExistentName", FilterDTO.FilterType.CONTAINS);
 
         when(containerRepository.findAll(any(Specification.class))).thenReturn(Collections.emptyList());
 

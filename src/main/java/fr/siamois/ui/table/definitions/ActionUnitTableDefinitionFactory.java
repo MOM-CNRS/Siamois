@@ -60,7 +60,7 @@ public final class ActionUnitTableDefinitionFactory {
                         .toggleable(false)
                         .sortable(true)
                         .filterable(true)
-                        .sortField("full_identifier")
+                        .sortField("fullIdentifier")
 
                         .iconClass("bi bi-arrow-down-square")
                         .chipColor("var(--context-main-color)")

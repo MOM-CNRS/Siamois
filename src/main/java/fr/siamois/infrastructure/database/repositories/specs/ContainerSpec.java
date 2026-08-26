@@ -11,6 +11,7 @@ public class ContainerSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
+    public static final String IDENTIFIER_FILTER = "identifier";
     public static final String ID_FILTER = "id";
     public static final String ACTION_UNIT_FILTER = "actionUnit";
 
@@ -28,7 +29,7 @@ public class ContainerSpec {
         return ((root, query, criteriaBuilder) -> {
             if (name == null || name.isBlank())
                 return null;
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get("identifier")), "%" + name.toLowerCase() + "%");
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get(IDENTIFIER_FILTER)), "%" + name.toLowerCase() + "%");
         });
     }
 

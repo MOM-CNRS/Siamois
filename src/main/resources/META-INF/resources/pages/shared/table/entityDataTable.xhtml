@@ -76,7 +76,13 @@
 
         <!-- Merged: status | id-chip | row-actions -->
         <p:column styleClass="small-cell" exportable="false" toggleable="false" id="statusIdActionsCol"
-                  style="width: 1%; white-space: nowrap;">
+                  style="width: 1%; white-space: nowrap;"
+                  headerText=""
+                  sortable="#{tableModel.tableDefinition.commandLinkColumn.sortable}"
+                  field="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
+                  sortBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
+                  filterable="#{tableModel.tableDefinition.commandLinkColumn.filterable}"
+                  filterBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}">
 
             <p:outputPanel id="mergedCell" layout="block" styleClass="siamois-row-ajax-target">
                 <div class="mca-wrapper">

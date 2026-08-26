@@ -61,8 +61,8 @@ final class TableDefinitions {
 
     /**
      * The leading chip column: it shows the entity's identifier and opens its panel when clicked.
-     * Neither sortable nor filterable, and never hidden — the row would then have nothing to be
-     * opened by.
+     * Never hidden — the row would then have nothing to be opened by. Sortable and filterable by
+     * that same identifier.
      *
      * @param headerKey  i18n key of the column header
      * @param iconClass  icon shown inside the chip
@@ -78,8 +78,8 @@ final class TableDefinitions {
                 .headerKey(headerKey)
                 .visible(true)
                 .toggleable(false)
-                .sortable(false)
-                .filterable(false)
+                .sortable(true)
+                .filterable(true)
                 .sortField(IDENTIFIER)
                 .iconClass(iconClass)
                 .chipColor(chipColor)
