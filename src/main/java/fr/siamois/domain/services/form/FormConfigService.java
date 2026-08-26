@@ -63,7 +63,6 @@ public class FormConfigService {
      *
      * @param progressWrapper where to report progress, or null when nobody is watching
      */
-    @Transactional(rollbackFor = Exception.class)
     public void addConceptConfigFor(@NonNull FormConfig formConfig,
                                     @NonNull CustomFieldConcept customFieldConcept,
                                     @NonNull ConceptDTO branchTopConcept,

@@ -63,7 +63,6 @@ public class ConceptCollectionService {
      *
      * @param progressWrapper where to report progress, or null when nobody is watching
      */
-    @Transactional
     public ConceptCollection createOrUpdateConceptCollection(@NonNull ConceptCollectionDTO collection, @Nullable ProgressWrapper progressWrapper) {
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(collection.getVocabulary().completeUri());
