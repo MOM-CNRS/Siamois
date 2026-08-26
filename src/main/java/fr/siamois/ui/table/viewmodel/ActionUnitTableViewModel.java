@@ -298,7 +298,12 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
     @Override
     public boolean canUserEditRow(ActionUnitDTO unit) {
-        return profilePermissionService.hasActionUnitWritePermission(sessionSettingsBean.getUserInfo(), unit);
+        // hasActionUnitWritePermission's org-level short-circuit (ORGANIZATION_MANAGE_ACTIONS) is not
+        // the same code as its project-level check (PROJECT_MANAGE_SETTINGS) — unlike the other
+        // entities' canUserEditRow, so both are passed through explicitly here.
+        return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
+                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS, PermissionConstants.PROJECT_MANAGE_SETTINGS,
+                ActionUnitDTO::getId, unit.getId());
     }
 
     @Override

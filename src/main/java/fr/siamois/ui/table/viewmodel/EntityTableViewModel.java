@@ -561,6 +561,70 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      */
     public abstract boolean canUserEditRow(T unit);
 
+    /**
+     * The row list {@link #canEditByActionUnit}/{@link #canEditFlat} last computed their permission
+     * cache for — its identity (not content) is the invalidation signal: {@link BaseLazyDataModel#load}
+     * hands back the very same list instance across repeated renders of an unchanged page, and only a
+     * real page/sort/filter change produces a new one (see its cache check).
+     */
+    private transient List<T> permissionCacheRows;
+    private transient Map<Long, Boolean> permissionCacheByActionUnit;
+    private transient Boolean permissionCacheFlatResult;
+
+    private void resetPermissionCacheIfPageChanged() {
+        List<T> currentRows = getLazyDataModel().getQueryResult();
+        if (currentRows != permissionCacheRows) {
+            permissionCacheRows = currentRows;
+            permissionCacheByActionUnit = null;
+            permissionCacheFlatResult = null;
+        }
+    }
+
+    /**
+     * Batches a per-action-unit permission check (org/instance short-circuit, else project-scoped)
+     * across every row of the current page into a single query — see
+     * {@link fr.siamois.domain.services.permissions.ProfilePermissionService#actionUnitIdsWithPermission} —
+     * instead of {@code canUserEditRow} querying once per row. Memoized against the current page, so
+     * only the first row of a page pays for the batch query.
+     *
+     * @param actionUnitIdOf   reads a row's action unit id, for building the batch's id set
+     * @param thisRowActionUnitId the action unit id of the row actually being checked
+     */
+    protected boolean canEditByActionUnit(fr.siamois.domain.services.permissions.ProfilePermissionService profilePermissionService,
+                                          fr.siamois.domain.models.UserInfo userInfo,
+                                          String organizationPermissionCode,
+                                          String projectPermissionCode,
+                                          Function<T, Long> actionUnitIdOf,
+                                          Long thisRowActionUnitId) {
+        resetPermissionCacheIfPageChanged();
+        if (permissionCacheByActionUnit == null) {
+            Set<Long> ids = permissionCacheRows == null ? Set.of() : permissionCacheRows.stream()
+                    .map(actionUnitIdOf)
+                    .filter(Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+            Set<Long> editable = profilePermissionService.actionUnitIdsWithPermission(
+                    userInfo, ids, organizationPermissionCode, projectPermissionCode);
+            permissionCacheByActionUnit = new HashMap<>();
+            for (Long id : ids) {
+                permissionCacheByActionUnit.put(id, editable.contains(id));
+            }
+        }
+        return thisRowActionUnitId != null && permissionCacheByActionUnit.getOrDefault(thisRowActionUnitId, false);
+    }
+
+    /**
+     * Same idea as {@link #canEditByActionUnit}, for a permission that doesn't vary by row (e.g. a pure
+     * organization-scoped check, see {@code SpatialUnitTableViewModel}) : evaluated once per page
+     * instead of once per row.
+     */
+    protected boolean canEditFlat(java.util.function.BooleanSupplier check) {
+        resetPermissionCacheIfPageChanged();
+        if (permissionCacheFlatResult == null) {
+            permissionCacheFlatResult = check.getAsBoolean();
+        }
+        return permissionCacheFlatResult;
+    }
+
     public String getOnCompleteJs(T unit) {
         if (unit instanceof RecordingUnitDTO) {
             return "PF('buiContent').hide();onCompleteCallback('panel-recording-unit-" + unit.getId() + CONTAINER;

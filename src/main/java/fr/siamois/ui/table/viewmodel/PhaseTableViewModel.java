@@ -1,5 +1,6 @@
 package fr.siamois.ui.table.viewmodel;
 
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.form.FormService;
@@ -168,7 +169,10 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
 
     @Override
     public boolean canUserEditRow(PhaseDTO unit) {
-        return profilePermissionService.hasPhaseWritePermission(sessionSettingsBean.getUserInfo(), unit);
+        Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
+        return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
+                PermissionConstants.PROJECT_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES,
+                p -> p.getActionUnit() != null ? p.getActionUnit().getId() : null, actionUnitId);
     }
 
     @Override

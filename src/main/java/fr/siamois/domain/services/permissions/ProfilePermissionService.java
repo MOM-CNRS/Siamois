@@ -12,6 +12,11 @@ import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * Checks user permissions against the profile-based permission system.
  * <p>
@@ -95,6 +100,47 @@ public class ProfilePermissionService {
         PersonDTO person = user.getUser();
         return actionUnitId != null && person != null && person.getId() != null
                 && assignmentRepository.personHasPermissionInActionUnit(person.getId(), actionUnitId, permissionCode);
+    }
+
+    /**
+     * Bulk version of {@link #hasProjectPermission} : which of the given action units the user holds
+     * {@code permissionCode} on, computed in at most one query total instead of one query (or up to
+     * three, counting the org/instance checks) per action unit. Meant for a whole table page's worth of
+     * rows at once — see {@code EntityTableViewModel#canEditByActionUnit} — rather than one row at a
+     * time.
+     *
+     * @param actionUnitIds the action units to check, e.g. the distinct ones on the current table page
+     * @return the subset of {@code actionUnitIds} the user holds {@code permissionCode} on
+     */
+    public Set<Long> actionUnitIdsWithPermission(UserInfo user, Collection<Long> actionUnitIds, String permissionCode) {
+        return actionUnitIdsWithPermission(user, actionUnitIds, permissionCode, permissionCode);
+    }
+
+    /**
+     * Same as {@link #actionUnitIdsWithPermission(UserInfo, Collection, String)}, for the rarer case
+     * (e.g. {@link #hasActionUnitWritePermission}) where the organization-level short-circuit is a
+     * different permission code than the project-level one.
+     */
+    public Set<Long> actionUnitIdsWithPermission(UserInfo user, Collection<Long> actionUnitIds,
+                                                 String organizationPermissionCode, String projectPermissionCode) {
+        Set<Long> ids = actionUnitIds == null ? Set.of() : actionUnitIds.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return Set.of();
+        }
+        // hasProjectPermission's own org/instance short-circuit checks organizationPermissionCode; mirror
+        // that here too (not just the caller's own organizationPermissionCode) so a project-scoped
+        // permission granted org/instance-wide still short-circuits, exactly as it would one row at a time
+        if (hasOrganizationPermission(user, organizationPermissionCode)
+                || hasOrganizationPermission(user, projectPermissionCode)) {
+            return ids;
+        }
+        PersonDTO person = user.getUser();
+        if (person == null || person.getId() == null) {
+            return Set.of();
+        }
+        return assignmentRepository.findActionUnitIdsWithPermission(person.getId(), ids, projectPermissionCode);
     }
 
     /**
