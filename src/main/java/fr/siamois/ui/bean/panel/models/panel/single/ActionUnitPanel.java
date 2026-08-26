@@ -29,6 +29,7 @@ import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
+import fr.siamois.ui.bean.dialog.duplicate.DuplicateStructureDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
@@ -88,6 +89,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
+    private final transient DuplicateStructureDialogBean duplicateStructureDialogBean;
     private final transient InstitutionService institutionService;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient EffectiveFormResolver effectiveFormResolver;
@@ -138,6 +140,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.duplicateStructureDialogBean = context.getBean(DuplicateStructureDialogBean.class);
         this.institutionService = context.getBean(InstitutionService.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.effectiveFormResolver = context.getBean(EffectiveFormResolver.class);
@@ -460,7 +463,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 recordingUnitService,
                 langBean,
                 formContextServices,
-                effectiveFormResolver
+                effectiveFormResolver,
+                duplicateStructureDialogBean
         );
         recordingTabTableModel.setParentPanel(this);
 

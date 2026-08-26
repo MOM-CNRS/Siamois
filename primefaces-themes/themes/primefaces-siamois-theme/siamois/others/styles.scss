@@ -963,6 +963,20 @@ body .view-edit-button.ui-splitbutton {
   border-right: 2px solid var(--siamois-green-active) !important;
 }
 
+/* ── entityDataTable/entityTreeTable: newly duplicated row highlight ── */
+@keyframes row-newly-duplicated-fade {
+  from {
+    background-color: var(--siamois-green-light-350);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+.ui-treetable tr.row-newly-duplicated > td,
+.ui-datatable tr.row-newly-duplicated > td {
+  animation: row-newly-duplicated-fade 3s ease-out forwards;
+}
+
 /* ── entityDataTable: chip-cell ── */
 .chip-cell-wrapper {
   display: flex;

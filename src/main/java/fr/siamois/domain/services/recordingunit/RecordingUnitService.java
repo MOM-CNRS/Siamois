@@ -1023,6 +1023,91 @@ public class RecordingUnitService implements ArkEntityService {
                 .anyMatch(existing -> !Objects.equals(existing.getId(), recordingUnitId));
     }
 
+    /**
+     * Duplicates {@code root} and, level by level, the descendants of the hierarchy under it whose
+     * id is in {@code selectedIds} — {@code count} independent exemplars of the whole selected
+     * structure. Processing one full depth of the tree before the next guarantees that a child's
+     * new parent (whose identifier and id the child's own identifier generation may depend on,
+     * e.g. {@code NUM_PARENT}/{@code ID_PARENT}) always exists and is fully persisted first.
+     * <p>
+     * A duplicated descendant is attached only to the copy of its parent within this structure —
+     * any other parent it had in the original hierarchy is not reproduced.
+     *
+     * @param root        the entity to duplicate; must already be persisted
+     * @param selectedIds ids (within {@code root}'s descendants, {@code root}'s own id is implicit)
+     *                    to include in the duplicated structure
+     * @param count       how many independent copies of the structure to create (at least 1)
+     */
+    @Transactional
+    public RecordingUnitStructureDuplicationResult duplicateStructure(
+            @NonNull RecordingUnitDTO root, @NonNull Set<Long> selectedIds, int count) {
+
+        if (root.getId() == null) {
+            throw new IllegalArgumentException("Root recording unit must be persisted");
+        }
+        int copies = Math.max(1, count);
+
+        UserInfo info = ExecutionContextHolder.get();
+        Long actionUnitId = root.getActionUnit() != null ? root.getActionUnit().getId() : null;
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)) {
+            throw new ForbiddenOperationException("You are not allowed to duplicate this recording unit");
+        }
+
+        List<RecordingUnitDTO> allCreated = new ArrayList<>();
+        Map<Long, List<RecordingUnitDTO>> copiesByOriginalId = new LinkedHashMap<>();
+
+        List<RecordingUnitDTO> rootCopies = new ArrayList<>(copies);
+        for (int i = 0; i < copies; i++) {
+            rootCopies.add(duplicateSingleRecordingUnit(root, root.getParents(), info));
+        }
+        allCreated.addAll(rootCopies);
+        copiesByOriginalId.put(root.getId(), rootCopies);
+
+        Deque<RecordingUnitDTO> queue = new ArrayDeque<>();
+        queue.add(root);
+        Set<Long> visited = new HashSet<>();
+        visited.add(root.getId());
+
+        while (!queue.isEmpty()) {
+            RecordingUnitDTO originalParent = queue.poll();
+            List<RecordingUnitDTO> parentCopies = copiesByOriginalId.get(originalParent.getId());
+
+            for (RecordingUnitDTO originalChild : findAllByParentRecordingUnit(originalParent.getId())) {
+                if (!selectedIds.contains(originalChild.getId()) || !visited.add(originalChild.getId())) {
+                    continue;
+                }
+
+                List<RecordingUnitDTO> childCopies = new ArrayList<>(copies);
+                for (int i = 0; i < copies; i++) {
+                    Set<RecordingUnitSummaryDTO> parentForCopy =
+                            new HashSet<>(Set.of(new RecordingUnitSummaryDTO(parentCopies.get(i))));
+                    childCopies.add(duplicateSingleRecordingUnit(originalChild, parentForCopy, info));
+                }
+                allCreated.addAll(childCopies);
+                copiesByOriginalId.put(originalChild.getId(), childCopies);
+                queue.add(originalChild);
+            }
+        }
+
+        return new RecordingUnitStructureDuplicationResult(rootCopies, allCreated);
+    }
+
+    private RecordingUnitDTO duplicateSingleRecordingUnit(
+            RecordingUnitDTO source, Set<RecordingUnitSummaryDTO> parents, UserInfo info) {
+
+        RecordingUnitDTO copy = new RecordingUnitDTO(source);
+        copy.setParents(parents == null ? new HashSet<>() : new HashSet<>(parents));
+        copy.setAuthor(info.getUser());
+        copy.setCreatedBy(info.getUser());
+
+        copy = save(copy);
+        copy.setFullIdentifier(generateFullIdentifier(copy.getActionUnit(), copy));
+        if (fullIdentifierAlreadyExistInAction(copy)) {
+            throw new IllegalStateException("Generated recording-unit identifier already exists");
+        }
+        return save(copy);
+    }
+
     @NonNull
     public List<RecordingUnit> findByActionIdAndFullId(@NotNull Long actionUnitId, @NotNull String fullIdentifier) {
         return recordingUnitRepository.findByFullIdentifierAndActionUnitId(fullIdentifier, actionUnitId);

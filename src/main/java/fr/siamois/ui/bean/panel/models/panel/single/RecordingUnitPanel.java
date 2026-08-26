@@ -27,6 +27,7 @@ import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
+import fr.siamois.ui.bean.dialog.duplicate.DuplicateStructureDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
@@ -81,6 +82,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
+    private final transient DuplicateStructureDialogBean duplicateStructureDialogBean;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient EffectiveFormResolver effectiveFormResolver;
 
@@ -110,6 +112,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.duplicateStructureDialogBean = context.getBean(DuplicateStructureDialogBean.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.effectiveFormResolver = context.getBean(EffectiveFormResolver.class);
 
@@ -564,7 +567,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 recordingUnitService,
                 langBean,
                 formContextServices,
-                effectiveFormResolver
+                effectiveFormResolver,
+                duplicateStructureDialogBean
         );
         childTableModel.setParentPanel(this);
         RecordingUnitTableDefinitionFactory.applyTo(childTableModel);

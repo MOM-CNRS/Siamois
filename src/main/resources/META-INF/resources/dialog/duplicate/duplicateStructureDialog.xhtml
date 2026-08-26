@@ -1,0 +1,105 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://java.sun.com/jsf/core"
+>
+    <h:form id="duplicateStructureForm">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <p:dialog widgetVar="duplicateStructureDiag" id="duplicateStructureDiag" showEffect="fade"
+                  closeOnEscape="true" appendToBody="true" modal="true"
+                  width="60vw" minWidth="700" maxWidth="1100"
+                  styleClass="sia-duplicate-structure-dialog ui-panel siamois-panel">
+
+            <f:facet name="header">
+                <span>#{langBean.msg('duplicateStructure.title')}</span>
+            </f:facet>
+
+            <div style="display:grid; grid-template-columns: 1.15fr 1fr; gap: 0; min-height: 320px;">
+
+                <div style="padding: 0 1.2em 0 0; border-right: 1px solid var(--gray-200); overflow-y: auto; max-height: 55vh;">
+                    <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 0.75em; margin-bottom: 0.25em;">
+                        <span style="font-size: 0.8em; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gray-600);">
+                            #{langBean.msg('duplicateStructure.elementsToInclude')}
+                        </span>
+                        <p:commandLink value="#{duplicateStructureDialogBean.toggleAllLabel}"
+                                       action="#{duplicateStructureDialogBean.toggleAll()}"
+                                       update=":duplicateStructureForm:duplicateTree :duplicateStructureForm:duplicateSummary"
+                                       process="@this"
+                                       style="font-size: 0.85em; font-weight: 600;"/>
+                    </div>
+                    <div style="font-size: 0.85em; color: var(--gray-600); margin-bottom: 0.75em;">
+                        #{langBean.msg('duplicateStructure.helpText')}
+                    </div>
+
+                    <p:tree id="duplicateTree" value="#{duplicateStructureDialogBean.rootNode}" var="node"
+                            selectionMode="checkbox"
+                            selection="#{duplicateStructureDialogBean.selectedNodes}"
+                            propagateSelectionUp="false"
+                            propagateSelectionDown="true">
+                        <p:ajax event="select" update=":duplicateStructureForm:duplicateSummary" process="@this"/>
+                        <p:ajax event="unselect" update=":duplicateStructureForm:duplicateSummary" process="@this"/>
+                        <p:treeNode>
+                            <span style="display:inline-flex; align-items:center; gap: 0.5em;">
+                                <ui:fragment rendered="#{duplicateStructureDialogBean.isRoot(node)}">
+                                    <i class="bi bi-lock-fill" title="#{langBean.msg('duplicateStructure.rootLocked')}"
+                                       style="color: var(--gray-500); font-size: 0.85em;"/>
+                                </ui:fragment>
+                                <span style="display:inline-block; padding: 3px 9px; border-radius: 999px; color: #fff; font-size: 0.8em; font-weight: 600; white-space: nowrap;
+                                             background: var(--ground-main-color);">
+                                    #{node.fullIdentifier}
+                                </span>
+                                <ui:fragment rendered="#{duplicateStructureDialogBean.isRoot(node)}">
+                                    <span style="font-size: 0.8em; color: var(--gray-500); font-style: italic;">
+                                        #{langBean.msg('duplicateStructure.rootLocked')}
+                                    </span>
+                                </ui:fragment>
+                            </span>
+                        </p:treeNode>
+                    </p:tree>
+                </div>
+
+                <div style="padding: 0 0 0 1.2em;">
+                    <div style="font-size: 0.8em; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gray-600);">
+                        #{langBean.msg('duplicateStructure.copyCount')}
+                    </div>
+                    <p:inputNumber id="duplicateCount" value="#{duplicateStructureDialogBean.count}"
+                                   decimalPlaces="0" minValue="1" maxValue="50"
+                                   inputStyle="width: 5em;" style="margin-top: 0.5em;">
+                        <p:ajax event="change" update=":duplicateStructureForm:duplicateSummary" process="@this"/>
+                    </p:inputNumber>
+
+                    <p:outputPanel id="duplicateSummary" style="margin-top: 1.5em; padding: 0.9em 1em; border-radius: 8px;
+                                background: var(--siamois-green-light-100); border: 1px solid var(--siamois-green-light-350);">
+                        <span style="font-size: 0.9em;">#{duplicateStructureDialogBean.summary}</span>
+                    </p:outputPanel>
+                </div>
+
+            </div>
+
+            <f:facet name="footer">
+                <div style="background-color: var(--siamois-green-light-100);">
+                    <p:toolbar class="panel-footer">
+                        <p:toolbarGroup align="right">
+                            <p:commandLink value="#{langBean.msg('common.action.cancel')}"
+                                           oncomplete="PF('duplicateStructureDiag').hide()"
+                                           immediate="true"
+                                           style="margin-right: 1rem"/>
+                            <p:commandButton id="confirmDuplicateStructureBtn"
+                                             value="#{langBean.msg('duplicateStructure.title')}"
+                                             action="#{duplicateStructureDialogBean.confirm()}"
+                                             update="@(.datatable-hoverable-table)"
+                                             oncomplete="setTimeout(function(){clearDuplicateHighlight();}, 3500);"
+                                             style="margin-right: 1rem"/>
+                        </p:toolbarGroup>
+                    </p:toolbar>
+                </div>
+            </f:facet>
+
+        </p:dialog>
+
+        <p:remoteCommand name="clearDuplicateHighlight"
+                          action="#{duplicateStructureDialogBean.callerTable.clearRecentlyCreated()}"
+                          update="@(.datatable-hoverable-table)"/>
+    </h:form>
+</ui:fragment>

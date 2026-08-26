@@ -120,6 +120,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     private Long overviewEntityId; // ID of the entity currently open in the overview panel
 
     /**
+     * Ids of entities created by the last "duplicate structure" action, briefly highlighted in the
+     * table. Cleared by {@link #clearRecentlyCreated()}, invoked client-side a few seconds after
+     * the duplication so the highlight fades rather than lingering indefinitely.
+     */
+    private Set<Long> recentlyCreatedIds = new HashSet<>();
+
+    /**
      * Nom de la propriété de T utilisée comme "form scope" (ex: "type"),
      * passé au EntityFormContext si besoin.
      */
@@ -720,7 +727,23 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         if (overviewEntityId != null && overviewEntityId.equals(item.getId())) {
             classes = classes.isEmpty() ? "overview-open" : classes + " overview-open";
         }
+        if (recentlyCreatedIds.contains(item.getId())) {
+            classes = classes.isEmpty() ? "row-newly-duplicated" : classes + " row-newly-duplicated";
+        }
         return classes;
+    }
+
+    /**
+     * Flags {@code ids} so {@link #getRowStyleClass} highlights their rows until
+     * {@link #clearRecentlyCreated()} is called.
+     */
+    public void markRecentlyCreated(Collection<Long> ids) {
+        recentlyCreatedIds = new HashSet<>(ids);
+    }
+
+    /** Removes the "just duplicated" highlight from every row. */
+    public void clearRecentlyCreated() {
+        recentlyCreatedIds = new HashSet<>();
     }
 
     /**
