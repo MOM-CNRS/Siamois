@@ -9,11 +9,13 @@ import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.ContainerLazyDataModel;
+import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ContainerTableDefinitionFactory;
 import fr.siamois.ui.table.viewmodel.ContainerTableViewModel;
 import lombok.EqualsAndHashCode;
@@ -157,6 +159,24 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     @Override
     void configureTableColumns() {
         ContainerTableDefinitionFactory.applyTo(tableModel);
+
+        tableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.CONTAINER)
+                        .createAllowedSupplier(() -> false)
+                        .unavailableMessageKeySupplier(() -> "container.toolbar.createRequiresActionUnit")
+                        .unavailableLinkLabelKeySupplier(() -> "common.action.selectProject")
+                        .unavailableLinkAction(this::goToActionUnitList)
+                        .build()
+        );
+    }
+
+    private void goToActionUnitList() {
+        try {
+            navBean.goToActionUnitList("FOCUS");
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Override

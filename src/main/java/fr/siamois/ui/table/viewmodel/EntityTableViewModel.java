@@ -76,7 +76,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     protected final BaseLazyDataModel<T> lazyDataModel;
 
     @Setter
-    public int defaultPageSize = 20;
+    public int defaultPageSize = 10;
 
     /**
      * The row list {@link #canEditByActionUnit}/{@link #canEditFlat} last computed their permission
@@ -541,6 +541,12 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             dialogBean.selectKind(ctx, this);
         } catch (fr.siamois.ui.exceptions.CannotInitializeNewUnitDialogException e) {
             // comportement silencieux comme avant
+        }
+    }
+
+    public void onToolbarCreateUnavailableLinkClick() {
+        if (toolbarCreateConfig != null && toolbarCreateConfig.getUnavailableLinkAction() != null) {
+            toolbarCreateConfig.getUnavailableLinkAction().run();
         }
     }
 
