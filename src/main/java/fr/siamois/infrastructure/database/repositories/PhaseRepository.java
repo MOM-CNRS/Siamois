@@ -17,6 +17,8 @@ import java.util.Set;
 public interface PhaseRepository extends CrudRepository<Phase, Long>, JpaSpecificationExecutor<Phase> {
     boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
 
+    int countByActionUnitId(Long actionUnitId);
+
     Optional<Phase> findByIdentifierAndActionUnitId(String identifier, Long actionUnitId);
 
     Optional<Phase> findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(Long actionUnitId, OffsetDateTime createdAt);

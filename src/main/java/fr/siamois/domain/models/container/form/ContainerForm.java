@@ -1,7 +1,6 @@
 package fr.siamois.domain.models.container.form;
 
 import fr.siamois.domain.models.container.Container;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
@@ -31,11 +30,6 @@ public abstract class ContainerForm {
     protected static final Concept spatialUnitConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
             .externalId("container.spatialUnit")
-            .build();
-
-    protected static final Concept actionUnitConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("container.actionUnit")
             .build();
 
     protected static final Concept lengthConcept = new Concept.Builder()
@@ -88,15 +82,6 @@ public abstract class ContainerForm {
             .id(-603L)
             .valueBinding("spatialUnit")
             .concept(spatialUnitConcept)
-            .build();
-
-    @Transient
-    protected static final CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
-            .label("container.field.actionUnit")
-            .isSystemField(true)
-            .id(-604L)
-            .valueBinding("actionUnit")
-            .concept(actionUnitConcept)
             .build();
 
     public static final String CENTRIMETRE = "Centimètre";

@@ -10,6 +10,7 @@ import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PhaseDTO;
@@ -53,6 +54,10 @@ public class PhaseService {
             specs = specs.and(PhaseSpec.identifierContaining(globalFilter.valueAsString()));
         }
 
+        if (filters.containsColumn(PhaseSpec.ACTION_UNIT_FILTER)) {
+            specs = specs.and(PhaseSpec.isInActionUnit(filters.valueAsIdListOf(PhaseSpec.ACTION_UNIT_FILTER)));
+        }
+
         return specs;
     }
 
@@ -68,6 +73,10 @@ public class PhaseService {
 
     public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
         return Math.toIntExact(phaseRepository.count(prepareSpecs(institutionDTO, filters)));
+    }
+
+    public int countByActionContext(ActionUnitDTO actionUnit) {
+        return phaseRepository.countByActionUnitId(actionUnit.getId());
     }
 
     public boolean identifierAlreadyExistInAction(PhaseDTO phase) {

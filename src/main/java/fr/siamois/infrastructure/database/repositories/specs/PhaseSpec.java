@@ -11,6 +11,7 @@ public class PhaseSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
+    public static final String ACTION_UNIT_FILTER = "actionUnit";
 
     private PhaseSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -36,5 +37,10 @@ public class PhaseSpec {
 
     public static Specification<Phase> idIn(Collection<Long> ids) {
         return (root, query, cb) -> root.get("id").in(ids);
+    }
+
+    @NonNull
+    public static Specification<Phase> isInActionUnit(Collection<Long> actionUnitIds) {
+        return (root, query, cb) -> cb.in(root.get(ACTION_UNIT_FILTER).get("id")).value(actionUnitIds);
     }
 }

@@ -9,14 +9,11 @@ import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
-import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
-import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.ContainerLazyDataModel;
-import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ContainerTableDefinitionFactory;
 import fr.siamois.ui.table.viewmodel.ContainerTableViewModel;
 import lombok.EqualsAndHashCode;
@@ -160,18 +157,6 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     @Override
     void configureTableColumns() {
         ContainerTableDefinitionFactory.applyTo(tableModel);
-
-        // configuration du bouton creer
-        tableModel.setToolbarCreateConfig(
-                ToolbarCreateConfig.builder()
-                        .kindToCreate(UnitKind.CONTAINER)
-                        .scopeSupplier(NewUnitContext.Scope::none)
-                        .insertPolicySupplier(() -> NewUnitContext.UiInsertPolicy.builder()
-                                .listInsert(NewUnitContext.ListInsert.TOP)
-                                .treeInsert(NewUnitContext.TreeInsert.ROOT)
-                                .build())
-                        .build()
-        );
     }
 
     @Override

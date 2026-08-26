@@ -11,6 +11,7 @@ import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -205,6 +206,10 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
     public List<MenuModel> getAllParentBreadcrumbModels() {
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());
+        if (unit != null && unit.getActionUnit() != null) {
+            ActionUnitDTO actionUnit = actionUnitService.findById(unit.getActionUnit().getId());
+            breadcrumbModel.getElements().add(createUnitItem(actionUnit));
+        }
         breadcrumbModel.getElements().add(createRootTypeItem());
         return List.of(breadcrumbModel);
     }
