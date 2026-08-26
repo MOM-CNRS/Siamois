@@ -218,10 +218,16 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     @Override
     public void closeOverview() {
         if (tableModel != null) {
+            Long previousOverviewId = tableModel.getOverviewEntityId();
             tableModel.setOverviewEntityId(null);
+            super.closeOverview();
+            List<String> targets = getRowUpdateTargets(previousOverviewId);
+            if (!targets.isEmpty()) {
+                PrimeFaces.current().ajax().update(targets);
+            }
+        } else {
+            super.closeOverview();
         }
-        super.closeOverview();
-        PrimeFaces.current().ajax().update(getActiveTableClientId());
     }
 
 
