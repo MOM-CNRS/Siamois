@@ -183,17 +183,12 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
 
     @Override
     protected ContainerDTO findNext() {
-        return unit;
+        return containerService.findNextByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
     protected ContainerDTO findPrevious() {
-        return unit;
-    }
-
-    @Override
-    public boolean hasPreviousNext() {
-        return false;
+        return containerService.findPreviousByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override

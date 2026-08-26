@@ -183,17 +183,12 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
 
     @Override
     protected PhaseDTO findNext() {
-        return unit;
+        return phaseService.findNextByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
     protected PhaseDTO findPrevious() {
-        return unit;
-    }
-
-    @Override
-    public boolean hasPreviousNext() {
-        return false;
+        return phaseService.findPreviousByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override

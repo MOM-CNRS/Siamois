@@ -1,6 +1,7 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
@@ -9,6 +10,7 @@ import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
@@ -154,5 +156,45 @@ public class PhaseService {
         for (T item : incoming) {
             if (!managed.contains(item)) managed.add(item);
         }
+    }
+
+    /**
+     * Find the next phase created in the same action unit after the given one.
+     * If there is no next, returns the oldest one (wraps around).
+     *
+     * @param actionUnit The action unit to find phases for
+     * @param current    The current phase to find the next one from
+     * @return The next PhaseDTO, or the oldest one if there is no next
+     */
+    public PhaseDTO findNextByActionUnit(ActionUnitSummaryDTO actionUnit, PhaseDTO current) {
+        return phaseRepository
+                .findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(
+                        actionUnit.getId(), current.getCreationTime())
+                .map(phaseMapper::convert)
+                .orElseGet(() -> phaseRepository
+                        .findFirstByActionUnitIdOrderByCreationTimeAsc(actionUnit.getId())
+                        .map(phaseMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + actionUnit.getId()))
+                );
+    }
+
+    /**
+     * Find the previous phase created in the same action unit before the given one.
+     * If there is no previous, returns the most recent one (wraps around).
+     *
+     * @param actionUnit The action unit to find phases for
+     * @param current    The current phase to find the previous one from
+     * @return The previous PhaseDTO, or the most recent one if there is no previous
+     */
+    public PhaseDTO findPreviousByActionUnit(ActionUnitSummaryDTO actionUnit, PhaseDTO current) {
+        return phaseRepository
+                .findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(
+                        actionUnit.getId(), current.getCreationTime())
+                .map(phaseMapper::convert)
+                .orElseGet(() -> phaseRepository
+                        .findFirstByActionUnitIdOrderByCreationTimeDesc(actionUnit.getId())
+                        .map(phaseMapper::convert)
+                        .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + actionUnit.getId()))
+                );
     }
 }

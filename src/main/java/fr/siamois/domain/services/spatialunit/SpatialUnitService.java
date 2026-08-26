@@ -452,8 +452,7 @@ public class SpatialUnitService implements ArkEntityService {
      */
     public SpatialUnitDTO findNextByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
         return spatialUnitRepository
-                .findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(
-                        institution.getId(), current.getCreationTime())
+                .findNext(institution.getId(), current.getCreationTime(), current.getId())
                 .map(spatialUnitMapper::convert)
                 .orElseGet(() -> spatialUnitRepository
                         .findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(institution.getId())
@@ -472,8 +471,7 @@ public class SpatialUnitService implements ArkEntityService {
      */
     public SpatialUnitDTO findPreviousByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
         return spatialUnitRepository
-                .findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(
-                        institution.getId(), current.getCreationTime())
+                .findPrevious(institution.getId(), current.getCreationTime(), current.getId())
                 .map(spatialUnitMapper::convert)
                 .orElseGet(() -> spatialUnitRepository
                         .findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(institution.getId())

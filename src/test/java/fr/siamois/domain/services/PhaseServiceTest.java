@@ -597,4 +597,90 @@ class PhaseServiceTest {
 
         assertSame(type, managed.getType());
     }
+
+    @Test
+    void findNextByActionUnit_hasNext_returnsConvertedNext() {
+        fr.siamois.dto.entity.ActionUnitSummaryDTO action = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        action.setId(10L);
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        phaseDTO.setCreationTime(now);
+
+        Phase next = new Phase();
+        next.setId(2L);
+        PhaseDTO nextDto = new PhaseDTO();
+
+        when(phaseRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(10L, now))
+                .thenReturn(Optional.of(next));
+        when(phaseMapper.convert(next)).thenReturn(nextDto);
+
+        PhaseDTO result = phaseService.findNextByActionUnit(action, phaseDTO);
+
+        assertSame(nextDto, result);
+        verify(phaseRepository, never()).findFirstByActionUnitIdOrderByCreationTimeAsc(anyLong());
+    }
+
+    @Test
+    void findNextByActionUnit_noNext_wrapsToOldest() {
+        fr.siamois.dto.entity.ActionUnitSummaryDTO action = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        action.setId(10L);
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        phaseDTO.setCreationTime(now);
+
+        Phase oldest = new Phase();
+        oldest.setId(3L);
+        PhaseDTO oldestDto = new PhaseDTO();
+
+        when(phaseRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(10L, now))
+                .thenReturn(Optional.empty());
+        when(phaseRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L))
+                .thenReturn(Optional.of(oldest));
+        when(phaseMapper.convert(oldest)).thenReturn(oldestDto);
+
+        PhaseDTO result = phaseService.findNextByActionUnit(action, phaseDTO);
+
+        assertSame(oldestDto, result);
+    }
+
+    @Test
+    void findPreviousByActionUnit_hasPrevious_returnsConvertedPrevious() {
+        fr.siamois.dto.entity.ActionUnitSummaryDTO action = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        action.setId(10L);
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        phaseDTO.setCreationTime(now);
+
+        Phase previous = new Phase();
+        previous.setId(4L);
+        PhaseDTO previousDto = new PhaseDTO();
+
+        when(phaseRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(10L, now))
+                .thenReturn(Optional.of(previous));
+        when(phaseMapper.convert(previous)).thenReturn(previousDto);
+
+        PhaseDTO result = phaseService.findPreviousByActionUnit(action, phaseDTO);
+
+        assertSame(previousDto, result);
+        verify(phaseRepository, never()).findFirstByActionUnitIdOrderByCreationTimeDesc(anyLong());
+    }
+
+    @Test
+    void findPreviousByActionUnit_noPrevious_wrapsToMostRecent() {
+        fr.siamois.dto.entity.ActionUnitSummaryDTO action = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        action.setId(10L);
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        phaseDTO.setCreationTime(now);
+
+        Phase mostRecent = new Phase();
+        mostRecent.setId(5L);
+        PhaseDTO mostRecentDto = new PhaseDTO();
+
+        when(phaseRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(10L, now))
+                .thenReturn(Optional.empty());
+        when(phaseRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L))
+                .thenReturn(Optional.of(mostRecent));
+        when(phaseMapper.convert(mostRecent)).thenReturn(mostRecentDto);
+
+        PhaseDTO result = phaseService.findPreviousByActionUnit(action, phaseDTO);
+
+        assertSame(mostRecentDto, result);
+    }
 }

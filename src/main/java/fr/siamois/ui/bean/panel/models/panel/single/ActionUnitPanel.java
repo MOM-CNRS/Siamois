@@ -266,13 +266,13 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     protected ActionUnitDTO findNext() {
-        return actionUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
+        return actionUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
 
     }
 
     @Override
     protected ActionUnitDTO findPrevious() {
-        return actionUnitService.findNextByInstitution(unit.getCreatedByInstitution(), unit);
+        return actionUnitService.findPreviousByInstitution(unit.getCreatedByInstitution(), unit);
     }
 
     @Override

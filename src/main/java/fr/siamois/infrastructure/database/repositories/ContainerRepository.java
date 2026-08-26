@@ -6,13 +6,23 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ContainerRepository extends JpaRepository<Container, Long>, JpaSpecificationExecutor<Container> {
 
     boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
 
     List<Container> findByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
+
+    Optional<Container> findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(Long actionUnitId, OffsetDateTime createdAt);
+
+    Optional<Container> findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(Long actionUnitId, OffsetDateTime createdAt);
+
+    Optional<Container> findFirstByActionUnitIdOrderByCreationTimeAsc(Long actionUnitId);
+
+    Optional<Container> findFirstByActionUnitIdOrderByCreationTimeDesc(Long actionUnitId);
 
     @Query(value = """
     WITH RECURSIVE ascend AS (
