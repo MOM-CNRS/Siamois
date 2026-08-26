@@ -49,7 +49,7 @@ public class ProjectDetailsBean {
         elements = new ArrayList<>();
 
         elements.add(new OptionElement("bi bi-upload", langBean.msg("projectSettings.titles.upload"),
-                "Importer ou exporter de la donnée au format .xlsx", () -> {
+                "Importer de la donnée au format .xlsx", () -> {
             projectUploadSettingsBean.init(project);
             return "/pages/settings/project/projectUploadSettings.xhtml?faces-redirect=true";
         }));

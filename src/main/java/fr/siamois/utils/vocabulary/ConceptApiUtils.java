@@ -1,5 +1,6 @@
 package fr.siamois.utils.vocabulary;
 
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptHierarchy;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -10,12 +11,14 @@ import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import java.util.*;
 
+@Slf4j
 public class ConceptApiUtils {
 
     public static final String IDC = "idc=";
@@ -54,47 +57,98 @@ public class ConceptApiUtils {
     }
 
     public static Map<String, Concept> saveAllConceptsOfBranch(@NonNull BranchLoadComponents components, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO branchDTO, @NonNull Map<String, Concept> urlSavedConcept) {
-        saveAllConceptFromBranch(components, vocabulary, branchDTO, urlSavedConcept);
+        return saveAllConceptsOfBranch(components, vocabulary, branchDTO, urlSavedConcept, null);
+    }
+
+    public static Map<String, Concept> saveAllConceptsOfBranch(@NonNull BranchLoadComponents components, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO branchDTO) {
+        return saveAllConceptsOfBranch(components, vocabulary, branchDTO, new HashMap<>(), null);
+    }
+
+    /**
+     * Same as {@link #saveAllConceptsOfBranch(BranchLoadComponents, Vocabulary, ConceptBranchDTO, Map)},
+     * reporting progress on {@code progressWrapper} as it goes — one step per concept saved, plus one
+     * per narrower/related link processed (whether or not it actually results in a fetch or a save),
+     * since those links, not the initial per-concept save, are what a large collection spends most of
+     * its time on. Null is a valid, no-op progress tracker : most callers have no progress bar to
+     * drive.
+     */
+    public static Map<String, Concept> saveAllConceptsOfBranch(@NonNull BranchLoadComponents components, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO branchDTO, @NonNull Map<String, Concept> urlSavedConcept, @Nullable ProgressWrapper progressWrapper) {
+        if (progressWrapper != null) {
+            progressWrapper.reset();
+            progressWrapper.setTotalSteps(totalStepsOf(branchDTO));
+        }
+        saveAllConceptFromBranch(components, vocabulary, branchDTO, urlSavedConcept, progressWrapper);
         for (Map.Entry<String, FullInfoDTO> info : branchDTO.getData().entrySet()) {
             FullInfoDTO fullInfoDTO = info.getValue();
             if (Objects.nonNull(fullInfoDTO.getNarrower())) {
-                createRelations(components, info, fullInfoDTO, urlSavedConcept);
+                createRelations(components, info, fullInfoDTO, urlSavedConcept, progressWrapper);
             }
             if (Objects.nonNull(fullInfoDTO.getRelated())) {
-                createRelatedConceptsRelations(components, vocabulary, info, urlSavedConcept, fullInfoDTO);
+                createRelatedConceptsRelations(components, vocabulary, info, urlSavedConcept, fullInfoDTO, progressWrapper);
             }
         }
         return urlSavedConcept;
     }
 
-    public static Map<String, Concept> saveAllConceptsOfBranch(@NonNull BranchLoadComponents components, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO branchDTO) {
-        return saveAllConceptsOfBranch(components, vocabulary, branchDTO, new HashMap<>());
+    private static int totalStepsOf(@NonNull ConceptBranchDTO branchDTO) {
+        int steps = branchDTO.getData().size();
+        for (FullInfoDTO info : branchDTO.getData().values()) {
+            if (info.getNarrower() != null) steps += info.getNarrower().length;
+            if (info.getRelated() != null) steps += info.getRelated().length;
+        }
+        return steps;
     }
 
-    private static void createRelatedConceptsRelations(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, Map.Entry<String, FullInfoDTO> info, @NonNull Map<String, Concept> urlTosavedConcept, @NonNull FullInfoDTO fullInfoDTO) {
+    private static void incrementIfTracked(@Nullable ProgressWrapper progressWrapper) {
+        if (progressWrapper != null) {
+            progressWrapper.incrementStep();
+        }
+    }
+
+    /**
+     * A "related" link almost always points at a concept the branch/collection already fetched for
+     * another reason — either it's one of the branch's own concepts ({@code urlTosavedConcept} already
+     * holds it), or an earlier "related" link elsewhere in the same branch already resolved it. Reusing
+     * {@code urlTosavedConcept} as the cache for both cases turns what would otherwise be one remote
+     * fetch per related link (in the hundreds for a large collection, since the same handful of
+     * concepts are typically related from many sides) into one fetch per concept actually new to this
+     * import.
+     */
+    private static void createRelatedConceptsRelations(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, Map.Entry<String, FullInfoDTO> info, @NonNull Map<String, Concept> urlTosavedConcept, @NonNull FullInfoDTO fullInfoDTO, @Nullable ProgressWrapper progressWrapper) {
         Concept currentConcept = urlTosavedConcept.get(info.getKey());
         for (PurlInfoDTO related : fullInfoDTO.getRelated()) {
-            FullInfoDTO relatedInfos = utils.conceptApi.fetchConceptInfoByUri(vocabulary, related.getValue());
-            Concept relatedConcept = utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
+            Concept relatedConcept = urlTosavedConcept.computeIfAbsent(related.getValue(), url -> {
+                FullInfoDTO relatedInfos = utils.conceptApi.fetchConceptInfoByUri(vocabulary, url);
+                return utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
+            });
             utils.conceptRepository.addRelatedConceptIfAbsent(currentConcept.getId(), relatedConcept.getId());
+            incrementIfTracked(progressWrapper);
         }
     }
 
-    private static void saveAllConceptFromBranch(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO dto, Map<String, Concept> savedConcept) {
+    private static void saveAllConceptFromBranch(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO dto, Map<String, Concept> savedConcept, @Nullable ProgressWrapper progressWrapper) {
         for (Map.Entry<String, FullInfoDTO> info : dto.getData().entrySet()) {
             savedConcept.put(info.getKey(), utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, info.getValue(), null));
+            incrementIfTracked(progressWrapper);
         }
     }
 
-    private static void createRelations(BranchLoadComponents utils, Map.Entry<String, FullInfoDTO> info, @NonNull FullInfoDTO fullInfoDTO, Map<String, Concept> savedConcept) {
+    private static void createRelations(BranchLoadComponents utils, Map.Entry<String, FullInfoDTO> info, @NonNull FullInfoDTO fullInfoDTO, Map<String, Concept> savedConcept, @Nullable ProgressWrapper progressWrapper) {
         for (PurlInfoDTO purlInfoDTO : fullInfoDTO.getNarrower()) {
+            incrementIfTracked(progressWrapper);
             Concept parent = savedConcept.get(info.getKey());
             Concept child = savedConcept.get(purlInfoDTO.getValue());
             if (parent == null) {
                 throw new IllegalStateException("No concept found in cache map for URL " + info.getKey());
             }
             if (child == null) {
-                throw new IllegalStateException("No concept found in cache map for URL " + purlInfoDTO.getValue());
+                // The thesaurus's hierarchy can point outside the fetched set : a collection is a
+                // curated subset of the thesaurus, and one of its concepts can have a narrower concept
+                // that belongs to a different collection, so it isn't part of this response at all.
+                // There's nothing local to attach the relation to — that's expected, not corrupt data.
+                log.debug("Skipping narrower relation {} -> {} : the child concept was not returned by this branch/collection fetch",
+                        info.getKey(), purlInfoDTO.getValue());
+                continue;
             }
             if (!parent.equals(child)) {
                 ConceptHierarchy relation = new ConceptHierarchy(parent, child, null);

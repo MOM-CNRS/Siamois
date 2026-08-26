@@ -379,6 +379,123 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
+    void getUrlOfCollection_shouldReturnUrl_whenCollectionIsValid() {
+        ConceptCollection collection = new ConceptCollection();
+        collection.setVocabulary(vocabulary);
+        collection.setExternalId("g120");
+
+        String result = service.getUrlOfCollection(collection);
+
+        assertThat(result).isEqualTo("http://exemple.org/?idg=g120&idt=th2");
+    }
+
+    @Test
+    void getUrlForConceptField_shouldReturnBranchUrl_whenFieldHasABranchConfig() {
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setFieldCode("SIARU.GEOMORPHO");
+
+        Concept branchTopTerm = new Concept();
+        branchTopTerm.setVocabulary(vocabulary);
+        branchTopTerm.setExternalId("266341");
+
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setBranchTopTerm(branchTopTerm);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(config));
+
+        String result = service.getUrlForConceptField(field, 42L);
+
+        assertThat(result).isEqualTo("http://exemple.org/?idc=266341&idt=th2");
+    }
+
+    @Test
+    void getUrlForConceptField_shouldReturnCollectionUrl_whenFieldHasACollectionConfig() {
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setFieldCode("SIARU.GEOMORPHO");
+
+        ConceptCollection collection = new ConceptCollection();
+        collection.setVocabulary(vocabulary);
+        collection.setExternalId("g120");
+
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setCollection(collection);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(config));
+
+        String result = service.getUrlForConceptField(field, 42L);
+
+        assertThat(result).isEqualTo("http://exemple.org/?idg=g120&idt=th2");
+    }
+
+    @Test
+    void getUrlForConceptField_shouldFallBackOnFieldCode_whenNoFormConfigExists() {
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId("12");
+        cfc.setConcept(concept);
+        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.of(cfc));
+
+        String result = service.getUrlForConceptField(field, 42L);
+
+        assertThat(result).isEqualTo("http://exemple.org/?idc=12&idt=th2");
+    }
+
+    @Test
+    void getUrlForConceptField_shouldFallBackOnFieldCode_whenTheFormConfigIsNotValid() {
+        // an empty ConceptFieldFormConfig (neither branch nor collection) must be treated the same as
+        // no configuration at all, not surfaced as a branch/collection URL
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        ConceptFieldConfig cfc = new ConceptFieldConfig();
+        Concept concept = new Concept();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId("12");
+        cfc.setConcept(concept);
+        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(new ConceptFieldFormConfig()));
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+                .thenReturn(Optional.of(cfc));
+
+        String result = service.getUrlForConceptField(field, 42L);
+
+        assertThat(result).isEqualTo("http://exemple.org/?idc=12&idt=th2");
+    }
+
+    @Test
+    void getUrlForConceptField_shouldReturnNull_whenNoFormConfigAndFieldIsNotFieldCodeDriven() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
+
+        String result = service.getUrlForConceptField(field, 42L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void getUrlForConceptField_shouldReturnNull_whenNoFormConfigAndNoExecutionContextIsBound() {
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+
+        when(fieldFormConfigRepository.findByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
+        ExecutionContextHolder.clear();
+
+        String result = service.getUrlForConceptField(field, 42L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
     void findConfigurationForFieldCode_shouldReturnConfig_whenExists() throws NoConfigForFieldException {
         ConceptFieldConfig cfc = new ConceptFieldConfig();
         Concept concept = new Concept();

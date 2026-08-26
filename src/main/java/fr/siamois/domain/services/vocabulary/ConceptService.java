@@ -405,11 +405,14 @@ public class ConceptService {
                                                                          @Nullable ConceptRemoteAutocompleteDTO prefLabel) {
         ConceptRemoteAutocompleteDTO reference = prefLabel != null ? prefLabel : labelsOfConcept.get(0);
 
-        String externalId = ConceptApiUtils.externalIdFromUri(reference.uri());
-        if (externalId == null) {
-            log.warn("Ignoring remote autocomplete result '{}' : no concept id could be read from its URI {}", reference.label(), reference.uri());
+        // The thesaurus's own "identifier" field, not its uri : a uri can be an ark, which does not
+        // encode the canonical numeric id (see ConceptService#fetchConceptDesignatedBy) and must never
+        // be saved as external_id.
+        if (reference.identifier() == null) {
+            log.warn("Ignoring remote autocomplete result '{}' : the thesaurus returned no identifier", reference.label());
             return List.of();
         }
+        String externalId = String.valueOf(reference.identifier());
 
         ConceptDTO concept = ConceptDTO.builder()
                 .externalId(externalId)
@@ -456,6 +459,20 @@ public class ConceptService {
         if (info == null || info.getPrefLabel() == null || info.getPrefLabel().length == 0) {
             log.warn("The URL {} designates the concept {}, which the thesaurus did not return", uri, externalId);
             return Optional.empty();
+        }
+
+        if (externalId.startsWith("ark:")) {
+            // The ark does not encode the thesaurus's canonical numeric id (e.g. ark:/26678/pcrtp9tsh62g34
+            // resolves to 266341 on Pactols), so it must never be saved as external_id : the same concept
+            // designated once by ark and once by idc would then be saved as two different local Concept
+            // rows, and whichever one branch/collection configs point at could be missing the labels and
+            // hierarchy children only imported under the other. ConceptApi#conceptIdOf enforces the same
+            // rule before calling the down-expansion endpoint.
+            if (info.getIdentifier() == null || info.getIdentifier().length == 0) {
+                log.warn("The thesaurus did not return a canonical id for ark {}, refusing to save it as external_id", externalId);
+                return Optional.empty();
+            }
+            externalId = info.getIdentifierStr();
         }
 
         ConceptDTO concept = ConceptDTO.builder()

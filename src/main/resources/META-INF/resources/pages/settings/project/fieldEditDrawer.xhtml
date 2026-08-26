@@ -4,6 +4,56 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:f="http://java.sun.com/jsf/core">
 
+    <script>
+        const fieldDrawerFunnyMessages = [
+            "#{langBean.msg('organisationManagement.creating.funny.1')}",
+            "#{langBean.msg('organisationManagement.creating.funny.2')}",
+            "#{langBean.msg('organisationManagement.creating.funny.3')}",
+            "#{langBean.msg('organisationManagement.creating.funny.4')}",
+            "#{langBean.msg('organisationManagement.creating.funny.5')}",
+            "#{langBean.msg('organisationManagement.creating.funny.6')}",
+            "#{langBean.msg('organisationManagement.creating.funny.7')}",
+            "#{langBean.msg('organisationManagement.creating.funny.8')}",
+            "#{langBean.msg('organisationManagement.creating.funny.9')}",
+            "#{langBean.msg('organisationManagement.creating.funny.10')}",
+            "#{langBean.msg('organisationManagement.creating.funny.11')}",
+            "#{langBean.msg('organisationManagement.creating.funny.12')}",
+            "#{langBean.msg('organisationManagement.creating.funny.13')}",
+            "#{langBean.msg('organisationManagement.creating.funny.14')}",
+            "#{langBean.msg('organisationManagement.creating.funny.15')}",
+            "#{langBean.msg('organisationManagement.creating.funny.16')}"
+        ];
+        let fieldDrawerFunnyMessageInterval = null;
+
+        function nextFieldDrawerFunnyMessage() {
+            const label = document.getElementById('fieldDrawerFunnyMessage');
+            if (!label) return;
+            const choices = fieldDrawerFunnyMessages.filter(msg => msg !== label.dataset.current);
+            const next = choices[Math.floor(Math.random() * choices.length)];
+            label.dataset.current = next;
+            label.textContent = next;
+        }
+
+        function startFieldDrawerProgressBar() {
+            const bars = document.getElementsByClassName('field-drawer-progress-bar');
+            for (const bar of bars) {
+                bar.style.visibility = 'visible';
+            }
+            PF('pbAjaxFieldDrawerSaveWidget').start();
+            nextFieldDrawerFunnyMessage();
+            fieldDrawerFunnyMessageInterval = setInterval(nextFieldDrawerFunnyMessage, 5000);
+        }
+
+        function endFieldDrawerProgressBar() {
+            const bars = document.getElementsByClassName('field-drawer-progress-bar');
+            for (const bar of bars) {
+                bar.style.visibility = 'collapse';
+            }
+            PF('pbAjaxFieldDrawerSaveWidget').cancel();
+            clearInterval(fieldDrawerFunnyMessageInterval);
+        }
+    </script>
+
     <h:form id="fieldEditForm">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
@@ -11,9 +61,9 @@
                    position="right" modal="true" dismissable="true" closeOnEscape="true" blockScroll="true"
                    styleClass="ptc-drawer-sidebar" style="width:460px;max-width:92vw;">
             <p:ajax event="close" listener="#{projectTableFieldSettingsBean.closeDrawer()}"
-                    update="@form :projectTablesFormCC:projectTablesForm"/>
+                    update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm"/>
 
-            <div class="ptc-drawer">
+            <h:panelGroup id="drawerContent" layout="block" styleClass="ptc-drawer">
                 <div class="ptc-drawer-header">
                     <div class="ptc-drawer-title">
                         #{projectTableFieldSettingsBean.draftCreateMode ? langBean.msg('projectTables.drawer.titleCreate') : langBean.msg('projectTables.drawer.titleEdit')}
@@ -50,7 +100,7 @@
                         <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
                             <h:selectOneMenu id="draftType" value="#{projectTableFieldSettingsBean.draftTypeName}" styleClass="ptc-native-select">
                                 <f:selectItems value="#{projectTableFieldSettingsBean.fieldTypeOptions}" var="t" itemLabel="#{t.label}" itemValue="#{t.name()}"/>
-                                <p:ajax event="change" update="@form"/>
+                                <p:ajax event="change" update=":fieldEditForm:drawerContent"/>
                             </h:selectOneMenu>
                         </h:panelGroup>
                         <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
@@ -80,14 +130,14 @@
                                 <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
                                     <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourcePrincipal')}"
                                                       styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'principal' ? 'ptc-chip-option-selected' : ''}"
-                                                      actionListener="#{projectTableFieldSettingsBean.selectDraftSource('principal')}" update="@form" process="@this"/>
+                                                      actionListener="#{projectTableFieldSettingsBean.selectDraftSource('principal')}" update=":fieldEditForm:drawerContent" process="@this"/>
                                 </h:panelGroup>
                                 <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceBranche')}"
                                                   styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'branche' ? 'ptc-chip-option-selected' : ''}"
-                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('branche')}" update="@form" process="@this"/>
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('branche')}" update=":fieldEditForm:drawerContent" process="@this"/>
                                 <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceCollection')}"
                                                   styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'collection' ? 'ptc-chip-option-selected' : ''}"
-                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('collection')}" update="@form" process="@this"/>
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('collection')}" update=":fieldEditForm:drawerContent" process="@this"/>
                             </div>
 
                             <h:panelGroup rendered="#{empty projectTableFieldSettingsBean.draftSource}">
@@ -106,42 +156,65 @@
                             <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche' or projectTableFieldSettingsBean.draftSource eq 'collection'}">
                                 <div class="ptc-drawer-field">
                                     <label class="ptc-drawer-label" for="fieldEditForm:draftThesaurusUrl">#{langBean.msg('projectTables.drawer.params.thesaurusUrl')}</label>
-                                    <div class="ptc-params-url-row">
-                                        <p:inputText id="draftThesaurusUrl" value="#{projectTableFieldSettingsBean.draftThesaurusUrl}"
-                                                     placeholder="#{langBean.msg('projectTables.drawer.params.thesaurusUrlPlaceholder')}"/>
-                                        <p:commandButton icon="bi bi-arrow-clockwise" styleClass="ui-button-secondary ui-button-sm ptc-params-refresh"
+                                    <p:inputText id="draftThesaurusUrl" value="#{projectTableFieldSettingsBean.draftThesaurusUrl}"
+                                                 placeholder="#{langBean.msg('projectTables.drawer.params.thesaurusUrlPlaceholder')}" style="width:100%"/>
+                                    <div class="ptc-params-action-row">
+                                        <p:commandButton value="#{projectTableFieldSettingsBean.draftConnectionTested ? langBean.msg('projectTables.drawer.params.refresh') : langBean.msg('projectTables.drawer.params.load')}"
+                                                          icon="bi bi-arrow-clockwise"
+                                                          styleClass="ui-button-sm"
                                                           title="#{langBean.msg('projectTables.drawer.params.testConnection')}"
-                                                          actionListener="#{projectTableFieldSettingsBean.testThesaurusConnection()}" update="@form" process="@this draftThesaurusUrl"/>
+                                                          actionListener="#{projectTableFieldSettingsBean.testThesaurusConnection()}" update=":fieldEditForm:drawerContent" process="@this draftThesaurusUrl"/>
+                                        <h:outputLink value="#{projectTableFieldSettingsBean.draftVocabularyUrl}" target="_blank"
+                                                      disabled="#{not projectTableFieldSettingsBean.draftConnectionTested}"
+                                                      styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-sm">
+                                            <span class="ui-button-text">#{langBean.msg('projectTables.drawer.params.view')}</span>
+                                        </h:outputLink>
                                     </div>
                                     <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConnectionTested}">
                                         <div class="ptc-params-connection-ok">✓ #{langBean.msg('projectTables.drawer.params.connectionOk')}</div>
                                     </h:panelGroup>
                                 </div>
 
-                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche'}">
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche' and projectTableFieldSettingsBean.draftConnectionTested}">
                                     <div class="ptc-drawer-field">
                                         <label class="ptc-drawer-label" for="fieldEditForm:draftBrancheConcept">#{langBean.msg('projectTables.drawer.params.brancheConcept')}</label>
-                                        <p:autoComplete id="draftBrancheConcept" value="#{projectTableFieldSettingsBean.draftBrancheConcept}"
-                                                        completeMethod="#{projectTableFieldSettingsBean.completeBrancheConcepts}"
-                                                        var="c" itemLabel="#{c.conceptLabelToDisplay.label}" itemValue="#{c}"
-                                                        converter="#{conceptAutocompleteDetachedDTOConverter}"
-                                                        scrollHeight="220" style="width:100%" forceSelection="true"
-                                                        showEmptyMessage="true"
-                                                        placeholder="#{langBean.msg('projectTables.drawer.params.brancheConceptPlaceholder')}"/>
-
-
-
+                                        <h:panelGroup id="brancheRow" layout="block" styleClass="ptc-params-url-row">
+                                            <p:autoComplete id="draftBrancheConcept" value="#{projectTableFieldSettingsBean.draftBrancheConcept}"
+                                                            completeMethod="#{projectTableFieldSettingsBean.completeBrancheConcepts}"
+                                                            var="c" itemLabel="#{c.conceptLabelToDisplay.label}" itemValue="#{c}"
+                                                            converter="#{conceptAutocompleteDetachedDTOConverter}"
+                                                            scrollHeight="220" style="width:100%" forceSelection="true"
+                                                            showEmptyMessage="true"
+                                                            placeholder="#{langBean.msg('projectTables.drawer.params.brancheConceptPlaceholder')}">
+                                                <p:ajax event="itemSelect" update=":fieldEditForm:brancheRow" process="@this"/>
+                                                <p:ajax event="clear" update=":fieldEditForm:brancheRow" process="@this"/>
+                                            </p:autoComplete>
+                                            <h:outputLink value="#{projectTableFieldSettingsBean.draftBrancheConceptUrl}" target="_blank"
+                                                          disabled="#{not projectTableFieldSettingsBean.draftBrancheConceptSelected}"
+                                                          styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-sm">
+                                                <span class="ui-button-text">#{langBean.msg('projectTables.drawer.params.view')}</span>
+                                            </h:outputLink>
+                                        </h:panelGroup>
                                     </div>
                                 </h:panelGroup>
 
-                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'collection'}">
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'collection' and projectTableFieldSettingsBean.draftConnectionTested}">
                                     <div class="ptc-drawer-field">
                                         <label class="ptc-drawer-label" for="fieldEditForm:draftCollectionName">#{langBean.msg('projectTables.drawer.params.collection')}</label>
-                                        <p:autoComplete id="draftCollectionName" value="#{projectTableFieldSettingsBean.draftCollectionName}"
-                                                        completeMethod="#{projectTableFieldSettingsBean.completeCollections}"
-                                                        scrollHeight="220" style="width:100%"
-                                                        appendTo="@(body)"
-                                                        placeholder="#{langBean.msg('projectTables.drawer.params.collectionPlaceholder')}"/>
+                                        <h:panelGroup id="collectionRow" layout="block" styleClass="ptc-params-url-row">
+                                            <p:autoComplete id="draftCollectionName" value="#{projectTableFieldSettingsBean.draftCollectionName}"
+                                                            completeMethod="#{projectTableFieldSettingsBean.completeCollections}"
+                                                            scrollHeight="220" style="width:100%"
+                                                            appendTo="@(body)"
+                                                            placeholder="#{langBean.msg('projectTables.drawer.params.collectionPlaceholder')}">
+                                                <p:ajax event="itemSelect" update=":fieldEditForm:collectionRow" process="@this"/>
+                                            </p:autoComplete>
+                                            <h:outputLink value="#{projectTableFieldSettingsBean.draftCollectionUrl}" target="_blank"
+                                                          disabled="#{not projectTableFieldSettingsBean.draftCollectionSelected}"
+                                                          styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-sm">
+                                                <span class="ui-button-text">#{langBean.msg('projectTables.drawer.params.view')}</span>
+                                            </h:outputLink>
+                                        </h:panelGroup>
                                     </div>
                                 </h:panelGroup>
                             </h:panelGroup>
@@ -149,13 +222,32 @@
                     </h:panelGroup>
                 </div>
 
+                <p id="fieldDrawerFunnyMessage"
+                   class="field-drawer-progress-bar text-muted"
+                   style="visibility: collapse; font-style: italic; margin: 0 22px 0.5rem;"
+                />
+
+                <p:progressBar widgetVar="pbAjaxFieldDrawerSaveWidget"
+                               id="pbAjaxFieldDrawerSave"
+                               ajax="true"
+                               value="#{projectTableFieldSettingsBean.progressWrapper.progressPercentage}"
+                               labelTemplate="{value}%"
+                               styleClass="field-drawer-progress-bar"
+                               style="visibility: collapse; margin: 0 22px 0.5rem;"
+                               global="true"
+                               interval="500"
+                />
+
                 <div class="ptc-drawer-footer">
                     <p:commandButton id="cancelBtn" value="#{langBean.msg('common.action.cancel')}" styleClass="ui-button-secondary"
-                                      actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true" update="@form :projectTablesFormCC:projectTablesForm"/>
+                                      actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true"
+                                      update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm"/>
                     <p:commandButton value="#{langBean.msg('common.action.save')}"
-                                      actionListener="#{projectTableFieldSettingsBean.saveDrawer()}" update="@form :projectTablesFormCC:projectTablesForm"/>
+                                      actionListener="#{projectTableFieldSettingsBean.saveDrawer()}"
+                                      update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm"
+                                      onstart="startFieldDrawerProgressBar()" oncomplete="endFieldDrawerProgressBar()"/>
                 </div>
-            </div>
+            </h:panelGroup>
         </p:sidebar>
     </h:form>
 </ui:fragment>
