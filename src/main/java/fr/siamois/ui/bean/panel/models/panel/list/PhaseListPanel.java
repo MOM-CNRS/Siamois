@@ -9,11 +9,13 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.PhaseLazyDataModel;
+import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.PhaseTableDefinitionFactory;
 import fr.siamois.ui.table.viewmodel.PhaseTableViewModel;
 import lombok.EqualsAndHashCode;
@@ -142,6 +144,24 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
     @Override
     void configureTableColumns() {
         PhaseTableDefinitionFactory.applyTo(tableModel);
+
+        tableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.PHASE)
+                        .createAllowedSupplier(() -> false)
+                        .unavailableMessageKeySupplier(() -> "phase.toolbar.createRequiresActionUnit")
+                        .unavailableLinkLabelKeySupplier(() -> "common.action.selectProject")
+                        .unavailableLinkAction(this::goToActionUnitList)
+                        .build()
+        );
+    }
+
+    private void goToActionUnitList() {
+        try {
+            navBean.goToActionUnitList("FOCUS");
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Override

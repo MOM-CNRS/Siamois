@@ -9,11 +9,13 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
+import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
 import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
 import lombok.EqualsAndHashCode;
@@ -183,7 +185,25 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
     @Override
     void configureTableColumns() {
         SpecimenTableDefinitionFactory.applyTo(tableModel);
-        // no toolbar button in institution context
+
+        // no toolbar button in institution context — creation requires a Recording Unit scope
+        tableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.SPECIMEN)
+                        .createAllowedSupplier(() -> false)
+                        .unavailableMessageKeySupplier(() -> "specimen.toolbar.createRequiresRecordingUnit")
+                        .unavailableLinkLabelKeySupplier(() -> "common.action.selectRecordingUnit")
+                        .unavailableLinkAction(this::goToRecordingUnitList)
+                        .build()
+        );
+    }
+
+    private void goToRecordingUnitList() {
+        try {
+            navBean.goToRecordingUnitList("FOCUS");
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Override

@@ -386,6 +386,14 @@ class PersonServiceTest {
     }
 
     @Test
+    void findAllAuthorsOfActionUnitByInstitution_NullInstitution_ReturnsEmptyList() {
+        List<Person> res = personService.findAllAuthorsOfActionUnitByInstitution(null);
+
+        assertTrue(res.isEmpty());
+        verifyNoInteractions(personRepository);
+    }
+
+    @Test
     void findClosestByUsernameOrEmail_ShouldReturnEmptyList_WhenInputIsNullOrBlank() {
         assertTrue(personService.findClosestByUsernameOrEmail(null).isEmpty());
         assertTrue(personService.findClosestByUsernameOrEmail("").isEmpty());
