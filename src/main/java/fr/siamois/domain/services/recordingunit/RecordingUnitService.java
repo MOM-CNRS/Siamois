@@ -47,8 +47,10 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -99,6 +101,17 @@ public class RecordingUnitService implements ArkEntityService {
      */
     @PersistenceContext
     private EntityManager entityManager;
+
+    /**
+     * Self-reference resolved through the Spring proxy, so that calls made from within this same
+     * class (e.g. {@link #duplicateStructure}'s per-node work calling {@link #save(RecordingUnitDTO)})
+     * still go through AOP-backed behavior such as {@code @CacheEvict} — a direct {@code this.save(...)}
+     * call bypasses the proxy entirely and silently skips it. {@code @Lazy} avoids a circular
+     * dependency at construction time.
+     */
+    @Lazy
+    @Autowired
+    private RecordingUnitService self;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -1117,12 +1130,12 @@ public class RecordingUnitService implements ArkEntityService {
         FlushModeType previousFlushMode = entityManager.getFlushMode();
         entityManager.setFlushMode(FlushModeType.COMMIT);
         try {
-            copy = save(copy);
-            copy.setFullIdentifier(generateFullIdentifier(copy.getActionUnit(), copy));
-            if (fullIdentifierAlreadyExistInAction(copy)) {
+            copy = self.save(copy);
+            copy.setFullIdentifier(self.generateFullIdentifier(copy.getActionUnit(), copy));
+            if (self.fullIdentifierAlreadyExistInAction(copy)) {
                 throw new RecordingUnitIdentifierAlreadyExistsException(copy.getFullIdentifier());
             }
-            copy = save(copy);
+            copy = self.save(copy);
             entityManager.flush();
         } finally {
             entityManager.setFlushMode(previousFlushMode);

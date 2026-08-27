@@ -2405,6 +2405,10 @@ class RecordingUnitServiceTest {
             // run (passes in isolation, null when run alongside the rest of the suite) — set it
             // explicitly on the spy to remove any doubt.
             org.springframework.test.util.ReflectionTestUtils.setField(spyService, "entityManager", entityManager);
+            // Production code routes self-calls (save/generateFullIdentifier/...) through the
+            // Spring-proxied "self" field so @CacheEvict etc. still apply; point it back at the spy
+            // itself so the stubbing above is actually exercised.
+            org.springframework.test.util.ReflectionTestUtils.setField(spyService, "self", spyService);
         }
 
         private RecordingUnitDTO unit(long id) {
