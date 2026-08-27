@@ -42,6 +42,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -1204,6 +1205,25 @@ class ActionUnitServiceTest {
 
         assertEquals(2, result.getContent().size());
         assertThat(result.getContent()).containsExactly(actionUnit1dto, actionUnit2dto);
+    }
+
+    @Test
+    void searchActionUnits_withRecordingUnitCountSort_stripsSortFromPageableAndComposesOrderingSpec() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        Pageable sortedPageable = org.springframework.data.domain.PageRequest.of(0, 10,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
+                        ActionUnitSpec.RECORDING_UNIT_COUNT_SORT));
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        when(actionUnitRepository.findAll(any(Specification.class), pageableCaptor.capture())).thenReturn(page);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+
+        actionUnitService.searchActionUnits(inst, filters, sortedPageable);
+
+        assertTrue(pageableCaptor.getValue().getSort().isUnsorted());
     }
 
     @Test

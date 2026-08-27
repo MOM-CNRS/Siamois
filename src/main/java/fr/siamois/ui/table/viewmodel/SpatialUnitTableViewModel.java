@@ -157,7 +157,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                 case PARENTS -> su.getParents() == null ? 0 : su.getParents().size();
                 case CHILDREN -> su.getChildren() == null ? 0 : su.getChildren().size();
                 case "actions" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
-                case "recordingUnit" -> su.getRecordingUnitList() == null ? 0 : su.getRecordingUnitList().size();
+                case "recordingUnit" -> su.getRecordingUnitCount() == null ? 0 : (int) (long) su.getRecordingUnitCount();
                 default -> 0;
             };
         }

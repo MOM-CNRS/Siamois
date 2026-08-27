@@ -75,6 +75,11 @@ public class ActionUnitLazyDataModel extends BaseActionUnitLazyDataModel {
             if (fullIdentifierSortMeta != null) {
                 sortDTO.add(ActionUnitSpec.FULL_IDENTIFIER_FILTER, fullIdentifierSortMeta.getOrder());
             }
+
+            SortMeta recordingUnitCountSortMeta = sortBy.get(ActionUnitSpec.RECORDING_UNIT_COUNT_SORT);
+            if (recordingUnitCountSortMeta != null) {
+                sortDTO.add(ActionUnitSpec.RECORDING_UNIT_COUNT_SORT, recordingUnitCountSortMeta.getOrder());
+            }
         }
     }
 }

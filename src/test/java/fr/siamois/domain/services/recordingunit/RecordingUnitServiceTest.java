@@ -220,6 +220,22 @@ class RecordingUnitServiceTest {
     }
 
     @Test
+    void findById_hydratesSpecimenCount() {
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(7L);
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(7L);
+
+        when(recordingUnitRepository.findById(7L)).thenReturn(Optional.of(recordingUnit));
+        when(recordingUnitMapper.convert(recordingUnit)).thenReturn(dto);
+        when(recordingUnitRepository.countSpecimensByRecordingUnitId(7L)).thenReturn(3L);
+
+        RecordingUnitDTO result = recordingUnitService.findById(7L);
+
+        assertEquals(3L, result.getSpecimenCount());
+    }
+
+    @Test
     void save() {
 
         RecordingUnit recordingUnit = new RecordingUnit();
@@ -2043,6 +2059,10 @@ class RecordingUnitServiceTest {
             when(recordingUnitSummaryMapper.convert(parent)).thenReturn(parentSummary);
             when(recordingUnitSummaryMapper.convert(child)).thenReturn(childSummary);
             when(phaseMapper.convert(phase)).thenReturn(phaseDto);
+            when(recordingUnitRepository.countSpecimensByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 4L}));
+            when(recordingUnitRepository.countRelationshipsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 6L}));
 
             Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable);
 
@@ -2051,9 +2071,59 @@ class RecordingUnitServiceTest {
             assertEquals(Set.of(parentSummary), dto.getParents());
             assertEquals(Set.of(childSummary), dto.getChildren());
             assertEquals(Set.of(phaseDto), dto.getPhases());
+            assertEquals(4L, dto.getSpecimenCount());
+            assertEquals(6L, dto.getRelationshipCount());
             verify(recordingUnitRepository, never()).findParentsOf(any());
             verify(recordingUnitRepository, never()).findChildrensOf(any());
             verify(phaseRepository, never()).findByRecordingUnitId(any());
+        }
+
+        @Test
+        void searchRecordingUnit_withSpecimenCountSort_stripsSortFromPageable() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable sortedPageable = PageRequest.of(0, 10,
+                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
+                            fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec.SPECIMEN_COUNT_SORT));
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            org.mockito.ArgumentCaptor<Pageable> pageableCaptor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            when(recordingUnitRepository.findAll(any(Specification.class), pageableCaptor.capture()))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+
+            recordingUnitService.searchRecordingUnit(institution, filters, sortedPageable, false);
+
+            assertTrue(pageableCaptor.getValue().getSort().isUnsorted());
+        }
+
+        @Test
+        void searchRecordingUnit_withRelationshipCountSort_stripsSortFromPageable() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable sortedPageable = PageRequest.of(0, 10,
+                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC,
+                            fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec.RELATIONSHIP_COUNT_SORT));
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            org.mockito.ArgumentCaptor<Pageable> pageableCaptor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            when(recordingUnitRepository.findAll(any(Specification.class), pageableCaptor.capture()))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+
+            recordingUnitService.searchRecordingUnit(institution, filters, sortedPageable, false);
+
+            assertTrue(pageableCaptor.getValue().getSort().isUnsorted());
         }
 
         @Test
@@ -2077,6 +2147,8 @@ class RecordingUnitServiceTest {
                     .thenReturn(List.<Object[]>of(new Object[]{7L, 3L}));
             when(recordingUnitRepository.countSpecimensByIds(List.of(7L)))
                     .thenReturn(List.<Object[]>of(new Object[]{7L, 4L}));
+            when(recordingUnitRepository.countRelationshipsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 6L}));
 
             Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable, false);
 
@@ -2084,6 +2156,7 @@ class RecordingUnitServiceTest {
             assertEquals(2, dto.getParentsCount());
             assertEquals(3, dto.getChildrenCount());
             assertEquals(4L, dto.getSpecimenCount());
+            assertEquals(6L, dto.getRelationshipCount());
             assertNull(dto.getParents());
             assertNull(dto.getChildren());
             assertNull(dto.getPhases());
@@ -2108,6 +2181,8 @@ class RecordingUnitServiceTest {
                     .thenReturn(List.<Object[]>of(new Object[]{7L, 0L}));
             when(recordingUnitRepository.countSpecimensByIds(List.of(7L)))
                     .thenReturn(List.<Object[]>of(new Object[]{7L, 5L}));
+            when(recordingUnitRepository.countRelationshipsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 2L}));
 
             Page<RecordingUnitDTO> result = recordingUnitService.findByActionUnitId(20L, 10, 0, Sort.unsorted());
 
@@ -2115,6 +2190,7 @@ class RecordingUnitServiceTest {
             assertEquals(1, dto.getParentsCount());
             assertEquals(0, dto.getChildrenCount());
             assertEquals(5L, dto.getSpecimenCount());
+            assertEquals(2L, dto.getRelationshipCount());
             verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
             verify(recordingUnitRepository, never()).countSpecimensByRecordingUnitId(any());
             verify(recordingUnitRepository, never()).countStratigraphicRelationshipsByRecordingUnitId(any());

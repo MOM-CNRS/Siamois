@@ -147,6 +147,23 @@ class SpatialUnitServiceTest {
         assertEquals(spatialUnit1DTO, actualResult);
     }
 
+    @Test
+    void findById_hydratesRecordingUnitCount() {
+        SpatialUnit spatialUnit = new SpatialUnit();
+        spatialUnit.setId(1L);
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setId(1L);
+
+        when(spatialUnitRepository.findById(1L)).thenReturn(Optional.of(spatialUnit));
+        when(spatialUnitMapper.convert(spatialUnit)).thenReturn(dto);
+        when(recordingUnitRepository.countBySpatialUnitIds(List.of(1L)))
+                .thenReturn(List.<Object[]>of(new Object[]{1L, 3L}));
+
+        SpatialUnitDTO result = spatialUnitService.findById(1L);
+
+        assertEquals(3L, result.getRecordingUnitCount());
+    }
+
 
     @Test
     void testFindById_SpatialUnitNotFoundException() {
@@ -945,6 +962,47 @@ class SpatialUnitServiceTest {
         Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
 
         assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchSpatialUnits_withActionsCountSort_stripsSortFromPageable() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        Pageable sortedPageable = PageRequest.of(0, 10,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC,
+                        SpatialUnitSpec.ACTIONS_COUNT_SORT));
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        when(spatialUnitRepository.findAll(any(Specification.class), pageableCaptor.capture())).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        spatialUnitService.searchSpatialUnits(inst, filters, sortedPageable);
+
+        assertTrue(pageableCaptor.getValue().getSort().isUnsorted());
+    }
+
+    @Test
+    void searchSpatialUnits_hydratesRecordingUnitCountPerRow() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+
+        SpatialUnitDTO dto1 = new SpatialUnitDTO();
+        dto1.setId(1L);
+        SpatialUnitDTO dto2 = new SpatialUnitDTO();
+        dto2.setId(2L);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(spatialUnit1)).thenReturn(dto1);
+        when(spatialUnitMapper.convert(spatialUnit2)).thenReturn(dto2);
+        when(recordingUnitRepository.countBySpatialUnitIds(List.of(1L, 2L)))
+                .thenReturn(List.<Object[]>of(new Object[]{1L, 5L}));
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertEquals(5L, result.getContent().get(0).getRecordingUnitCount());
+        assertEquals(0L, result.getContent().get(1).getRecordingUnitCount());
     }
 
     @Test
