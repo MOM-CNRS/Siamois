@@ -2,20 +2,19 @@ package fr.siamois.domain.services.vocabulary;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
-import fr.siamois.domain.models.UserInfo;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
-import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptRemoteAutocompleteDTO;
@@ -23,15 +22,18 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarc
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -407,23 +409,15 @@ class ConceptServiceTest {
         savedChild.setExternalId("concept-child");
         savedChild.setVocabulary(vocabulary);
 
-        // Related concept that will be fetched and saved
+        // Related concept, saved as a stub : the import records the link without fetching the concept
         Concept savedRelated = new Concept();
         savedRelated.setId(102L);
-        savedRelated.setExternalId("concept-related");
         savedRelated.setVocabulary(vocabulary);
 
         // Ensure save returns parent then child (and then related)
         when(conceptRepository.save(any(Concept.class))).thenReturn(savedParent).thenReturn(savedChild).thenReturn(savedRelated);
 
         when(localizedConceptDataRepository.findByConceptAndLangCode(anyLong(), anyString())).thenReturn(Optional.empty());
-
-        // Mock fetching the related concept info by its URL
-        FullInfoDTO fetchedRelated = new FullInfoDTO();
-        PurlInfoDTO relatedId = new PurlInfoDTO();
-        relatedId.setValue("concept-related");
-        fetchedRelated.setIdentifier(new PurlInfoDTO[]{relatedId});
-        when(conceptApi.fetchConceptInfoByUri(vocabulary, "url-related")).thenReturn(fetchedRelated);
 
         stubBranchLoadComponents();
 
@@ -434,6 +428,9 @@ class ConceptServiceTest {
         verify(conceptChangeEventPublisher, times(1)).publishEvent(config.getFieldCode());
         verify(conceptRepository, atLeast(2)).save(any(Concept.class));
         verify(localizedConceptDataRepository, atLeast(2)).save(any(LocalizedConceptData.class));
+        verify(conceptRepository).addRelatedConceptIfAbsent(anyLong(), anyLong());
+        // The related concept is recorded as a stub, its content is only fetched when something reads it
+        verify(conceptApi, never()).fetchConceptInfoByUri(any(Vocabulary.class), anyString());
     }
 
     @Test
@@ -964,6 +961,105 @@ class ConceptServiceTest {
         // a blank definition carries no information, the first meaningful one stands for the concept
         assertThat(results).hasSize(2)
                 .allSatisfy(result -> assertThat(result.getDefinition()).isEqualTo("Objet en terre cuite"));
+    }
+
+    // --- Deferred loading of related concepts -------------------------------------------------
+
+    private Concept relatedStub(Long id, String uri) {
+        Concept stub = new Concept();
+        stub.setId(id);
+        stub.setVocabulary(vocabulary);
+        stub.setUri(uri);
+        stub.setLoaded(false);
+        return stub;
+    }
+
+    private FullInfoDTO conceptInfo(String externalId, String label) {
+        FullInfoDTO info = new FullInfoDTO();
+        PurlInfoDTO identifier = new PurlInfoDTO();
+        identifier.setValue(externalId);
+        info.setIdentifier(new PurlInfoDTO[]{identifier});
+        PurlInfoDTO prefLabel = new PurlInfoDTO();
+        prefLabel.setLang("fr");
+        prefLabel.setValue(label);
+        info.setPrefLabel(new PurlInfoDTO[]{prefLabel});
+        return info;
+    }
+
+    @Test
+    void loadUnloadedRelatedConceptsOf_shouldFetchEachStubAndTagItsLabelsWithTheFieldContext() {
+        Concept stub = relatedStub(50L, "http://example.com/?idt=vocab1&idc=4242");
+        when(conceptRepository.findUnloadedRelatedConceptsOf(1L)).thenReturn(List.of(stub));
+        when(conceptApi.fetchConceptInfoByUri(vocabulary, stub.getUri())).thenReturn(conceptInfo("4242", "Céramique"));
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        conceptService.loadUnloadedRelatedConceptsOf(concept, concept);
+
+        ArgumentCaptor<Concept> savedCaptor = ArgumentCaptor.forClass(Concept.class);
+        verify(conceptRepository).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().isLoaded()).isTrue();
+        assertThat(savedCaptor.getValue().getExternalId()).isEqualTo("4242");
+        // Without the field context the concept would stay invisible in the related autocomplete
+        verify(labelService).updateLabel(stub, "fr", "Céramique", concept);
+    }
+
+    @Test
+    void loadUnloadedRelatedConceptsOf_shouldDoNothing_whenEveryRelatedConceptIsAlreadyLoaded() {
+        when(conceptRepository.findUnloadedRelatedConceptsOf(1L)).thenReturn(List.of());
+
+        conceptService.loadUnloadedRelatedConceptsOf(concept, concept);
+
+        verifyNoInteractions(conceptApi);
+        verify(conceptRepository, never()).save(any(Concept.class));
+    }
+
+    @Test
+    void loadUnloadedRelatedConceptsOf_shouldLeaveTheStubUnloaded_whenTheThesaurusIsUnreachable() {
+        Concept stub = relatedStub(50L, "http://example.com/?idt=vocab1&idc=4242");
+        when(conceptRepository.findUnloadedRelatedConceptsOf(1L)).thenReturn(List.of(stub));
+        when(conceptApi.fetchConceptInfoByUri(vocabulary, stub.getUri()))
+                .thenThrow(new ResourceAccessException("thesaurus down"));
+
+        conceptService.loadUnloadedRelatedConceptsOf(concept, concept);
+
+        // One unreachable concept must not take down the autocomplete of every other candidate
+        assertThat(stub.isLoaded()).isFalse();
+        verify(conceptRepository, never()).save(any(Concept.class));
+        verifyNoInteractions(labelService);
+    }
+
+    @Test
+    void loadUnloadedRelatedConceptsOf_shouldLeaveTheStubUnloaded_whenTheThesaurusAnswersWithoutIdentifier() {
+        Concept stub = relatedStub(50L, "http://example.com/?idt=vocab1&idc=4242");
+        when(conceptRepository.findUnloadedRelatedConceptsOf(1L)).thenReturn(List.of(stub));
+        when(conceptApi.fetchConceptInfoByUri(vocabulary, stub.getUri())).thenReturn(null);
+
+        conceptService.loadUnloadedRelatedConceptsOf(concept, concept);
+
+        assertThat(stub.isLoaded()).isFalse();
+        verify(conceptRepository, never()).save(any(Concept.class));
+    }
+
+    @Test
+    void loadUnloadedRelatedConceptsOf_shouldSkipAStubWithoutUri_ratherThanFetchIt() {
+        Concept stub = relatedStub(50L, null);
+        when(conceptRepository.findUnloadedRelatedConceptsOf(1L)).thenReturn(List.of(stub));
+
+        conceptService.loadUnloadedRelatedConceptsOf(concept, concept);
+
+        verifyNoInteractions(conceptApi);
+        verify(conceptRepository, never()).save(any(Concept.class));
+    }
+
+    @Test
+    void loadUnloadedRelatedConceptsOf_shouldDoNothing_whenTheBaseValueIsNotSavedYet() {
+        Concept unsaved = new Concept();
+        unsaved.setVocabulary(vocabulary);
+
+        conceptService.loadUnloadedRelatedConceptsOf(unsaved, concept);
+
+        verify(conceptRepository, never()).findUnloadedRelatedConceptsOf(any());
+        verifyNoInteractions(conceptApi);
     }
 
 }

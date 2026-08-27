@@ -34,6 +34,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 
 import java.util.*;
 
@@ -160,12 +161,66 @@ public class ConceptService {
             concept.setExternalId(conceptDTO.getIdentifier()[0].getValue());
         }
 
+        concept.setLoaded(true);
+
         concept = conceptRepository.save(concept);
 
         updateAllLabelsFromDTO(concept, conceptDTO, fieldParentConcept);
         updateAllDefinitionsFromDTO(concept, conceptDTO);
 
         return concept;
+    }
+
+    /**
+     * Fetches from the thesaurus every concept related to {@code baseValue} that is still a stub — a row
+     * created for a {@code skos:related} link during an import, which records the link without fetching
+     * the concept behind it. Nothing reads a related concept until an autocomplete asks for the
+     * candidates of a dependent field, so that read is where the deferred fetch belongs.
+     *
+     * @param baseValue          the concept whose related concepts are about to be read
+     * @param fieldParentConcept the field context to tag the loaded labels with, or null for none
+     */
+    public void loadUnloadedRelatedConceptsOf(@NonNull Concept baseValue, @Nullable Concept fieldParentConcept) {
+        if (baseValue.getId() == null) {
+            return;
+        }
+        List<Concept> unloaded = conceptRepository.findUnloadedRelatedConceptsOf(baseValue.getId());
+        if (unloaded.isEmpty()) {
+            return;
+        }
+        log.debug("Loading {} related concepts of concept {} from the thesaurus", unloaded.size(), baseValue.getId());
+        for (Concept concept : unloaded) {
+            loadConceptFromThesaurus(concept, fieldParentConcept);
+        }
+    }
+
+    private void loadConceptFromThesaurus(@NonNull Concept concept, @Nullable Concept fieldParentConcept) {
+        String uri = concept.getUri();
+        if (uri == null || uri.isBlank()) {
+            log.warn("Cannot load concept {} : it carries no URI to fetch it from", concept.getId());
+            return;
+        }
+
+        FullInfoDTO info;
+        try {
+            info = conceptApi.fetchConceptInfoByUri(concept.getVocabulary(), uri);
+        } catch (RestClientException e) {
+            log.error("Could not fetch concept {} from the thesaurus : {}", uri, e.getMessage(), e);
+            return;
+        }
+        if (info == null || info.getIdentifier() == null || info.getIdentifier().length == 0) {
+            log.warn("The thesaurus returned no usable info for concept {}, it stays unloaded", uri);
+            return;
+        }
+
+        if (concept.getExternalId() == null) {
+            concept.setExternalId(info.getIdentifierStr());
+        }
+        concept.setLoaded(true);
+        Concept loadedConcept = conceptRepository.save(concept);
+
+        updateAllLabelsFromDTO(loadedConcept, info, fieldParentConcept);
+        updateAllDefinitionsFromDTO(loadedConcept, info);
     }
 
     /**
@@ -311,6 +366,7 @@ public class ConceptService {
             FullInfoDTO dto = branchDTO.getData().get(url);
             if (dto.getIdentifier() != null) {
                 for (PurlInfoDTO identifier : dto.getIdentifier()) {
+                    assert concept.getExternalId() != null;
                     if (concept.getExternalId().equalsIgnoreCase(identifier.getValue())) {
                         branchDTO.setParentUrl(url);
                         return dto;

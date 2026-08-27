@@ -46,6 +46,7 @@ class FormConfigServiceTest {
     private static final String PARENT_URL = "https://thesaurus.example/parent";
     private static final String CHILD_URL = "https://thesaurus.example/child";
     private static final String RELATED_URL = "https://thesaurus.example/related";
+    private static final String RELATED_URL_WITH_IDC = "https://thesaurus.example/?idt=th221&idc=4242";
     private static final String UNKNOWN_URL = "https://thesaurus.example/unknown";
 
     @Mock
@@ -323,29 +324,57 @@ class FormConfigServiceTest {
     }
 
     @Test
-    void addConceptConfigFor_shouldAttachRelatedConceptsToTheSavedConcept() throws Exception {
+    void addConceptConfigFor_shouldAttachRelatedConceptsToTheSavedConcept_asAnUnloadedStub() throws Exception {
         ConceptBranchDTO branch = new ConceptBranchDTO.ConceptBranchDTOBuilder()
                 .identifier(PARENT_URL, "parent")
                 .build();
         FullInfoDTO parentInfo = branch.getData().get(PARENT_URL);
         parentInfo.setRelated(new PurlInfoDTO[]{purl(RELATED_URL)});
 
-        FullInfoDTO relatedInfo = new FullInfoDTO();
-        relatedInfo.setIdentifier(new PurlInfoDTO[]{purl("related")});
-        Concept relatedConcept = new Concept.Builder()
+        Concept savedStub = new Concept.Builder()
                 .id(13L)
-                .externalId("related")
                 .vocabulary(vocabulary)
                 .build();
 
         stubDownExpansion(branch);
         when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
-        when(conceptApi.fetchConceptInfoByUri(vocabulary, RELATED_URL)).thenReturn(relatedInfo);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfo, null)).thenReturn(relatedConcept);
+        when(conceptRepository.findByUri(RELATED_URL)).thenReturn(Optional.empty());
+        when(conceptRepository.save(any(Concept.class))).thenReturn(savedStub);
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        verify(conceptRepository).addRelatedConceptIfAbsent(branchTopConcept.getId(), relatedConcept.getId());
+        ArgumentCaptor<Concept> stubCaptor = ArgumentCaptor.forClass(Concept.class);
+        verify(conceptRepository).save(stubCaptor.capture());
+        assertThat(stubCaptor.getValue().getUri()).isEqualTo(RELATED_URL);
+        assertThat(stubCaptor.getValue().isLoaded()).isFalse();
+        assertThat(stubCaptor.getValue().getVocabulary()).isSameAs(vocabulary);
+        verify(conceptRepository).addRelatedConceptIfAbsent(branchTopConcept.getId(), savedStub.getId());
+        // The concept behind the link is only fetched when something actually reads it.
+        verify(conceptApi, never()).fetchConceptInfoByUri(any(Vocabulary.class), anyString());
+    }
+
+    @Test
+    void addConceptConfigFor_shouldReuseTheExistingConcept_whenTheRelatedConceptIsAlreadyImported() throws Exception {
+        ConceptBranchDTO branch = new ConceptBranchDTO.ConceptBranchDTOBuilder()
+                .identifier(PARENT_URL, "parent")
+                .build();
+        FullInfoDTO parentInfo = branch.getData().get(PARENT_URL);
+        parentInfo.setRelated(new PurlInfoDTO[]{purl(RELATED_URL_WITH_IDC)});
+
+        Concept alreadyImported = new Concept.Builder()
+                .id(13L)
+                .externalId("4242")
+                .vocabulary(vocabulary)
+                .build();
+
+        stubDownExpansion(branch);
+        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("th221", "4242")).thenReturn(Optional.of(alreadyImported));
+
+        formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
+
+        verify(conceptRepository).addRelatedConceptIfAbsent(branchTopConcept.getId(), alreadyImported.getId());
+        verify(conceptRepository, never()).save(any(Concept.class));
     }
 
     @Test

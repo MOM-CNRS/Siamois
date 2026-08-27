@@ -541,6 +541,9 @@ public class FieldConfigurationService {
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Concept baseValue, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
         ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode, actionUnitId);
+        if (baseValue != null) {
+            conceptService.loadUnloadedRelatedConceptsOf(baseValue, config.getConcept());
+        }
         return autocompleteRepository.findMatchingConceptsFromRelatedFor(config.getConcept(), baseValue, info.getLang(), input, LIMIT_RESULTS);
     }
 
