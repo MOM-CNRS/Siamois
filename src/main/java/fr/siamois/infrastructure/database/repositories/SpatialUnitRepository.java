@@ -155,13 +155,29 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
             """, nativeQuery = true)
     boolean existsRootChildrenByParent(@Param("spatialUnitId") Long spatialUnitId);
 
-    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(Long institutionId, OffsetDateTime createdAt);
-
-    Optional<SpatialUnit> findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(Long institutionId, OffsetDateTime createdAt);
-
     Optional<SpatialUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(Long institutionId);  // oldest
 
     Optional<SpatialUnit> findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(Long institutionId);
+
+    /**
+     * The id tie-breaks equal creation times, so navigation is deterministic even when several
+     * spatial units were created in the same instant (e.g. bulk import).
+     */
+    @Query(value = "SELECT * FROM spatial_unit " +
+            "WHERE fk_institution_id = :institutionId " +
+            "AND (creation_time, spatial_unit_id) > (:currentTime, :currentId) " +
+            "ORDER BY creation_time ASC, spatial_unit_id ASC LIMIT 1", nativeQuery = true)
+    Optional<SpatialUnit> findNext(@Param("institutionId") Long institutionId,
+                                   @Param("currentTime") OffsetDateTime currentTime,
+                                   @Param("currentId") Long currentId);
+
+    @Query(value = "SELECT * FROM spatial_unit " +
+            "WHERE fk_institution_id = :institutionId " +
+            "AND (creation_time, spatial_unit_id) < (:currentTime, :currentId) " +
+            "ORDER BY creation_time DESC, spatial_unit_id DESC LIMIT 1", nativeQuery = true)
+    Optional<SpatialUnit> findPrevious(@Param("institutionId") Long institutionId,
+                                       @Param("currentTime") OffsetDateTime currentTime,
+                                       @Param("currentId") Long currentId);
 
     @Query(value = """
             SELECT * FROM spatial_unit

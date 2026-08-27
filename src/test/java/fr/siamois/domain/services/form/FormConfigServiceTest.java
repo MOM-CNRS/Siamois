@@ -46,6 +46,7 @@ class FormConfigServiceTest {
     private static final String PARENT_URL = "https://thesaurus.example/parent";
     private static final String CHILD_URL = "https://thesaurus.example/child";
     private static final String RELATED_URL = "https://thesaurus.example/related";
+    private static final String RELATED_URL_WITH_IDC = "https://thesaurus.example/?idt=th221&idc=4242";
     private static final String UNKNOWN_URL = "https://thesaurus.example/unknown";
 
     @Mock
@@ -303,7 +304,10 @@ class FormConfigServiceTest {
     }
 
     @Test
-    void addConceptConfigFor_shouldThrowIllegalState_whenNarrowerConceptIsNotPartOfTheBranch() throws Exception {
+    void addConceptConfigFor_shouldSkipTheNarrowerRelation_whenTheChildConceptIsNotPartOfTheBranch() throws Exception {
+        // a branch/collection is a subset of the thesaurus : a fetched concept can have a narrower
+        // concept that belongs outside that subset, so it is simply absent from the response — not a
+        // sign of corrupt data, and it must not abort saving the rest of the (still valid) branch
         ConceptBranchDTO branch = new ConceptBranchDTO.ConceptBranchDTOBuilder()
                 .identifier(PARENT_URL, "parent")
                 .build();
@@ -313,39 +317,64 @@ class FormConfigServiceTest {
         stubDownExpansion(branch);
         when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
 
-        assertThatThrownBy(() -> formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(UNKNOWN_URL);
+        formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        verify(fieldFormConfigRepository, never()).save(any());
+        verify(conceptHierarchyRepository, never()).save(any());
+        verify(fieldFormConfigRepository).save(any());
     }
 
     @Test
-    void addConceptConfigFor_shouldAttachRelatedConceptsToTheSavedConcept() throws Exception {
+    void addConceptConfigFor_shouldAttachRelatedConceptsToTheSavedConcept_asAnUnloadedStub() throws Exception {
         ConceptBranchDTO branch = new ConceptBranchDTO.ConceptBranchDTOBuilder()
                 .identifier(PARENT_URL, "parent")
                 .build();
         FullInfoDTO parentInfo = branch.getData().get(PARENT_URL);
         parentInfo.setRelated(new PurlInfoDTO[]{purl(RELATED_URL)});
 
-        FullInfoDTO relatedInfo = new FullInfoDTO();
-        relatedInfo.setIdentifier(new PurlInfoDTO[]{purl("related")});
-        Concept relatedConcept = new Concept.Builder()
+        Concept savedStub = new Concept.Builder()
                 .id(13L)
-                .externalId("related")
                 .vocabulary(vocabulary)
                 .build();
 
         stubDownExpansion(branch);
         when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
-        when(conceptApi.fetchConceptInfoByUri(vocabulary, RELATED_URL)).thenReturn(relatedInfo);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfo, null)).thenReturn(relatedConcept);
-        when(conceptRepository.save(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(conceptRepository.findByUri(RELATED_URL)).thenReturn(Optional.empty());
+        when(conceptRepository.save(any(Concept.class))).thenReturn(savedStub);
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        assertThat(branchTopConcept.getRelatedConcepts()).containsExactly(relatedConcept);
-        verify(conceptRepository).save(branchTopConcept);
+        ArgumentCaptor<Concept> stubCaptor = ArgumentCaptor.forClass(Concept.class);
+        verify(conceptRepository).save(stubCaptor.capture());
+        assertThat(stubCaptor.getValue().getUri()).isEqualTo(RELATED_URL);
+        assertThat(stubCaptor.getValue().isLoaded()).isFalse();
+        assertThat(stubCaptor.getValue().getVocabulary()).isSameAs(vocabulary);
+        verify(conceptRepository).addRelatedConceptIfAbsent(branchTopConcept.getId(), savedStub.getId());
+        // The concept behind the link is only fetched when something actually reads it.
+        verify(conceptApi, never()).fetchConceptInfoByUri(any(Vocabulary.class), anyString());
+    }
+
+    @Test
+    void addConceptConfigFor_shouldReuseTheExistingConcept_whenTheRelatedConceptIsAlreadyImported() throws Exception {
+        ConceptBranchDTO branch = new ConceptBranchDTO.ConceptBranchDTOBuilder()
+                .identifier(PARENT_URL, "parent")
+                .build();
+        FullInfoDTO parentInfo = branch.getData().get(PARENT_URL);
+        parentInfo.setRelated(new PurlInfoDTO[]{purl(RELATED_URL_WITH_IDC)});
+
+        Concept alreadyImported = new Concept.Builder()
+                .id(13L)
+                .externalId("4242")
+                .vocabulary(vocabulary)
+                .build();
+
+        stubDownExpansion(branch);
+        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("th221", "4242")).thenReturn(Optional.of(alreadyImported));
+
+        formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
+
+        verify(conceptRepository).addRelatedConceptIfAbsent(branchTopConcept.getId(), alreadyImported.getId());
+        verify(conceptRepository, never()).save(any(Concept.class));
     }
 
     @Test
@@ -372,7 +401,7 @@ class FormConfigServiceTest {
         ConceptCollection savedCollection = savedCollection();
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
-        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any())).thenReturn(savedCollection);
 
         formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
 
@@ -401,7 +430,7 @@ class FormConfigServiceTest {
         existing.setBranchTopTerm(branchTopConcept);
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
-        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any())).thenReturn(savedCollection);
 
         formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
 
@@ -427,7 +456,7 @@ class FormConfigServiceTest {
         existing.setPosition(7);
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
-        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO)).thenReturn(savedCollection);
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any())).thenReturn(savedCollection);
 
         formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
 
@@ -446,7 +475,7 @@ class FormConfigServiceTest {
         ConceptCollectionDTO collectionDTO = collectionDTO();
 
         when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
-        when(conceptCollectionService.createOrUpdateConceptCollection(collectionDTO))
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any()))
                 .thenThrow(new VocabularyNotFoundException("Vocabulary could not be found"));
 
         assertThatThrownBy(() -> formConfigService.addConceptConfigFor(formConfig, field, collectionDTO))

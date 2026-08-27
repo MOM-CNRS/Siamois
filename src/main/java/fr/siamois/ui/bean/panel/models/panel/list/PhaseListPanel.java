@@ -4,11 +4,11 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
-import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -47,6 +47,7 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
     private final transient InstitutionService institutionService;
     private final transient FormContextServices formContextServices;
     private final transient PhaseService phaseService;
+    private final transient ProfilePermissionService profilePermissionService;
 
     @Override
     public String getPrefixPanelIndex() {
@@ -77,7 +78,9 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
                 flowBean,
                 genericNewUnitDialogBean,
                 institutionService,
-                formContextServices
+                formContextServices,
+                phaseService,
+                profilePermissionService
         );
         tableModel.setParentPanel(this);
         return lazy;
@@ -101,6 +104,7 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
         this.institutionService = context.getBean(InstitutionService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.phaseService = phaseService;
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     @Override
@@ -144,13 +148,20 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
         tableModel.setToolbarCreateConfig(
                 ToolbarCreateConfig.builder()
                         .kindToCreate(UnitKind.PHASE)
-                        .scopeSupplier(NewUnitContext.Scope::none)
-                        .insertPolicySupplier(() -> NewUnitContext.UiInsertPolicy.builder()
-                                .listInsert(NewUnitContext.ListInsert.TOP)
-                                .treeInsert(NewUnitContext.TreeInsert.ROOT)
-                                .build())
+                        .createAllowedSupplier(() -> false)
+                        .unavailableMessageKeySupplier(() -> "phase.toolbar.createRequiresActionUnit")
+                        .unavailableLinkLabelKeySupplier(() -> "common.action.selectProject")
+                        .unavailableLinkAction(this::goToActionUnitList)
                         .build()
         );
+    }
+
+    private void goToActionUnitList() {
+        try {
+            navBean.goToActionUnitList("FOCUS");
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Override

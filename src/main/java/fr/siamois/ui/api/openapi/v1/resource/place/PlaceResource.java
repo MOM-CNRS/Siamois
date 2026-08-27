@@ -12,6 +12,8 @@ public class PlaceResource extends PlaceResourceIdentifier {
 
     private String name;
 
+    private Integer placeNumber;
+
     private ResolvedConceptResource type;
 
     private OrganizationResourceIdentifier organization;

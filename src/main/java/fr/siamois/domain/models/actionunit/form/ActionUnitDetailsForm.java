@@ -28,7 +28,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(true)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .className("d-none")
                                                         .field(IDENTIFIER_FIELD)
                                                         .isRequired(true)
                                                         .build())

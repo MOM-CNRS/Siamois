@@ -71,7 +71,7 @@ public class RecordingUnitHandler implements INewUnitHandler<RecordingUnitDTO> {
 
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(created)) {
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
-            created.setFullIdentifier(unit.getActionUnit().getRecordingUnitIdentifierFormat());
+            throw new IllegalStateException("Generated recording-unit identifier already exists");
         }
 
         created = recordingUnitService.save(created);

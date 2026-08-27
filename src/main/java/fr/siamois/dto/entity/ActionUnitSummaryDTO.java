@@ -16,11 +16,8 @@ public class ActionUnitSummaryDTO extends AbstractEntityDTO {
     private ConceptDTO type;
     private String identifier;
     private String fullIdentifier;
-    protected Integer maxRecordingUnitCode;
-    protected Integer minRecordingUnitCode;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
-    private String recordingUnitIdentifierFormat;
 
     public ActionUnitSummaryDTO(ActionUnitDTO dto) {
         super(dto);

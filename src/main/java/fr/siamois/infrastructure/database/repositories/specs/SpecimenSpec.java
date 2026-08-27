@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.specs;
 import fr.siamois.domain.models.specimen.Specimen;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ public class SpecimenSpec {
 
     public static final String ACTION_UNIT_FILTER = "actionUnit";
     public static final String RECORDING_UNIT_FILTER = "recordingUnit";
+    public static final String FULL_IDENTIFIER_FILTER = "fullIdentifier";
 
     private SpecimenSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -18,8 +20,17 @@ public class SpecimenSpec {
     @NonNull
     public static List<String> allColumns() {
         return List.of(
-
+                FULL_IDENTIFIER_FILTER
         );
+    }
+
+    @NonNull
+    public static Specification<Specimen> fullIdentifierContaining(@Nullable String value) {
+        return (root, query, cb) -> {
+            if (value == null || value.isBlank())
+                return null;
+            return cb.like(cb.lower(root.get(FULL_IDENTIFIER_FILTER)), "%" + value.toLowerCase() + "%");
+        };
     }
 
     @NonNull

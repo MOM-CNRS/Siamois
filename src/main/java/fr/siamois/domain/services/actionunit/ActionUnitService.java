@@ -9,12 +9,15 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
@@ -27,7 +30,6 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepo
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
@@ -35,6 +37,7 @@ import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -46,6 +49,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,11 +80,11 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
     private final ProfileRepository profileRepository;
     private final DocumentRepository documentRepository;
-    private final RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     private final RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
     private final ProfileService profileService;
     private final PersonProfileAssignmentService personProfileAssignmentService;
     private final ProfileMapper profileMapper;
+    private final ProfilePermissionService profilePermissionService;
 
 
     /**
@@ -238,9 +242,19 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
+        assertWritePermission(info, actionUnit);
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
         assignRoles(info, savedDTO);
         return savedDTO;
+    }
+
+    private void assertWritePermission(UserInfo info, ActionUnitDTO actionUnit) {
+        boolean allowed = actionUnit.getId() == null
+                ? profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                : profilePermissionService.hasActionUnitWritePermission(info, actionUnit);
+        if (!allowed) {
+            throw new ForbiddenOperationException("You are not allowed to save this action unit");
+        }
     }
 
     private void assignRoles(UserInfo info, ActionUnitDTO savedDTO) {
@@ -310,6 +324,11 @@ public class ActionUnitService implements ArkEntityService {
             @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
+        UserInfo info = ExecutionContextHolder.get();
+        if (info == null) {
+            throw new ForbiddenOperationException("You are not allowed to save this action unit");
+        }
+        assertWritePermission(info, (ActionUnitDTO) toSave);
         try {
             return actionUnitMapper.convert(
                     actionUnitRepository.save(Objects.requireNonNull(
@@ -317,6 +336,18 @@ public class ActionUnitService implements ArkEntityService {
         } catch (DataIntegrityViolationException e) {
             throw new FailedActionUnitSaveException(e.getMessage());
         }
+    }
+
+    public boolean fullIdentifierAlreadyExistInInstitution(ActionUnitDTO actionUnit) {
+        if (actionUnit.getCreatedByInstitution() == null) {
+            return false;
+        }
+        return actionUnitRepository.findByFullIdentifier(actionUnit.getFullIdentifier())
+                .filter(existing -> existing.getCreatedByInstitution() != null && Objects.equals(
+                        existing.getCreatedByInstitution().getId(),
+                        actionUnit.getCreatedByInstitution().getId()))
+                .filter(existing -> !Objects.equals(existing.getId(), actionUnit.getId()))
+                .isPresent();
     }
 
     /**
@@ -565,8 +596,36 @@ public class ActionUnitService implements ArkEntityService {
 
     public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
-        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
+        specs = applyCountSort(specs, pageable.getSort());
+        Page<ActionUnit> res = actionUnitRepository.findAll(specs, stripCountSort(pageable));
         return res.map(this::convertWithCount);
+    }
+
+    /**
+     * Composes a count-based ordering {@link Specification} when the requested sort targets a
+     * synthetic (non-JPA-path) count key, e.g. {@link ActionUnitSpec#RECORDING_UNIT_COUNT_SORT}.
+     */
+    private Specification<ActionUnit> applyCountSort(Specification<ActionUnit> specs, Sort sort) {
+        for (Sort.Order order : sort) {
+            if (ActionUnitSpec.RECORDING_UNIT_COUNT_SORT.equals(order.getProperty())) {
+                return specs.and(ActionUnitSpec.orderByRecordingUnitCount(order.getDirection()));
+            }
+        }
+        return specs;
+    }
+
+    /**
+     * Strips the synthetic count sort key from the {@link Pageable} passed to the repository,
+     * since it is not a real JPA-mapped path (the ordering is applied via {@link #applyCountSort}
+     * as a {@link Specification} side effect instead).
+     */
+    private Pageable stripCountSort(Pageable pageable) {
+        boolean hasCountSort = pageable.getSort().stream()
+                .anyMatch(order -> ActionUnitSpec.RECORDING_UNIT_COUNT_SORT.equals(order.getProperty()));
+        if (!hasCountSort) {
+            return pageable;
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
     }
 
 
@@ -632,6 +691,10 @@ public class ActionUnitService implements ArkEntityService {
 
         if (filters.containsColumn(ActionUnitSpec.SPATIAL_UNIT_FILTER)) {
             specs = specs.and(ActionUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(ActionUnitSpec.SPATIAL_UNIT_FILTER)));
+        }
+
+        if (filters.containsColumn(ActionUnitSpec.FULL_IDENTIFIER_FILTER)) {
+            specs = specs.and(ActionUnitSpec.fullIdentifierContaining(filters.valueOfAsString(ActionUnitSpec.FULL_IDENTIFIER_FILTER)));
         }
 
         return specs;
@@ -766,6 +829,13 @@ public class ActionUnitService implements ArkEntityService {
             @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
     public void deleteProjectWhenEmpty(long actionUnitId) {
+        UserInfo info = ExecutionContextHolder.get();
+        boolean allowed = info != null
+                && (profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                || profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_MANAGE_SETTINGS));
+        if (!allowed) {
+            throw new ForbiddenOperationException("You are not allowed to delete this action unit");
+        }
         if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des unités d'enregistrement");
         }
@@ -776,9 +846,7 @@ public class ActionUnitService implements ArkEntityService {
         }
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
-        recordingUnitIdCounterRepository.deleteAllByConfigActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
-        actionUnitRepository.deleteFormMappingsForActionUnit(actionUnitId);
         actionUnitRepository.deleteSecondaryActionCodeLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);

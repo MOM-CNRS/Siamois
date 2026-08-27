@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.history.RevisionRepository;
@@ -38,29 +39,6 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
     )
     List<Concept> findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(String idt, Collection<String> lowerIdcs);
 
-    /**
-     * Find the top term configuration for a field code of a user.
-     * @param fieldCode The code of the field
-     * @return An optional containing the concept if found
-     */
-    @Query(
-            nativeQuery = true,
-            value = "SELECT c.* FROM concept c " +
-                    "JOIN concept_field_config cfc ON cfc.fk_concept_id = c.concept_id " +
-                    "WHERE cfc.fk_institution_id = :institutionId AND " +
-                    "cfc.fk_user_id = :userId AND " +
-                    "cfc.field_code = :fieldCode"
-    )
-    Optional<Concept> findTopTermConfigForFieldCodeOfUser(Long institutionId, Long userId, String fieldCode);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT DISTINCT c.* "+
-                    "FROM spatial_unit su "+
-                    "LEFT JOIN concept c ON su.fk_concept_category_id = c.concept_id "+
-                    "WHERE su.fk_institution_id = :institutionId"
-    )
-    List<Concept> findAllBySpatialUnitOfInstitution(@Param("institutionId") Long institutionId);
 
     @Query(
             nativeQuery = true,
@@ -77,7 +55,7 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
                     "JOIN concept_field_config cfc ON cfc.fk_concept_id = c.concept_id " +
                     "WHERE cfc.fk_institution_id = :institutionId " +
                     "AND cfc.field_code = :fieldCode " +
-                    "AND cfc.fk_user_id IS NULL"
+                    "AND cfc.fk_action_unit_id IS NULL"
     )
     Optional<Concept> findTopTermConfigForFieldCodeOfInstitution(Long institutionId, String fieldCode);
 
@@ -102,4 +80,32 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
     )
     List<Concept> findAllByFieldContextAndExactLabel(Long fieldConceptId, String lang, String label);
 
+    /**
+     * Idempotently records a {@code skos:related} link between two concepts. Thesaurus subtrees can
+     * overlap across field configs and syncs, so the same pair may be processed more than once across
+     * separate transactions — {@code ON CONFLICT DO NOTHING} avoids a {@code concept_related_pkey}
+     * violation in that case.
+     */
+    @Modifying
+    @Query(
+            nativeQuery = true,
+            value = "INSERT INTO concept_related (fk_concept_id, fk_related_concept_id) " +
+                    "VALUES (:conceptId, :relatedConceptId) ON CONFLICT DO NOTHING"
+    )
+    void addRelatedConceptIfAbsent(@Param("conceptId") Long conceptId, @Param("relatedConceptId") Long relatedConceptId);
+
+    Optional<Concept> findByUri(String uri);
+
+    /**
+     * The concepts related to the given concept that are still stubs : rows created for a
+     * {@code skos:related} link without ever being fetched from the thesaurus, so they carry a URI but
+     * no label.
+     *
+     * @param conceptId the concept whose related concepts to look at
+     * @return the related concepts left to load, empty once they all have been
+     */
+    @Query("SELECT r FROM Concept c " +
+            "JOIN c.relatedConcepts r " +
+            "WHERE c.id = :conceptId AND r.isLoaded = FALSE AND r.uri IS NOT NULL")
+    List<Concept> findUnloadedRelatedConceptsOf(@Param("conceptId") Long conceptId);
 }

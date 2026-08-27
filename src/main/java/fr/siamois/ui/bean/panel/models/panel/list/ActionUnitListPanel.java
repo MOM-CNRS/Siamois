@@ -1,7 +1,8 @@
 package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -46,7 +47,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean;
     private final transient NavBean navBean;
-    private final transient InstitutionService institutionService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient FormContextServices formContextServices;
     private final transient ActionUnitMapper actionUnitMapper;
 
@@ -82,7 +83,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
                 navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                institutionService,
+                profilePermissionService,
                 formContextServices,
                 actionUnitService,
                 actionUnitMapper
@@ -107,7 +108,7 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.navBean = context.getBean(NavBean.class);
-        this.institutionService = context.getBean(InstitutionService.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.actionUnitMapper = actionUnitMapper;
     }
@@ -189,6 +190,8 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
                                 .listInsert(NewUnitContext.ListInsert.TOP)
                                 .treeInsert(NewUnitContext.TreeInsert.ROOT)
                                 .build())
+                        .createAllowedSupplier(() -> profilePermissionService.hasOrganizationPermission(
+                                sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
                         .build()
         );
     }

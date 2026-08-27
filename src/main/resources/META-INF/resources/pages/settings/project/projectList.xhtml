@@ -41,6 +41,7 @@
                         sortMode="single"
                         widgetVar="actionUnitDatatable"
                         rowKey="#{au.id}"
+                        emptyMessage="#{langBean.msg('projectList.empty')}"
                 >
                     <p:column headerText="#{langBean.msg('actionManagers.header.name')}">
                         <p:outputLabel value="#{au.name}"/>

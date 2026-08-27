@@ -107,7 +107,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
         if (column.getAction() == GO_TO_SPATIAL_UNIT) {
             setOverviewEntityId(su.getId());
-            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, null);
+            flowBean.addSpatialUnitToOverview(su.getId(), parentPanel, null, false);
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
         }
@@ -132,13 +132,32 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     @Override
+    public void handleLinkEdit(CommandLinkColumn column, SpatialUnitDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "spatialunit.error.name.blank");
+            return;
+        }
+
+        String previous = item.getName();
+        item.setName(trimmed);
+
+        try {
+            spatialUnitService.save(item);
+        } catch (FailedRecordingUnitSaveException e) {
+            item.setName(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.spatialUnit.updateFailed", item.getName());
+        }
+    }
+
+    @Override
     public Integer resolveCount(TableColumn column, SpatialUnitDTO su) {
         if (column instanceof RelationColumn rel) {
             return switch (rel.getCountKey()) {
                 case PARENTS -> su.getParents() == null ? 0 : su.getParents().size();
                 case CHILDREN -> su.getChildren() == null ? 0 : su.getChildren().size();
                 case "actions" -> su.getRelatedActionUnitList() == null ? 0 : su.getRelatedActionUnitList().size();
-                case "recordingUnit" -> su.getRecordingUnitList() == null ? 0 : su.getRecordingUnitList().size();
+                case "recordingUnit" -> su.getRecordingUnitCount() == null ? 0 : (int) (long) su.getRecordingUnitCount();
                 default -> 0;
             };
         }
@@ -253,15 +272,10 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     }
 
     public boolean isRendered(RowAction action, SpatialUnitDTO su) {
-        // todo: display based on permissions
-        return switch (action.getAction()) {
-            case DUPLICATE_ROW, NEW_CHILDREN, NEW_PARENT -> flowBean.getIsWriteMode() && // perm to create spatial unit in orga and app is in write mode
-                    spatialUnitService.hasCreatePermission(sessionSettingsBean.getUserInfo());
-            case TOGGLE_BOOKMARK -> true; // Anyone can add to fav
-            case NEW_ACTION -> flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
-                    profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
-            default -> true;
-        };
+        if (action.getAction() == TableColumnAction.TOGGLE_BOOKMARK) {
+            return true; // Anyone can add to fav
+        }
+        return canUserEditRow(su);
     }
 
 
@@ -410,8 +424,11 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
     @Override
     public boolean canUserEditRow(SpatialUnitDTO unit) {
-        return flowBean.getIsWriteMode() && // perm to create action unit in orga and app is in write mode
-                profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+        // perm to edit spatial units in orga and app is in write mode — doesn't vary by row, so it's
+        // evaluated once per page (canEditFlat) instead of once per row like hasOrganizationPermission
+        // used to be called here
+        return flowBean.getIsWriteMode() &&
+                canEditFlat(() -> profilePermissionService.hasOrganizationPermission(sessionSettingsBean.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES));
     }
 
     @Override
@@ -491,6 +508,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
 
         onAnyEntityCreated(newUnit, ctx) ;
+        markRecentlyCreated(java.util.List.of(newUnit.getId()));
         MessageUtils.displayInfoMessage(sessionSettingsBean.getLangBean(), "common.action.duplicateEntity", toDuplicate.getName());
     }
 

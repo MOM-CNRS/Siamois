@@ -1,6 +1,8 @@
 package fr.siamois.domain.services.vocabulary;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.events.publisher.ConceptChangeEventPublisher;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
@@ -22,6 +24,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarc
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.utils.vocabulary.ConceptApiUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +34,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 
 import java.util.*;
 
@@ -157,12 +161,66 @@ public class ConceptService {
             concept.setExternalId(conceptDTO.getIdentifier()[0].getValue());
         }
 
+        concept.setLoaded(true);
+
         concept = conceptRepository.save(concept);
 
         updateAllLabelsFromDTO(concept, conceptDTO, fieldParentConcept);
         updateAllDefinitionsFromDTO(concept, conceptDTO);
 
         return concept;
+    }
+
+    /**
+     * Fetches from the thesaurus every concept related to {@code baseValue} that is still a stub — a row
+     * created for a {@code skos:related} link during an import, which records the link without fetching
+     * the concept behind it. Nothing reads a related concept until an autocomplete asks for the
+     * candidates of a dependent field, so that read is where the deferred fetch belongs.
+     *
+     * @param baseValue          the concept whose related concepts are about to be read
+     * @param fieldParentConcept the field context to tag the loaded labels with, or null for none
+     */
+    public void loadUnloadedRelatedConceptsOf(@NonNull Concept baseValue, @Nullable Concept fieldParentConcept) {
+        if (baseValue.getId() == null) {
+            return;
+        }
+        List<Concept> unloaded = conceptRepository.findUnloadedRelatedConceptsOf(baseValue.getId());
+        if (unloaded.isEmpty()) {
+            return;
+        }
+        log.debug("Loading {} related concepts of concept {} from the thesaurus", unloaded.size(), baseValue.getId());
+        for (Concept concept : unloaded) {
+            loadConceptFromThesaurus(concept, fieldParentConcept);
+        }
+    }
+
+    private void loadConceptFromThesaurus(@NonNull Concept concept, @Nullable Concept fieldParentConcept) {
+        String uri = concept.getUri();
+        if (uri == null || uri.isBlank()) {
+            log.warn("Cannot load concept {} : it carries no URI to fetch it from", concept.getId());
+            return;
+        }
+
+        FullInfoDTO info;
+        try {
+            info = conceptApi.fetchConceptInfoByUri(concept.getVocabulary(), uri);
+        } catch (RestClientException e) {
+            log.error("Could not fetch concept {} from the thesaurus : {}", uri, e.getMessage(), e);
+            return;
+        }
+        if (info == null || info.getIdentifier() == null || info.getIdentifier().length == 0) {
+            log.warn("The thesaurus returned no usable info for concept {}, it stays unloaded", uri);
+            return;
+        }
+
+        if (concept.getExternalId() == null) {
+            concept.setExternalId(info.getIdentifierStr());
+        }
+        concept.setLoaded(true);
+        Concept loadedConcept = conceptRepository.save(concept);
+
+        updateAllLabelsFromDTO(loadedConcept, info, fieldParentConcept);
+        updateAllDefinitionsFromDTO(loadedConcept, info);
     }
 
     /**
@@ -308,6 +366,7 @@ public class ConceptService {
             FullInfoDTO dto = branchDTO.getData().get(url);
             if (dto.getIdentifier() != null) {
                 for (PurlInfoDTO identifier : dto.getIdentifier()) {
+                    assert concept.getExternalId() != null;
                     if (concept.getExternalId().equalsIgnoreCase(identifier.getValue())) {
                         branchDTO.setParentUrl(url);
                         return dto;
@@ -360,11 +419,13 @@ public class ConceptService {
      * @return a list of matching ConceptAutocompleteDetachedDTO, one per matching label
      */
     @NonNull
-    public List<ConceptAutocompleteDetachedDTO> fetchAutocompleteFromRemoteThesaurus(VocabularyDTO vocabularyDTO, String input) {
+    public List<ConceptAutocompleteDetachedDTO> fetchAutocompleteFromRemoteThesaurus(VocabularyDTO vocabularyDTO, String input) throws JsonProcessingException {
         if (input == null || input.isBlank()) {
             return Collections.emptyList();
         }
-        List<ConceptRemoteAutocompleteDTO> autocompleteDTOS = conceptApi. fetchRemoteAutocomplete(vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId(), input);
+        UserInfo info = ExecutionContextHolder.get();
+        String lang = Objects.isNull(info) ? null : info.getLang();
+        List<ConceptRemoteAutocompleteDTO> autocompleteDTOS = conceptApi.fetchRemoteAutocomplete(vocabularyDTO.getBaseUri(), vocabularyDTO.getExternalVocabularyId(), input, lang);
         Map<Long, List<ConceptRemoteAutocompleteDTO>> conceptIdToResults = new LinkedHashMap<>();
         Map<Long, ConceptRemoteAutocompleteDTO> conceptIdToPrefLabel = new HashMap<>();
         for (ConceptRemoteAutocompleteDTO autocompleteDTO : autocompleteDTOS) {
@@ -398,15 +459,16 @@ public class ConceptService {
     private List<ConceptAutocompleteDetachedDTO> detachedResultsOfConcept(@NonNull VocabularyDTO vocabularyDTO,
                                                                          @NonNull List<ConceptRemoteAutocompleteDTO> labelsOfConcept,
                                                                          @Nullable ConceptRemoteAutocompleteDTO prefLabel) {
-        // The pref label carries the display name of the concept. When it did not match the input, the
-        // thesaurus only returned alt labels : the first one then stands for the concept.
         ConceptRemoteAutocompleteDTO reference = prefLabel != null ? prefLabel : labelsOfConcept.get(0);
 
-        String externalId = ConceptApiUtils.externalIdFromUri(reference.uri());
-        if (externalId == null) {
-            log.warn("Ignoring remote autocomplete result '{}' : no concept id could be read from its URI {}", reference.label(), reference.uri());
+        // The thesaurus's own "identifier" field, not its uri : a uri can be an ark, which does not
+        // encode the canonical numeric id (see ConceptService#fetchConceptDesignatedBy) and must never
+        // be saved as external_id.
+        if (reference.identifier() == null) {
+            log.warn("Ignoring remote autocomplete result '{}' : the thesaurus returned no identifier", reference.label());
             return List.of();
         }
+        String externalId = String.valueOf(reference.identifier());
 
         ConceptDTO concept = ConceptDTO.builder()
                 .externalId(externalId)
@@ -435,6 +497,80 @@ public class ConceptService {
                     vocabularyDTO.completeUri()));
         }
         return results;
+    }
+
+    @NonNull
+    public Optional<ConceptAutocompleteDetachedDTO> fetchConceptDesignatedBy(@NonNull VocabularyDTO vocabularyDTO, @NonNull String uri) {
+        String externalId = ConceptApiUtils.externalIdFromUri(uri);
+        if (externalId == null) {
+            return Optional.empty();
+        }
+        FullInfoDTO info;
+        try {
+            info = conceptApi.fetchConceptInfoByUri(vocabularyDTO.getBaseUri(), uri);
+        } catch (RuntimeException e) {
+            log.warn("Could not read the concept designated by {} on {}", uri, vocabularyDTO.getBaseUri(), e);
+            return Optional.empty();
+        }
+        if (info == null || info.getPrefLabel() == null || info.getPrefLabel().length == 0) {
+            log.warn("The URL {} designates the concept {}, which the thesaurus did not return", uri, externalId);
+            return Optional.empty();
+        }
+
+        if (externalId.startsWith("ark:")) {
+            // The ark does not encode the thesaurus's canonical numeric id (e.g. ark:/26678/pcrtp9tsh62g34
+            // resolves to 266341 on Pactols), so it must never be saved as external_id : the same concept
+            // designated once by ark and once by idc would then be saved as two different local Concept
+            // rows, and whichever one branch/collection configs point at could be missing the labels and
+            // hierarchy children only imported under the other. ConceptApi#conceptIdOf enforces the same
+            // rule before calling the down-expansion endpoint.
+            if (info.getIdentifier() == null || info.getIdentifier().length == 0) {
+                log.warn("The thesaurus did not return a canonical id for ark {}, refusing to save it as external_id", externalId);
+                return Optional.empty();
+            }
+            externalId = info.getIdentifierStr();
+        }
+
+        ConceptDTO concept = ConceptDTO.builder()
+                .externalId(externalId)
+                .vocabulary(vocabularyDTO)
+                .deleted(false)
+                .build();
+
+        String prefLabel = valueInUserLang(info.getPrefLabel());
+        ConceptLabelDTO labelToDisplay = new ConceptPrefLabelDTO();
+        labelToDisplay.setConcept(concept);
+        labelToDisplay.setVocabulary(vocabularyDTO);
+        labelToDisplay.setLabel(prefLabel);
+
+        return Optional.of(new ConceptAutocompleteDetachedDTO(
+                labelToDisplay,
+                prefLabel,
+                altLabelsOf(info),
+                Objects.requireNonNullElse(valueInUserLang(info.getDefinition()), ""),
+                vocabularyDTO.completeUri()));
+    }
+
+    @Nullable
+    private String valueInUserLang(@Nullable PurlInfoDTO[] values) {
+        if (values == null || values.length == 0) {
+            return null;
+        }
+        UserInfo info = ExecutionContextHolder.get();
+        String lang = Objects.isNull(info) ? null : info.getLang();
+        return Arrays.stream(values)
+                .filter(value -> lang != null && lang.equalsIgnoreCase(value.getLang()))
+                .map(PurlInfoDTO::getValue)
+                .findFirst()
+                .orElseGet(() -> values[0].getValue());
+    }
+
+    @NonNull
+    private List<String> altLabelsOf(@NonNull FullInfoDTO info) {
+        if (info.getAltLabel() == null) {
+            return List.of();
+        }
+        return Arrays.stream(info.getAltLabel()).map(PurlInfoDTO::getValue).toList();
     }
 
     @NonNull

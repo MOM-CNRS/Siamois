@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.vocabulary.VocabularyNotFoundException;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
@@ -24,11 +25,15 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import static fr.siamois.utils.ArkUtils.extractArkOf;
 
 @Slf4j
 @Service
@@ -47,6 +52,18 @@ public class ConceptCollectionService {
      */
     @Transactional
     public ConceptCollection createOrUpdateConceptCollection(@NonNull ConceptCollectionDTO collection) {
+        return createOrUpdateConceptCollection(collection, null);
+    }
+
+    /**
+     * Same as {@link #createOrUpdateConceptCollection(ConceptCollectionDTO)}, reporting the collection's
+     * import progress on {@code progressWrapper} — a large collection resolves hundreds of related-concept
+     * links one HTTP call at a time (see {@link ConceptApiUtils#saveAllConceptsOfBranch}), so this can
+     * take long enough that the caller wants to show a progress bar.
+     *
+     * @param progressWrapper where to report progress, or null when nobody is watching
+     */
+    public ConceptCollection createOrUpdateConceptCollection(@NonNull ConceptCollectionDTO collection, @Nullable ProgressWrapper progressWrapper) {
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(collection.getVocabulary().completeUri());
             Optional<ConceptCollection> opt = conceptCollectionRepository.findByVocabularyAndExternalId(vocabulary, collection.getExternalId());
@@ -59,7 +76,7 @@ public class ConceptCollectionService {
                 savedCollection.setVocabulary(vocabulary);
                 savedCollection = conceptCollectionRepository.save(savedCollection);
             }
-            saveAllThesaurusInfoOfCollection(savedCollection);
+            saveAllThesaurusInfoOfCollection(savedCollection, progressWrapper);
             return savedCollection;
         } catch (InvalidEndpointException e) {
             log.error("Vocabulary could not be found", e);
@@ -67,7 +84,7 @@ public class ConceptCollectionService {
         }
     }
 
-    private void saveAllThesaurusInfoOfCollection(@NonNull ConceptCollection savedCollection) {
+    private void saveAllThesaurusInfoOfCollection(@NonNull ConceptCollection savedCollection, @Nullable ProgressWrapper progressWrapper) {
         ConceptBranchDTO branchDTO;
         try {
             branchDTO = conceptApi.fetchCollectionBranch(savedCollection.getVocabulary(), savedCollection);
@@ -79,7 +96,7 @@ public class ConceptCollectionService {
             return;
         }
         ConceptApiUtils.BranchLoadComponents components = new ConceptApiUtils.BranchLoadComponents(applicationContext);
-        Map<String, Concept> savedConcepts = ConceptApiUtils.saveAllConceptsOfBranch(components, savedCollection.getVocabulary(), branchDTO);
+        Map<String, Concept> savedConcepts = ConceptApiUtils.saveAllConceptsOfBranch(components, savedCollection.getVocabulary(), branchDTO, new HashMap<>(), progressWrapper);
         for (Concept concept : savedConcepts.values()) {
             savedCollection.getConcepts().add(concept);
         }
@@ -107,6 +124,44 @@ public class ConceptCollectionService {
                         labelToDisplay(collection, lang),
                         labelsOf(collection)))
                 .toList();
+    }
+
+    @NonNull
+    public Optional<ConceptCollectionDetachedDTO> fetchCollectionDesignatedBy(@NonNull VocabularyDTO vocabularyDTO, @NonNull String uri) {
+        try {
+            Optional<String> idGroup = groupIdOf(vocabularyDTO, uri);
+            if (idGroup.isEmpty()) {
+                return Optional.empty();
+            }
+            return fetchCollectionsFromRemoteThesaurus(vocabularyDTO).stream()
+                    .filter(collection -> collection.getExternalId().equalsIgnoreCase(idGroup.get()))
+                    .findFirst();
+        } catch (RuntimeException e) {
+            log.warn("Could not read the collection designated by {} on {}", uri, vocabularyDTO.getBaseUri(), e);
+            return Optional.empty();
+        }
+    }
+
+    @NonNull
+    private Optional<String> groupIdOf(@NonNull VocabularyDTO vocabularyDTO, @NonNull String uri) {
+        String idGroup = UriComponentsBuilder.fromUriString(uri).build().getQueryParams().getFirst("idg");
+        if (idGroup != null && !idGroup.isBlank()) {
+            return Optional.of(idGroup);
+        }
+        int arkIndex = uri.indexOf("ark:");
+        if (arkIndex < 0) {
+            return Optional.empty();
+        }
+        return conceptApi.fetchGroupIdOfArk(vocabularyDTO.getBaseUri(), arkOf(uri.substring(arkIndex)));
+    }
+
+    /**
+     * The ark alone : what follows it in the URL — a query string, a fragment — is not part of the
+     * identifier and would be sent to the API as if it were.
+     */
+    @NonNull
+    private static String arkOf(@NonNull String arkAndWhatFollows) {
+        return extractArkOf(arkAndWhatFollows);
     }
 
     /**

@@ -11,6 +11,8 @@ public class PhaseSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
+    public static final String IDENTIFIER_FILTER = "identifier";
+    public static final String ACTION_UNIT_FILTER = "actionUnit";
 
     private PhaseSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -23,18 +25,23 @@ public class PhaseSpec {
 
     @NonNull
     public static Specification<Phase> belongsToActionUnit(long actionUnitId) {
-        return (root, query, cb) -> cb.equal(root.get("actionUnit").get("id"), actionUnitId);
+        return (root, query, cb) -> cb.equal(root.get(ACTION_UNIT_FILTER).get("id"), actionUnitId);
     }
 
     @NonNull
     public static Specification<Phase> identifierContaining(@Nullable String value) {
         return (root, query, cb) -> {
             if (value == null || value.isBlank()) return null;
-            return cb.like(cb.lower(root.get("identifier")), "%" + value.toLowerCase() + "%");
+            return cb.like(cb.lower(root.get(IDENTIFIER_FILTER)), "%" + value.toLowerCase() + "%");
         };
     }
 
     public static Specification<Phase> idIn(Collection<Long> ids) {
         return (root, query, cb) -> root.get("id").in(ids);
+    }
+
+    @NonNull
+    public static Specification<Phase> isInActionUnit(Collection<Long> actionUnitIds) {
+        return (root, query, cb) -> cb.in(root.get(ACTION_UNIT_FILTER).get("id")).value(actionUnitIds);
     }
 }

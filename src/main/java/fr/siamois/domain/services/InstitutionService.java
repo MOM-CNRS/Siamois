@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
@@ -27,6 +28,7 @@ import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +56,7 @@ public class InstitutionService {
     private final PersonProfileAssignmentRepository personProfileAssignmentRepository;
     private final ProfileService profileService;
     private final ProfileMapper profileMapper;
+    private final ObjectProvider<InstitutionService> selfProvider;
 
     /**
      * Finds an institution by its identifier.
@@ -117,6 +120,20 @@ public class InstitutionService {
      * @throws FailedInstitutionSaveException   if there is an error while saving the institution
      */
     public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
+        return selfProvider.getObject().createInstitution(institution, thesaurusUrl, new ProgressWrapper());
+    }
+
+    /**
+     * Creates a new institution, reporting thesaurus configuration progress through the given wrapper.
+     *
+     * @param institution     the institution to create
+     * @param progressWrapper the wrapper to update with the progress of the thesaurus configuration
+     * @return the created institution
+     * @throws InstitutionAlreadyExistException if an institution with the same identifier already exists
+     * @throws FailedInstitutionSaveException   if there is an error while saving the institution
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public InstitutionDTO createInstitution(InstitutionDTO institution, String thesaurusUrl, ProgressWrapper progressWrapper) throws InstitutionAlreadyExistException, FailedInstitutionSaveException, InvalidEndpointException, NotSiamoisThesaurusException {
         Optional<Institution> existing = institutionRepository.findInstitutionByIdentifier(institution.getIdentifier());
         institution.setCreationDate(OffsetDateTime.now(ZoneOffset.UTC));
         if (existing.isPresent())
@@ -130,7 +147,7 @@ public class InstitutionService {
             // Verifier que le thesaurus soit compatible
 
             Institution i = institutionRepository.save(Objects.requireNonNull(institutionMapper.invertConvert(institution)));
-            fieldConfigurationService.setupFieldConfigurationForInstitution(Objects.requireNonNull(institutionMapper.convert(i)), vocabulary);
+            fieldConfigurationService.setupFieldConfigurationForInstitution(Objects.requireNonNull(institutionMapper.convert(i)), vocabulary, progressWrapper);
             InstitutionDTO institutionDTO = institutionMapper.convert(i);
             createInstitutionProfiles(institutionDTO);
             return  institutionDTO;
@@ -275,40 +292,6 @@ public class InstitutionService {
                 .stream()
                 .map(personMapper::convert)
                 .collect(Collectors.toSet());
-    }
-
-    /**
-     * Checks if a person is an institution manager.
-     *
-     * @param person      the person to check
-     * @param institution the institution to check against
-     * @return true if the person is an institution manager, false otherwise
-     */
-    public boolean personIsInstitutionManager(PersonDTO person, InstitutionDTO institution) {
-        return institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId());
-    }
-
-    /**
-     * Checks if a person is an action manager for a given institution.
-     *
-     * @param person      the person to check
-     * @param institution the institution to check against
-     * @return true if the person is an action manager, false otherwise
-     */
-    public boolean personIsActionManager(PersonDTO person, InstitutionDTO institution) {
-        return personProfileAssignmentRepository.personHasProfileWithCodeInInstitution(
-                person.getId(), institution.getId(), ProfileConstants.ORGANIZATION_PROJECT_MANAGER);
-    }
-
-    /**
-     * Checks if a person is either an institution manager or an action manager for a given institution.
-     *
-     * @param person      the person to check
-     * @param institution the institution to check against
-     * @return true if the person is either an institution manager or an action manager, false otherwise
-     */
-    public boolean personIsInstitutionManagerOrActionManager(PersonDTO person, InstitutionDTO institution) {
-        return personIsInstitutionManager(person, institution) || personIsActionManager(person, institution);
     }
 
     /**

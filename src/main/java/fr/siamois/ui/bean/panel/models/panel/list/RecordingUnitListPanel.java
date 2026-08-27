@@ -11,13 +11,16 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
+import fr.siamois.ui.bean.dialog.duplicate.DuplicateStructureDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.BaseRecordingUnitLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
+import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory;
 import fr.siamois.ui.table.viewmodel.RecordingUnitTableViewModel;
 import fr.siamois.utils.MessageUtils;
@@ -49,6 +52,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     private final transient SpatialUnitTreeService spatialUnitTreeService;
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<RecordingUnitDTO> genericNewUnitDialogBean;
+    private final transient DuplicateStructureDialogBean duplicateStructureDialogBean;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
@@ -79,6 +83,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
         this.spatialUnitTreeService = context.getBean(SpatialUnitTreeService.class);
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.duplicateStructureDialogBean = context.getBean(DuplicateStructureDialogBean.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.navBean = context.getBean(NavBean.class);
         this.formContextServices = context.getBean(FormContextServices.class);
@@ -114,7 +119,8 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
                 recordingUnitService,
                                 langBean,
                 formContextServices,
-                effectiveFormResolver
+                effectiveFormResolver,
+                duplicateStructureDialogBean
         );
         tableModel.setParentPanel(this);
 
@@ -171,8 +177,25 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
 
         RecordingUnitTableDefinitionFactory.applyTo(tableModel);
 
-        // no toolbar button in institution context
+        // no toolbar button in institution context — creation requires an Action Unit scope
+        tableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.RECORDING)
+                        .createAllowedSupplier(() -> false)
+                        .unavailableMessageKeySupplier(() -> "recordingunit.toolbar.createRequiresActionUnit")
+                        .unavailableLinkLabelKeySupplier(() -> "common.action.selectProject")
+                        .unavailableLinkAction(this::goToActionUnitList)
+                        .build()
+        );
 
+    }
+
+    private void goToActionUnitList() {
+        try {
+            navBean.goToActionUnitList("FOCUS");
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Override

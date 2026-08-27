@@ -220,6 +220,13 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
     protected abstract void setFormScopePropertyValue(ConceptDTO concept);
 
     /**
+     * Checks if the current user has the permission to edit this unit's fields.
+     * Used to force the form fields into read-only mode when the permission is missing,
+     * so a denied save is never even attempted.
+     */
+    public abstract boolean canUserEditUnit();
+
+    /**
      * In list panels children may override this to provide options.
      */
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
@@ -229,29 +236,47 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
     // -------------------- Form context helpers ------------
 
     /**
-     * Helper for children: once unit + detailsForm are set,
-     * call this to initialize the EntityFormContext.
+     * Pushes the saved entity into every entity-list tab that currently has it cached, and
+     * returns the row-scoped AJAX update targets for every tab whose row is on its currently
+     * displayed page. Tabs that never cached the row (never opened, other page, filtered out)
+     * are left alone — nothing gets re-rendered for them (never falls back to updating the
+     * whole tab table).
      */
-    private void updateEntityListTabsIfPresent(AbstractSingleEntityPanel<?> singlePanel) {
-        if (singlePanel.getTabs() == null) return;
+    private List<String> updateEntityListTabsIfPresent(AbstractSingleEntityPanel<?> singlePanel) {
+        if (singlePanel.getTabs() == null) return List.of();
+        String panelIndex = singlePanel.getPanelIndex();
+        List<String> targets = new ArrayList<>();
         singlePanel.getTabs().stream()
                 .filter(EntityListTab.class::isInstance)
                 .map(t -> (EntityListTab<?>) t)
                 .forEach(t -> {
-                    if (t.getTableModel() != null) t.getTableModel().updateIfPresent(unit);
+                    if (t.getTableModel() == null) return;
+                    t.getTableModel().updateIfPresent(unit);
+                    targets.addAll(t.getRowUpdateTargets(panelIndex, unit.getId()));
                 });
+        return targets;
     }
 
-    private void handlePostSave() {
+    /**
+     * Pushes the current {@link #unit} into whatever row/table is watching it and issues the
+     * matching row-scoped AJAX update. Registered as the form's post-save callback, but also
+     * called directly by header actions that mutate and persist the unit outside the normal
+     * form-save flow (validation toggle, inline identifier edit), which need the exact same
+     * row sync.
+     */
+    protected void handlePostSave() {
         if (isRoot || parentOrOverview == null) return;
         if (parentOrOverview instanceof AbstractListPanel<?> listPanel) {
             listPanel.updateRowInTableModel(unit);
-            PrimeFaces.current().ajax().update(listPanel.getRowUpdateTarget(unit.getId()));
+            List<String> targets = listPanel.getRowUpdateTargets(unit.getId());
+            if (!targets.isEmpty()) {
+                PrimeFaces.current().ajax().update(targets);
+            }
         } else if (parentOrOverview instanceof AbstractSingleEntityPanel<?> singlePanel) {
-            updateEntityListTabsIfPresent(singlePanel);
-            PrimeFaces.current().ajax().update(
-                    "singlePanelUnitForm-" + singlePanel.getPanelIndex() + ":singlePanelUnitTabs"
-            );
+            List<String> targets = updateEntityListTabsIfPresent(singlePanel);
+            if (!targets.isEmpty()) {
+                PrimeFaces.current().ajax().update(targets);
+            }
         }
     }
 

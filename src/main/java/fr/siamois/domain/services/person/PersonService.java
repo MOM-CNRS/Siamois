@@ -186,6 +186,9 @@ public class PersonService {
      * @return The Person list
      */
     public List<Person> findAllAuthorsOfActionUnitByInstitution(InstitutionDTO institution) {
+        if (institution == null) {
+            return List.of();
+        }
         return personRepository.findAllAuthorsOfActionUnitByInstitution(institution.getId());
     }
 

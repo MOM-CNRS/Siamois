@@ -12,7 +12,6 @@ import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.form.FormScopeRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
@@ -43,9 +42,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FormServiceTest {
-
-    @Mock
-    private FormScopeRepository formScopeRepository;
 
     @Mock
     private LabelBean labelBean;
@@ -806,32 +802,12 @@ class FormServiceTest {
 
     @Test
     void constructor_assignsAllFinalFields() {
-        FormService service = new FormService(labelBean, formScopeRepository, unitDefinitionMapper,
+        FormService service = new FormService(labelBean, unitDefinitionMapper,
                 customFieldAnswerService);
 
         assertSame(labelBean, service.getLabelBean());
-        assertSame(formScopeRepository, service.getFormScopeRepository());
         assertSame(unitDefinitionMapper, service.getUnitDefinitionMapper());
         assertSame(customFieldAnswerService, service.getCustomFieldAnswerService());
-    }
-
-    // =====================================================================
-    // findConfiguredRecordingUnitTypesByInstitution
-    // =====================================================================
-
-    @Test
-    void findConfiguredRecordingUnitTypesByInstitution_returnsConfiguredTypes() {
-        Concept concept1 = mock(Concept.class);
-        Concept concept2 = mock(Concept.class);
-        given(formScopeRepository.findConfiguredTypesByInstitution()).willReturn(List.of(concept1, concept2));
-
-        InstitutionDTO institutionDTO = new InstitutionDTO();
-        institutionDTO.setId(1L);
-
-        List<Concept> result = formService.findConfiguredRecordingUnitTypesByInstitution(institutionDTO);
-
-        assertEquals(2, result.size());
-        assertTrue(result.containsAll(List.of(concept1, concept2)));
     }
 
     // =====================================================================

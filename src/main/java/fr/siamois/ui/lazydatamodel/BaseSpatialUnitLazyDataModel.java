@@ -49,6 +49,20 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
     }
 
     @Override
+    public SpatialUnitDTO getRowData(String rowKey) {
+        List<SpatialUnitDTO> units = getWrappedData();
+        Long value = Long.valueOf(rowKey);
+
+        for (SpatialUnitDTO unit : units) {
+            if (unit.getId().equals(value)) {
+                return unit;
+            }
+        }
+
+        return null;
+    }
+
+    @Override
     protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
         if (filterBy == null || filterBy.isEmpty()) {
             return;
@@ -76,6 +90,16 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
             SortMeta categoryMeta = sortBy.get(SpatialUnitSpec.CATEGORY_FILTER);
             if (categoryMeta != null) {
                 sortDTO.add(SpatialUnitSpec.CATEGORY_FILTER, categoryMeta.getOrder());
+            }
+
+            SortMeta actionsCountMeta = sortBy.get(SpatialUnitSpec.ACTIONS_COUNT_SORT);
+            if (actionsCountMeta != null) {
+                sortDTO.add(SpatialUnitSpec.ACTIONS_COUNT_SORT, actionsCountMeta.getOrder());
+            }
+
+            SortMeta recordingUnitCountMeta = sortBy.get(SpatialUnitSpec.RECORDING_UNIT_COUNT_SORT);
+            if (recordingUnitCountMeta != null) {
+                sortDTO.add(SpatialUnitSpec.RECORDING_UNIT_COUNT_SORT, recordingUnitCountMeta.getOrder());
             }
         }
     }

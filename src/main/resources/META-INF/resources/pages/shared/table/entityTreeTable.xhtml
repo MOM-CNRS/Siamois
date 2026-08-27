@@ -31,7 +31,8 @@
                  allowUnsorting="true"
                  sortBy="#{tableModel.lazyDataModel.sortBy}"
                  sortMode="multiple"
-                 partialUpdate="false"
+                 partialUpdate="true"
+                 filterDelay="300"
                  resizableColumns="true"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
                  rowsPerPageTemplate="#{tableModel.rowPerPage()}"
@@ -42,14 +43,15 @@
                  style="overflow-x: auto;"
                  tableStyleClass="datatable-hoverable-table"
                  tableStyle="table-layout: auto;"
+                 styleClass="sia-entity-table"
                  class="#{tableClass}" paginator="true"
               isLeafMethod="#{tableModel.isLeafMethod}"
               loadMethod="#{tableModel.loadMethod}"
                           columnFilteringEnabled="#{tableModel.columnFilteringEnabled}"
                           rowStyleClass="#{tableModel.getRowStyleClass(item)}"
     >
-        <p:ajax event="select" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
-        <p:ajax event="unselect" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="select" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="unselect" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
 
         <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); }" />
         <f:facet name="header">
@@ -71,9 +73,15 @@
 
         <!-- Merged: status | id-chip | row-actions -->
         <p:column styleClass="small-cell" exportable="false" toggleable="false" id="statusIdActionsCol"
-                  style="width: 1%; white-space: nowrap;">
+                  style="width: 1%; white-space: nowrap;"
+                  headerText=""
+                  sortable="#{tableModel.tableDefinition.commandLinkColumn.sortable}"
+                  field="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
+                  sortBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
+                  filterable="#{tableModel.tableDefinition.commandLinkColumn.filterable}"
+                  filterBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}">
 
-            <p:outputPanel id="mergedCell" layout="block">
+            <p:outputPanel id="mergedCell" layout="block" styleClass="siamois-row-ajax-target">
                 <div class="mca-wrapper">
 
                     <!-- Status (left) -->
@@ -149,7 +157,8 @@
                         <ui:repeat value="#{tableModel.rowActions}" var="action" varStatus="status">
                             <p:commandButton
                                     id="btnAction"
-                                    rendered="#{tableModel.isRendered(action, item)}"
+                                    disabled="#{not tableModel.isRendered(action, item)}"
+                                    style="#{tableModel.isRendered(action, item) ? '' : 'visibility:hidden'}"
                                     icon="#{tableModel.resolveIcon(action, item)}"
                                     action="#{tableModel.handleRowAction(action, node)}"
                                     process="#{empty action.processExpr ? '@this' : action.processExpr}"

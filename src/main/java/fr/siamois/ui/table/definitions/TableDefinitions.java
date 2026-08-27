@@ -61,29 +61,31 @@ final class TableDefinitions {
 
     /**
      * The leading chip column: it shows the entity's identifier and opens its panel when clicked.
-     * Neither sortable nor filterable, and never hidden — the row would then have nothing to be
-     * opened by.
+     * Never hidden — the row would then have nothing to be opened by. Sortable and filterable by
+     * that same identifier.
      *
      * @param headerKey  i18n key of the column header
      * @param iconClass  icon shown inside the chip
      * @param chipColor  CSS colour of the chip
      * @param action     what the click opens
+     * @param editable   whether the chip's identifier can be edited inline (pencil icon)
      * @return the link column
      */
     static CommandLinkColumn panelLinkColumn(String headerKey, String iconClass, String chipColor,
-                                             TableColumnAction action) {
+                                             TableColumnAction action, boolean editable) {
         return CommandLinkColumn.builder()
                 .id(IDENTIFIER_COLUMN_ID)
                 .headerKey(headerKey)
                 .visible(true)
                 .toggleable(false)
-                .sortable(false)
-                .filterable(false)
+                .sortable(true)
+                .filterable(true)
                 .sortField(IDENTIFIER)
                 .iconClass(iconClass)
                 .chipColor(chipColor)
                 .valueKey(IDENTIFIER)
                 .action(action)
+                .editable(editable)
                 .processExpr(THIS)
                 .updateExpr(FLOW)
                 .onstartJs(SHOW_CONTENT_JS)

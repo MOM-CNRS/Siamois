@@ -318,18 +318,20 @@
                         </li>
                     </ul>
 
-                    <ul class="nav flex-column">
-                        <li class="nav-header">#{langBean.msg("nav.header.administration")}</li>
-                        <li class="nav-item">
-                            <h:commandLink action="#{navBean.goToUserManagementSettings()}" styleClass="nav-link"
-                                           id="userManagementLink">
-                                <i class="bi bi-shield-lock"/>
-                                <span class="menu-text">#{langBean.msg('nav.userManagement')}</span>
-                                <p:tooltip for="userManagementLink"
-                                           value="#{langBean.msg('nav.userManagement.hint')}"/>
-                            </h:commandLink>
-                        </li>
-                    </ul>
+                    <ui:fragment rendered="#{navBean.administrationVisible}">
+                        <ul class="nav flex-column">
+                            <li class="nav-header">#{langBean.msg("nav.header.administration")}</li>
+                            <li class="nav-item">
+                                <h:commandLink action="#{navBean.goToUserManagementSettings()}" styleClass="nav-link"
+                                               id="userManagementLink">
+                                    <i class="bi bi-shield-lock"/>
+                                    <span class="menu-text">#{langBean.msg('nav.userManagement')}</span>
+                                    <p:tooltip for="userManagementLink"
+                                               value="#{langBean.msg('nav.userManagement.hint')}"/>
+                                </h:commandLink>
+                            </li>
+                        </ul>
+                    </ui:fragment>
 
 
                     <div class="sidebar-footer">

@@ -5,6 +5,7 @@ import fr.siamois.infrastructure.api.dto.ThesaurusDTO;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
@@ -17,6 +18,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static fr.siamois.utils.ArkUtils.extractArkOf;
+
 /**
  * Service to fetch thesaurus information from the API.
  *
@@ -26,10 +29,23 @@ import java.util.Optional;
 @Service
 public class ThesaurusApi {
 
+    private static final String ARK_PREFIX = "ark:";
+    private static final int MAX_ARK_REDIRECTIONS = 10;
+
     private final RestTemplate restTemplate;
 
-    public ThesaurusApi(RequestFactory requestFactory) {
-        this.restTemplate = requestFactory.buildRestTemplate(false);
+    /**
+     * Deliberately does NOT follow redirections: resolving an ark is reading the {@code Location}
+     * header hop by hop, which a following client would consume and hide.
+     */
+    private final RestTemplate arkResolvingTemplate;
+
+    private final ConceptApi conceptApi;
+
+    public ThesaurusApi(RequestFactory requestFactory, ConceptApi conceptApi) {
+        this.restTemplate = requestFactory.buildRestTemplate(true);
+        this.arkResolvingTemplate = requestFactory.buildRestTemplate(false);
+        this.conceptApi = conceptApi;
     }
 
     /**
@@ -58,27 +74,31 @@ public class ThesaurusApi {
      */
     public ThesaurusDTO fetchThesaurusInfo(String uri) throws InvalidEndpointException {
         URI uriObj;
+        uri = uri.strip();
         try {
             uriObj = URI.create(uri);
-            uriObj = findRedirectUriIfArk(uriObj);
         } catch (IllegalArgumentException e) {
             log.error("Invalid URI: {}", uri, e);
             throw new InvalidEndpointException("Invalid URI: " + uri);
         }
+        uriObj = findRedirectUriIfArk(uriObj);
 
         MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUri(uriObj).build().getQueryParams();
         String externalId = queryParams.getFirst("idt");
-        if (externalId == null || externalId.isBlank()) {
-            throw new InvalidEndpointException("Invalid URI: missing idt parameter in " + uriObj);
-        }
 
-        String host = UriComponentsBuilder.fromUri(uriObj)
-                .replaceQuery(null)
-                .fragment(null)
-                .build()
-                .toUriString();
-        if (host.endsWith("/")) {
-            host = host.substring(0, host.length() - 1);
+        String host;
+        if (externalId == null || externalId.isBlank()) {
+            host = apiRootOfArk(uriObj);
+            externalId = thesaurusIdOfArk(host, arkOf(uriObj));
+        } else {
+            host = UriComponentsBuilder.fromUri(uriObj)
+                    .replaceQuery(null)
+                    .fragment(null)
+                    .build()
+                    .toUriString();
+            if (host.endsWith("/")) {
+                host = host.substring(0, host.length() - 1);
+            }
         }
 
         Optional<ThesaurusDTO> result = fetchThesaurusInfo(host, externalId);
@@ -90,17 +110,82 @@ public class ThesaurusApi {
         return result.get();
     }
 
+    public String resolveRedirections(String uri) {
+        try {
+            return findRedirectUriIfArk(URI.create(uri)).toString();
+        } catch (IllegalArgumentException e) {
+            log.warn("Could not read {} as an URI", uri, e);
+            return uri;
+        }
+    }
+
     private URI findRedirectUriIfArk(@NotNull URI uriObj) {
-        // ARK URIs have no query string and redirect to a URL containing idt.
-        // URIs that already expose query params (even without idt) must not hit the network here.
-        if (uriObj.getRawQuery() != null && !uriObj.getRawQuery().isEmpty()) {
-            return uriObj;
+        URI current = uriObj;
+        for (int hop = 0; hop < MAX_ARK_REDIRECTIONS; hop++) {
+            // URIs that already expose query params (even without idt) must not hit the network here.
+            if (current.getRawQuery() != null && !current.getRawQuery().isEmpty()) {
+                return current;
+            }
+            URI next = redirectionOf(current);
+            if (next == null || next.equals(current)) {
+                return current;
+            }
+            current = next;
         }
-        HttpEntity<String> entity = restTemplate.getForEntity(uriObj, String.class);
-        if (entity.getHeaders().getLocation() != null) {
-            return entity.getHeaders().getLocation();
+        log.warn("Stopped following {} after {} redirections", uriObj, MAX_ARK_REDIRECTIONS);
+        return current;
+    }
+
+    @Nullable
+    private URI redirectionOf(@NotNull URI uriObj) {
+        try {
+            HttpEntity<String> entity = arkResolvingTemplate.getForEntity(uriObj, String.class);
+            URI location = entity.getHeaders().getLocation();
+            return location == null ? null : uriObj.resolve(location);
+        } catch (RestClientException | IllegalArgumentException e) {
+            log.warn("Could not follow {} as an ark redirection", uriObj, e);
+            return null;
         }
-        return uriObj;
+    }
+
+    /**
+     * The root of the Opentheso instance hosting an ark URI, i.e. everything before the ark itself,
+     * without the {@code /api} mount arks are published under.
+     */
+    private String apiRootOfArk(@NotNull URI uriObj) throws InvalidEndpointException {
+        String raw = uriObj.toString();
+        int arkIndex = raw.indexOf(ARK_PREFIX);
+        if (arkIndex < 0) {
+            throw new InvalidEndpointException("Invalid URI: missing idt parameter in " + uriObj);
+        }
+        String root = raw.substring(0, arkIndex);
+        while (root.endsWith("/")) {
+            root = root.substring(0, root.length() - 1);
+        }
+        if (root.endsWith("/api")) {
+            root = root.substring(0, root.length() - "/api".length());
+        }
+        return root;
+    }
+
+    /**
+     * The ark alone : what follows it in the URL — a query string, a fragment — is not part of the
+     * identifier and would be sent to the API as if it were.
+     */
+    private String arkOf(@NotNull URI uriObj) {
+        String raw = uriObj.toString();
+        String ark = raw.substring(raw.indexOf(ARK_PREFIX));
+        return extractArkOf(ark);
+    }
+
+    private String thesaurusIdOfArk(String apiRoot, String ark) {
+        return conceptApi.fetchSchemeUriOfArk(apiRoot, ark)
+                .map(ThesaurusApi::lastSegmentOf)
+                .orElseGet(() -> lastSegmentOf(ark));
+    }
+
+    private static String lastSegmentOf(String uri) {
+        return uri.substring(uri.lastIndexOf('/') + 1);
     }
 
     /**

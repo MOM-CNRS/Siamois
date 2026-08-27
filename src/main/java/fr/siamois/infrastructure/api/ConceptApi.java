@@ -25,6 +25,7 @@ import org.springframework.http.*;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -95,7 +96,7 @@ public class ConceptApi {
      * @throws ErrorProcessingExpansionException if there is an error processing the expansion
      */
     public ConceptBranchDTO fetchDownExpansion(Vocabulary vocabulary, String idConcept) throws ErrorProcessingExpansionException {
-        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), idConcept));
+        URI uri = expansionUri(vocabulary, idConcept);
 
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
 
@@ -103,6 +104,24 @@ public class ConceptApi {
         };
 
         return processApiResponse(response, typeReference);
+    }
+
+    private URI expansionUri(Vocabulary vocabulary, String idConcept) throws ErrorProcessingExpansionException {
+        return URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down",
+                vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), conceptIdOf(vocabulary, idConcept)));
+    }
+
+    private String conceptIdOf(Vocabulary vocabulary, String externalId) throws ErrorProcessingExpansionException {
+        if (externalId == null || !externalId.startsWith("ark:")) {
+            return externalId;
+        }
+        FullInfoDTO info = fetchConceptInfoByUri(vocabulary, externalId);
+        if (info == null || info.getIdentifier() == null || info.getIdentifier().length == 0) {
+            throw new ErrorProcessingExpansionException("Could not resolve the concept id of ark " + externalId);
+        }
+        String conceptId = info.getIdentifierStr();
+        log.debug("Ark {} resolved to concept id {}", externalId, conceptId);
+        return conceptId;
     }
 
     private ConceptBranchDTO processApiResponse(ResponseEntity<String> response, TypeReference<Map<String, FullInfoDTO>> typeReference) throws ErrorProcessingExpansionException {
@@ -144,7 +163,7 @@ public class ConceptApi {
         Concept concept = config.getConcept();
         Vocabulary vocabulary = concept.getVocabulary();
         String existingChecksum = config.getExistingHash();
-        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/%s/expansion?way=down", vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(), concept.getExternalId()));
+        URI uri = expansionUri(vocabulary, concept.getExternalId());
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
         String body = response.getBody();
         if (body == null) return null;
@@ -187,19 +206,27 @@ public class ConceptApi {
         return processApiResponse(response, typeReference);
     }
 
-    public List<ConceptRemoteAutocompleteDTO> fetchRemoteAutocomplete(String vocabularyUri, String vocabularyExternalId, String input) {
-        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s/autocomplete/%s?full=true", vocabularyUri, vocabularyExternalId, input));
+    /**
+     * The input is what the user is typing, so it reaches this method with spaces, accents or any
+     * other character illegal in a URI : the path segments are built through
+     * {@link UriComponentsBuilder} and encoded, since {@code URI.create} on a raw input would throw
+     * {@link IllegalArgumentException}. Only the segments are encoded — percent-encoding
+     * {@code vocabularyUri} as a whole would escape its own {@code ://} and {@code /} and leave a
+     * relative URI the {@code RestTemplate} refuses.
+     */
+    public List<ConceptRemoteAutocompleteDTO> fetchRemoteAutocomplete(String vocabularyUri, String vocabularyExternalId, String input, String lang) throws JsonProcessingException {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(vocabularyUri)
+                .pathSegment("openapi", "v1", "concept", vocabularyExternalId, "autocomplete", input)
+                .queryParam("full", "true");
+        if (lang != null && !lang.isBlank()) {
+            builder.queryParam("lang", lang);
+        }
+        URI uri = builder.build().encode().toUri();
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
         String body = response.getBody();
 
         TypeReference<List<ConceptRemoteAutocompleteDTO>> typeReference = new TypeReference<>() {};
-
-        try {
-            return mapper.readValue(body, typeReference);
-        } catch (JsonProcessingException e) {
-            log.error(ERROR_WHILE_PROCESSING_JSON, e);
-            return new ArrayList<>();
-        }
+        return mapper.readValue(body, typeReference);
     }
 
     public List<ConceptApiCollectionDTO> fetchPublicCollections(VocabularyDTO vocabularyDTO) {
@@ -246,7 +273,49 @@ public class ConceptApi {
         }
     }
 
+    public Optional<String> fetchSchemeUriOfArk(String apiRoot, String ark) {
+        URI uri = URI.create(String.format("%s/openapi/v1/concept/%s", apiRoot, ark));
+        try {
+            ResponseEntity<String> response = sendRequestAcceptJson(uri);
+            TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
+            };
+            Map<String, FullInfoDTO> result = mapper.readValue(response.getBody(), typeReference);
+            return result.values().stream()
+                    .map(FullInfoDTO::getInScheme)
+                    .filter(scheme -> scheme != null && scheme.length > 0)
+                    .map(scheme -> scheme[0].getValue())
+                    .filter(Objects::nonNull)
+                    .findFirst();
+        } catch (JsonProcessingException | RestClientException e) {
+            log.error("Could not resolve the scheme of ark {} on {}", ark, apiRoot, e);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<String> fetchGroupIdOfArk(String apiRoot, String ark) {
+        URI uri = URI.create(String.format("%s/openapi/v1/group/%s", apiRoot, ark));
+        try {
+            ResponseEntity<String> response = sendRequestAcceptJson(uri);
+            TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {
+            };
+            Map<String, FullInfoDTO> result = mapper.readValue(response.getBody(), typeReference);
+            return result.values().stream()
+                    .map(FullInfoDTO::getIdentifier)
+                    .filter(identifier -> identifier != null && identifier.length > 0)
+                    .map(identifier -> identifier[0].getValue())
+                    .filter(Objects::nonNull)
+                    .findFirst();
+        } catch (JsonProcessingException | RestClientException e) {
+            log.error("Could not resolve the group of ark {} on {}", ark, apiRoot, e);
+            return Optional.empty();
+        }
+    }
+
     public FullInfoDTO fetchConceptInfoByUri(Vocabulary vocabulary, String uriStr) {
+        return fetchConceptInfoByUri(vocabulary.getBaseUri(), uriStr);
+    }
+
+    public FullInfoDTO fetchConceptInfoByUri(String baseUri, String uriStr) {
         String identifier = "";
         if (uriStr.contains("ark:")) {
             identifier = uriStr.substring(uriStr.indexOf("ark:"));
@@ -254,7 +323,7 @@ public class ConceptApi {
             MultiValueMap<String, String> params = UriComponentsBuilder.fromUriString(uriStr).build().getQueryParams();
             identifier = params.getFirst("idt") + "/" + params.getFirst("idc");
         }
-        URI uri = URI.create(vocabulary.getBaseUri() + String.format("/openapi/v1/concept/%s", identifier));
+        URI uri = URI.create(baseUri + String.format("/openapi/v1/concept/%s", identifier));
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
 
         TypeReference<Map<String, FullInfoDTO>> typeReference = new TypeReference<>() {

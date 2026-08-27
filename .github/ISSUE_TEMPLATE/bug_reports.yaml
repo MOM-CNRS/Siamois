@@ -24,15 +24,6 @@ body:
       required: true
 
   - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior
-      description: Describe what actually happened.
-      placeholder: Explain the observed behavior...
-    validations:
-      required: true
-
-  - type: textarea
     id: reprod
     attributes:
       label: Reproduction steps

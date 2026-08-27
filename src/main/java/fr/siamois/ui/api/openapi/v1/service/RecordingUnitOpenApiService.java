@@ -6,6 +6,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -29,6 +30,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -62,6 +64,7 @@ import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.type.FindDefaultType;
+import fr.siamois.ui.api.openapi.v1.resource.type.FindType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitIdentifierConfig;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
@@ -117,6 +120,7 @@ public class RecordingUnitOpenApiService {
     private final UnitDefinitionMapper unitDefinitionMapper;
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
+    private final TableFieldConfigService tableFieldConfigService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -278,7 +282,7 @@ public class RecordingUnitOpenApiService {
         return null;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ProjectRecordingUnitTypeListResponse buildProjectRecordingUnitTypeSettings(
             String projectKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectKey, accessibleInstitutionIds);
@@ -288,20 +292,22 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
         }
 
-        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(au);
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.UE, null);
         RecordingUnitDefaultType defaultType = buildDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
 
-        List<Concept> configuredTypes = formService.findConfiguredRecordingUnitTypesByInstitution(institution);
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.UE));
         Locale locale = langService.localeForApiLang(lang);
         List<RecordingUnitType> types = configuredTypes.stream()
-                .map(concept -> buildRecordingUnitType(au.getId(), concept, userInfo, locale, identifierConfig))
+                .map(concept -> buildRecordingUnitType(au.getId(), concept, userInfo, locale,
+                        buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.UE, concept.getId())))
                 .toList();
 
         return new ProjectRecordingUnitTypeListResponse(types, defaultType);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ProjectFindTypeListResponse buildProjectFindTypeSettings(
             String projectKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectKey, accessibleInstitutionIds);
@@ -311,30 +317,28 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
         }
 
-        FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
-        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
-        FormResource formBundle = new FormResource(layoutJson);
-
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.MOBILIER, null);
+        FindDefaultType defaultType = buildFindDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
+
+        List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.MOBILIER));
         Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
+        List<FindType> types = configuredTypes.stream()
+                .map(concept -> buildFindType(au.getId(), concept, userInfo, locale,
+                        buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.MOBILIER, concept.getId())))
+                .toList();
 
-        FindDefaultType defaultType = new FindDefaultType();
-        defaultType.setFormBundle(formBundle);
-        defaultType.setFields(fields);
-
-        return new ProjectFindTypeListResponse(List.of(), defaultType);
+        return new ProjectFindTypeListResponse(types, defaultType);
     }
 
-    private RecordingUnitIdentifierConfig buildIdentifierConfig(ActionUnitDTO au) {
+    private RecordingUnitIdentifierConfig buildIdentifierConfig(UserInfo userInfo, Long projectId, ConfigurableTable table, Long typeConceptId) {
+        FormConfig stored = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> tableFieldConfigService.resolveIdentifierConfig(
+                projectId, table, typeConceptId));
         RecordingUnitIdentifierConfig config = new RecordingUnitIdentifierConfig();
-        config.setRecordingUnitIdentifierFormat(au.getRecordingUnitIdentifierFormat());
-        config.setRecordingUnitIdentifierLang(au.getRecordingUnitIdentifierLang());
-        config.setMaxRecordingUnitCode(au.getMaxRecordingUnitCode());
-        config.setMinRecordingUnitCode(au.getMinRecordingUnitCode());
+        config.setIdentifierFormat(stored.getIdentifierFormat());
+        config.setMaxCode(stored.getMaxCode());
+        config.setMinCode(stored.getMinCode());
         return config;
     }
 
@@ -368,6 +372,44 @@ public class RecordingUnitOpenApiService {
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, concept.getId());
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            return buildFieldsMetadataOnly(fieldSource, locale);
+        });
+        type.setFields(fields);
+        return type;
+    }
+
+    private FindDefaultType buildFindDefaultType(Long projectId, InstitutionDTO institution, PersonDTO personDto, String lang,
+                                                 RecordingUnitIdentifierConfig identifierConfig) {
+        FindDefaultType defaultType = new FindDefaultType();
+        defaultType.setIdentifierConfig(identifierConfig);
+
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                    Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER, null);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            return buildFieldsMetadataOnly(fieldSource, locale);
+        });
+        defaultType.setFields(fields);
+        return defaultType;
+    }
+
+    private FindType buildFindType(Long projectId, Concept concept,
+                                   UserInfo userInfo, Locale locale,
+                                   RecordingUnitIdentifierConfig identifierConfig) {
+        ConceptDTO typeDto = conceptMapper.convert(concept);
+        FindType type = new FindType();
+        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setId(String.valueOf(concept.getId()));
+        type.setIdentifierConfig(identifierConfig);
+
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                    Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale);
@@ -432,7 +474,14 @@ public class RecordingUnitOpenApiService {
 
     /**
      * Formulaire de création d'une UE : même résolution que le détail (type + institution), sans entité persistée.
+     *
+     * @deprecated Scopé uniquement par institution (`organizationId`), sans notion de projet — le
+     * formulaire retourné est donc toujours {@link RecordingUnit#NEW_UNIT_FORM} tel quel, sans passer
+     * par {@link fr.siamois.domain.services.form.EffectiveFormResolver}, contrairement aux autres
+     * méthodes de résolution de formulaire de ce service. À remplacer par un formulaire de création
+     * scopé par projet, probablement intégré à {@link #buildProjectRecordingUnitTypeSettings}.
      */
+    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public RecordingUnitCreateFormData buildRecordingUnitCreateForm(long organizationId,
                                                                     long recordingUnitTypeConceptId,
@@ -466,7 +515,14 @@ public class RecordingUnitOpenApiService {
 
     /**
      * Gabarit UI pour création d'un mobilier : layout et métadonnées ({@link Specimen#NEW_UNIT_FORM}, comme le dialog web).
+     *
+     * @deprecated Scopé uniquement par institution (`organizationId`), sans notion de projet — le
+     * formulaire retourné est donc toujours {@link Specimen#NEW_UNIT_FORM} tel quel, sans passer par
+     * {@link fr.siamois.domain.services.form.EffectiveFormResolver}, contrairement aux autres méthodes
+     * de résolution de formulaire de ce service. À remplacer par un formulaire de création scopé par
+     * projet, probablement intégré à {@link #buildProjectFindTypeSettings}.
      */
+    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public FindCreateFormData buildFindCreateForm(long organizationId,
                                                   long findTypeConceptId,
@@ -800,10 +856,7 @@ public class RecordingUnitOpenApiService {
             shell.setSpatialUnit(suOptions.get(0));
         }
         shell.resetFullIdentifier();
-        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) {
-            String fmt = au.getRecordingUnitIdentifierFormat();
-            shell.setFullIdentifier(fmt != null && !fmt.isBlank() ? fmt : "PENDING");
-        }
+        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) shell.setFullIdentifier("PENDING");
         shell.setIdentifier("0");
         return shell;
     }
@@ -818,7 +871,7 @@ public class RecordingUnitOpenApiService {
         String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
         saved.setFullIdentifier(generated);
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-            saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Generated recording-unit identifier already exists");
         }
         try {
             return recordingUnitService.save(saved);
@@ -913,12 +966,9 @@ public class RecordingUnitOpenApiService {
         s.setName(au.getName());
         s.setFullIdentifier(au.getFullIdentifier());
         s.setIdentifier(au.getIdentifier());
-        s.setRecordingUnitIdentifierFormat(au.getRecordingUnitIdentifierFormat());
         s.setType(au.getType());
         s.setBeginDate(au.getBeginDate());
         s.setEndDate(au.getEndDate());
-        s.setMinRecordingUnitCode(au.getMinRecordingUnitCode());
-        s.setMaxRecordingUnitCode(au.getMaxRecordingUnitCode());
         return s;
     }
 

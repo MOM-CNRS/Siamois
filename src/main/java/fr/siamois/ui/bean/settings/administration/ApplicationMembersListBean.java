@@ -1,12 +1,14 @@
 package fr.siamois.ui.bean.settings.administration;
 
 import fr.siamois.domain.models.events.LoginEvent;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ApplicationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
-import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.AbstractMembersListBean;
 import fr.siamois.ui.email.InvitationMailer;
@@ -18,6 +20,7 @@ import org.primefaces.event.SelectEvent;
 import org.primefaces.event.UnselectEvent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -34,7 +37,8 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
 
     private final transient ApplicationMembersServiceInterface applicationMembersService;
     private final SessionSettingsBean sessionSettingsBean;
-    private final transient PersonProfileAssignmentService personProfileAssignmentService;
+    private final transient ProfilePermissionService profilePermissionService;
+    private final RedirectBean redirectBean;
 
     private transient List<ApplicationMemberDTO> members;
     private transient List<ApplicationMemberDTO> refMembers;
@@ -44,17 +48,41 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
     public ApplicationMembersListBean(ApplicationMembersServiceInterface applicationMembersService,
                                       LangBean langBean,
                                       SessionSettingsBean sessionSettingsBean,
-                                      PersonProfileAssignmentService personProfileAssignmentService,
+                                      ProfilePermissionService profilePermissionService,
                                       PendingPersonService pendingPersonService,
-                                      InvitationMailer invitationMailer) {
+                                      InvitationMailer invitationMailer,
+                                      RedirectBean redirectBean) {
         super(pendingPersonService, invitationMailer, langBean);
         this.applicationMembersService = applicationMembersService;
         this.sessionSettingsBean = sessionSettingsBean;
-        this.personProfileAssignmentService = personProfileAssignmentService;
+        this.profilePermissionService = profilePermissionService;
+        this.redirectBean = redirectBean;
+    }
+
+    private boolean isNotSuperAdmin() {
+        return !profilePermissionService.hasInstancePermission(
+                sessionSettingsBean.getAuthenticatedUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS);
+    }
+
+    /**
+     * Guards direct access to the application members page: redirects to a 404 if the user
+     * is not a super admin, so an unauthorized direct URL access can't bypass the controller check.
+     */
+    public void checkAccessOrRedirect() {
+        if (isNotSuperAdmin()) {
+            log.warn("Person {} tried to access the application members list without being a super admin", sessionSettingsBean.getAuthenticatedUser());
+            redirectBean.redirectTo(HttpStatus.NOT_FOUND);
+        }
     }
 
     /** Loads the application's user accounts and resets the search filter. */
     public void init() {
+        if (isNotSuperAdmin()) {
+            refMembers = new ArrayList<>();
+            members = new ArrayList<>();
+            availableProfiles = new ArrayList<>();
+            return;
+        }
         refMembers = new ArrayList<>(applicationMembersService.findMembers());
         members = new ArrayList<>(refMembers);
         availableProfiles = applicationMembersService.findAvailableProfiles();
@@ -107,7 +135,7 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
     /** Assigns the newly checked profile to the given member. */
     public void onProfileSelect(SelectEvent<ProfileDTO> event) {
         ApplicationMemberDTO member = (ApplicationMemberDTO) event.getComponent().getAttributes().get("member");
-        if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
+        if (isNotSuperAdmin()) {
             displayWarnMessage(langBean, "administrationSettings.error.notAdmin");
             return;
         }
@@ -117,7 +145,7 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
     /** Unassigns the newly unchecked profile from the given member. */
     public void onProfileUnselect(UnselectEvent<?> event) {
         ApplicationMemberDTO member = (ApplicationMemberDTO) event.getComponent().getAttributes().get("member");
-        if (personProfileAssignmentService.isNotSuperAdmin(sessionSettingsBean.getAuthenticatedUser())) {
+        if (isNotSuperAdmin()) {
             displayWarnMessage(langBean, "administrationSettings.error.notAdmin");
             return;
         }

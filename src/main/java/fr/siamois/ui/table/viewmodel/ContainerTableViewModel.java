@@ -1,8 +1,10 @@
 package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.container.Container;
-import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -21,6 +23,7 @@ import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
@@ -46,12 +49,13 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     private final BaseContainerLazyDataModel containerLazyDataModel;
     private final FlowBean flowBean;
 
-    private final InstitutionService institutionService;
+    private final ProfilePermissionService profilePermissionService;
 
     private final SessionSettingsBean sessionSettingsBean;
 
     private final ActionUnitService  actionUnitService;
     private final ActionUnitMapper actionUnitMapper;
+    private final ContainerService containerService;
 
 
     public ContainerTableViewModel(BaseContainerLazyDataModel containerLazyDataModel,
@@ -61,8 +65,9 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
                                    SpatialUnitService spatialUnitService,
                                    NavBean navBean,
                                    FlowBean flowBean, GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean,
-                                   InstitutionService institutionService,
-                                   FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
+                                   ProfilePermissionService profilePermissionService,
+                                   FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper,
+                                   ContainerService containerService) {
 
         super(
                 containerLazyDataModel,
@@ -79,9 +84,10 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         this.containerLazyDataModel = containerLazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
-        this.institutionService = institutionService;
+        this.profilePermissionService = profilePermissionService;
         this.actionUnitService = actionUnitService;
         this.actionUnitMapper = actionUnitMapper;
+        this.containerService = containerService;
     }
 
     @Override
@@ -99,7 +105,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
                                      ContainerDTO au) {
 
         if (column.getAction() == GO_TO_CONTAINER) {
-            flowBean.addContainerToOverview(au.getId(), parentPanel, null);
+            flowBean.addContainerToOverview(au.getId(), parentPanel, null, false);
         } else {
             throw new IllegalStateException(
                     "Unhandled action: " + column.getAction()
@@ -127,6 +133,31 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     }
 
     @Override
+    public void handleLinkEdit(CommandLinkColumn column, ContainerDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "container.error.identifier.blank");
+            return;
+        }
+
+        String previous = item.getIdentifier();
+        item.setIdentifier(trimmed);
+
+        if (containerService.identifierAlreadyExistInAction(item)) {
+            item.setIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "container.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            containerService.save(item);
+        } catch (RuntimeException e) {
+            item.setIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.container.updateFailed", item.getIdentifier());
+        }
+    }
+
+    @Override
     public Integer resolveCount(TableColumn column, ContainerDTO au) {
         return 0;
     }
@@ -135,9 +166,8 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     public boolean isRendered(TableColumn column, String key, ContainerDTO au) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
-                    flowBean.getSessionSettings().getUserInfo().getUser(),
-                    flowBean.getSessionSettings().getSelectedInstitution());
+            case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(
+                    flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
             default -> false;
         };
     }
@@ -188,7 +218,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> false;
             case TOGGLE_BOOKMARK -> false;
-            default -> true;
+            default -> canUserEditRow(au);
         };
     }
 
@@ -220,7 +250,10 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
     @Override
     public boolean canUserEditRow(ContainerDTO unit) {
-        return true; // todo: implement permission
+        Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
+        return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
+                PermissionConstants.PROJECT_EDIT_CONTAINERS, PermissionConstants.PROJECT_EDIT_CONTAINERS,
+                c -> c.getActionUnit() != null ? c.getActionUnit().getId() : null, actionUnitId);
     }
 
     @Override

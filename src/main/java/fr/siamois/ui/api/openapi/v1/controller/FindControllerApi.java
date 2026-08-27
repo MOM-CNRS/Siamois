@@ -149,12 +149,27 @@ public class FindControllerApi {
     }
 
 
+    /**
+     * @deprecated Cet endpoint n'est scopé qu'à l'organisation (`organizationId`), sans notion de projet
+     * (action unit) — or c'est au niveau du projet que sont résolues la configuration des champs et le
+     * formulaire effectif par type (voir {@code GET /api/v1/projects/{projectId}/find-types}).
+     * Le formulaire retourné ici est donc toujours le formulaire système statique
+     * ({@link fr.siamois.domain.models.specimen.Specimen#NEW_UNIT_FORM}), identique quel que soit le
+     * type ou l'organisation passés en paramètre. À terme, cet endpoint doit être retiré au profit d'un
+     * formulaire de création scopé par projet, probablement intégré à
+     * {@code GET /api/v1/projects/{projectId}/find-types}.
+     */
+    @Deprecated(forRemoval = true)
     @GetMapping("/form")
     @Operation(
             summary = "Formulaire de création/modification d'un mobilier",
             description = "Retourne le layout et la définition des champs pour un type de mobilier (concept) "
                     + "dans le contexte de l'organisation. Métadonnées UI seules (sans valeurs persistées) ; "
-                    + "pour un mobilier existant avec ses réponses, utiliser GET /api/v1/finds/{id}."
+                    + "pour un mobilier existant avec ses réponses, utiliser GET /api/v1/finds/{id}. "
+                    + "**Déprécié** : non scopé par projet, retourne toujours le formulaire système statique quel que "
+                    + "soit le type demandé — doit être remplacé par un formulaire de création scopé par projet, "
+                    + "probablement intégré à `GET /api/v1/projects/{projectId}/find-types`.",
+            deprecated = true
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),

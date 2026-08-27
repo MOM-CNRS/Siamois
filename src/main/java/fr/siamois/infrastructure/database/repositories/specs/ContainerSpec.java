@@ -5,11 +5,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.util.List;
+
 public class ContainerSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
+    public static final String IDENTIFIER_FILTER = "identifier";
     public static final String ID_FILTER = "id";
+    public static final String ACTION_UNIT_FILTER = "actionUnit";
 
     private ContainerSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -25,7 +29,7 @@ public class ContainerSpec {
         return ((root, query, criteriaBuilder) -> {
             if (name == null || name.isBlank())
                 return null;
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get("identifier")), "%" + name.toLowerCase() + "%");
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get(IDENTIFIER_FILTER)), "%" + name.toLowerCase() + "%");
         });
     }
 
@@ -35,6 +39,11 @@ public class ContainerSpec {
 
     public static Specification<Container> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
+    }
+
+    @NonNull
+    public static Specification<Container> isInActionUnit(List<Long> actionUnitIds) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(ACTION_UNIT_FILTER).get("id")).value(actionUnitIds);
     }
 
 }

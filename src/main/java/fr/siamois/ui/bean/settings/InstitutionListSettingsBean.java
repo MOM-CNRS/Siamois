@@ -12,6 +12,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -28,6 +29,7 @@ import org.primefaces.model.SortOrder;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -59,6 +61,14 @@ public class InstitutionListSettingsBean implements Serializable {
     private Map<Long, Boolean> toggleSwitchState = new HashMap<>();
 
     private String filterText;
+
+    /** Guards direct access to the institution list page: redirects to a 404 if the user cannot view institution data. */
+    public void checkAccessOrRedirect() {
+        if (!profilePermissionService.canViewInstitutionData(
+                sessionSettingsBean.getUserInfo().getUser(), sessionSettingsBean.getSelectedInstitution())) {
+            redirectBean.redirectTo(HttpStatus.NOT_FOUND);
+        }
+    }
 
     public void init() {
         UserInfo info = sessionSettingsBean.getUserInfo();
@@ -106,6 +116,12 @@ public class InstitutionListSettingsBean implements Serializable {
     public boolean userCanCreateInstitution() {
         return profilePermissionService.hasInstancePermission(
                 sessionSettingsBean.getAuthenticatedUser(), PermissionConstants.ORGANIZATION_CREATE);
+    }
+
+    public boolean canAccessInstitutionSettings(InstitutionDTO institution) {
+        PersonDTO person = sessionSettingsBean.getAuthenticatedUser();
+        return profilePermissionService.hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)
+                || profilePermissionService.hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
     }
 
     public boolean hasMoreThenOneInstitution() {
@@ -169,6 +185,12 @@ public class InstitutionListSettingsBean implements Serializable {
     }
 
     public String redirectToInstitution(InstitutionDTO institution) {
+        if (!canAccessInstitutionSettings(institution)) {
+            log.warn("Person {} tried to access settings of institution {} without permission",
+                    sessionSettingsBean.getAuthenticatedUser(), institution.getId());
+            MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");
+            return null;
+        }
         institutionDetailsBean.setInstitution(institution);
         institutionDetailsBean.init();
         return "/pages/settings/institutionSettings.xhtml?faces-redirect=true";

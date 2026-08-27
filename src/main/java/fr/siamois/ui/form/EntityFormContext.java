@@ -738,17 +738,12 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         if (!(rawAnswer instanceof CustomFieldAnswerSelectMultiplePhaseViewModel answer)) {
             return;
         }
-        if (answer.getNewIdentifier() == null || answer.getNewIdentifier().isBlank()) {
-            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
-            return;
-        }
         if (answer.getNewActionUnit() == null) {
             MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "Le projet est obligatoire");
             return;
         }
         try {
             PhaseDTO toSave = new PhaseDTO();
-            toSave.setIdentifier(answer.getNewIdentifier());
             toSave.setTitle(answer.getNewTitle());
             toSave.setOrderNumber(answer.getNewOrderNumber());
             toSave.setActionUnit(answer.getNewActionUnit());
@@ -778,13 +773,9 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         if (!(rawAnswer instanceof CustomFieldAnswerSelectMultipleContainerViewModel answer)) {
             return;
         }
-        if (answer.getNewIdentifier() == null || answer.getNewIdentifier().isBlank()) {
-            MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, "L'identifiant est obligatoire");
-            return;
-        }
         try {
             ContainerDTO toSave = new ContainerDTO();
-            toSave.setIdentifier(answer.getNewIdentifier());
+            toSave.setActionUnit(actionUnitOfCurrentUnit());
             if (answer.getNewType() != null) {
                 toSave.setType(answer.getNewType().getConceptLabelToDisplay().getConcept());
             }
@@ -802,6 +793,20 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         } catch (Exception e) {
             MessageUtils.displayErrorMessage(langBean, DIALOG_UNSAVED_ERROR, e.getMessage());
         }
+    }
+
+    private ActionUnitSummaryDTO actionUnitOfCurrentUnit() {
+        if (unit instanceof ActionUnitDTO actionUnit) return new ActionUnitSummaryDTO(actionUnit);
+        if (unit instanceof RecordingUnitDTO recordingUnit) return recordingUnit.getActionUnit();
+        if (unit instanceof SpecimenDTO specimen) {
+            if (specimen.getActionUnit() != null) return specimen.getActionUnit();
+            if (specimen.getRecordingUnit() == null || specimen.getRecordingUnit().getId() == null) return null;
+            RecordingUnitDTO recordingUnit = recordingUnitService.findById(specimen.getRecordingUnit().getId());
+            return recordingUnit == null ? null : recordingUnit.getActionUnit();
+        }
+        if (unit instanceof ContainerDTO container) return container.getActionUnit();
+        if (unit instanceof PhaseDTO phase) return phase.getActionUnit();
+        return null;
     }
 
     /**

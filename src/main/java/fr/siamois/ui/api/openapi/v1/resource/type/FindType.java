@@ -15,7 +15,7 @@ public class FindType {
     private ResolvedConceptResource concept;
     private String id; // id of the concept for now. Might evolve if we add a type table
     private FormResource formBundle;
-    private FindIdentifierConfig identifierConfig;
+    private RecordingUnitIdentifierConfig identifierConfig;
     @Schema(description = "Champs indexés par identifiant custom_field (chaîne numérique)")
     Map<String, FieldResource> fields;
 }

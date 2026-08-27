@@ -2,12 +2,13 @@ package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -26,6 +27,7 @@ import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
+import fr.siamois.ui.bean.dialog.duplicate.DuplicateStructureDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
@@ -80,6 +82,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
+    private final transient DuplicateStructureDialogBean duplicateStructureDialogBean;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient EffectiveFormResolver effectiveFormResolver;
 
@@ -109,6 +112,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
+        this.duplicateStructureDialogBean = context.getBean(DuplicateStructureDialogBean.class);
         this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.effectiveFormResolver = context.getBean(EffectiveFormResolver.class);
 
@@ -117,6 +121,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     public String entityRessourceUri() {
         return "/recording-unit/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasRecordingUnitWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override
@@ -146,6 +155,11 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void duplicate() {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(sessionSettingsBean.getUserInfo(), unit)) {
+            MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");
+            return;
+        }
+
         RecordingUnitDTO copy = new RecordingUnitDTO(unit);
         copy.setParents(new HashSet<>());
         copy.setAuthor(sessionSettingsBean.getAuthenticatedUser());
@@ -154,8 +168,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         RecordingUnitDTO saved = recordingUnitService.save(copy);
         saved.setFullIdentifier(recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved));
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-            saved.setFullIdentifier(saved.getActionUnit().getRecordingUnitIdentifierFormat());
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            throw new IllegalStateException("Generated recording-unit identifier already exists");
         }
         saved = recordingUnitService.save(saved);
 
@@ -246,6 +260,38 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
         //history = historyAuditService.findAllRevisionForEntity(RecordingUnitDTO.class, unitId);
         documents = unit != null ? documentService.findForRecordingUnit(unit) : List.of();
+    }
+
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getFullIdentifier();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.blank");
+            return false;
+        }
+
+        String previous = unit.getFullIdentifier();
+        unit.setFullIdentifier(trimmed);
+
+        if (recordingUnitService.fullIdentifierAlreadyExistInAction(unit)) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
+            return false;
+        }
+
+        try {
+            recordingUnitService.save(unit);
+            this.titleCodeOrTitle = unit.getFullIdentifier();
+            return true;
+        } catch (FailedRecordingUnitSaveException e) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.recordingUnits.updateFailed", unit.getFullIdentifier());
+            return false;
+        }
     }
 
     @Override
@@ -343,6 +389,12 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 return;
             }
 
+            if (!profilePermissionService.canViewRecordingUnit(sessionSettingsBean.getUserInfo().getUser(), unit)) {
+                log.warn("Person {} tried to access recording unit {} without permission", sessionSettingsBean.getUserInfo().getUser(), unitId);
+                redirectBean.redirectTo(HttpStatus.FORBIDDEN);
+                return;
+            }
+
             ensureTabsInitialized();
 
 
@@ -370,21 +422,21 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
-        flowBean.addRecordingUnitToOverview(id,parentOrOverview, activeTabIndex);
+        flowBean.addRecordingUnitToOverview(id, parentOrOverview, activeTabIndex, false);
     }
 
     @Override
     protected RecordingUnitDTO findNext() {
-        return recordingUnitService.findPreviousByActionUnit(unit.getActionUnit(), unit);
-    }
-
-    @Override
-    protected RecordingUnitDTO findPrevious() {
         return recordingUnitService.findNextByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
-    public void toggleValidate() {
+    protected RecordingUnitDTO findPrevious() {
+        return recordingUnitService.findPreviousByActionUnit(unit.getActionUnit(), unit);
+    }
+
+    @Override
+    protected void doToggleValidate() {
         unit = recordingUnitService.toggleValidated(unit.getId());
     }
 
@@ -417,11 +469,6 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     protected void configureSystemFieldsBeforeInit() {
 
         for (CustomField field : getAllFieldsFrom(detailsForm)) {
-
-            if ("identifier".equals(field.getValueBinding()) && field instanceof CustomFieldInteger cfi) {
-                cfi.setMaxValue(unit.getActionUnit().getMaxRecordingUnitCode());
-                cfi.setMinValue(unit.getActionUnit().getMinRecordingUnitCode());
-            }
 
             if (field instanceof CustomFieldDateTime dt) {
                 if ("openingDate".equals(field.getValueBinding()) && unit.getClosingDate() != null) {
@@ -520,7 +567,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 recordingUnitService,
                 langBean,
                 formContextServices,
-                effectiveFormResolver
+                effectiveFormResolver,
+                duplicateStructureDialogBean
         );
         childTableModel.setParentPanel(this);
         RecordingUnitTableDefinitionFactory.applyTo(childTableModel);
@@ -532,6 +580,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                                         .key("ACTION")
                                         .entityId(unit.getActionUnit().getId())
                                         .build())
+                        .createAllowedSupplier(() -> profilePermissionService.hasProjectPermission(
+                                sessionSettingsBean.getUserInfo(), unit.getActionUnit().getId(), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))
                         .build());
     }
 
@@ -547,6 +597,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                 spatialUnitService,
                 navBean,
                 flowBean,
+                specimenService,
+                profilePermissionService,
                 (GenericNewUnitDialogBean<SpecimenDTO>) genericNewUnitDialogBean,
                 formContextServices
         );
@@ -563,6 +615,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
                                         .entityId(unit.getId())
                                         .build()
                         )
+                        .createAllowedSupplier(() -> unit.getActionUnit() != null && profilePermissionService.hasProjectPermission(
+                                sessionSettingsBean.getUserInfo(), unit.getActionUnit().getId(), PermissionConstants.PROJECT_EDIT_FINDS))
                         .build()
         );
     }

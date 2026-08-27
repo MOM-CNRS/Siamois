@@ -9,13 +9,9 @@ import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
-import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,34 +37,6 @@ public class OrganizationRecordingUnitsControllerApi {
     private final ProjectApiService projectApiService;
 
 
-    @GetMapping("/{id}/recording-units/{recordingUnitFullIdentifier}")
-    @Operation(summary = "Récupérer une unité d'enregistrement d'une organisation par son identifiant métier")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "RecordingUnit trouvée"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
-            @ApiResponse(responseCode = "404", description = "RecordingUnit non trouvée"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    @Tag(name = OpenApiTags.RECORDING_UNIT)
-    public ResponseEntity<RecordingUnitResponse> getRecordingUnitByFullIdentifier(
-            @PathVariable Long id,
-            @Parameter(
-                    description = "Compteurs optionnels à inclure (seul 'specimen' est supporté).",
-                    schema = @Schema(type = "array", allowableValues = {"specimen"}),
-                    in = ParameterIn.QUERY
-            )
-            @RequestParam(required = false) List<String> counts,
-            @PathVariable String recordingUnitFullIdentifier) {
-
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        projectApiService.assertOrganizationInCallerScope(id, caller.accessibleInstitutionIds());
-
-        RecordingUnitDTO recordingUnit = recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(
-                recordingUnitFullIdentifier, id, counts);
-
-        return ResponseEntity.ok(new RecordingUnitResponse(recordingUnitResourceMapper.convert(recordingUnit)));
-    }
-
     @GetMapping("/{id}/recording-units")
     @Operation(summary = "Liste paginée des unités d'enregistrement d'une institution")
     @ApiResponses(value = {
@@ -89,7 +57,7 @@ public class OrganizationRecordingUnitsControllerApi {
         int pageNumber = limit > 0 ? offset / limit : 0;
         Pageable pageable = PageRequest.of(pageNumber, limit);
 
-        Page<RecordingUnitDTO> page = recordingUnitService.searchRecordingUnit(institution, new FilterDTO(), pageable);
+        Page<RecordingUnitDTO> page = recordingUnitService.searchRecordingUnit(institution, new FilterDTO(), pageable, false);
 
         List<RecordingUnitResource> resources = page.getContent().stream()
                 .map(recordingUnitResourceMapper::convert)

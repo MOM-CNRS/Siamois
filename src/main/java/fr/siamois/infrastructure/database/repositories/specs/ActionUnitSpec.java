@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -17,11 +18,14 @@ public class ActionUnitSpec {
 
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
+    public static final String FULL_IDENTIFIER_FILTER = "fullIdentifier";
     public static final String ID_FILTER = "id";
     public static final String SPATIAL_UNIT_FILTER = "mainLocation";
     public static final String CREATED_BY_INSTITUTION = "createdByInstitution";
     public static final String SCOPE = "scope";
     public static final String CODE = "code";
+    /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByRecordingUnitCount(Sort.Direction)}. */
+    public static final String RECORDING_UNIT_COUNT_SORT = "recordingUnitCount";
 
     private ActionUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -38,6 +42,15 @@ public class ActionUnitSpec {
             if (name == null || name.isBlank())
                 return null;
             return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+        });
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> fullIdentifierContaining(@Nullable String value) {
+        return ((root, query, criteriaBuilder) -> {
+            if (value == null || value.isBlank())
+                return null;
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get(FULL_IDENTIFIER_FILTER)), "%" + value.toLowerCase() + "%");
         });
     }
 
@@ -75,7 +88,7 @@ public class ActionUnitSpec {
             return cb.or(
                     cb.like(cb.lower(root.get("name")), pattern),
                     cb.like(cb.lower(cb.coalesce(root.get("identifier"), "")), pattern),
-                    cb.like(cb.lower(cb.coalesce(root.get("fullIdentifier"), "")), pattern)
+                    cb.like(cb.lower(cb.coalesce(root.get(FULL_IDENTIFIER_FILTER), "")), pattern)
             );
         };
     }
@@ -121,6 +134,23 @@ public class ActionUnitSpec {
     @NonNull
     public static Specification<ActionUnit> isInSpatialUnit(List<Long> ids) {
         return (root, query, cb) -> cb.in(root.get(SPATIAL_UNIT_FILTER).get("id")).value(ids);
+    }
+
+    /**
+     * Orders by the number of recording units attached to the action unit, via
+     * {@code cb.size(...)} on the mapped {@code recordingUnitList} collection — no subquery needed.
+     * Not a real filtering predicate: returns a neutral conjunction, the ordering is applied as a
+     * side effect on {@code query}. Callers must strip this synthetic sort key from the
+     * {@code Pageable}/{@code Sort} passed to the repository, since {@code recordingUnitCount} is
+     * not a real JPA-mapped path.
+     */
+    @NonNull
+    public static Specification<ActionUnit> orderByRecordingUnitCount(Sort.Direction direction) {
+        return (root, query, cb) -> {
+            var countExpr = cb.size(root.get("recordingUnitList"));
+            query.orderBy(direction == Sort.Direction.ASC ? cb.asc(countExpr) : cb.desc(countExpr));
+            return cb.conjunction();
+        };
     }
 
 }

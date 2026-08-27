@@ -5,9 +5,8 @@ import lombok.Data;
 @Data
 public class RecordingUnitIdentifierConfig {
 
-    private String recordingUnitIdentifierFormat;
-    private String recordingUnitIdentifierLang;
-    private Integer maxRecordingUnitCode;
-    private Integer minRecordingUnitCode;
+    private String identifierFormat;
+    private int minCode;
+    private int maxCode;
 
 }

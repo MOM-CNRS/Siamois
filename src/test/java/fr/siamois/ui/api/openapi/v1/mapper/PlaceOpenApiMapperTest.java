@@ -57,6 +57,16 @@ class PlaceOpenApiMapperTest {
     }
 
     @Test
+    void toResource_exposesPlaceNumber() {
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setPlaceNumber(42);
+
+        PlaceResource resource = mapper.toResource(dto, "fr");
+
+        assertThat(resource.getPlaceNumber()).isEqualTo(42);
+    }
+
+    @Test
     void toResource_withCategory_mapsTypeRelationship() {
         ConceptDTO category = new ConceptDTO();
         category.setId(3L);

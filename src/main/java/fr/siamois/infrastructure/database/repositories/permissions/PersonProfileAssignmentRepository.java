@@ -8,6 +8,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -54,6 +55,25 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
     boolean personHasPermissionInActionUnit(@Param("personId") Long personId,
                                             @Param("actionUnitId") Long actionUnitId,
                                             @Param("permissionCode") String permissionCode);
+
+    /**
+     * Bulk version of {@link #personHasPermissionInActionUnit} : which of the given action units the
+     * person holds the permission on, in one query instead of one per action unit — used to compute a
+     * whole table page's row-level edit permission (e.g. {@code canUserEditRow}) without an N+1.
+     */
+    @Query("""
+            SELECT DISTINCT prof.actionUnit.id
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            JOIN prof.permissions perm
+            WHERE a.person.id = :personId
+              AND prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.PROJECT
+              AND prof.actionUnit.id IN :actionUnitIds
+              AND perm.code = :permissionCode
+            """)
+    Set<Long> findActionUnitIdsWithPermission(@Param("personId") Long personId,
+                                              @Param("actionUnitIds") Collection<Long> actionUnitIds,
+                                              @Param("permissionCode") String permissionCode);
 
     @Query("""
             SELECT COUNT(a) > 0

@@ -122,14 +122,50 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     protected SpatialUnit spatialUnit;
 
 
+    /**
+     * Business equality: a recording unit is identified by its full identifier <em>within its
+     * action unit</em>. The identifier alone is not unique — two action units can each hold a
+     * "US 1" — so both halves of the natural key are required.
+     * <p>
+     * Accessors (not fields) are used throughout so Hibernate proxies compare correctly, and
+     * {@code instanceof} rather than {@code getClass()} equality so a proxy can equal its entity.
+     * When the natural key is not fully populated — a unit that has not been assigned its real
+     * identifier yet — equality falls back to the surrogate id, and transient instances with
+     * neither are equal only to themselves.
+     */
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (!(o instanceof RecordingUnitParent that)) return false;
-        return Objects.equals(fullIdentifier, that.fullIdentifier);
+
+        String thisFullIdentifier = getFullIdentifier();
+        String thatFullIdentifier = that.getFullIdentifier();
+        Long thisActionUnitId = getActionUnit() == null ? null : getActionUnit().getId();
+        Long thatActionUnitId = that.getActionUnit() == null ? null : that.getActionUnit().getId();
+
+        if (thisFullIdentifier != null && thatFullIdentifier != null
+                && thisActionUnitId != null && thatActionUnitId != null) {
+            return thisFullIdentifier.equals(thatFullIdentifier)
+                    && thisActionUnitId.equals(thatActionUnitId);
+        }
+
+        return getId() != null && Objects.equals(getId(), that.getId());
     }
 
+    /**
+     * Deliberately constant, and deliberately NOT derived from the natural key.
+     * <p>
+     * {@code fullIdentifier} is mutable: a created or duplicated unit is first saved with a
+     * temporary placeholder and only afterwards has its real identifier generated and written back
+     * in place (see {@code RecordingUnitService#generateFullIdentifier}). By then the entity may
+     * already sit in a {@code HashSet} — {@code parents}/{@code children} are exactly that — and a
+     * hash that changes under a live element strands it in the wrong bucket, which is what broke
+     * structure duplication. A constant keeps every instance in one bucket, so mutation stays safe
+     * and {@code equals} alone decides identity. It also keeps a Hibernate proxy and its entity in
+     * the same bucket, which {@code getClass().hashCode()} would not.
+     */
     @Override
     public int hashCode() {
-        return Objects.hashCode(fullIdentifier);
+        return RecordingUnitParent.class.hashCode();
     }
 }

@@ -3,6 +3,7 @@ package fr.siamois.domain.services.settings.tableconfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.models.vocabulary.Concept;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +38,18 @@ public interface TableFieldConfigService {
     List<TypeSummary> listTypes(Long projectId, ConfigurableTable table);
 
     /**
+     * Lists the {@link fr.siamois.domain.models.vocabulary.Concept}s a table is configured for —
+     * the concept-keyed equivalent of {@link #listTypes(Long, ConfigurableTable)}, minus the
+     * {@code _default} entry (which has no concept of its own).
+     *
+     * @param projectId the project (action unit) these types are scoped to
+     * @param table     the table whose configured types are listed
+     * @return the concepts every type explicitly configured through
+     * {@link #addConfiguration(Long, ConfigurableTable, String)} resolves to
+     */
+    List<Concept> listConfiguredTypeConcepts(Long projectId, ConfigurableTable table);
+
+    /**
      * Lists the values of the table's type field that could still be given a configuration, i.e.
      * the values of its vocabulary minus the ones already configured. Meant to back the type picker
      * of the "add a configuration" action.
@@ -60,7 +73,7 @@ public interface TableFieldConfigService {
     TypeSummary addConfiguration(Long projectId, ConfigurableTable table, String typeName);
 
     /**
-     * Reads the general (non-field) configuration of a type.
+     * Reads the general (non-field) configuration of a type, including effective identifier values.
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
@@ -78,6 +91,12 @@ public interface TableFieldConfigService {
      *                  which type it applies to
      */
     void saveFormConfig(Long projectId, ConfigurableTable table, TypeFormConfig config);
+
+    /**
+     * Resolves the persisted identifier configuration for a type. An unconfigured type inherits
+     * the project's default row, which is materialized with table defaults when necessary.
+     */
+    FormConfig resolveIdentifierConfig(Long projectId, ConfigurableTable table, Long typeConceptId);
 
     /**
      * Reads the system and additional fields configured for a type. System fields come in the order

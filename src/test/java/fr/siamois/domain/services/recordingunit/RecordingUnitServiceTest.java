@@ -1,30 +1,36 @@
 package fr.siamois.domain.services.recordingunit;
 
 import fr.siamois.domain.models.ArkEntity;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
-import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdInfoRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
@@ -33,6 +39,7 @@ import fr.siamois.mapper.RecordingUnitMapper;
 import fr.siamois.mapper.RecordingUnitSummaryMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,12 +48,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.*;
@@ -77,9 +84,6 @@ class RecordingUnitServiceTest {
     private PersonRepository personRepository;
     
     @Mock
-    private ApplicationContext applicationContext;
-
-    @Mock
     private ConversionService conversionService;
 
     @Mock
@@ -101,16 +105,104 @@ class RecordingUnitServiceTest {
     private PhaseMapper phaseMapper;
 
     @Mock
-    private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
-
-    @Mock
-    private RecordingUnitIdInfoRepository recordingUnitIdInfoRepository;
-
-    @Mock
     private CustomFieldAnswerService customFieldAnswerService;
+
+    @Mock
+    private EntityIdentifierGenerator entityIdentifierGenerator;
+
+    @Mock
+    private ProfilePermissionService profilePermissionService;
+
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
 
     @InjectMocks
     private RecordingUnitService recordingUnitService;
+
+    @BeforeEach
+    void setUpExecutionContext() {
+        ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
+        lenient().when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        // @InjectMocks uses constructor injection here, which skips leftover fields like the
+        // @PersistenceContext EntityManager - wire it explicitly so save() can call it.
+        org.springframework.test.util.ReflectionTestUtils.setField(recordingUnitService, "entityManager", entityManager);
+    }
+
+    @AfterEach
+    void clearExecutionContext() {
+        ExecutionContextHolder.clear();
+    }
+
+    @Test
+    void generateFullIdentifier_usesDeterministicContextAndUpdatesRecordingUnit() {
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(5L);
+        actionUnit.setFullIdentifier("UA-5");
+
+        RecordingUnit firstParent = new RecordingUnit();
+        firstParent.setId(3L);
+        firstParent.setIdentifier(30);
+        firstParent.setFullIdentifier("RU-30");
+        RecordingUnit secondParent = new RecordingUnit();
+        secondParent.setId(9L);
+        secondParent.setIdentifier(90);
+        secondParent.setFullIdentifier("RU-90");
+
+        SpatialUnit spatialUnit = new SpatialUnit();
+        spatialUnit.setPlaceNumber(7);
+        Concept type = new Concept();
+        type.setId(42L);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(100L);
+        recordingUnit.setType(type);
+        recordingUnit.setSpatialUnit(spatialUnit);
+        recordingUnit.setParents(new HashSet<>(List.of(secondParent, firstParent)));
+
+        when(entityIdentifierGenerator.generateIdentifierIfRequired(eq(recordingUnit), any())).thenAnswer(invocation -> {
+            IdentifierGenerationSpec<RecordingUnit> spec = invocation.getArgument(1);
+            GeneratedIdentifier generated = new GeneratedIdentifier(12, "UA-5-RU-30-007-012");
+            spec.numberSetter().accept(recordingUnit, generated.number());
+            spec.identifierSetter().accept(recordingUnit, generated.value());
+            return Optional.of(generated);
+        });
+
+        String result = recordingUnitService.generateFullIdentifier(actionUnit, recordingUnit);
+
+        assertThat(result).isEqualTo("UA-5-RU-30-007-012");
+        assertThat(recordingUnit.getIdentifier()).isEqualTo(12);
+        assertThat(recordingUnit.getFullIdentifier()).isEqualTo(result);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<IdentifierGenerationSpec<RecordingUnit>> specCaptor =
+                ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(entityIdentifierGenerator).generateIdentifierIfRequired(eq(recordingUnit), specCaptor.capture());
+        IdentifierGenerationSpec<RecordingUnit> spec = specCaptor.getValue();
+        assertThat(spec.table()).isEqualTo(ConfigurableTable.UE);
+        assertThat(spec.generationRequired().test(recordingUnit)).isTrue();
+        assertThat(spec.actionUnit().apply(recordingUnit)).isSameAs(actionUnit);
+        assertThat(spec.typeId().apply(recordingUnit)).isEqualTo(42L);
+        assertThat(spec.displayValues().get("NUM_PARENT").apply(recordingUnit)).isEqualTo(30);
+        assertThat(spec.displayValues().get("ID_PARENT").apply(recordingUnit)).isEqualTo("RU-30");
+        assertThat(spec.displayValues().get("NUM_USPATIAL").apply(recordingUnit)).isEqualTo(7);
+        assertThat(spec.displayValues().get("ID_UA").apply(recordingUnit)).isEqualTo("UA-5");
+        assertThat(spec.partitionValues().get("PARENT_RU").apply(recordingUnit)).isEqualTo(3L);
+        assertThat(spec.partitionValues().get("SPATIAL_PLACE").apply(recordingUnit)).isEqualTo(7);
+
+        RecordingUnit missingRelations = new RecordingUnit();
+        assertThat(spec.typeId().apply(missingRelations)).isNull();
+        assertThat(spec.displayValues().get("NUM_PARENT").apply(missingRelations)).isNull();
+        assertThat(spec.displayValues().get("ID_PARENT").apply(missingRelations)).isNull();
+        assertThat(spec.displayValues().get("NUM_USPATIAL").apply(missingRelations)).isNull();
+        assertThat(spec.partitionValues().get("PARENT_RU").apply(missingRelations)).isNull();
+        assertThat(spec.partitionValues().get("SPATIAL_PLACE").apply(missingRelations)).isNull();
+
+        RecordingUnit conflicting = new RecordingUnit();
+        conflicting.setId(101L);
+        when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("RU-CONFLICT", 5L))
+                .thenReturn(List.of(conflicting));
+        assertThat(spec.identifierAlreadyUsed().test(recordingUnit, "RU-CONFLICT")).isTrue();
+    }
 
     @Test
     void findWithoutArk() {
@@ -125,6 +217,22 @@ class RecordingUnitServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         verify(recordingUnitRepository, times(1)).findAllWithoutArkOfInstitution(institution.getId());
+    }
+
+    @Test
+    void findById_hydratesSpecimenCount() {
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(7L);
+        RecordingUnitDTO dto = new RecordingUnitDTO();
+        dto.setId(7L);
+
+        when(recordingUnitRepository.findById(7L)).thenReturn(Optional.of(recordingUnit));
+        when(recordingUnitMapper.convert(recordingUnit)).thenReturn(dto);
+        when(recordingUnitRepository.countSpecimensByRecordingUnitId(7L)).thenReturn(3L);
+
+        RecordingUnitDTO result = recordingUnitService.findById(7L);
+
+        assertEquals(3L, result.getSpecimenCount());
     }
 
     @Test
@@ -149,6 +257,26 @@ class RecordingUnitServiceTest {
         RecordingUnit savedEntity = entityCaptor.getValue();
         assertNotNull(savedEntity);
 
+    }
+
+    @Test
+    void save_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> recordingUnitService.save(new RecordingUnitDTO()));
+
+        verify(recordingUnitRepository, never()).save(any(RecordingUnit.class));
+    }
+
+    @Test
+    void save_throwsForbidden_whenPermissionDenied() {
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> recordingUnitService.save(new RecordingUnitDTO()));
+
+        verify(recordingUnitRepository, never()).save(any(RecordingUnit.class));
     }
 
     @Test
@@ -397,6 +525,26 @@ class RecordingUnitServiceTest {
     }
 
     @Test
+    void save_withAbstractEntityDTO_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> recordingUnitService.save((AbstractEntityDTO) new RecordingUnitDTO()));
+
+        verify(recordingUnitRepository, never()).save(any(RecordingUnit.class));
+    }
+
+    @Test
+    void save_withAbstractEntityDTO_throwsForbidden_whenPermissionDenied() {
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(false);
+
+        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> recordingUnitService.save((AbstractEntityDTO) new RecordingUnitDTO()));
+
+        verify(recordingUnitRepository, never()).save(any(RecordingUnit.class));
+    }
+
+    @Test
     void save_throughPublicDtoMethod_correctlyAssemblesAndSavesEntity() {
         // Ce test cible la logique de la méthode privée save(RecordingUnit)
         // en passant par son wrapper public. Il vérifie que l'entité est correctement
@@ -603,23 +751,6 @@ class RecordingUnitServiceTest {
         assertTrue(managed.getRelationshipsAsUnit1().isEmpty());
     }
 
-    @Mock
-    private RuIdentifierResolver identifierResolver;
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void findAllIdentifierResolver_ShouldReturnCachedResolversIfNotEmpty() {
-        // Arrange
-        doReturn(identifierResolver).when(applicationContext).getBean(any(Class.class));
-
-        when(identifierResolver.getCode()).thenReturn("TEST_CODE");
-
-        // Act
-        Map<String, RuIdentifierResolver> resolversAgain = recordingUnitService.findAllIdentifierResolver();
-
-        assertThat(resolversAgain).hasSize(1);
-    }
-
     @Test
     void findAllByActionUnit_shouldReturnAllAU() {
         ActionUnit a1 = new ActionUnit();
@@ -672,118 +803,6 @@ class RecordingUnitServiceTest {
 
         assertThat(dtos).hasSize(2);
     }
-
-    @Test
-    void findByFullIdentifierAndInstitutionId_shouldReturnRecordingUnit_whenFound() {
-        // Arrange
-        String fullIdentifier = "RU-001";
-        Long institutionId = 1L;
-        RecordingUnit expectedRecordingUnit = new RecordingUnit();
-        expectedRecordingUnit.setId(10L);
-        expectedRecordingUnit.setFullIdentifier(fullIdentifier);
-
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
-                .thenReturn(Optional.of(expectedRecordingUnit));
-
-        // Act
-        RecordingUnit result = recordingUnitService.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
-
-        // Assert
-        assertThat(result).isEqualTo(expectedRecordingUnit);
-        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
-    }
-
-    @Test
-    void findByFullIdentifierAndInstitutionId_shouldThrowException_whenNotFound() {
-        // Arrange
-        String fullIdentifier = "RU-001";
-        Long institutionId = 1L;
-
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
-                .thenReturn(Optional.empty());
-
-        // Act & Assert
-        RecordingUnitNotFoundException exception = assertThrows(RecordingUnitNotFoundException.class, () ->
-                recordingUnitService.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId)
-        );
-        assertThat(exception.getMessage()).contains("RecordingUnit not found with fullIdentifier=RU-001 and institutionIdentifier=1");
-        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
-    }
-
-    @Test
-    void findByFullIdentifierAndInstitutionIdDTO_shouldReturnRecordingUnitDTO_whenFoundWithoutSpecimenCount() {
-        // Arrange
-        String fullIdentifier = "RU-001";
-        Long institutionId = 1L;
-        RecordingUnit recordingUnit = new RecordingUnit();
-        recordingUnit.setId(10L);
-        recordingUnit.setFullIdentifier(fullIdentifier);
-        RecordingUnitDTO expectedDto = new RecordingUnitDTO();
-        expectedDto.setId(10L);
-        expectedDto.setFullIdentifier(fullIdentifier);
-
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
-                .thenReturn(Optional.of(recordingUnit));
-        when(recordingUnitMapper.convert(recordingUnit)).thenReturn(expectedDto);
-
-        // Act
-        RecordingUnitDTO result = recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(fullIdentifier, institutionId, null);
-
-        // Assert
-        assertThat(result).isEqualTo(expectedDto);
-        assertThat(result.getSpecimenCount()).isNull();
-        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
-        verify(recordingUnitMapper, times(1)).convert(recordingUnit);
-        verify(recordingUnitRepository, never()).countSpecimensByRecordingUnitId(anyLong());
-    }
-
-    @Test
-    void findByFullIdentifierAndInstitutionIdDTO_shouldReturnRecordingUnitDTO_whenFoundWithSpecimenCount() {
-        // Arrange
-        String fullIdentifier = "RU-001";
-        Long institutionId = 1L;
-        Long specimenCount = 5L;
-        RecordingUnit recordingUnit = new RecordingUnit();
-        recordingUnit.setId(10L);
-        recordingUnit.setFullIdentifier(fullIdentifier);
-        RecordingUnitDTO expectedDto = new RecordingUnitDTO();
-        expectedDto.setId(10L);
-        expectedDto.setFullIdentifier(fullIdentifier);
-
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
-                .thenReturn(Optional.of(recordingUnit));
-        when(recordingUnitMapper.convert(recordingUnit)).thenReturn(expectedDto);
-        when(recordingUnitRepository.countSpecimensByRecordingUnitId(recordingUnit.getId())).thenReturn(specimenCount);
-
-        // Act
-        RecordingUnitDTO result = recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(fullIdentifier, institutionId, List.of("specimen"));
-
-        // Assert
-        assertThat(result).isEqualTo(expectedDto);
-        assertThat(result.getSpecimenCount()).isEqualTo(specimenCount);
-        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
-        verify(recordingUnitMapper, times(1)).convert(recordingUnit);
-        verify(recordingUnitRepository, times(1)).countSpecimensByRecordingUnitId(recordingUnit.getId());
-    }
-
-    @Test
-    void findByFullIdentifierAndInstitutionIdDTO_shouldThrowException_whenNotFound() {
-        // Arrange
-        String fullIdentifier = "RU-001";
-        Long institutionId = 1L;
-
-        when(recordingUnitRepository.findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId))
-                .thenReturn(Optional.empty());
-
-        // Act & Assert
-        RecordingUnitNotFoundException exception = assertThrows(RecordingUnitNotFoundException.class, () ->
-                recordingUnitService.findByFullIdentifierAndInstitutionIdDTO(fullIdentifier, institutionId, null)
-        );
-        assertThat(exception.getMessage()).contains("RecordingUnit not found with fullIdentifier=RU-001 and institutionId=1");
-        verify(recordingUnitRepository, times(1)).findByFullIdentifierAndInstitutionId(fullIdentifier, institutionId);
-        verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
-    }
-
 
     // =====================================================================
     // autocompleteInActionUnit / searchRecordingUnitInRecordingUnit /
@@ -1292,6 +1311,32 @@ class RecordingUnitServiceTest {
         }
 
         @Test
+        void deleteRecordingUnitById_throwsForbidden_whenNoExecutionContext() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
+            ExecutionContextHolder.clear();
+
+            assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(1L));
+
+            verify(recordingUnitRepository, never()).delete(any(RecordingUnit.class));
+        }
+
+        @Test
+        void deleteRecordingUnitById_throwsForbidden_whenPermissionDenied() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
+            when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+
+            assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                    () -> recordingUnitService.deleteRecordingUnitById(1L));
+
+            verify(recordingUnitRepository, never()).delete(any(RecordingUnit.class));
+        }
+
+        @Test
         void deleteRecordingUnitById_hasSpecimens_throwsIllegalState() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(1L);
@@ -1343,7 +1388,6 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
             when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(rel));
-            when(recordingUnitIdInfoRepository.existsById(1L)).thenReturn(true);
             when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(1L);
@@ -1354,8 +1398,6 @@ class RecordingUnitServiceTest {
             verify(stratigraphicRelationshipRepository).deleteAll(List.of(rel));
             verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(1L);
             verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(1L);
-            verify(recordingUnitIdCounterRepository).deleteAllByRecordingUnitId(1L);
-            verify(recordingUnitIdInfoRepository).deleteById(1L);
             verify(recordingUnitRepository).delete(ru);
             verify(arkRepository).deleteById(99L);
         }
@@ -1369,13 +1411,11 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findById(5L)).thenReturn(Optional.of(ru));
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(5L)).thenReturn(0L);
             when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(5L)).thenReturn(List.of());
-            when(recordingUnitIdInfoRepository.existsById(5L)).thenReturn(false);
             when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(5L);
 
             verify(stratigraphicRelationshipRepository, never()).deleteAll(anyList());
-            verify(recordingUnitIdInfoRepository, never()).deleteById(any());
             verify(arkRepository, never()).deleteById(any());
             verify(recordingUnitRepository).delete(ru);
         }
@@ -1977,7 +2017,7 @@ class RecordingUnitServiceTest {
     class SearchAndCountFamilyTests {
 
         @Test
-        void searchRecordingUnit_populatesParentsChildrenAndPhases() {
+        void searchRecordingUnit_populatesParentsChildrenAndPhases_batchedNotPerRow() {
             InstitutionDTO institution = new InstitutionDTO();
             institution.setId(1L);
             FilterDTO filters = new FilterDTO(false);
@@ -2002,9 +2042,15 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
                     .thenReturn(new PageImpl<>(List.of(ru)));
             when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
-            when(recordingUnitRepository.findParentsOf(7L)).thenReturn(Set.of(parent));
-            when(recordingUnitRepository.findChildrensOf(7L)).thenReturn(List.of(child));
-            when(phaseRepository.findByRecordingUnitId(7L)).thenReturn(Set.of(phase));
+            when(recordingUnitRepository.findParentEdges(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 8L}));
+            when(recordingUnitRepository.findChildEdges(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 9L}));
+            when(phaseRepository.findPhaseEdges(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 11L}));
+            when(recordingUnitRepository.findAllById(List.of(8L))).thenReturn(List.of(parent));
+            when(recordingUnitRepository.findAllById(List.of(9L))).thenReturn(List.of(child));
+            when(phaseRepository.findAllById(List.of(11L))).thenReturn(List.of(phase));
 
             RecordingUnitSummaryDTO parentSummary = new RecordingUnitSummaryDTO();
             parentSummary.setId(8L);
@@ -2013,6 +2059,10 @@ class RecordingUnitServiceTest {
             when(recordingUnitSummaryMapper.convert(parent)).thenReturn(parentSummary);
             when(recordingUnitSummaryMapper.convert(child)).thenReturn(childSummary);
             when(phaseMapper.convert(phase)).thenReturn(phaseDto);
+            when(recordingUnitRepository.countSpecimensByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 4L}));
+            when(recordingUnitRepository.countRelationshipsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 6L}));
 
             Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable);
 
@@ -2021,6 +2071,129 @@ class RecordingUnitServiceTest {
             assertEquals(Set.of(parentSummary), dto.getParents());
             assertEquals(Set.of(childSummary), dto.getChildren());
             assertEquals(Set.of(phaseDto), dto.getPhases());
+            assertEquals(4L, dto.getSpecimenCount());
+            assertEquals(6L, dto.getRelationshipCount());
+            verify(recordingUnitRepository, never()).findParentsOf(any());
+            verify(recordingUnitRepository, never()).findChildrensOf(any());
+            verify(phaseRepository, never()).findByRecordingUnitId(any());
+        }
+
+        @Test
+        void searchRecordingUnit_withSpecimenCountSort_stripsSortFromPageable() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable sortedPageable = PageRequest.of(0, 10,
+                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
+                            fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec.SPECIMEN_COUNT_SORT));
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            org.mockito.ArgumentCaptor<Pageable> pageableCaptor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            when(recordingUnitRepository.findAll(any(Specification.class), pageableCaptor.capture()))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+
+            recordingUnitService.searchRecordingUnit(institution, filters, sortedPageable, false);
+
+            assertTrue(pageableCaptor.getValue().getSort().isUnsorted());
+        }
+
+        @Test
+        void searchRecordingUnit_withRelationshipCountSort_stripsSortFromPageable() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable sortedPageable = PageRequest.of(0, 10,
+                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC,
+                            fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec.RELATIONSHIP_COUNT_SORT));
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            org.mockito.ArgumentCaptor<Pageable> pageableCaptor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            when(recordingUnitRepository.findAll(any(Specification.class), pageableCaptor.capture()))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+
+            recordingUnitService.searchRecordingUnit(institution, filters, sortedPageable, false);
+
+            assertTrue(pageableCaptor.getValue().getSort().isUnsorted());
+        }
+
+        @Test
+        void searchRecordingUnit_countsOnly_populatesCountsNotFullCollections() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable pageable = PageRequest.of(0, 10);
+
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+            when(recordingUnitRepository.countParentsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 2L}));
+            when(recordingUnitRepository.countChildrenByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 3L}));
+            when(recordingUnitRepository.countSpecimensByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 4L}));
+            when(recordingUnitRepository.countRelationshipsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 6L}));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable, false);
+
+            RecordingUnitDTO dto = result.getContent().get(0);
+            assertEquals(2, dto.getParentsCount());
+            assertEquals(3, dto.getChildrenCount());
+            assertEquals(4L, dto.getSpecimenCount());
+            assertEquals(6L, dto.getRelationshipCount());
+            assertNull(dto.getParents());
+            assertNull(dto.getChildren());
+            assertNull(dto.getPhases());
+            verify(recordingUnitRepository, never()).findParentEdges(any());
+            verify(recordingUnitRepository, never()).findChildEdges(any());
+            verify(phaseRepository, never()).findPhaseEdges(any());
+        }
+
+        @Test
+        void findByActionUnitId_batchesCountsInsteadOfPerRowEnrichment() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(7L);
+            RecordingUnitDTO ruDto = new RecordingUnitDTO();
+            ruDto.setId(7L);
+
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitMapper.toLightDto(ru)).thenReturn(ruDto);
+            when(recordingUnitRepository.countParentsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 1L}));
+            when(recordingUnitRepository.countChildrenByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 0L}));
+            when(recordingUnitRepository.countSpecimensByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 5L}));
+            when(recordingUnitRepository.countRelationshipsByIds(List.of(7L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 2L}));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findByActionUnitId(20L, 10, 0, Sort.unsorted());
+
+            RecordingUnitDTO dto = result.getContent().get(0);
+            assertEquals(1, dto.getParentsCount());
+            assertEquals(0, dto.getChildrenCount());
+            assertEquals(5L, dto.getSpecimenCount());
+            assertEquals(2L, dto.getRelationshipCount());
+            verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
+            verify(recordingUnitRepository, never()).countSpecimensByRecordingUnitId(any());
+            verify(recordingUnitRepository, never()).countStratigraphicRelationshipsByRecordingUnitId(any());
         }
 
         @Test
@@ -2274,6 +2447,134 @@ class RecordingUnitServiceTest {
 
             assertEquals(Set.of(parentSummary), dto.getParents());
             assertEquals(Set.of(childSummary), dto.getChildren());
+        }
+    }
+
+    @Nested
+    class DuplicateStructureTests {
+
+        private RecordingUnitService spyService;
+        private ActionUnitSummaryDTO actionUnit;
+
+        @BeforeEach
+        void setUp() {
+            spyService = spy(recordingUnitService);
+            actionUnit = new ActionUnitSummaryDTO();
+            actionUnit.setId(1L);
+
+            java.util.concurrent.atomic.AtomicLong idSeq = new java.util.concurrent.atomic.AtomicLong(100);
+            lenient().doAnswer(invocation -> {
+                RecordingUnitDTO dto = invocation.getArgument(0);
+                if (dto.getId() == null) {
+                    dto.setId(idSeq.incrementAndGet());
+                }
+                return dto;
+            }).when(spyService).save(any(RecordingUnitDTO.class));
+
+            lenient().doAnswer(invocation -> "ID-" + invocation.<RecordingUnitDTO>getArgument(1).getId())
+                    .when(spyService).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
+
+            lenient().doReturn(false).when(spyService).fullIdentifierAlreadyExistInAction(any());
+
+            // Mockito's spy() copies field values by reference from the wrapped instance, but that
+            // copy has proven unreliable for this @PersistenceContext field under a full test-suite
+            // run (passes in isolation, null when run alongside the rest of the suite) — set it
+            // explicitly on the spy to remove any doubt.
+            org.springframework.test.util.ReflectionTestUtils.setField(spyService, "entityManager", entityManager);
+            // Production code routes self-calls (save/generateFullIdentifier/...) through the
+            // Spring-proxied "self" field so @CacheEvict etc. still apply; point it back at the spy
+            // itself so the stubbing above is actually exercised.
+            org.springframework.test.util.ReflectionTestUtils.setField(spyService, "self", spyService);
+        }
+
+        private RecordingUnitDTO unit(long id) {
+            RecordingUnitDTO dto = new RecordingUnitDTO();
+            dto.setId(id);
+            dto.setActionUnit(actionUnit);
+            dto.setFullIdentifier("RU-" + id);
+            return dto;
+        }
+
+        @Test
+        void duplicateStructure_createsCountCopiesPerLevel_attachedOnlyToDuplicatedParent() {
+            RecordingUnitDTO root = unit(10L);
+            RecordingUnitDTO child = unit(20L);
+
+            doReturn(List.of(child)).when(spyService).findAllByParentRecordingUnit(10L);
+            doReturn(List.of()).when(spyService).findAllByParentRecordingUnit(20L);
+
+            RecordingUnitStructureDuplicationResult result = spyService.duplicateStructure(root, Set.of(20L), 2);
+
+            assertThat(result.rootCopies()).hasSize(2);
+            assertThat(result.allCreated()).hasSize(4);
+
+            List<RecordingUnitDTO> childCopies = result.allCreated().stream()
+                    .filter(dto -> !result.rootCopies().contains(dto))
+                    .toList();
+            assertThat(childCopies).hasSize(2);
+
+            for (int i = 0; i < childCopies.size(); i++) {
+                Set<Long> parentIds = childCopies.get(i).getParents().stream()
+                        .map(RecordingUnitSummaryDTO::getId)
+                        .collect(java.util.stream.Collectors.toSet());
+                assertThat(parentIds).containsExactly(result.rootCopies().get(i).getId());
+            }
+
+            // The original hierarchy is walked once regardless of how many copies are requested.
+            verify(spyService, times(1)).findAllByParentRecordingUnit(10L);
+            verify(spyService, times(1)).findAllByParentRecordingUnit(20L);
+        }
+
+        @Test
+        void duplicateStructure_unselectedDescendant_isNotDuplicated() {
+            RecordingUnitDTO root = unit(10L);
+            RecordingUnitDTO child = unit(20L);
+
+            doReturn(List.of(child)).when(spyService).findAllByParentRecordingUnit(10L);
+
+            RecordingUnitStructureDuplicationResult result = spyService.duplicateStructure(root, Set.of(), 3);
+
+            assertThat(result.rootCopies()).hasSize(3);
+            assertThat(result.allCreated()).hasSize(3);
+            verify(spyService, never()).findAllByParentRecordingUnit(20L);
+        }
+
+        @Test
+        void duplicateStructure_defaultsCountToAtLeastOne() {
+            RecordingUnitDTO root = unit(10L);
+            doReturn(List.of()).when(spyService).findAllByParentRecordingUnit(10L);
+
+            RecordingUnitStructureDuplicationResult result = spyService.duplicateStructure(root, Set.of(), 0);
+
+            assertThat(result.rootCopies()).hasSize(1);
+        }
+
+        @Test
+        void duplicateStructure_identifierCollision_throwsWithIdentifier() {
+            RecordingUnitDTO root = unit(10L);
+            doReturn(true).when(spyService).fullIdentifierAlreadyExistInAction(any());
+
+            RecordingUnitIdentifierAlreadyExistsException ex = assertThrows(
+                    RecordingUnitIdentifierAlreadyExistsException.class,
+                    () -> spyService.duplicateStructure(root, Set.of(), 1));
+
+            assertThat(ex.getIdentifier()).isEqualTo("ID-101");
+        }
+
+        @Test
+        void duplicateStructure_rootNotPersisted_throwsIllegalArgument() {
+            RecordingUnitDTO root = new RecordingUnitDTO();
+            assertThrows(IllegalArgumentException.class,
+                    () -> spyService.duplicateStructure(root, Set.of(), 1));
+        }
+
+        @Test
+        void duplicateStructure_permissionDenied_throwsForbidden() {
+            RecordingUnitDTO root = unit(10L);
+            when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+
+            assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                    () -> spyService.duplicateStructure(root, Set.of(), 1));
         }
     }
 }

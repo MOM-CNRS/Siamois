@@ -84,6 +84,43 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected transient InfoRevisionEntity lastRevisionInfo;
 
+    // Inline identifier editing (panel header chip)
+    protected boolean editingIdentifier;
+    protected String editingIdentifierValue;
+
+    /**
+     * The unit's current identifying value (whichever field the header chip shows —
+     * {@code fullIdentifier}, {@code name}, ...), read when entering edit mode.
+     */
+    protected abstract String currentIdentifierValue();
+
+    /**
+     * Validates and persists {@code trimmed} as the unit's new identifying value.
+     * Implementations own their own messaging (blank/duplicate/save-failure) via
+     * {@link fr.siamois.utils.MessageUtils} and must revert the field on failure.
+     *
+     * @return true if the edit was applied and the edit UI should close
+     */
+    protected abstract boolean persistIdentifierEdit(String trimmed);
+
+    public void startEditIdentifier() {
+        this.editingIdentifierValue = currentIdentifierValue();
+        this.editingIdentifier = true;
+    }
+
+    public void cancelEditIdentifier() {
+        this.editingIdentifier = false;
+        this.editingIdentifierValue = null;
+    }
+
+    public void applyEditIdentifier() {
+        String trimmed = editingIdentifierValue == null ? "" : editingIdentifierValue.trim();
+        if (persistIdentifierEdit(trimmed)) {
+            cancelEditIdentifier();
+            handlePostSave();
+        }
+    }
+
     public abstract void refreshUnit();
 
     public void refresh() {
@@ -173,7 +210,16 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     protected static final String COLUMN_CLASS_NAME = "ui-g-12 ui-md-6 ui-lg-4";
 
-    public abstract void toggleValidate();
+    /**
+     * Toggles the unit's validation status and syncs the row wherever it's currently shown
+     * (main list panel, entity-list tab), same as a regular field save.
+     */
+    public final void toggleValidate() {
+        doToggleValidate();
+        handlePostSave();
+    }
+
+    protected abstract void doToggleValidate();
 
     /*
         Find unit by its ID

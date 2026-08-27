@@ -32,6 +32,9 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Query("SELECT r.id as id, COUNT(s) as cnt FROM RecordingUnit r LEFT JOIN r.specimenList s WHERE r.id IN :ids GROUP BY r.id")
     List<Object[]> countSpecimensByIds(@Param("ids") List<Long> ids);
 
+    @Query("SELECT r.spatialUnit.id as id, COUNT(r) as cnt FROM RecordingUnit r WHERE r.spatialUnit.id IN :ids GROUP BY r.spatialUnit.id")
+    List<Object[]> countBySpatialUnitIds(@Param("ids") List<Long> ids);
+
     @Query(value = """
         SELECT ru_id, COUNT(*) FROM (
             SELECT fk_recording_unit_1_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_1_id IN (:ids)
@@ -40,6 +43,44 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
         ) sub GROUP BY ru_id
         """, nativeQuery = true)
     List<Object[]> countRelationshipsByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * Parent/child edges of a whole page of units in a single query, for in-memory grouping — avoids
+     * one {@link #findParentsOf} call per row.
+     */
+    @Query(value = """
+        SELECT h.fk_child_id AS owner_id, h.fk_parent_id AS related_id
+        FROM recording_unit_hierarchy h
+        WHERE h.fk_child_id IN (:childIds)
+        """, nativeQuery = true)
+    List<Object[]> findParentEdges(@Param("childIds") Collection<Long> childIds);
+
+    /**
+     * Parent/child edges of a whole page of units in a single query, for in-memory grouping — avoids
+     * one {@link #findChildrensOf} call per row.
+     */
+    @Query(value = """
+        SELECT h.fk_parent_id AS owner_id, h.fk_child_id AS related_id
+        FROM recording_unit_hierarchy h
+        WHERE h.fk_parent_id IN (:parentIds)
+        """, nativeQuery = true)
+    List<Object[]> findChildEdges(@Param("parentIds") Collection<Long> parentIds);
+
+    @Query(value = """
+        SELECT h.fk_child_id, COUNT(*)
+        FROM recording_unit_hierarchy h
+        WHERE h.fk_child_id IN (:ids)
+        GROUP BY h.fk_child_id
+        """, nativeQuery = true)
+    List<Object[]> countParentsByIds(@Param("ids") Collection<Long> ids);
+
+    @Query(value = """
+        SELECT h.fk_parent_id, COUNT(*)
+        FROM recording_unit_hierarchy h
+        WHERE h.fk_parent_id IN (:ids)
+        GROUP BY h.fk_parent_id
+        """, nativeQuery = true)
+    List<Object[]> countChildrenByIds(@Param("ids") Collection<Long> ids);
 
     @Query(
             value = "UPDATE recording_unit SET fk_type = :type WHERE recording_unit.recording_unit_id IN (:ids)",
@@ -115,19 +156,6 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     Optional<RecordingUnit> findByFullIdentifierAndInstitutionIdentifier(
             @Param("fullIdentifier") String fullIdentifier,
             @Param("institutionIdentifier") String institutionIdentifier
-    );
-
-    @Query(
-            value = "SELECT ru.* " +
-                    "FROM recording_unit ru " +
-                    "JOIN institution i ON ru.fk_institution_id = i.institution_id " +
-                    "WHERE ru.full_identifier = :fullIdentifier " +
-                    "AND i.institution_id = :institutionId",
-            nativeQuery = true
-    )
-    Optional<RecordingUnit> findByFullIdentifierAndInstitutionId(
-            @Param("fullIdentifier") String fullIdentifier,
-            @Param("institutionId") Long institutionId
     );
 
     Optional<RecordingUnit> findByFullIdentifier(@NonNull String fullIdentifier);

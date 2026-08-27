@@ -16,6 +16,11 @@ public class ActionTab extends EntityListTab<ActionUnitDTO> {
         return "/panel/tab/actionTab.xhtml";
     }
 
+    @Override
+    protected String getTableCompositeId() {
+        return "actionList";
+    }
+
 
 
 

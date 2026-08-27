@@ -1,6 +1,10 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 
@@ -20,6 +24,10 @@ public class RecordingUnitSpec {
     public static final String TYPE_FILTER = "type";
     public static final String ID_FILTER = "id";
     public static final String PARENTS_FILTER = "parents";
+    /** Synthetic sort key: not a real JPA path, resolved via {@link #orderBySpecimenCount(Sort.Direction)}. */
+    public static final String SPECIMEN_COUNT_SORT = "specimenCount";
+    /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByRelationshipCount(Sort.Direction)}. */
+    public static final String RELATIONSHIP_COUNT_SORT = "relationshipCount";
 
 
     private RecordingUnitSpec() {
@@ -37,8 +45,49 @@ public class RecordingUnitSpec {
                 OPENING_DATE_FILTER,
                 CLOSING_DATE_FILTER,
                 CONTRIBUTORS_FILTER,
-                TYPE_FILTER
+                TYPE_FILTER,
+                SPECIMEN_COUNT_SORT,
+                RELATIONSHIP_COUNT_SORT
         );
+    }
+
+    /**
+     * Orders by the number of specimens attached to the recording unit, via {@code cb.size(...)}
+     * on the mapped {@code specimenList} collection — no subquery needed. Not a real filtering
+     * predicate: returns a neutral conjunction, the ordering is applied as a side effect on
+     * {@code query}. Callers must strip this synthetic sort key from the {@code Pageable}/{@code Sort}
+     * passed to the repository, since {@code specimenCount} is not a real JPA-mapped path.
+     */
+    @NonNull
+    public static Specification<RecordingUnit> orderBySpecimenCount(Sort.Direction direction) {
+        return (root, query, cb) -> {
+            var countExpr = cb.size(root.get("specimenList"));
+            query.orderBy(direction == Sort.Direction.ASC ? cb.asc(countExpr) : cb.desc(countExpr));
+            return cb.conjunction();
+        };
+    }
+
+    /**
+     * Orders by the number of stratigraphic relationships involving the recording unit, as either
+     * {@code unit1} or {@code unit2} — unlike {@link #orderBySpecimenCount(Sort.Direction)}, there is
+     * no single mapped collection for this relation (two FK columns matched with OR), so a genuine
+     * correlated {@link Subquery} with {@code COUNT} is required. Same caveats otherwise: neutral
+     * conjunction predicate, ordering applied as a side effect, synthetic sort key must be stripped
+     * from the {@code Pageable}/{@code Sort} passed to the repository.
+     */
+    @NonNull
+    public static Specification<RecordingUnit> orderByRelationshipCount(Sort.Direction direction) {
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<StratigraphicRelationship> rel = subquery.from(StratigraphicRelationship.class);
+            subquery.select(cb.count(rel));
+            subquery.where(cb.or(
+                    cb.equal(rel.get("unit1"), root),
+                    cb.equal(rel.get("unit2"), root)
+            ));
+            query.orderBy(direction == Sort.Direction.ASC ? cb.asc(subquery) : cb.desc(subquery));
+            return cb.conjunction();
+        };
     }
 
     @NonNull

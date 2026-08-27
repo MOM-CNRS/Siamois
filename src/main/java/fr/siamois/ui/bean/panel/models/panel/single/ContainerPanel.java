@@ -8,8 +8,10 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -19,6 +21,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -51,6 +54,7 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
     private final transient RedirectBean redirectBean;
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient LabelService labelService;
+    private final transient ProfilePermissionService profilePermissionService;
 
     @Override
     protected boolean documentExistsInUnitByHash(ContainerDTO unit, String hash) {
@@ -71,10 +75,16 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
         this.redirectBean = context.getBean(RedirectBean.class);
         this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
         this.labelService = context.getBean(LabelService.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     public String entityRessourceUri() {
         return "/container/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasContainerWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override
@@ -101,6 +111,38 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
         }
 
         documents = List.of();
+    }
+
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getIdentifier();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "container.error.identifier.blank");
+            return false;
+        }
+
+        String previous = unit.getIdentifier();
+        unit.setIdentifier(trimmed);
+
+        if (containerService.identifierAlreadyExistInAction(unit)) {
+            unit.setIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "container.error.identifier.alreadyExists");
+            return false;
+        }
+
+        try {
+            containerService.save(unit);
+            this.titleCodeOrTitle = unit.getIdentifier();
+            return true;
+        } catch (RuntimeException e) {
+            unit.setIdentifier(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.container.updateFailed", unit.getIdentifier());
+            return false;
+        }
     }
 
     @Override
@@ -137,26 +179,21 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
-        flowBean.addContainerToOverview(id, parentOrOverview, activeTabIndex);
+        flowBean.addContainerToOverview(id, parentOrOverview, activeTabIndex, false);
     }
 
     @Override
     protected ContainerDTO findNext() {
-        return unit;
+        return containerService.findNextByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
     protected ContainerDTO findPrevious() {
-        return unit;
+        return containerService.findPreviousByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
-    public boolean hasPreviousNext() {
-        return false;
-    }
-
-    @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         // not yet supported for containers
     }
 
@@ -169,6 +206,10 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
     public List<MenuModel> getAllParentBreadcrumbModels() {
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());
+        if (unit != null && unit.getActionUnit() != null) {
+            ActionUnitDTO actionUnit = actionUnitService.findById(unit.getActionUnit().getId());
+            breadcrumbModel.getElements().add(createUnitItem(actionUnit));
+        }
         breadcrumbModel.getElements().add(createRootTypeItem());
         return List.of(breadcrumbModel);
     }

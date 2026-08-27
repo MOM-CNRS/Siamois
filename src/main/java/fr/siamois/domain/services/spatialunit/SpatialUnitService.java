@@ -47,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service to manage SpatialUnit
@@ -95,7 +96,20 @@ public class SpatialUnitService implements ArkEntityService {
         SpatialUnit spatialUnit = spatialUnitRepository.findById(id)
                 .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + id));
         Hibernate.initialize(spatialUnit);
-        return spatialUnitMapper.convert(spatialUnit);
+        SpatialUnitDTO dto = spatialUnitMapper.convert(spatialUnit);
+        hydrateRecordingUnitCounts(List.of(dto), List.of(id));
+        return dto;
+    }
+
+    private void hydrateRecordingUnitCounts(List<SpatialUnitDTO> rows, List<Long> ids) {
+        Map<Long, Long> recordingUnitCount = recordingUnitRepository.countBySpatialUnitIds(ids).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).longValue()));
+
+        for (SpatialUnitDTO dto : rows) {
+            dto.setRecordingUnitCount(recordingUnitCount.getOrDefault(dto.getId(), 0L));
+        }
     }
 
 
@@ -452,8 +466,7 @@ public class SpatialUnitService implements ArkEntityService {
      */
     public SpatialUnitDTO findNextByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
         return spatialUnitRepository
-                .findFirstByCreatedByInstitutionIdAndCreationTimeAfterOrderByCreationTimeAsc(
-                        institution.getId(), current.getCreationTime())
+                .findNext(institution.getId(), current.getCreationTime(), current.getId())
                 .map(spatialUnitMapper::convert)
                 .orElseGet(() -> spatialUnitRepository
                         .findFirstByCreatedByInstitutionIdOrderByCreationTimeAsc(institution.getId())
@@ -472,8 +485,7 @@ public class SpatialUnitService implements ArkEntityService {
      */
     public SpatialUnitDTO findPreviousByInstitution(InstitutionDTO institution, SpatialUnitDTO current) {
         return spatialUnitRepository
-                .findFirstByCreatedByInstitutionIdAndCreationTimeBeforeOrderByCreationTimeDesc(
-                        institution.getId(), current.getCreationTime())
+                .findPrevious(institution.getId(), current.getCreationTime(), current.getId())
                 .map(spatialUnitMapper::convert)
                 .orElseGet(() -> spatialUnitRepository
                         .findFirstByCreatedByInstitutionIdOrderByCreationTimeDesc(institution.getId())
@@ -547,9 +559,54 @@ public class SpatialUnitService implements ArkEntityService {
 
     public Page<SpatialUnitDTO> searchSpatialUnits(InstitutionDTO institutionDTO, FilterDTO filterDTO, Pageable pageable) {
         Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
-        Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, pageable);
+        specs = applyCountSort(specs, pageable.getSort());
+        Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, stripCountSort(pageable));
         log.trace("Found {} SpatialUnits", result.getTotalElements());
-        return result.map(spatialUnitMapper::convert);
+        Page<SpatialUnitDTO> page = result.map(spatialUnitMapper::convert);
+        hydrateRecordingUnitCountsForPage(page);
+        return page;
+    }
+
+    private void hydrateRecordingUnitCountsForPage(Page<SpatialUnitDTO> page) {
+        List<Long> ids = page.getContent().stream()
+                .map(SpatialUnitDTO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!ids.isEmpty()) {
+            hydrateRecordingUnitCounts(page.getContent(), ids);
+        }
+    }
+
+    /**
+     * Composes a count-based ordering {@link Specification} when the requested sort targets a
+     * synthetic (non-JPA-path) count key, e.g. {@link SpatialUnitSpec#ACTIONS_COUNT_SORT} or
+     * {@link SpatialUnitSpec#RECORDING_UNIT_COUNT_SORT}.
+     */
+    private Specification<SpatialUnit> applyCountSort(Specification<SpatialUnit> specs, Sort sort) {
+        for (Sort.Order order : sort) {
+            if (SpatialUnitSpec.ACTIONS_COUNT_SORT.equals(order.getProperty())) {
+                return specs.and(SpatialUnitSpec.orderByActionsCount(order.getDirection()));
+            }
+            if (SpatialUnitSpec.RECORDING_UNIT_COUNT_SORT.equals(order.getProperty())) {
+                return specs.and(SpatialUnitSpec.orderByRecordingUnitCount(order.getDirection()));
+            }
+        }
+        return specs;
+    }
+
+    /**
+     * Strips synthetic count sort keys from the {@link Pageable} passed to the repository, since
+     * they are not real JPA-mapped paths (the ordering is applied via {@link #applyCountSort} as a
+     * {@link Specification} side effect instead).
+     */
+    private Pageable stripCountSort(Pageable pageable) {
+        boolean hasCountSort = pageable.getSort().stream()
+                .anyMatch(order -> SpatialUnitSpec.ACTIONS_COUNT_SORT.equals(order.getProperty())
+                        || SpatialUnitSpec.RECORDING_UNIT_COUNT_SORT.equals(order.getProperty()));
+        if (!hasCountSort) {
+            return pageable;
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
     }
 
     public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
@@ -564,7 +621,9 @@ public class SpatialUnitService implements ArkEntityService {
         specs = specs.and(SpatialUnitSpec.spatialUnitInSpatialUnit(spatialUnitDTO.getId()));
         Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, pageable);
         log.trace("Found {} SpatialUnits", result.getTotalElements());
-        return result.map(spatialUnitMapper::convert);
+        Page<SpatialUnitDTO> page = result.map(spatialUnitMapper::convert);
+        hydrateRecordingUnitCountsForPage(page);
+        return page;
     }
 
     public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
@@ -650,6 +709,17 @@ public class SpatialUnitService implements ArkEntityService {
                                       String newName,
                                       ConceptDTO newCategory,
                                       FullAddress newAddress) throws SpatialUnitAlreadyExistsException {
+        return updatePlace(info, placeId, newName, newCategory, newAddress, null, false);
+    }
+
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlace(UserInfo info,
+                                      long placeId,
+                                      String newName,
+                                      ConceptDTO newCategory,
+                                      FullAddress newAddress,
+                                      Integer newPlaceNumber,
+                                      boolean updatePlaceNumber) throws SpatialUnitAlreadyExistsException {
         SpatialUnitDTO dto = loadDtoById(placeId);
         Long institutionId = info.getInstitution().getId();
 
@@ -669,6 +739,9 @@ public class SpatialUnitService implements ArkEntityService {
         }
         if (newAddress != null) {
             dto.setAddress(newAddress);
+        }
+        if (updatePlaceNumber) {
+            dto.setPlaceNumber(newPlaceNumber);
         }
         return persistSpatialUnitDto(dto);
     }

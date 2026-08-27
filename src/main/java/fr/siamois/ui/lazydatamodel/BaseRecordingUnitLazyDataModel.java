@@ -136,7 +136,7 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
         newRec.setFullIdentifier(recordingUnitService.generateFullIdentifier(newRec.getActionUnit(), newRec));
         if (recordingUnitService.fullIdentifierAlreadyExistInAction(newRec)) {
             MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
-            newRec.resetFullIdentifier();
+            throw new IllegalStateException("Generated recording-unit identifier already exists");
         }
 
         newRec = recordingUnitService.save(newRec);

@@ -20,4 +20,7 @@ public class PlaceCreateRequest {
 
     @Schema(description = "Adresse postale ou géolocalisée (optionnel)")
     private FullAddress address;
+
+    @Schema(description = "Numéro de regroupement du lieu (optionnel, non unique)")
+    private Integer placeNumber;
 }

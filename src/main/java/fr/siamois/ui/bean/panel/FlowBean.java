@@ -222,6 +222,17 @@ public class FlowBean implements Serializable {
     }
 
     public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
+        addPanelToOverview(targetPanel, overviewPanel, true);
+    }
+
+    /**
+     * @param updateMainPanel whether to also force-refresh the main/root panel's container (or,
+     *                        for a list panel, its whole table). Needed the first time an
+     *                        overview is opened (to highlight the newly-selected row), but not
+     *                        when merely navigating between entities within an already-open
+     *                        overview (prev/next arrows) — nothing in the main panel changed.
+     */
+    public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel, boolean updateMainPanel) {
 
         HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
         HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
@@ -265,14 +276,14 @@ public class FlowBean implements Serializable {
 
         String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
         String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
-        String tableTarget = (targetPanel instanceof AbstractListPanel<?> lp)
-                ? lp.getActiveTableClientId()
-                : "panel-" + targetPanel.getPrefixPanelIndex() + "-container";
-        PrimeFaces.current().ajax().update(
-                "sideview-" + targetPanel.getPanelIndex(),
-                "historyForm",
-                tableTarget
-        );
+        List<String> updateTargets = new ArrayList<>(List.of("sideview-" + targetPanel.getPanelIndex(), "historyForm"));
+        if (updateMainPanel) {
+            String tableTarget = (targetPanel instanceof AbstractListPanel<?> lp)
+                    ? lp.getActiveTableClientId()
+                    : "panel-" + targetPanel.getPrefixPanelIndex() + "-container";
+            updateTargets.add(tableTarget);
+        }
+        PrimeFaces.current().ajax().update(updateTargets);
         PrimeFaces.current().executeScript(
                 String.format(
                         "showSideview('%s', '%s', '%s');",
@@ -285,6 +296,10 @@ public class FlowBean implements Serializable {
     }
 
     public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
+        addRecordingUnitToOverview(id, targetPanel, tabIndex, true);
+    }
+
+    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
 
         if (targetPanel != null) {
             // Add the overview
@@ -296,10 +311,10 @@ public class FlowBean implements Serializable {
             }
 
             if(targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel);
+                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
             }
             else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
             }
 
         }
@@ -321,6 +336,10 @@ public class FlowBean implements Serializable {
 
 
     public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel,  @Nullable Integer tabIndex) {
+        addSpatialUnitToOverview(id, targetPanel, tabIndex, true);
+    }
+
+    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
 
         if (targetPanel != null) {
             // Add the overview
@@ -330,15 +349,19 @@ public class FlowBean implements Serializable {
             }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel);
+                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
             }
             else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
             }
         }
     }
 
     public void addActionUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
+        addActionUnitToOverview(id, targetPanel, tabIndex, true);
+    }
+
+    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
 
         if (targetPanel != null) {
             // Add the overview
@@ -348,15 +371,19 @@ public class FlowBean implements Serializable {
             }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel);
+                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
             }
             else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
             }
         }
     }
 
     public void addSpecimenToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
+        addSpecimenToOverview(id, targetPanel, tabIndex, true);
+    }
+
+    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
 
         if (targetPanel != null) {
             // Add the overview
@@ -366,15 +393,19 @@ public class FlowBean implements Serializable {
             }
             overviewPanel.setRoot(false);
             if(targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel);
+                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
             }
             else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
             }
         }
     }
 
     public void addPhaseToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
+        addPhaseToOverview(id, targetPanel, tabIndex, true);
+    }
+
+    public void addPhaseToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
         if (targetPanel != null) {
             PhasePanel overviewPanel = panelFactory.createPhasePanel(id);
             if (tabIndex != null) {
@@ -382,14 +413,18 @@ public class FlowBean implements Serializable {
             }
             overviewPanel.setRoot(false);
             if (targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel);
+                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
             } else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
             }
         }
     }
 
     public void addContainerToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
+        addContainerToOverview(id, targetPanel, tabIndex, true);
+    }
+
+    public void addContainerToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
 
         if (targetPanel != null) {
             ContainerPanel overviewPanel = panelFactory.createContainerPanel(id);
@@ -398,9 +433,9 @@ public class FlowBean implements Serializable {
             }
             overviewPanel.setRoot(false);
             if (targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel);
+                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
             } else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel);
+                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
             }
         }
     }
@@ -655,7 +690,7 @@ public class FlowBean implements Serializable {
 
     public boolean userHasAddSpatialOrActionUnitPermission() {
         UserInfo info = sessionSettings.getUserInfo();
-        return profilePermissionService.isSuperAdmin(info.getUser())
+        return profilePermissionService.hasInstancePermission(info.getUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS)
                 || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_PLACES)
                 || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
     }
@@ -696,7 +731,7 @@ public class FlowBean implements Serializable {
 
         if (selectedInstitution != null
                 && (institutionService.personIsInInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)
-                || institutionService.isManagerOf(selectedInstitution, sessionSettings.getUserInfo().getUser()))) {
+                || profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo().getUser(), selectedInstitution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))) {
             sessionSettings.setSelectedInstitution(selectedInstitution);
             PrimeFaces.current().ajax().update("navBar", "flow");
             institutionChangeEventPublisher.publishInstitutionChangeEvent();

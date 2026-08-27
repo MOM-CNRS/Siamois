@@ -8,6 +8,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
@@ -24,6 +25,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,6 +62,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     private final transient SpecimenService specimenService;
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient LabelService labelService;
+    private final transient ProfilePermissionService profilePermissionService;
 
     @Override
     protected boolean documentExistsInUnitByHash(SpecimenDTO unit, String hash) {
@@ -85,10 +88,16 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         this.redirectBean = context.getBean(RedirectBean.class);
         this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
         this.labelService = context.getBean(LabelService.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     public String entityRessourceUri() {
         return "/specimen/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasSpecimenWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override
@@ -138,6 +147,38 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         documents = documentService.findForSpecimen(unit);
     }
 
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getFullIdentifier();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "specimen.error.identifier.blank");
+            return false;
+        }
+
+        String previous = unit.getFullIdentifier();
+        unit.setFullIdentifier(trimmed);
+
+        if (specimenService.fullIdentifierAlreadyExistInAction(unit)) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "specimen.error.identifier.alreadyExists");
+            return false;
+        }
+
+        try {
+            specimenService.save(unit);
+            this.titleCodeOrTitle = unit.getFullIdentifier();
+            return true;
+        } catch (RuntimeException e) {
+            unit.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.specimen.updateFailed", unit.getFullIdentifier());
+            return false;
+        }
+    }
+
 
     @Override
     public void init() {
@@ -181,7 +222,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
-        flowBean.addSpecimenToOverview(id,parentOrOverview, activeTabIndex);
+        flowBean.addSpecimenToOverview(id, parentOrOverview, activeTabIndex, false);
     }
 
     @Override
@@ -195,7 +236,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
     }
 
     @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         unit = specimenService.toggleValidated(unit.getId());
     }
 

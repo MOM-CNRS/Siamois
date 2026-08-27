@@ -8,6 +8,7 @@ import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.institution.FailedInstitutionSaveException;
 import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
@@ -32,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.*;
 
@@ -64,6 +66,8 @@ class InstitutionServiceTest {
     private PersonProfileAssignmentRepository personProfileAssignmentRepository;
     @Mock
     private ProfileMapper profileMapper;
+    @Mock
+    private ObjectProvider<InstitutionService> selfProvider;
 
     @InjectMocks
     private InstitutionService institutionService;
@@ -111,6 +115,8 @@ class InstitutionServiceTest {
         actionUnit.setId(1L);
         actionUnit.setCreatedBy(manager);
         actionUnit.setCreatedByInstitution(institution1);
+
+        lenient().when(selfProvider.getObject()).thenReturn(institutionService);
     }
 
     @Test
@@ -163,7 +169,7 @@ class InstitutionServiceTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString()))
                 .thenReturn(fakeVocabulary);
         when(fieldConfigurationService
-                .setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class))).thenReturn(
+                .setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class), any(ProgressWrapper.class))).thenReturn(
                         Optional.of(mock(FeedbackFieldConfig.class)));
         when(institutionMapper.convert(any(Institution.class))).thenReturn(new InstitutionDTO());
         when(institutionRepository.save(any(Institution.class))).thenReturn(mock(Institution.class));
@@ -378,114 +384,6 @@ class InstitutionServiceTest {
 
         assertThat(result).containsExactlyInAnyOrder(managerDTO);
     }
-
-    @Test
-    void personIsInstitutionManager_shouldReturnTrueIfManager() {
-        Institution institution = new Institution();
-        institution.setId(-1L);
-
-        Person person = new Person();
-        person.setId(1L);
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-
-        when(institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId())).thenReturn(true);
-
-        boolean result = institutionService.personIsInstitutionManager(personDto, institution1DTO);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void personIsInstitutionManager_shouldReturnFalseIfNotManager() {
-        Institution institution = new Institution();
-        institution.setId(-1L);
-
-        Person person = new Person();
-        person.setId(1L);
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-        when(institutionRepository.personIsInstitutionManagerOf(institution.getId(), person.getId())).thenReturn(false);
-
-        boolean result = institutionService.personIsInstitutionManager(personDto, institution1DTO);
-
-        assertThat(result).isFalse();
-    }
-
-    @Test
-    void personIsActionManager_shouldReturnTrueIfActionManager() {
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-        institution1DTO.setId(1L);
-
-        when(personProfileAssignmentRepository.personHasProfileWithCodeInInstitution(
-                personDto.getId(), institution1DTO.getId(), ProfileConstants.ORGANIZATION_PROJECT_MANAGER))
-                .thenReturn(true);
-
-        boolean result = institutionService.personIsActionManager(personDto, institution1DTO);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void personIsActionManager_shouldReturnFalseIfNotActionManager() {
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-        institution1DTO.setId(1L);
-
-        when(personProfileAssignmentRepository.personHasProfileWithCodeInInstitution(
-                personDto.getId(), institution1DTO.getId(), ProfileConstants.ORGANIZATION_PROJECT_MANAGER))
-                .thenReturn(false);
-
-        boolean result = institutionService.personIsActionManager(personDto, institution1DTO);
-
-        assertThat(result).isFalse();
-    }
-
-    @Test
-    void personIsInstitutionManagerOrActionManager_shouldReturnTrueIfManager() {
-        institution1DTO.setId(1L);
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-
-        when(institutionRepository.personIsInstitutionManagerOf(1L, 1L)).thenReturn(true);
-
-        boolean result = institutionService.personIsInstitutionManagerOrActionManager(personDto, institution1DTO);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void personIsInstitutionManagerOrActionManager_shouldReturnTrueIfActionManager() {
-        institution1DTO.setId(-1L);
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-
-        when(institutionRepository.personIsInstitutionManagerOf(institution1DTO.getId(), personDto.getId())).thenReturn(false);
-        when(personProfileAssignmentRepository.personHasProfileWithCodeInInstitution(
-                personDto.getId(), institution1DTO.getId(), ProfileConstants.ORGANIZATION_PROJECT_MANAGER))
-                .thenReturn(true);
-
-        boolean result = institutionService.personIsInstitutionManagerOrActionManager(personDto, institution1DTO);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void personIsInstitutionManagerOrActionManager_shouldReturnFalseIfNeither() {
-        PersonDTO personDto = new PersonDTO();
-        personDto.setId(1L);
-
-        when(institutionRepository.personIsInstitutionManagerOf(institution1DTO.getId(), personDto.getId())).thenReturn(false);
-        when(personProfileAssignmentRepository.personHasProfileWithCodeInInstitution(
-                personDto.getId(), institution1DTO.getId(), ProfileConstants.ORGANIZATION_PROJECT_MANAGER))
-                .thenReturn(false);
-
-        boolean result = institutionService.personIsInstitutionManagerOrActionManager(personDto, institution1DTO);
-
-        assertThat(result).isFalse();
-    }
-
 
     @Test
     void addPersonAsMemberOfActionUnit_shouldAddMemberAndReturnTrue() {

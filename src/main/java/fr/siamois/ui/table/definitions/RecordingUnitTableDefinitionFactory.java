@@ -3,6 +3,7 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
@@ -56,7 +57,6 @@ public final class RecordingUnitTableDefinitionFactory {
 
     private static void applyTo(TableDefinition definition) {
 
-        CustomField recordingUnitIdField = systemField(ConfigurableTable.UE, "fullIdentifier");
         CustomField typeField = systemField(ConfigurableTable.UE, "type");
         CustomField matrixColor = systemField(ConfigurableTable.UE, "matrixColor");
         CustomField dateField = systemField(ConfigurableTable.UE, "openingDate");
@@ -78,11 +78,12 @@ public final class RecordingUnitTableDefinitionFactory {
                         .toggleable(false)
                         .sortable(true)
                         .filterable(true)
-                        .sortField("full_identifier")
+                        .sortField("fullIdentifier")
 
                         .iconClass("bi bi-pencil-square")
                         .chipColor("var(--ground-main-color)")
                         .valueKey("fullIdentifier")
+                        .editable(true)
 
                         // What to do on click (Pattern A key)
                         .action(TableColumnAction.GO_TO_RECORDING_UNIT)
@@ -94,18 +95,6 @@ public final class RecordingUnitTableDefinitionFactory {
                         .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("identifier")
-                        .headerKey("recordingunit.field.identifier")
-                        .field(recordingUnitIdField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(true)
-                        .required(true)
-                        .build()
-        );
-
         definition.addColumn(
                 FormFieldColumn.builder()
                         .id("isPartOf")
@@ -174,6 +163,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .headerIcon("bi bi-diagram-2")
                         .visible(true)
                         .toggleable(true)
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.RELATIONSHIP_COUNT_SORT)
 
                         .countKey("relationships")
                         .viewIcon(BI_BI_EYE)
@@ -199,6 +190,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .headerIcon("bi bi-bucket")
                         .visible(true)
                         .toggleable(true)
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.SPECIMEN_COUNT_SORT)
 
                         .countKey("specimenList")
 
@@ -251,7 +244,7 @@ public final class RecordingUnitTableDefinitionFactory {
                         .sortable(true)
                         .filterable(true)
                         .visible(false)
-                        .required(true)
+                        .required(false)
                         .build()
         );
         definition.addColumn(

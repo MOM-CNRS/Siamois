@@ -11,11 +11,13 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
@@ -28,7 +30,6 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepo
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdCounterRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
@@ -36,9 +37,12 @@ import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -55,6 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -74,11 +79,11 @@ class ActionUnitServiceTest {
     @Mock private PersonProfileAssignmentRepository personProfileAssignmentRepository;
     @Mock private ProfileRepository profileRepository;
     @Mock private DocumentRepository documentRepository;
-    @Mock private RecordingUnitIdCounterRepository recordingUnitIdCounterRepository;
     @Mock private RecordingUnitIdLabelRepository recordingUnitIdLabelRepository;
     @Mock private ProfileService profileService;
     @Mock private PersonProfileAssignmentService personProfileAssignmentService;
     @Mock private ProfileMapper profileMapper;
+    @Mock private ProfilePermissionService profilePermissionService;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -119,6 +124,10 @@ class ActionUnitServiceTest {
         PersonDTO p =new PersonDTO();
         InstitutionDTO i = new InstitutionDTO();
         info = new UserInfo(i,p,"fr");
+        ExecutionContextHolder.set(info);
+        lenient().when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
         c1 = new Concept();
         c2 = new Concept();
         c3 = new Concept();
@@ -156,6 +165,11 @@ class ActionUnitServiceTest {
 
 
 
+    }
+
+    @AfterEach
+    void clearExecutionContext() {
+        ExecutionContextHolder.clear();
     }
 
 
@@ -832,6 +846,120 @@ class ActionUnitServiceTest {
                 () -> actionUnitService.save(actionUnit1dto));
     }
 
+    @Test
+    void save_AbstractEntity_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.save(actionUnit1dto));
+
+        verify(actionUnitRepository, never()).save(any());
+    }
+
+    @Test
+    void save_AbstractEntity_throwsForbidden_whenPermissionDenied() {
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.save(actionUnit1dto));
+
+        verify(actionUnitRepository, never()).save(any());
+    }
+
+    // ------------------------------------------------------------------
+    // permission checks on save(UserInfo, ActionUnitDTO, ConceptDTO)
+    // ------------------------------------------------------------------
+
+    @Test
+    void save_withUserInfo_throwsForbidden_whenCreatingWithoutOrganizationPermission() {
+        ActionUnitDTO newActionUnit = new ActionUnitDTO();
+        ConceptDTO conceptDto = new ConceptDTO();
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.save(info, newActionUnit, conceptDto));
+
+        verify(actionUnitRepository, never()).save(any());
+    }
+
+    @Test
+    void save_withUserInfo_throwsForbidden_whenUpdatingWithoutActionUnitWritePermission() {
+        ActionUnitDTO existingActionUnit = new ActionUnitDTO();
+        existingActionUnit.setId(7L);
+        ConceptDTO conceptDto = new ConceptDTO();
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(false);
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.save(info, existingActionUnit, conceptDto));
+
+        verify(actionUnitRepository, never()).save(any());
+    }
+
+    // ------------------------------------------------------------------
+    // deleteProjectWhenEmpty
+    // ------------------------------------------------------------------
+
+    @Test
+    void deleteProjectWhenEmpty_throwsForbidden_whenNoExecutionContext() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_throwsForbidden_whenNeitherOrganizationNorProjectGrantsIt() {
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(), anyLong(), anyString())).thenReturn(false);
+
+        assertThrows(ForbiddenOperationException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_throwsIllegalState_whenRecordingUnitsExist() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(2L);
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_throwsIllegalState_whenChildActionUnitsExist() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
+                .thenReturn(Collections.singletonList(new Object[]{1L, 3L}));
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_happyPath_deletesEverything() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
+                .thenReturn(List.of());
+
+        actionUnitService.deleteProjectWhenEmpty(1L);
+
+        verify(personProfileAssignmentRepository).deleteAllByProfileActionUnitId(1L);
+        verify(profileRepository).deleteAllByActionUnitId(1L);
+        verify(recordingUnitIdLabelRepository).deleteAllByActionUnitId(1L);
+        verify(actionUnitRepository).deleteSecondaryActionCodeLinksForActionUnit(1L);
+        verify(actionUnitRepository).deleteHierarchyLinksForActionUnit(1L);
+        verify(actionUnitRepository).deleteSpatialContextLinksForActionUnit(1L);
+        verify(documentRepository).deleteAllActionUnitDocumentLinksByActionUnitId(1L);
+        verify(actionUnitRepository).deleteById(1L);
+    }
+
     // ------------------------------------------------------------------
     // count delegators
     // ------------------------------------------------------------------
@@ -1077,6 +1205,25 @@ class ActionUnitServiceTest {
 
         assertEquals(2, result.getContent().size());
         assertThat(result.getContent()).containsExactly(actionUnit1dto, actionUnit2dto);
+    }
+
+    @Test
+    void searchActionUnits_withRecordingUnitCountSort_stripsSortFromPageableAndComposesOrderingSpec() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        Pageable sortedPageable = org.springframework.data.domain.PageRequest.of(0, 10,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
+                        ActionUnitSpec.RECORDING_UNIT_COUNT_SORT));
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        when(actionUnitRepository.findAll(any(Specification.class), pageableCaptor.capture())).thenReturn(page);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+
+        actionUnitService.searchActionUnits(inst, filters, sortedPageable);
+
+        assertTrue(pageableCaptor.getValue().getSort().isUnsorted());
     }
 
     @Test

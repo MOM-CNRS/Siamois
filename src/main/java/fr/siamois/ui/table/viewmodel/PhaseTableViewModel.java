@@ -1,7 +1,10 @@
 package fr.siamois.ui.table.viewmodel;
 
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.PhaseDTO;
@@ -18,6 +21,7 @@ import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 
@@ -32,6 +36,8 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
     private final FlowBean flowBean;
     private final InstitutionService institutionService;
     private final SessionSettingsBean sessionSettingsBean;
+    private final PhaseService phaseService;
+    private final ProfilePermissionService profilePermissionService;
 
     public PhaseTableViewModel(BasePhaseLazyDataModel phaseLazyDataModel,
                                FormService formService,
@@ -42,7 +48,9 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
                                FlowBean flowBean,
                                GenericNewUnitDialogBean<PhaseDTO> genericNewUnitDialogBean,
                                InstitutionService institutionService,
-                               FormContextServices formContextServices) {
+                               FormContextServices formContextServices,
+                               PhaseService phaseService,
+                               ProfilePermissionService profilePermissionService) {
         super(
                 phaseLazyDataModel,
                 genericNewUnitDialogBean,
@@ -59,6 +67,8 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
         this.institutionService = institutionService;
+        this.phaseService = phaseService;
+        this.profilePermissionService = profilePermissionService;
     }
 
     @Override
@@ -75,7 +85,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
     protected void handleCommandLink(CommandLinkColumn column, PhaseDTO phase) {
         if (column.getAction() == GO_TO_PHASE) {
             setOverviewEntityId(phase.getId());
-            flowBean.addPhaseToOverview(phase.getId(), parentPanel, null);
+            flowBean.addPhaseToOverview(phase.getId(), parentPanel, null, false);
         } else {
             throw new IllegalStateException("Unhandled action: " + column.getAction());
         }
@@ -88,6 +98,31 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
             throw new IllegalStateException("Unknown valueKey: " + linkColumn.getValueKey());
         }
         return "";
+    }
+
+    @Override
+    public void handleLinkEdit(CommandLinkColumn column, PhaseDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.blank");
+            return;
+        }
+
+        String previous = item.getIdentifier();
+        item.setIdentifier(trimmed);
+
+        if (phaseService.identifierAlreadyExistInAction(item)) {
+            item.setIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            phaseService.save(item);
+        } catch (RuntimeException e) {
+            item.setIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.phase.updateFailed", item.getIdentifier());
+        }
     }
 
     @Override
@@ -124,7 +159,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
     public boolean isRendered(RowAction action, PhaseDTO phase) {
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> false;
-            default -> true;
+            default -> canUserEditRow(phase);
         };
     }
 
@@ -134,7 +169,10 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
 
     @Override
     public boolean canUserEditRow(PhaseDTO unit) {
-        return true;
+        Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
+        return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
+                PermissionConstants.PROJECT_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES,
+                p -> p.getActionUnit() != null ? p.getActionUnit().getId() : null, actionUnitId);
     }
 
     @Override

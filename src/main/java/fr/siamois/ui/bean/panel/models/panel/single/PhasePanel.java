@@ -8,8 +8,10 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.services.PhaseService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -19,6 +21,7 @@ import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.utils.MessageUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -51,6 +54,7 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     private final transient RedirectBean redirectBean;
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient LabelService labelService;
+    private final transient ProfilePermissionService profilePermissionService;
 
     @Override
     protected boolean documentExistsInUnitByHash(PhaseDTO unit, String hash) {
@@ -71,10 +75,16 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         this.redirectBean = context.getBean(RedirectBean.class);
         this.tableFieldConfigService = context.getBean(TableFieldConfigService.class);
         this.labelService = context.getBean(LabelService.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     public String entityRessourceUri() {
         return "/phase/" + unitId;
+    }
+
+    @Override
+    public boolean canUserEditUnit() {
+        return unit != null && profilePermissionService.hasPhaseWritePermission(sessionSettingsBean.getUserInfo(), unit);
     }
 
     @Override
@@ -101,6 +111,38 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         }
 
         documents = List.of();
+    }
+
+    @Override
+    protected String currentIdentifierValue() {
+        return unit.getIdentifier();
+    }
+
+    @Override
+    protected boolean persistIdentifierEdit(String trimmed) {
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.blank");
+            return false;
+        }
+
+        String previous = unit.getIdentifier();
+        unit.setIdentifier(trimmed);
+
+        if (phaseService.identifierAlreadyExistInAction(unit)) {
+            unit.setIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "phase.error.identifier.alreadyExists");
+            return false;
+        }
+
+        try {
+            phaseService.save(unit);
+            this.titleCodeOrTitle = unit.getIdentifier();
+            return true;
+        } catch (RuntimeException e) {
+            unit.setIdentifier(previous);
+            MessageUtils.displayErrorMessage(langBean, "common.entity.phase.updateFailed", unit.getIdentifier());
+            return false;
+        }
     }
 
     @Override
@@ -137,26 +179,21 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
 
     @Override
     protected void addToOverview(Long id, AbstractPanel parentOrOverview, Integer activeTabIndex) {
-        flowBean.addPhaseToOverview(id, parentOrOverview, activeTabIndex);
+        flowBean.addPhaseToOverview(id, parentOrOverview, activeTabIndex, false);
     }
 
     @Override
     protected PhaseDTO findNext() {
-        return unit;
+        return phaseService.findNextByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
     protected PhaseDTO findPrevious() {
-        return unit;
+        return phaseService.findPreviousByActionUnit(unit.getActionUnit(), unit);
     }
 
     @Override
-    public boolean hasPreviousNext() {
-        return false;
-    }
-
-    @Override
-    public void toggleValidate() {
+    protected void doToggleValidate() {
         // not yet supported
     }
 
@@ -169,6 +206,10 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
     public List<MenuModel> getAllParentBreadcrumbModels() {
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());
+        if (unit != null && unit.getActionUnit() != null) {
+            ActionUnitDTO actionUnit = actionUnitService.findById(unit.getActionUnit().getId());
+            breadcrumbModel.getElements().add(createUnitItem(actionUnit));
+        }
         breadcrumbModel.getElements().add(createRootTypeItem());
         return List.of(breadcrumbModel);
     }

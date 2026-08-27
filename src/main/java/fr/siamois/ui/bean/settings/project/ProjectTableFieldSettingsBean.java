@@ -1,19 +1,22 @@
 package fr.siamois.ui.bean.settings.project;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.exceptions.form.FieldVocabularyConfigException;
+import fr.siamois.domain.models.exceptions.form.NoVocabularySelectedException;
+import fr.siamois.domain.models.exceptions.form.VocabularyConfigNotSavedException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.tableconfig.*;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
-import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.domain.services.recordingunit.identifier.generic.RuIdentifierResolver;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
+import fr.siamois.domain.services.identifier.*;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -40,16 +43,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
 @Slf4j
 @Component
@@ -62,6 +59,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public static final int TAB_IDENTIFIANTS = 1;
     public static final String ID_UA = "ID_UA";
     public static final String NUM_UE = "NUM_UE";
+    public static final String BRANCHE = "branche";
+    public static final String COLLECTION = "collection";
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient FormConfigService formConfigService;
@@ -71,8 +70,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private final transient VocabularyMapper vocabularyMapper;
     private final transient LabelService labelService;
     private final LangBean langBean;
-    private final transient RecordingUnitService recordingUnitService;
-    private final transient ActionUnitService actionUnitService;
+    private final transient IdentifierResolverRegistry identifierResolverRegistry;
 
     private ActionUnitDTO project;
     private List<ConfigurableTable> tables = new ArrayList<>();
@@ -112,6 +110,15 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private transient VocabularyDTO draftVocabulary;
 
     /**
+     * Progress of the branch/collection import {@link #saveDrawer()} triggers when saving a branch or
+     * collection source — a large collection resolves its concepts one HTTP call at a time (see
+     * {@code ConceptApiUtils#saveAllConceptsOfBranch}) and can take long enough to warrant a progress
+     * bar, following the same session-scoped-bean + PrimeFaces-self-polling pattern as
+     * {@code InstitutionDialogBean}.
+     */
+    private final ProgressWrapper progressWrapper = new ProgressWrapper();
+
+    /**
      * The results {@link #completeCollections} last returned to the autocomplete widget, kept around
      * so {@link #saveDrawer()} can resolve the DTO behind the label the user picked — unlike
      * {@link #draftBrancheConcept}, {@code draftCollectionName}'s {@code p:autoComplete} only
@@ -129,6 +136,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private transient String draftOriginalBrancheConceptKey;
     private transient String draftOriginalCollectionKey;
 
+    /**
+     * The error shown in the drawer's own message area, at the top of the panel. Anything raised
+     * while the drawer is open goes there rather than to the global growl: the growl is anchored to
+     * the top-right corner of the page, exactly where the drawer sits, and renders under the
+     * sidebar's overlay — so the user never sees it. Null when there is nothing to report.
+     */
+    private String drawerErrorMessage;
+
     private String newTypeName;
 
     private List<IdentifierSegment> identSegments = new ArrayList<>();
@@ -145,7 +160,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                                          VocabularyService vocabularyService,
                                          VocabularyMapper vocabularyMapper,
                                          LabelService labelService,
-                                         LangBean langBean, RecordingUnitService recordingUnitService, ActionUnitService actionUnitService) {
+                                         LangBean langBean, IdentifierResolverRegistry identifierResolverRegistry) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.formConfigService = formConfigService;
         this.conceptService = conceptService;
@@ -154,8 +169,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.vocabularyMapper = vocabularyMapper;
         this.labelService = labelService;
         this.langBean = langBean;
-        this.recordingUnitService = recordingUnitService;
-        this.actionUnitService = actionUnitService;
+        this.identifierResolverRegistry = identifierResolverRegistry;
     }
 
     @EventListener(LoginEvent.class)
@@ -228,13 +242,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         loadIdentConfig();
     }
 
-    /**
-     * The UE identifier format is project-wide (one format governs every RecordingUnit in the
-     * project), so it only makes sense to surface it when the UE / _default node is selected —
-     * other table/type combinations show an "unavailable" placeholder instead.
-     */
     public boolean isIdentTabAvailable() {
-        return selectedTable == ConfigurableTable.UE && isSelectedTypeDefault();
+        return selectedTable != null && formConfig != null;
     }
 
     private void loadIdentConfig() {
@@ -244,9 +253,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             identLast = null;
             return;
         }
-        identFirst = project.getMinRecordingUnitCode();
-        identLast = project.getMaxRecordingUnitCode();
-        identSegments = parseFormat(project.getRecordingUnitIdentifierFormat());
+        identFirst = formConfig.getMinCode();
+        identLast = formConfig.getMaxCode();
+        identSegments = parseFormat(formConfig.getIdentifierFormat());
     }
 
     /**
@@ -266,12 +275,28 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public long getHiddenSystemFieldCount() {
         if (fieldsConfig == null) return 0;
-        return fieldsConfig.getFields().stream().filter(f -> f.isSystemField() && !f.isActive()).count();
+        return fieldsConfig.getFields().stream()
+                .filter(f -> f.isSystemField() && !f.isActive() && !isPivotField(f))
+                .count();
     }
 
     public List<TypeFieldFormConfig> getSystemFields() {
         if (fieldsConfig == null) return List.of();
-        return fieldsConfig.getFields().stream().filter(TypeFieldFormConfig::isSystemField).toList();
+        return fieldsConfig.getFields().stream()
+                .filter(TypeFieldFormConfig::isSystemField)
+                .filter(f -> !isPivotField(f))
+                .toList();
+    }
+
+    /**
+     * The table's own "type" field — the pivot whose value picks which {@link FormConfig} applies —
+     * has no business being toggled active/mandatory or reordered here: it isn't an optional field of
+     * the form, it's what selects the form. It stays a real, active system field of the table/entity
+     * form ({@link TableFieldConfigService#getFieldsConfig} is untouched), only hidden from this
+     * settings screen.
+     */
+    private boolean isPivotField(TypeFieldFormConfig field) {
+        return selectedTable != null && selectedTable.getFieldCode().equals(field.getSourceLabel());
     }
 
     /**
@@ -402,7 +427,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void prefillBranch(Concept branchTopTerm) {
-        draftSource = "branche";
+        draftSource = BRANCHE;
         draftVocabulary = vocabularyMapper.convert(branchTopTerm.getVocabulary());
         draftThesaurusUrl = draftVocabulary.completeUri();
         draftConnectionTested = true;
@@ -425,7 +450,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * live lookup against the thesaurus, matched back by external id.
      */
     private void prefillCollection(ConceptCollection collection) {
-        draftSource = "collection";
+        draftSource = COLLECTION;
         draftVocabulary = vocabularyMapper.convert(collection.getVocabulary());
         draftThesaurusUrl = draftVocabulary.completeUri();
         draftConnectionTested = true;
@@ -455,6 +480,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftThesaurusUrl = null;
         draftConnectionTested = false;
         draftVocabulary = null;
+        drawerErrorMessage = null;
         clearSourceSelection();
     }
 
@@ -487,53 +513,187 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * resolve-then-report convention as {@code ProjectThesaurusSettingsBean#saveConfig}.
      */
     public void testThesaurusConnection() {
+        drawerErrorMessage = null;
         if (draftThesaurusUrl == null || draftThesaurusUrl.isBlank()) {
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "projectTables.drawer.params.connectionMissingUrl");
+            showDrawerError("projectTables.drawer.params.connectionMissingUrl");
             return;
         }
         try {
-            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(draftThesaurusUrl);
+            String resolvedUrl = vocabularyService.resolveRedirections(draftThesaurusUrl);
+            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(resolvedUrl);
             draftVocabulary = vocabularyMapper.convert(vocabulary);
+            // success needs no message of its own : the drawer shows the "✓ connected" line as soon
+            // as the connection is marked as tested
             draftConnectionTested = true;
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.params.connectionOk");
+            preselectDesignatedConcept(resolvedUrl);
+            draftThesaurusUrl = draftVocabulary.completeUri();
         } catch (InvalidEndpointException e) {
-            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
+            log.error("Invalid thesaurus URL '{}'", draftThesaurusUrl, e);
+            draftConnectionTested = false;
+            draftVocabulary = null;
+            showDrawerError("myProfile.thesaurus.uri.invalid");
+        } catch (RuntimeException e) {
+            // anything the thesaurus lookup didn't turn into an InvalidEndpointException would
+            // otherwise leave the button silent, which reads as "nothing happened"
+            log.error("Could not reach the thesaurus at '{}'", draftThesaurusUrl, e);
+            draftConnectionTested = false;
+            draftVocabulary = null;
+            showDrawerError("projectTables.drawer.params.connectionFailed");
         }
     }
 
-    /** Empty until the thesaurus connection has been tested successfully. */
+    private void preselectDesignatedConcept(String resolvedUrl) {
+        Optional<ConceptAutocompleteDetachedDTO> concept = conceptService.fetchConceptDesignatedBy(draftVocabulary, resolvedUrl);
+        if (concept.isPresent()) {
+            draftSource = BRANCHE;
+            draftBrancheConcept = concept.get();
+            draftCollectionName = null;
+            draftOriginalBrancheConceptKey = null;
+            return;
+        }
+        conceptCollectionService.fetchCollectionDesignatedBy(draftVocabulary, resolvedUrl).ifPresent(collection -> {
+            draftSource = COLLECTION;
+            lastCollectionResults = List.of(collection);
+            draftCollectionName = collection.getLabelToDisplay();
+            draftBrancheConcept = null;
+            draftOriginalCollectionKey = null;
+        });
+    }
+
+    /**
+     * Fills the drawer's message area. Kept apart from {@link MessageUtils} on purpose: these
+     * messages belong to the panel the user is looking at, not to the page-wide growl.
+     */
+    private void showDrawerError(String messageCode, Object... args) {
+        drawerErrorMessage = langBean.msg(messageCode, args);
+    }
+
+    /**
+     * The OpenTheso URL of the whole thesaurus currently loaded, for the "view" button next to the
+     * load/refresh button — null (and the button disabled) until {@link #testThesaurusConnection()}
+     * has resolved one.
+     */
+    public String getDraftVocabularyUrl() {
+        return draftVocabulary == null ? null : draftVocabulary.completeUri();
+    }
+
+    public boolean isDraftBrancheConceptSelected() {
+        return draftBrancheConcept != null && draftBrancheConcept.concept() != null;
+    }
+
+    /**
+     * The OpenTheso URL of the branch's root concept, for the "view" button next to the branch picker —
+     * null (and the button disabled) until a concept has been picked.
+     */
+    public String getDraftBrancheConceptUrl() {
+        if (!isDraftBrancheConceptSelected()) {
+            return null;
+        }
+        ConceptDTO concept = draftBrancheConcept.concept();
+        VocabularyDTO vocabulary = concept.getVocabulary();
+        return vocabulary.getBaseUri() + "/?idc=" + concept.getExternalId() + "&idt=" + vocabulary.getExternalVocabularyId();
+    }
+
+    public boolean isDraftCollectionSelected() {
+        return selectedCollection().isPresent();
+    }
+
+    /**
+     * The OpenTheso URL of the selected collection, for the "view" button next to the collection picker
+     * — null (and the button disabled) until the typed label matches one of {@link #lastCollectionResults}.
+     */
+    public String getDraftCollectionUrl() {
+        return selectedCollection()
+                .map(c -> c.getVocabulary().getBaseUri() + "/?idg=" + c.getExternalId() + "&idt=" + c.getVocabulary().getExternalVocabularyId())
+                .orElse(null);
+    }
+
+    private Optional<ConceptCollectionDetachedDTO> selectedCollection() {
+        return lastCollectionResults.stream()
+                .filter(c -> c.getLabelToDisplay().equals(draftCollectionName))
+                .findFirst();
+    }
+
+    /**
+     * Empty until the thesaurus connection has been tested successfully. A thesaurus that answers
+     * with something unparseable, or that stopped answering since the connection was tested, must
+     * not surface as "no result" : the user would read it as "this concept doesn't exist".
+     */
     public List<ConceptAutocompleteDetachedDTO> completeBrancheConcepts(String query) {
         if (draftVocabulary == null) {
             return List.of();
         }
-        return conceptService.fetchAutocompleteFromRemoteThesaurus(draftVocabulary, query);
+        try {
+            return conceptService.fetchAutocompleteFromRemoteThesaurus(draftVocabulary, query);
+        } catch (JsonProcessingException | RuntimeException e) {
+            log.error("Could not fetch the concepts matching '{}' in thesaurus {}", query, draftVocabulary.getBaseUri(), e);
+            showDrawerError("common.error.internal");
+            return List.of();
+        }
     }
 
     /**
      * Empty until the thesaurus connection has been tested successfully. Caches its results in
      * {@link #lastCollectionResults} so {@link #saveDrawer()} can resolve the collection behind the
-     * label the {@code p:autoComplete} round-trips.
+     * label the {@code p:autoComplete} round-trips. Reports a failing thesaurus like
+     * {@link #completeBrancheConcepts} does, and for the same reason.
      */
     public List<String> completeCollections(String query) {
         if (draftVocabulary == null) {
             lastCollectionResults = List.of();
             return List.of();
         }
-        lastCollectionResults = conceptCollectionService.fetchCollectionsFromRemoteThesaurus(draftVocabulary).stream()
-                .filter(c -> query == null || query.isBlank() || c.getLabelToDisplay().toLowerCase().contains(query.toLowerCase()))
-                .toList();
+        try {
+            lastCollectionResults = conceptCollectionService.fetchCollectionsFromRemoteThesaurus(draftVocabulary).stream()
+                    .filter(c -> query == null || query.isBlank() || c.getLabelToDisplay().toLowerCase().contains(query.toLowerCase()))
+                    .toList();
+        } catch (RuntimeException e) {
+            log.error("Could not fetch the collections of thesaurus {}", draftVocabulary.getBaseUri(), e);
+            lastCollectionResults = List.of();
+            showDrawerError("common.error.internal");
+        }
         return lastCollectionResults.stream().map(ConceptCollectionDetachedDTO::getLabelToDisplay).toList();
     }
 
+    /**
+     * The field itself is saved first and stays saved whatever happens next : only the vocabulary
+     * configuration can fail here, and the drawer must then say so instead of closing on a success
+     * message the configuration never got.
+     */
     public void saveDrawer() {
+        drawerErrorMessage = null;
         if (draftOriginalName == null) {
             tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription);
         } else {
             tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName, draftName, draftType, draftDescription);
         }
-        saveDraftVocabularyConfig();
+        // the field now exists under that name : should the vocabulary configuration fail below, the
+        // drawer stays open on the error, and saving again must update that field rather than try to
+        // create a second one — or, after a rename, update from a name that no longer exists
+        draftOriginalName = draftName;
+
+        try {
+            saveDraftVocabularyConfig();
+        } catch (FieldVocabularyConfigException e) {
+            log.error("Vocabulary configuration of field '{}' on type '{}' of table {} was not saved",
+                    draftName, selectedTypeName, selectedTable, e);
+            showDrawerError(e.getMessageCode());
+            // the drawer stays open : the message lives in it, and the user is one correction away
+            // from a working configuration
+            loadConfigs();
+            return;
+        } finally {
+            progressWrapper.reset();
+        }
+
         loadConfigs();
-        closeDrawer();
+        // the drawer stays open : the user can keep editing (or check what the vocabulary config
+        // resolved to) without reopening it — re-reading it mirrors openDrawerForEdit's initial load,
+        // so draftOriginalBrancheConceptKey/draftOriginalCollectionKey track what was just persisted
+        // rather than the value the drawer was first opened with
+        if (isDraftConfigurable()) {
+            prefillVocabularyConfig();
+        }
         MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.saveSuccess");
     }
 
@@ -542,13 +702,16 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * {@link #saveDrawer()}: clears any existing branch/collection restriction for
      * {@code "principal"}, or saves the newly picked branch/collection — a no-op when the source is
      * unset (non-configurable fields) or when the user left the prefilled selection untouched.
+     *
+     * @throws FieldVocabularyConfigException when the picked branch/collection did not make it onto
+     * the field, carrying the message {@link #saveDrawer()} reports
      */
     private void saveDraftVocabularyConfig() {
         if ("principal".equals(draftSource)) {
             clearConceptConfigIfAny();
-        } else if ("branche".equals(draftSource)) {
+        } else if (BRANCHE.equals(draftSource)) {
             saveBrancheConceptIfChanged();
-        } else if ("collection".equals(draftSource)) {
+        } else if (COLLECTION.equals(draftSource)) {
             saveCollectionIfChanged();
         }
     }
@@ -566,42 +729,69 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void saveBrancheConceptIfChanged() {
-        if (draftBrancheConcept == null || draftBrancheConcept.concept().getExternalId().equals(draftOriginalBrancheConceptKey)) {
+        // the picker has forceSelection, so an empty value means the user asked for a branch without
+        // ever picking one : the field keeps no vocabulary, which is a failed configuration
+        if (draftBrancheConcept == null || draftBrancheConcept.concept() == null) {
+            throw new NoVocabularySelectedException(
+                    String.format("No branch picked for field '%s'", draftName),
+                    "projectTables.drawer.params.brancheMissing");
+        }
+        if (draftBrancheConcept.concept().getExternalId().equals(draftOriginalBrancheConceptKey)) {
             return;
         }
-        resolveConceptFieldTarget().ifPresentOrElse(
-                target -> formConfigService.addConceptConfigFor(target.formConfig(), target.field(), draftBrancheConcept.concept()),
-                this::warnFieldNotResolved);
+        ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.brancheSaveError");
+        try {
+            formConfigService.addConceptConfigFor(target.formConfig(), target.field(), Objects.requireNonNull(draftBrancheConcept.concept()), progressWrapper);
+        } catch (RuntimeException e) {
+            throw new VocabularyConfigNotSavedException(
+                    String.format("Could not save the branch '%s' as the vocabulary of field '%s'",
+                            draftBrancheConcept.concept().getExternalId(), draftName),
+                    "projectTables.drawer.params.brancheSaveError", e);
+        }
     }
 
     private void saveCollectionIfChanged() {
-        Optional<ConceptCollectionDetachedDTO> selected = lastCollectionResults.stream()
-                .filter(c -> c.getLabelToDisplay().equals(draftCollectionName))
-                .filter(c -> !c.getExternalId().equals(draftOriginalCollectionKey))
-                .findFirst();
+        Optional<ConceptCollectionDetachedDTO> selected = selectedCollection();
+        // unlike the branch picker this one accepts free text : an empty field, or a label matching no
+        // collection of the thesaurus, leaves nothing to configure
         if (selected.isEmpty()) {
+            throw new NoVocabularySelectedException(
+                    String.format("No collection of the thesaurus matches '%s' for field '%s'", draftCollectionName, draftName),
+                    "projectTables.drawer.params.collectionMissing");
+        }
+        if (selected.get().getExternalId().equals(draftOriginalCollectionKey)) {
             return;
         }
-        resolveConceptFieldTarget().ifPresentOrElse(
-                target -> formConfigService.addConceptConfigFor(target.formConfig(), target.field(), selected.get()),
-                this::warnFieldNotResolved);
+        ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.collectionSaveError");
+        try {
+            formConfigService.addConceptConfigFor(target.formConfig(), target.field(), selected.get(), progressWrapper);
+        } catch (RuntimeException e) {
+            throw new VocabularyConfigNotSavedException(
+                    String.format("Could not save the collection '%s' as the vocabulary of field '%s'",
+                            selected.get().getExternalId(), draftName),
+                    "projectTables.drawer.params.collectionSaveError", e);
+        }
     }
 
     private record ConceptFieldTarget(FormConfig formConfig, CustomFieldConcept field) {
     }
 
-    private Optional<ConceptFieldTarget> resolveConceptFieldTarget() {
+    /**
+     * The field row was just written, so failing to find it back as a concept field leaves the picked
+     * branch/collection nowhere to go — a failed configuration like any other.
+     *
+     * @param messageCode the message to report for that field, branch or collection flavoured
+     */
+    private ConceptFieldTarget resolveConceptFieldTarget(String messageCode) {
         Optional<FormConfig> formConfigLocal = tableFieldConfigService.createOrGetFormConfig(project.getId(), selectedTable, selectedTypeName);
         Optional<CustomField> field = tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName);
         if (formConfigLocal.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept customFieldConcept)) {
-            return Optional.empty();
+            throw new VocabularyConfigNotSavedException(
+                    String.format("Could not resolve the saved field '%s' as a concept field on type '%s' of table %s",
+                            draftName, selectedTypeName, selectedTable),
+                    messageCode);
         }
-        return Optional.of(new ConceptFieldTarget(formConfigLocal.get(), customFieldConcept));
-    }
-
-    private void warnFieldNotResolved() {
-        log.warn("Could not resolve the saved field '{}' as a concept field on type '{}' of table {}; " +
-                "branch/collection selection was not persisted", draftName, selectedTypeName, selectedTable);
+        return new ConceptFieldTarget(formConfigLocal.get(), customFieldConcept);
     }
 
     public boolean isDraftCreateMode() {
@@ -638,7 +828,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         newTypeName = null;
     }
 
-    // ===== Identifiants (UE / _default only) =====
+    // ===== Identifiants =====
 
     private List<IdentifierSegment> parseFormat(String format) {
         List<IdentifierSegment> segments = new ArrayList<>();
@@ -652,9 +842,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             }
             String[] parts = matcher.group(1).split(":", 2);
             String code = parts[0];
-            boolean numeric = recordingUnitService.findAllNumericalIdentifiersCode().contains(code);
-            int digits = parts.length > 1 ? parts[1].length() : IDENT_DEFAULT_DIGITS;
-            segments.add(tokenSegment(code, numeric, digits <= 0 ? IDENT_DEFAULT_DIGITS : digits));
+            boolean numeric = resolver(code).map(r -> r.valueKind() == IdentifierValueKind.NUMERICAL).orElse(false);
+            int digits = parts.length > 1 ? parts[1].length() : 0;
+            segments.add(tokenSegment(code, numeric, digits));
             last = matcher.end();
         }
         if (last < format.length()) {
@@ -671,9 +861,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                 continue;
             }
             sb.append('{').append(seg.getCode());
-            if (!ID_UA.equals(seg.getCode())) {
-                String specifierChar = seg.isNumeric() ? "0" : "X";
-                sb.append(':').append(specifierChar.repeat(Math.max(1, seg.getDigits())));
+            if (seg.isNumeric() && seg.getDigits() > 0) {
+                sb.append(':').append("0".repeat(seg.getDigits()));
             }
             sb.append('}');
         }
@@ -685,8 +874,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private IdentifierSegment tokenSegment(String code, boolean numeric, int digits) {
-        RuIdentifierResolver resolver = recordingUnitService.findAllIdentifierResolver().get(code);
-        String label = resolver == null ? code : langBean.msg(resolver.getTitleCode());
+        IdentifierResolver<IdentifierRenderContext> resolver = resolver(code).orElse(null);
+        String label = resolver == null ? code : langBean.msg(resolver.titleCode());
         return IdentifierSegment.builder().token(true).code(code).label(label).numeric(numeric).digits(digits).build();
     }
 
@@ -695,7 +884,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public void addIdentTokenSegment(String code) {
-        boolean numeric = recordingUnitService.findAllNumericalIdentifiersCode().contains(code);
+        boolean numeric = resolver(code).map(r -> r.valueKind() == IdentifierValueKind.NUMERICAL).orElse(false);
         identSegments.add(tokenSegment(code, numeric, IDENT_DEFAULT_DIGITS));
     }
 
@@ -711,60 +900,30 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         identSegments.remove(index);
     }
 
-    /**
-     * The addable token catalog for the format builder — same fixed NUM_UE/NUM_PARENT-first
-     * ordering as the moved-from {@code ActionUnitPanel.findAllResolvers()}, minus TYPE_UE/
-     * TYPE_PARENT: those are not offered as placeholders here, the user types static text instead.
-     */
-    public List<RuIdentifierResolver> getIdentifierResolvers() {
-        Map<String, RuIdentifierResolver> resolvers = recordingUnitService.findAllIdentifierResolver();
-        List<RuIdentifierResolver> result = new ArrayList<>();
-        result.add(resolvers.get(NUM_UE));
-        result.add(resolvers.get("NUM_PARENT"));
-        for (RuIdentifierResolver resolver : resolvers.values()) {
-            if (!result.contains(resolver)) {
-                result.add(resolver);
-            }
-        }
-        result.removeIf(r -> r == null || "TYPE_UE".equals(r.getCode()) || "TYPE_PARENT".equals(r.getCode()));
-        return result;
+    public List<IdentifierResolver<IdentifierRenderContext>> getIdentifierResolvers() {
+        return selectedTable == null ? List.of() : identifierResolverRegistry.resolvers(selectedTable);
     }
 
-    /**
-     * A preview built from sample values, never the real {@code RuIdentifierResolver.resolve()} —
-     * text resolvers persist a dedup row as a side effect of resolving, which would be wrong to
-     * trigger just from the user typing in this format builder. The design's own caption already
-     * frames this as illustrative ("Exemple généré avec des valeurs types").
-     */
     public String getIdentExample() {
-        StringBuilder sb = new StringBuilder();
-        for (IdentifierSegment seg : identSegments) {
-            sb.append(seg.isToken() ? sampleValueFor(seg) : seg.getText());
+        if (!isIdentTabAvailable()) return "";
+        String format = serializeFormat(identSegments);
+        try {
+            return identifierResolverRegistry.render(selectedTable, format, previewContext());
+        } catch (IllegalArgumentException exception) {
+            return format;
         }
-        return sb.toString();
     }
 
-    private String sampleValueFor(IdentifierSegment seg) {
-        return switch (seg.getCode()) {
-            case NUM_UE -> zeroPad(142, seg.getDigits());
-            case "NUM_PARENT" -> zeroPad(4, seg.getDigits());
-            case "NUM_USPATIAL" -> zeroPad(3, seg.getDigits());
-            case "TYPE_UE" -> truncate("CERAMIQUE", seg.getDigits());
-            case "TYPE_PARENT" -> truncate("SONDAGE", seg.getDigits());
-            case ID_UA -> "UA1";
-            default -> seg.getLabel();
-        };
-    }
-
-    private String zeroPad(int value, int digits) {
-        String raw = Integer.toString(value);
-        int width = Math.max(1, digits);
-        return raw.length() >= width ? raw : "0".repeat(width - raw.length()) + raw;
-    }
-
-    private String truncate(String value, int digits) {
-        int width = digits <= 0 ? IDENT_DEFAULT_DIGITS : digits;
-        return value.length() > width ? value.substring(0, width) : value;
+    private IdentifierRenderContext previewContext() {
+        Map<String, Object> values = new HashMap<>();
+        values.put(identifierResolverRegistry.ownNumericalToken(selectedTable), switch (selectedTable) {
+            case UE -> 142;
+            case MOBILIER -> 27;
+            case CONTENANT -> 8;
+            case PHASE -> 2;
+        });
+        values.put(ID_UA, "UA1");
+        return new MapIdentifierRenderContext(values);
     }
 
     public void saveIdentConfig() {
@@ -773,93 +932,39 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         String format = serializeFormat(identSegments);
         if (identifierFormatIsInvalid(format)) return;
 
-        project.setMinRecordingUnitCode(identFirst);
-        project.setMaxRecordingUnitCode(identLast);
-        project.setRecordingUnitIdentifierFormat(format);
-        project.setRecordingUnitIdentifierLang(langBean.getLanguageCode());
-
-        actionUnitService.save(project);
-        loadIdentConfig();
+        formConfig.setIdentifierFormat(format);
+        formConfig.setMinCode(identFirst);
+        formConfig.setMaxCode(identLast);
+        tableFieldConfigService.saveFormConfig(project.getId(), selectedTable, formConfig);
+        loadConfigs();
 
         MessageUtils.displayInfoMessage(langBean, "actionUnit.settings.success.identifierConfigSaved");
     }
 
     private boolean identifierFormatIsInvalid(String format) {
-        if (format == null || format.isEmpty()) {
-            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
+        if (identFirst == null || identLast == null || identFirst < 0 || identLast < identFirst) {
+            MessageUtils.displayErrorMessage(langBean, "projectTables.ident.invalidRange");
             return true;
         }
-
-        boolean containsNumRu = false;
-        Matcher matcher = IDENT_PLACEHOLDER_PATTERN.matcher(format);
-
-        String strippedFormat = format.replaceAll(IDENT_PLACEHOLDER_PATTERN.pattern(), "");
-        if (strippedFormat.contains("{") || strippedFormat.contains("}")) {
+        try {
+            identifierResolverRegistry.validate(selectedTable, format);
+        } catch (IdentifierFormatException exception) {
             MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
             return true;
         }
-
-        while (matcher.find()) {
-            String[] parts = matcher.group(1).split(":", 2);
-            String placeholderName = parts[0];
-
-            if (identFormatContainsInvalidCode(placeholderName)) return true;
-            containsNumRu = containsNumRu || placeholderName.equals(NUM_UE);
-
-            if (identFormatOfCodeIsNotValid(parts, placeholderName)) return true;
-        }
-
-        if (!containsNumRu) {
-            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.missingNumUe");
-            return true;
-        }
-        return false;
-    }
-
-    private boolean identFormatContainsInvalidCode(String placeholderName) {
-        if (!recordingUnitService.findAllIdentifiersCode().contains(placeholderName)) {
-            MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
-            return true;
-        }
-        return false;
-    }
-
-    private boolean identFormatOfCodeIsNotValid(String[] parts, String placeholderName) {
-        if (parts.length <= 1) return false;
-        String formatSpecifier = parts[1];
-        return identFormatSpecifierIsNotValid(placeholderName, formatSpecifier) || identNumericalFormatIsNotValid(placeholderName, formatSpecifier);
-    }
-
-    /**
-     * A numeric code (NUM_UE, NUM_PARENT, NUM_USPATIAL) needs a {@code 0+} specifier; any other
-     * code needs {@code X+} (and ID_UA may carry none at all — enforced by the caller, which never
-     * passes it a specifier to check here). Numeric and text codes are checked by two separate
-     * branches — a specifier valid for one must never fall through into the other's check.
-     */
-    private boolean identFormatSpecifierIsNotValid(String placeholderName, String formatSpecifier) {
-        if (recordingUnitService.findAllNumericalIdentifiersCode().contains(placeholderName)) {
-            if (!formatSpecifier.matches("0+")) {
-                MessageUtils.displayWarnMessage(langBean, "actionUnit.settings.help.numericalFormat", placeholderName);
-                return true;
-            }
-            return false;
-        }
-        if (!formatSpecifier.matches("X+") || placeholderName.equals(ID_UA)) {
-            MessageUtils.displayWarnMessage(langBean, "actionUnit.settings.help.textualFormat", placeholderName);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean identNumericalFormatIsNotValid(String placeholderName, String formatSpecifier) {
-        if (recordingUnitService.findAllNumericalIdentifiersCode().contains(placeholderName)) {
-            long zeroCount = formatSpecifier.chars().filter(ch -> ch == '0').count();
-            if (zeroCount > 0 && identLast != null && String.valueOf(identLast).length() > zeroCount) {
-                MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.insufficientDigits", placeholderName);
+        String ownToken = identifierResolverRegistry.ownNumericalToken(selectedTable);
+        for (IdentifierSegment segment : identSegments) {
+            if (segment.isToken() && ownToken.equals(segment.getCode()) && segment.getDigits() > 0
+                    && String.valueOf(identLast).length() > segment.getDigits()) {
+                MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.insufficientDigits", ownToken);
                 return true;
             }
         }
         return false;
+    }
+
+    private Optional<IdentifierResolver<IdentifierRenderContext>> resolver(String code) {
+        return selectedTable == null ? Optional.empty() : identifierResolverRegistry.resolver(selectedTable, code);
     }
 
 }

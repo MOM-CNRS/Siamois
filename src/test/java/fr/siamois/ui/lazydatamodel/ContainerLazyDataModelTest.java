@@ -6,6 +6,7 @@ import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,7 +104,7 @@ class ContainerLazyDataModelTest {
         Map<String, FilterMeta> filterBy = new HashMap<>();
 
         FilterMeta nameMeta = FilterMeta.builder()
-                .field(ActionUnitSpec.NAME_FILTER)
+                .field(ContainerSpec.IDENTIFIER_FILTER)
                 .filterValue("MyContainer")
                 .matchMode(MatchMode.CONTAINS)
                 .build();
@@ -114,7 +115,7 @@ class ContainerLazyDataModelTest {
                 .matchMode(MatchMode.CONTAINS)
                 .build();
 
-        filterBy.put(ActionUnitSpec.NAME_FILTER, nameMeta);
+        filterBy.put(ContainerSpec.IDENTIFIER_FILTER, nameMeta);
         filterBy.put(ActionUnitSpec.GLOBAL_FILTER, globalMeta);
 
         // Act
@@ -122,13 +123,13 @@ class ContainerLazyDataModelTest {
 
         // Assert
         assertTrue(filterDTO.hasUserFilters());
-        assertTrue(filterDTO.containsColumn(ActionUnitSpec.NAME_FILTER));
+        assertTrue(filterDTO.containsColumn(ContainerSpec.IDENTIFIER_FILTER));
         assertTrue(filterDTO.containsColumn(FilterDTO.GLOBAL_FILTER_KEY));
 
-        assertEquals("MyContainer", filterDTO.valueOfAsString(ActionUnitSpec.NAME_FILTER));
+        assertEquals("MyContainer", filterDTO.valueOfAsString(ContainerSpec.IDENTIFIER_FILTER));
         assertEquals("GlobalSearchText", filterDTO.valueOfAsString(FilterDTO.GLOBAL_FILTER_KEY));
 
-        assertEquals(FilterDTO.FilterType.CONTAINS, filterDTO.filterOf(ActionUnitSpec.NAME_FILTER).getType());
+        assertEquals(FilterDTO.FilterType.CONTAINS, filterDTO.filterOf(ContainerSpec.IDENTIFIER_FILTER).getType());
         assertEquals(FilterDTO.FilterType.CONTAINS, filterDTO.filterOf(FilterDTO.GLOBAL_FILTER_KEY).getType());
     }
 
@@ -152,18 +153,18 @@ class ContainerLazyDataModelTest {
         Map<String, SortMeta> sortBy = new HashMap<>();
 
         SortMeta nameSortMeta = SortMeta.builder()
-                .field(ActionUnitSpec.NAME_FILTER)
+                .field(ContainerSpec.IDENTIFIER_FILTER)
                 .order(org.primefaces.model.SortOrder.ASCENDING)
                 .build();
-        sortBy.put(ActionUnitSpec.NAME_FILTER, nameSortMeta);
+        sortBy.put(ContainerSpec.IDENTIFIER_FILTER, nameSortMeta);
 
         // Act
         lazyDataModel.prepareSortDTO(sortBy, sortDTO);
 
         // Assert
         assertFalse(sortDTO.isEmpty());
-        assertTrue(sortDTO.getAttributeNames().contains(ActionUnitSpec.NAME_FILTER));
-        assertEquals(SortDTO.SortOrder.ASC, sortDTO.orderOf(ActionUnitSpec.NAME_FILTER));
+        assertTrue(sortDTO.getAttributeNames().contains(ContainerSpec.IDENTIFIER_FILTER));
+        assertEquals(SortDTO.SortOrder.ASC, sortDTO.orderOf(ContainerSpec.IDENTIFIER_FILTER));
     }
 
     @Test
@@ -173,16 +174,16 @@ class ContainerLazyDataModelTest {
         Map<String, SortMeta> sortBy = new HashMap<>();
 
         SortMeta nameSortMeta = SortMeta.builder()
-                .field(ActionUnitSpec.NAME_FILTER)
+                .field(ContainerSpec.IDENTIFIER_FILTER)
                 .order(org.primefaces.model.SortOrder.DESCENDING)
                 .build();
-        sortBy.put(ActionUnitSpec.NAME_FILTER, nameSortMeta);
+        sortBy.put(ContainerSpec.IDENTIFIER_FILTER, nameSortMeta);
 
         // Act
         lazyDataModel.prepareSortDTO(sortBy, sortDTO);
 
         // Assert
         assertFalse(sortDTO.isEmpty());
-        assertEquals(SortDTO.SortOrder.DESC, sortDTO.orderOf(ActionUnitSpec.NAME_FILTER));
+        assertEquals(SortDTO.SortOrder.DESC, sortDTO.orderOf(ContainerSpec.IDENTIFIER_FILTER));
     }
 }

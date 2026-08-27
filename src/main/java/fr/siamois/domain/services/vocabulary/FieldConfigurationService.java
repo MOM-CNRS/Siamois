@@ -13,6 +13,7 @@ import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -31,6 +32,7 @@ import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -60,6 +62,7 @@ public class FieldConfigurationService {
     private final InstitutionMapper institutionMapper;
     private final ActionUnitMapper actionUnitMapper;
     private final FieldFormConfigRepository fieldFormConfigRepository;
+    private final ObjectProvider<FieldConfigurationService> selfProvider;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
         return conceptDTO.getFieldcode().isPresent();
@@ -77,7 +80,7 @@ public class FieldConfigurationService {
     public void setupFieldConfigurationForInstitution(UserInfo info,
                                                       Vocabulary vocabulary,
                                                       ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, progressWrapper);
+        selfProvider.getObject().setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, progressWrapper);
     }
 
     /**
@@ -89,6 +92,7 @@ public class FieldConfigurationService {
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(InstitutionDTO institution, Vocabulary vocabulary, ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfiguration(institution, vocabulary, progressWrapper);
     }
@@ -105,7 +109,7 @@ public class FieldConfigurationService {
     @NonNull
     @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull UserInfo info, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, new ProgressWrapper());
+        return selfProvider.getObject().setupFieldConfigurationForInstitution(info.getInstitution(), vocabulary, new ProgressWrapper());
     }
 
     /**
@@ -118,6 +122,7 @@ public class FieldConfigurationService {
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
     @NonNull
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         return setupFieldConfiguration(institution, vocabulary, new ProgressWrapper());
     }
@@ -307,6 +312,50 @@ public class FieldConfigurationService {
     }
 
     /**
+     * Gets the URL of a concept collection based on its vocabulary and external ID.
+     *
+     * @param collection the ConceptCollection for which to get the URL
+     * @return the URL of the collection
+     */
+    @NonNull
+    public String getUrlOfCollection(@NonNull ConceptCollection collection) {
+        Hibernate.initialize(collection.getVocabulary());
+        Vocabulary vocabulary = collection.getVocabulary();
+        return vocabulary.getBaseUri() + "/?idg=" + collection.getExternalId() + "&idt=" + vocabulary.getExternalVocabularyId();
+    }
+
+    /**
+     * Gets the OpenTheso URL to display for a concept field, following the same configuration priority
+     * as {@link #fetchAutocomplete(CustomFieldConcept, String, Long)} : the field's own branch/collection
+     * restriction for the given project (Action Unit) takes priority over its field-code configuration.
+     *
+     * @param conceptField the concept field to get the URL for
+     * @param actionUnitId the action unit (project) the field is displayed in, or null for institution-only
+     * @return the OpenTheso URL to display, or null if the field has no usable configuration
+     */
+    @Nullable
+    @Transactional(readOnly = true)
+    public String getUrlForConceptField(@NonNull CustomFieldConcept conceptField, @Nullable Long actionUnitId) {
+        Optional<ConceptFieldFormConfig> opt = fieldFormConfigRepository.findByFieldAndActionUnit(conceptField, actionUnitId);
+        if (opt.isPresent() && !opt.get().isNotValid()) {
+            ConceptFieldFormConfig config = opt.get();
+            if (config.isBranchConfig()) {
+                Concept branchTopTerm = config.getBranchTopTerm();
+                Hibernate.initialize(branchTopTerm.getVocabulary());
+                return getUrlOfConcept(branchTopTerm);
+            }
+            return getUrlOfCollection(config.getCollection());
+        }
+        if (conceptField instanceof CustomFieldConceptFromFieldCode fromFieldCode) {
+            UserInfo info = ExecutionContextHolder.get();
+            if (info != null) {
+                return getUrlForFieldCode(info, fromFieldCode.getFieldCode(), actionUnitId);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Gets the URL for a specific field code for a user.
      *
      * @param info      the user information containing institution and user details
@@ -492,6 +541,9 @@ public class FieldConfigurationService {
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Concept baseValue, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
         ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode, actionUnitId);
+        if (baseValue != null) {
+            conceptService.loadUnloadedRelatedConceptsOf(baseValue, config.getConcept());
+        }
         return autocompleteRepository.findMatchingConceptsFromRelatedFor(config.getConcept(), baseValue, info.getLang(), input, LIMIT_RESULTS);
     }
 

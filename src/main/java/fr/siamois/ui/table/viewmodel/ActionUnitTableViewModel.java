@@ -1,8 +1,9 @@
 package fr.siamois.ui.table.viewmodel;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -23,6 +24,8 @@ import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
+import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
+import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.primefaces.model.TreeNode;
@@ -48,7 +51,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     private final BaseActionUnitLazyDataModel actionUnitLazyDataModel;
     private final FlowBean flowBean;
 
-    private final InstitutionService institutionService;
+    private final ProfilePermissionService profilePermissionService;
 
     private final SessionSettingsBean sessionSettingsBean;
 
@@ -63,7 +66,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
                                     SpatialUnitService spatialUnitService,
                                     NavBean navBean,
                                     FlowBean flowBean, GenericNewUnitDialogBean<ActionUnitDTO> genericNewUnitDialogBean,
-                                    InstitutionService institutionService,
+                                    ProfilePermissionService profilePermissionService,
                                     FormContextServices formContextServices, ActionUnitService actionUnitService, ActionUnitMapper actionUnitMapper) {
 
         super(
@@ -81,7 +84,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         this.actionUnitLazyDataModel = actionUnitLazyDataModel;
         this.sessionSettingsBean = sessionSettingsBean;
         this.flowBean = flowBean;
-        this.institutionService = institutionService;
+        this.profilePermissionService = profilePermissionService;
         this.actionUnitService = actionUnitService;
         this.actionUnitMapper = actionUnitMapper;
     }
@@ -105,7 +108,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
             flowBean.addActionUnitToOverview(
                     au.getId(),
                     parentPanel,
-                    null
+                    null,
+                    false
             );
 
 
@@ -128,11 +132,40 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
                 return au.getName();
             }
 
+            if ("fullIdentifier".equals(valueKey)) {
+                return au.getFullIdentifier();
+            }
+
             throw new IllegalStateException("Unknown valueKey: " + valueKey);
         }
 
 
         return "";
+    }
+
+    @Override
+    public void handleLinkEdit(CommandLinkColumn column, ActionUnitDTO item, String newValue) {
+        String trimmed = newValue == null ? "" : newValue.trim();
+        if (trimmed.isEmpty()) {
+            MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.blank");
+            return;
+        }
+
+        String previous = item.getFullIdentifier();
+        item.setFullIdentifier(trimmed);
+
+        if (actionUnitService.fullIdentifierAlreadyExistInInstitution(item)) {
+            item.setFullIdentifier(previous);
+            MessageUtils.displayWarnMessage(langBean, "actionunit.error.identifier.alreadyExists");
+            return;
+        }
+
+        try {
+            actionUnitService.save(item);
+        } catch (FailedActionUnitSaveException e) {
+            item.setFullIdentifier(previous);
+            MessageUtils.displayErrorMessage(sessionSettingsBean.getLangBean(), "common.entity.actionUnit.updateFailed", item.getFullIdentifier());
+        }
     }
 
     @Override
@@ -152,9 +185,8 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     public boolean isRendered(TableColumn column, String key, ActionUnitDTO au) {
         return switch (key) {
             case "writeMode" -> flowBean.getIsWriteMode();
-            case "actionUnitCreateAllowed" -> institutionService.personIsInstitutionManagerOrActionManager(
-                    flowBean.getSessionSettings().getUserInfo().getUser(),
-                    flowBean.getSessionSettings().getSelectedInstitution());
+            case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(
+                    flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
             default -> false;
         };
     }
@@ -234,7 +266,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
         return switch (action.getAction()) {
             case DUPLICATE_ROW -> false;
             case TOGGLE_BOOKMARK -> false;
-            default -> true;
+            default -> canUserEditRow(au);
         };
     }
 
@@ -266,7 +298,12 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
     @Override
     public boolean canUserEditRow(ActionUnitDTO unit) {
-        return true; // todo: implement permission
+        // hasActionUnitWritePermission's org-level short-circuit (ORGANIZATION_MANAGE_ACTIONS) is not
+        // the same code as its project-level check (PROJECT_MANAGE_SETTINGS) — unlike the other
+        // entities' canUserEditRow, so both are passed through explicitly here.
+        return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
+                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS, PermissionConstants.PROJECT_MANAGE_SETTINGS,
+                ActionUnitDTO::getId, unit.getId());
     }
 
     @Override

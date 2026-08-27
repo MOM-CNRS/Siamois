@@ -3,6 +3,7 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.RelationColumn;
@@ -53,18 +54,19 @@ public final class ActionUnitTableDefinitionFactory {
         tableModel.getTableDefinition().setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
-                        .headerKey("table.spatialunit.column.name")
+                        .headerKey("table.actionunit.column.identifier")
                         .visible(true)
 
                         // PrimeFaces metadata equivalents
                         .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
-                        .sortField("name")
+                        .sortable(true)
+                        .filterable(true)
+                        .sortField("fullIdentifier")
 
                         .iconClass("bi bi-arrow-down-square")
                         .chipColor("var(--context-main-color)")
-                        .valueKey("name")
+                        .valueKey("fullIdentifier")
+                        .editable(true)
 
                         // What to do on click (Pattern A key)
                         .action(TableColumnAction.GO_TO_ACTION_UNIT)
@@ -96,6 +98,8 @@ public final class ActionUnitTableDefinitionFactory {
                         .headerIcon("bi bi-pencil-square")
                         .visible(true)
                         .toggleable(true)
+                        .sortable(true)
+                        .sortField(ActionUnitSpec.RECORDING_UNIT_COUNT_SORT)
 
                         .countKey("recordingUnit")
 

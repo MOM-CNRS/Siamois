@@ -3,16 +3,19 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
+import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.form.FormContextServices;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
+import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.SpecimenTableDefinitionFactory;
 import fr.siamois.ui.table.viewmodel.SpecimenTableViewModel;
 import lombok.EqualsAndHashCode;
@@ -43,6 +46,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
     private final transient GenericNewUnitDialogBean<SpecimenDTO> genericNewUnitDialogBean;
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
+    private final transient ProfilePermissionService profilePermissionService;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -74,6 +78,8 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
                 spatialUnitService,
                 navBean,
                 flowBean,
+                specimenService,
+                profilePermissionService,
                 genericNewUnitDialogBean,
                 formContextServices
         );
@@ -101,6 +107,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.navBean = context.getBean(NavBean.class);
         this.formContextServices = context.getBean(FormContextServices.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
     }
 
     @Override
@@ -178,7 +185,25 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
     @Override
     void configureTableColumns() {
         SpecimenTableDefinitionFactory.applyTo(tableModel);
-        // no toolbar button in institution context
+
+        // no toolbar button in institution context — creation requires a Recording Unit scope
+        tableModel.setToolbarCreateConfig(
+                ToolbarCreateConfig.builder()
+                        .kindToCreate(UnitKind.SPECIMEN)
+                        .createAllowedSupplier(() -> false)
+                        .unavailableMessageKeySupplier(() -> "specimen.toolbar.createRequiresRecordingUnit")
+                        .unavailableLinkLabelKeySupplier(() -> "common.action.selectRecordingUnit")
+                        .unavailableLinkAction(this::goToRecordingUnitList)
+                        .build()
+        );
+    }
+
+    private void goToRecordingUnitList() {
+        try {
+            navBean.goToRecordingUnitList("FOCUS");
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Override

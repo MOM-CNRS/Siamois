@@ -47,6 +47,16 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     protected transient Map<String, FilterMeta> initialFilter = new HashMap<>();
     protected boolean initialized = false;
 
+    /**
+     * The rows of the page {@link #load} most recently fetched — the same list instance is returned
+     * again by {@code load} as long as the page/sort/filter haven't changed (see the cache check at the
+     * top of {@link #load}), so callers can use its identity as a cheap "did the page change" signal to
+     * memoize per-page computations (e.g. table-wide permission checks) instead of redoing them per row.
+     */
+    public List<T> getQueryResult() {
+        return queryResult;
+    }
+
     // Constant filters: applied after prepareFilterDTO on every load/count, cannot be overridden by the user.
     private final Map<String, FilterDTO.FilterInfo> constantFilters = new LinkedHashMap<>();
 

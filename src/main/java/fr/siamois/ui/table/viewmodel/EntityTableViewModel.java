@@ -76,7 +76,18 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     protected final BaseLazyDataModel<T> lazyDataModel;
 
     @Setter
-    public int defaultPageSize = 20;
+    public int defaultPageSize = 10;
+
+    /**
+     * The row list {@link #canEditByActionUnit}/{@link #canEditFlat} last computed their permission
+     * cache for — its identity (not content) is the invalidation signal: {@link BaseLazyDataModel#load}
+     * hands back the very same list instance across repeated renders of an unchanged page, and only a
+     * real page/sort/filter change produces a new one (see its cache check).
+     */
+    private List<T> permissionCacheRows;
+    private Map<Long, Boolean> permissionCacheByActionUnit;
+    private Boolean permissionCacheFlatResult;
+
 
     /**
      * Services nécessaires pour la logique formulaire de ligne
@@ -107,6 +118,16 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     @Getter
     @Setter
     private Long overviewEntityId; // ID of the entity currently open in the overview panel
+
+    /**
+     * Ids of entities created by the last "duplicate structure" action, briefly highlighted in the
+     * table. Cleared by {@link #clearRecentlyCreated()}, invoked client-side a few seconds after
+     * the duplication so the highlight fades rather than lingering indefinitely.
+     */
+    private Set<Long> recentlyCreatedIds = new HashSet<>();
+
+    /** When {@link #recentlyCreatedIds} was last set, for the highlight's time-based expiry. */
+    private long recentlyCreatedAtMillis;
 
     /**
      * Nom de la propriété de T utilisée comme "form scope" (ex: "type"),
@@ -533,6 +554,12 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
     }
 
+    public void onToolbarCreateUnavailableLinkClick() {
+        if (toolbarCreateConfig != null && toolbarCreateConfig.getUnavailableLinkAction() != null) {
+            toolbarCreateConfig.getUnavailableLinkAction().run();
+        }
+    }
+
     public boolean hasUnsavedModifications() {
         return rowContexts.values().stream()
                 .anyMatch(EntityFormContext::isHasUnsavedModifications);
@@ -560,6 +587,62 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      * Check if user has permission to edit the row data
      */
     public abstract boolean canUserEditRow(T unit);
+
+
+
+    private void resetPermissionCacheIfPageChanged() {
+        List<T> currentRows = getLazyDataModel().getQueryResult();
+        if (currentRows != permissionCacheRows) {
+            permissionCacheRows = currentRows;
+            permissionCacheByActionUnit = null;
+            permissionCacheFlatResult = null;
+        }
+    }
+
+    /**
+     * Batches a per-action-unit permission check (org/instance short-circuit, else project-scoped)
+     * across every row of the current page into a single query — see
+     * {@link fr.siamois.domain.services.permissions.ProfilePermissionService#actionUnitIdsWithPermission} —
+     * instead of {@code canUserEditRow} querying once per row. Memoized against the current page, so
+     * only the first row of a page pays for the batch query.
+     *
+     * @param actionUnitIdOf   reads a row's action unit id, for building the batch's id set
+     * @param thisRowActionUnitId the action unit id of the row actually being checked
+     */
+    protected boolean canEditByActionUnit(fr.siamois.domain.services.permissions.ProfilePermissionService profilePermissionService,
+                                          fr.siamois.domain.models.UserInfo userInfo,
+                                          String organizationPermissionCode,
+                                          String projectPermissionCode,
+                                          Function<T, Long> actionUnitIdOf,
+                                          Long thisRowActionUnitId) {
+        resetPermissionCacheIfPageChanged();
+        if (permissionCacheByActionUnit == null) {
+            Set<Long> ids = permissionCacheRows == null ? Set.of() : permissionCacheRows.stream()
+                    .map(actionUnitIdOf)
+                    .filter(Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+            Set<Long> editable = profilePermissionService.actionUnitIdsWithPermission(
+                    userInfo, ids, organizationPermissionCode, projectPermissionCode);
+            permissionCacheByActionUnit = new HashMap<>();
+            for (Long id : ids) {
+                permissionCacheByActionUnit.put(id, editable.contains(id));
+            }
+        }
+        return thisRowActionUnitId != null && permissionCacheByActionUnit.getOrDefault(thisRowActionUnitId, false);
+    }
+
+    /**
+     * Same idea as {@link #canEditByActionUnit}, for a permission that doesn't vary by row (e.g. a pure
+     * organization-scoped check, see {@code SpatialUnitTableViewModel}) : evaluated once per page
+     * instead of once per row.
+     */
+    protected boolean canEditFlat(java.util.function.BooleanSupplier check) {
+        resetPermissionCacheIfPageChanged();
+        if (permissionCacheFlatResult == null) {
+            permissionCacheFlatResult = check.getAsBoolean();
+        }
+        return permissionCacheFlatResult;
+    }
 
     public String getOnCompleteJs(T unit) {
         if (unit instanceof RecordingUnitDTO) {
@@ -647,7 +730,43 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         if (overviewEntityId != null && overviewEntityId.equals(item.getId())) {
             classes = classes.isEmpty() ? "overview-open" : classes + " overview-open";
         }
+        if (isRecentlyCreated(item.getId())) {
+            classes = classes.isEmpty() ? "row-newly-duplicated" : classes + " row-newly-duplicated";
+        }
         return classes;
+    }
+
+    /**
+     * How long a "just duplicated" row keeps its highlight. The blink animation replays from
+     * the start on every render, so without an expiry an unrelated refresh minutes later would
+     * make the row blink again. Callers that can schedule a client-side callback may still clear
+     * it earlier (and more precisely) via {@link #clearRecentlyCreated()}.
+     */
+    private static final long RECENTLY_CREATED_TTL_MILLIS = 2_000L;
+
+    private boolean isRecentlyCreated(Long id) {
+        if (recentlyCreatedIds.isEmpty()) {
+            return false;
+        }
+        if (System.currentTimeMillis() - recentlyCreatedAtMillis > RECENTLY_CREATED_TTL_MILLIS) {
+            recentlyCreatedIds = new HashSet<>();
+            return false;
+        }
+        return recentlyCreatedIds.contains(id);
+    }
+
+    /**
+     * Flags {@code ids} so {@link #getRowStyleClass} highlights their rows, until either
+     * {@link #clearRecentlyCreated()} is called or {@link #RECENTLY_CREATED_TTL_MILLIS} elapses.
+     */
+    public void markRecentlyCreated(Collection<Long> ids) {
+        recentlyCreatedIds = new HashSet<>(ids);
+        recentlyCreatedAtMillis = System.currentTimeMillis();
+    }
+
+    /** Removes the "just duplicated" highlight from every row. */
+    public void clearRecentlyCreated() {
+        recentlyCreatedIds = new HashSet<>();
     }
 
     /**
@@ -680,7 +799,8 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     /**
      * Index (0-based) of {@code entityId} in the current page's cached result, or -1 if absent.
-     * Used to build a PrimeFaces {@code :@row(n)} AJAX update target.
+     * Used together with {@link fr.siamois.ui.table.RowAjaxUpdateResolver} to build a row-scoped
+     * PrimeFaces AJAX update target.
      */
     public int getRowIndexInCurrentPage(Long entityId) {
         if (lazyDataModel == null || entityId == null) return -1;
@@ -1021,7 +1141,10 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
     public String getSelectedAndTotalCount() {
-        return lazyDataModel.getSelectedUnits().size() + "/" + lazyDataModel.getRowCount();
+        int selectedCount = treeMode
+                ? (checkboxSelectedTreeNodes == null ? 0 : checkboxSelectedTreeNodes.size())
+                : lazyDataModel.getSelectedUnits().size();
+        return selectedCount + "/" + lazyDataModel.getRowCount();
     }
 
     public void handleSelectionChange() {

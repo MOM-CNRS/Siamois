@@ -1,9 +1,12 @@
 package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.components.OptionElement;
 import fr.siamois.ui.bean.settings.institution.InstitutionInfoSettingsBean;
@@ -15,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -34,29 +38,51 @@ public class InstitutionDetailsBean implements Serializable {
     private final SessionSettingsBean sessionSettingsBean;
     private InstitutionDTO institution;
     private transient List<OptionElement> elements;
-    private final transient InstitutionService institutionService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient InstitutionMembersListBean institutionMembersListBean;
+    private final RedirectBean redirectBean;
 
     public InstitutionDetailsBean(InstitutionInfoSettingsBean institutionInfoSettingsBean,
                                   InstitutionThesaurusSettingsBean institutionThesaurusSettingsBean,
                                   LangBean langBean,
                                   SessionSettingsBean sessionSettingsBean,
-                                  InstitutionService institutionService,
-                                  InstitutionMembersListBean institutionMembersListBean) {
+                                  ProfilePermissionService profilePermissionService,
+                                  InstitutionMembersListBean institutionMembersListBean,
+                                  RedirectBean redirectBean) {
 
         this.institutionInfoSettingsBean = institutionInfoSettingsBean;
         this.institutionThesaurusSettingsBean = institutionThesaurusSettingsBean;
         this.langBean = langBean;
         this.sessionSettingsBean = sessionSettingsBean;
-        this.institutionService = institutionService;
+        this.profilePermissionService = profilePermissionService;
         this.institutionMembersListBean = institutionMembersListBean;
+        this.redirectBean = redirectBean;
+    }
+
+    private boolean canManageInstitution() {
+        PersonDTO person = sessionSettingsBean.getUserInfo().getUser();
+        return profilePermissionService.hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)
+                || profilePermissionService.hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+    }
+
+    /**
+     * Guards the institution settings pages: redirects to the institution list if no institution
+     * was selected (e.g. direct URL access), or to a 404 if the current user cannot manage it.
+     */
+    public void checkInstitutionOrRedirect() {
+        if (institution == null) {
+            redirectBean.redirectTo("/settings/organisation");
+            return;
+        }
+        if (!canManageInstitution()) {
+            redirectBean.redirectTo(HttpStatus.NOT_FOUND);
+        }
     }
 
     public void init() {
         elements = new ArrayList<>();
 
-        if (institutionService.personIsInstitutionManager(sessionSettingsBean.getUserInfo().getUser()
-                , institution)) {
+        if (canManageInstitution()) {
             elements.add(new OptionElement("bi bi-building", langBean.msg("organisationSettings.titles.settings"),
                     langBean.msg("organisationSettings.descriptions.settings"), () -> {
                 institutionInfoSettingsBean.init(institution);

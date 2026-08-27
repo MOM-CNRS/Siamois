@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
+import org.springframework.lang.Nullable;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -28,6 +29,7 @@ public class Concept implements Serializable {
     @JoinColumn(name = "fk_vocabulary_id", nullable = false)
     private Vocabulary vocabulary;
 
+    @Nullable
     @Column(name = "external_id", length = Integer.MAX_VALUE)
     private String externalId;
 
@@ -42,6 +44,17 @@ public class Concept implements Serializable {
             indexes = {@Index(name = "idx_related_concepts", columnList = "fk_concept_id")}
     )
     private Set<Concept> relatedConcepts;
+
+    @Nullable
+    @Column(name = "uri")
+    private String uri;
+
+    /**
+     * The infos about a concept that is not loaded should be with {{@link fr.siamois.infrastructure.api.ConceptApi#fetchConceptInfoByUri(Vocabulary, String)}}
+     * and then mark the concept as loaded
+     */
+    @Column(name = "is_loaded", nullable = false, columnDefinition = "boolean default false")
+    private boolean isLoaded = false;
 
     @Override
     public boolean equals(Object o) {

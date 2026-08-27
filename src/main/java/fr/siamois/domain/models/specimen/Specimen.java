@@ -85,9 +85,6 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     private List<Person> collectors;
 
     @FieldCode
-    public static final String CATEGORY_FIELD = "SIAS.CATEGORY"; // ceramique, ...
-
-    @FieldCode
     public static final String METHOD_FIELD = "SIAS.METHOD";
 
     @FieldCode

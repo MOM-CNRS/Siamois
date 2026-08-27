@@ -110,14 +110,15 @@ public class FindOpenApiService {
         shell.setValidated(ValidationStatus.INCOMPLETE);
 
         Map<String, Object> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
-        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
-        mergeFieldAnswers(response, fieldSource, fieldAnswers);
-        formService.updateJpaEntityFromResponse(response, shell);
-
-        SpecimenDTO created = specimenService.save(shell);
+        SpecimenDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
+            FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
+            mergeFieldAnswers(response, fieldSource, fieldAnswers);
+            formService.updateJpaEntityFromResponse(response, shell);
+            return specimenService.save(shell);
+        });
         return findOpenApiMapper.toResource(created);
     }
 
@@ -153,15 +154,14 @@ public class FindOpenApiService {
 
         FormUiDto systemForm = Specimen.DETAILS_FORM;
 
-        OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
+        SpecimenDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
             mergeFieldAnswers(response, fieldSource, answers);
             formService.updateJpaEntityFromResponse(response, dto);
+            return specimenService.save(dto);
         });
-
-        SpecimenDTO saved = specimenService.save(dto);
         return findOpenApiMapper.toResource(saved);
     }
 
@@ -316,12 +316,9 @@ public class FindOpenApiService {
         s.setName(au.getName());
         s.setFullIdentifier(au.getFullIdentifier());
         s.setIdentifier(au.getIdentifier());
-        s.setRecordingUnitIdentifierFormat(au.getRecordingUnitIdentifierFormat());
         s.setType(au.getType());
         s.setBeginDate(au.getBeginDate());
         s.setEndDate(au.getEndDate());
-        s.setMinRecordingUnitCode(au.getMinRecordingUnitCode());
-        s.setMaxRecordingUnitCode(au.getMaxRecordingUnitCode());
         return s;
     }
 

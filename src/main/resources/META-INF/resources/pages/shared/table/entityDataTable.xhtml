@@ -34,7 +34,8 @@
                  first="#{tableModel.lazyDataModel.first}"
                  sortMode="multiple"
                  filteredValue="#{tableModel.lazyDataModel.filtered}"
-                 partialUpdate="false"
+                 partialUpdate="true"
+                 filterDelay="300"
                  emptyMessage="#{langBean.msg('recordingUnitList.empty')}"
                  paginatorTemplate="#{langBean.msg('label.resultsPerPage')}: {RowsPerPageDropdown} {RowReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
                  rowsPerPageTemplate="#{tableModel.rowPerPage()}"
@@ -43,11 +44,11 @@
                  tableStyleClass="datatable-hoverable-table"
                  rowStyleClass="#{tableModel.getRowStyleClass(item)}"
                  value="#{tableModel.lazyDataModel}"
-                 styleClass="#{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
+                 styleClass="sia-entity-table #{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
 
-        <p:ajax event="rowSelectCheckbox" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
-        <p:ajax event="rowUnselectCheckbox" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
-        <p:ajax event="toggleSelect" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="rowSelectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="rowUnselectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
+        <p:ajax event="toggleSelect" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
 
         <f:facet name="{RowReport}">
             <span class="ui-paginator-current">
@@ -75,9 +76,15 @@
 
         <!-- Merged: status | id-chip | row-actions -->
         <p:column styleClass="small-cell" exportable="false" toggleable="false" id="statusIdActionsCol"
-                  style="width: 1%; white-space: nowrap;">
+                  style="width: 1%; white-space: nowrap;"
+                  headerText=""
+                  sortable="#{tableModel.tableDefinition.commandLinkColumn.sortable}"
+                  field="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
+                  sortBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
+                  filterable="#{tableModel.tableDefinition.commandLinkColumn.filterable}"
+                  filterBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}">
 
-            <p:outputPanel id="mergedCell" layout="block">
+            <p:outputPanel id="mergedCell" layout="block" styleClass="siamois-row-ajax-target">
                 <div class="mca-wrapper">
 
                     <!-- Status (left) -->
@@ -107,13 +114,14 @@
 
                             <div class="chip-cell-actions">
                                 <p:commandButton id="editChipBtn"
-                                                 rendered="#{tableModel.tableDefinition.commandLinkColumn.editable}"
+                                                 rendered="#{tableModel.tableDefinition.commandLinkColumn.editable and tableModel.isRendered(tableModel.tableDefinition.commandLinkColumn, 'writeMode', item)}"
                                                  icon="bi bi-pencil"
-                                                 styleClass="rum-action-btn"
+                                                 styleClass="rum-edit-id-btn"
                                                  action="#{tableModel.startEditLink(item)}"
                                                  update="mergedCell"
                                                  process="@this"
-                                                 title="Modifier"/>
+                                                 oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
+                                <p:tooltip for="editChipBtn" value="Modifier l'identifiant" position="top"/>
                             </div>
 
                             <p:contextMenu for="chipNavigate">
@@ -131,15 +139,19 @@
                                       style="display:flex; align-items:center; gap:4px;">
                             <p:inputText id="editLinkInput"
                                          value="#{tableModel.editingLinkValue}"
-                                         style="min-width: 8em;"/>
-                            <p:commandButton icon="bi bi-check"
-                                             styleClass="rum-action-btn"
+                                         style="min-width: 8em;"
+                                         styleClass="rum-edit-link-input"
+                                         onkeydown="if(event.key==='Enter'){event.preventDefault();$(this).siblings('.rum-apply-link-edit-btn').trigger('click');}else if(event.key==='Escape'){event.preventDefault();$(this).siblings('.rum-cancel-link-edit-btn').trigger('click');}"/>
+                            <p:commandButton id="applyLinkEditBtn"
+                                             icon="bi bi-check"
+                                             styleClass="rum-action-btn rum-apply-link-edit-btn"
                                              title="Valider"
                                              action="#{tableModel.applyLinkEdit(item)}"
                                              update="mergedCell"
                                              process="editLinkInput @this"/>
-                            <p:commandButton icon="bi bi-x"
-                                             styleClass="rum-action-btn"
+                            <p:commandButton id="cancelLinkEditBtn"
+                                             icon="bi bi-x"
+                                             styleClass="rum-action-btn rum-cancel-link-edit-btn"
                                              title="Annuler"
                                              action="#{tableModel.cancelEditLink()}"
                                              update="mergedCell"
@@ -152,7 +164,8 @@
                     <div class="mca-row-actions">
                         <ui:repeat value="#{tableModel.rowActions}" var="action">
                             <p:commandButton
-                                    rendered="#{tableModel.isRendered(action, item)}"
+                                    disabled="#{not tableModel.isRendered(action, item)}"
+                                    style="#{tableModel.isRendered(action, item) ? '' : 'visibility:hidden'}"
                                     icon="#{tableModel.resolveIcon(action, item)}"
                                     action="#{tableModel.handleRowAction(action, item)}"
                                     process="#{empty action.processExpr ? '@this' : action.processExpr}"
@@ -178,7 +191,7 @@
                     visible="#{column.visible}"
                     field="#{column.field.valueBinding}"
                     filterBy="#{column.field.valueBinding}"
-                    sortBy="#{column.field.valueBinding}"
+                    sortBy="#{column.field != null ? column.field.valueBinding : column.sortField}"
                     toggleable="#{column.type != 'COMMAND_LINK'}"
             >
                 <ui:include src="/pages/shared/table/filterTemplate.xhtml">

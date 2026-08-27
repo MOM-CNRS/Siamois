@@ -1,8 +1,13 @@
 package fr.siamois.ui.redirection;
 
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.ui.bean.NavBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
 import fr.siamois.ui.bean.settings.administration.ApplicationMembersListBean;
+import fr.siamois.ui.bean.settings.project.ProjectListBean;
+import jakarta.ws.rs.ForbiddenException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,13 +21,23 @@ public class SettingsController {
     private final NavBean navBean;
     private final InstitutionListSettingsBean institutionListSettingsBean;
     private final ApplicationMembersListBean applicationMembersListBean;
+    private final SessionSettingsBean sessionSettingsBean;
+    private final ProfilePermissionService profilePermissionService;
+    private final ProjectListBean projectListBean;
 
 
 
-    public SettingsController(NavBean navBean, InstitutionListSettingsBean institutionListSettingsBean, ApplicationMembersListBean applicationMembersListBean) {
+    public SettingsController(NavBean navBean, InstitutionListSettingsBean institutionListSettingsBean,
+                               ApplicationMembersListBean applicationMembersListBean,
+                               SessionSettingsBean sessionSettingsBean,
+                               ProfilePermissionService profilePermissionService,
+                               ProjectListBean projectListBean) {
         this.navBean = navBean;
         this.institutionListSettingsBean = institutionListSettingsBean;
         this.applicationMembersListBean = applicationMembersListBean;
+        this.sessionSettingsBean = sessionSettingsBean;
+        this.profilePermissionService = profilePermissionService;
+        this.projectListBean = projectListBean;
     }
 
     @GetMapping("/settings")
@@ -44,6 +59,9 @@ public class SettingsController {
 
     @GetMapping("/settings/organisation")
     public String goToAdminInstitutionSettings() {
+        if (!profilePermissionService.canViewInstitutionData(sessionSettingsBean.getUserInfo().getUser(), sessionSettingsBean.getSelectedInstitution())) {
+            throw new ForbiddenException();
+        }
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         institutionListSettingsBean.init();
         return "forward:/pages/settings/institutionListSettings.xhtml";
@@ -52,12 +70,16 @@ public class SettingsController {
     @GetMapping("/settings/project")
     public String goToProjectsSettings() {
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
-        institutionListSettingsBean.init();
+        projectListBean.init();
         return "forward:/pages/settings/project/projectList.xhtml";
     }
 
     @GetMapping("/settings/administration")
     public String goToUserManagementSettings() {
+        if (!profilePermissionService.hasInstancePermission(
+                sessionSettingsBean.getUserInfo().getUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS)) {
+            throw new ForbiddenException();
+        }
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         applicationMembersListBean.init();
         return "forward:/pages/settings/administration/userManagementSettings.xhtml";

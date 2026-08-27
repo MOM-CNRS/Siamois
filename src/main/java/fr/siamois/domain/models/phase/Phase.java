@@ -44,6 +44,10 @@ public class Phase extends TraceableEntity {
     @Column(name = "identifier")
     private String identifier;
 
+    /** Raw allocated counter value; kept separately because it cannot be inferred from the format. */
+    @Column(name = "generated_number")
+    private Integer generatedNumber;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_action_unit_id")
     private ActionUnit actionUnit;

@@ -110,7 +110,7 @@ public class PersonProfileAssignmentService {
         return applicationMemberDTO;
     }
 
-    public boolean isNotSuperAdmin(PersonDTO person) {
+    private boolean isNotSuperAdmin(PersonDTO person) {
         return !personProfileAssignmentRepository.personIsSuperAdmin(person.getId());
     }
 
@@ -133,7 +133,7 @@ public class PersonProfileAssignmentService {
         ppaOpt.ifPresent(personProfileAssignmentRepository::delete);
     }
 
-    public boolean isNotOrganisationManager(InstitutionDTO institutionDTO, PersonDTO person) {
+    private boolean isNotOrganisationManager(InstitutionDTO institutionDTO, PersonDTO person) {
         Optional<PersonProfileAssignment> ppaOpt = personProfileAssignmentRepository
                 .findByProfileCodeAndInstitutionIdAndPersonId(ProfileConstants.ORGANIZATION_MANAGER, institutionDTO.getId(), person.getId());
         return ppaOpt.isEmpty();
@@ -153,7 +153,7 @@ public class PersonProfileAssignmentService {
         personProfileAssignmentRepository.deleteByInstitutionIdAndPersonId(institution.getId(), person.getId());
     }
 
-    public boolean isNotProjectManager(ActionUnitDTO project, PersonDTO authenticatedUser) {
+    private boolean isNotProjectManager(ActionUnitDTO project, PersonDTO authenticatedUser) {
         Optional<PersonProfileAssignment> opt = personProfileAssignmentRepository.findByProfileCodeAndActionIdAndPersonId(ProfileConstants.PROJECT_MANAGER, project.getId(), authenticatedUser.getId());
         return opt.isEmpty();
     }

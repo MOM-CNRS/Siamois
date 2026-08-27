@@ -1,10 +1,10 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.RelationColumn;
@@ -46,13 +46,6 @@ public final class SpatialUnitTableDefinitionFactory {
                 .vocabulary(SYSTEM_THESO)
                 .externalId("4282365")
                 .build();
-        // unit name
-        final Concept nameConcept = new Concept.Builder()
-                .vocabulary(SYSTEM_THESO)
-                .externalId("4285848")
-                .build();
-
-
 
         // --------------- Fields
         CustomFieldSelectOneFromFieldCode spatialUnitTypeField = CustomFieldSelectOneFromFieldCode.builder()
@@ -64,14 +57,6 @@ public final class SpatialUnitTableDefinitionFactory {
                 .iconClass("bi bi-geo-alt")
                 .fieldCode(SpatialUnit.CATEGORY_FIELD_CODE)
                 .concept(spatialUnitTypeConcept)
-                .build();
-
-        CustomFieldText nameField =  CustomFieldText.builder()
-                .label("common.label.name")
-                .id(-252L)
-                .isSystemField(true)
-                .valueBinding("name")
-                .concept(nameConcept)
                 .build();
 
 
@@ -92,6 +77,7 @@ public final class SpatialUnitTableDefinitionFactory {
                         .iconClass("bi bi-geo-alt")
                         .chipColor("var(--context-main-color)")
                         .valueKey("name")
+                        .editable(true)
                         .action(TableColumnAction.GO_TO_SPATIAL_UNIT)
 
                         .processExpr(THIS)
@@ -101,17 +87,6 @@ public final class SpatialUnitTableDefinitionFactory {
                         .build()
         );
 
-        tableModel.getTableDefinition().addColumn(
-                FormFieldColumn.builder()
-                        .id("name")
-                        .headerKey("spatialunit.field.name")
-                        .field(nameField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(true)
-                        .required(true)
-                        .build()
-        );
         tableModel.getTableDefinition().addColumn(
                 FormFieldColumn.builder()
                         .id("type")
@@ -135,6 +110,8 @@ public final class SpatialUnitTableDefinitionFactory {
                         .headerIcon("bi bi-arrow-down-square")
                         .visible(true)
                         .toggleable(true)
+                        .sortable(true)
+                        .sortField(SpatialUnitSpec.ACTIONS_COUNT_SORT)
                         .countKey("actions")
 
                         .viewIcon(BI_BI_EYE)
@@ -145,6 +122,33 @@ public final class SpatialUnitTableDefinitionFactory {
                         .addIcon(BI_BI_PLUS_SQUARE)
                         .addAction(TableColumnAction.ADD_RELATION)
                         .addRenderedKey("actionUnitCreateAllowed")
+
+                        .processExpr(THIS)
+                        .updateExpr("flow")
+                        .onstartJs(PF_BUI_CONTENT_SHOW)
+                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
+                        .build()
+        );
+
+        // -------------
+        // Recording units
+        // -------------
+        tableModel.getTableDefinition().addColumn(
+                RelationColumn.builder()
+                        .id("recording")
+                        .headerKey("table.spatialunit.column.recordings")
+                        .headerIcon("bi bi-pencil-square")
+                        .visible(true)
+                        .toggleable(true)
+                        .sortable(true)
+                        .sortField(SpatialUnitSpec.RECORDING_UNIT_COUNT_SORT)
+                        .countKey("recordingUnit")
+
+                        .viewIcon(BI_BI_EYE)
+                        .viewAction(TableColumnAction.VIEW_RELATION)
+                        .viewTargetIndex(3)
+
+                        .addEnabled(false)
 
                         .processExpr(THIS)
                         .updateExpr("flow")

@@ -2,14 +2,13 @@ package fr.siamois.ui.bean.panel.models.panel.list;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.ContainerService;
-import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
-import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
@@ -47,7 +46,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     private final transient FlowBean flowBean;
     private final transient GenericNewUnitDialogBean<ContainerDTO> genericNewUnitDialogBean;
     private final transient NavBean navBean;
-    private final transient InstitutionService institutionService;
+    private final transient ProfilePermissionService profilePermissionService;
     private final transient FormContextServices formContextServices;
     private final transient ActionUnitMapper actionUnitMapper;
     private final transient ContainerService containerService;
@@ -85,10 +84,11 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
                 navBean,
                 flowBean,
                 genericNewUnitDialogBean,
-                institutionService,
+                profilePermissionService,
                 formContextServices,
                 actionUnitService,
-                actionUnitMapper
+                actionUnitMapper,
+                containerService
         );
         tableModel.setParentPanel(this);
         return lazy;
@@ -110,7 +110,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
         this.flowBean = context.getBean(FlowBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.navBean = context.getBean(NavBean.class);
-        this.institutionService = context.getBean(InstitutionService.class);
+        this.profilePermissionService = context.getBean(ProfilePermissionService.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.actionUnitMapper = actionUnitMapper;
         this.containerService = containerService;
@@ -160,17 +160,23 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
     void configureTableColumns() {
         ContainerTableDefinitionFactory.applyTo(tableModel);
 
-        // configuration du bouton creer
         tableModel.setToolbarCreateConfig(
                 ToolbarCreateConfig.builder()
                         .kindToCreate(UnitKind.CONTAINER)
-                        .scopeSupplier(NewUnitContext.Scope::none)
-                        .insertPolicySupplier(() -> NewUnitContext.UiInsertPolicy.builder()
-                                .listInsert(NewUnitContext.ListInsert.TOP)
-                                .treeInsert(NewUnitContext.TreeInsert.ROOT)
-                                .build())
+                        .createAllowedSupplier(() -> false)
+                        .unavailableMessageKeySupplier(() -> "container.toolbar.createRequiresActionUnit")
+                        .unavailableLinkLabelKeySupplier(() -> "common.action.selectProject")
+                        .unavailableLinkAction(this::goToActionUnitList)
                         .build()
         );
+    }
+
+    private void goToActionUnitList() {
+        try {
+            navBean.goToActionUnitList("FOCUS");
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Override

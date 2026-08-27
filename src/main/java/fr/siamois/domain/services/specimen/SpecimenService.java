@@ -1,16 +1,23 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -26,6 +33,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -58,6 +66,8 @@ public class SpecimenService implements ArkEntityService {
     private final InstitutionRepository institutionRepository;
     private final ArkRepository arkRepository;
     private final UnitDefinitionService unitDefinitionService;
+    private final EntityIdentifierGenerator identifierGenerator;
+    private final ProfilePermissionService profilePermissionService;
 
 
     @Override
@@ -186,6 +196,17 @@ public class SpecimenService implements ArkEntityService {
         return measurement;
     }
 
+    public boolean fullIdentifierAlreadyExistInAction(SpecimenDTO specimen) {
+        Long actionUnitId = specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null;
+        if (actionUnitId == null) {
+            // No action unit resolved on the DTO (e.g. only linked via a recording unit summary
+            // that doesn't carry it) — nothing to scope the uniqueness check against.
+            return false;
+        }
+        return specimenRepository.findByActionUnitIdAndFullIdentifier(actionUnitId, specimen.getFullIdentifier()).stream()
+                .anyMatch(existing -> !Objects.equals(existing.getId(), specimen.getId()));
+    }
+
     /**
      * Saves a specimen to the repository.
      *
@@ -193,16 +214,7 @@ public class SpecimenService implements ArkEntityService {
      * @return the saved specimen
      */
     public SpecimenDTO save(SpecimenDTO toSave) {
-
-        if (toSave.getFullIdentifier() == null) {
-            if (toSave.getIdentifier() == null) {
-
-                toSave.setIdentifier(generateNextIdentifier(toSave));
-            }
-            // Set full identifier
-            toSave.setFullIdentifier(toSave.getRecordingUnit().getFullIdentifier()+"_"+toSave.getIdentifier().toString());
-        }
-
+        assertWritePermission(toSave);
         // Convertir SpecimenDTO en Specimen
         Specimen specimen = specimenMapper.invertConvert(toSave);
 
@@ -211,6 +223,7 @@ public class SpecimenService implements ArkEntityService {
         setupChilds(specimen, managedSpecimen);
         setupOtherFields(specimen, managedSpecimen);
         attachManagedAssociations(specimen, managedSpecimen);
+        identifierGenerator.generateIdentifierIfRequired(managedSpecimen, specimenIdentifierSpec());
         synchronizeCollection(managedSpecimen.getMaterialClass(), resolveConcepts(specimen.getMaterialClass()));
         synchronizeCollection(managedSpecimen.getMaterial(), resolveConcepts(specimen.getMaterial()));
         synchronizeCollection(managedSpecimen.getContainers(), specimen.getContainers());
@@ -221,6 +234,58 @@ public class SpecimenService implements ArkEntityService {
 
         // Convertir l'entité sauvegardée en SpecimenDTO et la retourner
         return specimenMapper.convert(savedSpecimen);
+    }
+
+    private IdentifierGenerationSpec<Specimen> specimenIdentifierSpec() {
+        return IdentifierGenerationSpec.<Specimen>builder()
+                .table(ConfigurableTable.MOBILIER)
+                .entityName("specimen")
+                .generationRequired(specimen -> specimen.getId() == null && specimen.getFullIdentifier() == null)
+                .actionUnit(this::resolveIdentifierActionUnit)
+                .typeId(specimen -> specimen.getCategory() == null ? null : specimen.getCategory().getId())
+                .displayValue("NUM_PARENT", specimen -> {
+                    Specimen parent = deterministicParent(specimen);
+                    return parent == null ? null : parent.getIdentifier();
+                })
+                .displayValue("ID_PARENT", specimen -> {
+                    Specimen parent = deterministicParent(specimen);
+                    return parent == null ? null : parent.getFullIdentifier();
+                })
+                .displayValue("NUM_UE", specimen -> specimen.getRecordingUnit() == null
+                        ? null : specimen.getRecordingUnit().getIdentifier())
+                .displayValue("ID_UE", specimen -> specimen.getRecordingUnit() == null
+                        ? null : specimen.getRecordingUnit().getFullIdentifier())
+                .displayValue("ID_UA", specimen -> specimen.getActionUnit().getFullIdentifier())
+                .partitionValue("PARENT_MOBILIER", specimen -> {
+                    Specimen parent = deterministicParent(specimen);
+                    return parent == null ? null : parent.getId();
+                })
+                .partitionValue("PARENT_RU", specimen -> specimen.getRecordingUnit() == null
+                        ? null : specimen.getRecordingUnit().getId())
+                .identifierAlreadyUsed((specimen, candidate) ->
+                        specimenRepository.findByActionUnitIdAndFullIdentifier(
+                                        specimen.getActionUnit().getId(), candidate).stream()
+                                .anyMatch(existing -> !Objects.equals(existing.getId(), specimen.getId())))
+                .numberSetter(Specimen::setIdentifier)
+                .identifierSetter(Specimen::setFullIdentifier)
+                .build();
+    }
+
+    private ActionUnit resolveIdentifierActionUnit(Specimen specimen) {
+        RecordingUnit recordingUnit = specimen.getRecordingUnit();
+        ActionUnit actionUnit = specimen.getActionUnit();
+        if (actionUnit == null && recordingUnit != null) actionUnit = recordingUnit.getActionUnit();
+        specimen.setActionUnit(actionUnit);
+        return actionUnit;
+    }
+
+    private static Specimen deterministicParent(Specimen specimen) {
+        if (specimen.getParents() == null) return null;
+        return specimen.getParents().stream()
+                .filter(Objects::nonNull)
+                .filter(parent -> parent.getId() != null)
+                .min(Comparator.comparing(Specimen::getId))
+                .orElse(null);
     }
 
     private void attachManagedAssociations(Specimen source, Specimen managed) {
@@ -297,9 +362,28 @@ public class SpecimenService implements ArkEntityService {
 
     @Override
     public AbstractEntityDTO save(AbstractEntityDTO abstractEntityDTO) {
+        assertWritePermission((SpecimenDTO) abstractEntityDTO);
         Specimen specimen = specimenMapper.invertConvert((SpecimenDTO) abstractEntityDTO);
         Specimen saved = specimenRepository.save(specimen);
         return specimenMapper.convert(saved);
+    }
+
+    /**
+     * Checks that the current user can write the given specimen, resolving its action unit
+     * through the related recording unit if it isn't directly set (mirrors {@link #resolveIdentifierActionUnit}).
+     */
+    private void assertWritePermission(SpecimenDTO toSave) {
+        UserInfo info = ExecutionContextHolder.get();
+        Long actionUnitId = toSave.getActionUnit() != null ? toSave.getActionUnit().getId() : null;
+        if (actionUnitId == null && toSave.getRecordingUnit() != null && toSave.getRecordingUnit().getId() != null) {
+            actionUnitId = recordingUnitRepository.findById(toSave.getRecordingUnit().getId())
+                    .map(RecordingUnit::getActionUnit)
+                    .map(ActionUnit::getId)
+                    .orElse(null);
+        }
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS)) {
+            throw new ForbiddenOperationException("You are not allowed to edit this specimen");
+        }
     }
 
     /**
@@ -616,6 +700,18 @@ public class SpecimenService implements ArkEntityService {
         Specimen specimen = specimenRepository.findById(specimenId)
                 .orElseThrow(() -> new IllegalArgumentException("Mobilier introuvable: " + specimenId));
 
+        UserInfo info = ExecutionContextHolder.get();
+        ActionUnit actionUnit;
+        if (specimen.getActionUnit() != null) {
+            actionUnit = specimen.getActionUnit();
+        } else {
+            actionUnit = specimen.getRecordingUnit() != null ? specimen.getRecordingUnit().getActionUnit() : null;
+        }
+        Long actionUnitId = actionUnit != null ? actionUnit.getId() : null;
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS)) {
+            throw new ForbiddenOperationException("You are not allowed to delete this specimen");
+        }
+
         if (specimenRepository.countMovementsBySpecimenId(specimenId) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le mobilier a des mouvements associés");
         }
@@ -717,6 +813,10 @@ public class SpecimenService implements ArkEntityService {
 
         if (filters.containsColumn(SpecimenSpec.RECORDING_UNIT_FILTER)) {
             specification = specification.and(SpecimenSpec.isInRecordingUnit(filters.valueAsIdListOf(SpecimenSpec.RECORDING_UNIT_FILTER)));
+        }
+
+        if (filters.containsColumn(SpecimenSpec.FULL_IDENTIFIER_FILTER)) {
+            specification = specification.and(SpecimenSpec.fullIdentifierContaining(filters.valueOfAsString(SpecimenSpec.FULL_IDENTIFIER_FILTER)));
         }
 
         return specification;

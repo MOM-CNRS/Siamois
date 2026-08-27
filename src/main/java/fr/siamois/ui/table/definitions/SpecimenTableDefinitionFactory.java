@@ -54,7 +54,6 @@ public final class SpecimenTableDefinitionFactory {
 
     private static void applyTo(TableDefinition definition) {
 
-        CustomField idField = systemField(ConfigurableTable.MOBILIER, "fullIdentifier");
         CustomField categoryField = systemField(ConfigurableTable.MOBILIER, "category");
         CustomField recordingUnitField = systemField(ConfigurableTable.MOBILIER, "recordingUnit");
         CustomField isPartOfField = systemField(ConfigurableTable.MOBILIER, "parents");
@@ -79,12 +78,13 @@ public final class SpecimenTableDefinitionFactory {
                         .headerKey("table.recordingunit.column.identifier")
                         .visible(true)
                         .toggleable(false)
-                        .sortable(false)
-                        .filterable(false)
-                        .sortField("full_identifier")
+                        .sortable(true)
+                        .filterable(true)
+                        .sortField("fullIdentifier")
                         .iconClass("bi bi-bucket")
                         .chipColor("var(--ground-main-color)")
                         .valueKey("fullIdentifier")
+                        .editable(true)
                         .action(TableColumnAction.GO_TO_SPECIMEN)
                         .processExpr(THIS)
                         .updateExpr("flow")
@@ -94,18 +94,6 @@ public final class SpecimenTableDefinitionFactory {
         );
 
         // --- Visible columns ---
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("identifier")
-                        .headerKey("recordingunit.field.identifier")
-                        .field(idField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(true)
-                        .required(true)
-                        .build()
-        );
-
         definition.addColumn(
                 FormFieldColumn.builder()
                         .id("category")

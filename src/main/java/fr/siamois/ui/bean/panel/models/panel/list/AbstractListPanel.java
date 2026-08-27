@@ -16,6 +16,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
+import fr.siamois.ui.table.RowAjaxUpdateResolver;
 import fr.siamois.ui.table.TableViewRuntimeMapper;
 import fr.siamois.ui.table.column.TableColumn;
 import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
@@ -217,10 +218,16 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     @Override
     public void closeOverview() {
         if (tableModel != null) {
+            Long previousOverviewId = tableModel.getOverviewEntityId();
             tableModel.setOverviewEntityId(null);
+            super.closeOverview();
+            List<String> targets = getRowUpdateTargets(previousOverviewId);
+            if (!targets.isEmpty()) {
+                PrimeFaces.current().ajax().update(targets);
+            }
+        } else {
+            super.closeOverview();
         }
-        super.closeOverview();
-        PrimeFaces.current().ajax().update(getActiveTableClientId());
     }
 
 
@@ -231,16 +238,18 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     }
 
     /**
-     * AJAX update target for a single row, or the whole table when the row index is unknown.
-     * Always targets the table component itself — never the outer panel container.
+     * Row-scoped AJAX update targets (one per cell) for {@code entityId}, or an empty list if
+     * it isn't on the currently displayed page. Never falls back to updating the whole table —
+     * if there's no row to target, there's nothing to refresh.
      */
-    public String getRowUpdateTarget(Long entityId) {
-        if (tableModel == null || entityId == null) return getActiveTableClientId();
-        String prefix = getTableClientIdPrefix();
-        if (tableModel.isTreeMode()) {
-            return prefix + ":entityTreeTable";
-        }
-        return prefix + ":entityDatatable";
+    public List<String> getRowUpdateTargets(Long entityId) {
+        if (tableModel == null || entityId == null) return List.of();
+        int rowIndex = tableModel.getRowIndexInCurrentPage(entityId);
+        if (rowIndex < 0) return List.of();
+        // UIData/LazyDataModel address rows by their absolute index across the whole dataset
+        // (rowIndex - first), not by their index within the current page.
+        int absoluteRowIndex = tableModel.getLazyDataModel().getFirst() + rowIndex;
+        return RowAjaxUpdateResolver.resolveRowChildIds(getActiveTableClientId(), absoluteRowIndex);
     }
 
     /** Returns the currently active table component client ID (tree or flat). */

@@ -24,15 +24,6 @@ body:
       required: true
 
   - type: textarea
-    id: actual
-    attributes:
-      label: Comportement observé
-      description: Décrivez ce qui s'est réellement produit.
-      placeholder: Expliquez le comportement observé...
-    validations:
-      required: true
-
-  - type: textarea
     id: reprod
     attributes:
       label: Étapes de reproduction

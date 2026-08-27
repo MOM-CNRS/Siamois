@@ -6,6 +6,7 @@ import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -125,22 +126,22 @@ class PhaseLazyDataModelTest {
     void prepareFilterDTO_nameFilterWithValue_isAdded() {
         FilterDTO filterDTO = new FilterDTO(false);
         Map<String, FilterMeta> filterBy = new HashMap<>();
-        filterBy.put(ActionUnitSpec.NAME_FILTER,
-                FilterMeta.builder().field(ActionUnitSpec.NAME_FILTER).filterValue("test").build());
+        filterBy.put(PhaseSpec.IDENTIFIER_FILTER,
+                FilterMeta.builder().field(PhaseSpec.IDENTIFIER_FILTER).filterValue("test").build());
 
         lazyModel.prepareFilterDTO(filterBy, filterDTO);
 
-        assertTrue(filterDTO.containsColumn(ActionUnitSpec.NAME_FILTER));
-        assertEquals("test", filterDTO.valueOfAsString(ActionUnitSpec.NAME_FILTER));
-        assertEquals(FilterDTO.FilterType.CONTAINS, filterDTO.filterOf(ActionUnitSpec.NAME_FILTER).getType());
+        assertTrue(filterDTO.containsColumn(PhaseSpec.IDENTIFIER_FILTER));
+        assertEquals("test", filterDTO.valueOfAsString(PhaseSpec.IDENTIFIER_FILTER));
+        assertEquals(FilterDTO.FilterType.CONTAINS, filterDTO.filterOf(PhaseSpec.IDENTIFIER_FILTER).getType());
     }
 
     @Test
     void prepareFilterDTO_nameFilterWithNullValue_isSkipped() {
         FilterDTO filterDTO = new FilterDTO(false);
         Map<String, FilterMeta> filterBy = new HashMap<>();
-        filterBy.put(ActionUnitSpec.NAME_FILTER,
-                FilterMeta.builder().field(ActionUnitSpec.NAME_FILTER).build());
+        filterBy.put(PhaseSpec.IDENTIFIER_FILTER,
+                FilterMeta.builder().field(PhaseSpec.IDENTIFIER_FILTER).build());
 
         lazyModel.prepareFilterDTO(filterBy, filterDTO);
 
@@ -177,14 +178,14 @@ class PhaseLazyDataModelTest {
     void prepareFilterDTO_nameAndGlobalFilters_areBothAdded() {
         FilterDTO filterDTO = new FilterDTO(false);
         Map<String, FilterMeta> filterBy = new HashMap<>();
-        filterBy.put(ActionUnitSpec.NAME_FILTER,
-                FilterMeta.builder().field(ActionUnitSpec.NAME_FILTER).filterValue("p1").build());
+        filterBy.put(PhaseSpec.IDENTIFIER_FILTER,
+                FilterMeta.builder().field(PhaseSpec.IDENTIFIER_FILTER).filterValue("p1").build());
         filterBy.put(ActionUnitSpec.GLOBAL_FILTER,
                 FilterMeta.builder().field(ActionUnitSpec.GLOBAL_FILTER).filterValue("p2").build());
 
         lazyModel.prepareFilterDTO(filterBy, filterDTO);
 
-        assertEquals("p1", filterDTO.valueOfAsString(ActionUnitSpec.NAME_FILTER));
+        assertEquals("p1", filterDTO.valueOfAsString(PhaseSpec.IDENTIFIER_FILTER));
         assertEquals("p2", filterDTO.valueOfAsString(FilterDTO.GLOBAL_FILTER_KEY));
     }
 
@@ -204,12 +205,12 @@ class PhaseLazyDataModelTest {
     void prepareFilterDTO_filterValueIsNotAString_isCoercedViaToString() {
         FilterDTO filterDTO = new FilterDTO(false);
         Map<String, FilterMeta> filterBy = new HashMap<>();
-        filterBy.put(ActionUnitSpec.NAME_FILTER,
-                FilterMeta.builder().field(ActionUnitSpec.NAME_FILTER).filterValue(42).build());
+        filterBy.put(PhaseSpec.IDENTIFIER_FILTER,
+                FilterMeta.builder().field(PhaseSpec.IDENTIFIER_FILTER).filterValue(42).build());
 
         lazyModel.prepareFilterDTO(filterBy, filterDTO);
 
-        assertEquals("42", filterDTO.valueOfAsString(ActionUnitSpec.NAME_FILTER));
+        assertEquals("42", filterDTO.valueOfAsString(PhaseSpec.IDENTIFIER_FILTER));
     }
 
     // ------------------------------------------------------------------
@@ -238,24 +239,24 @@ class PhaseLazyDataModelTest {
     void prepareSortDTO_nameAscending_isAdded() {
         SortDTO sortDTO = new SortDTO();
         Map<String, SortMeta> sortBy = new HashMap<>();
-        sortBy.put(ActionUnitSpec.NAME_FILTER,
-                SortMeta.builder().field(ActionUnitSpec.NAME_FILTER).order(SortOrder.ASCENDING).build());
+        sortBy.put(PhaseSpec.IDENTIFIER_FILTER,
+                SortMeta.builder().field(PhaseSpec.IDENTIFIER_FILTER).order(SortOrder.ASCENDING).build());
 
         lazyModel.prepareSortDTO(sortBy, sortDTO);
 
-        assertEquals(SortDTO.SortOrder.ASC, sortDTO.orderOf(ActionUnitSpec.NAME_FILTER));
+        assertEquals(SortDTO.SortOrder.ASC, sortDTO.orderOf(PhaseSpec.IDENTIFIER_FILTER));
     }
 
     @Test
     void prepareSortDTO_nameDescending_isAdded() {
         SortDTO sortDTO = new SortDTO();
         Map<String, SortMeta> sortBy = new HashMap<>();
-        sortBy.put(ActionUnitSpec.NAME_FILTER,
-                SortMeta.builder().field(ActionUnitSpec.NAME_FILTER).order(SortOrder.DESCENDING).build());
+        sortBy.put(PhaseSpec.IDENTIFIER_FILTER,
+                SortMeta.builder().field(PhaseSpec.IDENTIFIER_FILTER).order(SortOrder.DESCENDING).build());
 
         lazyModel.prepareSortDTO(sortBy, sortDTO);
 
-        assertEquals(SortDTO.SortOrder.DESC, sortDTO.orderOf(ActionUnitSpec.NAME_FILTER));
+        assertEquals(SortDTO.SortOrder.DESC, sortDTO.orderOf(PhaseSpec.IDENTIFIER_FILTER));
     }
 
     @Test

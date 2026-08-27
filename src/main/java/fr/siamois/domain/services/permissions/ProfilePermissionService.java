@@ -2,11 +2,20 @@ package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Checks user permissions against the profile-based permission system.
@@ -26,19 +35,6 @@ public class ProfilePermissionService {
 
     public ProfilePermissionService(PersonProfileAssignmentRepository assignmentRepository) {
         this.assignmentRepository = assignmentRepository;
-    }
-
-    /**
-     * Checks if the person holds the SUPERADMIN profile.
-     *
-     * @param person the person to check
-     * @return true if the SUPERADMIN profile is assigned to the person
-     */
-    public boolean isSuperAdmin(PersonDTO person) {
-        if (person == null || person.getId() == null) {
-            return false;
-        }
-        return assignmentRepository.personIsSuperAdmin(person.getId());
     }
 
     /**
@@ -107,6 +103,47 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Bulk version of {@link #hasProjectPermission} : which of the given action units the user holds
+     * {@code permissionCode} on, computed in at most one query total instead of one query (or up to
+     * three, counting the org/instance checks) per action unit. Meant for a whole table page's worth of
+     * rows at once — see {@code EntityTableViewModel#canEditByActionUnit} — rather than one row at a
+     * time.
+     *
+     * @param actionUnitIds the action units to check, e.g. the distinct ones on the current table page
+     * @return the subset of {@code actionUnitIds} the user holds {@code permissionCode} on
+     */
+    public Set<Long> actionUnitIdsWithPermission(UserInfo user, Collection<Long> actionUnitIds, String permissionCode) {
+        return actionUnitIdsWithPermission(user, actionUnitIds, permissionCode, permissionCode);
+    }
+
+    /**
+     * Same as {@link #actionUnitIdsWithPermission(UserInfo, Collection, String)}, for the rarer case
+     * (e.g. {@link #hasActionUnitWritePermission}) where the organization-level short-circuit is a
+     * different permission code than the project-level one.
+     */
+    public Set<Long> actionUnitIdsWithPermission(UserInfo user, Collection<Long> actionUnitIds,
+                                                 String organizationPermissionCode, String projectPermissionCode) {
+        Set<Long> ids = actionUnitIds == null ? Set.of() : actionUnitIds.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return Set.of();
+        }
+        // hasProjectPermission's own org/instance short-circuit checks organizationPermissionCode; mirror
+        // that here too (not just the caller's own organizationPermissionCode) so a project-scoped
+        // permission granted org/instance-wide still short-circuits, exactly as it would one row at a time
+        if (hasOrganizationPermission(user, organizationPermissionCode)
+                || hasOrganizationPermission(user, projectPermissionCode)) {
+            return ids;
+        }
+        PersonDTO person = user.getUser();
+        if (person == null || person.getId() == null) {
+            return Set.of();
+        }
+        return assignmentRepository.findActionUnitIdsWithPermission(person.getId(), ids, projectPermissionCode);
+    }
+
+    /**
      * Checks if the user can write the given recording unit, i.e. holds
      * {@link PermissionConstants#PROJECT_EDIT_RECORDING_UNITS} on the recording
      * unit's action unit.
@@ -118,6 +155,61 @@ public class ProfilePermissionService {
     public boolean hasRecordingUnitWritePermission(UserInfo user, RecordingUnitDTO recordingUnit) {
         Long actionUnitId = recordingUnit.getActionUnit() != null ? recordingUnit.getActionUnit().getId() : null;
         return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
+    }
+
+    /**
+     * Checks if the user can write the given specimen, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_FINDS} on the specimen's action unit.
+     *
+     * @param user     the user information
+     * @param specimen the specimen to write
+     * @return true if the user can write the specimen
+     */
+    public boolean hasSpecimenWritePermission(UserInfo user, SpecimenDTO specimen) {
+        Long actionUnitId = specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS);
+    }
+
+    /**
+     * Checks if the user can write the given phase, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_PHASES} on the phase's action unit.
+     *
+     * @param user  the user information
+     * @param phase the phase to write
+     * @return true if the user can write the phase
+     */
+    public boolean hasPhaseWritePermission(UserInfo user, PhaseDTO phase) {
+        Long actionUnitId = phase.getActionUnit() != null ? phase.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_PHASES);
+    }
+
+    /**
+     * Checks if the user can write the given container, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_CONTAINERS} on the container's action unit.
+     *
+     * @param user      the user information
+     * @param container the container to write
+     * @return true if the user can write the container
+     */
+    public boolean hasContainerWritePermission(UserInfo user, ContainerDTO container) {
+        Long actionUnitId = container.getActionUnit() != null ? container.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_CONTAINERS);
+    }
+
+    /**
+     * Checks if the user can write the given action unit's own fields, i.e. holds
+     * {@link PermissionConstants#PROJECT_MANAGE_SETTINGS} on the action unit itself, or
+     * {@link PermissionConstants#ORGANIZATION_MANAGE_ACTIONS} on the user's institution.
+     *
+     * @param user       the user information
+     * @param actionUnit the action unit to write; its id may be null for a not-yet-created action unit
+     * @return true if the user can write the action unit
+     */
+    public boolean hasActionUnitWritePermission(UserInfo user, ActionUnitDTO actionUnit) {
+        if (hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+            return true;
+        }
+        return actionUnit != null && hasProjectPermission(user, actionUnit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
     /**

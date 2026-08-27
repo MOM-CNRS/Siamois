@@ -35,7 +35,7 @@ public class SpecimenDetailsForm extends SpecimenForm {
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(true)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .className("d-none")
                                                         .field(specimenIdField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
