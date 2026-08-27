@@ -16,7 +16,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 public class ConceptApiUtils {
@@ -106,24 +109,53 @@ public class ConceptApiUtils {
     }
 
     /**
-     * A "related" link almost always points at a concept the branch/collection already fetched for
-     * another reason — either it's one of the branch's own concepts ({@code urlTosavedConcept} already
-     * holds it), or an earlier "related" link elsewhere in the same branch already resolved it. Reusing
-     * {@code urlTosavedConcept} as the cache for both cases turns what would otherwise be one remote
-     * fetch per related link (in the hundreds for a large collection, since the same handful of
-     * concepts are typically related from many sides) into one fetch per concept actually new to this
-     * import.
+     * A "related" link almost always points at a concept the branch/collection already saved for another
+     * reason — either it's one of the branch's own concepts ({@code urlTosavedConcept} already holds it),
+     * or an earlier "related" link elsewhere in the same branch already resolved it. Reusing
+     * {@code urlTosavedConcept} as the cache for both cases keeps a large collection, where the same
+     * handful of concepts are related from many sides, down to one lookup per distinct related concept.
+     *
+     * <p>A related concept the import has never seen is recorded as a stub rather than fetched, see
+     * {@link #findOrCreateStub}.
      */
     private static void createRelatedConceptsRelations(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, Map.Entry<String, FullInfoDTO> info, @NonNull Map<String, Concept> urlTosavedConcept, @NonNull FullInfoDTO fullInfoDTO, @Nullable ProgressWrapper progressWrapper) {
         Concept currentConcept = urlTosavedConcept.get(info.getKey());
         for (PurlInfoDTO related : fullInfoDTO.getRelated()) {
-            Concept relatedConcept = urlTosavedConcept.computeIfAbsent(related.getValue(), url -> {
-                FullInfoDTO relatedInfos = utils.conceptApi.fetchConceptInfoByUri(vocabulary, url);
-                return utils.conceptService.saveOrGetConceptFromFullDTO(vocabulary, relatedInfos, null);
-            });
-            utils.conceptRepository.addRelatedConceptIfAbsent(currentConcept.getId(), relatedConcept.getId());
+            String relatedUri = related.getValue();
             incrementIfTracked(progressWrapper);
+            if (relatedUri == null || relatedUri.isBlank()) {
+                // Nothing identifies the concept on the other end of the link : there is no local row to
+                // create for it, and no URI a later fetch could use to resolve it.
+                log.debug("Skipping a related link of {} : the thesaurus returned no URI for it", info.getKey());
+                continue;
+            }
+            Concept relatedConcept = urlTosavedConcept.computeIfAbsent(relatedUri, url -> findOrCreateStub(utils, vocabulary, url));
+            utils.conceptRepository.addRelatedConceptIfAbsent(currentConcept.getId(), relatedConcept.getId());
         }
+    }
+
+    /**
+     * Looks the related concept up by external id — the key every concept is stored under — so that a
+     * concept already imported by another branch or collection is reused rather than duplicated. Only a
+     * URI carrying no external id at all falls back to the URI itself as the lookup key.
+     *
+     * <p>A concept new to this instance is saved as a stub : its vocabulary, URI and external id, no
+     * labels, {@code isLoaded = false}. Fetching what fills it in is deferred until something actually
+     * reads it, see {@code ConceptService#loadUnloadedRelatedConceptsOf}.
+     */
+    private static Concept findOrCreateStub(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, @NonNull String uri) {
+        String externalId = externalIdFromUri(uri);
+        Optional<Concept> existing = externalId == null
+                ? utils.conceptRepository.findByUri(uri)
+                : utils.conceptRepository.findConceptByExternalIdIgnoreCase(vocabulary.getExternalVocabularyId(), externalId);
+        return existing.orElseGet(() -> {
+            Concept stub = new Concept();
+            stub.setVocabulary(vocabulary);
+            stub.setUri(uri);
+            stub.setExternalId(externalId);
+            stub.setLoaded(false);
+            return utils.conceptRepository.save(stub);
+        });
     }
 
     private static void saveAllConceptFromBranch(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO dto, Map<String, Concept> savedConcept, @Nullable ProgressWrapper progressWrapper) {

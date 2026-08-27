@@ -74,6 +74,7 @@ public class ThesaurusApi {
      */
     public ThesaurusDTO fetchThesaurusInfo(String uri) throws InvalidEndpointException {
         URI uriObj;
+        uri = uri.strip();
         try {
             uriObj = URI.create(uri);
         } catch (IllegalArgumentException e) {

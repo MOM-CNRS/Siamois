@@ -94,4 +94,18 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
     )
     void addRelatedConceptIfAbsent(@Param("conceptId") Long conceptId, @Param("relatedConceptId") Long relatedConceptId);
 
+    Optional<Concept> findByUri(String uri);
+
+    /**
+     * The concepts related to the given concept that are still stubs : rows created for a
+     * {@code skos:related} link without ever being fetched from the thesaurus, so they carry a URI but
+     * no label.
+     *
+     * @param conceptId the concept whose related concepts to look at
+     * @return the related concepts left to load, empty once they all have been
+     */
+    @Query("SELECT r FROM Concept c " +
+            "JOIN c.relatedConcepts r " +
+            "WHERE c.id = :conceptId AND r.isLoaded = FALSE AND r.uri IS NOT NULL")
+    List<Concept> findUnloadedRelatedConceptsOf(@Param("conceptId") Long conceptId);
 }
