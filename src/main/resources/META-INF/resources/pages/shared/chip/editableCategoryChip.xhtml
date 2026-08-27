@@ -1,0 +1,39 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+        xmlns:cc="http://java.sun.com/jsf/composite"
+        xmlns:h="http://java.sun.com/jsf/html"
+        xmlns:siaInplace="http://xmlns.jcp.org/jsf/composite/pages/shared/inplace"
+>
+
+    <!--
+        Read/edit toggle for an entity's category/type chip in a panel header. Reuses the same
+        CustomField + answer already tracked by the panel's EntityFormContext (via
+        getFormScopeField()/getFormScopeAnswer()), so a change here goes through the exact same
+        handleConceptChange/isFormScopeField pivot pipeline as every other concept field in the
+        app, instead of a second, parallel binding. Like every other concept field, a selection
+        autosaves immediately — there is no apply/cancel here.
+        The panel bean must extend AbstractSingleEntityPanel; edit mode is driven by the same
+        editingIdentifier flag the shared header edit button toggles (see editableIdentifierChip).
+    -->
+    <cc:interface>
+        <cc:attribute name="panel"
+                      shortDescription="The panel bean, extending AbstractSingleEntityPanel"
+                      required="true"/>
+        <cc:attribute name="panelId" type="java.lang.String" required="false"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <h:panelGroup id="categoryChipArea" styleClass="mr-2"
+                      rendered="#{cc.attrs.panel.formContext ne null and cc.attrs.panel.formContext.formScopeField ne null}">
+            <siaInplace:concept
+                    field="#{cc.attrs.panel.formContext.formScopeField}"
+                    answer="#{cc.attrs.panel.formContext.formScopeAnswer}"
+                    mode="#{cc.attrs.panel.editingIdentifier ? 'input' : 'READ'}"
+                    panelId="#{cc.attrs.panelId}"
+                    formCtx="#{cc.attrs.panel.formContext}"
+                    updateTargetsOnBlur="@form"
+                    onConceptChanged="#{cc.attrs.panel.formContext.setFieldConceptAnswerHasBeenModified}"/>
+        </h:panelGroup>
+    </cc:implementation>
+</ui:composition>

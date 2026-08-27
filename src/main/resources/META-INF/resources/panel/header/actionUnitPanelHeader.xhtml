@@ -25,18 +25,44 @@
         <p:tooltip autoHide="false" value="Fiche suivante" position="bottom" for="next"/>
     </div>
 
-    <p:chip label="#{panelModel.unit != null ? panelModel.unit.name : panelModel.titleCodeOrTitle}"
-            styleClass="mr-2 action-unit-chip-alt"
-            icon="#{panelModel.icon}"
-    />
-
-    <chip:editableIdentifierChip panel="#{panelModel}"
+    <chip:editableIdentifierChip id="idChipComposite" panel="#{panelModel}"
                                   value="#{panelModel.unit != null ? panelModel.unit.fullIdentifier : ''}"
                                   styleClass="action-unit-chip-alt"
-                                  icon="bi bi-hash"/>
+                                  icon="#{panelModel.icon}"/>
 
+    <chip:editableCategoryChip id="categoryChipComposite" panel="#{panelModel}"/>
 
-    <chip:conceptChip concept="#{panelModel.unit.type}" styleClass="mr-2 action-unit-type-chip"/>
+    <h:panelGroup id="headerEditControls">
+        <p:commandButton id="editHeaderBtn"
+                          rendered="#{flowBean.isWriteMode and not panelModel.editingIdentifier}"
+                          icon="bi bi-pencil"
+                          styleClass="rum-edit-id-btn"
+                          action="#{panelModel.startEditIdentifier()}"
+                          update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
+                          process="@this"
+                          oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
+        <p:tooltip for="editHeaderBtn" value="Modifier l'identifiant et la catégorie" position="top"/>
+        <h:panelGroup rendered="#{panelModel.editingIdentifier}">
+            <p:commandButton id="applyHeaderEditBtn"
+                             icon="bi bi-check"
+                             styleClass="rum-action-btn rum-apply-header-edit-btn"
+                             title="Valider"
+                             action="#{panelModel.applyEditIdentifier()}"
+                             update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
+                             process="@form"/>
+            <p:commandButton id="cancelHeaderEditBtn"
+                             icon="bi bi-x"
+                             styleClass="rum-action-btn rum-cancel-header-edit-btn"
+                             title="Annuler"
+                             action="#{panelModel.cancelEditIdentifier()}"
+                             update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
+                             process="@this"/>
+        </h:panelGroup>
+    </h:panelGroup>
+
+    <p:chip label="#{panelModel.unit != null ? panelModel.unit.name : panelModel.titleCodeOrTitle}"
+            styleClass="mr-2 action-unit-type-chip"
+    />
 
     <p:chip rendered="#{not empty panelModel.unit.mainLocation}" label="#{panelModel.unit.mainLocation.name}"
             styleClass="mr-2 action-unit-type-chip" icon="bi bi-geo-alt"

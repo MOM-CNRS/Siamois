@@ -349,12 +349,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     protected String getFormScopePropertyName() {
-        return "";
+        return "type";
     }
 
     @Override
     protected void setFormScopePropertyValue(ConceptDTO concept) {
-        // to be implemented
+        unit.setType(concept);
     }
 
 

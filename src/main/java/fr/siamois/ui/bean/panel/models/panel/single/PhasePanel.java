@@ -274,7 +274,7 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
 
     @Override
     protected String getFormScopePropertyName() {
-        return "";
+        return "type";
     }
 
     @Override

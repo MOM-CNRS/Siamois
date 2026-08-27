@@ -277,7 +277,7 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
 
     @Override
     protected String getFormScopePropertyName() {
-        return "";
+        return "type";
     }
 
     @Override

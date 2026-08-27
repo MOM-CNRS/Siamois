@@ -350,7 +350,10 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
             formContext.flushBackToEntity();
         }
         setFormScopePropertyValue(newVal); // change type of unit to be able to init forms
-        initForms(false);
+        // Force a full reinit: initForms() may rebuild detailsForm with a different field set
+        // for the new scope value, and initFormContext(false) would otherwise keep reusing the
+        // stale EntityFormContext/field source built from the previous detailsForm.
+        initForms(true);
     }
 
 

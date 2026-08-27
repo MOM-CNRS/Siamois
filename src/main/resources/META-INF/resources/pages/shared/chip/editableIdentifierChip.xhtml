@@ -7,11 +7,14 @@
 >
 
     <!--
-        Read/edit toggle for an entity's identifying chip in a panel header: plain chip with a
-        pencil on hover, turning into an input (Enter saves, Escape cancels) when clicked.
-        The panel bean must extend AbstractSingleEntityPanel, which owns the editing state
-        (editingIdentifier / editingIdentifierValue) and the start/cancel/apply actions —
-        this component only renders the UI and wires the clicks, it holds no state of its own.
+        Read/edit toggle for an entity's identifying chip in a panel header: plain chip in read
+        mode, turning into an input (Enter/Escape trigger the shared header edit button's
+        apply/cancel) when the panel is in edit mode. Entering/leaving edit mode and its
+        apply/cancel actions are driven from outside this composite (one shared edit button per
+        header, placed after the category chip) — this component only renders the identifier
+        half of that shared edit session and holds no state of its own beyond what the panel
+        bean (which must extend AbstractSingleEntityPanel) exposes via editingIdentifier /
+        editingIdentifierValue.
     -->
     <cc:interface>
         <cc:attribute name="panel"
@@ -39,38 +42,13 @@
                         icon="#{cc.attrs.icon}"
                         id="idChip"
                 />
-                <div class="chip-cell-actions">
-                    <p:commandButton id="editIdentifierBtn"
-                                     rendered="#{flowBean.isWriteMode}"
-                                     icon="bi bi-pencil"
-                                     styleClass="rum-edit-id-btn"
-                                     action="#{cc.attrs.panel.startEditIdentifier()}"
-                                     update="idChipArea"
-                                     process="@this"
-                                     oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
-                    <p:tooltip for="editIdentifierBtn" value="Modifier l'identifiant" position="top"/>
-                </div>
             </h:panelGroup>
             <h:panelGroup rendered="#{cc.attrs.panel.editingIdentifier}" styleClass="chip-cell-wrapper">
                 <p:inputText id="editIdentifierInput"
                              value="#{cc.attrs.panel.editingIdentifierValue}"
                              styleClass="rum-edit-link-input"
                              style="min-width: 8em;"
-                             onkeydown="if(event.key==='Enter'){event.preventDefault();$(this).siblings('.rum-apply-link-edit-btn').trigger('click');}else if(event.key==='Escape'){event.preventDefault();$(this).siblings('.rum-cancel-link-edit-btn').trigger('click');}"/>
-                <p:commandButton id="applyIdentifierBtn"
-                                 icon="bi bi-check"
-                                 styleClass="rum-action-btn rum-apply-link-edit-btn"
-                                 title="Valider"
-                                 action="#{cc.attrs.panel.applyEditIdentifier()}"
-                                 update="idChipArea"
-                                 process="editIdentifierInput @this"/>
-                <p:commandButton id="cancelIdentifierBtn"
-                                 icon="bi bi-x"
-                                 styleClass="rum-action-btn rum-cancel-link-edit-btn"
-                                 title="Annuler"
-                                 action="#{cc.attrs.panel.cancelEditIdentifier()}"
-                                 update="idChipArea"
-                                 process="@this"/>
+                             onkeydown="if(event.key==='Enter'){event.preventDefault();$(this).closest('form').find('.rum-apply-header-edit-btn').trigger('click');}else if(event.key==='Escape'){event.preventDefault();$(this).closest('form').find('.rum-cancel-header-edit-btn').trigger('click');}"/>
             </h:panelGroup>
         </h:panelGroup>
     </cc:implementation>
