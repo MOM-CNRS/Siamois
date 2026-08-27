@@ -127,7 +127,8 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
         MessageUtils.displayInfoMessage(langBean, "common.entity.recordingUnits.bulkUpdated", updateCount);
     }
 
-    public void duplicateRow() {
+    /** @return the newly created copy, so callers can highlight its row. */
+    public SpecimenDTO duplicateRow() {
         // Create a copy from selected row
         SpecimenDTO original = getRowData();
         SpecimenDTO newRec = new SpecimenDTO(original);
@@ -138,6 +139,7 @@ public abstract class BaseSpecimenLazyDataModel extends BaseLazyDataModel<Specim
 
         // Add it to the model
         addRowToModel(newRec);
+        return newRec;
     }
 
 }

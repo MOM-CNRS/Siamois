@@ -44,7 +44,7 @@
                  tableStyleClass="datatable-hoverable-table"
                  rowStyleClass="#{tableModel.getRowStyleClass(item)}"
                  value="#{tableModel.lazyDataModel}"
-                 styleClass="#{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
+                 styleClass="sia-entity-table #{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
 
         <p:ajax event="rowSelectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
         <p:ajax event="rowUnselectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>

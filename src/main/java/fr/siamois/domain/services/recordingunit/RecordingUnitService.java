@@ -7,6 +7,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
@@ -41,12 +42,15 @@ import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -97,6 +101,17 @@ public class RecordingUnitService implements ArkEntityService {
      */
     @PersistenceContext
     private EntityManager entityManager;
+
+    /**
+     * Self-reference resolved through the Spring proxy, so that calls made from within this same
+     * class (e.g. {@link #duplicateStructure}'s per-node work calling {@link #save(RecordingUnitDTO)})
+     * still go through AOP-backed behavior such as {@code @CacheEvict} — a direct {@code this.save(...)}
+     * call bypasses the proxy entirely and silently skips it. {@code @Lazy} avoids a circular
+     * dependency at construction time.
+     */
+    @Lazy
+    @Autowired
+    private RecordingUnitService self;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -210,10 +225,17 @@ public class RecordingUnitService implements ArkEntityService {
             setupOtherFields(recordingUnit, managedRecordingUnit);
             synchronizeCollection(managedRecordingUnit.getPhases(), recordingUnit.getPhases());
 
+            // IMPORTANT: keep working with the instance save() RETURNS, never with the one passed in.
+            // syncRevision is a @Version wrapper initialised to 0L, so Spring Data's isNew() check
+            // sees a non-null version and treats even a brand-new unit as detached: it calls
+            // em.merge(), which returns a *different* managed copy and leaves the argument transient
+            // with a null id forever. Handing that transient instance to setupParents() below planted
+            // it inside an existing parent's children collection, and the flush then blew up with
+            // "references an unsaved transient instance" - only ever for units that have a parent.
             RecordingUnit savedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
 
-            setupParents(recordingUnit, managedRecordingUnit);
-            setupChilds(recordingUnit, managedRecordingUnit);
+            setupParents(recordingUnit, savedRecordingUnit);
+            setupChilds(recordingUnit, savedRecordingUnit);
             return savedRecordingUnit;
 
         } catch (RuntimeException e) {
@@ -1021,6 +1043,104 @@ public class RecordingUnitService implements ArkEntityService {
     private boolean identifierBelongsToAnotherUnit(Long actionUnitId, Long recordingUnitId, String fullIdentifier) {
         return recordingUnitRepository.findByFullIdentifierAndActionUnitId(fullIdentifier, actionUnitId).stream()
                 .anyMatch(existing -> !Objects.equals(existing.getId(), recordingUnitId));
+    }
+
+    /**
+     * Duplicates {@code root} and, level by level, the descendants of the hierarchy under it whose
+     * id is in {@code selectedIds} — {@code count} independent exemplars of the whole selected
+     * structure. Processing one full depth of the tree before the next guarantees that a child's
+     * new parent (whose identifier and id the child's own identifier generation may depend on,
+     * e.g. {@code NUM_PARENT}/{@code ID_PARENT}) always exists and is fully persisted first.
+     * <p>
+     * A duplicated descendant is attached only to the copy of its parent within this structure —
+     * any other parent it had in the original hierarchy is not reproduced.
+     *
+     * @param root        the entity to duplicate; must already be persisted
+     * @param selectedIds ids (within {@code root}'s descendants, {@code root}'s own id is implicit)
+     *                    to include in the duplicated structure
+     * @param count       how many independent copies of the structure to create (at least 1)
+     */
+    @Transactional
+    public RecordingUnitStructureDuplicationResult duplicateStructure(
+            @NonNull RecordingUnitDTO root, @NonNull Set<Long> selectedIds, int count) {
+
+        if (root.getId() == null) {
+            throw new IllegalArgumentException("Root recording unit must be persisted");
+        }
+        int copies = Math.max(1, count);
+
+        UserInfo info = ExecutionContextHolder.get();
+        Long actionUnitId = root.getActionUnit() != null ? root.getActionUnit().getId() : null;
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)) {
+            throw new ForbiddenOperationException("You are not allowed to duplicate this recording unit");
+        }
+
+        List<RecordingUnitDTO> allCreated = new ArrayList<>();
+        Map<Long, List<RecordingUnitDTO>> copiesByOriginalId = new LinkedHashMap<>();
+
+        List<RecordingUnitDTO> rootCopies = new ArrayList<>(copies);
+        for (int i = 0; i < copies; i++) {
+            rootCopies.add(duplicateSingleRecordingUnit(root, root.getParents(), info));
+        }
+        allCreated.addAll(rootCopies);
+        copiesByOriginalId.put(root.getId(), rootCopies);
+
+        Deque<RecordingUnitDTO> queue = new ArrayDeque<>();
+        queue.add(root);
+        Set<Long> visited = new HashSet<>();
+        visited.add(root.getId());
+
+        while (!queue.isEmpty()) {
+            RecordingUnitDTO originalParent = queue.poll();
+            List<RecordingUnitDTO> parentCopies = copiesByOriginalId.get(originalParent.getId());
+
+            for (RecordingUnitDTO originalChild : findAllByParentRecordingUnit(originalParent.getId())) {
+                if (!selectedIds.contains(originalChild.getId()) || !visited.add(originalChild.getId())) {
+                    continue;
+                }
+
+                List<RecordingUnitDTO> childCopies = new ArrayList<>(copies);
+                for (int i = 0; i < copies; i++) {
+                    Set<RecordingUnitSummaryDTO> parentForCopy =
+                            new HashSet<>(Set.of(new RecordingUnitSummaryDTO(parentCopies.get(i))));
+                    childCopies.add(duplicateSingleRecordingUnit(originalChild, parentForCopy, info));
+                }
+                allCreated.addAll(childCopies);
+                copiesByOriginalId.put(originalChild.getId(), childCopies);
+                queue.add(originalChild);
+            }
+        }
+
+        return new RecordingUnitStructureDuplicationResult(rootCopies, allCreated);
+    }
+
+    private RecordingUnitDTO duplicateSingleRecordingUnit(
+            RecordingUnitDTO source, Set<RecordingUnitSummaryDTO> parents, UserInfo info) {
+
+        RecordingUnitDTO copy = new RecordingUnitDTO(source);
+        copy.setParents(parents == null ? new HashSet<>() : new HashSet<>(parents));
+        copy.setAuthor(info.getUser());
+        copy.setCreatedBy(info.getUser());
+
+        // A node is built over two save() calls with an identifier lookup in between, so it is only
+        // fully consistent at the end. Hold back Hibernate's automatic pre-query flush for the whole
+        // sequence (same guard as generateFullIdentifier()'s native counter lookup) and flush once,
+        // deliberately, when the node is complete - before the next node in the structure references
+        // it as its parent.
+        FlushModeType previousFlushMode = entityManager.getFlushMode();
+        entityManager.setFlushMode(FlushModeType.COMMIT);
+        try {
+            copy = self.save(copy);
+            copy.setFullIdentifier(self.generateFullIdentifier(copy.getActionUnit(), copy));
+            if (self.fullIdentifierAlreadyExistInAction(copy)) {
+                throw new RecordingUnitIdentifierAlreadyExistsException(copy.getFullIdentifier());
+            }
+            copy = self.save(copy);
+            entityManager.flush();
+        } finally {
+            entityManager.setFlushMode(previousFlushMode);
+        }
+        return copy;
     }
 
     @NonNull

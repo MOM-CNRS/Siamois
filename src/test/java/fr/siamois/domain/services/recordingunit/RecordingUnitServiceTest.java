@@ -7,6 +7,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.institution.Institution;
@@ -112,6 +113,9 @@ class RecordingUnitServiceTest {
     @Mock
     private ProfilePermissionService profilePermissionService;
 
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private RecordingUnitService recordingUnitService;
 
@@ -120,6 +124,9 @@ class RecordingUnitServiceTest {
         ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
         lenient().when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        // @InjectMocks uses constructor injection here, which skips leftover fields like the
+        // @PersistenceContext EntityManager - wire it explicitly so save() can call it.
+        org.springframework.test.util.ReflectionTestUtils.setField(recordingUnitService, "entityManager", entityManager);
     }
 
     @AfterEach
@@ -2364,6 +2371,134 @@ class RecordingUnitServiceTest {
 
             assertEquals(Set.of(parentSummary), dto.getParents());
             assertEquals(Set.of(childSummary), dto.getChildren());
+        }
+    }
+
+    @Nested
+    class DuplicateStructureTests {
+
+        private RecordingUnitService spyService;
+        private ActionUnitSummaryDTO actionUnit;
+
+        @BeforeEach
+        void setUp() {
+            spyService = spy(recordingUnitService);
+            actionUnit = new ActionUnitSummaryDTO();
+            actionUnit.setId(1L);
+
+            java.util.concurrent.atomic.AtomicLong idSeq = new java.util.concurrent.atomic.AtomicLong(100);
+            lenient().doAnswer(invocation -> {
+                RecordingUnitDTO dto = invocation.getArgument(0);
+                if (dto.getId() == null) {
+                    dto.setId(idSeq.incrementAndGet());
+                }
+                return dto;
+            }).when(spyService).save(any(RecordingUnitDTO.class));
+
+            lenient().doAnswer(invocation -> "ID-" + invocation.<RecordingUnitDTO>getArgument(1).getId())
+                    .when(spyService).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
+
+            lenient().doReturn(false).when(spyService).fullIdentifierAlreadyExistInAction(any());
+
+            // Mockito's spy() copies field values by reference from the wrapped instance, but that
+            // copy has proven unreliable for this @PersistenceContext field under a full test-suite
+            // run (passes in isolation, null when run alongside the rest of the suite) — set it
+            // explicitly on the spy to remove any doubt.
+            org.springframework.test.util.ReflectionTestUtils.setField(spyService, "entityManager", entityManager);
+            // Production code routes self-calls (save/generateFullIdentifier/...) through the
+            // Spring-proxied "self" field so @CacheEvict etc. still apply; point it back at the spy
+            // itself so the stubbing above is actually exercised.
+            org.springframework.test.util.ReflectionTestUtils.setField(spyService, "self", spyService);
+        }
+
+        private RecordingUnitDTO unit(long id) {
+            RecordingUnitDTO dto = new RecordingUnitDTO();
+            dto.setId(id);
+            dto.setActionUnit(actionUnit);
+            dto.setFullIdentifier("RU-" + id);
+            return dto;
+        }
+
+        @Test
+        void duplicateStructure_createsCountCopiesPerLevel_attachedOnlyToDuplicatedParent() {
+            RecordingUnitDTO root = unit(10L);
+            RecordingUnitDTO child = unit(20L);
+
+            doReturn(List.of(child)).when(spyService).findAllByParentRecordingUnit(10L);
+            doReturn(List.of()).when(spyService).findAllByParentRecordingUnit(20L);
+
+            RecordingUnitStructureDuplicationResult result = spyService.duplicateStructure(root, Set.of(20L), 2);
+
+            assertThat(result.rootCopies()).hasSize(2);
+            assertThat(result.allCreated()).hasSize(4);
+
+            List<RecordingUnitDTO> childCopies = result.allCreated().stream()
+                    .filter(dto -> !result.rootCopies().contains(dto))
+                    .toList();
+            assertThat(childCopies).hasSize(2);
+
+            for (int i = 0; i < childCopies.size(); i++) {
+                Set<Long> parentIds = childCopies.get(i).getParents().stream()
+                        .map(RecordingUnitSummaryDTO::getId)
+                        .collect(java.util.stream.Collectors.toSet());
+                assertThat(parentIds).containsExactly(result.rootCopies().get(i).getId());
+            }
+
+            // The original hierarchy is walked once regardless of how many copies are requested.
+            verify(spyService, times(1)).findAllByParentRecordingUnit(10L);
+            verify(spyService, times(1)).findAllByParentRecordingUnit(20L);
+        }
+
+        @Test
+        void duplicateStructure_unselectedDescendant_isNotDuplicated() {
+            RecordingUnitDTO root = unit(10L);
+            RecordingUnitDTO child = unit(20L);
+
+            doReturn(List.of(child)).when(spyService).findAllByParentRecordingUnit(10L);
+
+            RecordingUnitStructureDuplicationResult result = spyService.duplicateStructure(root, Set.of(), 3);
+
+            assertThat(result.rootCopies()).hasSize(3);
+            assertThat(result.allCreated()).hasSize(3);
+            verify(spyService, never()).findAllByParentRecordingUnit(20L);
+        }
+
+        @Test
+        void duplicateStructure_defaultsCountToAtLeastOne() {
+            RecordingUnitDTO root = unit(10L);
+            doReturn(List.of()).when(spyService).findAllByParentRecordingUnit(10L);
+
+            RecordingUnitStructureDuplicationResult result = spyService.duplicateStructure(root, Set.of(), 0);
+
+            assertThat(result.rootCopies()).hasSize(1);
+        }
+
+        @Test
+        void duplicateStructure_identifierCollision_throwsWithIdentifier() {
+            RecordingUnitDTO root = unit(10L);
+            doReturn(true).when(spyService).fullIdentifierAlreadyExistInAction(any());
+
+            RecordingUnitIdentifierAlreadyExistsException ex = assertThrows(
+                    RecordingUnitIdentifierAlreadyExistsException.class,
+                    () -> spyService.duplicateStructure(root, Set.of(), 1));
+
+            assertThat(ex.getIdentifier()).isEqualTo("ID-101");
+        }
+
+        @Test
+        void duplicateStructure_rootNotPersisted_throwsIllegalArgument() {
+            RecordingUnitDTO root = new RecordingUnitDTO();
+            assertThrows(IllegalArgumentException.class,
+                    () -> spyService.duplicateStructure(root, Set.of(), 1));
+        }
+
+        @Test
+        void duplicateStructure_permissionDenied_throwsForbidden() {
+            RecordingUnitDTO root = unit(10L);
+            when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+
+            assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                    () -> spyService.duplicateStructure(root, Set.of(), 1));
         }
     }
 }

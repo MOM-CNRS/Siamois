@@ -13,11 +13,11 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.bean.dialog.duplicate.DuplicateStructureDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.GenericNewUnitDialogBean;
 import fr.siamois.ui.bean.dialog.newunit.NewUnitContext;
 import fr.siamois.ui.bean.dialog.newunit.UnitKind;
@@ -75,6 +75,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     private final SessionSettingsBean sessionSettingsBean;
 
+    private final DuplicateStructureDialogBean duplicateStructureDialogBean;
+
 
 
     public RecordingUnitTableViewModel(BaseRecordingUnitLazyDataModel lazyDataModel,
@@ -87,7 +89,8 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                                        ProfilePermissionService profilePermissionService,
                                        RecordingUnitService recordingUnitService,
                                       LangBean langBean, FormContextServices formContextServices,
-                                      EffectiveFormResolver effectiveFormResolver) {
+                                      EffectiveFormResolver effectiveFormResolver,
+                                      DuplicateStructureDialogBean duplicateStructureDialogBean) {
 
         super(
                 lazyDataModel,
@@ -107,6 +110,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         this.recordingUnitService = recordingUnitService;
         this.profilePermissionService = profilePermissionService;
         this.effectiveFormResolver = effectiveFormResolver;
+        this.duplicateStructureDialogBean = duplicateStructureDialogBean;
     }
 
     @Override
@@ -311,6 +315,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     public boolean isRendered(RowAction action, RecordingUnitDTO ru) {
+        // A lazy tree renders placeholder rows for indices outside the loaded page window
+        // (see RootChildList#createVirtualNode), and those carry no data at all.
+        if (ru == null) {
+            return false;
+        }
         if (action.getAction() == TableColumnAction.TOGGLE_BOOKMARK) {
             return true;
         }
@@ -319,6 +328,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
 
     public String resolveIcon(RowAction action,RecordingUnitDTO ru) {
+        if (ru == null) {
+            return "";
+        }
 
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(String.valueOf(ru.getId())))
@@ -334,7 +346,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     public void handleRowAction(RowAction action,  RecordingUnitDTO ru) {
         switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> navBean.toggleRecordingUnitBookmark(ru);
-            case DUPLICATE_ROW -> this.duplicateRow(ru, null);
+            case DUPLICATE_ROW -> duplicateStructureDialogBean.openFor(ru, this);
             case NEW_CHILDREN -> {
                 // Open new rec unit dialog
                 // The new spatial rec will be children of the current ru
@@ -380,16 +392,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     // actions specific to treetable
     public void handleRowAction(RowAction action, TreeNode<RecordingUnitDTO> node) {
-        RecordingUnitDTO ru = node.getData();
-        if (action.getAction() == DUPLICATE_ROW) {
-            if (!Objects.equals(node.getParent().getRowKey(), "root")) {
-                this.duplicateRow(node.getData(), node.getParent().getData());
-                return;
-            }
-            this.duplicateRow(node.getData(), null);
-        } else {
-            handleRowAction(action, ru);
-        }
+        handleRowAction(action, node.getData());
     }
 
     @Override
@@ -400,6 +403,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     public boolean canUserEditRow(RecordingUnitDTO unit) {
+        if (unit == null) {
+            return false;
+        }
         Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
         return canEditByActionUnit(profilePermissionService, flowBean.getSessionSettings().getUserInfo(),
                 PermissionConstants.PROJECT_EDIT_RECORDING_UNITS, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
@@ -424,52 +430,6 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
         return recordingUnitService.findAllByParentRecordingUnit(parentUnit.getId());
     }
 
-
-    // Duplique une unité d'enregistrement
-    // Le place au même niveau dans la hierarchie mais ne copie pas les enfants
-    private void duplicateRow(RecordingUnitDTO toDuplicate, RecordingUnitDTO parent) {
-
-        // Create a copy from selected row
-        RecordingUnitDTO newUnit = new RecordingUnitDTO(toDuplicate);
-        newUnit.setParents(new HashSet<>());
-
-        if(parent != null) {
-            newUnit.getParents().add(new RecordingUnitSummaryDTO(parent));
-        }
-
-        newUnit.setAuthor(sessionSettingsBean.getAuthenticatedUser());
-        newUnit.setCreatedBy(sessionSettingsBean.getAuthenticatedUser());
-
-        newUnit = recordingUnitService.save(newUnit);
-
-        newUnit.setFullIdentifier(recordingUnitService.generateFullIdentifier(newUnit.getActionUnit(), newUnit));
-        if (recordingUnitService.fullIdentifierAlreadyExistInAction(newUnit)) {
-            MessageUtils.displayWarnMessage(langBean, "recordingunit.error.identifier.alreadyExists");
-            throw new IllegalStateException("Generated recording-unit identifier already exists");
-        }
-
-        newUnit = recordingUnitService.save(newUnit);
-
-        // The duplicate must appear right below the source row, as its sibling.
-        // We expose the SOURCE entity id (not the parent) as clickedId so the
-        // tree mutator can locate it and slot the new node just after it.
-        NewUnitContext ctx = NewUnitContext.builder()
-                .kindToCreate(UnitKind.RECORDING)
-                .trigger(NewUnitContext.Trigger.cell(
-                        UnitKind.RECORDING,
-                        toDuplicate.getId(),
-                        PARENTS
-                ))
-                .insertPolicy(NewUnitContext.UiInsertPolicy.builder()
-                        .listInsert(NewUnitContext.ListInsert.TOP)
-                        .treeInsert(NewUnitContext.TreeInsert.SIBLING_BELOW)
-                        .build())
-                .build();
-
-
-        onAnyEntityCreated(newUnit, ctx) ;
-        MessageUtils.displayInfoMessage(sessionSettingsBean.getLangBean(), "common.action.duplicateEntity", toDuplicate.getFullIdentifier());
-    }
 
     @Override
     public void save() {
