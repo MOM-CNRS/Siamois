@@ -399,35 +399,62 @@ $(globalThis).on("popstate", function(e) {
 
 });
 
-function rumExpand(id) {
-    let view = document.getElementById('rum_v_' + id);
-    if (!view) return;
-    view.querySelectorAll('.rum-extra').forEach(function(el) { el.style.display = ''; });
-    let expandBtn = view.querySelector('.rum-expand-btn');
-    if (expandBtn) expandBtn.style.display = 'none';
-    let collapseBtn = view.querySelector('.rum-collapse-btn');
-    if (collapseBtn) collapseBtn.style.display = '';
+// Only one rum overlay (expand or edit, on any row/field) may be open at a time.
+let rumOpenWidgetVar = null;
+
+function rumCloseCurrentOverlay() {
+    if (rumOpenWidgetVar) {
+        let w = PF(rumOpenWidgetVar);
+        if (w) w.hide();
+        rumOpenWidgetVar = null;
+    }
 }
 
-function rumCollapse(id) {
-    let view = document.getElementById('rum_v_' + id);
-    if (!view) return;
-    view.querySelectorAll('.rum-extra').forEach(function(el) { el.style.display = 'none'; });
-    let expandBtn = view.querySelector('.rum-expand-btn');
-    if (expandBtn) expandBtn.style.display = '';
-    let collapseBtn = view.querySelector('.rum-collapse-btn');
-    if (collapseBtn) collapseBtn.style.display = 'none';
+// Called from each overlay's onHide callback so outside-click dismissal
+// (or another overlay taking over) keeps the tracked state correct.
+function rumOnOverlayHide(widgetVar) {
+    if (rumOpenWidgetVar === widgetVar) {
+        rumOpenWidgetVar = null;
+    }
+}
+
+// Edit overlay's onHide: refresh the view cell no matter how the overlay
+// closed (explicit close button, outside click, or another overlay taking
+// over), so the chip list always reflects what was just edited.
+function rumOnEditOverlayHide(id, clientId, viewId) {
+    rumOnOverlayHide(id + '_editOverlay');
+    PrimeFaces.ab({source: clientId, process: '@none', update: viewId});
+}
+
+// anchorId is passed explicitly to show() because the anchor used in the
+// overlay's "for" attribute (the composite's outputPanel) is rendered with
+// style="display:contents" and therefore has no layout box of its own to
+// position against; the rum_v_<id> div does, so we align against that instead.
+function rumToggleOverlay(widgetVar, anchorId) {
+    if (rumOpenWidgetVar === widgetVar) {
+        rumCloseCurrentOverlay();
+        return;
+    }
+    rumCloseCurrentOverlay();
+    let w = PF(widgetVar);
+    if (w) {
+        w.show(anchorId);
+        rumOpenWidgetVar = widgetVar;
+    }
+}
+
+function rumExpand(id) {
+    rumToggleOverlay(id + '_expandOverlay', 'rum_v_' + id);
 }
 
 function rumEdit(id) {
-    let view = document.getElementById('rum_v_' + id);
-    let edit = document.getElementById('rum_e_' + id);
-    if (view) view.style.display = 'none';
-    if (edit) {
-        edit.style.display = '';
-        let input = edit.querySelector('input[type="text"]');
-        if (input) setTimeout(function() { input.focus(); }, 50);
-    }
+    rumToggleOverlay(id + '_editOverlay', 'rum_v_' + id);
+    setTimeout(function() {
+        let w = PF(id + '_editOverlay');
+        if (!w || !w.isVisible() || !w.jq) return;
+        let input = w.jq.find('input[type="text"]').get(0);
+        if (input) input.focus();
+    }, 150);
 }
 
 function rumWrapperClick(event, id) {
@@ -439,10 +466,8 @@ function rumWrapperClick(event, id) {
 }
 
 function rumClose(id) {
-    let edit = document.getElementById('rum_e_' + id);
-    let view = document.getElementById('rum_v_' + id);
-    if (edit) edit.style.display = 'none';
-    if (view) view.style.display = '';
+    let w = PF(id + '_editOverlay');
+    if (w) w.hide();
 }
 
 function ruInplaceOnBlur(clientId) {

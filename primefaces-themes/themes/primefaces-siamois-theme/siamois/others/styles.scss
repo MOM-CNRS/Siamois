@@ -855,11 +855,24 @@ body .view-edit-button.ui-splitbutton {
   flex-wrap: nowrap;
   align-items: center;
   gap: 0.25rem;
-  width: 100%;
+  min-width: 22rem;
 }
 .rum-edit-wrapper .ui-autocomplete {
   flex: 1;
   min-width: 0;
+}
+.ui-overlaypanel.rum-overlay {
+  border: 1px solid #ced4da;
+}
+.ui-overlaypanel.rum-overlay .ui-overlaypanel-content {
+  padding: 0.5rem;
+}
+.rum-overlay-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 24rem;
 }
 .rum-action-btn {
   background: transparent;
