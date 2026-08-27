@@ -3,6 +3,7 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
 import fr.siamois.ui.table.column.RelationColumn;
@@ -97,6 +98,8 @@ public final class ActionUnitTableDefinitionFactory {
                         .headerIcon("bi bi-pencil-square")
                         .visible(true)
                         .toggleable(true)
+                        .sortable(true)
+                        .sortField(ActionUnitSpec.RECORDING_UNIT_COUNT_SORT)
 
                         .countKey("recordingUnit")
 

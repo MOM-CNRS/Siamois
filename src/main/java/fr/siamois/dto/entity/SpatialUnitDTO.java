@@ -30,6 +30,7 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private Set<SpatialUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private Set<ActionUnitSummaryDTO> relatedActionUnitList;
+    private Long recordingUnitCount;
     private String code;
     private Integer placeNumber;
 

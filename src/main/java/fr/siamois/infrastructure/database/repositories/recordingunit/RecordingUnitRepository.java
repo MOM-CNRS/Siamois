@@ -32,6 +32,9 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Query("SELECT r.id as id, COUNT(s) as cnt FROM RecordingUnit r LEFT JOIN r.specimenList s WHERE r.id IN :ids GROUP BY r.id")
     List<Object[]> countSpecimensByIds(@Param("ids") List<Long> ids);
 
+    @Query("SELECT r.spatialUnit.id as id, COUNT(r) as cnt FROM RecordingUnit r WHERE r.spatialUnit.id IN :ids GROUP BY r.spatialUnit.id")
+    List<Object[]> countBySpatialUnitIds(@Param("ids") List<Long> ids);
+
     @Query(value = """
         SELECT ru_id, COUNT(*) FROM (
             SELECT fk_recording_unit_1_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_1_id IN (:ids)

@@ -465,7 +465,9 @@ public class RecordingUnitService implements ArkEntityService {
         try {
             RecordingUnit recordingUnit = recordingUnitRepository.findById(id)
                     .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + id));
-            return recordingUnitMapper.convert(recordingUnit);
+            RecordingUnitDTO dto = recordingUnitMapper.convert(recordingUnit);
+            dto.setSpecimenCount(recordingUnitRepository.countSpecimensByRecordingUnitId(id));
+            return dto;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
@@ -1278,7 +1280,8 @@ public class RecordingUnitService implements ArkEntityService {
      */
     private Page<RecordingUnitDTO> pageAndEnrich(Specification<RecordingUnit> specs, Pageable pageable,
                                                  boolean includeFullRelations) {
-        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, pageable)
+        specs = applyCountSort(specs, pageable.getSort());
+        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, stripCountSort(pageable))
                 .map(recordingUnitMapper::toLightDto);
 
         List<Long> ids = page.getContent().stream()
@@ -1289,13 +1292,43 @@ public class RecordingUnitService implements ArkEntityService {
             return page;
         }
 
+        hydrateCounts(page.getContent(), ids);
         if (includeFullRelations) {
             hydrateFullRelations(page.getContent(), ids);
-        } else {
-            hydrateCounts(page.getContent(), ids);
         }
 
         return page;
+    }
+
+    /**
+     * Composes a count-based ordering {@link Specification} when the requested sort targets a
+     * synthetic (non-JPA-path) count key, e.g. {@link RecordingUnitSpec#SPECIMEN_COUNT_SORT}.
+     */
+    private Specification<RecordingUnit> applyCountSort(Specification<RecordingUnit> specs, Sort sort) {
+        for (Sort.Order order : sort) {
+            if (RecordingUnitSpec.SPECIMEN_COUNT_SORT.equals(order.getProperty())) {
+                return specs.and(RecordingUnitSpec.orderBySpecimenCount(order.getDirection()));
+            }
+            if (RecordingUnitSpec.RELATIONSHIP_COUNT_SORT.equals(order.getProperty())) {
+                return specs.and(RecordingUnitSpec.orderByRelationshipCount(order.getDirection()));
+            }
+        }
+        return specs;
+    }
+
+    /**
+     * Strips the synthetic count sort key from the {@link Pageable} passed to the repository,
+     * since it is not a real JPA-mapped path (the ordering is applied via {@link #applyCountSort}
+     * as a {@link Specification} side effect instead).
+     */
+    private Pageable stripCountSort(Pageable pageable) {
+        boolean hasCountSort = pageable.getSort().stream()
+                .anyMatch(order -> RecordingUnitSpec.SPECIMEN_COUNT_SORT.equals(order.getProperty())
+                        || RecordingUnitSpec.RELATIONSHIP_COUNT_SORT.equals(order.getProperty()));
+        if (!hasCountSort) {
+            return pageable;
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
     }
 
     private void hydrateFullRelations(List<RecordingUnitDTO> rows, List<Long> ids) {
@@ -1369,11 +1402,16 @@ public class RecordingUnitService implements ArkEntityService {
                 .collect(Collectors.toMap(
                         row -> ((Number) row[0]).longValue(),
                         row -> ((Number) row[1]).longValue()));
+        Map<Long, Long> relationshipCount = recordingUnitRepository.countRelationshipsByIds(ids).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).longValue()));
 
         for (RecordingUnitDTO dto : rows) {
             dto.setParentsCount(parentsCount.getOrDefault(dto.getId(), 0));
             dto.setChildrenCount(childrenCount.getOrDefault(dto.getId(), 0));
             dto.setSpecimenCount(specimenCount.getOrDefault(dto.getId(), 0L));
+            dto.setRelationshipCount(relationshipCount.getOrDefault(dto.getId(), 0L));
         }
     }
 

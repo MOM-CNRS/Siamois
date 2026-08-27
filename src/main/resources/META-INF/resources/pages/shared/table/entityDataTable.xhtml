@@ -191,7 +191,7 @@
                     visible="#{column.visible}"
                     field="#{column.field.valueBinding}"
                     filterBy="#{column.field.valueBinding}"
-                    sortBy="#{column.field.valueBinding}"
+                    sortBy="#{column.field != null ? column.field.valueBinding : column.sortField}"
                     toggleable="#{column.type != 'COMMAND_LINK'}"
             >
                 <ui:include src="/pages/shared/table/filterTemplate.xhtml">

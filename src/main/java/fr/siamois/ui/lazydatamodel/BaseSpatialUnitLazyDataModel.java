@@ -91,6 +91,16 @@ public abstract class BaseSpatialUnitLazyDataModel extends BaseLazyDataModel<Spa
             if (categoryMeta != null) {
                 sortDTO.add(SpatialUnitSpec.CATEGORY_FILTER, categoryMeta.getOrder());
             }
+
+            SortMeta actionsCountMeta = sortBy.get(SpatialUnitSpec.ACTIONS_COUNT_SORT);
+            if (actionsCountMeta != null) {
+                sortDTO.add(SpatialUnitSpec.ACTIONS_COUNT_SORT, actionsCountMeta.getOrder());
+            }
+
+            SortMeta recordingUnitCountMeta = sortBy.get(SpatialUnitSpec.RECORDING_UNIT_COUNT_SORT);
+            if (recordingUnitCountMeta != null) {
+                sortDTO.add(SpatialUnitSpec.RECORDING_UNIT_COUNT_SORT, recordingUnitCountMeta.getOrder());
+            }
         }
     }
 

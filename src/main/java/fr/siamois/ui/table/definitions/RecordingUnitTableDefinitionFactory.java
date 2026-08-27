@@ -3,6 +3,7 @@ package fr.siamois.ui.table.definitions;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.column.CommandLinkColumn;
 import fr.siamois.ui.table.column.FormFieldColumn;
@@ -162,6 +163,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .headerIcon("bi bi-diagram-2")
                         .visible(true)
                         .toggleable(true)
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.RELATIONSHIP_COUNT_SORT)
 
                         .countKey("relationships")
                         .viewIcon(BI_BI_EYE)
@@ -187,6 +190,8 @@ public final class RecordingUnitTableDefinitionFactory {
                         .headerIcon("bi bi-bucket")
                         .visible(true)
                         .toggleable(true)
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.SPECIMEN_COUNT_SORT)
 
                         .countKey("specimenList")
 

@@ -49,6 +49,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -595,8 +596,36 @@ public class ActionUnitService implements ArkEntityService {
 
     public Page<ActionUnitDTO> searchActionUnits(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
-        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
+        specs = applyCountSort(specs, pageable.getSort());
+        Page<ActionUnit> res = actionUnitRepository.findAll(specs, stripCountSort(pageable));
         return res.map(this::convertWithCount);
+    }
+
+    /**
+     * Composes a count-based ordering {@link Specification} when the requested sort targets a
+     * synthetic (non-JPA-path) count key, e.g. {@link ActionUnitSpec#RECORDING_UNIT_COUNT_SORT}.
+     */
+    private Specification<ActionUnit> applyCountSort(Specification<ActionUnit> specs, Sort sort) {
+        for (Sort.Order order : sort) {
+            if (ActionUnitSpec.RECORDING_UNIT_COUNT_SORT.equals(order.getProperty())) {
+                return specs.and(ActionUnitSpec.orderByRecordingUnitCount(order.getDirection()));
+            }
+        }
+        return specs;
+    }
+
+    /**
+     * Strips the synthetic count sort key from the {@link Pageable} passed to the repository,
+     * since it is not a real JPA-mapped path (the ordering is applied via {@link #applyCountSort}
+     * as a {@link Specification} side effect instead).
+     */
+    private Pageable stripCountSort(Pageable pageable) {
+        boolean hasCountSort = pageable.getSort().stream()
+                .anyMatch(order -> ActionUnitSpec.RECORDING_UNIT_COUNT_SORT.equals(order.getProperty()));
+        if (!hasCountSort) {
+            return pageable;
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
     }
 
 
