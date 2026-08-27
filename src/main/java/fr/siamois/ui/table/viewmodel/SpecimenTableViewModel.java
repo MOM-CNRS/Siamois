@@ -220,7 +220,10 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
     public void handleRowAction(RowAction action, SpecimenDTO s) {
         if (action.getAction() == DUPLICATE_ROW) {
-            specimenLazyDataModel.duplicateRow();
+            SpecimenDTO created = specimenLazyDataModel.duplicateRow();
+            if (created != null && created.getId() != null) {
+                markRecentlyCreated(java.util.List.of(created.getId()));
+            }
         } else {
             throw new IllegalStateException("Unhandled action: " + action.getAction());
         }

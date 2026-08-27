@@ -820,7 +820,7 @@ body .view-edit-button.ui-splitbutton {
   gap: 0.25rem;
   min-height: 32px;
   background: white;
-  padding: 0;
+  padding: 0.2em;
   border: 1px solid #ced4da;
   border-radius: 3px;
 }
@@ -964,17 +964,20 @@ body .view-edit-button.ui-splitbutton {
 }
 
 /* ── entityDataTable/entityTreeTable: newly duplicated row highlight ── */
-@keyframes row-newly-duplicated-fade {
-  from {
-    background-color: var(--siamois-green-light-350);
-  }
-  to {
+/* Three short blinks rather than one long fade: the row re-renders once while the
+   highlight is being cleared, which restarts the animation - a discrete blink that
+   starts and ends transparent stays clean when replayed, a slow fade does not. */
+@keyframes row-newly-duplicated-blink {
+  0%, 100% {
     background-color: transparent;
+  }
+  50% {
+    background-color: var(--siamois-green-light-350);
   }
 }
 .ui-treetable tr.row-newly-duplicated > td,
 .ui-datatable tr.row-newly-duplicated > td {
-  animation: row-newly-duplicated-fade 3s ease-out forwards;
+  animation: row-newly-duplicated-blink 0.4s ease-in-out 3;
 }
 
 /* ── entityDataTable: chip-cell ── */

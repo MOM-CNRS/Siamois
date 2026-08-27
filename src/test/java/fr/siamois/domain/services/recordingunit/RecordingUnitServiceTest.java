@@ -7,6 +7,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.institution.Institution;
@@ -112,6 +113,9 @@ class RecordingUnitServiceTest {
     @Mock
     private ProfilePermissionService profilePermissionService;
 
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private RecordingUnitService recordingUnitService;
 
@@ -120,6 +124,9 @@ class RecordingUnitServiceTest {
         ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
         lenient().when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        // @InjectMocks uses constructor injection here, which skips leftover fields like the
+        // @PersistenceContext EntityManager - wire it explicitly so save() can call it.
+        org.springframework.test.util.ReflectionTestUtils.setField(recordingUnitService, "entityManager", entityManager);
     }
 
     @AfterEach
@@ -2392,6 +2399,12 @@ class RecordingUnitServiceTest {
                     .when(spyService).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
 
             lenient().doReturn(false).when(spyService).fullIdentifierAlreadyExistInAction(any());
+
+            // Mockito's spy() copies field values by reference from the wrapped instance, but that
+            // copy has proven unreliable for this @PersistenceContext field under a full test-suite
+            // run (passes in isolation, null when run alongside the rest of the suite) — set it
+            // explicitly on the spy to remove any doubt.
+            org.springframework.test.util.ReflectionTestUtils.setField(spyService, "entityManager", entityManager);
         }
 
         private RecordingUnitDTO unit(long id) {
@@ -2454,6 +2467,18 @@ class RecordingUnitServiceTest {
             RecordingUnitStructureDuplicationResult result = spyService.duplicateStructure(root, Set.of(), 0);
 
             assertThat(result.rootCopies()).hasSize(1);
+        }
+
+        @Test
+        void duplicateStructure_identifierCollision_throwsWithIdentifier() {
+            RecordingUnitDTO root = unit(10L);
+            doReturn(true).when(spyService).fullIdentifierAlreadyExistInAction(any());
+
+            RecordingUnitIdentifierAlreadyExistsException ex = assertThrows(
+                    RecordingUnitIdentifierAlreadyExistsException.class,
+                    () -> spyService.duplicateStructure(root, Set.of(), 1));
+
+            assertThat(ex.getIdentifier()).isEqualTo("ID-101");
         }
 
         @Test

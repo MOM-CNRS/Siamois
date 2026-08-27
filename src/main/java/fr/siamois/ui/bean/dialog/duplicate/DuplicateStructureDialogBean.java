@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.dialog.duplicate;
 
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitStructureDuplicationResult;
 import fr.siamois.dto.entity.RecordingUnitDTO;
@@ -70,7 +71,10 @@ public class DuplicateStructureDialogBean implements Serializable {
         this.callerTable = table;
         this.count = 1;
         this.rootNode = buildTree(ru);
-        this.selectedNodes = collectAllNodes(ruNode);
+        // Nothing pre-selected: duplicating just the clicked unit is the common case, and
+        // opting descendants in is safer than having to opt them out.
+        this.selectedNodes = new ArrayList<>();
+        applySelection(ruNode, false);
 
         PrimeFaces.current().ajax().update("duplicateStructureForm");
         PrimeFaces.current().executeScript("PF('duplicateStructureDiag').show()");
@@ -100,13 +104,29 @@ public class DuplicateStructureDialogBean implements Serializable {
         }
     }
 
-    private List<TreeNode<RecordingUnitDTO>> collectAllNodes(TreeNode<RecordingUnitDTO> node) {
+    /** Every node under {@code node}, excluding {@code node} itself (the root has no checkbox). */
+    private List<TreeNode<RecordingUnitDTO>> collectDescendants(TreeNode<RecordingUnitDTO> node) {
         List<TreeNode<RecordingUnitDTO>> all = new ArrayList<>();
-        all.add(node);
         for (TreeNode<RecordingUnitDTO> child : node.getChildren()) {
-            all.addAll(collectAllNodes(child));
+            all.add(child);
+            all.addAll(collectDescendants(child));
         }
         return all;
+    }
+
+    /**
+     * Check/uncheck every descendant of {@code node}. PrimeFaces renders each checkbox from the
+     * TreeNode's own {@code selected} flag, so replacing {@link #selectedNodes} alone leaves the
+     * rendered tree unchanged — the flags have to be set too. {@code partialSelected} is cleared
+     * as well, otherwise ancestors keep the indeterminate "some children checked" state.
+     */
+    private void applySelection(TreeNode<RecordingUnitDTO> node, boolean selected) {
+        if (node == null) return;
+        node.setPartialSelected(false);
+        for (TreeNode<RecordingUnitDTO> child : node.getChildren()) {
+            child.setSelected(selected);
+            applySelection(child, selected);
+        }
     }
 
     public boolean isRoot(RecordingUnitDTO ru) {
@@ -123,9 +143,11 @@ public class DuplicateStructureDialogBean implements Serializable {
     }
 
     public boolean isAllSelected() {
-        if (rootNode == null) return true;
-        long selectedDescendants = selectedNodes.stream().filter(n -> !isRoot(n.getData())).count();
-        return selectedDescendants >= countDescendants(rootNode);
+        if (ruNode == null) return false;
+        int total = countDescendants(ruNode);
+        // With no descendants at all there is nothing to check, so "select all" is the honest label.
+        if (total == 0) return false;
+        return selectedDescendantCount() >= total;
     }
 
     public String getToggleAllLabel() {
@@ -133,12 +155,26 @@ public class DuplicateStructureDialogBean implements Serializable {
     }
 
     public void toggleAll() {
-        if (rootNode == null) return;
-        selectedNodes = isAllSelected() ? new ArrayList<>() : collectAllNodes(rootNode);
+        if (ruNode == null) return;
+        boolean select = !isAllSelected();
+        selectedNodes = select ? collectDescendants(ruNode) : new ArrayList<>();
+        applySelection(ruNode, select);
+    }
+
+    /**
+     * Selected descendants of the root, root excluded. The root itself is never toggleable and is
+     * not guaranteed to be reflected in {@link #selectedNodes} by the checkbox tree (it isn't
+     * selectable), so it's always counted separately, both here and in {@link #confirm()}.
+     */
+    private int selectedDescendantCount() {
+        if (selectedNodes == null) return 0;
+        return (int) selectedNodes.stream()
+                .filter(n -> n.getData() != null && !isRoot(n.getData()))
+                .count();
     }
 
     public String getSummary() {
-        int selected = selectedNodes == null ? 0 : selectedNodes.size();
+        int selected = 1 + selectedDescendantCount();
         int copies = Math.max(1, count);
         return langBean.msg("duplicateStructure.summary", selected, copies, selected * copies);
     }
@@ -159,6 +195,10 @@ public class DuplicateStructureDialogBean implements Serializable {
         RecordingUnitStructureDuplicationResult result;
         try {
             result = recordingUnitService.duplicateStructure(root, selectedIds, count);
+        } catch (RecordingUnitIdentifierAlreadyExistsException e) {
+            log.error("Recording-unit structure duplication failed", e);
+            MessageUtils.displayWarnMessage(langBean, "duplicateStructure.error.identifierExists", e.getIdentifier());
+            return;
         } catch (RuntimeException e) {
             log.error("Recording-unit structure duplication failed", e);
             MessageUtils.displayWarnMessage(langBean, "duplicateStructure.error");
@@ -181,6 +221,7 @@ public class DuplicateStructureDialogBean implements Serializable {
         // seconds later (see the dialog's confirm button) still needs it.
         root = null;
         rootNode = null;
+        ruNode = null;
         selectedNodes = new ArrayList<>();
     }
 

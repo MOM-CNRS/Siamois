@@ -256,6 +256,8 @@ class BaseLazyDataModelTest {
         filterBy = new HashMap<>();
         RecordingUnit r = new RecordingUnit();
         RecordingUnit r2 = new RecordingUnit();
+        r.setId(1L);
+        r2.setId(1L);
         r.setFullIdentifier("f1");
         r2.setFullIdentifier("f1");
         filterBy2.put("f1", FilterMeta.builder().field("f1").filterValue(r).build());
@@ -277,6 +279,10 @@ class BaseLazyDataModelTest {
         RecordingUnit r2 = new RecordingUnit();
         RecordingUnit r3 = new RecordingUnit();
         RecordingUnit r4 = new RecordingUnit();
+        r.setId(1L);
+        r2.setId(2L);
+        r3.setId(2L);
+        r4.setId(1L);
         r.setFullIdentifier("f1");
         r2.setFullIdentifier("f2");
         r3.setFullIdentifier("f2");

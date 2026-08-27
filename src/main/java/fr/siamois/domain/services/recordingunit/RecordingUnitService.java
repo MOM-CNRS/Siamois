@@ -7,6 +7,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
+import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
@@ -41,6 +42,7 @@ import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -210,10 +212,17 @@ public class RecordingUnitService implements ArkEntityService {
             setupOtherFields(recordingUnit, managedRecordingUnit);
             synchronizeCollection(managedRecordingUnit.getPhases(), recordingUnit.getPhases());
 
+            // IMPORTANT: keep working with the instance save() RETURNS, never with the one passed in.
+            // syncRevision is a @Version wrapper initialised to 0L, so Spring Data's isNew() check
+            // sees a non-null version and treats even a brand-new unit as detached: it calls
+            // em.merge(), which returns a *different* managed copy and leaves the argument transient
+            // with a null id forever. Handing that transient instance to setupParents() below planted
+            // it inside an existing parent's children collection, and the flush then blew up with
+            // "references an unsaved transient instance" - only ever for units that have a parent.
             RecordingUnit savedRecordingUnit = recordingUnitRepository.save(managedRecordingUnit);
 
-            setupParents(recordingUnit, managedRecordingUnit);
-            setupChilds(recordingUnit, managedRecordingUnit);
+            setupParents(recordingUnit, savedRecordingUnit);
+            setupChilds(recordingUnit, savedRecordingUnit);
             return savedRecordingUnit;
 
         } catch (RuntimeException e) {
@@ -1100,12 +1109,25 @@ public class RecordingUnitService implements ArkEntityService {
         copy.setAuthor(info.getUser());
         copy.setCreatedBy(info.getUser());
 
-        copy = save(copy);
-        copy.setFullIdentifier(generateFullIdentifier(copy.getActionUnit(), copy));
-        if (fullIdentifierAlreadyExistInAction(copy)) {
-            throw new IllegalStateException("Generated recording-unit identifier already exists");
+        // A node is built over two save() calls with an identifier lookup in between, so it is only
+        // fully consistent at the end. Hold back Hibernate's automatic pre-query flush for the whole
+        // sequence (same guard as generateFullIdentifier()'s native counter lookup) and flush once,
+        // deliberately, when the node is complete - before the next node in the structure references
+        // it as its parent.
+        FlushModeType previousFlushMode = entityManager.getFlushMode();
+        entityManager.setFlushMode(FlushModeType.COMMIT);
+        try {
+            copy = save(copy);
+            copy.setFullIdentifier(generateFullIdentifier(copy.getActionUnit(), copy));
+            if (fullIdentifierAlreadyExistInAction(copy)) {
+                throw new RecordingUnitIdentifierAlreadyExistsException(copy.getFullIdentifier());
+            }
+            copy = save(copy);
+            entityManager.flush();
+        } finally {
+            entityManager.setFlushMode(previousFlushMode);
         }
-        return save(copy);
+        return copy;
     }
 
     @NonNull

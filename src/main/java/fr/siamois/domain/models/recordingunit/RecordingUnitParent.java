@@ -122,14 +122,22 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     protected SpatialUnit spatialUnit;
 
 
+    // fullIdentifier is mutable - a duplicated/created unit starts with a temporary placeholder
+    // and gets its real identifier assigned afterwards (RecordingUnitService.generateFullIdentifier
+    // mutates it in place on the already-managed entity). Basing equals/hashCode on it corrupts any
+    // HashSet<RecordingUnit> the entity was added to beforehand (e.g. parents/children), since the
+    // element becomes unreachable at its new hash bucket - the classic mutable-hashCode-key bug.
+    // id is stable once assigned and unset only for transient instances, which are equal only to
+    // themselves.
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (!(o instanceof RecordingUnitParent that)) return false;
-        return Objects.equals(fullIdentifier, that.fullIdentifier);
+        return getId() != null && Objects.equals(getId(), that.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(fullIdentifier);
+        return getClass().hashCode();
     }
 }

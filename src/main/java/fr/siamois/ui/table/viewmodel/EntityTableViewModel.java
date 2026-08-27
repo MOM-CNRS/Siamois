@@ -126,6 +126,9 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      */
     private Set<Long> recentlyCreatedIds = new HashSet<>();
 
+    /** When {@link #recentlyCreatedIds} was last set, for the highlight's time-based expiry. */
+    private long recentlyCreatedAtMillis;
+
     /**
      * Nom de la propriété de T utilisée comme "form scope" (ex: "type"),
      * passé au EntityFormContext si besoin.
@@ -727,18 +730,38 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         if (overviewEntityId != null && overviewEntityId.equals(item.getId())) {
             classes = classes.isEmpty() ? "overview-open" : classes + " overview-open";
         }
-        if (recentlyCreatedIds.contains(item.getId())) {
+        if (isRecentlyCreated(item.getId())) {
             classes = classes.isEmpty() ? "row-newly-duplicated" : classes + " row-newly-duplicated";
         }
         return classes;
     }
 
     /**
-     * Flags {@code ids} so {@link #getRowStyleClass} highlights their rows until
-     * {@link #clearRecentlyCreated()} is called.
+     * How long a "just duplicated" row keeps its highlight. The blink animation replays from
+     * the start on every render, so without an expiry an unrelated refresh minutes later would
+     * make the row blink again. Callers that can schedule a client-side callback may still clear
+     * it earlier (and more precisely) via {@link #clearRecentlyCreated()}.
+     */
+    private static final long RECENTLY_CREATED_TTL_MILLIS = 2_000L;
+
+    private boolean isRecentlyCreated(Long id) {
+        if (recentlyCreatedIds.isEmpty()) {
+            return false;
+        }
+        if (System.currentTimeMillis() - recentlyCreatedAtMillis > RECENTLY_CREATED_TTL_MILLIS) {
+            recentlyCreatedIds = new HashSet<>();
+            return false;
+        }
+        return recentlyCreatedIds.contains(id);
+    }
+
+    /**
+     * Flags {@code ids} so {@link #getRowStyleClass} highlights their rows, until either
+     * {@link #clearRecentlyCreated()} is called or {@link #RECENTLY_CREATED_TTL_MILLIS} elapses.
      */
     public void markRecentlyCreated(Collection<Long> ids) {
         recentlyCreatedIds = new HashSet<>(ids);
+        recentlyCreatedAtMillis = System.currentTimeMillis();
     }
 
     /** Removes the "just duplicated" highlight from every row. */

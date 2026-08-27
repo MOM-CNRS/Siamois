@@ -131,13 +131,21 @@
 
 /* dialogs */
 
-.sia-new-unit-dialog.ui-dialog .ui-dialog-titlebar {
+.sia-new-unit-dialog.ui-dialog .ui-dialog-titlebar,
+.sia-duplicate-structure-dialog.ui-dialog .ui-dialog-titlebar {
   padding: 1em;
   background: var(--siamois-green-light-100);
 }
 
-.sia-new-unit-dialog.ui-dialog .ui-dialog-footer {
+.sia-new-unit-dialog.ui-dialog .ui-dialog-footer,
+.sia-duplicate-structure-dialog.ui-dialog .ui-dialog-footer {
   padding: 0;
+}
+
+/* The duplication modal's body is a bare two-column grid rather than a form
+   component, so it needs its own breathing room inside the dialog. */
+.sia-duplicate-structure-dialog.ui-dialog .ui-dialog-content {
+  padding: 1.25em;
 }
 
 body {

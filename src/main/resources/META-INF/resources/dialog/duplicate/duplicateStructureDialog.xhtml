@@ -12,7 +12,11 @@
                   styleClass="sia-duplicate-structure-dialog ui-panel siamois-panel">
 
             <f:facet name="header">
-                <span>#{langBean.msg('duplicateStructure.title')}</span>
+                <p:outputPanel style="display: flex;gap: 0.5em; align-items: center;
+                        float:left;color: var(--main-color);">
+                    <i class="bi bi-copy" style="font-size:2rem;"/>
+                    <span style="padding-right:0.5em;">#{langBean.msg('duplicateStructure.title')}</span>
+                </p:outputPanel>
             </f:facet>
 
             <div style="display:grid; grid-template-columns: 1.15fr 1fr; gap: 0; min-height: 320px;">
@@ -22,9 +26,10 @@
                         <span style="font-size: 0.8em; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gray-600);">
                             #{langBean.msg('duplicateStructure.elementsToInclude')}
                         </span>
-                        <p:commandLink value="#{duplicateStructureDialogBean.toggleAllLabel}"
+                        <p:commandLink id="toggleAllLink"
+                                       value="#{duplicateStructureDialogBean.toggleAllLabel}"
                                        action="#{duplicateStructureDialogBean.toggleAll()}"
-                                       update=":duplicateStructureForm:duplicateTree :duplicateStructureForm:duplicateSummary"
+                                       update=":duplicateStructureForm:duplicateTree :duplicateStructureForm:duplicateSummary :duplicateStructureForm:toggleAllLink"
                                        process="@this"
                                        style="font-size: 0.85em; font-weight: 600;"/>
                     </div>
@@ -37,8 +42,8 @@
                             selection="#{duplicateStructureDialogBean.selectedNodes}"
                             propagateSelectionUp="false"
                             propagateSelectionDown="true">
-                        <p:ajax event="select" update=":duplicateStructureForm:duplicateSummary" process="@this"/>
-                        <p:ajax event="unselect" update=":duplicateStructureForm:duplicateSummary" process="@this"/>
+                        <p:ajax event="select" update=":duplicateStructureForm:duplicateSummary :duplicateStructureForm:toggleAllLink" process="@this"/>
+                        <p:ajax event="unselect" update=":duplicateStructureForm:duplicateSummary :duplicateStructureForm:toggleAllLink" process="@this"/>
                         <p:treeNode>
                             <span style="display:inline-flex; align-items:center; gap: 0.5em;">
                                 <ui:fragment rendered="#{duplicateStructureDialogBean.isRoot(node)}">
@@ -49,11 +54,6 @@
                                              background: var(--ground-main-color);">
                                     #{node.fullIdentifier}
                                 </span>
-                                <ui:fragment rendered="#{duplicateStructureDialogBean.isRoot(node)}">
-                                    <span style="font-size: 0.8em; color: var(--gray-500); font-style: italic;">
-                                        #{langBean.msg('duplicateStructure.rootLocked')}
-                                    </span>
-                                </ui:fragment>
                             </span>
                         </p:treeNode>
                     </p:tree>
@@ -88,8 +88,8 @@
                             <p:commandButton id="confirmDuplicateStructureBtn"
                                              value="#{langBean.msg('duplicateStructure.title')}"
                                              action="#{duplicateStructureDialogBean.confirm()}"
-                                             update="@(.datatable-hoverable-table)"
-                                             oncomplete="setTimeout(function(){clearDuplicateHighlight();}, 3500);"
+                                             update="@(.sia-entity-table)"
+                                             oncomplete="setTimeout(function(){clearDuplicateHighlight();}, 1400);"
                                              style="margin-right: 1rem"/>
                         </p:toolbarGroup>
                     </p:toolbar>
@@ -100,6 +100,6 @@
 
         <p:remoteCommand name="clearDuplicateHighlight"
                           action="#{duplicateStructureDialogBean.callerTable.clearRecentlyCreated()}"
-                          update="@(.datatable-hoverable-table)"/>
+                          update="@(.sia-entity-table)"/>
     </h:form>
 </ui:fragment>

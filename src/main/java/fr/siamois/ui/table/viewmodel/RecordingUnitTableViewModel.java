@@ -315,6 +315,11 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
     }
 
     public boolean isRendered(RowAction action, RecordingUnitDTO ru) {
+        // A lazy tree renders placeholder rows for indices outside the loaded page window
+        // (see RootChildList#createVirtualNode), and those carry no data at all.
+        if (ru == null) {
+            return false;
+        }
         if (action.getAction() == TableColumnAction.TOGGLE_BOOKMARK) {
             return true;
         }
@@ -323,6 +328,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
 
     public String resolveIcon(RowAction action,RecordingUnitDTO ru) {
+        if (ru == null) {
+            return "";
+        }
 
         return switch (action.getAction()) {
             case TOGGLE_BOOKMARK -> Boolean.TRUE.equals(navBean.isRecordingUnitBookmarkedByUser(String.valueOf(ru.getId())))
@@ -395,6 +403,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
     @Override
     public boolean canUserEditRow(RecordingUnitDTO unit) {
+        if (unit == null) {
+            return false;
+        }
         Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
         return canEditByActionUnit(profilePermissionService, flowBean.getSessionSettings().getUserInfo(),
                 PermissionConstants.PROJECT_EDIT_RECORDING_UNITS, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,

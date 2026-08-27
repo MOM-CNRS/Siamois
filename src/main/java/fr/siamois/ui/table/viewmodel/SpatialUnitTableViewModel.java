@@ -508,6 +508,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
 
 
         onAnyEntityCreated(newUnit, ctx) ;
+        markRecentlyCreated(java.util.List.of(newUnit.getId()));
         MessageUtils.displayInfoMessage(sessionSettingsBean.getLangBean(), "common.action.duplicateEntity", toDuplicate.getName());
     }
 
