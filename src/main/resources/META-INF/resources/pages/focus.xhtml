@@ -282,9 +282,11 @@
                                                        rendered="#{focusViewBean.mainPanel.canOpenInProjectSettings()}"
                                                        styleClass="sideview-topbar-button"
                                                        action="#{navBean.redirectToActionUnitSettings(focusViewBean.mainPanel.unit)}"
-                                                       title="Ouvrir le projet dans les paramètres">
+                                                       title="#{langBean.msg('panel.header.settings')}">
                                             <h:outputText styleClass="bi bi-gear"/>
                                         </p:commandLink>
+                                        <p:tooltip rendered="#{focusViewBean.mainPanel.canOpenInProjectSettings()}" autoHide="false" for="openInProjectSettingsButton" value="#{langBean.msg('panel.header.settings')}" position="bottom"/>
+
                                     </div>
 
                                 </h:form>
