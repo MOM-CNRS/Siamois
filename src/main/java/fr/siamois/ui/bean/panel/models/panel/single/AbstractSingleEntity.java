@@ -200,6 +200,33 @@ public abstract class AbstractSingleEntity<T extends AbstractEntityDTO>
 
     }
 
+    /**
+     * Absolute client id of this panel's details-tab form (see {@code singleUnitPanel.xhtml}).
+     * Used to refresh the form body from outside its own form — e.g. from the header's category
+     * chip, whose change can rebuild {@code detailsForm} with a different field set via
+     * {@link #initForms}.
+     * <p>
+     * When shown as a side-panel overview (not root), {@code panelContent.xhtml} builds the form
+     * id from the <em>containing</em> panel's index plus {@code -overview} — not this panel's own
+     * index — same pattern as {@link #getActionToolbarId()}.
+     */
+    public String getDetailsFormUpdateId() {
+        if (isRoot) {
+            return ":singlePanelUnitForm-" + getPanelIndex();
+        }
+        return ":singlePanelUnitForm-" + parentOrOverview.getPanelIndex() + "-overview";
+    }
+
+    /**
+     * Full ajax {@code update} target list for the header's category chip: its own form plus the
+     * details-tab form. Precomputed as a single string (rather than concatenated in EL) because a
+     * literal-text + EL composite attribute value does not survive being passed through the
+     * chip's several levels of nested {@code cc.attrs} indirection.
+     */
+    public String getCategoryChipUpdateTargets() {
+        return "@form " + getDetailsFormUpdateId();
+    }
+
     public String getAutocompleteClass() {
         return formContext != null ? formContext.getAutocompleteClass() : "";
     }

@@ -32,7 +32,7 @@
                     mode="#{cc.attrs.panel.editingIdentifier ? 'input' : 'READ'}"
                     panelId="#{cc.attrs.panelId}"
                     formCtx="#{cc.attrs.panel.formContext}"
-                    updateTargetsOnBlur="@form"
+                    updateTargetsOnBlur="#{cc.attrs.panel.categoryChipUpdateTargets}"
                     onConceptChanged="#{cc.attrs.panel.formContext.setFieldConceptAnswerHasBeenModified}"/>
         </h:panelGroup>
     </cc:implementation>
