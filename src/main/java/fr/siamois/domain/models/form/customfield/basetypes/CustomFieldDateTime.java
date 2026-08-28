@@ -18,7 +18,7 @@ import java.time.Month;
 @Entity
 @DiscriminatorValue("DATETIME")
 @Table(name = "custom_field")
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 public class CustomFieldDateTime extends CustomField {
 

@@ -446,8 +446,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         Long typeConceptId = unit.getType() != null ? unit.getType().getId() : null;
         FormUiDto base = effectiveFormResolver.resolveEffectiveForm(
                 RecordingUnit.DETAILS_FORM, unit.getActionUnit().getId(), ConfigurableTable.UE, typeConceptId);
-        detailsForm = CustomFormComposer.withFieldsInPanel(base,
-                RecordingUnitDetailsForm.MEASUREMENTS_PANEL_NAME, measurementFields());
+        detailsForm = CustomFormComposer.deepCopy(CustomFormComposer.withFieldsInPanel(base,
+                RecordingUnitDetailsForm.MEASUREMENTS_PANEL_NAME, measurementFields()));
         configureSystemFieldsBeforeInit();
         // Init system form answers
         initFormContext(forceInit);

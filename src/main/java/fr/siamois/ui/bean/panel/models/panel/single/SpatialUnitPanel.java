@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -191,7 +192,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = SpatialUnit.DETAILS_FORM;
+        detailsForm = CustomFormComposer.deepCopy(SpatialUnit.DETAILS_FORM);
         // Init system form answers
         initFormContext(forceInit);
     }

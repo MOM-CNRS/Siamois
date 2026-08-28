@@ -1,5 +1,7 @@
 package fr.siamois.domain.models.form.customform;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
@@ -17,6 +19,11 @@ import java.util.stream.Collectors;
  * (e.g. {@code RecordingUnit.DETAILS_FORM}) are {@code public static final} shared singletons,
  * and mutating them in place would corrupt the form for every other session. Only a new list and
  * a new trailing panel are created; the existing panel objects are safe to reference as-is.
+ * <p>
+ * Callers that need to apply runtime-only, per-view constraints to a resolved form's fields
+ * (e.g. constraining a date field's min/max from another field's current value) must call
+ * {@link #deepCopy(FormUiDto)} first and mutate the copy — never a form/panel/col/field handed
+ * back by this class or a static {@code DETAILS_FORM} constant directly.
  */
 public final class CustomFormComposer {
 
@@ -149,5 +156,67 @@ public final class CustomFormComposer {
         CustomRowUiDto copy = new CustomRowUiDto();
         copy.setColumns(columns);
         return copy;
+    }
+
+    /**
+     * @param form the form to copy, left untouched; {@code null} is returned as {@code null}
+     * @return an independent deep copy of {@code form} (panels, rows and cols are all fresh
+     * objects) safe to mutate at runtime — e.g. to apply a per-view constraint to a date field —
+     * without corrupting {@code form} itself or any other form/row/col sharing its objects.
+     */
+    public static FormUiDto deepCopy(FormUiDto form) {
+        if (form == null) {
+            return null;
+        }
+        List<CustomFormPanelUiDto> panels = form.getLayout().stream()
+                .map(CustomFormComposer::deepCopyPanel)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        return new FormUiDto.Builder()
+                .addPanels(panels)
+                .build();
+    }
+
+    private static CustomFormPanelUiDto deepCopyPanel(CustomFormPanelUiDto panel) {
+        CustomFormPanelUiDto copy = new CustomFormPanelUiDto();
+        copy.setName(panel.getName());
+        copy.setClassName(panel.getClassName());
+        copy.setIsSystemPanel(panel.getIsSystemPanel());
+        copy.setCanUserAddFields(panel.getCanUserAddFields());
+        copy.setRows(panel.getRows().stream()
+                .map(CustomFormComposer::deepCopyRow)
+                .collect(Collectors.toCollection(ArrayList::new)));
+        return copy;
+    }
+
+    private static CustomRowUiDto deepCopyRow(CustomRowUiDto row) {
+        CustomRowUiDto copy = new CustomRowUiDto();
+        copy.setColumns(row.getColumns().stream()
+                .map(CustomFormComposer::deepCopyCol)
+                .collect(Collectors.toCollection(ArrayList::new)));
+        return copy;
+    }
+
+    private static CustomColUiDto deepCopyCol(CustomColUiDto col) {
+        CustomColUiDto copy = new CustomColUiDto();
+        copy.setReadOnly(col.isReadOnly());
+        copy.setRequired(col.isRequired());
+        copy.setCanBeRemoved(col.isCanBeRemoved());
+        copy.setField(deepCopyField(col.getField()));
+        copy.setClassName(col.getClassName());
+        copy.setEnabledWhenSpec(col.getEnabledWhenSpec());
+        copy.setDependsOnSpec(col.getDependsOnSpec());
+        return copy;
+    }
+
+    /**
+     * Only {@link CustomFieldDateTime} is ever mutated at runtime (its min/max), so only it needs
+     * an independent copy; every other field type is safe to keep sharing.
+     */
+    private static CustomField deepCopyField(CustomField field) {
+        if (field instanceof CustomFieldDateTime dt) {
+            return dt.toBuilder().build();
+        }
+        return field;
     }
 }
