@@ -100,7 +100,7 @@
                         <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
                             <h:selectOneMenu id="draftType" value="#{projectTableFieldSettingsBean.draftTypeName}" styleClass="ptc-native-select">
                                 <f:selectItems value="#{projectTableFieldSettingsBean.fieldTypeOptions}" var="t" itemLabel="#{t.label}" itemValue="#{t.name()}"/>
-                                <p:ajax event="change" update=":fieldEditForm:drawerContent"/>
+                                <p:ajax event="change" process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
                             </h:selectOneMenu>
                         </h:panelGroup>
                         <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
@@ -130,14 +130,14 @@
                                 <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
                                     <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourcePrincipal')}"
                                                       styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'principal' ? 'ptc-chip-option-selected' : ''}"
-                                                      actionListener="#{projectTableFieldSettingsBean.selectDraftSource('principal')}" update=":fieldEditForm:drawerContent" process="@this"/>
+                                                      actionListener="#{projectTableFieldSettingsBean.selectDraftSource('principal')}" update=":fieldEditForm:drawerContent" process="@this draftName draftDescription"/>
                                 </h:panelGroup>
                                 <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceBranche')}"
                                                   styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'branche' ? 'ptc-chip-option-selected' : ''}"
-                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('branche')}" update=":fieldEditForm:drawerContent" process="@this"/>
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('branche')}" update=":fieldEditForm:drawerContent" process="@this draftName draftDescription"/>
                                 <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceCollection')}"
                                                   styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'collection' ? 'ptc-chip-option-selected' : ''}"
-                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('collection')}" update=":fieldEditForm:drawerContent" process="@this"/>
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('collection')}" update=":fieldEditForm:drawerContent" process="@this draftName draftDescription"/>
                             </div>
 
                             <h:panelGroup rendered="#{empty projectTableFieldSettingsBean.draftSource}">
@@ -163,7 +163,7 @@
                                                           icon="bi bi-arrow-clockwise"
                                                           styleClass="ui-button-sm"
                                                           title="#{langBean.msg('projectTables.drawer.params.testConnection')}"
-                                                          actionListener="#{projectTableFieldSettingsBean.testThesaurusConnection()}" update=":fieldEditForm:drawerContent" process="@this draftThesaurusUrl"/>
+                                                          actionListener="#{projectTableFieldSettingsBean.testThesaurusConnection()}" update=":fieldEditForm:drawerContent" process="@this draftThesaurusUrl draftName draftDescription"/>
                                         <h:outputLink value="#{projectTableFieldSettingsBean.draftVocabularyUrl}" target="_blank"
                                                       disabled="#{not projectTableFieldSettingsBean.draftConnectionTested}"
                                                       styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-sm">
