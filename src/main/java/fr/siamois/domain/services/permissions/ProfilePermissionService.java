@@ -212,6 +212,14 @@ public class ProfilePermissionService {
         return actionUnit != null && hasProjectPermission(user, actionUnit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
+    public boolean canAccessInstitution(PersonDTO person, InstitutionDTO institution) {
+        if (person == null || person.getId() == null || institution == null || institution.getId() == null) {
+            return false;
+        }
+        return assignmentRepository.personHasAnyProfileInInstitution(person.getId(), institution.getId())
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+    }
+
     /**
      * Checks if the person can display the data of the given institution, i.e. holds
      * {@link PermissionConstants#ORGANIZATION_ACCESS} through an INSTANCE- or
