@@ -10,6 +10,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 
 
 @Getter
@@ -23,9 +24,9 @@ public class CustomFieldDateTime extends CustomField {
 
     private Boolean showTime;
 
-    private LocalDateTime min;
+    private LocalDateTime min = LocalDateTime.of(1000, Month.JANUARY, 1, 1, 1);
 
-    private LocalDateTime max;
+    private LocalDateTime max = LocalDateTime.of(9999, Month.DECEMBER, 31, 23, 59);
 
     @Override
     public String getIcon() {
