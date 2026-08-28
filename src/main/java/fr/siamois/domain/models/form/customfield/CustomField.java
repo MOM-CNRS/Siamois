@@ -20,7 +20,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @Entity
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @Table(name = "custom_field")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "answer_type", discriminatorType = DiscriminatorType.STRING)

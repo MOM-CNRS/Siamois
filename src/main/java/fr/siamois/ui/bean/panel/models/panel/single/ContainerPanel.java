@@ -245,7 +245,7 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
             FormUiDto base = CustomFormComposer.withoutFields(form, inactiveSystemFieldBindings(projectId, typeName));
             form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(projectId, typeName));
         }
-        detailsForm = form;
+        detailsForm = CustomFormComposer.deepCopy(form);
 
         initFormContext(forceInit);
     }

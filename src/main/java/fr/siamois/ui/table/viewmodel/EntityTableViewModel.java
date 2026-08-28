@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectPerson;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -315,8 +316,9 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
 
         return rowContexts.computeIfAbsent(id, key -> {
-            // 1) Formulaire spécifique à cette entité (défini par la sous-classe)
-            FormUiDto rowForm = resolveRowFormFor(entity);
+            // 1) Formulaire spécifique à cette entité (défini par la sous-classe), copié pour ne
+            // jamais muter un formulaire partagé (cache, singleton statique, etc.)
+            FormUiDto rowForm = CustomFormComposer.deepCopy(resolveRowFormFor(entity));
 
             // 2) Configuration min/max des champs système pour CETTE ligne
             configureRowSystemFields(entity, rowForm);
