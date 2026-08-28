@@ -473,11 +473,9 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             if (field instanceof CustomFieldDateTime dt) {
                 if ("openingDate".equals(field.getValueBinding()) && unit.getClosingDate() != null) {
                     dt.setMax(unit.getClosingDate().toLocalDateTime());
-                    dt.setMin(LocalDateTime.of(1000, Month.JANUARY, 1, 1, 1));
                 }
                 if ("closingDate".equals(field.getValueBinding()) && unit.getOpeningDate() != null) {
                     dt.setMin(unit.getOpeningDate().toLocalDateTime());
-                    dt.setMax(LocalDateTime.of(9999, Month.DECEMBER, 31, 23, 59));
                 }
             }
         }
@@ -486,7 +484,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     @Override
     public void visualise(RevisionWithInfo<RecordingUnitDTO> history) {
-        // todo: implement
+        // Not implemented yet
     }
 
     @Override
