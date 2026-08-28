@@ -729,9 +729,7 @@ public class FlowBean implements Serializable {
             return;
         }
 
-        if (selectedInstitution != null
-                && (institutionService.personIsInInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)
-                || profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo().getUser(), selectedInstitution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))) {
+        if (profilePermissionService.canAccessInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)) {
             sessionSettings.setSelectedInstitution(selectedInstitution);
             PrimeFaces.current().ajax().update("navBar", "flow");
             institutionChangeEventPublisher.publishInstitutionChangeEvent();
