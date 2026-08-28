@@ -30,7 +30,6 @@ import java.util.Objects;
 @ViewScoped
 @Data
 @RequiredArgsConstructor
-@NoArgsConstructor(force = true)
 public class FocusViewBean implements Serializable {
 
     private final transient PanelFactory panelFactory;
