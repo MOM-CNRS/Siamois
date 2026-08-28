@@ -128,9 +128,11 @@
                                                process="@this"
                                                styleClass="sideview-topbar-button"
                                                action="#{navBean.redirectToActionUnitSettings(panelModel.parentOrOverview.unit)}"
-                                               title="Ouvrir le projet dans les paramètres">
+                                               title="#{langBean.msg('panel.header.settings')}">
                                     <h:outputText styleClass="bi bi-gear"/>
                                 </p:commandLink>
+                                <p:tooltip rendered="#{panelModel.parentOrOverview.canOpenInProjectSettings()}" autoHide="false" for="openInProjectSettingsButton" value="#{langBean.msg('panel.header.settings')}" position="bottom"/>
+
 
                             </div>
                         </h:form>
