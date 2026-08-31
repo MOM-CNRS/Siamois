@@ -954,6 +954,14 @@ body .view-edit-button.ui-splitbutton {
   text-align: left;
   vertical-align: top;
 }
+.ui-datatable thead th.ui-sortable-column {
+  white-space: nowrap;
+}
+
+.ui-datatable thead th .ui-column-title {
+  white-space: nowrap;
+}
+
 .ui-datatable thead th .ui-column-title,
 .ui-datatable thead th .ui-sortable-column-icon {
   display: inline-block;
@@ -964,6 +972,9 @@ body .view-edit-button.ui-splitbutton {
   width: 100%;
   margin-top: 0.5rem;
   box-sizing: border-box;
+}
+.ui-datatable .ui-datatable-data > tr > td {
+  white-space: nowrap;
 }
 .ui-datatable tr.overview-open > td {
   border-top: 2px solid var(--siamois-green-active) !important;
