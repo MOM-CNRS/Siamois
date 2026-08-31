@@ -31,33 +31,9 @@
 
     <chip:editableCategoryChip id="categoryChipComposite" panel="#{panelModel}"/>
 
-    <h:panelGroup id="headerEditControls">
-        <p:commandButton id="editHeaderBtn"
-                          rendered="#{flowBean.isWriteMode and not panelModel.editingIdentifier}"
-                          icon="bi bi-pencil"
-                          styleClass="rum-edit-id-btn"
-                          action="#{panelModel.startEditIdentifier()}"
-                          update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                          process="@this"
-                          oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
-        <p:tooltip for="editHeaderBtn" value="Modifier l'identifiant et la catégorie" position="top"/>
-        <h:panelGroup rendered="#{panelModel.editingIdentifier}">
-            <p:commandButton id="applyHeaderEditBtn"
-                             icon="bi bi-check"
-                             styleClass="rum-action-btn rum-apply-header-edit-btn"
-                             title="Valider"
-                             action="#{panelModel.applyEditIdentifier()}"
-                             update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                             process="@form"/>
-            <p:commandButton id="cancelHeaderEditBtn"
-                             icon="bi bi-x"
-                             styleClass="rum-action-btn rum-cancel-header-edit-btn"
-                             title="Annuler"
-                             action="#{panelModel.cancelEditIdentifier()}"
-                             update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                             process="@this"/>
-        </h:panelGroup>
-    </h:panelGroup>
+    <ui:include src="/pages/shared/panel/headerEditControls.xhtml">
+        <ui:param name="panel" value="#{panelModel}"/>
+    </ui:include>
 
     <p:chip rendered="#{panelModel.hasUnsavedModifications}" label="Modifications non enregistré"
             styleClass="mr-2 error-chip"

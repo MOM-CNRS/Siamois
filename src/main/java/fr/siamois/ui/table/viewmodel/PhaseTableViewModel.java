@@ -133,7 +133,7 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
     @Override
     public boolean isRendered(TableColumn column, String key, PhaseDTO phase) {
         return switch (key) {
-            case "writeMode" -> flowBean.getIsWriteMode();
+            case "writeMode" -> canUserEditRow(phase);
             default -> false;
         };
     }
