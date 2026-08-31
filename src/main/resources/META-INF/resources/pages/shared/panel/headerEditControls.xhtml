@@ -1,52 +1,50 @@
-<ui:composition
-        xmlns="http://www.w3.org/1999/xhtml"
-        xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-        xmlns:cc="http://java.sun.com/jsf/composite"
-        xmlns:h="http://java.sun.com/jsf/html"
-        xmlns:p="http://primefaces.org/ui"
->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:p="http://primefaces.org/ui">
+
+<ui:composition>
 
     <!--
         Pencil / apply / cancel controls for a panel header's identifier + category chips.
         Shared across every *PanelHeader.xhtml (spatial unit, recording unit, specimen, phase,
         action unit, container) since the markup and update targets are identical; only the
-        panel bean differs. The pencil requires both the global read/write mode (flowBean) and
-        the user's actual edit right on this entity (panel.canUserEditUnit()) — see bug #448.
-        The panel bean must extend AbstractSingleEntityPanel.
+        panel bean differs. Included via ui:include (not a composite component) so it stays in
+        the caller's naming container and the "idChipComposite:idChipArea" / "categoryChipComposite:
+        categoryChipArea" update targets keep resolving as plain siblings, same as before the dedup.
+        The pencil requires both the global read/write mode (flowBean) and the user's actual edit
+        right on this entity (panel.canUserEditUnit()) — see bug #448.
+        @elvariable id="panel" type="fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel"
     -->
-    <cc:interface>
-        <cc:attribute name="panel"
-                      shortDescription="The panel bean, extending AbstractSingleEntityPanel"
-                      required="true"/>
-    </cc:interface>
 
-    <cc:implementation>
-        <h:panelGroup id="headerEditControls">
-            <p:commandButton id="editHeaderBtn"
-                              rendered="#{flowBean.isWriteMode and cc.attrs.panel.canUserEditUnit() and not cc.attrs.panel.editingIdentifier}"
-                              icon="bi bi-pencil"
-                              styleClass="rum-edit-id-btn"
-                              action="#{cc.attrs.panel.startEditIdentifier()}"
-                              update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                              process="@this"
-                              oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
-            <p:tooltip for="editHeaderBtn" value="Modifier l'identifiant et la catégorie" position="top"/>
-            <h:panelGroup rendered="#{cc.attrs.panel.editingIdentifier}">
-                <p:commandButton id="applyHeaderEditBtn"
-                                 icon="bi bi-check"
-                                 styleClass="rum-action-btn rum-apply-header-edit-btn"
-                                 title="Valider"
-                                 action="#{cc.attrs.panel.applyEditIdentifier()}"
-                                 update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                                 process="@form"/>
-                <p:commandButton id="cancelHeaderEditBtn"
-                                 icon="bi bi-x"
-                                 styleClass="rum-action-btn rum-cancel-header-edit-btn"
-                                 title="Annuler"
-                                 action="#{cc.attrs.panel.cancelEditIdentifier()}"
-                                 update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                                 process="@this"/>
-            </h:panelGroup>
+    <h:panelGroup id="headerEditControls">
+        <p:commandButton id="editHeaderBtn"
+                          rendered="#{flowBean.isWriteMode and panel.canUserEditUnit() and not panel.editingIdentifier}"
+                          icon="bi bi-pencil"
+                          styleClass="rum-edit-id-btn"
+                          action="#{panel.startEditIdentifier()}"
+                          update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
+                          process="@this"
+                          oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
+        <p:tooltip for="editHeaderBtn" value="Modifier l'identifiant et la catégorie" position="top"/>
+        <h:panelGroup rendered="#{panel.editingIdentifier}">
+            <p:commandButton id="applyHeaderEditBtn"
+                             icon="bi bi-check"
+                             styleClass="rum-action-btn rum-apply-header-edit-btn"
+                             title="Valider"
+                             action="#{panel.applyEditIdentifier()}"
+                             update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
+                             process="@form"/>
+            <p:commandButton id="cancelHeaderEditBtn"
+                             icon="bi bi-x"
+                             styleClass="rum-action-btn rum-cancel-header-edit-btn"
+                             title="Annuler"
+                             action="#{panel.cancelEditIdentifier()}"
+                             update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
+                             process="@this"/>
         </h:panelGroup>
-    </cc:implementation>
+    </h:panelGroup>
 </ui:composition>
+</html>
