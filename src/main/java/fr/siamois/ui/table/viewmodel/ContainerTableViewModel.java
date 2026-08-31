@@ -165,7 +165,7 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
     @Override
     public boolean isRendered(TableColumn column, String key, ContainerDTO au) {
         return switch (key) {
-            case "writeMode" -> flowBean.getIsWriteMode();
+            case "writeMode" -> canUserEditRow(au);
             case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(
                     flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
             default -> false;

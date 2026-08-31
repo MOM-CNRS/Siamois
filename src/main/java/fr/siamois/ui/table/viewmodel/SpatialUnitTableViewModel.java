@@ -167,7 +167,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     @Override
     public boolean isRendered(TableColumn column, String key, SpatialUnitDTO su) {
         return switch (key) {
-            case "writeMode" -> flowBean.getIsWriteMode();
+            case "writeMode" -> canUserEditRow(su);
             case "spatialUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES);
             case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
             default -> false;

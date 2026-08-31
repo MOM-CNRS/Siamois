@@ -161,7 +161,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     @Override
     public boolean isRendered(TableColumn column, String key, SpecimenDTO s) {
         return switch (key) {
-            case "writeMode" -> flowBean.getIsWriteMode();
+            case "writeMode" -> canUserEditRow(s);
             default -> false;
         };
     }

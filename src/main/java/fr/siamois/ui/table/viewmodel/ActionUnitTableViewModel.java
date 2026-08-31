@@ -184,7 +184,7 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
     @Override
     public boolean isRendered(TableColumn column, String key, ActionUnitDTO au) {
         return switch (key) {
-            case "writeMode" -> flowBean.getIsWriteMode();
+            case "writeMode" -> canUserEditRow(au);
             case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(
                     flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
             default -> false;

@@ -66,7 +66,7 @@
 
     <h:panelGroup id="headerEditControls">
         <p:commandButton id="editHeaderBtn"
-                          rendered="#{flowBean.isWriteMode and not panelModel.editingIdentifier}"
+                          rendered="#{flowBean.isWriteMode and panelModel.canUserEditUnit() and not panelModel.editingIdentifier}"
                           icon="bi bi-pencil"
                           styleClass="rum-edit-id-btn"
                           action="#{panelModel.startEditIdentifier()}"
