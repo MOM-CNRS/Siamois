@@ -850,6 +850,58 @@ class RecordingUnitServiceTest {
         }
 
         // ------------------------------------------------------------------
+        // findMatchingInInstitutionByFullIdentifier
+        // ------------------------------------------------------------------
+
+        @Test
+        void findMatchingInInstitutionByFullIdentifier_convertsRepositoryResults() {
+            RecordingUnitSummaryDTO summaryDTO = new RecordingUnitSummaryDTO();
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitSummaryMapper.convert(ru)).thenReturn(summaryDTO);
+
+            List<RecordingUnitSummaryDTO> result =
+                    recordingUnitService.findMatchingInInstitutionByFullIdentifier(institution, "US-", 5);
+
+            assertThat(result).containsExactly(summaryDTO);
+        }
+
+        @Test
+        void findMatchingInInstitutionByFullIdentifier_respectsLimit() {
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            when(recordingUnitRepository.findAll(any(Specification.class), pageableCaptor.capture()))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            recordingUnitService.findMatchingInInstitutionByFullIdentifier(institution, "US-", 3);
+
+            assertEquals(3, pageableCaptor.getValue().getPageSize());
+        }
+
+        @Test
+        void findMatchingInInstitutionByFullIdentifier_noMatch_returnsEmptyList() {
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            List<RecordingUnitSummaryDTO> result =
+                    recordingUnitService.findMatchingInInstitutionByFullIdentifier(institution, "absent", 5);
+
+            assertThat(result).isEmpty();
+            verifyNoInteractions(recordingUnitSummaryMapper);
+        }
+
+        @Test
+        void findMatchingInInstitutionByFullIdentifier_blankQuery_stillQueriesTheInstitution() {
+            // fullIdentifierContains contributes no predicate on a blank query; the institution
+            // scope must still apply, so the dropdown lists that institution's units only
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            recordingUnitService.findMatchingInInstitutionByFullIdentifier(institution, "", 5);
+
+            verify(recordingUnitRepository).findAll(any(Specification.class), any(Pageable.class));
+        }
+
+        // ------------------------------------------------------------------
         // autocompleteInActionUnit
         // ------------------------------------------------------------------
 
