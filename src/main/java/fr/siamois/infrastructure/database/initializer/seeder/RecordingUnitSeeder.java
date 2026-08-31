@@ -61,7 +61,14 @@ public class RecordingUnitSeeder {
                                      String matrixColor,
                                      String matrixComposition,
                                      String matrixTexture,
-                                     List<String> phaseIdentifiers) {
+                                     List<String> phaseIdentifiers,
+                                     String comments,
+                                     Integer taq,
+                                     Integer tpq,
+                                     ConceptSeeder.ConceptKey erosionShape,
+                                     ConceptSeeder.ConceptKey erosionOrientation,
+                                     ConceptSeeder.ConceptKey erosionProfile,
+                                     ConceptSeeder.ConceptKey chronologicalAttribution) {
 
     }
 
@@ -165,6 +172,10 @@ public class RecordingUnitSeeder {
         Concept geoCycle = resolveOptionalConcept(conceptsByKey, "geomorphologicalCycle", s.geomorphologicalCycle);
         Concept geoAgent = resolveOptionalConcept(conceptsByKey, "geomorphologicalAgent", s.geomorphologicalAgent);
         Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation);
+        Concept erosionShape = resolveOptionalConcept(conceptsByKey, "erosionShape", s.erosionShape);
+        Concept erosionOrientation = resolveOptionalConcept(conceptsByKey, "erosionOrientation", s.erosionOrientation);
+        Concept erosionProfile = resolveOptionalConcept(conceptsByKey, "erosionProfile", s.erosionProfile);
+        Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution);
 
         Institution institution = resolveInstitution(s, institutionsByIdentifier);
         Person authorPerson = SeederUtils.field("author",    () -> personSeeder.resolveCached(personCache, s.author));
@@ -193,6 +204,13 @@ public class RecordingUnitSeeder {
         toGetOrCreate.setCreationTime(s.creationTime);
         toGetOrCreate.setActionUnit(au);
         toGetOrCreate.setSpatialUnit(su);
+        toGetOrCreate.setComments(s.comments);
+        toGetOrCreate.setTaq(s.taq);
+        toGetOrCreate.setTpq(s.tpq);
+        toGetOrCreate.setErosionShape(erosionShape);
+        toGetOrCreate.setErosionOrientation(erosionOrientation);
+        toGetOrCreate.setErosionProfile(erosionProfile);
+        toGetOrCreate.setChronologicalAttribution(chronologicalAttribution);
 
         if (s.phaseIdentifiers != null && !s.phaseIdentifiers.isEmpty()) {
             toGetOrCreate.setPhases(resolvePhases(s, au, phasesByCompositeKey));
@@ -284,6 +302,10 @@ public class RecordingUnitSeeder {
             addConceptKey(lowerIdcsByVocab, s.geomorphologicalCycle());
             addConceptKey(lowerIdcsByVocab, s.geomorphologicalAgent());
             addConceptKey(lowerIdcsByVocab, s.interpretation());
+            addConceptKey(lowerIdcsByVocab, s.erosionShape());
+            addConceptKey(lowerIdcsByVocab, s.erosionOrientation());
+            addConceptKey(lowerIdcsByVocab, s.erosionProfile());
+            addConceptKey(lowerIdcsByVocab, s.chronologicalAttribution());
         }
         Map<ConceptSeeder.ConceptKey, Concept> result = new HashMap<>();
         for (var entry : lowerIdcsByVocab.entrySet()) {

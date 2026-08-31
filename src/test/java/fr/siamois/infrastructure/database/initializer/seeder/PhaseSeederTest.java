@@ -64,7 +64,7 @@ class PhaseSeederTest {
                                         String authorEmail) {
         return new PhaseSeeder.PhaseSpecs(
                 identifier, "Titre test", type, "Description",
-                1, 100, 200, authorEmail, AU_KEY);
+                1, 100, 200, authorEmail, AU_KEY, null, null);
     }
 
     private void stubActionUnitFound() {
@@ -125,7 +125,7 @@ class PhaseSeederTest {
         // phaseRepository bulk-existence lookup left unstubbed -> empty -> not already present
 
         PhaseSeeder.PhaseSpecs s = new PhaseSeeder.PhaseSpecs(
-                "PH-01", "Titre", typeKey, "Desc", 2, 500, 1000, "author@site.fr", AU_KEY);
+                "PH-01", "Titre", typeKey, "Desc", 2, 500, 1000, "author@site.fr", AU_KEY, null, null);
         seeder.seed(List.of(s));
 
         Phase saved = savedPhase();

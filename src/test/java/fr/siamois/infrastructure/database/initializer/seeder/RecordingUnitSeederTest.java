@@ -119,6 +119,13 @@ class RecordingUnitSeederTest {
                         "",
                         "",
                         "",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
                         null
                 )
         );

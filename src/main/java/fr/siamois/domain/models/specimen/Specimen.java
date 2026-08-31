@@ -99,6 +99,12 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String CLASS_FIELD = "SIAS.CLASS";
 
+    @FieldCode
+    public static final String SANITARY_STATE_FIELD = "SIAS.SANITARY";
+
+    @FieldCode
+    public static final String CHRONOLOGICAL_ATTRIBUTION_FIELD = "SIAS.CHRONO";
+
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;

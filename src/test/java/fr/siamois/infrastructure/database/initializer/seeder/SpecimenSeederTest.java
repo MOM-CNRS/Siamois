@@ -56,15 +56,27 @@ class SpecimenSeederTest {
             new SpecimenSeeder.SpecimenSpecs(
                     "chartres-C309_01-1100-1",
                     1,
-                    new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
+                    null,
                     new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4286252"),
-                    new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4286252"),
+                    null,
                     "author@siamois.fr",
                     "chartres",
                     List.of("author@siamois.fr"),
                     List.of("author@siamois.fr"),
                     OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
-                    new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100", "")
+                    new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100", ""),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
             )
     );
 

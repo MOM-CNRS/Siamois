@@ -39,7 +39,9 @@ public class PhaseSeeder {
             Integer lowerBound,
             Integer upperBound,
             String authorEmail,
-            ActionUnitSeeder.ActionUnitKey actionUnitKey
+            ActionUnitSeeder.ActionUnitKey actionUnitKey,
+            Set<ConceptSeeder.ConceptKey> periods,
+            Set<ConceptSeeder.ConceptKey> keywords
     ) {}
 
     public void seed(List<PhaseSpecs> specs) {
@@ -105,6 +107,8 @@ public class PhaseSeeder {
             phase.setCreatedByInstitution(au.getCreatedByInstitution());
             phase.setAuthor(author);
             phase.setCreatedBy(author);
+            phase.setPeriods(resolveConceptSet(s.periods(), conceptsByKey));
+            phase.setKeywords(resolveConceptSet(s.keywords(), conceptsByKey));
             existingIdsByActionUnitId.computeIfAbsent(au.getId(), k -> new ArrayList<>()).add(s.identifier());
             return Optional.of(phase);
         } catch (Exception e) {
@@ -128,6 +132,17 @@ public class PhaseSeeder {
             if (c == null) throw new IllegalStateException("Concept " + s.type() + " introuvable");
             return c;
         });
+    }
+
+    private Set<Concept> resolveConceptSet(Set<ConceptSeeder.ConceptKey> keys, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey) {
+        if (keys == null || keys.isEmpty()) return new HashSet<>();
+        Set<Concept> result = new HashSet<>();
+        for (ConceptSeeder.ConceptKey key : keys) {
+            Concept c = conceptsByKey.get(key);
+            if (c == null) throw new IllegalStateException("Concept " + key + " introuvable");
+            result.add(c);
+        }
+        return result;
     }
 
     private Person resolveAuthor(PhaseSpecs s, Map<String, Person> personCache) {
@@ -175,8 +190,9 @@ public class PhaseSeeder {
     private Map<ConceptSeeder.ConceptKey, Concept> fetchConcepts(List<PhaseSpecs> specs) {
         Map<String, Set<String>> lowerIdcsByVocab = new HashMap<>();
         for (PhaseSpecs s : specs) {
-            if (s.type() == null) continue;
-            lowerIdcsByVocab.computeIfAbsent(s.type().vocabularyExtId(), k -> new HashSet<>()).add(s.type().conceptExtId().toLowerCase());
+            addConceptKey(lowerIdcsByVocab, s.type());
+            if (s.periods() != null) s.periods().forEach(k -> addConceptKey(lowerIdcsByVocab, k));
+            if (s.keywords() != null) s.keywords().forEach(k -> addConceptKey(lowerIdcsByVocab, k));
         }
         Map<ConceptSeeder.ConceptKey, Concept> result = new HashMap<>();
         for (var entry : lowerIdcsByVocab.entrySet()) {
@@ -185,6 +201,11 @@ public class PhaseSeeder {
             }
         }
         return result;
+    }
+
+    private void addConceptKey(Map<String, Set<String>> lowerIdcsByVocab, ConceptSeeder.ConceptKey key) {
+        if (key == null) return;
+        lowerIdcsByVocab.computeIfAbsent(key.vocabularyExtId(), k -> new HashSet<>()).add(key.conceptExtId().toLowerCase());
     }
 
     private Map<String, Person> prefetchPersons(List<PhaseSpecs> specs) {
