@@ -171,4 +171,10 @@ public class PersonProfileAssignmentService {
     public void removeFromProject(ActionUnitDTO project, PersonDTO person) {
         personProfileAssignmentRepository.deleteByActionUnitIdAndPersonId(project.getId(), person.getId());
     }
+
+    public boolean isOrganizationManagerOrProjectManager(InstitutionDTO institutionDTO, PersonDTO user) {
+        Profile organizationManager = profileService.createOrGetOrganizationManagerProfile(institutionDTO);
+        Profile projectmanager = profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO);
+        return personProfileAssignmentRepository.personHasAnyProfile(user.getId(), List.of(organizationManager.getId(), projectmanager.getId()));
+    }
 }

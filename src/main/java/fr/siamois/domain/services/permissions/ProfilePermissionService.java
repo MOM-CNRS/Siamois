@@ -2,13 +2,7 @@ package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import org.springframework.stereotype.Service;
 

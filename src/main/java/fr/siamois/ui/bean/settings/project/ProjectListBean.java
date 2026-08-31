@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.settings.project;
 
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -11,6 +12,7 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
 import fr.siamois.utils.MessageUtils;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -74,8 +76,9 @@ public class ProjectListBean implements SettingsDatatableBean {
 
     public void init() {
         reset();
-        this.actionUnits = actionUnitService.findAllByActionManager(
-                sessionSettingsBean.getUserInfo().getUser());
+        UserInfo info = ExecutionContextHolder.get();
+        assert info != null;
+        this.actionUnits = actionUnitService.findAllEditableByPerson(info.getUser());
         this.filteredActionUnits = new ArrayList<>(actionUnits);
     }
 

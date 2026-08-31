@@ -230,4 +230,12 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
     @Modifying
     @Query("DELETE FROM PersonProfileAssignment ppa WHERE ppa.profile.actionUnit.id = :actionUnitId AND ppa.person.id = :personId")
     void deleteByActionUnitIdAndPersonId(Long actionUnitId, Long personId);
+
+    @Query("""
+            SELECT COUNT(*) > 0
+            FROM PersonProfileAssignment ppa
+            WHERE ppa.profile.id IN :profilesId
+            AND ppa.person.id = :personId
+            """)
+    boolean personHasAnyProfile(Long personId, List<Long> profilesId);
 }
