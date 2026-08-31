@@ -3,6 +3,7 @@ package fr.siamois.ui.table.viewmodel;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectPerson;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
@@ -280,6 +281,11 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     public boolean isRecordingUnitFilter(TableColumn column) {
         return column instanceof FormFieldColumn ffc
                 && ffc.getField() instanceof CustomFieldSelectMultipleRecordingUnit;
+    }
+
+    public boolean isIntegerFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldInteger;
     }
 
     public boolean isDateTimeFilter(TableColumn column) {

@@ -140,6 +140,31 @@
         </f:facet>
     </c:if>
 
+    <c:if test="#{tableModel.isIntegerFilter(column) and tableModel.columnFilteringEnabled}">
+        <f:facet name="filter">
+            <div class="ui-fluid sia-range-filter">
+                <p:inputNumber value="#{tableModel.lazyDataModel.rangeFilterFrom[column.field.valueBinding]}"
+                               decimalPlaces="0"
+                               thousandSeparator=""
+                               placeholder="#{langBean.msg('common.filter.range.from')}">
+                    <p:ajax event="change" process="@this" update="#{tableModel.parentPanel.actionToolbarId}"
+                            global="false" delay="500"
+                            listener="#{tableModel.lazyDataModel.onRangeFilterChange}"
+                            oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                </p:inputNumber>
+                <p:inputNumber value="#{tableModel.lazyDataModel.rangeFilterTo[column.field.valueBinding]}"
+                               decimalPlaces="0"
+                               thousandSeparator=""
+                               placeholder="#{langBean.msg('common.filter.range.to')}">
+                    <p:ajax event="change" process="@this" update="#{tableModel.parentPanel.actionToolbarId}"
+                            global="false" delay="500"
+                            listener="#{tableModel.lazyDataModel.onRangeFilterChange}"
+                            oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                </p:inputNumber>
+            </div>
+        </f:facet>
+    </c:if>
+
     <c:if test="#{tableModel.isDateTimeFilter(column) and tableModel.columnFilteringEnabled}">
         <f:facet name="filter">
             <div class="ui-fluid">

@@ -110,6 +110,9 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
                 RecordingUnitSpec.SPATIAL_UNIT_FILTER,
                 RecordingUnitSpec.CONTRIBUTORS_FILTER,
                 RecordingUnitSpec.TYPE_FILTER,
+                RecordingUnitSpec.NATURE_FILTER,
+                RecordingUnitSpec.AGENT_FILTER,
+                RecordingUnitSpec.INTERPRETATION_FILTER,
                 RecordingUnitSpec.PARENTS_FILTER,
                 RecordingUnitSpec.CHILDREN_FILTER}) {
             FilterMeta entityMeta = filterBy.get(entityFilter);

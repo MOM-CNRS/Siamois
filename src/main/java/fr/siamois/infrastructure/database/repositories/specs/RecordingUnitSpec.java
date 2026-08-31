@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
@@ -26,6 +27,11 @@ public class RecordingUnitSpec {
     public static final String ID_FILTER = "id";
     public static final String PARENTS_FILTER = "parents";
     public static final String CHILDREN_FILTER = "children";
+    public static final String NATURE_FILTER = "geomorphologicalCycle";
+    public static final String AGENT_FILTER = "geomorphologicalAgent";
+    public static final String INTERPRETATION_FILTER = "normalizedInterpretation";
+    public static final String TPQ_FILTER = "tpq";
+    public static final String TAQ_FILTER = "taq";
     /** Synthetic sort key: not a real JPA path, resolved via {@link #orderBySpecimenCount(Sort.Direction)}. */
     public static final String SPECIMEN_COUNT_SORT = "specimenCount";
     /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByRelationshipCount(Sort.Direction)}. */
@@ -34,6 +40,12 @@ public class RecordingUnitSpec {
     public static final String PARENTS_COUNT_SORT = "parentsCount";
     /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByChildrenCount(Sort.Direction)}. */
     public static final String CHILDREN_COUNT_SORT = "childrenCount";
+    /** Synthetic sort key: alphabetical on the nature's label, via {@link #orderByConceptLabel}. */
+    public static final String NATURE_LABEL_SORT = "geomorphologicalCycleLabel";
+    /** Synthetic sort key: alphabetical on the agent's label, via {@link #orderByConceptLabel}. */
+    public static final String AGENT_LABEL_SORT = "geomorphologicalAgentLabel";
+    /** Synthetic sort key: alphabetical on the interpretation's label, via {@link #orderByConceptLabel}. */
+    public static final String INTERPRETATION_LABEL_SORT = "normalizedInterpretationLabel";
 
 
     private RecordingUnitSpec() {
@@ -55,7 +67,12 @@ public class RecordingUnitSpec {
                 SPECIMEN_COUNT_SORT,
                 RELATIONSHIP_COUNT_SORT,
                 PARENTS_COUNT_SORT,
-                CHILDREN_COUNT_SORT
+                CHILDREN_COUNT_SORT,
+                NATURE_LABEL_SORT,
+                AGENT_LABEL_SORT,
+                INTERPRETATION_LABEL_SORT,
+                TPQ_FILTER,
+                TAQ_FILTER
         );
     }
 
@@ -91,6 +108,21 @@ public class RecordingUnitSpec {
     @NonNull
     public static Specification<RecordingUnit> orderByChildrenCount(Sort.Direction direction) {
         return orderByCollectionSize(CHILDREN_FILTER, direction);
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> orderByConceptLabel(String attribute, String langCode, Sort.Direction direction) {
+        return (root, query, cb) -> {
+            Subquery<String> subquery = query.subquery(String.class);
+            Root<ConceptPrefLabel> label = subquery.from(ConceptPrefLabel.class);
+            subquery.select(label.get("label"));
+            subquery.where(cb.and(
+                    cb.equal(label.get("concept"), root.get(attribute)),
+                    cb.equal(label.get("langCode"), langCode)
+            ));
+            query.orderBy(direction == Sort.Direction.ASC ? cb.asc(subquery) : cb.desc(subquery));
+            return cb.conjunction();
+        };
     }
 
     /**
@@ -162,6 +194,20 @@ public class RecordingUnitSpec {
     }
 
     @NonNull
+    public static Specification<RecordingUnit> integerFieldBetween(String fieldName, Integer from, Integer to) {
+        return (root, query, criteriaBuilder) -> {
+            if (from != null && to != null) {
+                return criteriaBuilder.between(root.get(fieldName), from, to);
+            } else if (from != null) {
+                return criteriaBuilder.greaterThanOrEqualTo(root.get(fieldName), from);
+            } else if (to != null) {
+                return criteriaBuilder.lessThanOrEqualTo(root.get(fieldName), to);
+            }
+            return null;
+        };
+    }
+
+    @NonNull
     public static Specification<RecordingUnit> authorIsIn(List<Long> personsIds) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.AUTHOR_FILTER).get("id")).value(personsIds);
     }
@@ -187,8 +233,13 @@ public class RecordingUnitSpec {
     }
 
     @NonNull
+    public static Specification<RecordingUnit> conceptIsIn(String attribute, List<Long> conceptIds) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(attribute).get("id")).value(conceptIds);
+    }
+
+    @NonNull
     public static Specification<RecordingUnit> typeIsIn(List<Long> conceptIds) {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.TYPE_FILTER).get("id")).value(conceptIds);
+        return conceptIsIn(TYPE_FILTER, conceptIds);
     }
 
     @NonNull

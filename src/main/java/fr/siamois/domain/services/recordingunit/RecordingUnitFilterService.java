@@ -1,0 +1,127 @@
+package fr.siamois.domain.services.recordingunit;
+
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Service;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+
+@Service
+@RequiredArgsConstructor
+public class RecordingUnitFilterService {
+
+    private final RecordingUnitRepository recordingUnitRepository;
+
+    private record FilterBinding(String column, Function<FilterDTO, Specification<RecordingUnit>> toSpec) {}
+
+    private static final List<FilterBinding> USER_FILTERS = List.of(
+            text(RecordingUnitSpec.FULL_IDENTIFIER, RecordingUnitSpec::fullIdentifierContains),
+            ids(RecordingUnitSpec.AUTHOR_FILTER, RecordingUnitSpec::authorIsIn),
+            text(RecordingUnitSpec.MATRIX_FILTER, RecordingUnitSpec::matrixContains),
+            ids(RecordingUnitSpec.SPATIAL_UNIT_FILTER, RecordingUnitSpec::isInSpatialUnit),
+            ids(RecordingUnitSpec.ACTION_UNIT_FILTER, RecordingUnitSpec::isInActionUnit),
+            ids(RecordingUnitSpec.CONTRIBUTORS_FILTER, RecordingUnitSpec::isInContributors),
+            concept(RecordingUnitSpec.TYPE_FILTER),
+            concept(RecordingUnitSpec.NATURE_FILTER),
+            concept(RecordingUnitSpec.AGENT_FILTER),
+            concept(RecordingUnitSpec.INTERPRETATION_FILTER),
+            dateRange(RecordingUnitSpec.OPENING_DATE_FILTER),
+            dateRange(RecordingUnitSpec.CLOSING_DATE_FILTER),
+            intRange(RecordingUnitSpec.TPQ_FILTER),
+            intRange(RecordingUnitSpec.TAQ_FILTER),
+            ids(RecordingUnitSpec.PARENTS_FILTER, RecordingUnitSpec::isChildOf),
+            ids(RecordingUnitSpec.CHILDREN_FILTER, RecordingUnitSpec::isParentOf));
+
+    private static FilterBinding text(String column, Function<String, Specification<RecordingUnit>> toSpec) {
+        return new FilterBinding(column, filters -> toSpec.apply(filters.valueOfAsString(column)));
+    }
+
+    private static FilterBinding ids(String column, Function<List<Long>, Specification<RecordingUnit>> toSpec) {
+        return new FilterBinding(column, filters -> toSpec.apply(filters.valueAsIdListOf(column)));
+    }
+
+    private static FilterBinding concept(String column) {
+        return ids(column, conceptIds -> RecordingUnitSpec.conceptIsIn(column, conceptIds));
+    }
+
+    private static FilterBinding dateRange(String column) {
+        return new FilterBinding(column, filters -> {
+            FilterDTO.DateRange range = filters.valueAsDateRangeOf(column);
+            return RecordingUnitSpec.dateFieldBetween(column, range.from(), range.to());
+        });
+    }
+
+    private static FilterBinding intRange(String column) {
+        return new FilterBinding(column, filters -> {
+            FilterDTO.IntRange range = filters.valueAsIntRangeOf(column);
+            return RecordingUnitSpec.integerFieldBetween(column, range.from(), range.to());
+        });
+    }
+
+    static Specification<RecordingUnit> userFilterSpecs(@NonNull FilterDTO filters) {
+        Specification<RecordingUnit> specification = Specification.where(null);
+
+        for (FilterBinding binding : USER_FILTERS) {
+            if (filters.containsColumn(binding.column())) {
+                specification = specification.and(binding.toSpec().apply(filters));
+            }
+        }
+
+        return specification;
+    }
+
+    Specification<RecordingUnit> prepareSpecs(@NonNull InstitutionDTO institution, @NonNull FilterDTO filters) {
+        Specification<RecordingUnit> base = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
+
+        if (filters.isRootOnly()) {
+            if (filters.hasUserFilters()) {
+                Collection<Long> closure = resolveAncestorClosure(institution, filters);
+                if (closure.isEmpty()) {
+                    return base.and((root, q, cb) -> cb.disjunction());
+                }
+                return base.and(RecordingUnitSpec.unitIsRoot()).and(RecordingUnitSpec.idIn(closure));
+            }
+            return base.and(RecordingUnitSpec.unitIsRoot());
+        }
+
+        return base.and(userFilterSpecs(filters));
+    }
+
+    private Collection<Long> resolveAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        if (filters.getAncestorClosure() != null) {
+            return filters.getAncestorClosure();
+        }
+        Specification<RecordingUnit> matchSpecs = RecordingUnitSpec
+                .recordingUnitInInstitution(institution.getId())
+                .and(userFilterSpecs(filters));
+
+        List<Long> matchIds = recordingUnitRepository.findAll(matchSpecs)
+                .stream()
+                .map(RecordingUnit::getId)
+                .toList();
+        Set<Long> closure = matchIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(recordingUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
+        filters.setAncestorClosure(closure);
+        filters.setMatchIds(new HashSet<>(matchIds));
+        return closure;
+    }
+
+    Set<Long> computeAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        if (!filters.isRootOnly() || !filters.hasUserFilters()) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(resolveAncestorClosure(institution, filters));
+    }
+}
