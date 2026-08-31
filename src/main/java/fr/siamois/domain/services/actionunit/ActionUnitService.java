@@ -20,7 +20,6 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
-import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -83,7 +82,6 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonProfileAssignmentService personProfileAssignmentService;
     private final ProfileMapper profileMapper;
     private final ProfilePermissionService profilePermissionService;
-    private final PersonService personService;
     private final InstitutionService institutionService;
 
 
@@ -649,6 +647,7 @@ public class ActionUnitService implements ArkEntityService {
 
     private ActionUnitDTO convertWithCount(ActionUnit au) {
         ActionUnitDTO dto = actionUnitMapper.convert(au);
+        assert dto != null;
         Integer count = recordingUnitRepository.countByActionContext(au.getId());
         dto.setRecordingUnitCount(count != null ? count : 0);
         return dto;

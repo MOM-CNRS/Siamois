@@ -87,15 +87,6 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
                                             @Param("actionUnitId") Long actionUnitId);
 
     @Query("""
-            SELECT COUNT(p) > 0
-            FROM PersonProfileAssignment ppa
-            JOIN ppa.person p
-            JOIN ppa.profile prof
-            WHERE prof.code = fr.siamois.domain.models.permissions.ProfileConstants.SUPERADMIN AND p = :admin
-            """)
-    boolean personIsSuperAdmin(Person admin);
-
-    @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a
             JOIN a.profile prof
@@ -121,18 +112,6 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             """)
     boolean personHasAnyProfileInInstitution(@Param("personId") Long personId,
                                              @Param("institutionId") Long institutionId);
-
-    @Query("""
-            SELECT COUNT(a) > 0
-            FROM PersonProfileAssignment a
-            JOIN a.profile prof
-            WHERE a.person.id = :personId
-              AND prof.institution.id = :institutionId
-              AND prof.code = :profileCode
-            """)
-    boolean personHasProfileWithCodeInInstitution(@Param("personId") Long personId,
-                                                  @Param("institutionId") Long institutionId,
-                                                  @Param("profileCode") String profileCode);
 
     @Query("""
             SELECT DISTINCT p
