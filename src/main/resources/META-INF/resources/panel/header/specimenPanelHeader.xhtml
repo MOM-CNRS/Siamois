@@ -1,6 +1,7 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui" xmlns:chip="http://xmlns.jcp.org/jsf/composite/pages/shared/chip"
+             xmlns:panelui="http://xmlns.jcp.org/jsf/composite/pages/shared/panel"
              xmlns:h="http://java.sun.com/jsf/html"
 >
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.single.SpecimenPanel"-->
@@ -31,33 +32,7 @@
 
     <chip:editableCategoryChip id="categoryChipComposite" panel="#{panelModel}"/>
 
-    <h:panelGroup id="headerEditControls">
-        <p:commandButton id="editHeaderBtn"
-                          rendered="#{flowBean.isWriteMode and panelModel.canUserEditUnit() and not panelModel.editingIdentifier}"
-                          icon="bi bi-pencil"
-                          styleClass="rum-edit-id-btn"
-                          action="#{panelModel.startEditIdentifier()}"
-                          update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                          process="@this"
-                          oncomplete="$('.rum-edit-link-input').trigger('focus').trigger('select');"/>
-        <p:tooltip for="editHeaderBtn" value="Modifier l'identifiant et la catégorie" position="top"/>
-        <h:panelGroup rendered="#{panelModel.editingIdentifier}">
-            <p:commandButton id="applyHeaderEditBtn"
-                             icon="bi bi-check"
-                             styleClass="rum-action-btn rum-apply-header-edit-btn"
-                             title="Valider"
-                             action="#{panelModel.applyEditIdentifier()}"
-                             update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                             process="@form"/>
-            <p:commandButton id="cancelHeaderEditBtn"
-                             icon="bi bi-x"
-                             styleClass="rum-action-btn rum-cancel-header-edit-btn"
-                             title="Annuler"
-                             action="#{panelModel.cancelEditIdentifier()}"
-                             update="idChipComposite:idChipArea categoryChipComposite:categoryChipArea headerEditControls"
-                             process="@this"/>
-        </h:panelGroup>
-    </h:panelGroup>
+    <panelui:headerEditControls id="headerEditControlsComposite" panel="#{panelModel}"/>
 
     <p:chip
             label="#{panelModel.unit.createdBy.displayName()}"
