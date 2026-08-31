@@ -386,4 +386,54 @@ class PersonProfileAssignmentServiceTest {
 
         verify(personProfileAssignmentRepository).deleteByActionUnitIdAndPersonId(7L, 1L);
     }
+
+    @Test
+    void isOrganizationManagerOrProjectManager_ReturnsTrueWhenPersonHasOneOfTheProfiles() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        Profile organizationManager = buildProfile(20L, ProfileConstants.ORGANIZATION_MANAGER);
+        Profile organizationProjectManager = buildProfile(21L, ProfileConstants.ORGANIZATION_PROJECT_MANAGER);
+
+        when(profileService.createOrGetOrganizationManagerProfile(institutionDTO)).thenReturn(organizationManager);
+        when(profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO)).thenReturn(organizationProjectManager);
+        when(personProfileAssignmentRepository.personHasAnyProfile(1L, List.of(20L, 21L))).thenReturn(true);
+
+        assertTrue(service.isOrganizationManagerOrProjectManager(institutionDTO, personDTO));
+    }
+
+    @Test
+    void isOrganizationManagerOrProjectManager_ReturnsFalseWhenPersonHasNeitherProfile() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        Profile organizationManager = buildProfile(20L, ProfileConstants.ORGANIZATION_MANAGER);
+        Profile organizationProjectManager = buildProfile(21L, ProfileConstants.ORGANIZATION_PROJECT_MANAGER);
+
+        when(profileService.createOrGetOrganizationManagerProfile(institutionDTO)).thenReturn(organizationManager);
+        when(profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO)).thenReturn(organizationProjectManager);
+        when(personProfileAssignmentRepository.personHasAnyProfile(1L, List.of(20L, 21L))).thenReturn(false);
+
+        assertFalse(service.isOrganizationManagerOrProjectManager(institutionDTO, personDTO));
+    }
+
+    @Test
+    void isOrganizationManagerOrProjectManager_ChecksBothManagerProfilesOfTheInstitution() {
+        institutionDTO.setId(5L);
+        personDTO.setId(1L);
+        Profile organizationManager = buildProfile(20L, ProfileConstants.ORGANIZATION_MANAGER);
+        Profile organizationProjectManager = buildProfile(21L, ProfileConstants.ORGANIZATION_PROJECT_MANAGER);
+
+        when(profileService.createOrGetOrganizationManagerProfile(institutionDTO)).thenReturn(organizationManager);
+        when(profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO)).thenReturn(organizationProjectManager);
+
+        service.isOrganizationManagerOrProjectManager(institutionDTO, personDTO);
+
+        // Les deux profils de gestion sont créés (ou récupérés) pour l'organisation ciblée
+        verify(profileService).createOrGetOrganizationManagerProfile(institutionDTO);
+        verify(profileService).createOrGetOrganizationProjectManagerProfile(institutionDTO);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Long>> profileIdsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(personProfileAssignmentRepository).personHasAnyProfile(eq(1L), profileIdsCaptor.capture());
+        assertThat(profileIdsCaptor.getValue()).containsExactlyInAnyOrder(20L, 21L);
+    }
 }
