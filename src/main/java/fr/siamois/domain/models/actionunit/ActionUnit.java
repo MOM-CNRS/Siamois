@@ -101,6 +101,24 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIAAU.TYPE";
 
+    @FieldCode
+    public static final String STATUS_FIELD_CODE = "SIAAU.STATUS";
+
+    @FieldCode
+    public static final String FIELD_STATUS_FIELD_CODE = "SIAAU.FIELD_STATUS";
+
+    @FieldCode
+    public static final String SYSTEM_FIELD_CODE = "SIAAU.SYSTEM";
+
+    @FieldCode
+    public static final String DEVELOPMENT_NATURE_FIELD_CODE = "SIAAU.DEVELOPMENT_NATURE";
+
+    @FieldCode
+    public static final String PERIODS_FIELD_CODE = "SIAAU.PERIODS";
+
+    @FieldCode
+    public static final String SUBJECTS_FIELD_CODE = "SIAAU.SUBJECTS";
+
     public String displayFullIdentifier() {
         if (getFullIdentifier() == null) {
             if (getCreatedByInstitution().getIdentifier() == null) {
@@ -152,6 +170,100 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
      */
     @Column(name = "has_childrens", columnDefinition = "boolean default false")
     protected boolean hasChildrens = false;
+
+    // --------------- Documentation / administrative fields (SIAAU.*)
+
+    @Column(name = "oa_code")
+    protected String oaCode;
+
+    @Column(name = "prescription_order_number")
+    protected String prescriptionOrderNumber;
+
+    @Column(name = "prescription_order_date")
+    protected OffsetDateTime prescriptionOrderDate;
+
+    @Column(name = "scientific_manager")
+    protected String scientificManager;
+
+    @Column(name = "host_structure")
+    protected String hostStructure;
+
+    @Column(name = "developer")
+    protected String developer;
+
+    @Column(name = "scientific_notice", length = 5000)
+    protected String scientificNotice;
+
+    @Column(name = "comments", length = 5000)
+    protected String comments;
+
+    @Column(name = "zmin")
+    protected Double zmin;
+
+    @Column(name = "zmax")
+    protected Double zmax;
+
+    @Column(name = "designation_order_number")
+    protected String designationOrderNumber;
+
+    @Column(name = "designation_order_date")
+    protected OffsetDateTime designationOrderDate;
+
+    @Column(name = "prescribed_area")
+    protected Double prescribedArea;
+
+    @Column(name = "excavated_area")
+    protected Double excavatedArea;
+
+    @Column(name = "accessible_area")
+    protected Double accessibleArea;
+
+    @Column(name = "opening_rate")
+    protected Double openingRate;
+
+    @Column(name = "volume_count")
+    protected Integer volumeCount;
+
+    @Column(name = "page_count")
+    protected Integer pageCount;
+
+    @Column(name = "figure_count")
+    protected Integer figureCount;
+
+    @Column(name = "appendix_count")
+    protected Integer appendixCount;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_status")
+    protected Concept status;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_field_status")
+    protected Concept fieldStatus;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_system")
+    protected Concept system;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_development_nature")
+    protected Concept developmentNature;
+
+    @ManyToMany
+    @JoinTable(
+            name = "action_unit_period",
+            joinColumns = {@JoinColumn(name = "fk_action_unit_id")},
+            inverseJoinColumns = {@JoinColumn(name = "fk_concept_id")}
+    )
+    private Set<Concept> periods = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "action_unit_subject",
+            joinColumns = {@JoinColumn(name = "fk_action_unit_id")},
+            inverseJoinColumns = {@JoinColumn(name = "fk_concept_id")}
+    )
+    private Set<Concept> subjects = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {

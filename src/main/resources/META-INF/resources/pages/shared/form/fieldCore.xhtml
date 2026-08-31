@@ -65,6 +65,23 @@
             />
         </c:if>
 
+        <c:if test="#{col.field['class'].simpleName eq 'CustomFieldDecimal'}">
+            <!-- DECIMAL -->
+            <siaInplace:decimal
+                    id="decimal"
+                    panelModel="#{bean}"
+                    field="#{col.field}"
+                    required="#{col.required}"
+                    label="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
+                    hasBeenModified="#{hasBeenModified}"
+                    panelId="#{panelId}"
+                    onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                    answer="#{answer}"
+                    mode="#{mode}"
+                    updateTargetsOnBlur="#{panelHeaderUpdateId}"
+            />
+        </c:if>
+
         <c:if test="#{col.field['class'].simpleName eq 'CustomFieldDateTime'}">
             <!-- DATETIME -->
             <siaInplace:datePicker

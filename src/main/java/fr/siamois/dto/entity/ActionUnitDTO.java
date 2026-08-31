@@ -29,8 +29,39 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private ActionCodeDTO primaryActionCode;
     private int recordingUnitCount;
 
+    private String oaCode;
+    private String prescriptionOrderNumber;
+    private OffsetDateTime prescriptionOrderDate;
+    private String scientificManager;
+    private String hostStructure;
+    private String developer;
+    private Set<ConceptDTO> periods = new HashSet<>();
+    private Set<ConceptDTO> subjects = new HashSet<>();
+    private String scientificNotice;
+    private ConceptDTO status;
+    private String comments;
+    private ConceptDTO system;
+    private ConceptDTO fieldStatus;
+    private Double zmin;
+    private Double zmax;
+    private String designationOrderNumber;
+    private OffsetDateTime designationOrderDate;
+    private Double prescribedArea;
+    private Double excavatedArea;
+    private Double accessibleArea;
+    private Double openingRate;
+    private ConceptDTO developmentNature;
+    private Integer volumeCount;
+    private Integer pageCount;
+    private Integer figureCount;
+    private Integer appendixCount;
+
     public List<String> getBindableFieldNames() {
-        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation");
+        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation",
+                "oaCode", "prescriptionOrderNumber", "prescriptionOrderDate", "scientificManager", "hostStructure", "developer",
+                "periods", "subjects", "scientificNotice", "status", "comments", "system", "fieldStatus", "zmin", "zmax",
+                "designationOrderNumber", "designationOrderDate", "prescribedArea", "excavatedArea", "accessibleArea",
+                "openingRate", "developmentNature", "volumeCount", "pageCount", "figureCount", "appendixCount");
     }
 
     @Override
