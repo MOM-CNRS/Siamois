@@ -9,6 +9,8 @@ import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.
 
 public class ActionUnitDetailsForm extends ActionUnitForm {
 
+    public static final String UI_G_12_UI_MD_12_UI_LG_12 = "ui-g-12 ui-md-12 ui-lg-12";
+
     private ActionUnitDetailsForm() {
         throw new UnsupportedOperationException();
     }
@@ -75,7 +77,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className("ui-g-12 ui-md-12 ui-lg-12")
+                                                        .className(UI_G_12_UI_MD_12_UI_LG_12)
                                                         .field(SPATIAL_CONTEXT_FIELD)
                                                         .build())
                                                 .build()
@@ -209,7 +211,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className("ui-g-12 ui-md-12 ui-lg-12")
+                                                        .className(UI_G_12_UI_MD_12_UI_LG_12)
                                                         .field(PERIODS_FIELD)
                                                         .build())
                                                 .build()
@@ -218,7 +220,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className("ui-g-12 ui-md-12 ui-lg-12")
+                                                        .className(UI_G_12_UI_MD_12_UI_LG_12)
                                                         .field(SUBJECTS_FIELD)
                                                         .build())
                                                 .build()
@@ -255,7 +257,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className("ui-g-12 ui-md-12 ui-lg-12")
+                                                        .className(UI_G_12_UI_MD_12_UI_LG_12)
                                                         .field(SCIENTIFIC_NOTICE_FIELD)
                                                         .build())
                                                 .build()
@@ -264,7 +266,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className("ui-g-12 ui-md-12 ui-lg-12")
+                                                        .className(UI_G_12_UI_MD_12_UI_LG_12)
                                                         .field(COMMENTS_FIELD)
                                                         .build())
                                                 .build()
