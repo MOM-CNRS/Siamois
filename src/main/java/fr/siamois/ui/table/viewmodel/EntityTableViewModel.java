@@ -3,7 +3,9 @@ package fr.siamois.ui.table.viewmodel;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectPerson;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
@@ -167,6 +169,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     private final Map<String, List<SpatialUnitDTO>> spatialUnitFilterValues = new HashMap<>();
 
     /**
+     * Unités d'enregistrement sélectionnées pour le filtre d'une colonne (clé = valueBinding de la
+     * colonne). Utilisé par les colonnes "parents" et "children", dont le filtre est une sélection
+     * multiple d'UE.
+     */
+    private final Map<String, List<RecordingUnitSummaryDTO>> recordingUnitFilterValues = new HashMap<>();
+
+    /**
      * Bornes de dates sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
      * Contient jusqu'à 2 éléments : [from, to].
      */
@@ -269,6 +278,16 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                 && ffc.getField() instanceof CustomFieldSelectOneSpatialUnit;
     }
 
+    public boolean isRecordingUnitFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectMultipleRecordingUnit;
+    }
+
+    public boolean isIntegerFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldInteger;
+    }
+
     public boolean isDateTimeFilter(TableColumn column) {
         return column instanceof FormFieldColumn ffc
                 && ffc.getField() instanceof CustomFieldDateTime;
@@ -300,6 +319,11 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     public List<SpatialUnitDTO> completeSpatialUnitForFilter(String query) {
         return formContextServices.getSpatialUnitService()
                 .findMatchingInInstitutionByName(formContextServices.getSessionSettingsBean().getSelectedInstitution(), query, LIMIT);
+    }
+
+    public List<RecordingUnitSummaryDTO> completeRecordingUnitForFilter(String query) {
+        return formContextServices.getRecordingUnitService()
+                .findMatchingInInstitutionByFullIdentifier(formContextServices.getSessionSettingsBean().getSelectedInstitution(), query, LIMIT);
     }
 
     /**
@@ -875,6 +899,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         personFilterValues.clear();
         actionUnitFilterValues.clear();
         spatialUnitFilterValues.clear();
+        recordingUnitFilterValues.clear();
         dateFilterValues.clear();
 
         for (FilterState state : filters.values()) {
@@ -1016,6 +1041,38 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                     );
                 }
 
+                case RECORDING_UNIT -> {
+
+                    List<Map<String, Object>> rawValues =
+                            (List<Map<String, Object>>) state.getValue();
+
+                    List<RecordingUnitSummaryDTO> values =
+                            rawValues.stream()
+                                    .map(raw -> {
+
+                                        Long id =
+                                                ((Number) raw.get("id")).longValue();
+
+                                        String label =
+                                                (String) raw.get(LABEL);
+
+                                        RecordingUnitSummaryDTO dto =
+                                                new RecordingUnitSummaryDTO();
+
+                                        dto.setId(id);
+
+                                        dto.setFullIdentifier(label);
+
+                                        return dto;
+                                    })
+                                    .toList();
+
+                    recordingUnitFilterValues.put(
+                            state.getColumnId(),
+                            values
+                    );
+                }
+
                 case DATE_RANGE -> {
 
                     List<Date> dates =
@@ -1125,6 +1182,27 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             filters.put(columnId, state);
         });
 
+        // recording units
+        recordingUnitFilterValues.forEach((columnId, values) -> {
+
+            FilterState state = new FilterState();
+
+            state.setColumnId(columnId);
+
+            state.setType(RECORDING_UNIT);
+
+            state.setValue(
+                    values.stream()
+                            .map(v -> Map.of(
+                                    "id", v.getId(),
+                                    LABEL, v.getFullIdentifier()
+                            ))
+                            .toList()
+            );
+
+            filters.put(columnId, state);
+        });
+
         // date ranges
         dateFilterValues.forEach((columnId, values) -> {
 
@@ -1144,9 +1222,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public String getSelectedAndTotalCount() {
         int selectedCount = treeMode
-                ? (checkboxSelectedTreeNodes == null ? 0 : checkboxSelectedTreeNodes.size())
+                ? getCount()
                 : lazyDataModel.getSelectedUnits().size();
         return selectedCount + "/" + lazyDataModel.getRowCount();
+    }
+
+    private int getCount() {
+        return checkboxSelectedTreeNodes == null ? 0 : checkboxSelectedTreeNodes.size();
     }
 
     public void handleSelectionChange() {

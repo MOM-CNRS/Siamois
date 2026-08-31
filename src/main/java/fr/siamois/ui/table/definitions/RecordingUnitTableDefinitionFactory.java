@@ -100,8 +100,10 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("isPartOf")
                         .headerKey("common.field.parents")
                         .field(isPartOfField)
-                        .sortable(false)
-                        .filterable(false)
+                        // Filtre : sélection multiple d'UE parentes ; tri : nombre de parents
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.PARENTS_COUNT_SORT)
+                        .filterable(true)
                         .visible(true)
                         .required(false)
                         .build()
@@ -112,8 +114,10 @@ public final class RecordingUnitTableDefinitionFactory {
                         .id("contains")
                         .headerKey("common.field.children")
                         .field(containsField)
-                        .sortable(false)
-                        .filterable(false)
+                        // Filtre : sélection multiple d'UE enfants ; tri : nombre d'enfants
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.CHILDREN_COUNT_SORT)
+                        .filterable(true)
                         .visible(true)
                         .required(false)
                         .build()
@@ -270,20 +274,58 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
+        // Nature, agent et interprétation : filtre par valeur (sélection de concepts) et tri
+        // alphabétique sur le libellé du concept — trier sur l'association elle-même ordonnerait
+        // par clé étrangère. Toggleables, masquées par défaut comme elles l'étaient.
+        definition.addColumn(
+                column(systemField(ConfigurableTable.UE, "geomorphologicalCycle"))
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.NATURE_LABEL_SORT)
+                        .filterable(true)
+                        .build()
+        );
+
+        definition.addColumn(
+                column(systemField(ConfigurableTable.UE, "geomorphologicalAgent"))
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.AGENT_LABEL_SORT)
+                        .filterable(true)
+                        .build()
+        );
+
+        definition.addColumn(
+                column(systemField(ConfigurableTable.UE, "normalizedInterpretation"))
+                        .sortable(true)
+                        .sortField(RecordingUnitSpec.INTERPRETATION_LABEL_SORT)
+                        .filterable(true)
+                        .build()
+        );
+
+        // TPQ / TAQ : tri par valeur (colonnes entières réellement mappées, aucune clé synthétique
+        // nécessaire) et filtre par intervalle.
+        definition.addColumn(
+                column(systemField(ConfigurableTable.UE, "tpq"))
+                        .sortable(true)
+                        .filterable(true)
+                        .build()
+        );
+
+        definition.addColumn(
+                column(systemField(ConfigurableTable.UE, "taq"))
+                        .sortable(true)
+                        .filterable(true)
+                        .build()
+        );
+
         // Fields that exist on RecordingUnit.DETAILS_FORM but had no table column of their own yet:
         // configurable/toggleable, hidden from the table by default so nobody's view changes.
         TableDefinitions.addColumns(definition,
-                column(systemField(ConfigurableTable.UE, "geomorphologicalCycle")).build(),
-                column(systemField(ConfigurableTable.UE, "geomorphologicalAgent")).build(),
-                column(systemField(ConfigurableTable.UE, "normalizedInterpretation")).build(),
                 column(systemField(ConfigurableTable.UE, "erosionShape")).build(),
                 column(systemField(ConfigurableTable.UE, "erosionProfile")).build(),
                 column(systemField(ConfigurableTable.UE, "erosionOrientation")).build(),
                 column(systemField(ConfigurableTable.UE, "description")).build(),
                 column(systemField(ConfigurableTable.UE, "comments")).build(),
                 column(systemField(ConfigurableTable.UE, "chronologicalPhase")).build(),
-                column(systemField(ConfigurableTable.UE, "tpq")).build(),
-                column(systemField(ConfigurableTable.UE, "taq")).build(),
                 column(systemField(ConfigurableTable.UE, "zInf")).build(),
                 column(systemField(ConfigurableTable.UE, "zSup")).build(),
                 column(systemField(ConfigurableTable.UE, "closingDate")).build()

@@ -73,6 +73,62 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         return this;
     }
 
+    /**
+     * Lower bounds of the interval filters, keyed by column valueBinding (e.g. {@code tpq}).
+     * <p>
+     * Interval filters cannot travel through PrimeFaces' FilterMeta like the other column filters:
+     * a column's filter facet is read through its <em>first</em> {@code EditableValueHolder} only
+     * (see {@code CompositeUtils#invokeOnDeepestEditableValueHolder}), so a facet holding two
+     * inputs would lose one bound. The two inputs therefore write here directly, and
+     * {@link #applyRangeFilters(FilterDTO)} folds them into the query on every load and count.
+     */
+    @Getter
+    private final transient Map<String, Object> rangeFilterFrom = new HashMap<>();
+
+    /** Upper bounds of the interval filters. See {@link #rangeFilterFrom}. */
+    @Getter
+    private final transient Map<String, Object> rangeFilterTo = new HashMap<>();
+
+    /**
+     * Adds the interval filters to the query, as {@code [from, to]} under the column's key. Runs
+     * after {@code prepareFilterDTO} so that it wins over anything PrimeFaces may have collected
+     * from the facet's first input. A bound left empty stays null, for an open-ended interval; a
+     * column with both bounds empty contributes no filter at all.
+     */
+    protected void applyRangeFilters(FilterDTO filterDTO) {
+        Set<String> columns = new HashSet<>(rangeFilterFrom.keySet());
+        columns.addAll(rangeFilterTo.keySet());
+        for (String column : columns) {
+            Object from = boundOrNull(rangeFilterFrom.get(column));
+            Object to = boundOrNull(rangeFilterTo.get(column));
+            if (from == null && to == null) {
+                continue;
+            }
+            filterDTO.add(column, Arrays.asList(from, to), FilterDTO.FilterType.CONTAINS);
+        }
+    }
+
+    /**
+     * Normalizes a bound coming from the filter input, which submits an empty string when the user
+     * clears it. The numeric type is left to {@link FilterDTO} to coerce, since the input's
+     * converter is free to hand back any {@link Number}.
+     */
+    private static Object boundOrNull(Object value) {
+        if (value instanceof String text && text.isBlank()) {
+            return null;
+        }
+        return value;
+    }
+
+    /**
+     * Invalidates the page cache when an interval bound changes. The cache key is built from the
+     * PrimeFaces filter/sort maps, which an interval filter never goes through, so without this the
+     * previous page would be served again.
+     */
+    public void onRangeFilterChange() {
+        resetCache();
+    }
+
     @Getter
     @Setter
     protected transient TreeNode<T> lazyRoot;
@@ -232,6 +288,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
             }
         }
         constantFilters.forEach((k, v) -> filterDTO.addScopeFilter(k, v.getFilter(), v.getType()));
+        applyRangeFilters(filterDTO);
         return countWithFilter(filterDTO);
     }
 
@@ -274,6 +331,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
 
         prepareFilterDTO(activeFilters, filterDTO);
         constantFilters.forEach((k, v) -> filterDTO.addScopeFilter(k, v.getFilter(), v.getType()));
+        applyRangeFilters(filterDTO);
         prepareSortDTO(activeSorts, sortDTO);
 
         Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortDTO));

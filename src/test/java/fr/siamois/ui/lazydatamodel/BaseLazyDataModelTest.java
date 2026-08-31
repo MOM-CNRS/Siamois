@@ -817,4 +817,180 @@ class BaseLazyDataModelTest {
         assertEquals(3, model.getQueryResult().size());
     }
 
+    // ------------------------------------------------------------------
+    // Interval filters — rangeFilterFrom / rangeFilterTo / applyRangeFilters
+    // ------------------------------------------------------------------
+
+    /** A model whose {@code prepareFilterDTO} is a no-op, so only the range filters reach the query. */
+    private static TestLazyDataModel rangeOnlyModel() {
+        return new TestLazyDataModel() {
+            @Override
+            protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+                // no-op: the interval filters are the only thing under test
+            }
+
+            @Override
+            protected void prepareSortDTO(Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
+                // no-op
+            }
+        };
+    }
+
+    private static FilterDTO loadAndCaptureFilter(TestLazyDataModel model) {
+        FilterDTO[] captured = new FilterDTO[1];
+        model.loader = (f, p) -> {
+            captured[0] = f;
+            return new PageImpl<>(List.of());
+        };
+        model.load(0, 10, new HashMap<>(), new HashMap<>());
+        return captured[0];
+    }
+
+    @Test
+    void applyRangeFilters_bothBoundsSet_passesClosedInterval() {
+        TestLazyDataModel model = rangeOnlyModel();
+        model.getRangeFilterFrom().put("tpq", -800);
+        model.getRangeFilterTo().put("tpq", 1200);
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertTrue(filter.containsColumn("tpq"));
+        assertEquals(-800, filter.valueAsIntRangeOf("tpq").from());
+        assertEquals(1200, filter.valueAsIntRangeOf("tpq").to());
+    }
+
+    @Test
+    void applyRangeFilters_onlyLowerBound_leavesUpperBoundOpen() {
+        TestLazyDataModel model = rangeOnlyModel();
+        model.getRangeFilterFrom().put("tpq", 500);
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertEquals(500, filter.valueAsIntRangeOf("tpq").from());
+        assertNull(filter.valueAsIntRangeOf("tpq").to());
+    }
+
+    @Test
+    void applyRangeFilters_onlyUpperBound_leavesLowerBoundOpen() {
+        TestLazyDataModel model = rangeOnlyModel();
+        model.getRangeFilterTo().put("taq", 1500);
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertNull(filter.valueAsIntRangeOf("taq").from());
+        assertEquals(1500, filter.valueAsIntRangeOf("taq").to());
+    }
+
+    @Test
+    void applyRangeFilters_noBoundSet_contributesNoFilter() {
+        TestLazyDataModel model = rangeOnlyModel();
+        model.getRangeFilterFrom().put("tpq", null);
+        model.getRangeFilterTo().put("tpq", null);
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertFalse(filter.containsColumn("tpq"));
+        assertFalse(filter.hasUserFilters());
+    }
+
+    @Test
+    void applyRangeFilters_clearedInputSubmitsBlank_treatedAsNoBound() {
+        TestLazyDataModel model = rangeOnlyModel();
+        // p:inputNumber submits an empty string once the user clears it
+        model.getRangeFilterFrom().put("tpq", "   ");
+        model.getRangeFilterTo().put("tpq", "");
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertFalse(filter.containsColumn("tpq"));
+    }
+
+    @Test
+    void applyRangeFilters_blankBoundBesideRealOne_keepsTheRealOne() {
+        TestLazyDataModel model = rangeOnlyModel();
+        model.getRangeFilterFrom().put("tpq", "");
+        model.getRangeFilterTo().put("tpq", 1200);
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertNull(filter.valueAsIntRangeOf("tpq").from());
+        assertEquals(1200, filter.valueAsIntRangeOf("tpq").to());
+    }
+
+    @Test
+    void applyRangeFilters_nonIntegerBoundFromConverter_isCoerced() {
+        TestLazyDataModel model = rangeOnlyModel();
+        // the input's converter is free to hand back any Number
+        model.getRangeFilterFrom().put("tpq", 12.0d);
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertEquals(12, filter.valueAsIntRangeOf("tpq").from());
+    }
+
+    @Test
+    void applyRangeFilters_countsAsUserFilter() {
+        TestLazyDataModel model = rangeOnlyModel();
+        model.getRangeFilterFrom().put("tpq", 500);
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertTrue(filter.hasUserFilters(),
+                "an interval bound is a filter the user set, not a scope filter");
+    }
+
+    @Test
+    void applyRangeFilters_winsOverWhatPrepareFilterDTOPutOnTheSameColumn() {
+        // PrimeFaces only reads a facet's first input, so it may carry a single bound under the
+        // column key; the interval filter runs last and must replace it.
+        TestLazyDataModel model = new TestLazyDataModel() {
+            @Override
+            protected void prepareFilterDTO(Map<String, FilterMeta> filterBy, FilterDTO filterDTO) {
+                filterDTO.add("tpq", 999, FilterDTO.FilterType.CONTAINS);
+            }
+
+            @Override
+            protected void prepareSortDTO(Map<String, SortMeta> sortBy, @NonNull SortDTO sortDTO) {
+                // no-op
+            }
+        };
+        model.getRangeFilterFrom().put("tpq", -800);
+        model.getRangeFilterTo().put("tpq", 1200);
+
+        FilterDTO filter = loadAndCaptureFilter(model);
+
+        assertEquals(-800, filter.valueAsIntRangeOf("tpq").from());
+        assertEquals(1200, filter.valueAsIntRangeOf("tpq").to());
+    }
+
+    @Test
+    void applyRangeFilters_alsoAppliedOnCount() {
+        // the row count must narrow the same way the page does
+        TestLazyDataModel model = rangeOnlyModel();
+        model.getRangeFilterFrom().put("tpq", -800);
+        model.getRangeFilterTo().put("tpq", 1200);
+
+        FilterDTO[] captured = new FilterDTO[1];
+        model.initialized = true;
+        model.counter = filter -> {
+            captured[0] = filter;
+            return 4;
+        };
+
+        assertEquals(4, model.count(new HashMap<>()));
+        assertEquals(-800, captured[0].valueAsIntRangeOf("tpq").from());
+        assertEquals(1200, captured[0].valueAsIntRangeOf("tpq").to());
+    }
+
+    @Test
+    void onRangeFilterChange_invalidatesThePageCache() {
+        // the cache key is built from the PrimeFaces maps, which an interval filter never goes
+        // through — without this reset the previous page would be served again
+        TestLazyDataModel model = rangeOnlyModel();
+        model.setQueryResult(new ArrayList<>(List.of("stale")));
+
+        model.onRangeFilterChange();
+
+        assertNull(model.getQueryResult());
+    }
 }
