@@ -16,6 +16,7 @@ import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
@@ -45,11 +46,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,6 +82,7 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonProfileAssignmentService personProfileAssignmentService;
     private final ProfileMapper profileMapper;
     private final ProfilePermissionService profilePermissionService;
+    private final InstitutionService institutionService;
 
 
     /**
@@ -649,6 +647,7 @@ public class ActionUnitService implements ArkEntityService {
 
     private ActionUnitDTO convertWithCount(ActionUnit au) {
         ActionUnitDTO dto = actionUnitMapper.convert(au);
+        assert dto != null;
         Integer count = recordingUnitRepository.countByActionContext(au.getId());
         dto.setRecordingUnitCount(count != null ? count : 0);
         return dto;
@@ -900,6 +899,23 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnits.stream()
                 .map(actionUnitMapper::convert)
                 .collect(Collectors.toSet());
+    }
+
+    public Set<ActionUnitDTO> findAllEditableByPerson(PersonDTO user) {
+        if (user == null || user.getId() == null) {
+            return Collections.emptySet();
+        }
+
+        Set<ActionUnitDTO> actionUnits = new HashSet<>();
+
+        for (InstitutionDTO institutionDTO : institutionService.findInstitutionsOfPerson(user)) {
+            if (personProfileAssignmentService.isOrganizationManagerOrProjectManager(institutionDTO, user)) {
+                List<ActionUnit> institutionActionUnits = actionUnitRepository.findAllByCreatedByInstitutionId(institutionDTO.getId());
+                actionUnits.addAll(institutionActionUnits.stream().map(actionUnitMapper::convert).collect(Collectors.toSet()));
+            }
+        }
+
+        return actionUnits;
     }
 
 }

@@ -84,6 +84,7 @@ class ActionUnitServiceTest {
     @Mock private PersonProfileAssignmentService personProfileAssignmentService;
     @Mock private ProfileMapper profileMapper;
     @Mock private ProfilePermissionService profilePermissionService;
+    @Mock private InstitutionService institutionService;
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -1807,6 +1808,132 @@ class ActionUnitServiceTest {
 
         verify(actionUnitRepository, never()).findAll(any(Specification.class));
         verify(actionUnitRepository, never()).findAncestorClosure(any());
+    }
+
+    @Test
+    void findAllEditableByPerson_returnsEmptySetWhenUserIsNull() {
+        Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(null);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(institutionService);
+        verifyNoInteractions(personProfileAssignmentService);
+        verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(any());
+    }
+
+    @Test
+    void findAllEditableByPerson_returnsEmptySetWhenUserHasNoId() {
+        PersonDTO user = new PersonDTO();
+
+        Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(institutionService);
+        verifyNoInteractions(personProfileAssignmentService);
+        verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(any());
+    }
+
+    @Test
+    void findAllEditableByPerson_returnsOnlyActionUnitsOfInstitutionsWhereUserIsManager() {
+        PersonDTO user = new PersonDTO();
+        user.setId(42L);
+
+        InstitutionDTO managedInstitution = new InstitutionDTO();
+        managedInstitution.setId(1L);
+        InstitutionDTO otherInstitution = new InstitutionDTO();
+        otherInstitution.setId(2L);
+
+        ActionUnit au1 = buildActionUnitWithFullIdentifier(11L, "MOM-11");
+        ActionUnit au2 = buildActionUnitWithFullIdentifier(12L, "MOM-12");
+        ActionUnitDTO dto1 = buildActionUnitDTO(11L, "MOM-11");
+        ActionUnitDTO dto2 = buildActionUnitDTO(12L, "MOM-12");
+
+        when(institutionService.findInstitutionsOfPerson(user))
+                .thenReturn(new LinkedHashSet<>(List.of(managedInstitution, otherInstitution)));
+        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(managedInstitution, user)).thenReturn(true);
+        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(otherInstitution, user)).thenReturn(false);
+        when(actionUnitRepository.findAllByCreatedByInstitutionId(1L)).thenReturn(List.of(au1, au2));
+        when(actionUnitMapper.convert(au1)).thenReturn(dto1);
+        when(actionUnitMapper.convert(au2)).thenReturn(dto2);
+
+        Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
+
+        assertThat(result).containsExactlyInAnyOrder(dto1, dto2);
+        // Les unités d'action de l'organisation où l'utilisateur n'est pas gestionnaire ne sont jamais chargées
+        verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(2L);
+    }
+
+    @Test
+    void findAllEditableByPerson_returnsEmptySetWhenUserManagesNoInstitution() {
+        PersonDTO user = new PersonDTO();
+        user.setId(42L);
+
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+
+        when(institutionService.findInstitutionsOfPerson(user)).thenReturn(Set.of(institution));
+        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(institution, user)).thenReturn(false);
+
+        Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
+
+        assertThat(result).isEmpty();
+        verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(any());
+    }
+
+    @Test
+    void findAllEditableByPerson_returnsEmptySetWhenPersonBelongsToNoInstitution() {
+        PersonDTO user = new PersonDTO();
+        user.setId(42L);
+
+        when(institutionService.findInstitutionsOfPerson(user)).thenReturn(Set.of());
+
+        Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(personProfileAssignmentService);
+        verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(any());
+    }
+
+    @Test
+    void findAllEditableByPerson_deduplicatesActionUnitsSharedBetweenInstitutions() {
+        PersonDTO user = new PersonDTO();
+        user.setId(42L);
+
+        InstitutionDTO institution1 = new InstitutionDTO();
+        institution1.setId(1L);
+        InstitutionDTO institution2 = new InstitutionDTO();
+        institution2.setId(2L);
+
+        ActionUnit shared = buildActionUnitWithFullIdentifier(11L, "MOM-11");
+        ActionUnit au2 = buildActionUnitWithFullIdentifier(12L, "MOM-12");
+        ActionUnitDTO sharedDto = buildActionUnitDTO(11L, "MOM-11");
+        ActionUnitDTO dto2 = buildActionUnitDTO(12L, "MOM-12");
+
+        when(institutionService.findInstitutionsOfPerson(user))
+                .thenReturn(new LinkedHashSet<>(List.of(institution1, institution2)));
+        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(any(InstitutionDTO.class), eq(user))).thenReturn(true);
+        when(actionUnitRepository.findAllByCreatedByInstitutionId(1L)).thenReturn(List.of(shared));
+        when(actionUnitRepository.findAllByCreatedByInstitutionId(2L)).thenReturn(List.of(shared, au2));
+        when(actionUnitMapper.convert(shared)).thenReturn(sharedDto);
+        when(actionUnitMapper.convert(au2)).thenReturn(dto2);
+
+        Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
+
+        // L'unité d'action commune aux deux organisations n'est retournée qu'une seule fois
+        assertThat(result).containsExactlyInAnyOrder(sharedDto, dto2);
+    }
+
+    private ActionUnit buildActionUnitWithFullIdentifier(Long id, String fullIdentifier) {
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(id);
+        actionUnit.setFullIdentifier(fullIdentifier);
+        return actionUnit;
+    }
+
+    private ActionUnitDTO buildActionUnitDTO(Long id, String fullIdentifier) {
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setId(id);
+        dto.setFullIdentifier(fullIdentifier);
+        return dto;
     }
 
 }
