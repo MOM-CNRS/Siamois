@@ -16,8 +16,8 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
@@ -25,7 +25,6 @@ import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
@@ -52,7 +51,10 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -1159,6 +1161,26 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
+    /**
+     * The recording units of an institution whose full identifier matches the query — what the
+     * table's parents/children filters autocomplete on, where the scope is the whole institution
+     * rather than one action unit.
+     *
+     * @param institution the institution to search in
+     * @param query       the text the full identifier must contain, null or blank matching everything
+     * @param limit       how many units to return at most
+     */
+    @Transactional(readOnly = true)
+    public List<RecordingUnitSummaryDTO> findMatchingInInstitutionByFullIdentifier(InstitutionDTO institution, String query, int limit) {
+        Specification<RecordingUnit> specs = RecordingUnitSpec.recordingUnitInInstitution(institution.getId())
+                .and(RecordingUnitSpec.fullIdentifierContains(query));
+
+        return recordingUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+                .stream()
+                .map(recordingUnitSummaryMapper::convert)
+                .toList();
+    }
+
     public List<RecordingUnitSummaryDTO> autocompleteInActionUnit(@NotNull Long actionUnitId, String query, int limit) {
         return recordingUnitRepository
                 .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
@@ -1301,16 +1323,26 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
+     * The synthetic (non-JPA-path) count sort keys, each mapped to the ordering
+     * {@link Specification} it resolves to. Both {@link #applyCountSort} and
+     * {@link #stripCountSort} read this single table, so a key can never be ordered by without
+     * also being stripped from the {@link Pageable}.
+     */
+    private static final Map<String, Function<Sort.Direction, Specification<RecordingUnit>>> COUNT_SORTS = Map.of(
+            RecordingUnitSpec.SPECIMEN_COUNT_SORT, RecordingUnitSpec::orderBySpecimenCount,
+            RecordingUnitSpec.RELATIONSHIP_COUNT_SORT, RecordingUnitSpec::orderByRelationshipCount,
+            RecordingUnitSpec.PARENTS_COUNT_SORT, RecordingUnitSpec::orderByParentsCount,
+            RecordingUnitSpec.CHILDREN_COUNT_SORT, RecordingUnitSpec::orderByChildrenCount);
+
+    /**
      * Composes a count-based ordering {@link Specification} when the requested sort targets a
      * synthetic (non-JPA-path) count key, e.g. {@link RecordingUnitSpec#SPECIMEN_COUNT_SORT}.
      */
     private Specification<RecordingUnit> applyCountSort(Specification<RecordingUnit> specs, Sort sort) {
         for (Sort.Order order : sort) {
-            if (RecordingUnitSpec.SPECIMEN_COUNT_SORT.equals(order.getProperty())) {
-                return specs.and(RecordingUnitSpec.orderBySpecimenCount(order.getDirection()));
-            }
-            if (RecordingUnitSpec.RELATIONSHIP_COUNT_SORT.equals(order.getProperty())) {
-                return specs.and(RecordingUnitSpec.orderByRelationshipCount(order.getDirection()));
+            Function<Sort.Direction, Specification<RecordingUnit>> countSort = COUNT_SORTS.get(order.getProperty());
+            if (countSort != null) {
+                return specs.and(countSort.apply(order.getDirection()));
             }
         }
         return specs;
@@ -1323,8 +1355,7 @@ public class RecordingUnitService implements ArkEntityService {
      */
     private Pageable stripCountSort(Pageable pageable) {
         boolean hasCountSort = pageable.getSort().stream()
-                .anyMatch(order -> RecordingUnitSpec.SPECIMEN_COUNT_SORT.equals(order.getProperty())
-                        || RecordingUnitSpec.RELATIONSHIP_COUNT_SORT.equals(order.getProperty()));
+                .anyMatch(order -> COUNT_SORTS.containsKey(order.getProperty()));
         if (!hasCountSort) {
             return pageable;
         }
@@ -1528,6 +1559,10 @@ public class RecordingUnitService implements ArkEntityService {
 
         if (filters.containsColumn(RecordingUnitSpec.PARENTS_FILTER)) {
             specification = specification.and(RecordingUnitSpec.isChildOf(filters.valueAsIdListOf(RecordingUnitSpec.PARENTS_FILTER)));
+        }
+
+        if (filters.containsColumn(RecordingUnitSpec.CHILDREN_FILTER)) {
+            specification = specification.and(RecordingUnitSpec.isParentOf(filters.valueAsIdListOf(RecordingUnitSpec.CHILDREN_FILTER)));
         }
 
         return specification;

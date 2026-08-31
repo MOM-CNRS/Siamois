@@ -115,6 +115,31 @@
         </f:facet>
     </c:if>
 
+    <c:if test="#{tableModel.isRecordingUnitFilter(column) and tableModel.columnFilteringEnabled}">
+        <f:facet name="filter">
+            <div class="ui-fluid">
+                <p:autoComplete value="#{tableModel.recordingUnitFilterValues[column.field.valueBinding]}"
+                                completeMethod="#{tableModel.completeRecordingUnitForFilter}"
+                                var="recordingUnitDto"
+                                itemValue="#{recordingUnitDto}"
+                                itemLabel="#{recordingUnitDto.fullIdentifier}"
+                                converter="#{recordingUnitSummaryConverter}"
+                                multiple="true"
+                                dropdown="true"
+                                forceSelection="true"
+                                scrollHeight="300"
+                                showEmptyMessage="false"
+                                appendTo="@(body)"
+                                panelStyleClass="sia-autocomplete-panel">
+                    <p:ajax event="itemSelect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                            oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                    <p:ajax event="itemUnselect" process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                            oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                </p:autoComplete>
+            </div>
+        </f:facet>
+    </c:if>
+
     <c:if test="#{tableModel.isDateTimeFilter(column) and tableModel.columnFilteringEnabled}">
         <f:facet name="filter">
             <div class="ui-fluid">
