@@ -26,13 +26,13 @@ import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
-class RecordingUnitFilterServiceTest {
+class RecordingUnitSortFilterServiceTest {
 
     @Mock
     private RecordingUnitRepository recordingUnitRepository;
 
     @InjectMocks
-    private RecordingUnitFilterService recordingUnitFilterService;
+    private RecordingUnitSortFilterService recordingUnitSortFilterService;
 
     @Test
     void userFilterSpecs_allColumnsSet_buildsSpecificationWithoutError() {
@@ -57,7 +57,7 @@ class RecordingUnitFilterServiceTest {
         filters.add(RecordingUnitSpec.PARENTS_FILTER, List.of(6L), FilterDTO.FilterType.EQUAL);
         filters.add(RecordingUnitSpec.CHILDREN_FILTER, List.of(10L), FilterDTO.FilterType.EQUAL);
 
-        Specification<RecordingUnit> spec = RecordingUnitFilterService.userFilterSpecs(filters);
+        Specification<RecordingUnit> spec = RecordingUnitSortFilterService.userFilterSpecs(filters);
 
         assertNotNull(spec);
     }
@@ -68,7 +68,7 @@ class RecordingUnitFilterServiceTest {
         institution.setId(1L);
         FilterDTO filters = new FilterDTO(true);
 
-        Specification<RecordingUnit> spec = recordingUnitFilterService.prepareSpecs(institution, filters);
+        Specification<RecordingUnit> spec = recordingUnitSortFilterService.prepareSpecs(institution, filters);
 
         assertNotNull(spec);
         verifyNoInteractions(recordingUnitRepository);
@@ -83,7 +83,7 @@ class RecordingUnitFilterServiceTest {
 
         when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
-        Specification<RecordingUnit> spec = recordingUnitFilterService.prepareSpecs(institution, filters);
+        Specification<RecordingUnit> spec = recordingUnitSortFilterService.prepareSpecs(institution, filters);
 
         assertNotNull(spec);
         verify(recordingUnitRepository).findAll(any(Specification.class));
@@ -103,7 +103,7 @@ class RecordingUnitFilterServiceTest {
         when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
         when(recordingUnitRepository.findAncestorClosure(new Long[]{42L})).thenReturn(List.of(42L, 1L));
 
-        Specification<RecordingUnit> spec = recordingUnitFilterService.prepareSpecs(institution, filters);
+        Specification<RecordingUnit> spec = recordingUnitSortFilterService.prepareSpecs(institution, filters);
 
         assertNotNull(spec);
     }
@@ -114,7 +114,7 @@ class RecordingUnitFilterServiceTest {
         institution.setId(1L);
         FilterDTO filters = new FilterDTO(false);
 
-        Specification<RecordingUnit> spec = recordingUnitFilterService.prepareSpecs(institution, filters);
+        Specification<RecordingUnit> spec = recordingUnitSortFilterService.prepareSpecs(institution, filters);
 
         assertNotNull(spec);
         verifyNoInteractions(recordingUnitRepository);
@@ -127,7 +127,7 @@ class RecordingUnitFilterServiceTest {
         FilterDTO filters = new FilterDTO(false);
         filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
 
-        Set<Long> result = recordingUnitFilterService.computeAncestorClosure(institution, filters);
+        Set<Long> result = recordingUnitSortFilterService.computeAncestorClosure(institution, filters);
 
         assertTrue(result.isEmpty());
         verifyNoInteractions(recordingUnitRepository);
@@ -139,7 +139,7 @@ class RecordingUnitFilterServiceTest {
         institution.setId(1L);
         FilterDTO filters = new FilterDTO(true);
 
-        Set<Long> result = recordingUnitFilterService.computeAncestorClosure(institution, filters);
+        Set<Long> result = recordingUnitSortFilterService.computeAncestorClosure(institution, filters);
 
         assertTrue(result.isEmpty());
         verifyNoInteractions(recordingUnitRepository);
@@ -158,7 +158,7 @@ class RecordingUnitFilterServiceTest {
         when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
         when(recordingUnitRepository.findAncestorClosure(new Long[]{42L})).thenReturn(List.of(42L, 1L));
 
-        Set<Long> result = recordingUnitFilterService.computeAncestorClosure(institution, filters);
+        Set<Long> result = recordingUnitSortFilterService.computeAncestorClosure(institution, filters);
 
         assertEquals(Set.of(42L, 1L), result);
     }

@@ -86,7 +86,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
     private final StatigraphicRelationshipMapper stratigraphicRelationshipMapper;
     private final RecordingUnitSummaryMapper recordingUnitSummaryMapper;
-    private final RecordingUnitFilterService recordingUnitFilterService;
+    private final RecordingUnitSortFilterService recordingUnitSortFilterService;
     private final ConversionService conversionService;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
     private final DocumentRepository documentRepository;
@@ -1290,7 +1290,7 @@ public class RecordingUnitService implements ArkEntityService {
 
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable,
                                                        boolean includeFullRelations) {
-        Specification<RecordingUnit> specs = recordingUnitFilterService.prepareSpecs(institution, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institution, filters);
         return pageAndEnrich(specs, pageable, includeFullRelations);
     }
 
@@ -1303,8 +1303,8 @@ public class RecordingUnitService implements ArkEntityService {
      */
     private Page<RecordingUnitDTO> pageAndEnrich(Specification<RecordingUnit> specs, Pageable pageable,
                                                  boolean includeFullRelations) {
-        specs = applySyntheticSort(specs, pageable.getSort());
-        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, stripSyntheticSort(pageable))
+        specs = recordingUnitSortFilterService.applySyntheticSort(specs, pageable.getSort());
+        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, recordingUnitSortFilterService.stripSyntheticSort(pageable))
                 .map(recordingUnitMapper::toLightDto);
 
         List<Long> ids = page.getContent().stream()
@@ -1323,62 +1323,6 @@ public class RecordingUnitService implements ArkEntityService {
         return page;
     }
 
-    /**
-     * The synthetic (non-JPA-path) count sort keys, each mapped to the ordering
-     * {@link Specification} it resolves to.
-     */
-    private static final Map<String, Function<Sort.Direction, Specification<RecordingUnit>>> COUNT_SORTS = Map.of(
-            RecordingUnitSpec.SPECIMEN_COUNT_SORT, RecordingUnitSpec::orderBySpecimenCount,
-            RecordingUnitSpec.RELATIONSHIP_COUNT_SORT, RecordingUnitSpec::orderByRelationshipCount,
-            RecordingUnitSpec.PARENTS_COUNT_SORT, RecordingUnitSpec::orderByParentsCount,
-            RecordingUnitSpec.CHILDREN_COUNT_SORT, RecordingUnitSpec::orderByChildrenCount);
-
-    private static final Map<String, String> CONCEPT_LABEL_SORTS = Map.of(
-            RecordingUnitSpec.NATURE_LABEL_SORT, RecordingUnitSpec.NATURE_FILTER,
-            RecordingUnitSpec.AGENT_LABEL_SORT, RecordingUnitSpec.AGENT_FILTER,
-            RecordingUnitSpec.INTERPRETATION_LABEL_SORT, RecordingUnitSpec.INTERPRETATION_FILTER);
-
-    /** Language the alphabetical sorts read concept labels in when no context is bound. */
-    private static final String DEFAULT_LANG = "fr";
-
-    /**
-     * Composes an ordering {@link Specification} when the requested sort targets a synthetic
-     * (non-JPA-path) key — a collection size, e.g. {@link RecordingUnitSpec#SPECIMEN_COUNT_SORT},
-     * or a concept label, e.g. {@link RecordingUnitSpec#NATURE_LABEL_SORT}.
-     */
-    private Specification<RecordingUnit> applySyntheticSort(Specification<RecordingUnit> specs, Sort sort) {
-        for (Sort.Order order : sort) {
-            Function<Sort.Direction, Specification<RecordingUnit>> countSort = COUNT_SORTS.get(order.getProperty());
-            if (countSort != null) {
-                return specs.and(countSort.apply(order.getDirection()));
-            }
-            String conceptAttribute = CONCEPT_LABEL_SORTS.get(order.getProperty());
-            if (conceptAttribute != null) {
-                return specs.and(RecordingUnitSpec.orderByConceptLabel(conceptAttribute, currentLang(), order.getDirection()));
-            }
-        }
-        return specs;
-    }
-
-    /**
-     * Strips the synthetic sort keys from the {@link Pageable} passed to the repository, since they
-     * are not real JPA-mapped paths (the ordering is applied via {@link #applySyntheticSort} as a
-     * {@link Specification} side effect instead).
-     */
-    private Pageable stripSyntheticSort(Pageable pageable) {
-        boolean hasSyntheticSort = pageable.getSort().stream()
-                .anyMatch(order -> COUNT_SORTS.containsKey(order.getProperty())
-                        || CONCEPT_LABEL_SORTS.containsKey(order.getProperty()));
-        if (!hasSyntheticSort) {
-            return pageable;
-        }
-        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-    }
-
-    private static String currentLang() {
-        UserInfo info = ExecutionContextHolder.get();
-        return info != null && info.getLang() != null ? info.getLang() : DEFAULT_LANG;
-    }
 
     private void hydrateFullRelations(List<RecordingUnitDTO> rows, List<Long> ids) {
         Map<Long, Set<RecordingUnitSummaryDTO>> parentsByOwner = groupRecordingUnitsByOwner(
@@ -1471,7 +1415,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {
-        Specification<RecordingUnit> specs = recordingUnitFilterService.prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
         Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
         return results.map(recordingUnitMapper::convert);
@@ -1480,7 +1424,7 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> searchRecordingUnitInRecordingUnit(InstitutionDTO institutionDTO,
                                                                      @NonNull RecordingUnitDTO recordingUnitDTO,
                                                                      FilterDTO filters, Pageable pageable) {
-        Specification<RecordingUnit> specs = recordingUnitFilterService.prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInRecordingUnit(recordingUnitDTO.getId()));
         Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
         return results.map(recordingUnitMapper::convert);
@@ -1489,34 +1433,34 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> searchRecordingUnitInSpatialUnit(InstitutionDTO institutionDTO,
                                                                    @NonNull SpatialUnitDTO spatialUnitDTO,
                                                                    FilterDTO filters, Pageable pageable) {
-        Specification<RecordingUnit> specs = recordingUnitFilterService.prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInSpatialUnit(spatialUnitDTO.getId()));
         Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
         return results.map(recordingUnitMapper::convert);
     }
 
     public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters) {
-        Specification<RecordingUnit> specs = recordingUnitFilterService.prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
     public int countSearchResultsInRecordingUnit(InstitutionDTO institutionDTO,
                                                  @NonNull RecordingUnitDTO recordingUnitDTO, FilterDTO filters) {
-        Specification<RecordingUnit> specs = recordingUnitFilterService.prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInRecordingUnit(recordingUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
     public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
                                                @NonNull SpatialUnitDTO spatialUnitDTO, FilterDTO filters) {
-        Specification<RecordingUnit> specs = recordingUnitFilterService.prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInSpatialUnit(spatialUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
     public int countSearchResults(InstitutionDTO institution, FilterDTO filters) {
-        Specification<RecordingUnit> specs = recordingUnitFilterService.prepareSpecs(institution, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institution, filters);
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 

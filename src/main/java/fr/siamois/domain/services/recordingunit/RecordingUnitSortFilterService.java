@@ -1,11 +1,16 @@
 package fr.siamois.domain.services.recordingunit;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -14,12 +19,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
-public class RecordingUnitFilterService {
+public class RecordingUnitSortFilterService {
 
     private final RecordingUnitRepository recordingUnitRepository;
 
@@ -123,5 +129,47 @@ public class RecordingUnitFilterService {
             return Collections.emptySet();
         }
         return new HashSet<>(resolveAncestorClosure(institution, filters));
+    }
+
+    private static final Map<String, Function<Sort.Direction, Specification<RecordingUnit>>> COUNT_SORTS = Map.of(
+            RecordingUnitSpec.SPECIMEN_COUNT_SORT, RecordingUnitSpec::orderBySpecimenCount,
+            RecordingUnitSpec.RELATIONSHIP_COUNT_SORT, RecordingUnitSpec::orderByRelationshipCount,
+            RecordingUnitSpec.PARENTS_COUNT_SORT, RecordingUnitSpec::orderByParentsCount,
+            RecordingUnitSpec.CHILDREN_COUNT_SORT, RecordingUnitSpec::orderByChildrenCount);
+
+    private static final Map<String, String> CONCEPT_LABEL_SORTS = Map.of(
+            RecordingUnitSpec.NATURE_LABEL_SORT, RecordingUnitSpec.NATURE_FILTER,
+            RecordingUnitSpec.AGENT_LABEL_SORT, RecordingUnitSpec.AGENT_FILTER,
+            RecordingUnitSpec.INTERPRETATION_LABEL_SORT, RecordingUnitSpec.INTERPRETATION_FILTER);
+
+    private static final String DEFAULT_LANG = "fr";
+
+    Specification<RecordingUnit> applySyntheticSort(Specification<RecordingUnit> specs, Sort sort) {
+        for (Sort.Order order : sort) {
+            Function<Sort.Direction, Specification<RecordingUnit>> countSort = COUNT_SORTS.get(order.getProperty());
+            if (countSort != null) {
+                return specs.and(countSort.apply(order.getDirection()));
+            }
+            String conceptAttribute = CONCEPT_LABEL_SORTS.get(order.getProperty());
+            if (conceptAttribute != null) {
+                return specs.and(RecordingUnitSpec.orderByConceptLabel(conceptAttribute, currentLang(), order.getDirection()));
+            }
+        }
+        return specs;
+    }
+
+    Pageable stripSyntheticSort(Pageable pageable) {
+        boolean hasSyntheticSort = pageable.getSort().stream()
+                .anyMatch(order -> COUNT_SORTS.containsKey(order.getProperty())
+                        || CONCEPT_LABEL_SORTS.containsKey(order.getProperty()));
+        if (!hasSyntheticSort) {
+            return pageable;
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+    }
+
+    private static String currentLang() {
+        UserInfo info = ExecutionContextHolder.get();
+        return info != null && info.getLang() != null ? info.getLang() : DEFAULT_LANG;
     }
 }

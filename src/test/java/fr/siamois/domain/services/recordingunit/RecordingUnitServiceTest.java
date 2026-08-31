@@ -117,7 +117,7 @@ class RecordingUnitServiceTest {
     private jakarta.persistence.EntityManager entityManager;
 
     @Mock
-    private RecordingUnitFilterService recordingUnitFilterService;
+    private RecordingUnitSortFilterService recordingUnitSortFilterService;
 
     @InjectMocks
     private RecordingUnitService recordingUnitService;
@@ -130,13 +130,17 @@ class RecordingUnitServiceTest {
         // @InjectMocks uses constructor injection here, which skips leftover fields like the
         // @PersistenceContext EntityManager - wire it explicitly so save() can call it.
         org.springframework.test.util.ReflectionTestUtils.setField(recordingUnitService, "entityManager", entityManager);
-        // The specification building moved to RecordingUnitFilterService, but the search/count
+        // The specification building moved to RecordingUnitSortFilterService, but the search/count
         // tests below assert on the real closure behaviour (which repository calls it makes, and
         // when). Route the collaborator through a real instance backed by the same repository mock
         // rather than stubbing a specification per test.
-        RecordingUnitFilterService realFilters = new RecordingUnitFilterService(recordingUnitRepository);
-        lenient().when(recordingUnitFilterService.prepareSpecs(any(), any()))
-                .thenAnswer(invocation -> realFilters.prepareSpecs(invocation.getArgument(0), invocation.getArgument(1)));
+        RecordingUnitSortFilterService realSortFilter = new RecordingUnitSortFilterService(recordingUnitRepository);
+        lenient().when(recordingUnitSortFilterService.prepareSpecs(any(), any()))
+                .thenAnswer(invocation -> realSortFilter.prepareSpecs(invocation.getArgument(0), invocation.getArgument(1)));
+        lenient().when(recordingUnitSortFilterService.applySyntheticSort(any(), any()))
+                .thenAnswer(invocation -> realSortFilter.applySyntheticSort(invocation.getArgument(0), invocation.getArgument(1)));
+        lenient().when(recordingUnitSortFilterService.stripSyntheticSort(any()))
+                .thenAnswer(invocation -> realSortFilter.stripSyntheticSort(invocation.getArgument(0)));
     }
 
     @AfterEach
@@ -2302,7 +2306,7 @@ class RecordingUnitServiceTest {
 
     // =====================================================================
     // initializeHierarchy
-    // (prepareSpecs / userFilterSpecs / closures : voir RecordingUnitFilterServiceTest)
+    // (prepareSpecs / userFilterSpecs / closures : voir RecordingUnitSortFilterServiceTest)
     // =====================================================================
 
     @Nested
