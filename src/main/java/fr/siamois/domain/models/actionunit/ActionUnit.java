@@ -255,7 +255,7 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
             joinColumns = {@JoinColumn(name = "fk_action_unit_id")},
             inverseJoinColumns = {@JoinColumn(name = "fk_concept_id")}
     )
-    protected Set<Concept> periods = new HashSet<>();
+    private Set<Concept> periods = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -263,7 +263,7 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
             joinColumns = {@JoinColumn(name = "fk_action_unit_id")},
             inverseJoinColumns = {@JoinColumn(name = "fk_concept_id")}
     )
-    protected Set<Concept> subjects = new HashSet<>();
+    private Set<Concept> subjects = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {
