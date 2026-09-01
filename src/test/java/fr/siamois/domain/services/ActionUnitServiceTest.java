@@ -13,6 +13,7 @@ import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveExcept
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -1837,7 +1838,7 @@ class ActionUnitServiceTest {
 
         assertThat(result).isEmpty();
         verifyNoInteractions(institutionService);
-        verifyNoInteractions(personProfileAssignmentService);
+        verifyNoInteractions(profilePermissionService);
         verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(any());
     }
 
@@ -1849,7 +1850,7 @@ class ActionUnitServiceTest {
 
         assertThat(result).isEmpty();
         verifyNoInteractions(institutionService);
-        verifyNoInteractions(personProfileAssignmentService);
+        verifyNoInteractions(profilePermissionService);
         verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(any());
     }
 
@@ -1870,8 +1871,8 @@ class ActionUnitServiceTest {
 
         when(institutionService.findInstitutionsOfPerson(user))
                 .thenReturn(new LinkedHashSet<>(List.of(managedInstitution, otherInstitution)));
-        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(managedInstitution, user)).thenReturn(true);
-        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(otherInstitution, user)).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(user, managedInstitution, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(user, otherInstitution, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
         when(actionUnitRepository.findAllByCreatedByInstitutionId(1L)).thenReturn(List.of(au1, au2));
         when(actionUnitMapper.convert(au1)).thenReturn(dto1);
         when(actionUnitMapper.convert(au2)).thenReturn(dto2);
@@ -1892,7 +1893,7 @@ class ActionUnitServiceTest {
         institution.setId(1L);
 
         when(institutionService.findInstitutionsOfPerson(user)).thenReturn(Set.of(institution));
-        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(institution, user)).thenReturn(false);
+        when(profilePermissionService.hasOrganizationPermission(user, institution, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
 
         Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
 
@@ -1910,7 +1911,7 @@ class ActionUnitServiceTest {
         Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
 
         assertThat(result).isEmpty();
-        verifyNoInteractions(personProfileAssignmentService);
+        verifyNoInteractions(profilePermissionService);
         verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(any());
     }
 
@@ -1931,7 +1932,7 @@ class ActionUnitServiceTest {
 
         when(institutionService.findInstitutionsOfPerson(user))
                 .thenReturn(new LinkedHashSet<>(List.of(institution1, institution2)));
-        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(any(InstitutionDTO.class), eq(user))).thenReturn(true);
+        when(profilePermissionService.hasOrganizationPermission(eq(user), any(InstitutionDTO.class), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
         when(actionUnitRepository.findAllByCreatedByInstitutionId(1L)).thenReturn(List.of(shared));
         when(actionUnitRepository.findAllByCreatedByInstitutionId(2L)).thenReturn(List.of(shared, au2));
         when(actionUnitMapper.convert(shared)).thenReturn(sharedDto);

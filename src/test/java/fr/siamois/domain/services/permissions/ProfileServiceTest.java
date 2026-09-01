@@ -3,6 +3,8 @@ package fr.siamois.domain.services.permissions;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.Permission;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -23,6 +25,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -78,20 +82,37 @@ class ProfileServiceTest {
     }
 
     @Test
-    void createOrGetSuperadminProfile_WhenAlreadyExists_ReturnsExisting() {
-        when(profileRepository.findByCode(ProfileConstants.SUPERADMIN)).thenReturn(Optional.of(existingProfile));
+    void createOrGetSuperadminProfile_WhenAlreadyExistsWithEveryPermission_ReturnsExistingUnchanged() {
+        Profile superadmin = superadminProfileHolding(SUPERADMIN_PERMISSION_CODES);
+        when(profileRepository.findByCode(ProfileConstants.SUPERADMIN)).thenReturn(Optional.of(superadmin));
 
         Profile result = profileService.createOrGetSuperadminProfile();
 
-        assertEquals(existingProfile, result);
+        assertSame(superadmin, result);
         verify(permissionRepository, never()).findByCode(anyString());
         verify(profileRepository, never()).save(any());
     }
 
     @Test
+    void createOrGetSuperadminProfile_WhenAlreadyExistsWithoutProjectPermissions_GrantsThemAndSaves() {
+        Profile superadmin = superadminProfileHolding(List.of(
+                PermissionConstants.INSTANCE_MANAGE_SETTINGS,
+                PermissionConstants.ORGANIZATION_CREATE,
+                PermissionConstants.ORGANIZATION_ACCESS));
+        when(profileRepository.findByCode(ProfileConstants.SUPERADMIN)).thenReturn(Optional.of(superadmin));
+        stubPermissionLookupByCode();
+        when(profileRepository.save(any(Profile.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Profile result = profileService.createOrGetSuperadminProfile();
+
+        assertEquals(Set.copyOf(SUPERADMIN_PERMISSION_CODES), permissionCodesOf(result));
+        verify(profileRepository, times(1)).save(superadmin);
+    }
+
+    @Test
     void createOrGetSuperadminProfile_WhenDoesNotExist_CreatesAndReturnsNew() {
         when(profileRepository.findByCode(ProfileConstants.SUPERADMIN)).thenReturn(Optional.empty());
-        when(permissionRepository.findByCode(anyString())).thenReturn(Optional.of(mockPermission));
+        stubPermissionLookupByCode();
         when(profileRepository.save(any(Profile.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Profile result = profileService.createOrGetSuperadminProfile();
@@ -99,8 +120,41 @@ class ProfileServiceTest {
         assertNotNull(result);
         assertEquals(ProfileConstants.SUPERADMIN, result.getCode());
         assertEquals("Super administrateur", result.getName());
+        assertEquals(PermissionScopeType.INSTANCE, result.getScope());
+        assertEquals(Set.copyOf(SUPERADMIN_PERMISSION_CODES), permissionCodesOf(result));
 
         verify(profileRepository, times(1)).save(any(Profile.class));
+    }
+
+    private static final List<String> SUPERADMIN_PERMISSION_CODES = List.of(
+            PermissionConstants.INSTANCE_MANAGE_SETTINGS,
+            PermissionConstants.ORGANIZATION_CREATE,
+            PermissionConstants.ORGANIZATION_ACCESS,
+            PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
+            PermissionConstants.PROJECT_MANAGE_SETTINGS);
+
+    private Profile superadminProfileHolding(List<String> permissionCodes) {
+        Profile profile = new Profile();
+        profile.setId(999L);
+        profile.setCode(ProfileConstants.SUPERADMIN);
+        profile.setScope(PermissionScopeType.INSTANCE);
+        permissionCodes.forEach(code -> profile.getPermissions().add(permissionWithCode(code)));
+        return profile;
+    }
+
+    private void stubPermissionLookupByCode() {
+        when(permissionRepository.findByCode(anyString()))
+                .thenAnswer(invocation -> Optional.of(permissionWithCode(invocation.getArgument(0))));
+    }
+
+    private static Permission permissionWithCode(String code) {
+        Permission permission = new Permission();
+        permission.setCode(code);
+        return permission;
+    }
+
+    private static Set<String> permissionCodesOf(Profile profile) {
+        return profile.getPermissions().stream().map(Permission::getCode).collect(Collectors.toSet());
     }
 
     @Test

@@ -28,15 +28,23 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
 
     /**
      * Institutions the person is allowed to display, based on the profile permission system:
-     * an INSTANCE-scoped profile holding one of {@code instancePermissionCodes} grants every institution,
-     * an ORGANISATION-scoped profile holding {@code organizationAccessCode} grants its institution,
-     * and a PROJECT-scoped profile grants the institution owning its action unit.
+     * an INSTANCE-scoped profile holding {@code ORGANIZATION_ACCESS} grants every institution of the
+     * instance (this is how the superadmin reaches organizations they are not a member of), while an
+     * ORGANISATION-scoped profile grants its institution and a PROJECT-scoped profile grants the
+     * institution owning its action unit.
      */
     @Query("""
-            SELECT DISTINCT i FROM PersonProfileAssignment a
-                        JOIN a.profile prof
-                        JOIN prof.institution i
-                        WHERE a.person.id = :personId
+            SELECT DISTINCT i FROM Institution i
+            WHERE EXISTS (SELECT 1 FROM PersonProfileAssignment a
+                          JOIN a.profile prof
+                          JOIN prof.permissions perm
+                          WHERE a.person.id = :personId
+                            AND prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.INSTANCE
+                            AND perm.code = fr.siamois.domain.models.permissions.PermissionConstants.ORGANIZATION_ACCESS)
+               OR EXISTS (SELECT 1 FROM PersonProfileAssignment a
+                          JOIN a.profile prof
+                          WHERE a.person.id = :personId
+                            AND prof.institution.id = i.id)
             """)
     Set<Institution> findAllVisibleToPerson(Long personId);
 
