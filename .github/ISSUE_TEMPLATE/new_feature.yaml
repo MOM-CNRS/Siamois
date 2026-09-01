@@ -3,6 +3,7 @@ description: Create a new ticket to request a feature.
 title: "[Feature Request] - <title>"
 labels:
   - enhancement
+type: feature
 
 body:
   - type: dropdown

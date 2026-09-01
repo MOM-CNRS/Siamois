@@ -3,6 +3,7 @@ description: Créer un nouveau ticket pour proposer une fonctionnalité.
 title: "[Demande de fonctionnalité] - <titre>"
 labels:
   - enhancement
+type: feature
 
 body:
   - type: dropdown
