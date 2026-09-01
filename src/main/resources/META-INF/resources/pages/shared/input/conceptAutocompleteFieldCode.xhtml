@@ -48,6 +48,7 @@
                         placeholder="#{langBean.msg('common.action.chooseConcept')}"
                         showEmptyMessage="false"
                         maxResults="#{fieldConfigurationService.resultLimit()}"
+                        dropdown="true"
         >
             <f:attribute name="fieldCode" value="#{spatialUnitFieldBean.resolveFieldCode(cc.attrs.field)}" />
             <f:attribute name="field" value="#{cc.attrs.field}" />
