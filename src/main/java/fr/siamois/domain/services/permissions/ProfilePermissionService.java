@@ -206,12 +206,22 @@ public class ProfilePermissionService {
         return actionUnit != null && hasProjectPermission(user, actionUnit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
+    /**
+     * Checks if the person can activate the given institution, i.e. holds a profile in it, may manage
+     * its settings, or may view its data — the latter covering the INSTANCE-scoped superadmin, who
+     * reaches every organization of the instance without being a member of any.
+     *
+     * @param person      the person to check
+     * @param institution the institution to activate
+     * @return true if the person can activate the institution
+     */
     public boolean canAccessInstitution(PersonDTO person, InstitutionDTO institution) {
         if (person == null || person.getId() == null || institution == null || institution.getId() == null) {
             return false;
         }
         return assignmentRepository.personHasAnyProfileInInstitution(person.getId(), institution.getId())
-                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS)
+                || canViewInstitutionData(person, institution);
     }
 
     /**
