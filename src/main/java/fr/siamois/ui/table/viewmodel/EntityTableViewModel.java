@@ -68,7 +68,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Slf4j
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
-    private static final List<Integer> ROW_PER_PAGE = List.of(10, 50, 100);
+    private static final List<Integer> ROW_PER_PAGE = List.of(10, 25, 50);
     public static final String CONTAINER = "-container');";
     public static final int LIMIT = 100;
     public static final String LABEL = "label";
