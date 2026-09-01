@@ -193,10 +193,8 @@ class SpecimenSeederTest {
         seeder.seed(toInsert, 1L);
 
         verify(specimenRepository, times(1)).saveAll(argThat(list -> {
-            for (var sp : list) {
-                return sp.getActionUnit() == ru.getActionUnit();
-            }
-            return false;
+            var it = list.iterator();
+            return it.hasNext() && it.next().getActionUnit() == ru.getActionUnit();
         }));
     }
 }
