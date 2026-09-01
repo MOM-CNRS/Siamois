@@ -424,42 +424,63 @@ class OOXMLImportServiceTest {
 
         RecordingUnitSeeder.RecordingUnitSpecs ru = specs.get(0);
 
-        assertThat(ru.fullIdentifier()).isEqualTo("123");
-        assertThat(ru.identifier()).isEqualTo(123);
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::fullIdentifier,
+                RecordingUnitSeeder.RecordingUnitSpecs::identifier
+        ).containsExactly("123", 123);
 
-        assertThat(ru.type()).isEqualTo(new ConceptSeeder.ConceptKey("th1", "10"));
-        assertThat(ru.geomorphologicalCycle()).isEqualTo(new ConceptSeeder.ConceptKey("th2", "20"));
-        assertThat(ru.geomorphologicalAgent()).isEqualTo(new ConceptSeeder.ConceptKey("th3", "30"));
-        assertThat(ru.interpretation()).isEqualTo(new ConceptSeeder.ConceptKey("th4", "40"));
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::type,
+                RecordingUnitSeeder.RecordingUnitSpecs::geomorphologicalCycle,
+                RecordingUnitSeeder.RecordingUnitSpecs::geomorphologicalAgent,
+                RecordingUnitSeeder.RecordingUnitSpecs::interpretation,
+                RecordingUnitSeeder.RecordingUnitSpecs::erosionShape,
+                RecordingUnitSeeder.RecordingUnitSpecs::erosionOrientation,
+                RecordingUnitSeeder.RecordingUnitSpecs::erosionProfile,
+                RecordingUnitSeeder.RecordingUnitSpecs::chronologicalAttribution
+        ).containsExactly(
+                new ConceptSeeder.ConceptKey("th1", "10"),
+                new ConceptSeeder.ConceptKey("th2", "20"),
+                new ConceptSeeder.ConceptKey("th3", "30"),
+                new ConceptSeeder.ConceptKey("th4", "40"),
+                new ConceptSeeder.ConceptKey("th5", "50"),
+                new ConceptSeeder.ConceptKey("th6", "60"),
+                new ConceptSeeder.ConceptKey("th7", "70"),
+                new ConceptSeeder.ConceptKey("th8", "80")
+        );
 
-        assertThat(ru.authorEmail()).isEqualTo("author@site.fr");
-        assertThat(ru.institutionIdentifier()).isEqualTo("INST");
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::authorEmail,
+                RecordingUnitSeeder.RecordingUnitSpecs::institutionIdentifier,
+                RecordingUnitSeeder.RecordingUnitSpecs::createdBy
+        ).containsExactly("author@site.fr", "INST", ImportSchema.SIAMOIS_SYSTEM);
+
         assertThat(ru.excavators()).containsExactly("a@b.fr", "c@d.fr");
 
-        assertThat(ru.beginDate()).isEqualTo(
-                OffsetDateTime.of(2023, 1, 10, 0, 0, 0, 0, ZoneOffset.UTC)
-        );
-        assertThat(ru.endDate()).isEqualTo(
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::beginDate,
+                RecordingUnitSeeder.RecordingUnitSpecs::endDate
+        ).containsExactly(
+                OffsetDateTime.of(2023, 1, 10, 0, 0, 0, 0, ZoneOffset.UTC),
                 OffsetDateTime.of(2023, 2, 20, 0, 0, 0, 0, ZoneOffset.UTC)
         );
 
         assertThat(ru.spatialUnitName().unitName()).isEqualTo("US-01");
         assertThat(ru.actionUnitIdentifier().fullIdentifier()).isEqualTo("UA-99");
 
-        assertThat(ru.matrixColor()).isEqualTo("Brun");
-        assertThat(ru.matrixComposition()).isEqualTo("Argile");
-        assertThat(ru.matrixTexture()).isEqualTo("Sableux");
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::matrixColor,
+                RecordingUnitSeeder.RecordingUnitSpecs::matrixComposition,
+                RecordingUnitSeeder.RecordingUnitSpecs::matrixTexture
+        ).containsExactly("Brun", "Argile", "Sableux");
 
-        assertThat(ru.createdBy()).isEqualTo(ImportSchema.SIAMOIS_SYSTEM);
         assertThat(ru.creationTime()).isNotNull();
 
-        assertThat(ru.comments()).isEqualTo("Un commentaire");
-        assertThat(ru.taq()).isEqualTo(-500);
-        assertThat(ru.tpq()).isEqualTo(-100);
-        assertThat(ru.erosionShape()).isEqualTo(new ConceptSeeder.ConceptKey("th5", "50"));
-        assertThat(ru.erosionOrientation()).isEqualTo(new ConceptSeeder.ConceptKey("th6", "60"));
-        assertThat(ru.erosionProfile()).isEqualTo(new ConceptSeeder.ConceptKey("th7", "70"));
-        assertThat(ru.chronologicalAttribution()).isEqualTo(new ConceptSeeder.ConceptKey("th8", "80"));
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::comments,
+                RecordingUnitSeeder.RecordingUnitSpecs::taq,
+                RecordingUnitSeeder.RecordingUnitSpecs::tpq
+        ).containsExactly("Un commentaire", -500, -100);
 
         // header is Excel row 1, this is the first data row -> Excel row 2, not list position 1.
         assertThat(ru.excelRowNumber()).isEqualTo(2);
