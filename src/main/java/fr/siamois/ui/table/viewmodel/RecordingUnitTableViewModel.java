@@ -269,9 +269,9 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
                         .styleClass(SIA_ICON_BTN)
                         .build(),
 
-                // Add children
+                // Add parent
                 RowAction.builder()
-                        .action(TableColumnAction.NEW_CHILDREN)
+                        .action(TableColumnAction.NEW_PARENT)
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)
@@ -279,7 +279,7 @@ public class RecordingUnitTableViewModel extends EntityTableViewModel<RecordingU
 
                 // Add children
                 RowAction.builder()
-                        .action(TableColumnAction.NEW_PARENT)
+                        .action(TableColumnAction.NEW_CHILDREN)
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)

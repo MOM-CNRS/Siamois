@@ -158,11 +158,16 @@ body .ui-datatable .ui-datatable-data > tr.ui-state-highlight {
 }
 
 .rotate-90 {
-  transform: rotate(90deg);
+  /* bi-node-plus-fill isn't visually centered in its glyph box, so a plain
+     rotate leaves the "+" node off-center and reads as a gap next to the
+     other row-action icons; nudge it back after rotating (order matters:
+     translate must come first so it applies in screen space, after the
+     rotation). */
+  transform:   translateY(-0.25em) translateX(-0.25em) rotate(90deg);
 }
 
 .rotate-minus90 {
-  transform: rotate(-90deg);
+  transform:   translateY(-0.25em) translateX(0.25em) rotate(-90deg);
 }
 
 /* below is fixing horizontal scrolling for treetable */

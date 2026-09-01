@@ -164,6 +164,7 @@
                     <div class="mca-row-actions">
                         <ui:repeat value="#{tableModel.rowActions}" var="action">
                             <p:commandButton
+                                    id="btnAction"
                                     disabled="#{not tableModel.isRendered(action, item)}"
                                     style="#{tableModel.isRendered(action, item) ? '' : 'visibility:hidden'}"
                                     icon="#{tableModel.resolveIcon(action, item)}"
@@ -171,6 +172,12 @@
                                     process="#{empty action.processExpr ? '@this' : action.processExpr}"
                                     update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityDatatable')) : action.updateExpr}"
                                     styleClass="#{action.styleClass}"/>
+                            <p:tooltip
+                                    id="btnActionTooltip"
+                                    autoHide="false"
+                                    value="#{tableModel.getRowActionTooltipCode(action, item)}"
+                                    position="bottom"
+                                    for="btnAction"/>
                         </ui:repeat>
                     </div>
 
