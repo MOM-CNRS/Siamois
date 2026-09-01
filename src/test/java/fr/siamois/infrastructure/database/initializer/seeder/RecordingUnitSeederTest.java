@@ -152,8 +152,9 @@ class RecordingUnitSeederTest {
                 original.erosionOrientation(), original.erosionProfile(), original.chronologicalAttribution(),
                 42);
 
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specsWithRealRow = List.of(withRealRow);
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(List.of(withRealRow)));
+                () -> seeder.seed(specsWithRealRow));
 
         assertThat(ex.getMessage()).contains("[UE ligne 42]");
     }
