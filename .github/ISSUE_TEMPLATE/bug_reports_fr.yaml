@@ -3,6 +3,7 @@ description: Créer un nouveau ticket pour signaler un bug.
 title: "[Bug] - <titre>"
 labels:
   - bug
+type: bug
 
 body:
   - type: textarea
