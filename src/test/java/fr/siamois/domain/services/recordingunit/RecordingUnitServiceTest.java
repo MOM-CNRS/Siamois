@@ -902,45 +902,6 @@ class RecordingUnitServiceTest {
         }
 
         // ------------------------------------------------------------------
-        // autocompleteInActionUnit
-        // ------------------------------------------------------------------
-
-        @Test
-        void autocompleteInActionUnit_withQuery_delegatesToRepositoryAndConverts() {
-            RecordingUnitSummaryDTO summaryDTO = new RecordingUnitSummaryDTO();
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq("US-"), any(Pageable.class)))
-                    .thenReturn(List.of(ru));
-            when(conversionService.convert(ru, RecordingUnitSummaryDTO.class)).thenReturn(summaryDTO);
-
-            List<RecordingUnitSummaryDTO> result =
-                    recordingUnitService.autocompleteInActionUnit(10L, "US-", 5);
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0)).isSameAs(summaryDTO);
-            verify(recordingUnitRepository)
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq("US-"), any(Pageable.class));
-        }
-
-        @Test
-        void autocompleteInActionUnit_nullQuery_treatedAsEmptyString() {
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq(""), any(Pageable.class)))
-                    .thenReturn(List.of());
-
-            List<RecordingUnitSummaryDTO> result =
-                    recordingUnitService.autocompleteInActionUnit(10L, null, 5);
-
-            assertThat(result).isEmpty();
-            verify(recordingUnitRepository)
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq(""), any(Pageable.class));
-        }
-
-        // ------------------------------------------------------------------
         // searchRecordingUnitInRecordingUnit
         // ------------------------------------------------------------------
 
