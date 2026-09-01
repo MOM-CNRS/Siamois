@@ -19,7 +19,7 @@ BEGIN
         p_min_code + 1
     )
     ON CONFLICT (fk_action_unit_id, fk_form_config_id, canonical_key)
-    DO UPDATE SET counter = identifier_counter.counter + 1
+    DO UPDATE SET counter = GREATEST(identifier_counter.counter, p_min_code) + 1
     RETURNING counter - 1 INTO v_allocated;
 
     RETURN v_allocated;

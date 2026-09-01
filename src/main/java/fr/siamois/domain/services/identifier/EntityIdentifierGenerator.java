@@ -8,6 +8,7 @@ import fr.siamois.infrastructure.database.repositories.identifier.IdentifierCoun
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.PersistenceContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.util.function.Predicate;
 
 /** One allocator/rendering transaction shared by every configurable entity table. */
 @Service
+@RequiredArgsConstructor
 public class EntityIdentifierGenerator {
     private final TableFieldConfigService tableFieldConfigService;
     private final IdentifierResolverRegistry resolverRegistry;
@@ -28,16 +30,6 @@ public class EntityIdentifierGenerator {
 
     @PersistenceContext
     private EntityManager entityManager;
-
-    public EntityIdentifierGenerator(TableFieldConfigService tableFieldConfigService,
-                                     IdentifierResolverRegistry resolverRegistry,
-                                     IdentifierPartitionService partitionService,
-                                     IdentifierCounterRepository counterRepository) {
-        this.tableFieldConfigService = tableFieldConfigService;
-        this.resolverRegistry = resolverRegistry;
-        this.partitionService = partitionService;
-        this.counterRepository = counterRepository;
-    }
 
     public GeneratedIdentifier generate(ConfigurableTable table,
                                         ActionUnit actionUnit,
@@ -52,10 +44,8 @@ public class EntityIdentifierGenerator {
                 actionUnit.getId(), table, typeConceptId);
         validateRange(config);
 
-        Map<String, Object> values = new HashMap<>();
-        displayValues.forEach(values::put);
-        Map<String, Object> partitions = new HashMap<>();
-        partitionValues.forEach(partitions::put);
+        Map<String, Object> values = new HashMap<>(displayValues);
+        Map<String, Object> partitions = new HashMap<>(partitionValues);
         MapIdentifierRenderContext context = new MapIdentifierRenderContext(values, partitions);
         String canonicalKey = partitionService.canonicalKey(table, config.getIdentifierFormat(), context);
 
