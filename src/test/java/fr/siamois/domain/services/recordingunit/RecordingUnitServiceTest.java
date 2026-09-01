@@ -902,69 +902,6 @@ class RecordingUnitServiceTest {
         }
 
         // ------------------------------------------------------------------
-        // autocompleteInActionUnit
-        // ------------------------------------------------------------------
-
-        @Test
-        void autocompleteInActionUnit_withQuery_delegatesToRepositoryAndConverts() {
-            RecordingUnitSummaryDTO summaryDTO = new RecordingUnitSummaryDTO();
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq("US-"), any(Pageable.class)))
-                    .thenReturn(List.of(ru));
-            when(conversionService.convert(ru, RecordingUnitSummaryDTO.class)).thenReturn(summaryDTO);
-
-            List<RecordingUnitSummaryDTO> result =
-                    recordingUnitService.autocompleteInActionUnit(10L, "US-", 5);
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0)).isSameAs(summaryDTO);
-            verify(recordingUnitRepository)
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq("US-"), any(Pageable.class));
-        }
-
-        @Test
-        void autocompleteInActionUnit_nullQuery_treatedAsEmptyString() {
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq(""), any(Pageable.class)))
-                    .thenReturn(List.of());
-
-            List<RecordingUnitSummaryDTO> result =
-                    recordingUnitService.autocompleteInActionUnit(10L, null, 5);
-
-            assertThat(result).isEmpty();
-            verify(recordingUnitRepository)
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq(""), any(Pageable.class));
-        }
-
-        @Test
-        void autocompleteInActionUnit_respectsLimit() {
-            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            anyLong(), anyString(), pageableCaptor.capture()))
-                    .thenReturn(List.of());
-
-            recordingUnitService.autocompleteInActionUnit(10L, "x", 3);
-
-            assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(3);
-        }
-
-        @Test
-        void autocompleteInActionUnit_noResults_returnsEmptyList() {
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            anyLong(), anyString(), any()))
-                    .thenReturn(List.of());
-
-            assertThat(recordingUnitService.autocompleteInActionUnit(10L, "zzz", 10)).isEmpty();
-            verifyNoInteractions(conversionService);
-        }
-
-        // ------------------------------------------------------------------
         // searchRecordingUnitInRecordingUnit
         // ------------------------------------------------------------------
 

@@ -1184,9 +1184,7 @@ public class RecordingUnitService implements ArkEntityService {
 
     public List<RecordingUnitSummaryDTO> autocompleteInActionUnit(@NotNull Long actionUnitId, String query, int limit) {
         return recordingUnitRepository
-                .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                        actionUnitId, query == null ? "" : query,
-                        org.springframework.data.domain.PageRequest.of(0, limit))
+                .findByActionUnitIdAndFullIdentifierStartingWithLimited(actionUnitId, query == null ? "" : query, limit)
                 .stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitSummaryDTO.class))
                 .toList();
