@@ -207,9 +207,8 @@ public class ProfilePermissionService {
     }
 
     /**
-     * Checks if the person can activate the given institution, i.e. holds a profile in it, may manage
-     * its settings, or may view its data — the latter covering the INSTANCE-scoped superadmin, who
-     * reaches every organization of the instance without being a member of any.
+     * Checks if the person can activate the given institution, i.e. holds a profile in it or may
+     * manage its settings.
      *
      * @param person      the person to check
      * @param institution the institution to activate
@@ -220,8 +219,7 @@ public class ProfilePermissionService {
             return false;
         }
         return assignmentRepository.personHasAnyProfileInInstitution(person.getId(), institution.getId())
-                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS)
-                || canViewInstitutionData(person, institution);
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
     }
 
     /**

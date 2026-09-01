@@ -7,6 +7,7 @@ import fr.siamois.domain.models.permissions.Permission;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
@@ -36,6 +37,7 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
     private final ProfileService profileService;
     private final InstitutionRepository institutionRepository;
     private final InstitutionMapper institutionMapper;
+    private final PersonProfileAssignmentService personProfileAssignmentService;
 
     @Value("${siamois.admin.username}")
     private String adminUsername;
@@ -75,10 +77,28 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
         }
     }
 
-    private void initializeDefaultInstitutionPermissions(InstitutionDTO institution) {
+    private void initializeInstitutionPermissions(InstitutionDTO institution) {
         profileService.createOrGetOrganizationManagerProfile(institution);
         profileService.createOrGetOrganizationProjectManagerProfile(institution);
         profileService.createOrGetOrganizationMemberProfile(institution);
+    }
+
+    /**
+     * Creates the organization profiles of every existing institution and puts every superadmin among
+     * its managers. A superadmin holds no instance-wide grant over organization data: they reach an
+     * organization only through its
+     * {@link fr.siamois.domain.models.permissions.ProfileConstants#ORGANIZATION_MANAGER} profile, which
+     * this catches up here for the organizations that existed before the superadmin did.
+     */
+    private void assignSuperAdminsToExistingInstitutions() {
+        for (Institution institution : institutionRepository.findAll()) {
+            InstitutionDTO institutionDTO = institutionMapper.convert(institution);
+            if (institutionDTO == null) {
+                continue;
+            }
+            initializeInstitutionPermissions(institutionDTO);
+            personProfileAssignmentService.assignSuperAdminsAsOrganizationManagers(institutionDTO);
+        }
     }
 
     @Override
@@ -91,14 +111,9 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
 
         assignProfilIfMissing(superAdmin, admin);
 
-        Institution defaultInstitution = institutionRepository.findInstitutionByIdentifier("siamois")
+        institutionRepository.findInstitutionByIdentifier("siamois")
                 .orElseThrow(() -> new DatabaseDataInitException("Default Institution not found"));
-        InstitutionDTO institutionDTO = institutionMapper.convert(defaultInstitution);
-        assert institutionDTO != null;
-        initializeDefaultInstitutionPermissions(institutionDTO);
-        Profile organizationManager = profileService
-                .createOrGetOrganizationManagerProfile(institutionDTO);
 
-        assignProfilIfMissing(organizationManager, admin);
+        assignSuperAdminsToExistingInstitutions();
     }
 }

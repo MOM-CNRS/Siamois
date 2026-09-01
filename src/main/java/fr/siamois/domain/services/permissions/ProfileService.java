@@ -14,24 +14,26 @@ import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
 
+    /**
+     * The superadmin holds instance-level permissions only. Access to the data of an organization
+     * comes from the {@link ProfileConstants#ORGANIZATION_MANAGER} profile they are assigned in every
+     * organization, not from an instance-wide grant — see
+     * {@code PersonProfileAssignmentService#assignSuperAdminsAsOrganizationManagers}.
+     */
     private static final List<String> SUPERADMIN_PERMISSIONS = List.of(
             PermissionConstants.INSTANCE_MANAGE_SETTINGS,
             PermissionConstants.ORGANIZATION_CREATE,
-            PermissionConstants.ORGANIZATION_ACCESS,
-            PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
-            PermissionConstants.PROJECT_MANAGE_SETTINGS
+            PermissionConstants.ORGANIZATION_ACCESS
     );
 
     private final PermissionRepository permissionRepository;
@@ -48,10 +50,9 @@ public class ProfileService {
 
 
     @NonNull
-    @Transactional
     public Profile createOrGetSuperadminProfile() {
         Optional<Profile> profile = profileRepository.findByCode(ProfileConstants.SUPERADMIN);
-        if (profile.isPresent()) return grantMissingPermissions(profile.get(), SUPERADMIN_PERMISSIONS);
+        if (profile.isPresent()) return profile.get();
 
         Set<Permission> profilePermission = new HashSet<>();
         for (String permissionCode : SUPERADMIN_PERMISSIONS) {
@@ -66,31 +67,6 @@ public class ProfileService {
                 .build();
 
         return profileRepository.save(superAdmin);
-    }
-
-    /**
-     * Grants a persisted system profile the permissions it does not hold yet, so that a profile created
-     * by an earlier version of the application picks up the permissions this version grants it. Existing
-     * permissions are never removed.
-     *
-     * @param profile         the persisted profile to reconcile
-     * @param permissionCodes the {@link PermissionConstants} codes the profile must hold
-     * @return the profile, saved again if it was missing permissions
-     */
-    @NonNull
-    private Profile grantMissingPermissions(@NonNull Profile profile, List<String> permissionCodes) {
-        Set<String> heldCodes = profile.getPermissions().stream()
-                .map(Permission::getCode)
-                .collect(Collectors.toSet());
-        List<Permission> missing = permissionCodes.stream()
-                .filter(code -> !heldCodes.contains(code))
-                .map(this::findOrThrowPermission)
-                .toList();
-        if (missing.isEmpty()) {
-            return profile;
-        }
-        profile.getPermissions().addAll(missing);
-        return profileRepository.save(profile);
     }
 
     @NonNull

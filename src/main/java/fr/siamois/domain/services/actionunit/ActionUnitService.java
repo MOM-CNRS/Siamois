@@ -902,10 +902,8 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * All action units the person may manage, across every institution visible to them. The check is
-     * permission-based rather than profile-based, so an INSTANCE-scoped grant of
-     * {@link PermissionConstants#ORGANIZATION_MANAGE_ACTIONS} (the superadmin) yields the projects of
-     * every organization of the instance.
+     * All action units the person may manage, across every institution visible to them: those of each
+     * institution where they hold the organization manager or project manager profile.
      *
      * @param user the person whose editable action units to find
      * @return the action units the person may manage
@@ -918,7 +916,7 @@ public class ActionUnitService implements ArkEntityService {
         Set<ActionUnitDTO> actionUnits = new HashSet<>();
 
         for (InstitutionDTO institutionDTO : institutionService.findInstitutionsOfPerson(user)) {
-            if (profilePermissionService.hasOrganizationPermission(user, institutionDTO, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+            if (personProfileAssignmentService.isOrganizationManagerOrProjectManager(institutionDTO, user)) {
                 List<ActionUnit> institutionActionUnits = actionUnitRepository.findAllByCreatedByInstitutionId(institutionDTO.getId());
                 actionUnits.addAll(institutionActionUnits.stream().map(actionUnitMapper::convert).collect(Collectors.toSet()));
             }
