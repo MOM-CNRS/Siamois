@@ -3,7 +3,6 @@ package fr.siamois.infrastructure.database.repositories.specs;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
-import fr.siamois.domain.models.permissions.Profile;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
@@ -24,7 +23,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
