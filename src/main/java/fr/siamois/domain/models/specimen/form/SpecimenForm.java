@@ -353,6 +353,7 @@ public abstract class SpecimenForm {
             .label("specimen.field.chronologicalAttribution")
             .isSystemField(true)
             .id(-416L)
+            .fieldCode(Specimen.CHRONOLOGICAL_ATTRIBUTION_FIELD)
             .valueBinding("chronologicalAttribution")
             .concept(chronologicalAttributionConcept)
             .build();
