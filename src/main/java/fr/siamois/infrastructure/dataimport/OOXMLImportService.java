@@ -497,7 +497,8 @@ public class OOXMLImportService {
                 us1, us2, relKey,
                 "True".equals(direction),
                 "True".equals(asynchrone),
-                "True".equals(incertain)));
+                "True".equals(incertain),
+                row.getRowNum() + 1));
     }
 
     public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(Sheet sheet) {
@@ -716,7 +717,8 @@ public class OOXMLImportService {
                 erosionShape,
                 erosionOrientation,
                 erosionProfile,
-                chronologicalAttribution
+                chronologicalAttribution,
+                row.getRowNum() + 1
         ));
     }
 
@@ -822,7 +824,8 @@ public class OOXMLImportService {
                 collectionDate,
                 collectionMethod,
                 sanitaryState,
-                materialClass
+                materialClass,
+                row.getRowNum() + 1
         ));
     }
 
@@ -869,7 +872,7 @@ public class OOXMLImportService {
 
                     result.add(new PhaseSeeder.PhaseSpecs(
                             identifier, title, type, description, orderNumber, lowerBound, upperBound, authorEmail, actionKey,
-                            periods, keywords));
+                            periods, keywords, row.getRowNum() + 1));
                 });
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
@@ -945,17 +948,22 @@ public class OOXMLImportService {
     private ConceptSeeder.ConceptKey conceptKeyFromColumnOrLabel(Row row, Map<String, Integer> cols, String uriKey, String labelKey,
                                                                   String fieldCode, Long institutionId) {
         String uri = getStringCellOrNull(row, cols, uriKey);
-        if (uri != null && !uri.isBlank()) {
-            return conceptKeyFromColumn(row, cols, uriKey);
-        }
         String label = getStringCellOrNull(row, cols, labelKey);
+        if (uri != null && !uri.isBlank()) {
+            ConceptSeeder.ConceptKey key = conceptKeyFromColumn(row, cols, uriKey);
+            if (key == null) return null;
+            // The label column may carry a human-readable hint even though the URI won the resolution —
+            // keep it on the key purely so a later "concept not found" error can show it, not for lookups.
+            return (label == null || label.isBlank()) ? key
+                    : new ConceptSeeder.ConceptKey(key.vocabularyExtId(), key.conceptExtId(), label);
+        }
         if (label == null || label.isBlank()) return null;
         if (institutionId == null) {
             throw new IllegalStateException("[colonne '" + labelKey + "'] : résolution par label indisponible hors contexte projet");
         }
         try {
             Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
-            return new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId());
+            return new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId(), label);
         } catch (Exception e) {
             throw new IllegalStateException("[colonne '" + labelKey + "'] : " + e.getMessage(), e);
         }
@@ -1002,7 +1010,7 @@ public class OOXMLImportService {
         for (String label : labels) {
             try {
                 Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
-                result.add(new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId()));
+                result.add(new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId(), label));
             } catch (Exception e) {
                 throw new IllegalStateException("[colonne '" + labelKey + "'] : " + e.getMessage(), e);
             }

@@ -460,6 +460,33 @@ class OOXMLImportServiceTest {
         assertThat(ru.erosionOrientation()).isEqualTo(new ConceptSeeder.ConceptKey("th6", "60"));
         assertThat(ru.erosionProfile()).isEqualTo(new ConceptSeeder.ConceptKey("th7", "70"));
         assertThat(ru.chronologicalAttribution()).isEqualTo(new ConceptSeeder.ConceptKey("th8", "80"));
+
+        // header is Excel row 1, this is the first data row -> Excel row 2, not list position 1.
+        assertThat(ru.excelRowNumber()).isEqualTo(2);
+    }
+
+    @Test
+    void parseRecordingUnits_excelRowNumber_isRealSheetRowNotListPosition() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description");
+        row(s, 1, "", "");            // blank row, skipped by parsing -> never added to the specs list
+        row(s, 2, "UE-002", "desc");  // first spec actually produced -> Excel row 3
+
+        RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.ALL, null).get(0);
+
+        assertThat(spec.excelRowNumber()).isEqualTo(3);
+    }
+
+    @Test
+    void parseRecordingUnits_typeUriAndLabelBothPresent_keyCarriesLabelForErrorMessages() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description", "type uri", "type label");
+        row(s, 1, "UE-001", "desc", "uri?idt=th1&idc=10", "Fosse");
+
+        RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.ALL, null).get(0);
+
+        assertThat(spec.type()).isEqualTo(new ConceptSeeder.ConceptKey("th1", "10"));
+        assertThat(spec.type().label()).isEqualTo("Fosse");
     }
 
     @Test

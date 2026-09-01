@@ -52,6 +52,8 @@ class RecordingUnitSeederTest {
     @Mock
     ConceptRepository conceptRepository;
     @Mock
+    ConceptSeeder conceptSeeder;
+    @Mock
     EntityManager entityManager;
 
     @InjectMocks
@@ -126,14 +128,41 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         null,
+                        null,
                         null
                 )
         );
     }
 
     @Test
+    void seed_errorMessage_usesRealExcelRowNumberWhenPresent() {
+        stubInstitutionFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
+
+        List<RecordingUnitSeeder.RecordingUnitSpecs> oneSpecList = oneSpec();
+        RecordingUnitSeeder.RecordingUnitSpecs original = oneSpecList.get(0);
+        RecordingUnitSeeder.RecordingUnitSpecs withRealRow = new RecordingUnitSeeder.RecordingUnitSpecs(
+                original.fullIdentifier(), original.identifier(), original.type(), original.geomorphologicalCycle(),
+                original.geomorphologicalAgent(), original.interpretation(), original.authorEmail(),
+                original.institutionIdentifier(), original.author(), original.createdBy(), original.excavators(),
+                original.creationTime(), original.beginDate(), original.endDate(), original.spatialUnitName(),
+                original.actionUnitIdentifier(), original.description(), original.matrixColor(),
+                original.matrixComposition(), original.matrixTexture(), original.phaseIdentifiers(),
+                original.comments(), original.taq(), original.tpq(), original.erosionShape(),
+                original.erosionOrientation(), original.erosionProfile(), original.chronologicalAttribution(),
+                42);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> seeder.seed(List.of(withRealRow)));
+
+        assertThat(ex.getMessage()).contains("[UE ligne 42]");
+    }
+
+    @Test
     void seed_ConceptDoesNotExist() {
         // conceptRepository left unstubbed -> returns empty list by default -> concept not found
+        stubInstitutionFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
         List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
 
         IllegalStateException ex = assertThrows(
@@ -141,7 +170,7 @@ class RecordingUnitSeederTest {
                 () -> seeder.seed(specs)
         );
 
-        assertThat(ex.getMessage()).contains("Concept").contains("introuvable");
+        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
     }
 
     @Test

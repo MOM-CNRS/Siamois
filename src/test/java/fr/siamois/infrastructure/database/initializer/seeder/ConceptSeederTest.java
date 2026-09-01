@@ -4,6 +4,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,9 @@ class ConceptSeederTest {
 
     @Mock
     ConceptLabelRepository conceptLabelRepository;
+
+    @Mock
+    VocabularyRepository vocabularyRepository;
 
     @InjectMocks
     ConceptSeeder seeder;
@@ -119,9 +123,61 @@ class ConceptSeederTest {
                 () -> seeder.findConceptOrThrow(key)
         );
 
-        assertEquals("Concept ConceptKey[vocabularyExtId=VOCAB2, conceptExtId=CONCEPT2] introuvable", exception.getMessage());
+        assertEquals("Concept ConceptKey[vocabularyExtId=VOCAB2, conceptExtId=CONCEPT2, label=null] introuvable", exception.getMessage());
         verify(conceptRepository).findConceptByExternalIdIgnoreCase("VOCAB2", "CONCEPT2");
     }
 
+    @Test
+    void describeMissingConcept_vocabularyResolvedForInstitution_includesLink() {
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th252", "4282395");
+        Vocabulary vocab = new Vocabulary();
+        vocab.setBaseUri("https://thesaurus.mom.fr");
+        vocab.setExternalVocabularyId("th252");
+        when(vocabularyRepository.findDistinctByInstitutionId(7L)).thenReturn(List.of(vocab));
+
+        String message = seeder.describeMissingConcept(key, 7L);
+
+        assertEquals("Concept non chargé dans Siamois (vocabulaire th252, concept 4282395) : "
+                + "https://thesaurus.mom.fr/?idc=4282395&idt=th252", message);
+    }
+
+    @Test
+    void describeMissingConcept_keyCarriesLabel_includesLabelInMessage() {
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th252", "4282395", "Fosse");
+        when(vocabularyRepository.findDistinctByInstitutionId(7L)).thenReturn(List.of());
+
+        String message = seeder.describeMissingConcept(key, 7L);
+
+        assertEquals("Concept non chargé dans Siamois (vocabulaire th252, concept 4282395, libellé \"Fosse\")", message);
+    }
+
+    @Test
+    void conceptKey_equalsIgnoresLabel_soCacheLookupsStillMatch() {
+        ConceptSeeder.ConceptKey withLabel = new ConceptSeeder.ConceptKey("th252", "4282395", "Fosse");
+        ConceptSeeder.ConceptKey withoutLabel = new ConceptSeeder.ConceptKey("th252", "4282395");
+
+        assertEquals(withoutLabel, withLabel);
+        assertEquals(withoutLabel.hashCode(), withLabel.hashCode());
+    }
+
+    @Test
+    void describeMissingConcept_vocabularyNotResolvable_noLink() {
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th252", "4282395");
+        when(vocabularyRepository.findDistinctByInstitutionId(7L)).thenReturn(List.of());
+
+        String message = seeder.describeMissingConcept(key, 7L);
+
+        assertEquals("Concept non chargé dans Siamois (vocabulaire th252, concept 4282395)", message);
+    }
+
+    @Test
+    void describeMissingConcept_nullInstitutionId_noLink() {
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th252", "4282395");
+
+        String message = seeder.describeMissingConcept(key, null);
+
+        assertEquals("Concept non chargé dans Siamois (vocabulaire th252, concept 4282395)", message);
+        verifyNoInteractions(vocabularyRepository);
+    }
 
 }

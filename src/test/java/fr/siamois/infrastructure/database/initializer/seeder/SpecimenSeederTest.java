@@ -40,6 +40,8 @@ class SpecimenSeederTest {
     @Mock
     RecordingUnitSeeder recordingUnitSeeder;
     @Mock
+    ConceptSeeder conceptSeeder;
+    @Mock
     EntityManager entityManager;
 
     @InjectMocks
@@ -65,6 +67,7 @@ class SpecimenSeederTest {
                     List.of("author@siamois.fr"),
                     OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
                     new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100", ""),
+                    null,
                     null,
                     null,
                     null,
@@ -107,14 +110,17 @@ class SpecimenSeederTest {
     @Test
     void seed_CategoryDoesNotExist() {
         // conceptRepository left unstubbed -> empty -> category not found
+        stubInstitutionFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(toInsert, 1L));
 
-        assertThat(ex.getMessage()).contains("Concept").contains("introuvable");
+        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
     }
 
     @Test
     void seed_AuthorDoesNotExist() {
         stubCategoryFound();
+        stubInstitutionFound();
         when(personSeeder.resolveCached(any(), eq("author@siamois.fr")))
                 .thenThrow(new IllegalStateException("Person introuvable"));
 

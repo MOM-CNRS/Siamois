@@ -23,6 +23,7 @@ public class RecordingUnitStratiRelSeeder {
     private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
     private final RecordingUnitSeeder recordingUnitSeeder;
     private final ConceptRepository conceptRepository;
+    private final ConceptSeeder conceptSeeder;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -33,7 +34,8 @@ public class RecordingUnitStratiRelSeeder {
             ConceptSeeder.ConceptKey rel,
             Boolean conceptDirection,
             Boolean isAsynchronous,
-            Boolean isUncertain) {
+            Boolean isUncertain,
+            Integer excelRowNumber) {
     }
 
     // -------------------------------------------------------------------------
@@ -63,7 +65,7 @@ public class RecordingUnitStratiRelSeeder {
         List<StratigraphicRelationship> built = new ArrayList<>();
         Set<String> queuedPairs = new HashSet<>();
         for (int i = 0; i < specs.size(); i++) {
-            buildRelationship(specs.get(i), i, actionUnitIdentifier, recordingUnitsByKey, conceptsByKey, queuedPairs)
+            buildRelationship(specs.get(i), i, actionUnitIdentifier, recordingUnitsByKey, conceptsByKey, queuedPairs, institutionId)
                     .ifPresent(built::add);
         }
 
@@ -81,11 +83,11 @@ public class RecordingUnitStratiRelSeeder {
     private Optional<StratigraphicRelationship> buildRelationship(RecordingUnitStratiRelDTO s, int index, String actionUnitIdentifier,
                                                                     Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> recordingUnitsByKey,
                                                                     Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey,
-                                                                    Set<String> queuedPairs) {
+                                                                    Set<String> queuedPairs, Long institutionId) {
         try {
             RecordingUnit us1 = resolveRecordingUnit(s.us1, actionUnitIdentifier, recordingUnitsByKey);
             RecordingUnit us2 = resolveRecordingUnit(s.us2, actionUnitIdentifier, recordingUnitsByKey);
-            Concept rel = resolveRelConcept(s, conceptsByKey);
+            Concept rel = resolveRelConcept(s, conceptsByKey, institutionId);
 
             if (rel == null || !queuedPairs.add(us1.getId() + "|" + us2.getId())) return Optional.empty();
 
@@ -99,7 +101,7 @@ public class RecordingUnitStratiRelSeeder {
             return Optional.of(newRelationship);
         } catch (Exception e) {
             throw new IllegalStateException(
-                    "[Relation strati ligne " + (index + 1) + "] '" + s.us1 + " -> " + s.us2 + "' : " + e.getMessage(), e);
+                    "[Relation strati ligne " + SeederUtils.lineNumber(s.excelRowNumber(), index) + "] '" + s.us1 + " -> " + s.us2 + "' : " + e.getMessage(), e);
         }
     }
 
@@ -110,10 +112,10 @@ public class RecordingUnitStratiRelSeeder {
         return ru;
     }
 
-    private Concept resolveRelConcept(RecordingUnitStratiRelDTO s, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey) {
+    private Concept resolveRelConcept(RecordingUnitStratiRelDTO s, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, Long institutionId) {
         if (s.rel == null) return null;
         Concept rel = conceptsByKey.get(s.rel);
-        if (rel == null) throw new IllegalStateException("Concept " + s.rel + " introuvable");
+        if (rel == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.rel, institutionId));
         return rel;
     }
 

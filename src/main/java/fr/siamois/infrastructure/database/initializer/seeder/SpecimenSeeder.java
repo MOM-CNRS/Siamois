@@ -31,6 +31,7 @@ public class SpecimenSeeder {
     private final SpecimenRepository specimenRepository;
     private final PersonSeeder personSeeder;
     private final ConceptRepository conceptRepository;
+    private final ConceptSeeder conceptSeeder;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -56,7 +57,8 @@ public class SpecimenSeeder {
                                      OffsetDateTime collectionDate,
                                      ConceptSeeder.ConceptKey collectionMethod,
                                      ConceptSeeder.ConceptKey sanitaryState,
-                                     ConceptSeeder.ConceptKey materialClass) {
+                                     ConceptSeeder.ConceptKey materialClass,
+                                     Integer excelRowNumber) {
 
     }
 
@@ -124,23 +126,25 @@ public class SpecimenSeeder {
                                     Map<String, Person> personCache, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey,
                                     Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> recordingUnitsByKey) {
         try {
-            Concept cat = SeederUtils.field("category", () -> {
-                Concept c = conceptsByKey.get(s.category());
-                if (c == null) throw new IllegalStateException("Concept " + s.category() + " introuvable");
-                return c;
-            });
-            Concept material = resolveOptionalConcept(conceptsByKey, "material", s.material());
-            Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation());
-            Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution());
-            Concept collectionMethod = resolveOptionalConcept(conceptsByKey, "collectionMethod", s.collectionMethod());
-            Concept sanitaryState = resolveOptionalConcept(conceptsByKey, "sanitaryState", s.sanitaryState());
-            Concept materialClass = resolveOptionalConcept(conceptsByKey, "materialClass", s.materialClass());
-            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
             Institution institution = SeederUtils.field("institutionIdentifier", () -> {
                 Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
                 if (inst == null) throw new IllegalStateException("Institution introuvable");
                 return inst;
             });
+            Long institutionId = institution.getId();
+
+            Concept cat = SeederUtils.field("category", () -> {
+                Concept c = conceptsByKey.get(s.category());
+                if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.category(), institutionId));
+                return c;
+            });
+            Concept material = resolveOptionalConcept(conceptsByKey, "material", s.material(), institutionId);
+            Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation(), institutionId);
+            Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution(), institutionId);
+            Concept collectionMethod = resolveOptionalConcept(conceptsByKey, "collectionMethod", s.collectionMethod(), institutionId);
+            Concept sanitaryState = resolveOptionalConcept(conceptsByKey, "sanitaryState", s.sanitaryState(), institutionId);
+            Concept materialClass = resolveOptionalConcept(conceptsByKey, "materialClass", s.materialClass(), institutionId);
+            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
 
             List<Person> authors    = buildPersonList(personCache, s.authors,    "authors");
             List<Person> collectors = buildPersonList(personCache, s.collectors, "collectors");
@@ -178,15 +182,15 @@ public class SpecimenSeeder {
             return toGetOrCreate;
         } catch (Exception e) {
             throw new IllegalStateException(
-                    "[Spécimen ligne " + (index + 1) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
+                    "[Spécimen ligne " + SeederUtils.lineNumber(s.excelRowNumber(), index) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
         }
     }
 
-    private Concept resolveOptionalConcept(Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, String fieldName, ConceptSeeder.ConceptKey key) {
+    private Concept resolveOptionalConcept(Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, String fieldName, ConceptSeeder.ConceptKey key, Long institutionId) {
         if (key == null) return null;
         return SeederUtils.field(fieldName, () -> {
             Concept c = conceptsByKey.get(key);
-            if (c == null) throw new IllegalStateException("Concept " + key + " introuvable");
+            if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(key, institutionId));
             return c;
         });
     }
