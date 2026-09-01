@@ -534,7 +534,7 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> specs = prepareSpecs(institution, new FilterDTO());
         Pageable pageLimit = PageRequest.of(0, Math.toIntExact(limit));
 
-        specs = specs.and(ActionUnitSpec.visibleToPerson(member.getId()));
+        specs = specs.and(ActionUnitSpec.hasProjectMembership(member.getId()));
 
         Page<ActionUnit> actionUnits = actionUnitRepository.findAll(specs, pageLimit);
         return actionUnits.stream()

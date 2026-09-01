@@ -1390,6 +1390,27 @@ class ActionUnitServiceTest {
     }
 
     // ------------------------------------------------------------------
+    // findByTeamMember (home panel "My projects")
+    // ------------------------------------------------------------------
+
+    @Test
+    void findByTeamMember_usesProjectMembershipSpec_returnsMappedList() {
+        PersonDTO member = new PersonDTO();
+        member.setId(7L);
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(PageRequest.of(0, 10))))
+                .thenReturn(page);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+
+        List<ActionUnitDTO> result = actionUnitService.findByTeamMember(member, inst, 10);
+
+        assertThat(result).containsExactly(actionUnit1dto, actionUnit2dto);
+    }
+
+    // ------------------------------------------------------------------
     // findAccessibleProjects (API liste projets)
     // ------------------------------------------------------------------
 
