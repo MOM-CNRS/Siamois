@@ -125,6 +125,27 @@ public class ActionUnitSpec {
         };
     }
 
+    /**
+     * Action units the person is a direct team member of: a PROJECT-scoped
+     * profile assigned on the unit itself. Unlike {@link #visibleToPerson},
+     * this excludes institution-wide access granted by INSTANCE/ORGANISATION
+     * {@link PermissionConstants#ORGANIZATION_ACCESS} profiles.
+     */
+    @NonNull
+    public static Specification<ActionUnit> hasProjectMembership(Long personId) {
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
+            Join<PersonProfileAssignment, Profile> profile = assignment.join("profile");
+
+            subquery.select(cb.literal(1L)).where(
+                    cb.equal(assignment.get("person").get("id"), personId),
+                    cb.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
+                    cb.equal(profile.get("actionUnit"), root));
+            return cb.exists(subquery);
+        };
+    }
+
     @NonNull
     public static Specification<ActionUnit> actionUnitInSpatialUnit(long spatialUnitId) {
         return (root, query, cb) ->
