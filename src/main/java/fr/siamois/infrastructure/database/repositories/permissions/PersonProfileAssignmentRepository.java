@@ -103,6 +103,21 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             """)
     long countPersonsWithSuperAdminProfile();
 
+    /**
+     * Every person holding the {@link fr.siamois.domain.models.permissions.ProfileConstants#SUPERADMIN}
+     * profile. Used to assign them the organization manager profile of each organization, which is how
+     * a superadmin reaches organization data — see
+     * {@code PersonProfileAssignmentService#assignSuperAdminsAsOrganizationManagers}.
+     */
+    @Query("""
+            SELECT DISTINCT p
+            FROM PersonProfileAssignment a
+            JOIN a.person p
+            JOIN a.profile prof
+            WHERE prof.code = fr.siamois.domain.models.permissions.ProfileConstants.SUPERADMIN
+            """)
+    Set<Person> findAllSuperAdmins();
+
     @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a

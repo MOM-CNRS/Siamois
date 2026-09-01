@@ -12,6 +12,9 @@ import java.util.Optional;
 public interface ProfileRepository extends CrudRepository<Profile, Integer> {
     Optional<Profile> findByCode(String code);
 
+    @Query("SELECT p FROM Profile p " +
+            "JOIN FETCH p.permissions " +
+            "WHERE p.code = :code AND p.institution.id = :institutionId")
     Optional<Profile> findByCodeAndInstitutionId(String code, Long institutionId);
 
     Optional<Profile> findByCodeAndInstitutionIdAndActionUnitId(String code, Long institutionId, Long actionUnitId);

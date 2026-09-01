@@ -160,10 +160,16 @@ public class InstitutionService {
         }
     }
 
+    /**
+     * Creates the three organization profiles of a freshly created institution and puts every
+     * superadmin among its managers, so a superadmin has the same organization-scoped rights on it as
+     * on any other organization of the instance.
+     */
     private void createInstitutionProfiles(InstitutionDTO institutionDTO) {
         profileService.createOrGetOrganizationManagerProfile(institutionDTO);
         profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO);
         profileService.createOrGetOrganizationMemberProfile(institutionDTO);
+        personProfileAssignmentService.assignSuperAdminsAsOrganizationManagers(institutionDTO);
     }
 
 

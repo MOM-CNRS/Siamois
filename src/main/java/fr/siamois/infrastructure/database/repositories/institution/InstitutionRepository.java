@@ -27,24 +27,18 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
     boolean personIsInstitutionManagerOf(Long institutionId, Long personId);
 
     /**
-     * Institutions the person is allowed to display, based on the profile permission system:
-     * an INSTANCE-scoped profile holding {@code ORGANIZATION_ACCESS} grants every institution of the
-     * instance (this is how the superadmin reaches organizations they are not a member of), while an
-     * ORGANISATION-scoped profile grants its institution and a PROJECT-scoped profile grants the
-     * institution owning its action unit.
+     * Institutions the person is allowed to display: those carrying a profile assigned to the person,
+     * whether ORGANISATION-scoped (the institution itself) or PROJECT-scoped (the institution owning
+     * the action unit). INSTANCE-scoped profiles carry no institution and grant nothing here — the
+     * superadmin sees an organization because they are assigned its
+     * {@link fr.siamois.domain.models.permissions.ProfileConstants#ORGANIZATION_MANAGER} profile like
+     * any other manager.
      */
     @Query("""
-            SELECT DISTINCT i FROM Institution i
-            WHERE EXISTS (SELECT 1 FROM PersonProfileAssignment a
-                          JOIN a.profile prof
-                          JOIN prof.permissions perm
-                          WHERE a.person.id = :personId
-                            AND prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.INSTANCE
-                            AND perm.code = fr.siamois.domain.models.permissions.PermissionConstants.ORGANIZATION_ACCESS)
-               OR EXISTS (SELECT 1 FROM PersonProfileAssignment a
-                          JOIN a.profile prof
-                          WHERE a.person.id = :personId
-                            AND prof.institution.id = i.id)
+            SELECT DISTINCT i FROM PersonProfileAssignment a
+                        JOIN a.profile prof
+                        JOIN prof.institution i
+                        WHERE a.person.id = :personId
             """)
     Set<Institution> findAllVisibleToPerson(Long personId);
 
