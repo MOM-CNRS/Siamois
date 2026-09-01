@@ -31,12 +31,13 @@ public class SpecimenSeeder {
     private final SpecimenRepository specimenRepository;
     private final PersonSeeder personSeeder;
     private final ConceptRepository conceptRepository;
+    private final ConceptSeeder conceptSeeder;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     public record SpecimenSpecs(String fullIdentifier, Integer identifier,
-                                     ConceptSeeder.ConceptKey type,
+                                     ConceptSeeder.ConceptKey material,
                                      ConceptSeeder.ConceptKey category,
                                      ConceptSeeder.ConceptKey interpretation,
                                      String authorEmail,
@@ -44,7 +45,20 @@ public class SpecimenSeeder {
                                      List<String> authors,
                                      List<String> collectors,
                                      OffsetDateTime creationTime,
-                                     RecordingUnitSeeder.RecordingUnitKey recordingUnitKey) {
+                                     RecordingUnitSeeder.RecordingUnitKey recordingUnitKey,
+                                     String description,
+                                     String comments,
+                                     String isolationNumber,
+                                     Integer taq,
+                                     Integer tpq,
+                                     String otherIdentifier,
+                                     ConceptSeeder.ConceptKey chronologicalAttribution,
+                                     Integer numberOfElements,
+                                     OffsetDateTime collectionDate,
+                                     ConceptSeeder.ConceptKey collectionMethod,
+                                     ConceptSeeder.ConceptKey sanitaryState,
+                                     ConceptSeeder.ConceptKey materialClass,
+                                     Integer excelRowNumber) {
 
     }
 
@@ -112,17 +126,25 @@ public class SpecimenSeeder {
                                     Map<String, Person> personCache, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey,
                                     Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> recordingUnitsByKey) {
         try {
-            Concept cat = SeederUtils.field("category", () -> {
-                Concept c = conceptsByKey.get(s.category());
-                if (c == null) throw new IllegalStateException("Concept " + s.category() + " introuvable");
-                return c;
-            });
-            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
             Institution institution = SeederUtils.field("institutionIdentifier", () -> {
                 Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
                 if (inst == null) throw new IllegalStateException("Institution introuvable");
                 return inst;
             });
+            Long institutionId = institution.getId();
+
+            Concept cat = SeederUtils.field("category", () -> {
+                Concept c = conceptsByKey.get(s.category());
+                if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.category(), institutionId));
+                return c;
+            });
+            Concept material = resolveOptionalConcept(conceptsByKey, "material", s.material(), institutionId);
+            Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation(), institutionId);
+            Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution(), institutionId);
+            Concept collectionMethod = resolveOptionalConcept(conceptsByKey, "collectionMethod", s.collectionMethod(), institutionId);
+            Concept sanitaryState = resolveOptionalConcept(conceptsByKey, "sanitaryState", s.sanitaryState(), institutionId);
+            Concept materialClass = resolveOptionalConcept(conceptsByKey, "materialClass", s.materialClass(), institutionId);
+            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
 
             List<Person> authors    = buildPersonList(personCache, s.authors,    "authors");
             List<Person> collectors = buildPersonList(personCache, s.collectors, "collectors");
@@ -140,14 +162,38 @@ public class SpecimenSeeder {
             toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setRecordingUnit(ru);
+            toGetOrCreate.setActionUnit(ru.getActionUnit());
             toGetOrCreate.setAuthors(authors);
             toGetOrCreate.setCollectors(collectors);
             toGetOrCreate.setCreationTime(s.creationTime);
+            toGetOrCreate.setMaterial(material != null ? Set.of(material) : Set.of());
+            toGetOrCreate.setNormalizedInterpretation(interpretation);
+            toGetOrCreate.setDescription(s.description());
+            toGetOrCreate.setComments(s.comments());
+            toGetOrCreate.setIsolationNumber(s.isolationNumber());
+            toGetOrCreate.setTaq(s.taq());
+            toGetOrCreate.setTpq(s.tpq());
+            toGetOrCreate.setOtherIdentifier(s.otherIdentifier());
+            toGetOrCreate.setChronologicalAttribution(chronologicalAttribution);
+            toGetOrCreate.setNumberOfElements(s.numberOfElements());
+            toGetOrCreate.setCollectionDate(s.collectionDate());
+            toGetOrCreate.setCollectionMethod(collectionMethod);
+            toGetOrCreate.setSanitaryState(sanitaryState);
+            toGetOrCreate.setMaterialClass(materialClass != null ? Set.of(materialClass) : Set.of());
             return toGetOrCreate;
         } catch (Exception e) {
             throw new IllegalStateException(
-                    "[Spécimen ligne " + (index + 1) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
+                    "[Spécimen ligne " + SeederUtils.lineNumber(s.excelRowNumber(), index) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
         }
+    }
+
+    private Concept resolveOptionalConcept(Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, String fieldName, ConceptSeeder.ConceptKey key, Long institutionId) {
+        if (key == null) return null;
+        return SeederUtils.field(fieldName, () -> {
+            Concept c = conceptsByKey.get(key);
+            if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(key, institutionId));
+            return c;
+        });
     }
 
     private void flushInBatches(List<Specimen> toInsert, ImportProgress progress) {
@@ -210,8 +256,13 @@ public class SpecimenSeeder {
     private Map<ConceptSeeder.ConceptKey, Concept> fetchConcepts(List<SpecimenSpecs> specs) {
         Map<String, Set<String>> lowerIdcsByVocab = new HashMap<>();
         for (SpecimenSpecs s : specs) {
-            if (s.category() == null) continue;
-            lowerIdcsByVocab.computeIfAbsent(s.category().vocabularyExtId(), k -> new HashSet<>()).add(s.category().conceptExtId().toLowerCase());
+            addConceptKey(lowerIdcsByVocab, s.category());
+            addConceptKey(lowerIdcsByVocab, s.material());
+            addConceptKey(lowerIdcsByVocab, s.interpretation());
+            addConceptKey(lowerIdcsByVocab, s.chronologicalAttribution());
+            addConceptKey(lowerIdcsByVocab, s.collectionMethod());
+            addConceptKey(lowerIdcsByVocab, s.sanitaryState());
+            addConceptKey(lowerIdcsByVocab, s.materialClass());
         }
         Map<ConceptSeeder.ConceptKey, Concept> result = new HashMap<>();
         for (var entry : lowerIdcsByVocab.entrySet()) {
@@ -220,5 +271,10 @@ public class SpecimenSeeder {
             }
         }
         return result;
+    }
+
+    private void addConceptKey(Map<String, Set<String>> lowerIdcsByVocab, ConceptSeeder.ConceptKey key) {
+        if (key == null) return;
+        lowerIdcsByVocab.computeIfAbsent(key.vocabularyExtId(), k -> new HashSet<>()).add(key.conceptExtId().toLowerCase());
     }
 }

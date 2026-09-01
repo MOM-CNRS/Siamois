@@ -99,6 +99,12 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String CLASS_FIELD = "SIAS.CLASS";
 
+    @FieldCode
+    public static final String SANITARY_STATE_FIELD = "SIAS.SANITARY";
+
+    @FieldCode
+    public static final String CHRONOLOGICAL_ATTRIBUTION_FIELD = "SIAS.CHRONO";
+
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;
@@ -116,7 +122,7 @@ public class Specimen extends TraceableEntity implements ArkEntity {
             name = "specimen_material",
             joinColumns = @JoinColumn(name = "fk_specimen_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_material_id"))
-    protected transient Set<Concept> material;
+    private Set<Concept> material;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonIgnore
@@ -136,7 +142,7 @@ public class Specimen extends TraceableEntity implements ArkEntity {
             name = "specimen_material_class",
             joinColumns = @JoinColumn(name = "fk_specimen_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_material_class__id"))
-    protected transient Set<Concept> materialClass;
+    private Set<Concept> materialClass;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_collection_method")
@@ -151,7 +157,7 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     protected OffsetDateTime collectionDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_recording_unit_id")
+    @JoinColumn(name = "fk_recording_unit_id", nullable = false)
     protected RecordingUnit recordingUnit;
 
     @ManyToOne(fetch = FetchType.EAGER)

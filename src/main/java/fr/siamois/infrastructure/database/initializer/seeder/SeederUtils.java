@@ -22,6 +22,16 @@ public class SeederUtils {
         }
     }
 
+    /**
+     * The line number to report in a "[Xxx ligne N]" error prefix: the real Excel row number when
+     * the spec carries one (set during parsing from the actual sheet row), falling back to its
+     * 1-based position in the specs list otherwise — e.g. for specs built directly in tests or by
+     * the dataset-fixture initializers, which have no original spreadsheet row to point to.
+     */
+    public static int lineNumber(Integer excelRowNumber, int zeroBasedIndex) {
+        return excelRowNumber != null ? excelRowNumber : zeroBasedIndex + 1;
+    }
+
     /** Logs completion of one persist batch — called by seeders after each chunked (or single) saveAll. */
     public static void logBatch(String seederName, int itemsDoneSoFar, int chunkSize, int totalItems) {
         int totalBatches = Math.max(1, (int) Math.ceil((double) totalItems / chunkSize));

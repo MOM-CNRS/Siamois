@@ -110,6 +110,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM recording_unit_contributors WHERE fk_recording_unit_id = :recordingUnitId")
     void deleteContributorLinksForRecordingUnit(@Param("recordingUnitId") Long recordingUnitId);
+
     List<RecordingUnit> findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(Long actionUnitId, String query, org.springframework.data.domain.Pageable pageable);
 
     @Transactional

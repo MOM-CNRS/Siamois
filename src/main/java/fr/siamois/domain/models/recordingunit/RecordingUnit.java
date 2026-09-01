@@ -175,6 +175,9 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @FieldCode
     public static final String EROSION_ORIENTATION_FIELD_CODE = "SIARU.EROSIONORIENTATION";
 
+    @FieldCode
+    public static final String CHRONOLOGICAL_ATTRIBUTION_FIELD_CODE = "SIARU.CHRONO";
+
 
     // utils
     public String displayFullIdentifier() {

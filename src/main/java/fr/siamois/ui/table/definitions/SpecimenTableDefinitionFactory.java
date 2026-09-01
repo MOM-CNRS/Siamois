@@ -144,13 +144,25 @@ public final class SpecimenTableDefinitionFactory {
 
         definition.addColumn(
                 FormFieldColumn.builder()
+                        .id("actionUnit")
+                        .headerKey("specimen.field.actionUnit")
+                        .field(actionUnitField)
+                        .sortable(false)
+                        .filterable(false)
+                        .visible(true)
+                        .required(false)
+                        .build()
+        );
+
+        definition.addColumn(
+                FormFieldColumn.builder()
                         .id("recordingUnit")
                         .headerKey("specimen.field.recordingUnit")
                         .field(recordingUnitField)
                         .sortable(false)
                         .filterable(false)
                         .visible(true)
-                        .required(false)
+                        .required(true)
                         .build()
         );
 
@@ -271,18 +283,6 @@ public final class SpecimenTableDefinitionFactory {
                         .sortable(false)
                         .filterable(false)
                         .visible(false)
-                        .required(false)
-                        .build()
-        );
-
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("actionUnit")
-                        .headerKey("specimen.field.actionUnit")
-                        .field(actionUnitField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
                         .required(false)
                         .build()
         );

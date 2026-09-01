@@ -22,7 +22,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
@@ -466,6 +465,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectOneAddressViewModel.class, this::handleAddress);
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
         handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
+        handlers.put(CustomFieldAnswerSelectOneRecordingUnitViewModel.class, this::handleRecordingUnit);
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
         handlers.put(CustomFieldAnswerSelectMultipleContainerViewModel.class, this::handleContainerSet);
         handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
@@ -604,6 +604,12 @@ public class FormService {
         dto.setSourceName("INTERNAL");
         dto.setCategory(val.getCategory());
         return dto;
+    }
+
+    private void handleRecordingUnit(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneRecordingUnitViewModel ruAnswer) {
+            ruAnswer.setValue((RecordingUnitSummaryDTO) value);
+        }
     }
 
     private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {
