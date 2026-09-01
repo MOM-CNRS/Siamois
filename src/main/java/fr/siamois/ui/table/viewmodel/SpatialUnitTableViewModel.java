@@ -197,17 +197,17 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                         .styleClass(SIA_ICON_BTN)
                         .build(),
 
-                // Add children
+                // Add Parent
                 RowAction.builder()
-                        .action(TableColumnAction.NEW_CHILDREN)
+                        .action(TableColumnAction.NEW_PARENT)
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)
                         .build(),
 
-                // Add Parent
+                // Add children
                 RowAction.builder()
-                        .action(TableColumnAction.NEW_PARENT)
+                        .action(TableColumnAction.NEW_CHILDREN)
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)
