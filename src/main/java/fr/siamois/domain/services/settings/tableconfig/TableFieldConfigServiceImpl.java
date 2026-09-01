@@ -73,7 +73,7 @@ import java.util.function.Consumer;
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private static final String NO_SOURCE = "—";
-    private static final int DEFAULT_MIN_CODE = 0;
+    private static final int DEFAULT_MIN_CODE = 1;
     private static final int DEFAULT_MAX_CODE = 999;
 
     private final FieldConfigurationService fieldConfigurationService;

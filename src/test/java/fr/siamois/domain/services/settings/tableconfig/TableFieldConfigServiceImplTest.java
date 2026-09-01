@@ -621,7 +621,7 @@ class TableFieldConfigServiceImplTest {
         assertThat(result).isPresent();
         assertThat(result.get().getIdentifierFormat())
                 .isEqualTo(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat());
-        assertThat(result.get().getMinCode()).isZero();
+        assertThat(result.get().getMinCode()).isOne();
         assertThat(result.get().getMaxCode()).isEqualTo(999);
     }
 
@@ -984,10 +984,10 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void configurableTables_shouldDeclareTheirIdentifierDefaults() {
-        assertThat(ConfigurableTable.UE.getDefaultIdentifierFormat()).isEqualTo("{NUM_UE}");
-        assertThat(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat()).isEqualTo("{NUM_MOBILIER}");
-        assertThat(ConfigurableTable.CONTENANT.getDefaultIdentifierFormat()).isEqualTo("{NUM_CONTAINER}");
-        assertThat(ConfigurableTable.PHASE.getDefaultIdentifierFormat()).isEqualTo("{NUM_PHASE}");
+        assertThat(ConfigurableTable.UE.getDefaultIdentifierFormat()).isEqualTo("{NUM_UE:000}");
+        assertThat(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat()).isEqualTo("{NUM_MOBILIER:000}");
+        assertThat(ConfigurableTable.CONTENANT.getDefaultIdentifierFormat()).isEqualTo("{NUM_CONTAINER:000}");
+        assertThat(ConfigurableTable.PHASE.getDefaultIdentifierFormat()).isEqualTo("{NUM_PHASE:000}");
     }
 
     // ========== New Tests ==========
