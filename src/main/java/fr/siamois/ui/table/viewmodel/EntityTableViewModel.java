@@ -36,6 +36,7 @@ import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.column.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.TreeNode;
 import org.primefaces.model.Visibility;
@@ -64,6 +65,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
  * - configureRowSystemFields(T entity, CustomForm form)
  */
 @Getter
+@Slf4j
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     private static final List<Integer> ROW_PER_PAGE = List.of(10, 50, 100);
@@ -408,12 +410,24 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
 
+    /**
+     * Number of non-toggleable columns rendered before the dynamic column block in
+     * entityDataTable.xhtml (selection checkbox + merged status/id/actions column).
+     * PrimeFaces' ColumnToggleEvent index is computed over the DataTable's full column
+     * list, so it must be offset by this amount to map onto {@code tableDefinition.getColumns()}.
+     */
+    private static final int FIXED_LEADING_COLUMNS = 2;
+
     @SuppressWarnings("unused")
     public void onToggle(ColumnToggleEvent e) {
         Integer index = (Integer) e.getData();
         Visibility visibility = e.getVisibility();
-        // 4 bc the first 4 columns are fixed
-        tableDefinition.getColumns().get(index).setVisible(visibility == Visibility.VISIBLE);
+        int adjustedIndex = index - FIXED_LEADING_COLUMNS;
+        if (adjustedIndex < 0 || adjustedIndex >= tableDefinition.getColumns().size()) {
+            log.warn("onToggle: column toggle index {} out of range after offset ({})", index, adjustedIndex);
+            return;
+        }
+        tableDefinition.getColumns().get(adjustedIndex).setVisible(visibility == Visibility.VISIBLE);
     }
 
 
