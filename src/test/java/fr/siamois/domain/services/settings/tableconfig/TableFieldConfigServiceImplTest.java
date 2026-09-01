@@ -584,6 +584,48 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void createOrGetFormConfig_shouldInheritTheIdentifierConfigurationOfTheProjectDefault() {
+        // Until it has a row of its own, a type is generated with the identifier configuration of the
+        // default one; materializing that row must not silently move it back onto the built-in bounds.
+        defaultConfig.setIdentifierFormat("MOB-{NUM_MOBILIER:000}");
+        defaultConfig.setMinCode(100);
+        defaultConfig.setMaxCode(500);
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getIdentifierFormat()).isEqualTo("MOB-{NUM_MOBILIER:000}");
+        assertThat(result.get().getMinCode()).isEqualTo(100);
+        assertThat(result.get().getMaxCode()).isEqualTo(500);
+    }
+
+    @Test
+    void createOrGetFormConfig_shouldFallBackOnTheBuiltInIdentifierConfigurationWithoutADefaultToInheritFrom() {
+        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getIdentifierFormat())
+                .isEqualTo(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat());
+        assertThat(result.get().getMinCode()).isZero();
+        assertThat(result.get().getMaxCode()).isEqualTo(999);
+    }
+
+    @Test
     void createOrGetFormConfig_shouldReturnEmptyRatherThanCreateOneForAnUnknownType() {
         when(conceptRepository.findAllByFieldContextAndExactLabel(FIELD_CONCEPT_ID, "fr", "Métal"))
                 .thenReturn(List.of());
