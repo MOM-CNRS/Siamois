@@ -466,6 +466,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectOneAddressViewModel.class, this::handleAddress);
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
         handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
+        handlers.put(CustomFieldAnswerSelectOneRecordingUnitViewModel.class, this::handleRecordingUnit);
         handlers.put(CustomFieldAnswerMeasurementViewModel.class, this::handleMeasurement);
         handlers.put(CustomFieldAnswerSelectMultipleContainerViewModel.class, this::handleContainerSet);
         handlers.put(CustomFieldAnswerSelectMultipleSpecimenViewModel.class, this::handleSpecimenSet);
@@ -604,6 +605,12 @@ public class FormService {
         dto.setSourceName("INTERNAL");
         dto.setCategory(val.getCategory());
         return dto;
+    }
+
+    private void handleRecordingUnit(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerSelectOneRecordingUnitViewModel ruAnswer) {
+            ruAnswer.setValue((RecordingUnitSummaryDTO) value);
+        }
     }
 
     private void handleRecordingUnitSet(CustomFieldAnswerViewModel answer, Object value) {

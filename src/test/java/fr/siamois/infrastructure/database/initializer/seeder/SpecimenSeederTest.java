@@ -183,4 +183,20 @@ class SpecimenSeederTest {
         verify(entityManager, times(1)).flush();
         verify(entityManager, times(1)).clear();
     }
+
+    @Test
+    void seed_Created_setsActionUnitFromRecordingUnit() {
+        stubCategoryFound();
+        stubInstitutionFound();
+        RecordingUnit ru = stubRecordingUnitFound();
+
+        seeder.seed(toInsert, 1L);
+
+        verify(specimenRepository, times(1)).saveAll(argThat(list -> {
+            for (var sp : list) {
+                return sp.getActionUnit() == ru.getActionUnit();
+            }
+            return false;
+        }));
+    }
 }

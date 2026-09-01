@@ -66,6 +66,7 @@ public final class ImportSchema {
             Map.entry(SPATIAL_UNIT_REL, "Relations Lieu")
     );
 
+    public static final String TYPE_LABEL = "type label";
     /** Maps technical table ID → canonical column names expected for that entity. */
     public static final Map<String, List<String>> EXPECTED_COLUMNS = Map.ofEntries(
             Map.entry(INSTITUTION,      List.of("nom", DESCRIPTION, IDENTIFIANT, "email admins", "thesaurus")),
@@ -73,8 +74,8 @@ public final class ImportSchema {
             Map.entry("code",           List.of("code", TYPE_URI)),
             Map.entry(ACTION_UNIT,    List.of("nom", IDENTIFIANT, "code", TYPE_URI, "createur", INSTITUTION,
                                                 "contexte spatiale", "date debut", "date fin", "localisation principale")),
-            Map.entry(SPATIAL_UNIT,   List.of("nom", "uri type", "type label", INSTITUTION, "enfants")),
-            Map.entry(RECORDING_UNIT, List.of(IDENTIFIANT, DESCRIPTION, TYPE_URI, "type label", "cycle uri", "cycle label",
+            Map.entry(SPATIAL_UNIT,   List.of("nom", "uri type", TYPE_LABEL, INSTITUTION, "enfants")),
+            Map.entry(RECORDING_UNIT, List.of(IDENTIFIANT, DESCRIPTION, TYPE_URI, TYPE_LABEL, "cycle uri", "cycle label",
                                                 "agent uri", "agent label", "interpretation uri", "interpretation label",
                                                 "author email", INSTITUTION,
                                                 "contributeurs email", "date d'ouverture", "date de fermeture",
@@ -97,7 +98,7 @@ public final class ImportSchema {
                                                 "methode de collecte uri", "methode de collecte label",
                                                 "etat sanitaire uri", "etat sanitaire label",
                                                 "classe matiere uri", "classe matiere label")),
-            Map.entry(PHASE,          List.of(IDENTIFIANT, "titre", TYPE_URI, "type label", DESCRIPTION,
+            Map.entry(PHASE,          List.of(IDENTIFIANT, "titre", TYPE_URI, TYPE_LABEL, DESCRIPTION,
                                                 "ordre", "borne inferieure", "borne superieure",
                                                 "auteur", "projet", INSTITUTION,
                                                 "periodes uri", "periodes label", "mots cles uri", "mots cles label")),

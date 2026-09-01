@@ -33,6 +33,7 @@ public class OOXMLImportService {
     private static final String HEADER_READ_ERROR_PREFIX = "Erreur lecture en-tête: ";
     public static final String PARENT = "parent";
     public static final String ENFANT = "enfant";
+    public static final String TYPE_LABEL1 = "type label";
 
     private final ConceptService conceptService;
 
@@ -373,7 +374,7 @@ public class OOXMLImportService {
         Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
         String enfantsRaw  = getStringCellOrNull(row, cols, "enfants");
 
-        ConceptSeeder.ConceptKey typeKey = conceptKeyFromColumnOrLabel(row, cols, "uri type", "type label",
+        ConceptSeeder.ConceptKey typeKey = conceptKeyFromColumnOrLabel(row, cols, "uri type", TYPE_LABEL1,
                 SpatialUnit.CATEGORY_FIELD_CODE, institutionDbId);
 
         SpatialUnitSeeder.SpatialUnitSpecs spec = new SpatialUnitSeeder.SpatialUnitSpecs(
@@ -645,7 +646,7 @@ public class OOXMLImportService {
         Integer identifier = parseIntegerSafe(identStr);
 
         Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
-        ConceptSeeder.ConceptKey type           = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, "type label",
+        ConceptSeeder.ConceptKey type           = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, TYPE_LABEL1,
                 RecordingUnit.TYPE_FIELD_CODE, institutionDbId);
         ConceptSeeder.ConceptKey geomorphCycle  = conceptKeyFromColumnOrLabel(row, cols, "cycle uri", "cycle label",
                 RecordingUnit.GEOMORPHO_CYCLE_FIELD_CODE, institutionDbId);
@@ -849,7 +850,7 @@ public class OOXMLImportService {
                     if (identifier == null || identifier.isBlank()) return;
 
                     String title       = getStringCellOrNull(row, cols, "titre");
-                    ConceptSeeder.ConceptKey type = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, "type label",
+                    ConceptSeeder.ConceptKey type = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, TYPE_LABEL1,
                             Phase.TYPE_FIELD, institutionDbId);
                     String description  = getStringCellOrNull(row, cols, DESCRIPTION);
                     Integer orderNumber = getIntegerCellOrNull(row, cols, "ordre");

@@ -162,6 +162,7 @@ public class SpecimenSeeder {
             toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setRecordingUnit(ru);
+            toGetOrCreate.setActionUnit(ru.getActionUnit());
             toGetOrCreate.setAuthors(authors);
             toGetOrCreate.setCollectors(collectors);
             toGetOrCreate.setCreationTime(s.creationTime);
