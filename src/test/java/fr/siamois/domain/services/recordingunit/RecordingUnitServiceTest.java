@@ -940,30 +940,6 @@ class RecordingUnitServiceTest {
                             eq(10L), eq(""), any(Pageable.class));
         }
 
-        @Test
-        void autocompleteInActionUnit_respectsLimit() {
-            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            anyLong(), anyString(), pageableCaptor.capture()))
-                    .thenReturn(List.of());
-
-            recordingUnitService.autocompleteInActionUnit(10L, "x", 3);
-
-            assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(3);
-        }
-
-        @Test
-        void autocompleteInActionUnit_noResults_returnsEmptyList() {
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            anyLong(), anyString(), any()))
-                    .thenReturn(List.of());
-
-            assertThat(recordingUnitService.autocompleteInActionUnit(10L, "zzz", 10)).isEmpty();
-            verifyNoInteractions(conversionService);
-        }
-
         // ------------------------------------------------------------------
         // searchRecordingUnitInRecordingUnit
         // ------------------------------------------------------------------

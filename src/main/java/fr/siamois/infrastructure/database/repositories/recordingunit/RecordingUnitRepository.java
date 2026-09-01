@@ -402,4 +402,11 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 
+
+    @Query("SELECT ru FROM RecordingUnit ru " +
+            "WHERE ru.actionUnit.id = :actionUnitId " +
+            "AND ru.fullIdentifier LIKE CONCAT(:fullIdentifier, '%') " +
+            "ORDER BY ru.fullIdentifier ASC " +
+            "LIMIT :limit")
+    List<RecordingUnit> findByActionUnitIdAndFullIdentifierStartingWithLimited(Long actionUnitId, String fullIdentifier, int limit);
 }
