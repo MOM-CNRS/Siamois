@@ -31,6 +31,7 @@ import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.lang.NonNull;
@@ -486,13 +487,13 @@ public class FieldConfigurationService {
     @ExecutionTimeLogger
     @Transactional(readOnly = true, rollbackFor = Exception.class)
     public List<ConceptAutocompleteDTO> fetchAutocomplete(CustomFieldConcept conceptField, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
-        if (input == null || input.isBlank()) {
-            return new ArrayList<>();
-        }
-
         UserInfo info = ExecutionContextHolder.get();
         if (info == null) {
             throw new IllegalStateException(String.format("No execution context bound to fetch the autocomplete of field %s", conceptField.getId()));
+        }
+
+        if (!StringUtils.isBlank(input)) {
+            input = input.trim();
         }
 
         Optional<ConceptFieldFormConfig> opt = fieldFormConfigRepository.findByFieldAndActionUnit(conceptField, actionUnitId);
