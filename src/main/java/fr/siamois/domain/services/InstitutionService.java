@@ -196,6 +196,36 @@ public class InstitutionService {
     }
 
     /**
+     * Bulk version of {@link #findMembersOf(ActionUnitDTO)} : member count for every action unit in the
+     * collection, in one query instead of one per action unit — used to render a project list's member count
+     * column without an N+1.
+     */
+    public Map<Long, Integer> countMembersOf(Collection<ActionUnitDTO> actionUnits) {
+        if (actionUnits.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Long> actionUnitIds = actionUnits.stream().map(ActionUnitDTO::getId).toList();
+        Map<Long, Set<Long>> memberIdsByActionUnitId = new HashMap<>();
+        for (Object[] row : personProfileAssignmentRepository.findPersonIdsByProfileActionUnitIds(actionUnitIds)) {
+            memberIdsByActionUnitId
+                    .computeIfAbsent((Long) row[0], k -> new HashSet<>())
+                    .add((Long) row[1]);
+        }
+
+        Map<Long, Integer> counts = new HashMap<>();
+        for (ActionUnitDTO actionUnit : actionUnits) {
+            Set<Long> memberIds = memberIdsByActionUnitId.computeIfAbsent(actionUnit.getId(), k -> new HashSet<>());
+            if (actionUnit.getCreatedBy() != null) {
+                memberIds.add(actionUnit.getCreatedBy().getId());
+            }
+            counts.put(actionUnit.getId(), memberIds.size());
+        }
+
+        return counts;
+    }
+
+    /**
      * Creates or retrieves the settings for a given institution.
      *
      * @param institution the institution for which to create or retrieve settings

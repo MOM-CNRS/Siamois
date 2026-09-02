@@ -148,6 +148,19 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             """)
     Set<Person> findAllPersonsByProfileActionUnitId(@Param("actionUnitId") Long actionUnitId);
 
+    /**
+     * Bulk version of {@link #findAllPersonsByProfileActionUnitId} : (actionUnitId, personId) pairs for every
+     * action unit in the collection, in one query instead of one per action unit — used to compute member counts
+     * for a whole project list without an N+1.
+     */
+    @Query("""
+            SELECT prof.actionUnit.id, a.person.id
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE prof.actionUnit.id IN :actionUnitIds
+            """)
+    List<Object[]> findPersonIdsByProfileActionUnitIds(@Param("actionUnitIds") Collection<Long> actionUnitIds);
+
     void deleteAllByProfileActionUnitId(Long actionUnitId);
 
     Optional<PersonProfileAssignment> findByProfileIdAndPersonId(Long profileId, Long personId);

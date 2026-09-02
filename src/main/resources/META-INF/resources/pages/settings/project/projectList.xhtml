@@ -93,6 +93,7 @@
                         <p:commandButton
                                 icon="bi bi-three-dots"
                                 action="#{projectListBean.redirectToProject(au)}"
+                                rendered="#{projectListBean.canManageSettings(au)}"
                         />
                     </p:column>
                 </p:dataTable>

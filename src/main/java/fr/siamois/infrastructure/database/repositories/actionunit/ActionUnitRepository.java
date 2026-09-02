@@ -231,5 +231,6 @@ WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND actio
     @Query("SELECT au FROM ActionUnit au JOIN FETCH au.createdBy WHERE au.createdBy.id = :personId")
     Set<ActionUnit> findAllByCreatedById(@Param("personId") Long personId);
 
-    List<ActionUnit> findAllByCreatedByInstitutionId(Long createdByInstitutionId);
+    @Query("SELECT au FROM ActionUnit au JOIN FETCH au.createdBy JOIN FETCH au.createdByInstitution WHERE au.createdByInstitution.id = :createdByInstitutionId")
+    List<ActionUnit> findAllByCreatedByInstitutionId(@Param("createdByInstitutionId") Long createdByInstitutionId);
 }

@@ -24,8 +24,10 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -48,6 +50,8 @@ public class ProjectListBean implements SettingsDatatableBean {
 
     private Set<ActionUnitDTO> actionUnits;
     private List<ActionUnitDTO> filteredActionUnits;
+    private Map<Long, Integer> memberCountsByActionUnitId = Collections.emptyMap();
+    private Set<Long> actionUnitIdsWithManageSettingsPermission = Collections.emptySet();
 
     /** Set when the list is filtered down to one member's projects (see {@link #initFilteredByPerson}). */
     private PersonDTO filterPerson;
@@ -72,7 +76,12 @@ public class ProjectListBean implements SettingsDatatableBean {
     }
 
     public int numberOfMemberInActionUnit(ActionUnitDTO actionUnit) {
-        return institutionService.findMembersOf(actionUnit).size();
+        return memberCountsByActionUnitId.getOrDefault(actionUnit.getId(), 0);
+    }
+
+    /** Whether the current user may reach this project's settings — backs the row's burger button. */
+    public boolean canManageSettings(ActionUnitDTO actionUnit) {
+        return actionUnitIdsWithManageSettingsPermission.contains(actionUnit.getId());
     }
 
     public void reset() {
@@ -80,6 +89,8 @@ public class ProjectListBean implements SettingsDatatableBean {
         this.actionUnits = null;
         this.filteredActionUnits = null;
         this.filterPerson = null;
+        this.memberCountsByActionUnitId = Collections.emptyMap();
+        this.actionUnitIdsWithManageSettingsPermission = Collections.emptySet();
     }
 
     public void init() {
@@ -88,6 +99,7 @@ public class ProjectListBean implements SettingsDatatableBean {
         assert info != null;
         this.actionUnits = actionUnitService.findAllEditableByPerson(info.getUser());
         this.filteredActionUnits = new ArrayList<>(actionUnits);
+        loadDerivedData();
     }
 
     /**
@@ -101,6 +113,15 @@ public class ProjectListBean implements SettingsDatatableBean {
         this.filterPerson = person;
         this.actionUnits = new HashSet<>(actionUnitService.findAllByTeamMember(person));
         this.filteredActionUnits = new ArrayList<>(actionUnits);
+        loadDerivedData();
+    }
+
+    /** Member counts and the row-level manage-settings permission, both computed in bulk to avoid an N+1. */
+    private void loadDerivedData() {
+        this.memberCountsByActionUnitId = institutionService.countMembersOf(actionUnits);
+        List<Long> actionUnitIds = actionUnits.stream().map(ActionUnitDTO::getId).toList();
+        this.actionUnitIdsWithManageSettingsPermission = profilePermissionService.actionUnitIdsWithPermission(
+                sessionSettingsBean.getUserInfo(), actionUnitIds, PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
     /** Drops the person filter and reloads the current admin's own full editable project list. */

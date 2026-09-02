@@ -950,11 +950,12 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * All action units the person may manage, across every institution visible to them: those of each
-     * institution where they hold the organization manager or project manager profile.
+     * All action units of every institution visible to the person, regardless of their role there —
+     * whether they may manage any given one of them is a separate, per-action-unit permission check
+     * (see {@code ProfilePermissionService#hasActionUnitWritePermission}), not a listing filter.
      *
-     * @param user the person whose editable action units to find
-     * @return the action units the person may manage
+     * @param user the person whose visible action units to find
+     * @return the action units the person can see
      */
     public Set<ActionUnitDTO> findAllEditableByPerson(PersonDTO user) {
         if (user == null || user.getId() == null) {
@@ -964,10 +965,8 @@ public class ActionUnitService implements ArkEntityService {
         Set<ActionUnitDTO> actionUnits = new HashSet<>();
 
         for (InstitutionDTO institutionDTO : institutionService.findInstitutionsOfPerson(user)) {
-            if (personProfileAssignmentService.isOrganizationManagerOrProjectManager(institutionDTO, user)) {
-                List<ActionUnit> institutionActionUnits = actionUnitRepository.findAllByCreatedByInstitutionId(institutionDTO.getId());
-                actionUnits.addAll(institutionActionUnits.stream().map(actionUnitMapper::convert).collect(Collectors.toSet()));
-            }
+            List<ActionUnit> institutionActionUnits = actionUnitRepository.findAllByCreatedByInstitutionId(institutionDTO.getId());
+            actionUnits.addAll(institutionActionUnits.stream().map(actionUnitMapper::convert).collect(Collectors.toSet()));
         }
 
         return actionUnits;
