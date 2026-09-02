@@ -165,6 +165,7 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
         refMembers = null;
         availableProfiles = null;
         resetPendingInvitations();
+        resetProfileDetail();
         searchInput = null;
     }
 

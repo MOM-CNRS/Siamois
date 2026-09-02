@@ -82,13 +82,29 @@ class ProfileServiceTest {
     }
 
     @Test
-    void createOrGetSuperadminProfile_WhenAlreadyExists_ReturnsExisting() {
+    void createOrGetSuperadminProfile_WhenAlreadyExistsMissingPermissions_AddsThemAndSaves() {
         when(profileRepository.findByCode(ProfileConstants.SUPERADMIN)).thenReturn(Optional.of(existingProfile));
+        stubPermissionLookupByCode();
+        when(profileRepository.save(any(Profile.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Profile result = profileService.createOrGetSuperadminProfile();
 
         assertEquals(existingProfile, result);
-        verify(permissionRepository, never()).findByCode(anyString());
+        assertEquals(Set.copyOf(SUPERADMIN_PERMISSION_CODES), permissionCodesOf(result));
+        verify(profileRepository, times(1)).save(existingProfile);
+    }
+
+    @Test
+    void createOrGetSuperadminProfile_WhenAlreadyExistsWithAllPermissions_ReturnsWithoutSaving() {
+        existingProfile.getPermissions().addAll(SUPERADMIN_PERMISSION_CODES.stream()
+                .map(ProfileServiceTest::permissionWithCode)
+                .collect(Collectors.toSet()));
+        when(profileRepository.findByCode(ProfileConstants.SUPERADMIN)).thenReturn(Optional.of(existingProfile));
+        stubPermissionLookupByCode();
+
+        Profile result = profileService.createOrGetSuperadminProfile();
+
+        assertEquals(existingProfile, result);
         verify(profileRepository, never()).save(any());
     }
 
@@ -112,7 +128,14 @@ class ProfileServiceTest {
     private static final List<String> SUPERADMIN_PERMISSION_CODES = List.of(
             PermissionConstants.INSTANCE_MANAGE_SETTINGS,
             PermissionConstants.ORGANIZATION_CREATE,
-            PermissionConstants.ORGANIZATION_ACCESS);
+            PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS,
+            PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS,
+            PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_PLACES,
+            PermissionConstants.INSTANCE_ACCESS_ORGANIZATIONS,
+            PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+            PermissionConstants.INSTANCE_EDIT_PHASES,
+            PermissionConstants.INSTANCE_EDIT_FINDS,
+            PermissionConstants.INSTANCE_EDIT_CONTAINERS);
 
     private void stubPermissionLookupByCode() {
         when(permissionRepository.findByCode(anyString()))
@@ -161,6 +184,8 @@ class ProfileServiceTest {
 
     @Test
     void createOrGetOrganizationMemberProfile_WhenAlreadyExists_ReturnsExisting() {
+        existingProfile.getPermissions().add(permissionWithCode(PermissionConstants.ORGANIZATION_ACCESS));
+        stubPermissionLookupByCode();
         when(profileRepository.findByCodeAndInstitutionId(ProfileConstants.ORGANIZATION_MEMBER, institutionDTO.getId()))
                 .thenReturn(Optional.of(existingProfile));
 
@@ -168,6 +193,7 @@ class ProfileServiceTest {
 
         assertEquals(existingProfile, result);
         verify(institutionRepository, never()).findById(anyLong());
+        verify(profileRepository, never()).save(any());
     }
 
     @Test
@@ -193,6 +219,12 @@ class ProfileServiceTest {
 
     @Test
     void createOrGetProjectMemberProfile_WhenAlreadyExists_ReturnsExisting() {
+        existingProfile.getPermissions().addAll(Set.of(
+                permissionWithCode(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS),
+                permissionWithCode(PermissionConstants.PROJECT_EDIT_FINDS),
+                permissionWithCode(PermissionConstants.PROJECT_EDIT_PHASES),
+                permissionWithCode(PermissionConstants.PROJECT_EDIT_CONTAINERS)));
+        stubPermissionLookupByCode();
         when(profileRepository.findByCodeAndInstitutionIdAndActionUnitId(
                 ProfileConstants.PROJECT_MEMBER, institutionDTO.getId(), actionUnitDTO.getId()))
                 .thenReturn(Optional.of(existingProfile));

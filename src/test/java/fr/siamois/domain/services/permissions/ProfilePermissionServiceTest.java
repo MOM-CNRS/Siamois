@@ -46,6 +46,8 @@ class ProfilePermissionServiceTest {
     @Test
     void canAccessInstitution_shouldReturnTrueWhenPersonManagesTheInstitution() {
         when(assignmentRepository.personHasAnyProfileInInstitution(3L, 12L)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS))
+                .thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
                 .thenReturn(true);
 
@@ -55,6 +57,8 @@ class ProfilePermissionServiceTest {
     @Test
     void canAccessInstitution_shouldReturnFalseWhenPersonHasNoProfileInInstitution() {
         when(assignmentRepository.personHasAnyProfileInInstitution(3L, 12L)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS))
+                .thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
                 .thenReturn(false);
         when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
