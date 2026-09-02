@@ -369,6 +369,13 @@ a:hover {
     border-color: #f5c2bd;
 }
 
+.chip-disabled {
+    background-color: #f0f0f0;
+    color: #9a9a9a;
+    border-color: #e0e0e0;
+    cursor: default;
+}
+
 .resend-invitation-button {
     margin-left: 8px;
 }
@@ -624,5 +631,20 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 .member-filter-clear {
     cursor: pointer;
     color: #3a5a3c;
+    font-weight: 600;
+}
+
+.member-filter-me {
+    cursor: pointer;
+    padding: 5px 14px;
+    transition: background 0.15s ease;
+}
+
+.member-filter-me:hover {
+    background: var(--siamois-green-light-350);
+}
+
+.member-filter-me-active {
+    background: var(--siamois-green-light-350);
     font-weight: 600;
 }

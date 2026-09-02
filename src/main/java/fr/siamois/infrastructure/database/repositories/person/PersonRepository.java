@@ -103,6 +103,21 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
     long countPersonsInInstitution(Long institutionId);
 
     /**
+     * Bulk version of {@link #countPersonsInInstitution} : member count per institution, in one query
+     * instead of one per institution — used to render an institution list page's member count column
+     * without an N+1.
+     */
+    @Query("""
+            SELECT prof.institution.id, COUNT(DISTINCT p.id)
+            FROM PersonProfileAssignment a
+            JOIN a.person p
+            JOIN a.profile prof
+            WHERE prof.institution.id IN :institutionIds
+            GROUP BY prof.institution.id
+            """)
+    List<Object[]> countPersonsByInstitutionIds(@Param("institutionIds") Collection<Long> institutionIds);
+
+    /**
      * Personnes rattachées à une institution, c'est-à-dire ayant au moins un profil
      * (ORGANISATION ou PROJECT) rattaché à cette institution.
      */

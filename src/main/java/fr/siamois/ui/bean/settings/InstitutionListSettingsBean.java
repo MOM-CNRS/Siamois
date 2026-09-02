@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
@@ -18,6 +17,7 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.InstitutionDialogBean;
+import fr.siamois.ui.bean.settings.institution.InstitutionMembersListBean;
 import fr.siamois.utils.DateUtils;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
@@ -52,6 +52,7 @@ public class InstitutionListSettingsBean implements Serializable {
     private final InstitutionDialogBean institutionDialogBean;
     private final transient RecordingUnitService recordingUnitService;
     private final InstitutionDetailsBean institutionDetailsBean;
+    private final InstitutionMembersListBean institutionMembersListBean;
     private final LangBean langBean;
     private final RedirectBean redirectBean;
     private final transient PersonService personService;
@@ -61,6 +62,10 @@ public class InstitutionListSettingsBean implements Serializable {
     private List<InstitutionDTO> filteredInstitutions = null;
     private List<SortMeta> sortBy;
     private Map<Long, Boolean> toggleSwitchState = new HashMap<>();
+    private Set<Long> institutionIdsCanActivate = new HashSet<>();
+    private Set<Long> institutionIdsCanManageSettings = new HashSet<>();
+    private Map<Long, Long> memberCountsByInstitutionId = new HashMap<>();
+    private Map<Long, Long> recordingUnitCountsByInstitutionId = new HashMap<>();
 
     private String filterText;
 
@@ -77,37 +82,63 @@ public class InstitutionListSettingsBean implements Serializable {
 
     public void init() {
         filterPerson = null;
-        loadInstitutionsOf(sessionSettingsBean.getUserInfo().getUser());
+        loadInstitutions(institutionService.findAll());
     }
 
     /**
-     * Loads the institutions of an arbitrary member instead of the current admin's own, so the list can
-     * be reached pre-filtered to "organisations this person belongs to" (e.g. from the instance user list).
+     * Loads the institutions of an arbitrary member instead of the full list, so the list can be reached
+     * pre-filtered to "organisations this person belongs to" (e.g. from the instance user list).
      *
      * @param person the member whose institutions to show
      */
     public void initFilteredByPerson(PersonDTO person) {
         filterPerson = person;
-        loadInstitutionsOf(person);
+        loadInstitutions(institutionService.findInstitutionsOfPerson(person));
     }
 
-    /** Drops the person filter and reloads the current admin's own full institution list. */
+    /** Drops the person filter and reloads the full institution list. */
     public void clearPersonFilter() {
         init();
     }
 
-    private void loadInstitutionsOf(PersonDTO person) {
-        institutions = institutionService.findInstitutionsOfPerson(person);
+    /** Backs the "my organisations" chip: toggles the member filter between the current user and cleared. */
+    public void toggleFilterByMe() {
+        if (isFilteredByMe()) {
+            clearPersonFilter();
+        } else {
+            initFilteredByPerson(sessionSettingsBean.getAuthenticatedUser());
+        }
+    }
+
+    /** Whether the member filter is currently set to the current user — highlights the "my organisations" chip. */
+    public boolean isFilteredByMe() {
+        PersonDTO me = sessionSettingsBean.getAuthenticatedUser();
+        return filterPerson != null && me != null && filterPerson.getId().equals(me.getId());
+    }
+
+    private void loadInstitutions(Set<InstitutionDTO> loaded) {
+        institutions = loaded;
         filteredInstitutions = new ArrayList<>(institutions);
         filterText = null;
         onFilterType();
         updateTogglesState();
+        loadDerivedData();
         sortBy = new ArrayList<>();
         sortBy.add(SortMeta.builder()
                 .field("active")
                 .order(SortOrder.ASCENDING)
                 .priority(1)
                 .build());
+    }
+
+    /** Row-level permissions and counts, all computed in bulk to avoid an N+1 over {@link #institutions}. */
+    private void loadDerivedData() {
+        PersonDTO person = sessionSettingsBean.getAuthenticatedUser();
+        institutionIdsCanActivate = new HashSet<>(profilePermissionService.institutionIdsPersonCanAccess(person, institutions));
+        institutionIdsCanManageSettings = new HashSet<>(profilePermissionService.institutionIdsPersonCanManageSettings(person, institutions));
+        memberCountsByInstitutionId = new HashMap<>(institutionService.countMembersInInstitutions(institutions));
+        List<Long> institutionIds = institutions.stream().map(InstitutionDTO::getId).toList();
+        recordingUnitCountsByInstitutionId = new HashMap<>(recordingUnitService.countByInstitutionIds(institutionIds));
     }
 
     /** Autocomplete source for the person filter: matches by username or e-mail. */
@@ -150,18 +181,17 @@ public class InstitutionListSettingsBean implements Serializable {
     }
 
     public boolean canAccessInstitutionSettings(InstitutionDTO institution) {
-        PersonDTO person = sessionSettingsBean.getAuthenticatedUser();
-        return profilePermissionService.hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)
-                || profilePermissionService.hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+        return institutionIdsCanManageSettings.contains(institution.getId());
     }
 
-    public boolean hasMoreThenOneInstitution() {
-        if (institutions == null) {
-            UserInfo info = sessionSettingsBean.getUserInfo();
-            institutions = institutionService.findInstitutionsOfPerson(info.getUser());
-            return false;
-        }
-        return institutions.size() > 1;
+    /** Whether the current user may switch their active institution to this one — backs the row's toggle. */
+    public boolean canActivateInstitution(InstitutionDTO institution) {
+        return institutionIdsCanActivate.contains(institution.getId());
+    }
+
+    /** Whether the "active" toggle column is worth showing at all, i.e. the user can activate at least one institution. */
+    public boolean hasAnyActivatableInstitution() {
+        return !institutionIdsCanActivate.isEmpty();
     }
 
     public void displayCreateDialog() {
@@ -203,16 +233,28 @@ public class InstitutionListSettingsBean implements Serializable {
         institutions.add(institution);
         filteredInstitutions.add(institution);
         toggleSwitchState.put(institution.getId(), false);
+
+        PersonDTO person = sessionSettingsBean.getAuthenticatedUser();
+        if (profilePermissionService.canAccessInstitution(person, institution)) {
+            institutionIdsCanActivate.add(institution.getId());
+        }
+        if (profilePermissionService.hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)
+                || profilePermissionService.hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS)) {
+            institutionIdsCanManageSettings.add(institution.getId());
+        }
+        memberCountsByInstitutionId.put(institution.getId(), institutionService.countMembersInInstitution(institution));
+        recordingUnitCountsByInstitutionId.put(institution.getId(), recordingUnitService.countByInstitutionId(institution.getId()));
+
         institutionDialogBean.reset();
         PrimeFaces.current().executeScript("PF('newInstitutionDialog').hide();");
     }
 
     public long numberOfMemberInInstitution(InstitutionDTO institution) {
-        return institutionService.countMembersInInstitution(institution);
+        return memberCountsByInstitutionId.getOrDefault(institution.getId(), 0L);
     }
 
     public long numberOfRecordingUnitInInstitution(InstitutionDTO institution) {
-        return recordingUnitService.countByInstitutionId(institution.getId());
+        return recordingUnitCountsByInstitutionId.getOrDefault(institution.getId(), 0L);
     }
 
     public String redirectToInstitution(InstitutionDTO institution) {
@@ -227,12 +269,29 @@ public class InstitutionListSettingsBean implements Serializable {
         return "/pages/settings/institutionSettings.xhtml?faces-redirect=true";
     }
 
+    /** Navigates straight to the organisation's member page — backs the row's "members" chip. */
+    public String redirectToInstitutionMembers(InstitutionDTO institution) {
+        if (!canAccessInstitutionSettings(institution)) {
+            log.warn("Person {} tried to access members of institution {} without permission",
+                    sessionSettingsBean.getAuthenticatedUser(), institution.getId());
+            MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");
+            return null;
+        }
+        institutionDetailsBean.setInstitution(institution);
+        institutionMembersListBean.init(institution);
+        return "/pages/settings/institution/institutionMembersSettings.xhtml?faces-redirect=true";
+    }
+
     @EventListener(LoginEvent.class)
     public void reset() {
         institutions = null;
         filteredInstitutions = null;
         sortBy = null;
         toggleSwitchState.clear();
+        institutionIdsCanActivate.clear();
+        institutionIdsCanManageSettings.clear();
+        memberCountsByInstitutionId.clear();
+        recordingUnitCountsByInstitutionId.clear();
         filterText = null;
         filterPerson = null;
     }

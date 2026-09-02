@@ -89,13 +89,17 @@
                         </p:selectCheckboxMenu>
                     </p:column>
                     <p:column headerText="#{langBean.msg('administrationSettings.userManagement.columnOrganisations')}">
-                        <p:commandLink action="#{navBean.goToOrganisationSettings(member.person)}">
-                            #{applicationMembersListBean.numberOfInstitutionsForMember(member)}
+                        <p:commandLink action="#{navBean.goToOrganisationSettings(member.person)}" styleClass="chip-nav-link">
+                            <span class="chip chip-profile entity-nav-chip">
+                                #{applicationMembersListBean.numberOfInstitutionsForMember(member)}
+                            </span>
                         </p:commandLink>
                     </p:column>
                     <p:column headerText="#{langBean.msg('administrationSettings.userManagement.columnProjects')}">
-                        <p:commandLink action="#{navBean.goToProjectsSettings(member.person)}">
-                            #{applicationMembersListBean.numberOfProjectsForMember(member)}
+                        <p:commandLink action="#{navBean.goToProjectsSettings(member.person)}" styleClass="chip-nav-link">
+                            <span class="chip chip-profile entity-nav-chip">
+                                #{applicationMembersListBean.numberOfProjectsForMember(member)}
+                            </span>
                         </p:commandLink>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">

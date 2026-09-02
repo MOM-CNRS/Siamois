@@ -42,6 +42,25 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
                                              @Param("institutionId") Long institutionId,
                                              @Param("permissionCode") String permissionCode);
 
+    /**
+     * Bulk version of {@link #personHasPermissionInInstitution} : which of the given institutions the
+     * person holds the permission on, in one query instead of one per institution — used to compute a
+     * whole institution list page's row-level permissions without an N+1.
+     */
+    @Query("""
+            SELECT DISTINCT prof.institution.id
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            JOIN prof.permissions perm
+            WHERE a.person.id = :personId
+              AND prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.ORGANISATION
+              AND prof.institution.id IN :institutionIds
+              AND perm.code = :permissionCode
+            """)
+    Set<Long> findInstitutionIdsWithPermission(@Param("personId") Long personId,
+                                               @Param("institutionIds") Collection<Long> institutionIds,
+                                               @Param("permissionCode") String permissionCode);
+
     @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a
@@ -127,6 +146,20 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             """)
     boolean personHasAnyProfileInInstitution(@Param("personId") Long personId,
                                              @Param("institutionId") Long institutionId);
+
+    /**
+     * Bulk version of {@link #personHasAnyProfileInInstitution} : which of the given institutions the
+     * person holds any profile in, in one query instead of one per institution.
+     */
+    @Query("""
+            SELECT DISTINCT prof.institution.id
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE a.person.id = :personId
+              AND prof.institution.id IN :institutionIds
+            """)
+    Set<Long> findInstitutionIdsWithAnyProfile(@Param("personId") Long personId,
+                                               @Param("institutionIds") Collection<Long> institutionIds);
 
     @Query("""
             SELECT DISTINCT p

@@ -49,6 +49,12 @@
                                         dropdown="false">
                             <p:ajax event="itemSelect" listener="#{projectListBean.initFilteredByPerson(projectListBean.filterPerson)}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"/>
                         </p:autoComplete>
+                        <p:commandLink action="#{projectListBean.toggleFilterByMe()}"
+                                       process="@this"
+                                       update="@form :projectListDatatable:formCC:projectListForm"
+                                       styleClass="member-filter-chip member-filter-me#{projectListBean.isFilteredByMe() ? ' member-filter-me-active' : ''}">
+                            #{langBean.msg('projectList.filterByMember.me')}
+                        </p:commandLink>
                         <h:panelGroup rendered="#{not empty projectListBean.filterPerson}">
                             <span class="member-filter-chip">
                                 #{langBean.msg('projectList.filterByMember.active', projectListBean.filterPerson.displayName())}
@@ -77,14 +83,25 @@
                         <p:outputLabel value="#{au.name}"/>
                     </p:column>
 
-                    <p:column headerText="Institution">
+                    <p:column headerText="Organisation">
                         <p:outputLabel value="#{au.createdByInstitution.name}"/>
                     </p:column>
                     <p:column headerText="Identifiant">
                         <p:outputLabel value="#{au.fullIdentifier}"/>
                     </p:column>
                     <p:column headerText="#{langBean.msg('actionManagers.header.numberOfMembers')}">
-                        <p:outputLabel value="#{projectListBean.numberOfMemberInActionUnit(au)}"/>
+                        <p:commandLink action="#{projectListBean.redirectToProjectMembers(au)}" styleClass="chip-nav-link"
+                                       rendered="#{projectListBean.canManageSettings(au)}"
+                                       immediate="true" process="@this">
+                            <span class="chip chip-profile entity-nav-chip">
+                                #{projectListBean.numberOfMemberInActionUnit(au)}
+                            </span>
+                        </p:commandLink>
+                        <h:panelGroup rendered="#{not projectListBean.canManageSettings(au)}">
+                            <span class="chip chip-disabled">
+                                #{projectListBean.numberOfMemberInActionUnit(au)}
+                            </span>
+                        </h:panelGroup>
                     </p:column>
                     <p:column headerText="#{langBean.msg('organisationSettings.titles.actionManager')}">
                         <p:outputLabel value="#{au.createdBy.displayName()}"/>

@@ -301,6 +301,23 @@ public class InstitutionService {
     }
 
     /**
+     * Bulk version of {@link #countMembersInInstitution} : member count for every institution in the
+     * collection, in one query instead of one per institution — used to render an institution list's
+     * member count column without an N+1.
+     */
+    public Map<Long, Long> countMembersInInstitutions(Collection<InstitutionDTO> institutions) {
+        List<Long> institutionIds = institutions.stream().map(InstitutionDTO::getId).toList();
+        if (institutionIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : personRepository.countPersonsByInstitutionIds(institutionIds)) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+        return counts;
+    }
+
+    /**
      * Checks if a person is associated with a given institution, i.e. holds any
      * profile (ORGANISATION or PROJECT scoped) attached to the institution.
      *
