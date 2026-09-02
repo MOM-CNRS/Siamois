@@ -540,11 +540,11 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     /** @return whether at least one previewed CSV row is currently staged to be imported. */
     public boolean isCsvImportEnabled() {
-        return csvImportCount() > 0;
+        return getCsvImportCount() > 0;
     }
 
     /** @return how many previewed CSV rows are currently staged to be imported. */
-    public long csvImportCount() {
+    public long getCsvImportCount() {
         return csvPreviewRows == null ? 0
                 : csvPreviewRows.stream().filter(r -> r.isIncluded() && r.getError() == null).count();
     }
