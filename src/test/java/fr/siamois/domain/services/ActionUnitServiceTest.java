@@ -1943,6 +1943,54 @@ class ActionUnitServiceTest {
         assertThat(result).containsExactlyInAnyOrder(sharedDto, dto2);
     }
 
+    @Test
+    void findAllByTeamMember_returnsEmptySetWhenMemberIsNull() {
+        Set<ActionUnitDTO> result = actionUnitService.findAllByTeamMember(null);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void findAllByTeamMember_returnsEmptySetWhenMemberHasNoId() {
+        Set<ActionUnitDTO> result = actionUnitService.findAllByTeamMember(new PersonDTO());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void findAllByTeamMember_returnsEveryActionUnitTheMemberBelongsTo() {
+        PersonDTO member = new PersonDTO();
+        member.setId(7L);
+
+        ActionUnit au1 = buildActionUnitWithFullIdentifier(11L, "MOM-11");
+        ActionUnitDTO dto1 = buildActionUnitDTO(11L, "MOM-11");
+
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(au1));
+        when(actionUnitMapper.convert(au1)).thenReturn(dto1);
+        when(recordingUnitRepository.countByActionContext(11L)).thenReturn(3);
+
+        Set<ActionUnitDTO> result = actionUnitService.findAllByTeamMember(member);
+
+        assertThat(result).containsExactly(dto1);
+    }
+
+    @Test
+    void countByTeamMember_returnsZeroWhenPersonIdIsNull() {
+        assertThat(actionUnitService.countByTeamMember(null)).isZero();
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void countByTeamMember_delegatesToRepositoryCount() {
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(4L);
+
+        long result = actionUnitService.countByTeamMember(7L);
+
+        assertThat(result).isEqualTo(4L);
+    }
+
     private ActionUnit buildActionUnitWithFullIdentifier(Long id, String fullIdentifier) {
         ActionUnit actionUnit = new ActionUnit();
         actionUnit.setId(id);

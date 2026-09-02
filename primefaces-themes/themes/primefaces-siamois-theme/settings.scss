@@ -594,3 +594,35 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 .profile-permission-row .ui-chkbox .ui-chkbox-box.ui-state-disabled {
     opacity: 1;
 }
+
+/* ── Organisations/Projets lists: filter-by-member row ─────────── */
+/* Rendered via comp:datatable's "extraFilter" facet, so it sits between the
+   header (title/desc/search) and the actual table, in normal flow. */
+.member-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 3vw;
+}
+
+.member-filter-row .ui-autocomplete {
+    width: 280px;
+}
+
+.member-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #3a5a3c;
+    background: var(--siamois-green-light-100);
+    border: 1px solid var(--siamois-green-light-350);
+    border-radius: 20px;
+    padding: 5px 8px 5px 14px;
+}
+
+.member-filter-clear {
+    cursor: pointer;
+    color: #3a5a3c;
+    font-weight: 600;
+}

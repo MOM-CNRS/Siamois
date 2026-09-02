@@ -88,6 +88,16 @@
                             <p:ajax event="itemUnselect" listener="#{applicationMembersListBean.onProfileUnselect}" process="@this" update="profileSelect"/>
                         </p:selectCheckboxMenu>
                     </p:column>
+                    <p:column headerText="#{langBean.msg('administrationSettings.userManagement.columnOrganisations')}">
+                        <p:commandLink action="#{navBean.goToOrganisationSettings(member.person)}">
+                            #{applicationMembersListBean.numberOfInstitutionsForMember(member)}
+                        </p:commandLink>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('administrationSettings.userManagement.columnProjects')}">
+                        <p:commandLink action="#{navBean.goToProjectsSettings(member.person)}">
+                            #{applicationMembersListBean.numberOfProjectsForMember(member)}
+                        </p:commandLink>
+                    </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">
                         <span class="chip #{applicationMembersListBean.accountStatusChipClass(member.person)}">
                             #{applicationMembersListBean.accountStatusLabel(member.person)}

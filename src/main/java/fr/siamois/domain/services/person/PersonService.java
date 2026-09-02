@@ -336,9 +336,10 @@ public class PersonService {
     }
 
     /**
-     * Find a Person by its username or email. Case-insensitive. Uses the pg_trgm extension for fuzzy matching.
+     * Find a Person by its username, email, or first/last name. Case-insensitive. Uses the pg_trgm
+     * extension for fuzzy matching.
      *
-     * @param usernameOrMailInput The username or email of the person to find.
+     * @param usernameOrMailInput The username, email, or name of the person to find.
      * @return An Optional containing the Person if found, or empty if not found.
      */
     public List<PersonDTO> findClosestByUsernameOrEmail(String usernameOrMailInput) {
@@ -349,6 +350,7 @@ public class PersonService {
         Set<Person> result = new HashSet<>();
         result.addAll(personRepository.findClosestByEmailLimit10(usernameOrMailInput));
         result.addAll(personRepository.findClosestByUsernameLimit10(usernameOrMailInput));
+        result.addAll(personRepository.findClosestByNameLimit10(usernameOrMailInput));
 
         return result.stream()
                 .map(personMapper::convert)
