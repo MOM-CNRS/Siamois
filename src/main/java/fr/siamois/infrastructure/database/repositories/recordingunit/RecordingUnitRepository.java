@@ -144,6 +144,19 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
     long countByCreatedByInstitutionId(Long institutionId);
 
+    /**
+     * Bulk version of {@link #countByCreatedByInstitutionId} : recording unit count per institution, in
+     * one query instead of one per institution — used to render an institution list page's recording unit
+     * count column without an N+1.
+     */
+    @Query("""
+            SELECT ru.createdByInstitution.id, COUNT(ru)
+            FROM RecordingUnit ru
+            WHERE ru.createdByInstitution.id IN :institutionIds
+            GROUP BY ru.createdByInstitution.id
+            """)
+    List<Object[]> countByCreatedByInstitutionIds(@Param("institutionIds") Collection<Long> institutionIds);
+
     Optional<RecordingUnit> findByIdentifierAndCreatedByInstitution(Integer identifier, Institution institution);
 
     @Query(

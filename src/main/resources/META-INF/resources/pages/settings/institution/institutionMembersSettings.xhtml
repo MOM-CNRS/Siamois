@@ -116,7 +116,7 @@
             </p:tabView>
             <ui:include src="/dialog/shared/newMemberDialog.xhtml">
                 <ui:param name="dialogBean" value="#{newOrganizationMemberDialogBean}"/>
-                <ui:param name="updateTarget" value=":orgMembersDatatable:formCC:institutionMembersForm:membersDatatable"/>
+                <ui:param name="updateTarget" value=":orgMembersTabs:orgMembersDatatable:formCC:institutionMembersForm:membersDatatable"/>
             </ui:include>
             <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
                 <ui:param name="bean" value="#{institutionMembersListBean}"/>

@@ -17,12 +17,27 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.primefaces.PrimeFaces;
+import org.primefaces.event.FileUploadEvent;
+import org.primefaces.model.DefaultStreamedContent;
+import org.primefaces.model.StreamedContent;
+import org.primefaces.model.file.UploadedFile;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.io.ClassPathResource;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 import static fr.siamois.utils.MessageUtils.displayInfoMessage;
@@ -74,6 +89,13 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected String inviteUsername;
     protected String invitePassword;
     protected String invitePasswordConfirm;
+
+    // CSV import sub-step
+    protected transient List<CsvImportRow> csvPreviewRows;
+    protected String csvGlobalError;
+
+    private static final int CSV_MAX_ROWS = 500;
+    private static final List<String> CSV_REQUIRED_HEADERS = List.of("name", "lastname", "email");
 
     /** @return the PrimeFaces widget var of the dialog this bean backs, used to update/hide it. */
     protected abstract String getDialogWidgetVar();
@@ -150,6 +172,8 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         selectedProfiles = new ArrayList<>();
         availableProfiles = new ArrayList<>();
         clearInviteFields();
+        csvPreviewRows = null;
+        csvGlobalError = null;
     }
 
     private void clearInviteFields() {
@@ -185,8 +209,29 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         return step == WizardStep.INVITE;
     }
 
+    /**
+     * Tells whether the wizard is currently on the sub-step used to import members in bulk from a CSV file.
+     *
+     * @return {@code true} when the wizard is on the "CSV import" sub-step, {@code false} otherwise
+     */
+    public boolean isStepCsvImport() {
+        return step == WizardStep.CSV_IMPORT;
+    }
+
     protected static boolean isDraft(PersonDTO person) {
         return person.getId() != null && person.getId() < 0;
+    }
+
+    /**
+     * @return the label shown on a member chip in the selection field — the display name, suffixed with
+     * an indicator when the person is a not-yet-created draft, so drafts (whether staged one at a time via
+     * {@link #confirmInvite()} or in bulk via {@link #confirmCsvImport()}) are visually distinguishable
+     * from already-existing accounts.
+     */
+    public String memberChipLabel(PersonDTO person) {
+        return isDraft(person)
+                ? person.displayName() + " · " + langBean.msg("newOrganizationMember.chip.newAccount")
+                : person.displayName();
     }
 
     /**
@@ -217,14 +262,29 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         step = WizardStep.MAIN;
     }
 
+    /** Switches to the "import members from CSV" sub-step. */
+    public void goToCsvImport() {
+        csvPreviewRows = null;
+        csvGlobalError = null;
+        step = WizardStep.CSV_IMPORT;
+    }
+
+    /** Discards any uploaded/previewed CSV and returns to the member/profile selection step. */
+    public void cancelCsvImport() {
+        csvPreviewRows = null;
+        csvGlobalError = null;
+        step = WizardStep.MAIN;
+    }
+
     /**
      * Runs whatever the current step's primary button means: validates and stages the invite draft
-     * on the invite step, or creates/submits every selected member on the main step.
+     * on the invite step, or creates/submits every selected member on the main step. No-op on the CSV
+     * import step, which has its own dedicated confirm/cancel buttons.
      */
     public void primaryAction() {
         if (step == WizardStep.INVITE) {
             confirmInvite();
-        } else if (!selectedMembers.isEmpty()) {
+        } else if (step == WizardStep.MAIN && !selectedMembers.isEmpty()) {
             confirmWizard();
         }
     }
@@ -291,6 +351,236 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
             return false;
         }
         return username.chars().allMatch(c -> Character.isLetterOrDigit(c) || c == '.');
+    }
+
+    /** @return a downloadable example CSV file matching the expected {@code name,lastname,email} format. */
+    public StreamedContent getCsvImportTemplate() {
+        return DefaultStreamedContent.builder()
+                .name("import_membres_exemple.csv")
+                .contentType("text/csv")
+                .stream(() -> {
+                    try {
+                        return new ClassPathResource("datasets/member_import_example.csv").getInputStream();
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * Parses the uploaded CSV file (columns {@code name}, {@code lastname}, {@code email}, header
+     * required, order-independent, either "," or ";" delimited) into {@link #csvPreviewRows} for review,
+     * looking up each e-mail against existing accounts so the preview can tell existing members from
+     * ones that will be created. Does not touch {@link #selectedMembers} — see {@link #confirmCsvImport()}.
+     */
+    public void handleCsvUpload(FileUploadEvent event) {
+        csvGlobalError = null;
+        csvPreviewRows = null;
+
+        UploadedFile file = event.getFile();
+        if (file == null || file.getFileName() == null) {
+            return;
+        }
+
+        byte[] bytes;
+        try (InputStream is = file.getInputStream()) {
+            bytes = is.readAllBytes();
+        } catch (IOException e) {
+            csvGlobalError = langBean.msg("newOrganizationMember.csv.error.read");
+            return;
+        }
+
+        CSVFormat format = CSVFormat.DEFAULT.builder()
+                .setDelimiter(detectCsvDelimiter(bytes))
+                .setHeader()
+                .setSkipHeaderRecord(true)
+                .setIgnoreHeaderCase(true)
+                .setTrim(true)
+                // Tolerates a trailing delimiter on the header row (e.g. "name;lastname;email;"), a common
+                // side effect of exporting from Excel — commons-csv otherwise rejects the blank column name.
+                .setAllowMissingColumnNames(true)
+                .build();
+
+        List<CSVRecord> records;
+        Set<String> headerNames;
+        try (CSVParser parser = CSVParser.parse(
+                new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8), format)) {
+            headerNames = parser.getHeaderNames().stream()
+                    .map(h -> h.toLowerCase(Locale.ROOT))
+                    .collect(Collectors.toSet());
+            records = parser.getRecords();
+        } catch (IOException | IllegalArgumentException e) {
+            csvGlobalError = langBean.msg("newOrganizationMember.csv.error.parse");
+            return;
+        }
+
+        if (!headerNames.containsAll(CSV_REQUIRED_HEADERS)) {
+            csvGlobalError = langBean.msg("newOrganizationMember.csv.error.header");
+            return;
+        }
+        if (records.size() > CSV_MAX_ROWS) {
+            csvGlobalError = langBean.msg("newOrganizationMember.csv.error.tooManyRows", CSV_MAX_ROWS);
+            return;
+        }
+
+        csvPreviewRows = records.stream().map(this::toCsvImportRow).toList();
+        markCsvDuplicates();
+    }
+
+    private CsvImportRow toCsvImportRow(CSVRecord rec) {
+        CsvImportRow row = new CsvImportRow();
+        row.setName(rec.get("name"));
+        row.setLastname(rec.get("lastname"));
+        row.setEmail(rec.get("email"));
+
+        if (StringUtils.isBlank(row.getName()) || StringUtils.isBlank(row.getLastname()) || StringUtils.isBlank(row.getEmail())) {
+            row.setError(langBean.msg("newOrganizationMember.csv.error.missingField"));
+        } else if (!isValidEmail(row.getEmail())) {
+            row.setError(langBean.msg("newOrganizationMember.csv.error.invalidEmail"));
+        } else {
+            personService.findDtoByEmail(row.getEmail()).ifPresent(row::setExistingPerson);
+        }
+        row.setIncluded(row.getError() == null);
+        return row;
+    }
+
+    /**
+     * Guesses the CSV delimiter from the header line alone: whichever of "," or ";" appears more often
+     * there, defaulting to "," — covers both plain CSV exports and French-locale Excel exports (which use
+     * ";" because "," is the decimal separator).
+     */
+    private static char detectCsvDelimiter(byte[] bytes) {
+        String content = new String(bytes, StandardCharsets.UTF_8);
+        int newline = content.indexOf('\n');
+        String headerLine = newline >= 0 ? content.substring(0, newline) : content;
+        long commas = headerLine.chars().filter(c -> c == ',').count();
+        long semicolons = headerLine.chars().filter(c -> c == ';').count();
+        return semicolons > commas ? ';' : ',';
+    }
+
+    /**
+     * Marks duplicate e-mails within the previewed CSV (case-insensitive), keeping the first occurrence
+     * of each and flagging later ones as errors so they are excluded from {@link #confirmCsvImport()}.
+     */
+    private void markCsvDuplicates() {
+        Set<String> seen = new HashSet<>();
+        for (CsvImportRow row : csvPreviewRows) {
+            if (row.getError() != null || StringUtils.isBlank(row.getEmail())) {
+                continue;
+            }
+            if (!seen.add(row.getEmail().toLowerCase(Locale.ROOT))) {
+                row.setError(langBean.msg("newOrganizationMember.csv.error.duplicate"));
+                row.setIncluded(false);
+            }
+        }
+    }
+
+    /**
+     * Merges every included, error-free row of {@link #csvPreviewRows} into {@link #selectedMembers} —
+     * existing accounts as-is, new ones as drafts (same negative-id convention as {@link #confirmInvite()}),
+     * skipping anything already present — then returns to the main step. Submission itself still happens
+     * through the normal {@link #confirmWizard()} path, so imported members get the same profiles as the
+     * rest of the batch and new ones go through the same "invited without password" e-mail flow.
+     */
+    public void confirmCsvImport() {
+        if (csvPreviewRows == null) {
+            return;
+        }
+
+        Set<Long> existingIds = selectedMembers.stream()
+                .filter(p -> !isDraft(p))
+                .map(PersonDTO::getId)
+                .collect(Collectors.toCollection(HashSet::new));
+        Set<String> draftEmails = selectedMembers.stream()
+                .filter(AbstractNewMemberDialogBean::isDraft)
+                .map(p -> p.getEmail() == null ? "" : p.getEmail().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toCollection(HashSet::new));
+
+        for (CsvImportRow row : csvPreviewRows) {
+            mergeCsvRowIntoSelectedMembers(row, existingIds, draftEmails);
+        }
+
+        csvPreviewRows = null;
+        csvGlobalError = null;
+        step = WizardStep.MAIN;
+    }
+
+    /**
+     * Adds a single validated CSV row to {@link #selectedMembers} — the existing account as-is, or a new
+     * draft (same negative-id convention as {@link #confirmInvite()}) — unless it's invalid, excluded, or
+     * already staged (tracked via {@code existingIds}/{@code draftEmails}).
+     */
+    private void mergeCsvRowIntoSelectedMembers(CsvImportRow row, Set<Long> existingIds, Set<String> draftEmails) {
+        if (!row.isIncluded() || row.getError() != null) {
+            return;
+        }
+        if (row.isExisting()) {
+            if (existingIds.add(row.getExistingPerson().getId())) {
+                selectedMembers.add(row.getExistingPerson());
+            }
+            return;
+        }
+        String email = row.getEmail().toLowerCase(Locale.ROOT);
+        if (!draftEmails.add(email)) {
+            return;
+        }
+        PersonDTO draft = new PersonDTO();
+        draft.setId(nextDraftId--);
+        draft.setName(row.getName());
+        draft.setLastname(row.getLastname());
+        draft.setEmail(row.getEmail());
+        draft.setUsername(usernameFromEmail(row.getEmail()));
+        draftPasswords.put(draft.getId(), null);
+        selectedMembers.add(draft);
+    }
+
+    /**
+     * @return the localised status shown for a CSV preview row: its error if invalid, otherwise whether
+     * it matched an existing account or will be created.
+     */
+    public String csvRowStatusLabel(CsvImportRow row) {
+        if (row.getError() != null) {
+            return row.getError();
+        }
+        return langBean.msg(row.isExisting()
+                ? "newOrganizationMember.csv.status.existing"
+                : "newOrganizationMember.csv.status.new");
+    }
+
+    /** @return whether at least one previewed CSV row is currently staged to be imported. */
+    public boolean isCsvImportEnabled() {
+        return getCsvImportCount() > 0;
+    }
+
+    /** @return how many previewed CSV rows are currently staged to be imported. */
+    public long getCsvImportCount() {
+        return csvPreviewRows == null ? 0
+                : csvPreviewRows.stream().filter(r -> r.isIncluded() && r.getError() == null).count();
+    }
+
+    /** A single parsed, validated row of an uploaded member-import CSV, pending user confirmation. */
+    @Getter
+    @Setter
+    public static class CsvImportRow implements Serializable {
+        private String name;
+        private String lastname;
+        private String email;
+        private transient PersonDTO existingPerson;
+        private String error;
+        private boolean included = true;
+
+        public boolean isExisting() {
+            return existingPerson != null;
+        }
+
+        /** @return the chip CSS class for this row's status — existing/new/error, reusing the app's account-status chips. */
+        public String statusChipClass() {
+            if (error != null) {
+                return "chip-status-expired";
+            }
+            return isExisting() ? "chip-status-active" : "chip-status-invited";
+        }
     }
 
     /**
@@ -444,7 +734,8 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     public enum WizardStep {
         MAIN,
-        INVITE
+        INVITE,
+        CSV_IMPORT
     }
 
 }

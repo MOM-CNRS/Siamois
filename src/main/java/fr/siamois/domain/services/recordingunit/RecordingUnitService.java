@@ -820,6 +820,23 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
+    /**
+     * Bulk version of {@link #countByInstitutionId} : recording unit count for every institution id in the
+     * collection, in one query instead of one per institution — used to render an institution list's
+     * recording unit count column without an N+1.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Long> countByInstitutionIds(Collection<Long> institutionIds) {
+        if (institutionIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : recordingUnitRepository.countByCreatedByInstitutionIds(institutionIds)) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+        return counts;
+    }
+
 
     /**
      * Verify if the user has the permission to create specimen in the context of a recording unit

@@ -1902,14 +1902,14 @@ class ActionUnitServiceTest {
     }
 
     @Test
-    void findAllEditableByPerson_returnsOnlyActionUnitsOfInstitutionsWhereUserIsManager() {
+    void findAllEditableByPerson_returnsActionUnitsOfEveryVisibleInstitutionRegardlessOfRole() {
         PersonDTO user = new PersonDTO();
         user.setId(42L);
 
-        InstitutionDTO managedInstitution = new InstitutionDTO();
-        managedInstitution.setId(1L);
-        InstitutionDTO otherInstitution = new InstitutionDTO();
-        otherInstitution.setId(2L);
+        InstitutionDTO institution1 = new InstitutionDTO();
+        institution1.setId(1L);
+        InstitutionDTO institution2 = new InstitutionDTO();
+        institution2.setId(2L);
 
         ActionUnit au1 = buildActionUnitWithFullIdentifier(11L, "MOM-11");
         ActionUnit au2 = buildActionUnitWithFullIdentifier(12L, "MOM-12");
@@ -1917,35 +1917,18 @@ class ActionUnitServiceTest {
         ActionUnitDTO dto2 = buildActionUnitDTO(12L, "MOM-12");
 
         when(institutionService.findInstitutionsOfPerson(user))
-                .thenReturn(new LinkedHashSet<>(List.of(managedInstitution, otherInstitution)));
-        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(managedInstitution, user)).thenReturn(true);
-        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(otherInstitution, user)).thenReturn(false);
-        when(actionUnitRepository.findAllByCreatedByInstitutionId(1L)).thenReturn(List.of(au1, au2));
+                .thenReturn(new LinkedHashSet<>(List.of(institution1, institution2)));
+        when(actionUnitRepository.findAllByCreatedByInstitutionId(1L)).thenReturn(List.of(au1));
+        when(actionUnitRepository.findAllByCreatedByInstitutionId(2L)).thenReturn(List.of(au2));
         when(actionUnitMapper.convert(au1)).thenReturn(dto1);
         when(actionUnitMapper.convert(au2)).thenReturn(dto2);
 
         Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
 
+        // Every institution the person can see contributes its action units — the listing is no longer
+        // gated by a manager role, only per-action-unit permission checks (done elsewhere) are.
         assertThat(result).containsExactlyInAnyOrder(dto1, dto2);
-        // Les unités d'action de l'organisation où l'utilisateur n'est pas gestionnaire ne sont jamais chargées
-        verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(2L);
-    }
-
-    @Test
-    void findAllEditableByPerson_returnsEmptySetWhenUserManagesNoInstitution() {
-        PersonDTO user = new PersonDTO();
-        user.setId(42L);
-
-        InstitutionDTO institution = new InstitutionDTO();
-        institution.setId(1L);
-
-        when(institutionService.findInstitutionsOfPerson(user)).thenReturn(Set.of(institution));
-        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(institution, user)).thenReturn(false);
-
-        Set<ActionUnitDTO> result = actionUnitService.findAllEditableByPerson(user);
-
-        assertThat(result).isEmpty();
-        verify(actionUnitRepository, never()).findAllByCreatedByInstitutionId(any());
+        verifyNoInteractions(personProfileAssignmentService);
     }
 
     @Test
@@ -1979,7 +1962,6 @@ class ActionUnitServiceTest {
 
         when(institutionService.findInstitutionsOfPerson(user))
                 .thenReturn(new LinkedHashSet<>(List.of(institution1, institution2)));
-        when(personProfileAssignmentService.isOrganizationManagerOrProjectManager(any(InstitutionDTO.class), eq(user))).thenReturn(true);
         when(actionUnitRepository.findAllByCreatedByInstitutionId(1L)).thenReturn(List.of(shared));
         when(actionUnitRepository.findAllByCreatedByInstitutionId(2L)).thenReturn(List.of(shared, au2));
         when(actionUnitMapper.convert(shared)).thenReturn(sharedDto);

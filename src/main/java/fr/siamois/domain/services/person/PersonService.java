@@ -336,6 +336,16 @@ public class PersonService {
     }
 
     /**
+     * Find a Person by its email, as a DTO.
+     *
+     * @param email The email of the person to find.
+     * @return An Optional containing the PersonDTO if found, or empty if not found.
+     */
+    public Optional<PersonDTO> findDtoByEmail(String email) {
+        return findByEmail(email).map(personMapper::convert);
+    }
+
+    /**
      * Find a Person by its username, email, or first/last name. Case-insensitive. Uses the pg_trgm
      * extension for fuzzy matching.
      *

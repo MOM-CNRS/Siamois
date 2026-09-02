@@ -42,6 +42,7 @@ public class ProjectListBean implements SettingsDatatableBean {
     private final NavBean navBean;
     private final transient SessionSettingsBean sessionSettingsBean;
     private final transient ProjectDetailsBean projectDetailsBean;
+    private final transient ProjectMembersListBean projectMembersListBean;
     private final transient InstitutionService institutionService;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient PersonService personService;
@@ -129,6 +130,21 @@ public class ProjectListBean implements SettingsDatatableBean {
         init();
     }
 
+    /** Backs the "my projects" chip: toggles the member filter between the current user and cleared. */
+    public void toggleFilterByMe() {
+        if (isFilteredByMe()) {
+            clearPersonFilter();
+        } else {
+            initFilteredByPerson(sessionSettingsBean.getAuthenticatedUser());
+        }
+    }
+
+    /** Whether the member filter is currently set to the current user — highlights the "my projects" chip. */
+    public boolean isFilteredByMe() {
+        PersonDTO me = sessionSettingsBean.getAuthenticatedUser();
+        return filterPerson != null && me != null && filterPerson.getId().equals(me.getId());
+    }
+
     /** Autocomplete source for the person filter: matches by username or e-mail. */
     public List<PersonDTO> completePerson(String query) {
         return personService.findClosestByUsernameOrEmail(query);
@@ -146,5 +162,18 @@ public class ProjectListBean implements SettingsDatatableBean {
         projectDetailsBean.setProject(actionUnit);
         projectDetailsBean.init();
          return "/pages/settings/project/projectSettings.xhtml?faces-redirect=true";
+    }
+
+    /** Navigates straight to the project's member page — backs the row's "members" chip. */
+    public String redirectToProjectMembers(ActionUnitDTO actionUnit) {
+        if (!canManageSettings(actionUnit)) {
+            log.warn("Person {} tried to access members of project {} without permission",
+                    sessionSettingsBean.getUserInfo().getUser(), actionUnit.getId());
+            MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");
+            return null;
+        }
+        projectDetailsBean.setProject(actionUnit);
+        projectMembersListBean.init(actionUnit);
+        return "/pages/settings/project/projectMembersSettings.xhtml?faces-redirect=true";
     }
 }

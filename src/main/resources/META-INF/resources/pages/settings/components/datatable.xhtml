@@ -27,7 +27,7 @@
                         <i class="bi bi-search"/>
                         <p:inputText placeholder="#{cc.attrs.searchInputPlaceholder}"
                                      value="#{cc.attrs.searchInputTextValue}">
-                            <p:ajax event="keyup" update="@form :#{cc.clientId}:formCC"
+                            <p:ajax event="keyup" update="@form :#{cc.clientId}:formCC:#{cc.attrs.formId}"
                                     listener="#{cc.attrs.filterAction}"/>
                         </p:inputText>
                     </span>

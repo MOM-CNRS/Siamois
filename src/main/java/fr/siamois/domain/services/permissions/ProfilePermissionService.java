@@ -7,6 +7,7 @@ import fr.siamois.infrastructure.database.repositories.permissions.PersonProfile
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -261,6 +262,68 @@ public class ProfilePermissionService {
         return assignmentRepository.personHasAnyProfileInInstitution(person.getId(), institution.getId())
                 || hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS)
                 || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+    }
+
+    /**
+     * Bulk version of {@link #hasOrganizationPermission(PersonDTO, InstitutionDTO, String)} : which of the
+     * given institutions the person holds the permission on, in at most one query total instead of one (or
+     * two) per institution.
+     */
+    public Set<Long> institutionIdsWithOrganizationPermission(PersonDTO person, Collection<InstitutionDTO> institutions,
+                                                               String permissionCode) {
+        Set<Long> ids = institutionIds(institutions);
+        if (ids.isEmpty() || person == null || person.getId() == null) {
+            return Set.of();
+        }
+        if (hasInstancePermission(person, permissionCode)) {
+            return ids;
+        }
+        return assignmentRepository.findInstitutionIdsWithPermission(person.getId(), ids, permissionCode);
+    }
+
+    /**
+     * Bulk version of {@link #canAccessInstitution} : which of the given institutions the person may
+     * activate, in at most two queries total instead of up to four per institution — used for a whole
+     * institution list page's row-level "activate" toggle without an N+1.
+     */
+    public Set<Long> institutionIdsPersonCanAccess(PersonDTO person, Collection<InstitutionDTO> institutions) {
+        Set<Long> ids = institutionIds(institutions);
+        if (ids.isEmpty() || person == null || person.getId() == null) {
+            return Set.of();
+        }
+        if (hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS)) {
+            return ids;
+        }
+        Set<Long> accessibleIds = new HashSet<>(assignmentRepository.findInstitutionIdsWithAnyProfile(person.getId(), ids));
+        accessibleIds.addAll(institutionIdsWithOrganizationPermission(person, institutions, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS));
+        return accessibleIds;
+    }
+
+    /**
+     * Bulk version of the "may manage this institution's settings" check (holds
+     * {@link PermissionConstants#INSTANCE_MANAGE_SETTINGS} or
+     * {@link PermissionConstants#ORGANIZATION_MANAGE_SETTINGS} on it) — used for a whole institution list
+     * page's row-level settings button without an N+1.
+     */
+    public Set<Long> institutionIdsPersonCanManageSettings(PersonDTO person, Collection<InstitutionDTO> institutions) {
+        Set<Long> ids = institutionIds(institutions);
+        if (ids.isEmpty() || person == null || person.getId() == null) {
+            return Set.of();
+        }
+        if (hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)) {
+            return ids;
+        }
+        return institutionIdsWithOrganizationPermission(person, institutions, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+    }
+
+    private static Set<Long> institutionIds(Collection<InstitutionDTO> institutions) {
+        if (institutions == null) {
+            return Set.of();
+        }
+        return institutions.stream()
+                .map(InstitutionDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     /**
