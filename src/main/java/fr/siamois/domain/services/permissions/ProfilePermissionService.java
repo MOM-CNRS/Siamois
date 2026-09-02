@@ -15,10 +15,18 @@ import java.util.stream.Collectors;
  * Checks user permissions against the profile-based permission system.
  * <p>
  * A permission is granted when one of the profiles assigned to the person
- * ({@code PersonProfileAssignment}) contains it within a matching scope.
- * Scopes cascade: an INSTANCE-scoped profile grants the permission everywhere,
- * an ORGANISATION-scoped profile grants it within its institution, and a
+ * ({@code PersonProfileAssignment}) contains it within a matching scope: an INSTANCE-scoped profile
+ * grants it everywhere, an ORGANISATION-scoped profile grants it within its institution, and a
  * PROJECT-scoped profile grants it on its action unit only.
+ * <p>
+ * Every {@link PermissionConstants} code belongs to exactly one scope — a profile only ever holds codes
+ * matching its own scope (see {@code ProfileService}). A capability available at more than one scope
+ * (e.g. "edit recording units") therefore has one distinct code per scope
+ * ({@code PROJECT_EDIT_RECORDING_UNITS} / {@code ORGANIZATION_EDIT_RECORDING_UNITS} /
+ * {@code INSTANCE_EDIT_RECORDING_UNITS}), and the methods below explicitly check each scope's own code in
+ * turn (instance, then organisation, then project) — see the 5-arg overload of
+ * {@link #hasProjectPermission(UserInfo, Long, String, String, String)} — rather than relying on the same
+ * code being reused across scopes.
  * <p>
  * Replaces the removed {@code PermissionService}.
  */
@@ -97,6 +105,25 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Same as {@link #hasProjectPermission(UserInfo, Long, String)}, for a capability whose organisation-
+     * and instance-wide counterparts are different permission codes than the project-level one (e.g.
+     * {@code PROJECT_EDIT_RECORDING_UNITS} vs. {@code ORGANIZATION_EDIT_RECORDING_UNITS} vs.
+     * {@code INSTANCE_EDIT_RECORDING_UNITS}) — checks instance, then organisation, then project.
+     *
+     * @param instanceCode     the counterpart code that grants this everywhere, held on an INSTANCE-scoped profile
+     * @param organizationCode the counterpart code that grants this org-wide, held on an ORGANISATION-scoped profile
+     * @param projectCode      the code granting this on the action unit itself
+     */
+    public boolean hasProjectPermission(UserInfo user, Long actionUnitId, String instanceCode, String organizationCode, String projectCode) {
+        if (hasInstancePermission(user.getUser(), instanceCode) || hasOrganizationPermission(user, organizationCode)) {
+            return true;
+        }
+        PersonDTO person = user.getUser();
+        return actionUnitId != null && person != null && person.getId() != null
+                && assignmentRepository.personHasPermissionInActionUnit(person.getId(), actionUnitId, projectCode);
+    }
+
+    /**
      * Bulk version of {@link #hasProjectPermission} : which of the given action units the user holds
      * {@code permissionCode} on, computed in at most one query total instead of one query (or up to
      * three, counting the org/instance checks) per action unit. Meant for a whole table page's worth of
@@ -148,7 +175,10 @@ public class ProfilePermissionService {
      */
     public boolean hasRecordingUnitWritePermission(UserInfo user, RecordingUnitDTO recordingUnit) {
         Long actionUnitId = recordingUnit.getActionUnit() != null ? recordingUnit.getActionUnit().getId() : null;
-        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+                PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
+                PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
     }
 
     /**
@@ -161,7 +191,10 @@ public class ProfilePermissionService {
      */
     public boolean hasSpecimenWritePermission(UserInfo user, SpecimenDTO specimen) {
         Long actionUnitId = specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null;
-        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS);
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_FINDS,
+                PermissionConstants.ORGANIZATION_EDIT_FINDS,
+                PermissionConstants.PROJECT_EDIT_FINDS);
     }
 
     /**
@@ -174,7 +207,10 @@ public class ProfilePermissionService {
      */
     public boolean hasPhaseWritePermission(UserInfo user, PhaseDTO phase) {
         Long actionUnitId = phase.getActionUnit() != null ? phase.getActionUnit().getId() : null;
-        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_PHASES);
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_PHASES,
+                PermissionConstants.ORGANIZATION_EDIT_PHASES,
+                PermissionConstants.PROJECT_EDIT_PHASES);
     }
 
     /**
@@ -187,7 +223,10 @@ public class ProfilePermissionService {
      */
     public boolean hasContainerWritePermission(UserInfo user, ContainerDTO container) {
         Long actionUnitId = container.getActionUnit() != null ? container.getActionUnit().getId() : null;
-        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_CONTAINERS);
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
+                PermissionConstants.PROJECT_EDIT_CONTAINERS);
     }
 
     /**
@@ -200,7 +239,8 @@ public class ProfilePermissionService {
      * @return true if the user can write the action unit
      */
     public boolean hasActionUnitWritePermission(UserInfo user, ActionUnitDTO actionUnit) {
-        if (hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+        if (hasInstancePermission(user.getUser(), PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)
+                || hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
             return true;
         }
         return actionUnit != null && hasProjectPermission(user, actionUnit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
@@ -219,6 +259,7 @@ public class ProfilePermissionService {
             return false;
         }
         return assignmentRepository.personHasAnyProfileInInstitution(person.getId(), institution.getId())
+                || hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS)
                 || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
     }
 
@@ -232,7 +273,8 @@ public class ProfilePermissionService {
      * @return true if the institution data can be displayed
      */
     public boolean canViewInstitutionData(PersonDTO person, InstitutionDTO institution) {
-        return hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_ACCESS);
+        return hasInstancePermission(person, PermissionConstants.INSTANCE_ACCESS_ORGANIZATIONS)
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_ACCESS);
     }
 
     /**

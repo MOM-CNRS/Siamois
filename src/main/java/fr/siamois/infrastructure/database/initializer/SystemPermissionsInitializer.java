@@ -21,8 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Optional;
 
 @Slf4j
@@ -53,17 +51,8 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
     }
 
     private void initializePermissions() {
-        for (Field field : PermissionConstants.class.getDeclaredFields()) {
-            int modifiers = field.getModifiers();
-            if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers) && field.getType().equals(String.class)) {
-                try {
-                    field.setAccessible(true);
-                    String code = (String) field.get(null);
-                    createPermissionIfNotExists(code);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+        for (String code : PermissionConstants.allCodes()) {
+            createPermissionIfNotExists(code);
         }
     }
 

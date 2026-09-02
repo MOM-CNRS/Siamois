@@ -902,6 +902,35 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
+     * Every action unit the person is a PROJECT-scoped member of, across every institution — no
+     * institution restriction and no limit, unlike {@link #findByTeamMember}. Used to filter the global
+     * project list by an arbitrary member.
+     *
+     * @param member the person whose projects to find
+     * @return the action units the person is a member of
+     */
+    public Set<ActionUnitDTO> findAllByTeamMember(PersonDTO member) {
+        if (member == null || member.getId() == null) {
+            return Collections.emptySet();
+        }
+        List<ActionUnit> actionUnits = actionUnitRepository.findAll(ActionUnitSpec.hasProjectMembership(member.getId()));
+        return actionUnits.stream()
+                .map(this::convertWithCount)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * @param personId the person whose projects to count
+     * @return how many action units, across every institution, the person is a PROJECT-scoped member of
+     */
+    public long countByTeamMember(Long personId) {
+        if (personId == null) {
+            return 0;
+        }
+        return actionUnitRepository.count(ActionUnitSpec.hasProjectMembership(personId));
+    }
+
+    /**
      * All action units the person may manage, across every institution visible to them: those of each
      * institution where they hold the organization manager or project manager profile.
      *

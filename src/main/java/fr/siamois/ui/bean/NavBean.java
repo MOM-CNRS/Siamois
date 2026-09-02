@@ -133,6 +133,16 @@ public class NavBean implements Serializable {
         redirectBean.redirectTo("/settings/organisation");
     }
 
+    /**
+     * Same as {@link #goToOrganisationSettings()}, pre-filtered to the organisations the given member
+     * belongs to. The filter travels as a {@code memberId} query param — {@code SettingsController}'s
+     * {@code /settings/organisation} mapping applies it after the redirect, since it unconditionally
+     * (re)initialises {@code institutionListSettingsBean} on every request to that URL.
+     */
+    public void goToOrganisationSettings(PersonDTO person) {
+        redirectBean.redirectTo("/settings/organisation?memberId=" + person.getId());
+    }
+
     public void goToUserManagementSettings() {
         applicationMembersListBean.init();
         redirectBean.redirectTo("/settings/administration");
@@ -300,6 +310,15 @@ public class NavBean implements Serializable {
         setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         projectListBean.init();
         redirectBean.redirectTo("/settings/project");
+    }
+
+    /**
+     * Same as {@link #goToProjectsSettings()}, pre-filtered to the projects the given member belongs to.
+     * The filter travels as a {@code memberId} query param — see {@link #goToOrganisationSettings(PersonDTO)}.
+     */
+    public void goToProjectsSettings(PersonDTO person) {
+        setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        redirectBean.redirectTo("/settings/project?memberId=" + person.getId());
     }
 
     public enum ApplicationMode {

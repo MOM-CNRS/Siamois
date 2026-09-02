@@ -1,0 +1,41 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://java.sun.com/jsf/core">
+
+    <h:form id="profileDetailForm">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+        <p:sidebar widgetVar="profileDetailSidebar" visible="#{bean.profileDetailOpen}"
+                   position="right" modal="true" dismissable="true" closeOnEscape="true" blockScroll="true"
+                   styleClass="profile-drawer-sidebar" style="width:460px;max-width:92vw;">
+            <p:ajax event="close" listener="#{bean.closeProfileDetail()}" update=":profileDetailForm:drawerContent"/>
+
+            <h:panelGroup id="drawerContent" layout="block" styleClass="profile-drawer">
+                <div class="profile-drawer-header">
+                    <div class="profile-drawer-title">#{empty bean.selectedProfile ? '' : bean.selectedProfile.name}</div>
+                    <div class="profile-drawer-system-note">#{langBean.msg('profile.detail.systemNote')}</div>
+                </div>
+
+                <div class="profile-drawer-body">
+                    <ui:fragment rendered="#{empty bean.permissionCatalogOf(bean.selectedProfile)}">
+                        <div class="profile-readonly-value">#{langBean.msg('profile.detail.empty')}</div>
+                    </ui:fragment>
+
+                    <ui:repeat value="#{bean.permissionCatalogOf(bean.selectedProfile)}" var="theme">
+                        <div class="profile-permission-theme">
+                            <div class="profile-permission-theme-title">#{theme.label}</div>
+                            <ui:repeat value="#{theme.rows}" var="row">
+                                <div class="profile-permission-row">
+                                    <p:selectBooleanCheckbox value="#{row.granted}" disabled="true"/>
+                                    <span class="profile-permission-row-label">#{row.label}</span>
+                                </div>
+                            </ui:repeat>
+                        </div>
+                    </ui:repeat>
+                </div>
+            </h:panelGroup>
+        </p:sidebar>
+    </h:form>
+</ui:fragment>

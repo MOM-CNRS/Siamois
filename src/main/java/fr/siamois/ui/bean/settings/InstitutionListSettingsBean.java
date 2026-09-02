@@ -10,6 +10,7 @@ import fr.siamois.domain.models.exceptions.institution.InstitutionAlreadyExistEx
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -53,6 +54,7 @@ public class InstitutionListSettingsBean implements Serializable {
     private final InstitutionDetailsBean institutionDetailsBean;
     private final LangBean langBean;
     private final RedirectBean redirectBean;
+    private final transient PersonService personService;
 
 
     private Set<InstitutionDTO> institutions = null;
@@ -61,6 +63,9 @@ public class InstitutionListSettingsBean implements Serializable {
     private Map<Long, Boolean> toggleSwitchState = new HashMap<>();
 
     private String filterText;
+
+    /** Set when the list is filtered down to one member's institutions (see {@link #initFilteredByPerson}). */
+    private PersonDTO filterPerson;
 
     /** Guards direct access to the institution list page: redirects to a 404 if the user cannot view institution data. */
     public void checkAccessOrRedirect() {
@@ -71,9 +76,30 @@ public class InstitutionListSettingsBean implements Serializable {
     }
 
     public void init() {
-        UserInfo info = sessionSettingsBean.getUserInfo();
-        institutions = institutionService.findInstitutionsOfPerson(info.getUser());
+        filterPerson = null;
+        loadInstitutionsOf(sessionSettingsBean.getUserInfo().getUser());
+    }
+
+    /**
+     * Loads the institutions of an arbitrary member instead of the current admin's own, so the list can
+     * be reached pre-filtered to "organisations this person belongs to" (e.g. from the instance user list).
+     *
+     * @param person the member whose institutions to show
+     */
+    public void initFilteredByPerson(PersonDTO person) {
+        filterPerson = person;
+        loadInstitutionsOf(person);
+    }
+
+    /** Drops the person filter and reloads the current admin's own full institution list. */
+    public void clearPersonFilter() {
+        init();
+    }
+
+    private void loadInstitutionsOf(PersonDTO person) {
+        institutions = institutionService.findInstitutionsOfPerson(person);
         filteredInstitutions = new ArrayList<>(institutions);
+        filterText = null;
         onFilterType();
         updateTogglesState();
         sortBy = new ArrayList<>();
@@ -82,6 +108,11 @@ public class InstitutionListSettingsBean implements Serializable {
                 .order(SortOrder.ASCENDING)
                 .priority(1)
                 .build());
+    }
+
+    /** Autocomplete source for the person filter: matches by username or e-mail. */
+    public List<PersonDTO> completePerson(String query) {
+        return personService.findClosestByUsernameOrEmail(query);
     }
 
     public String displayDate(OffsetDateTime date) {
@@ -203,6 +234,7 @@ public class InstitutionListSettingsBean implements Serializable {
         sortBy = null;
         toggleSwitchState.clear();
         filterText = null;
+        filterPerson = null;
     }
 
 }

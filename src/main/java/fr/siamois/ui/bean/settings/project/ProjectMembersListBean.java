@@ -202,6 +202,7 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
         refMembers = null;
         availableProfiles = null;
         resetPendingInvitations();
+        resetProfileDetail();
         searchInput = null;
     }
 

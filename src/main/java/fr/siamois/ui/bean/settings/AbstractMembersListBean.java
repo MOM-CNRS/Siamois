@@ -1,18 +1,24 @@
 package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.auth.pending.PendingPerson;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.dto.entity.PermissionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.email.InvitationMailer;
 import fr.siamois.ui.email.InvitationMessages;
+import jakarta.faces.event.ActionEvent;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 import static fr.siamois.utils.MessageUtils.displayInfoMessage;
@@ -32,6 +38,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
 
     private transient Set<Long> pendingInvitationPersonIds;
     private transient Set<Long> expiredInvitationPersonIds;
+    private transient ProfileDTO selectedProfile;
 
     /** Loads the pending- and expired-invitation state for the given listed members. Call from {@code init(...)}. */
     protected final void loadPendingInvitations(Collection<Long> memberPersonIds) {
@@ -129,6 +136,135 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
         } else {
             displayErrorMessage(langBean, "newMember.invitation.failed", invitee.getEmail());
         }
+    }
+
+    /** @return the profile currently shown in the read-only profile detail drawer, or {@code null} when closed. */
+    public final ProfileDTO getSelectedProfile() {
+        return selectedProfile;
+    }
+
+    /** @return {@code true} when the read-only profile detail drawer should be shown. */
+    public final boolean isProfileDetailOpen() {
+        return selectedProfile != null;
+    }
+
+    /**
+     * Opens the read-only profile detail drawer for the profile stashed on the triggering component
+     * (via {@code <f:attribute name="profile" .../>} — composite attribute method expressions can't take
+     * arguments, so the profile travels on the component instead, same as {@code onProfileSelect}'s "member").
+     */
+    public final void openProfileDetail(ActionEvent event) {
+        Object profile = event.getComponent().getAttributes().get("profile");
+        if (profile instanceof ProfileDTO profileDTO) {
+            this.selectedProfile = profileDTO;
+        }
+    }
+
+    /** Closes the read-only profile detail drawer. */
+    public final void closeProfileDetail() {
+        this.selectedProfile = null;
+    }
+
+    private record PermissionThemeSpec(String themeKey, List<String> codes) {
+    }
+
+    public static final String PERMISSION_THEME_RECORDING = "permission.theme.recording";
+    private static final List<PermissionThemeSpec> INSTANCE_PERMISSION_THEMES = List.of(
+            new PermissionThemeSpec("permission.theme.instance", List.of(
+                    PermissionConstants.INSTANCE_MANAGE_SETTINGS)),
+            new PermissionThemeSpec("permission.theme.organisations", List.of(
+                    PermissionConstants.ORGANIZATION_CREATE,
+                    PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS,
+                    PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS,
+                    PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_PLACES,
+                    PermissionConstants.INSTANCE_ACCESS_ORGANIZATIONS)),
+            new PermissionThemeSpec(PERMISSION_THEME_RECORDING, List.of(
+                    PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+                    PermissionConstants.INSTANCE_EDIT_PHASES,
+                    PermissionConstants.INSTANCE_EDIT_FINDS,
+                    PermissionConstants.INSTANCE_EDIT_CONTAINERS))
+    );
+
+    private static final List<PermissionThemeSpec> ORGANISATION_PERMISSION_THEMES = List.of(
+            new PermissionThemeSpec("permission.theme.organisation", List.of(
+                    PermissionConstants.ORGANIZATION_MANAGE_SETTINGS,
+                    PermissionConstants.ORGANIZATION_ACCESS)),
+            new PermissionThemeSpec("permission.theme.projects", List.of(
+                    PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)),
+            new PermissionThemeSpec("permission.theme.spatialUnits", List.of(
+                    PermissionConstants.ORGANIZATION_MANAGE_PLACES)),
+            new PermissionThemeSpec(PERMISSION_THEME_RECORDING, List.of(
+                    PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
+                    PermissionConstants.ORGANIZATION_EDIT_PHASES,
+                    PermissionConstants.ORGANIZATION_EDIT_FINDS,
+                    PermissionConstants.ORGANIZATION_EDIT_CONTAINERS))
+    );
+
+    private static final List<PermissionThemeSpec> PROJECT_PERMISSION_THEMES = List.of(
+            new PermissionThemeSpec("permission.theme.project", List.of(
+                    PermissionConstants.PROJECT_MANAGE_SETTINGS)),
+            new PermissionThemeSpec(PERMISSION_THEME_RECORDING, List.of(
+                    PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
+                    PermissionConstants.PROJECT_EDIT_PHASES,
+                    PermissionConstants.PROJECT_EDIT_FINDS,
+                    PermissionConstants.PROJECT_EDIT_CONTAINERS))
+    );
+
+    /** One row of the read-only permission checkbox list: a permission's label and whether the profile grants it. */
+    @Getter
+    public static final class PermissionRowView {
+        private final String label;
+        private final boolean granted;
+
+        private PermissionRowView(String label, boolean granted) {
+            this.label = label;
+            this.granted = granted;
+        }
+    }
+
+    /** One theme section of the read-only permission checkbox list, grouping related permission rows. */
+    @Getter
+    public static final class PermissionThemeView {
+        private final String label;
+        private final List<PermissionRowView> rows;
+
+        private PermissionThemeView(String label, List<PermissionRowView> rows) {
+            this.label = label;
+            this.rows = rows;
+        }
+    }
+
+    /**
+     * @param profile the profile whose permissions should be described
+     * @return the permissions of the profile's own scope, grouped by theme, each as a read-only checkbox
+     *         row (checked when the profile grants it — all profiles are system/read-only for now). Every
+     *         {@link PermissionConstants} code belongs to exactly one scope and a profile only ever holds
+     *         codes of its own scope (see {@code ProfileService}), so this never needs to look outside it.
+     */
+    public final List<PermissionThemeView> permissionCatalogOf(ProfileDTO profile) {
+        if (profile == null || profile.getScope() == null) {
+            return List.of();
+        }
+        Set<String> granted = profile.getPermissions() == null
+                ? Set.of()
+                : profile.getPermissions().stream().map(PermissionDTO::getCode).collect(Collectors.toSet());
+        List<PermissionThemeSpec> themes = switch (profile.getScope()) {
+            case INSTANCE -> INSTANCE_PERMISSION_THEMES;
+            case ORGANISATION -> ORGANISATION_PERMISSION_THEMES;
+            case PROJECT -> PROJECT_PERMISSION_THEMES;
+        };
+        return themes.stream()
+                .map(theme -> new PermissionThemeView(
+                        langBean.msg(theme.themeKey()),
+                        theme.codes().stream()
+                                .map(code -> new PermissionRowView(langBean.msg("permission." + code), granted.contains(code)))
+                                .toList()))
+                .toList();
+    }
+
+    /** Clears the profile detail drawer state. Call from {@code reset()}. */
+    protected final void resetProfileDetail() {
+        selectedProfile = null;
     }
 
     /** @return the localised scope phrase (application / institution / project) shown in the invitation e-mail. */

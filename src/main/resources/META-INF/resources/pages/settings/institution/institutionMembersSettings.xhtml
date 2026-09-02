@@ -26,6 +26,12 @@
                     <p:menuitem value="#{langBean.msg('organisationSettings.titles.members')}"/>
                 </p:breadCrumb>
             </form:csrfform>
+            <div class="settings-page-header">
+                <h2 class="dt-title">#{langBean.msg('organisationSettings.membersProfiles.title')}</h2>
+                <p class="dt-desc">#{langBean.msg('organisationSettings.membersProfiles.description')}</p>
+            </div>
+            <p:tabView id="orgMembersTabs" dynamic="false" styleClass="settings-tabs">
+            <p:tab title="#{langBean.msg('common.label.members.tab')}">
             <settings:datatable
                     id="orgMembersDatatable"
                     title="#{langBean.msg('organisationSettings.managers.title', institutionDetailsBean.institution.name)}"
@@ -99,9 +105,21 @@
                     </p:column>
                 </p:dataTable>
             </settings:datatable>
+            </p:tab>
+            <p:tab title="#{langBean.msg('profile.tab.label')}">
+                <settings:profilesList
+                        title="#{langBean.msg('organisationSettings.titles.profiles')}"
+                        description="#{langBean.msg('organisationSettings.profiles.description')}"
+                        profiles="#{institutionMembersListBean.availableProfiles}"
+                        onOpen="#{institutionMembersListBean.openProfileDetail}"/>
+            </p:tab>
+            </p:tabView>
             <ui:include src="/dialog/shared/newMemberDialog.xhtml">
                 <ui:param name="dialogBean" value="#{newOrganizationMemberDialogBean}"/>
                 <ui:param name="updateTarget" value=":orgMembersDatatable:formCC:institutionMembersForm:membersDatatable"/>
+            </ui:include>
+            <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
+                <ui:param name="bean" value="#{institutionMembersListBean}"/>
             </ui:include>
         </main>
     </ui:define>

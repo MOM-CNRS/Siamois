@@ -214,6 +214,7 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
         roles = null;
         availableProfiles = null;
         resetPendingInvitations();
+        resetProfileDetail();
         searchInput = null;
     }
 

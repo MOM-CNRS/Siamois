@@ -10,13 +10,19 @@ import java.util.Optional;
 
 @Repository
 public interface ProfileRepository extends CrudRepository<Profile, Integer> {
+    @Query("SELECT p FROM Profile p " +
+            "LEFT JOIN FETCH p.permissions " +
+            "WHERE p.code = :code")
     Optional<Profile> findByCode(String code);
 
     @Query("SELECT p FROM Profile p " +
-            "JOIN FETCH p.permissions " +
+            "LEFT JOIN FETCH p.permissions " +
             "WHERE p.code = :code AND p.institution.id = :institutionId")
     Optional<Profile> findByCodeAndInstitutionId(String code, Long institutionId);
 
+    @Query("SELECT p FROM Profile p " +
+            "LEFT JOIN FETCH p.permissions " +
+            "WHERE p.code = :code AND p.institution.id = :institutionId AND p.actionUnit.id = :actionUnitId")
     Optional<Profile> findByCodeAndInstitutionIdAndActionUnitId(String code, Long institutionId, Long actionUnitId);
 
     void deleteAllByActionUnitId(Long actionUnitId);

@@ -82,6 +82,17 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
     )
     Set<Person> findClosestByUsernameLimit10(String input);
 
+    @Query(
+            nativeQuery = true,
+            value = "SELECT p.* FROM person p " +
+                    "WHERE p.name ILIKE CONCAT('%', :input, '%') " +
+                    "OR p.lastname ILIKE CONCAT('%', :input, '%') " +
+                    "OR CONCAT(p.name, ' ', p.lastname) ILIKE CONCAT('%', :input, '%') " +
+                    "ORDER BY similarity(CONCAT(p.name, ' ', p.lastname), :input) DESC " +
+                    "LIMIT 10"
+    )
+    Set<Person> findClosestByNameLimit10(String input);
+
     @Query("""
             SELECT COUNT(DISTINCT p.id)
             FROM PersonProfileAssignment a

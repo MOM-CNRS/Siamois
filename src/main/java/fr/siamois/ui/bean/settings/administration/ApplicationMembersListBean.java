@@ -3,6 +3,8 @@ package fr.siamois.ui.bean.settings.administration;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ApplicationMembersServiceInterface;
+import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
@@ -39,6 +41,8 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
     private final SessionSettingsBean sessionSettingsBean;
     private final transient ProfilePermissionService profilePermissionService;
     private final RedirectBean redirectBean;
+    private final transient InstitutionService institutionService;
+    private final transient ActionUnitService actionUnitService;
 
     private transient List<ApplicationMemberDTO> members;
     private transient List<ApplicationMemberDTO> refMembers;
@@ -51,12 +55,16 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
                                       ProfilePermissionService profilePermissionService,
                                       PendingPersonService pendingPersonService,
                                       InvitationMailer invitationMailer,
-                                      RedirectBean redirectBean) {
+                                      RedirectBean redirectBean,
+                                      InstitutionService institutionService,
+                                      ActionUnitService actionUnitService) {
         super(pendingPersonService, invitationMailer, langBean);
         this.applicationMembersService = applicationMembersService;
         this.sessionSettingsBean = sessionSettingsBean;
         this.profilePermissionService = profilePermissionService;
         this.redirectBean = redirectBean;
+        this.institutionService = institutionService;
+        this.actionUnitService = actionUnitService;
     }
 
     private boolean isNotSuperAdmin() {
@@ -112,6 +120,16 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
     }
 
 
+    /** @return how many organisations the given user belongs to, across the whole instance. */
+    public int numberOfInstitutionsForMember(ApplicationMemberDTO member) {
+        return institutionService.findInstitutionsOfPerson(member.getPerson()).size();
+    }
+
+    /** @return how many projects the given user belongs to, across the whole instance. */
+    public long numberOfProjectsForMember(ApplicationMemberDTO member) {
+        return actionUnitService.countByTeamMember(member.getPerson().getId());
+    }
+
     /**
      * Renews and re-sends the invitation of a user whose invitation has expired, replacing the old link.
      *
@@ -165,6 +183,7 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
         refMembers = null;
         availableProfiles = null;
         resetPendingInvitations();
+        resetProfileDetail();
         searchInput = null;
     }
 

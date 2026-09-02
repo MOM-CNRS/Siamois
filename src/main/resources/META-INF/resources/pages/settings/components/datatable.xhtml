@@ -14,11 +14,12 @@
         <cc:attribute name="searchInputPlaceholder" type="java.lang.String" default=""/>
         <cc:attribute name="renderCreateButton" type="java.lang.Boolean" default="false"/>
         <cc:attribute name="createButtonLabel" type="java.lang.String" required="true"/>
+        <cc:facet name="extraFilter"/>
     </cc:interface>
 
     <cc:implementation>
-        <form:csrfform id="formCC" formId="#{cc.attrs.formId}" style="width: 100%" onkeypress="if (event.keyCode === ENTER) { return false; }">
-            <div class="datatable-settings">
+        <div class="datatable-settings">
+            <form:csrfform id="headerFormCC" formId="#{cc.attrs.formId}Header" style="width: 100%" onkeypress="if (event.keyCode === ENTER) { return false; }">
                 <div class="datatable-info">
                     <h2 class="dt-title">#{cc.attrs.title}</h2>
                     <p class="dt-desc">#{cc.attrs.description}</p>
@@ -26,7 +27,7 @@
                         <i class="bi bi-search"/>
                         <p:inputText placeholder="#{cc.attrs.searchInputPlaceholder}"
                                      value="#{cc.attrs.searchInputTextValue}">
-                            <p:ajax event="keyup" update="@form"
+                            <p:ajax event="keyup" update="@form :#{cc.clientId}:formCC"
                                     listener="#{cc.attrs.filterAction}"/>
                         </p:inputText>
                     </span>
@@ -37,11 +38,20 @@
                         </span>
                     </h:panelGroup>
                 </div>
+            </form:csrfform>
+
+            <!-- Rendered as a sibling of the two forms above/below (not nested inside either
+                 <form> - nested <form> tags are invalid HTML and silently break ajax-driven
+                 components like p:autoComplete's completeMethod inside them). Lets callers put
+                 a filter row directly above the table instead of above the whole page header. -->
+            <cc:renderFacet name="extraFilter"/>
+
+            <form:csrfform id="formCC" formId="#{cc.attrs.formId}" style="width: 100%">
                 <div class="dt-content">
                     <cc:insertChildren/>
                 </div>
-            </div>
-        </form:csrfform>
+            </form:csrfform>
+        </div>
     </cc:implementation>
 
 </ui:composition>

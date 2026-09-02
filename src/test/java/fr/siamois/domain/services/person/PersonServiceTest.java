@@ -411,6 +411,7 @@ class PersonServiceTest {
 
         when(personRepository.findClosestByEmailLimit10("bob")).thenReturn(Set.of(p1));
         when(personRepository.findClosestByUsernameLimit10("bob")).thenReturn(Set.of(p2));
+        when(personRepository.findClosestByNameLimit10("bob")).thenReturn(Set.of());
 
         var res = personService.findClosestByUsernameOrEmail("bob");
         assertEquals(2, res.size());
@@ -423,10 +424,26 @@ class PersonServiceTest {
 
         when(personRepository.findClosestByEmailLimit10("bob")).thenReturn(Set.of(p1));
         when(personRepository.findClosestByUsernameLimit10("bob")).thenReturn(Set.of(p1));
+        when(personRepository.findClosestByNameLimit10("bob")).thenReturn(Set.of(p1));
 
         var res = personService.findClosestByUsernameOrEmail("bob");
         assertEquals(1, res.size());
 
+    }
+
+    @Test
+    void findClosestByUsernameOrEmail_ShouldAlsoMatchByName() {
+        Person p3 = new Person();
+        p3.setId(3L);
+        p3.setName("Bob");
+        p3.setLastname("Smith");
+
+        when(personRepository.findClosestByEmailLimit10("bob")).thenReturn(Set.of());
+        when(personRepository.findClosestByUsernameLimit10("bob")).thenReturn(Set.of());
+        when(personRepository.findClosestByNameLimit10("bob")).thenReturn(Set.of(p3));
+
+        var res = personService.findClosestByUsernameOrEmail("bob");
+        assertEquals(1, res.size());
     }
 
     // Pour createAndDeletePendingRelations, on teste via createPerson (chemins principaux)

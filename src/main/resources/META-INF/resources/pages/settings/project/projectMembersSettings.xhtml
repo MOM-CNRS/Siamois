@@ -25,6 +25,12 @@
                     <p:menuitem value="#{langBean.msg('projectSettings.titles.members')}"/>
                 </p:breadCrumb>
             </form:csrfform>
+            <div class="settings-page-header">
+                <h2 class="dt-title">#{langBean.msg('projectSettings.membersProfiles.title')}</h2>
+                <p class="dt-desc">#{langBean.msg('projectSettings.membersProfiles.description')}</p>
+            </div>
+            <p:tabView id="projectMembersTabs" dynamic="false" styleClass="settings-tabs">
+            <p:tab title="#{langBean.msg('common.label.members.tab')}">
             <settings:datatable
                     id="projectMembersDatatable"
                     title="#{langBean.msg('projectSettings.members.title', projectDetailsBean.project.name)}"
@@ -98,9 +104,21 @@
                     </p:column>
                 </p:dataTable>
             </settings:datatable>
+            </p:tab>
+            <p:tab title="#{langBean.msg('profile.tab.label')}">
+                <settings:profilesList
+                        title="#{langBean.msg('projectSettings.titles.profiles')}"
+                        description="#{langBean.msg('projectSettings.profiles.description')}"
+                        profiles="#{projectMembersListBean.availableProfiles}"
+                        onOpen="#{projectMembersListBean.openProfileDetail}"/>
+            </p:tab>
+            </p:tabView>
             <ui:include src="/dialog/shared/newMemberDialog.xhtml">
                 <ui:param name="dialogBean" value="#{newProjectMemberDialogBean}"/>
                 <ui:param name="updateTarget" value=":projectMembersDatatable:formCC:projectMembersForm:membersDatatable"/>
+            </ui:include>
+            <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
+                <ui:param name="bean" value="#{projectMembersListBean}"/>
             </ui:include>
         </main>
     </ui:define>

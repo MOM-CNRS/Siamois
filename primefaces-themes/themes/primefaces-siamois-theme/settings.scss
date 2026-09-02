@@ -7,6 +7,55 @@
     font-size: 120%;
 }
 
+/* ── Membres & profils tabs: blend into the page, no white panel/padding ──── */
+body .settings-tabs.ui-tabs {
+    background: transparent;
+    border: none;
+}
+
+body .settings-tabs.ui-tabs .ui-tabs-nav {
+    background: transparent;
+    border: none;
+}
+
+body .settings-tabs.ui-tabs .ui-tabs-panels {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+body .settings-tabs.ui-tabs .ui-tabs-nav li.ui-tabs-header {
+    background: transparent;
+}
+
+body .settings-tabs.ui-tabs .ui-tabs-nav li.ui-tabs-header.ui-state-active {
+    background: transparent;
+}
+
+body .settings-tabs.ui-tabs .ui-tabs-panels .ui-tabs-panel {
+    padding: 0;
+}
+
+/* headers of each tab's own section (Membres / Profils) — bigger, blending into the page */
+.settings-tabs .datatable-info {
+    background: transparent;
+}
+
+.settings-tabs .dt-title {
+    background: transparent;
+    font-size: 22px;
+}
+
+.settings-tabs .dt-desc {
+    background: transparent;
+    font-size: 15px;
+}
+
+/* page-level title ("Membres & profils") — give it room from the page edge */
+.settings-page-header {
+    padding: 1.5em 2vw 0;
+}
+
 
 main {
     display: flex;
@@ -77,8 +126,8 @@ main form:first-child .field-value-group {
 .datatable-settings {
     display: flex;
     flex-direction: column;
-    margin-top: 10vh;
-    row-gap: 1vh;
+    margin-top: 2em;
+    row-gap: 1em;
 }
 
 .datatable-info {
@@ -427,4 +476,153 @@ a:hover {
 
 body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     padding: 2em;
+}
+
+/* ── Profils tab: profile table (styled like the members table) ──── */
+.profile-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.profile-name-cell-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-card-name {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.profile-card-badge {
+    font-size: 10.5px;
+    color: #6a6a66;
+    border: 1px solid #d8d8d2;
+    border-radius: 5px;
+    padding: 1px 6px;
+    background: #f4f4f1;
+}
+
+.profile-card-permcount {
+    font-size: 12.5px;
+    color: #999;
+    white-space: nowrap;
+}
+
+.profile-view-button.ui-button {
+    background: var(--siamois-green);
+    border-color: var(--siamois-green);
+    color: #fff;
+}
+
+/* ── Profil detail drawer (p:sidebar) ───────────────── */
+.ui-sidebar.profile-drawer-sidebar {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-drawer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.profile-drawer-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid #ececec;
+    flex: none;
+}
+
+.profile-drawer-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.profile-drawer-system-note {
+    font-size: 12px;
+    color: #8a7d4a;
+    margin-top: 2px;
+}
+
+.profile-drawer-body {
+    flex: 1;
+    overflow: auto;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.profile-readonly-value {
+    font-size: 15px;
+    border: 1px solid #d8d8d2;
+    border-radius: 8px;
+    padding: 9px 11px;
+    background: #fff;
+    color: #777;
+}
+
+.profile-permission-theme {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.profile-permission-theme-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #a3a3a0;
+}
+
+.profile-permission-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.profile-permission-row-label {
+    font-size: 14px;
+    color: #2b2b2b;
+}
+
+.profile-permission-row .ui-chkbox .ui-chkbox-box.ui-state-disabled {
+    opacity: 1;
+}
+
+/* ── Organisations/Projets lists: filter-by-member row ─────────── */
+/* Rendered via comp:datatable's "extraFilter" facet, so it sits between the
+   header (title/desc/search) and the actual table, in normal flow. */
+.member-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 3vw;
+}
+
+.member-filter-row .ui-autocomplete {
+    width: 280px;
+}
+
+.member-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #3a5a3c;
+    background: var(--siamois-green-light-100);
+    border: 1px solid var(--siamois-green-light-350);
+    border-radius: 20px;
+    padding: 5px 8px 5px 14px;
+}
+
+.member-filter-clear {
+    cursor: pointer;
+    color: #3a5a3c;
+    font-weight: 600;
 }

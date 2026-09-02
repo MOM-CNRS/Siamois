@@ -1,0 +1,52 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+>
+    <cc:interface>
+        <cc:attribute name="title" type="java.lang.String" required="true"/>
+        <cc:attribute name="description" type="java.lang.String" default=""/>
+        <cc:attribute name="profiles" required="true"/>
+        <cc:attribute name="onOpen" method-signature="java.lang.Void f(jakarta.faces.event.ActionEvent)" required="true"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <form:csrfform formId="profilesListForm">
+            <div class="datatable-settings">
+                <div class="datatable-info">
+                    <h2 class="dt-title">#{cc.attrs.title}</h2>
+                    <p class="dt-desc">#{cc.attrs.description}</p>
+                </div>
+                <div class="dt-content">
+                    <p:dataTable
+                            id="profilesDatatable"
+                            value="#{cc.attrs.profiles}"
+                            var="profile"
+                            sortMode="single"
+                            rowKey="#{profile.id}"
+                    >
+                        <f:facet name="emptyMessage">
+                            <p class="members-empty-state">#{langBean.msg('profile.list.empty')}</p>
+                        </f:facet>
+                        <p:column headerText="#{langBean.msg('common.label.profile')}">
+                            <span class="profile-name-cell">
+                                <span class="profile-name-cell-label">
+                                    <span class="profile-card-name">#{profile.name}</span>
+                                    <span class="profile-card-badge">#{langBean.msg('profile.card.systemBadge')}</span>
+                                </span>
+                                <span class="profile-card-permcount">#{langBean.msg('profile.card.permissionCount', profile.permissions.size())}</span>
+                                <p:commandButton value="#{langBean.msg('profile.action.view')}" actionListener="#{cc.attrs.onOpen}" update=":profileDetailForm" styleClass="profile-view-button">
+                                    <f:attribute name="profile" value="#{profile}"/>
+                                </p:commandButton>
+                            </span>
+                        </p:column>
+                    </p:dataTable>
+                </div>
+            </div>
+        </form:csrfform>
+    </cc:implementation>
+
+</ui:composition>
