@@ -428,11 +428,11 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         markCsvDuplicates();
     }
 
-    private CsvImportRow toCsvImportRow(CSVRecord record) {
+    private CsvImportRow toCsvImportRow(CSVRecord rec) {
         CsvImportRow row = new CsvImportRow();
-        row.setName(record.get("name"));
-        row.setLastname(record.get("lastname"));
-        row.setEmail(record.get("email"));
+        row.setName(rec.get("name"));
+        row.setLastname(rec.get("lastname"));
+        row.setEmail(rec.get("email"));
 
         if (StringUtils.isBlank(row.getName()) || StringUtils.isBlank(row.getLastname()) || StringUtils.isBlank(row.getEmail())) {
             row.setError(langBean.msg("newOrganizationMember.csv.error.missingField"));
@@ -498,31 +498,41 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
                 .collect(Collectors.toCollection(HashSet::new));
 
         for (CsvImportRow row : csvPreviewRows) {
-            if (!row.isIncluded() || row.getError() != null) {
-                continue;
-            }
-            if (row.isExisting()) {
-                if (existingIds.add(row.getExistingPerson().getId())) {
-                    selectedMembers.add(row.getExistingPerson());
-                }
-            } else {
-                String email = row.getEmail().toLowerCase(Locale.ROOT);
-                if (draftEmails.add(email)) {
-                    PersonDTO draft = new PersonDTO();
-                    draft.setId(nextDraftId--);
-                    draft.setName(row.getName());
-                    draft.setLastname(row.getLastname());
-                    draft.setEmail(row.getEmail());
-                    draft.setUsername(usernameFromEmail(row.getEmail()));
-                    draftPasswords.put(draft.getId(), null);
-                    selectedMembers.add(draft);
-                }
-            }
+            mergeCsvRowIntoSelectedMembers(row, existingIds, draftEmails);
         }
 
         csvPreviewRows = null;
         csvGlobalError = null;
         step = WizardStep.MAIN;
+    }
+
+    /**
+     * Adds a single validated CSV row to {@link #selectedMembers} — the existing account as-is, or a new
+     * draft (same negative-id convention as {@link #confirmInvite()}) — unless it's invalid, excluded, or
+     * already staged (tracked via {@code existingIds}/{@code draftEmails}).
+     */
+    private void mergeCsvRowIntoSelectedMembers(CsvImportRow row, Set<Long> existingIds, Set<String> draftEmails) {
+        if (!row.isIncluded() || row.getError() != null) {
+            return;
+        }
+        if (row.isExisting()) {
+            if (existingIds.add(row.getExistingPerson().getId())) {
+                selectedMembers.add(row.getExistingPerson());
+            }
+            return;
+        }
+        String email = row.getEmail().toLowerCase(Locale.ROOT);
+        if (!draftEmails.add(email)) {
+            return;
+        }
+        PersonDTO draft = new PersonDTO();
+        draft.setId(nextDraftId--);
+        draft.setName(row.getName());
+        draft.setLastname(row.getLastname());
+        draft.setEmail(row.getEmail());
+        draft.setUsername(usernameFromEmail(row.getEmail()));
+        draftPasswords.put(draft.getId(), null);
+        selectedMembers.add(draft);
     }
 
     /**
@@ -533,9 +543,9 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         if (row.getError() != null) {
             return row.getError();
         }
-        return row.isExisting()
-                ? langBean.msg("newOrganizationMember.csv.status.existing")
-                : langBean.msg("newOrganizationMember.csv.status.new");
+        return langBean.msg(row.isExisting()
+                ? "newOrganizationMember.csv.status.existing"
+                : "newOrganizationMember.csv.status.new");
     }
 
     /** @return whether at least one previewed CSV row is currently staged to be imported. */

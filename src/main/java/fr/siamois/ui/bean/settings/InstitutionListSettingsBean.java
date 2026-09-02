@@ -133,11 +133,12 @@ public class InstitutionListSettingsBean implements Serializable {
 
     /** Row-level permissions and counts, all computed in bulk to avoid an N+1 over {@link #institutions}. */
     private void loadDerivedData() {
+        Set<InstitutionDTO> loaded = institutions == null ? Collections.emptySet() : institutions;
         PersonDTO person = sessionSettingsBean.getAuthenticatedUser();
-        institutionIdsCanActivate = new HashSet<>(profilePermissionService.institutionIdsPersonCanAccess(person, institutions));
-        institutionIdsCanManageSettings = new HashSet<>(profilePermissionService.institutionIdsPersonCanManageSettings(person, institutions));
-        memberCountsByInstitutionId = new HashMap<>(institutionService.countMembersInInstitutions(institutions));
-        List<Long> institutionIds = institutions.stream().map(InstitutionDTO::getId).toList();
+        institutionIdsCanActivate = new HashSet<>(profilePermissionService.institutionIdsPersonCanAccess(person, loaded));
+        institutionIdsCanManageSettings = new HashSet<>(profilePermissionService.institutionIdsPersonCanManageSettings(person, loaded));
+        memberCountsByInstitutionId = new HashMap<>(institutionService.countMembersInInstitutions(loaded));
+        List<Long> institutionIds = loaded.stream().map(InstitutionDTO::getId).toList();
         recordingUnitCountsByInstitutionId = new HashMap<>(recordingUnitService.countByInstitutionIds(institutionIds));
     }
 
