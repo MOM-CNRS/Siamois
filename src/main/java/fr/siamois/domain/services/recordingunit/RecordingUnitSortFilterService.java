@@ -91,17 +91,34 @@ public class RecordingUnitSortFilterService {
         Specification<RecordingUnit> base = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
 
         if (filters.isRootOnly()) {
+            // Scope filters (e.g. "this action unit") are always part of the fixed query context,
+            // even when there is no active user search — unlike user filters, they must never be
+            // dropped in root-mode, otherwise roots from other contexts leak into the tree.
+            Specification<RecordingUnit> scoped = base.and(scopeFilterSpecs(filters));
             if (filters.hasUserFilters()) {
                 Collection<Long> closure = resolveAncestorClosure(institution, filters);
                 if (closure.isEmpty()) {
-                    return base.and((root, q, cb) -> cb.disjunction());
+                    return scoped.and((root, q, cb) -> cb.disjunction());
                 }
-                return base.and(RecordingUnitSpec.unitIsRoot()).and(RecordingUnitSpec.idIn(closure));
+                return scoped.and(RecordingUnitSpec.unitIsRoot()).and(RecordingUnitSpec.idIn(closure));
             }
-            return base.and(RecordingUnitSpec.unitIsRoot());
+            return scoped.and(RecordingUnitSpec.unitIsRoot());
         }
 
         return base.and(userFilterSpecs(filters));
+    }
+
+    private static Specification<RecordingUnit> scopeFilterSpecs(@NonNull FilterDTO filters) {
+        Specification<RecordingUnit> specification = Specification.where(null);
+        Set<String> scopeKeys = filters.getScopeFilterKeys();
+
+        for (FilterBinding binding : USER_FILTERS) {
+            if (scopeKeys.contains(binding.column())) {
+                specification = specification.and(binding.toSpec().apply(filters));
+            }
+        }
+
+        return specification;
     }
 
     private Collection<Long> resolveAncestorClosure(InstitutionDTO institution, FilterDTO filters) {

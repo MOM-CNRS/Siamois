@@ -663,14 +663,18 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> base = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
 
         if (filters.isRootOnly()) {
+            // Scope filters (e.g. "action units of this spatial unit") are always part of the
+            // fixed query context, even with no active user search — they must never be dropped
+            // in root-mode, otherwise roots from other contexts leak into the tree.
+            Specification<ActionUnit> scoped = base.and(scopeFilterSpecs(filters));
             if (filters.hasUserFilters()) {
                 Collection<Long> closure = resolveAncestorClosure(institutionDTO, filters);
                 if (closure.isEmpty()) {
-                    return base.and((root, q, cb) -> cb.disjunction());
+                    return scoped.and((root, q, cb) -> cb.disjunction());
                 }
-                return base.and(ActionUnitSpec.unitIsRoot()).and(ActionUnitSpec.idIn(closure));
+                return scoped.and(ActionUnitSpec.unitIsRoot()).and(ActionUnitSpec.idIn(closure));
             }
-            return base.and(ActionUnitSpec.unitIsRoot());
+            return scoped.and(ActionUnitSpec.unitIsRoot());
         }
 
         return base.and(userFilterSpecs(filters));
@@ -693,6 +697,21 @@ public class ActionUnitService implements ArkEntityService {
         }
 
         if (filters.containsColumn(ActionUnitSpec.FULL_IDENTIFIER_FILTER)) {
+            specs = specs.and(ActionUnitSpec.fullIdentifierContaining(filters.valueOfAsString(ActionUnitSpec.FULL_IDENTIFIER_FILTER)));
+        }
+
+        return specs;
+    }
+
+    private Specification<ActionUnit> scopeFilterSpecs(FilterDTO filters) {
+        Specification<ActionUnit> specs = Specification.where(null);
+        Set<String> scopeKeys = filters.getScopeFilterKeys();
+
+        if (scopeKeys.contains(ActionUnitSpec.SPATIAL_UNIT_FILTER) && filters.containsColumn(ActionUnitSpec.SPATIAL_UNIT_FILTER)) {
+            specs = specs.and(ActionUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(ActionUnitSpec.SPATIAL_UNIT_FILTER)));
+        }
+
+        if (scopeKeys.contains(ActionUnitSpec.FULL_IDENTIFIER_FILTER) && filters.containsColumn(ActionUnitSpec.FULL_IDENTIFIER_FILTER)) {
             specs = specs.and(ActionUnitSpec.fullIdentifierContaining(filters.valueOfAsString(ActionUnitSpec.FULL_IDENTIFIER_FILTER)));
         }
 

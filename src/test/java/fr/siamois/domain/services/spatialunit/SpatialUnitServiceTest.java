@@ -1054,6 +1054,69 @@ class SpatialUnitServiceTest {
     }
 
     @Test
+    void searchSpatialUnits_rootOnlyWithScopeNameFilter_appliesScopeSpecAndRuns() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.addScopeFilter(SpatialUnitSpec.NAME_FILTER, "scoped", FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchSpatialUnits_rootOnlyWithScopeCategoryFilter_appliesScopeSpecAndRuns() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.addScopeFilter(SpatialUnitSpec.CATEGORY_FILTER, List.of(9L), FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchSpatialUnits_rootOnlyWithScopeParentFilter_appliesScopeSpecAndRuns() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.addScopeFilter(SpatialUnitSpec.PARENT_FILTER, List.of(7L), FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchSpatialUnits_rootOnlyWithScopeParentFilter_andUserFilterMatches_keepsScopeAcrossClosure() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.addScopeFilter(SpatialUnitSpec.PARENT_FILTER, List.of(7L), FilterDTO.FilterType.CONTAINS);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "x", FilterDTO.FilterType.CONTAINS);
+
+        when(spatialUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(spatialUnit1, spatialUnit2));
+        when(spatialUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
     void searchSpatialUnits_userModeWithCategoryFilter_runs() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(1L);
