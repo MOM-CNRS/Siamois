@@ -23,14 +23,18 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.FileUploadEvent;
+import org.primefaces.model.DefaultStreamedContent;
+import org.primefaces.model.StreamedContent;
 import org.primefaces.model.file.UploadedFile;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -347,6 +351,21 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
             return false;
         }
         return username.chars().allMatch(c -> Character.isLetterOrDigit(c) || c == '.');
+    }
+
+    /** @return a downloadable example CSV file matching the expected {@code name,lastname,email} format. */
+    public StreamedContent getCsvImportTemplate() {
+        return DefaultStreamedContent.builder()
+                .name("import_membres_exemple.csv")
+                .contentType("text/csv")
+                .stream(() -> {
+                    try {
+                        return new ClassPathResource("datasets/member_import_example.csv").getInputStream();
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                })
+                .build();
     }
 
     /**

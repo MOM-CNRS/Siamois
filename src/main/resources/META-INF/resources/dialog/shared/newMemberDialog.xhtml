@@ -127,6 +127,12 @@
 
                         <h:panelGroup layout="block" rendered="#{empty dialogBean.csvPreviewRows}">
                             <p class="csv-import-hint">#{langBean.msg('newOrganizationMember.csv.hint')}</p>
+                            <p:commandButton value="#{langBean.msg('newOrganizationMember.csv.action.downloadExample')}"
+                                             icon="pi pi-arrow-down"
+                                             styleClass="ui-button-outlined csv-download-example"
+                                             style="background-color: white;">
+                                <p:fileDownload value="#{dialogBean.csvImportTemplate}"/>
+                            </p:commandButton>
                             <p:fileUpload listener="#{dialogBean.handleCsvUpload}"
                                           mode="advanced"
                                           dragDrop="true"
