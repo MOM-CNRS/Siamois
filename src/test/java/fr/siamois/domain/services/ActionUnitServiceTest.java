@@ -1306,6 +1306,54 @@ class ActionUnitServiceTest {
     }
 
     @Test
+    void searchActionUnits_rootOnlyWithScopeSpatialUnitFilter_appliesScopeSpecAndRuns() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.addScopeFilter(ActionUnitSpec.SPATIAL_UNIT_FILTER, List.of(5L), FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchActionUnits_rootOnlyWithScopeFullIdentifierFilter_appliesScopeSpecAndRuns() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.addScopeFilter(ActionUnitSpec.FULL_IDENTIFIER_FILTER, "scoped", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchActionUnits_rootOnlyWithScopeSpatialUnitFilter_andUserFilterMatches_keepsScopeAcrossClosure() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.addScopeFilter(ActionUnitSpec.SPATIAL_UNIT_FILTER, List.of(5L), FilterDTO.FilterType.CONTAINS);
+        filters.add(ActionUnitSpec.NAME_FILTER, "match", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(actionUnit1, actionUnit2));
+        when(actionUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        Page<ActionUnitDTO> result = actionUnitService.searchActionUnits(inst, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
     void countSearchResults_delegatesToRepositoryCount() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(1L);
