@@ -168,6 +168,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
     private record PermissionThemeSpec(String themeKey, List<String> codes) {
     }
 
+    public static final String PERMISSION_THEME_RECORDING = "permission.theme.recording";
     private static final List<PermissionThemeSpec> INSTANCE_PERMISSION_THEMES = List.of(
             new PermissionThemeSpec("permission.theme.instance", List.of(
                     PermissionConstants.INSTANCE_MANAGE_SETTINGS)),
@@ -177,7 +178,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS,
                     PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_PLACES,
                     PermissionConstants.INSTANCE_ACCESS_ORGANIZATIONS)),
-            new PermissionThemeSpec("permission.theme.recording", List.of(
+            new PermissionThemeSpec(PERMISSION_THEME_RECORDING, List.of(
                     PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
                     PermissionConstants.INSTANCE_EDIT_PHASES,
                     PermissionConstants.INSTANCE_EDIT_FINDS,
@@ -192,7 +193,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)),
             new PermissionThemeSpec("permission.theme.spatialUnits", List.of(
                     PermissionConstants.ORGANIZATION_MANAGE_PLACES)),
-            new PermissionThemeSpec("permission.theme.recording", List.of(
+            new PermissionThemeSpec(PERMISSION_THEME_RECORDING, List.of(
                     PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
                     PermissionConstants.ORGANIZATION_EDIT_PHASES,
                     PermissionConstants.ORGANIZATION_EDIT_FINDS,
@@ -202,7 +203,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
     private static final List<PermissionThemeSpec> PROJECT_PERMISSION_THEMES = List.of(
             new PermissionThemeSpec("permission.theme.project", List.of(
                     PermissionConstants.PROJECT_MANAGE_SETTINGS)),
-            new PermissionThemeSpec("permission.theme.recording", List.of(
+            new PermissionThemeSpec(PERMISSION_THEME_RECORDING, List.of(
                     PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
                     PermissionConstants.PROJECT_EDIT_PHASES,
                     PermissionConstants.PROJECT_EDIT_FINDS,
