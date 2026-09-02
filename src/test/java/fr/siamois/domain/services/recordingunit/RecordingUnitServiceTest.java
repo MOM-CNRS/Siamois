@@ -320,6 +320,24 @@ class RecordingUnitServiceTest {
     }
 
     @Test
+    void countByInstitutionIds_shouldReturnEmptyMap_whenNoIdsGiven() {
+        Map<Long, Long> result = recordingUnitService.countByInstitutionIds(List.of());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    void countByInstitutionIds_shouldMapCountsByInstitutionId() {
+        when(recordingUnitRepository.countByCreatedByInstitutionIds(List.of(3L, 4L)))
+                .thenReturn(List.of(new Object[]{3L, 7L}, new Object[]{4L, 2L}));
+
+        Map<Long, Long> result = recordingUnitService.countByInstitutionIds(List.of(3L, 4L));
+
+        assertThat(result).containsEntry(3L, 7L).containsEntry(4L, 2L);
+    }
+
+    @Test
     void save_SyncsStratigraphicRelationshipsAsUnit1() {
         // Arrange
 

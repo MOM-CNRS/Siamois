@@ -299,6 +299,53 @@ class InstitutionServiceTest {
     }
 
     @Test
+    void countMembersOf_shouldReturnEmptyMap_whenNoActionUnitsGiven() {
+        Map<Long, Integer> result = institutionService.countMembersOf(List.of());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(personProfileAssignmentRepository);
+    }
+
+    @Test
+    void countMembersOf_shouldCountDistinctMembersIncludingCreator() {
+        ActionUnitDTO au1 = new ActionUnitDTO();
+        au1.setId(1L);
+        PersonDTO creator1 = new PersonDTO();
+        creator1.setId(100L);
+        au1.setCreatedBy(creator1);
+
+        ActionUnitDTO au2 = new ActionUnitDTO();
+        au2.setId(2L);
+
+        when(personProfileAssignmentRepository.findPersonIdsByProfileActionUnitIds(List.of(1L, 2L)))
+                .thenReturn(List.of(
+                        new Object[]{1L, 100L}, // same person as au1's creator — must not be double counted
+                        new Object[]{1L, 101L},
+                        new Object[]{2L, 102L}
+                ));
+
+        Map<Long, Integer> result = institutionService.countMembersOf(List.of(au1, au2));
+
+        assertThat(result).containsEntry(1L, 2).containsEntry(2L, 1);
+    }
+
+    @Test
+    void countMembersOf_shouldAddCreatorEvenWhenNotAssigned() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(1L);
+        PersonDTO creator = new PersonDTO();
+        creator.setId(100L);
+        au.setCreatedBy(creator);
+
+        when(personProfileAssignmentRepository.findPersonIdsByProfileActionUnitIds(List.of(1L)))
+                .thenReturn(List.of());
+
+        Map<Long, Integer> result = institutionService.countMembersOf(List.of(au));
+
+        assertThat(result).containsEntry(1L, 1);
+    }
+
+    @Test
     void addToManagers_shouldAddManagerAndReturnTrue() {
         InstitutionDTO instDto = new InstitutionDTO();
         instDto.setId(1L);
@@ -342,6 +389,29 @@ class InstitutionServiceTest {
         long result = institutionService.countMembersInInstitution(institution);
 
         assertThat(result).isEqualTo(2);
+    }
+
+    @Test
+    void countMembersInInstitutions_shouldReturnEmptyMap_whenNoInstitutionsGiven() {
+        Map<Long, Long> result = institutionService.countMembersInInstitutions(List.of());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(personRepository);
+    }
+
+    @Test
+    void countMembersInInstitutions_shouldMapCountsByInstitutionId() {
+        InstitutionDTO inst1 = new InstitutionDTO();
+        inst1.setId(10L);
+        InstitutionDTO inst2 = new InstitutionDTO();
+        inst2.setId(20L);
+
+        when(personRepository.countPersonsByInstitutionIds(List.of(10L, 20L)))
+                .thenReturn(List.of(new Object[]{10L, 3L}, new Object[]{20L, 5L}));
+
+        Map<Long, Long> result = institutionService.countMembersInInstitutions(List.of(inst1, inst2));
+
+        assertThat(result).containsEntry(10L, 3L).containsEntry(20L, 5L);
     }
 
     @Test

@@ -336,4 +336,152 @@ class ProfilePermissionServiceTest {
         assertThat(result).containsExactlyInAnyOrder(5L, 6L);
         verify(assignmentRepository, never()).findActionUnitIdsWithPermission(anyLong(), any(), anyString());
     }
+
+    // ------------------------------------------------------------------
+    // institutionIdsWithOrganizationPermission
+    // ------------------------------------------------------------------
+
+    private static InstitutionDTO institutionWithId(Long id) {
+        InstitutionDTO dto = new InstitutionDTO();
+        dto.setId(id);
+        return dto;
+    }
+
+    @Test
+    void institutionIdsWithOrganizationPermission_returnsEmpty_whenNoInstitutionsGiven() {
+        Set<Long> result = service.institutionIdsWithOrganizationPermission(person, List.of(), CODE);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsWithOrganizationPermission_returnsEmpty_whenPersonIsNull() {
+        Set<Long> result = service.institutionIdsWithOrganizationPermission(null, List.of(institution), CODE);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsWithOrganizationPermission_returnsEveryId_whenInstanceProfileGrantsIt() {
+        when(assignmentRepository.personHasInstancePermission(1L, CODE)).thenReturn(true);
+
+        Set<Long> result = service.institutionIdsWithOrganizationPermission(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)), CODE);
+
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+        verify(assignmentRepository, never()).findInstitutionIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void institutionIdsWithOrganizationPermission_batchesTheQuery_whenNoInstanceGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, CODE)).thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithPermission(1L, Set.of(10L, 20L), CODE))
+                .thenReturn(Set.of(10L));
+
+        Set<Long> result = service.institutionIdsWithOrganizationPermission(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)), CODE);
+
+        assertThat(result).containsExactly(10L);
+        // exactly one query for the whole batch, not one per institution
+        verify(assignmentRepository, times(1)).findInstitutionIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    // ------------------------------------------------------------------
+    // institutionIdsPersonCanAccess
+    // ------------------------------------------------------------------
+
+    @Test
+    void institutionIdsPersonCanAccess_returnsEmpty_whenNoInstitutionsGiven() {
+        Set<Long> result = service.institutionIdsPersonCanAccess(person, List.of());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsPersonCanAccess_returnsEmpty_whenPersonIsNull() {
+        Set<Long> result = service.institutionIdsPersonCanAccess(null, List.of(institution));
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsPersonCanAccess_returnsEveryId_whenInstanceManageOrganizationsSettingsGrantsIt() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS))
+                .thenReturn(true);
+
+        Set<Long> result = service.institutionIdsPersonCanAccess(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)));
+
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+        verify(assignmentRepository, never()).findInstitutionIdsWithAnyProfile(anyLong(), any());
+        verify(assignmentRepository, never()).findInstitutionIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void institutionIdsPersonCanAccess_returnsUnionOfMembershipAndManageSettings_whenNoInstanceGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS))
+                .thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithAnyProfile(1L, Set.of(10L, 20L)))
+                .thenReturn(Set.of(10L));
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithPermission(1L, Set.of(10L, 20L), PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(Set.of(20L));
+
+        Set<Long> result = service.institutionIdsPersonCanAccess(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)));
+
+        // 10L via membership, 20L via manage-settings permission — union of both sources
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+    }
+
+    // ------------------------------------------------------------------
+    // institutionIdsPersonCanManageSettings
+    // ------------------------------------------------------------------
+
+    @Test
+    void institutionIdsPersonCanManageSettings_returnsEmpty_whenNoInstitutionsGiven() {
+        Set<Long> result = service.institutionIdsPersonCanManageSettings(person, List.of());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsPersonCanManageSettings_returnsEmpty_whenPersonIsNull() {
+        Set<Long> result = service.institutionIdsPersonCanManageSettings(null, List.of(institution));
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsPersonCanManageSettings_returnsEveryId_whenInstanceManageSettingsGrantsIt() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_SETTINGS))
+                .thenReturn(true);
+
+        Set<Long> result = service.institutionIdsPersonCanManageSettings(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)));
+
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+        verify(assignmentRepository, never()).findInstitutionIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void institutionIdsPersonCanManageSettings_delegatesToOrganizationPermission_whenNoInstanceGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_SETTINGS))
+                .thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithPermission(1L, Set.of(10L), PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(Set.of(10L));
+
+        Set<Long> result = service.institutionIdsPersonCanManageSettings(person, List.of(institutionWithId(10L)));
+
+        assertThat(result).containsExactly(10L);
+    }
 }
