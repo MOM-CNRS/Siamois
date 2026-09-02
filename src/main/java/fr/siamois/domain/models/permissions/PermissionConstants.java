@@ -142,7 +142,6 @@ public final class PermissionConstants {
 
     private static String readCode(Field field) {
         try {
-            field.setAccessible(true);
             return (String) field.get(null);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Unable to read permission constant " + field.getName(), e);
