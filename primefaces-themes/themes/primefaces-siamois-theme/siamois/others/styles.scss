@@ -806,6 +806,11 @@ body .view-edit-button.ui-splitbutton {
   line-height: 1.6;
 }
 
+/* Variant for the member-import CSV dropzone (different accepted format than the .xlsx/.xls one above) */
+.modern-dropzone.dropzone-csv::after {
+  content: "Supporte les fichiers .csv de moins de 1MB";
+}
+
 .ui-treetable .new-entity-overlay tbody td {
   border: none;
 }

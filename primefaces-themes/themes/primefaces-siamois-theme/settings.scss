@@ -157,6 +157,22 @@ main form:first-child .field-value-group {
 
 .dt-content {
     grid-area: content;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+// PrimeFaces renders the table itself at width:100%, which never exceeds its container — so columns
+// just compress/wrap instead of overflowing and there is nothing for .dt-content's overflow-x to
+// scroll. Letting the table size to its content (min-width keeps it full-width when content is
+// narrower) and forbidding cell wrapping is what actually produces a scrollable, uncropped table.
+.dt-content .ui-datatable-tablewrapper > table {
+    width: auto;
+    min-width: 100%;
+}
+
+.dt-content .ui-datatable-tablewrapper th,
+.dt-content .ui-datatable-tablewrapper td {
+    white-space: nowrap;
 }
 
 .addButton {
@@ -470,6 +486,44 @@ a:hover {
 
 .ui-autocomplete-footer .invite-by-email-link {
     margin-top: 0;
+}
+
+.new-member-secondary-actions {
+    display: flex;
+    gap: 18px;
+}
+
+.csv-import-hint {
+    font-size: 13.5px;
+    color: #6b6b6b;
+    margin: 0 0 10px;
+}
+
+.csv-preview-table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.csv-preview-table-wrapper .ui-datatable-tablewrapper > table {
+    width: auto;
+    min-width: 100%;
+}
+
+.csv-preview-table-wrapper .ui-datatable-tablewrapper th,
+.csv-preview-table-wrapper .ui-datatable-tablewrapper td {
+    white-space: nowrap;
+}
+
+.csv-import-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background-color: #fdecea;
+    color: #b3261e;
+    font-size: 13.5px;
 }
 
 .dialog-new-organization-member .dialog-buttons {
