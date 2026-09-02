@@ -89,6 +89,16 @@ public class FilterDTO {
         return filter.keySet().stream().anyMatch(k -> !scopeFilterKeys.contains(k));
     }
 
+    /**
+     * Keys added via {@link #addScopeFilter} — the fixed context of the query (e.g. "this action unit"),
+     * as opposed to an ad-hoc user search filter. Always applied, unlike user filters which only
+     * constrain root-mode queries when actively searching.
+     */
+    @NonNull
+    public Set<String> getScopeFilterKeys() {
+        return Collections.unmodifiableSet(scopeFilterKeys);
+    }
+
     /** Add a scope (constant) filter — applied to every query but never treated as a user-applied filter. */
     public void addScopeFilter(String key, Object value, FilterType type) {
         filter.put(key, new FilterInfo(value, type));
