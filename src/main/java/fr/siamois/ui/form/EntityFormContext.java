@@ -658,7 +658,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public List<ActionUnitSummaryDTO> completeActionUnitOptions(String query) {
         return services.getActionUnitService()
-                .findAllEditableByPersonInInstitutionByNameCompletion(query, 20)
+                .findAllByPersonInInstitutionByNameCompletionWithEditPerm(query, 20)
                 .stream()
                 .map(ActionUnitSummaryDTO::new)
                 .toList();

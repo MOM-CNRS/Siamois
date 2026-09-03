@@ -2,6 +2,8 @@ package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.permissions.*;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
@@ -42,6 +44,52 @@ public class ActionUnitSpec {
             if (name == null || name.isBlank())
                 return null;
             return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+        });
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> nameStartsWith(@Nullable String name) {
+        return ((root, query, criteriaBuilder) -> {
+            if (name == null || name.isBlank())
+                return null;
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), name.toLowerCase() + "%");
+        });
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> withEditPermission(@Nullable InstitutionDTO institutionDTO,
+                                                               @Nullable PersonDTO personDTO) {
+        return ((root, query, criteriaBuilder) -> {
+            if (institutionDTO == null || institutionDTO.getId() == null
+                    || personDTO == null || personDTO.getId() == null) {
+                return criteriaBuilder.disjunction();
+            }
+
+            Long institutionId = institutionDTO.getId();
+            Long personId = personDTO.getId();
+
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
+            Join<PersonProfileAssignment, Profile> profile = assignment.join("profile");
+
+            subquery.select(criteriaBuilder.literal(1L)).where(
+                    criteriaBuilder.equal(assignment.get("person").get(ID_FILTER), personId),
+                    criteriaBuilder.or(
+                            criteriaBuilder.and(
+                                    criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.INSTANCE),
+                                    criteriaBuilder.equal(profile.get(CODE), ProfileConstants.SUPERADMIN)),
+                            criteriaBuilder.and(
+                                    criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.ORGANISATION),
+                                    criteriaBuilder.equal(profile.get(CODE), ProfileConstants.ORGANIZATION_MANAGER),
+                                    criteriaBuilder.equal(profile.get("institution").get(ID_FILTER), institutionId)),
+                            criteriaBuilder.and(
+                                    criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
+                                    criteriaBuilder.equal(profile.get(CODE), ProfileConstants.PROJECT_MEMBER),
+                                    criteriaBuilder.equal(profile.get("institution").get(ID_FILTER), institutionId),
+                                    criteriaBuilder.equal(profile.get("actionUnit").get(ID_FILTER), root.get(ID_FILTER)))
+                    ));
+
+            return criteriaBuilder.exists(subquery);
         });
     }
 

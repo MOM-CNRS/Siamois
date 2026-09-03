@@ -972,4 +972,17 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnits;
     }
 
+    public List<ActionUnitDTO> findAllByPersonInInstitutionByNameCompletionWithEditPerm(String nameInput, int limit) {
+        UserInfo info = ExecutionContextHolder.getNonNull();
+
+        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.belongsToInstitution(info.getInstitution().getId()));
+        spec = spec.and(ActionUnitSpec.nameStartsWith(nameInput));
+        spec = spec.and(ActionUnitSpec.withEditPermission(info.getInstitution(), info.getUser()));
+        Page<ActionUnit> page = actionUnitRepository.findAll(spec, PageRequest.of(0, limit));
+
+        return page.getContent()
+                .stream()
+                .map(actionUnitMapper::convert)
+                .toList();
+    }
 }
