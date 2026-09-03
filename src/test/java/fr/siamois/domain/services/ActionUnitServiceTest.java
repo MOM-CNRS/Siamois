@@ -1707,76 +1707,6 @@ class ActionUnitServiceTest {
     }
 
     // ------------------------------------------------------------------
-    // searchActionUnitsInSpatialUnit
-    // ------------------------------------------------------------------
-
-    @Test
-    void searchActionUnitsInSpatialUnit_happyPath_mapsResultsWithCount() {
-        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
-        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
-        FilterDTO filters   = new FilterDTO(false);
-
-        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
-        when(recordingUnitRepository.countByActionContext(any())).thenReturn(0);
-
-        Page<ActionUnitDTO> result =
-                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
-
-        assertEquals(2, result.getTotalElements());
-        verify(actionUnitRepository).findAll(any(Specification.class), eq(pageable));
-    }
-
-    @Test
-    void searchActionUnitsInSpatialUnit_emptyPage_returnsEmptyAndSkipsMapper() {
-        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
-        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
-        FilterDTO filters   = new FilterDTO(false);
-
-        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
-                .thenReturn(new PageImpl<>(List.of()));
-
-        Page<ActionUnitDTO> result =
-                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
-
-        assertTrue(result.isEmpty());
-        verifyNoInteractions(actionUnitMapper);
-    }
-
-    @Test
-    void searchActionUnitsInSpatialUnit_rootOnlyFalse_neverCallsListVariant() {
-        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
-        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
-        FilterDTO filters   = new FilterDTO(false);
-
-        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
-                .thenReturn(new PageImpl<>(List.of()));
-
-        actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
-
-        verify(actionUnitRepository, never()).findAll(any(Specification.class));
-    }
-
-    @Test
-    void searchActionUnitsInSpatialUnit_convertWithCount_setsRecordingUnitCount() {
-        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
-        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
-        FilterDTO filters   = new FilterDTO(false);
-        actionUnit1.setId(1L);
-
-        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
-                .thenReturn(new PageImpl<>(List.of(actionUnit1)));
-        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-        when(recordingUnitRepository.countByActionContext(1L)).thenReturn(7);
-
-        Page<ActionUnitDTO> result =
-                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
-
-        assertEquals(7, result.getContent().get(0).getRecordingUnitCount());
-    }
-
-    // ------------------------------------------------------------------
     // countSearchResultsInSpatialUnit
     // ------------------------------------------------------------------
 
@@ -2269,40 +2199,6 @@ class ActionUnitServiceTest {
         when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
 
         assertEquals(2, actionUnitService.searchActionUnits(inst, filters, pageable).getContent().size());
-    }
-
-    @Test
-    void searchActionUnitsInSpatialUnit_withNameFilter_mapsResults() {
-        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
-        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
-        FilterDTO filters   = new FilterDTO(false);
-        filters.add(ActionUnitSpec.NAME_FILTER, "foo", FilterDTO.FilterType.CONTAINS);
-
-        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
-
-        Page<ActionUnitDTO> result =
-                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
-
-        assertEquals(2, result.getContent().size());
-    }
-
-    @Test
-    void searchActionUnitsInSpatialUnit_nullRecordingUnitCount_defaultsToZero() {
-        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
-        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
-        FilterDTO filters   = new FilterDTO(false);
-        actionUnit1dto.setRecordingUnitCount(42);
-
-        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
-                .thenReturn(new PageImpl<>(List.of(actionUnit1)));
-        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-        when(recordingUnitRepository.countByActionContext(1L)).thenReturn(null);
-
-        Page<ActionUnitDTO> result =
-                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
-
-        assertEquals(0, result.getContent().get(0).getRecordingUnitCount());
     }
 
     // ------------------------------------------------------------------
