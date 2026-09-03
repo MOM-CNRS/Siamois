@@ -515,19 +515,6 @@ public class ActionUnitService implements ArkEntityService {
                 .toList();
     }
 
-    /**
-     * Get all ActionUnit in the institution that are linked to a spatial unit
-     *
-     * @param spatialId the spatial unit id
-     * @return The list of ActionUnit
-     */
-    public List<ActionUnitDTO> findBySpatialContext(Long spatialId) {
-        List<ActionUnit> res = actionUnitRepository.findBySpatialContext(spatialId);
-        return res.stream()
-                .map(actionUnitMapper::convert)
-                .toList();
-    }
-
 
     @Cacheable(value = "MyActionUnits", key = "#member.id + '-' + #institution.id + '-' + #limit")
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {

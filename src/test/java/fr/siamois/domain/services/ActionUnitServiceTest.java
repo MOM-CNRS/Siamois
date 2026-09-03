@@ -1038,16 +1038,6 @@ class ActionUnitServiceTest {
     }
 
     @Test
-    void findBySpatialContext_mapsToDtos() {
-        when(actionUnitRepository.findBySpatialContext(9L)).thenReturn(List.of(actionUnit1));
-        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
-
-        List<ActionUnitDTO> result = actionUnitService.findBySpatialContext(9L);
-
-        assertEquals(List.of(actionUnit1dto), result);
-    }
-
-    @Test
     void findRootsByInstitution_delegatesToRepository() {
         when(actionUnitRepository.findRootsByInstitution(1L, 0, 10)).thenReturn(List.of(actionUnit1));
         List<ActionUnit> result = actionUnitService.findRootsByInstitution(1L, 0, 10);

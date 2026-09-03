@@ -89,20 +89,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Modifying
     int updateTypeByIds(@Param("type") Long type, @Param("ids") List<Long> ids);
 
-    /**
-     * @param spatialUnitId - The ID of the spatial unit
-     * @return List of recording units
-     */
-    @Query(
-            nativeQuery = true,
-            value = "SELECT ru.* FROM recording_unit ru " +
-                    "WHERE ru.fk_spatial_unit_id = :spatialUnitId"
-    )
-    List<RecordingUnit> findAllBySpatialUnitId(Long spatialUnitId);
-
     List<RecordingUnit> findAllByActionUnitId(Long actionUnitId);
-
-    Page<RecordingUnit> findAllByActionUnitId(Long actionUnitId, Pageable pageable);
 
     long countByActionUnit_Id(Long actionUnitId);
 

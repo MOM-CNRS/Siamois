@@ -101,16 +101,6 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
                                                         @Param("institutionId") Long institutionId);
 
     @Query(value = """
-            SELECT su.*
-            FROM action_unit su
-            JOIN action_unit_spatial_context h
-              ON h.fk_action_unit_id = su.action_unit_id
-            WHERE h.fk_spatial_unit_id = :spatialId
-            ORDER BY su.creation_time DESC, su.action_unit_id DESC
-            """, nativeQuery = true)
-    List<ActionUnit> findBySpatialContext(@Param("spatialId") Long spatialId);
-
-    @Query(value = """
             SELECT COUNT(1) > 0
             FROM action_unit au
             JOIN action_hierarchy h ON h.fk_child_id = au.action_unit_id
