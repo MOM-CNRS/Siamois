@@ -196,9 +196,12 @@ public class InstitutionService {
     }
 
     /**
-     * Bulk version of {@link #findMembersOf(ActionUnitDTO)} : member count for every action unit in the
-     * collection, in one query instead of one per action unit — used to render a project list's member count
-     * column without an N+1.
+     * Member count for every action unit in the collection, in one query instead of one per action unit —
+     * used to render a project list's member count column without an N+1. Counts exactly the same
+     * population as {@link ProjectMembersServiceInterfaceImpl#findMembersOf(ActionUnitDTO)} (the project's
+     * Members page): people holding an explicit {@code PersonProfileAssignment} on the action unit. The
+     * creator is not implicitly counted unless they also hold such an assignment, so this always agrees
+     * with what the Members page shows.
      */
     public Map<Long, Integer> countMembersOf(Collection<ActionUnitDTO> actionUnits) {
         if (actionUnits.isEmpty()) {
@@ -215,11 +218,8 @@ public class InstitutionService {
 
         Map<Long, Integer> counts = new HashMap<>();
         for (ActionUnitDTO actionUnit : actionUnits) {
-            Set<Long> memberIds = memberIdsByActionUnitId.computeIfAbsent(actionUnit.getId(), k -> new HashSet<>());
-            if (actionUnit.getCreatedBy() != null) {
-                memberIds.add(actionUnit.getCreatedBy().getId());
-            }
-            counts.put(actionUnit.getId(), memberIds.size());
+            counts.put(actionUnit.getId(),
+                    memberIdsByActionUnitId.getOrDefault(actionUnit.getId(), Set.of()).size());
         }
 
         return counts;
