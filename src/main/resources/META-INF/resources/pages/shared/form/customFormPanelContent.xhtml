@@ -165,6 +165,7 @@
                                 <p:commandButton icon="pi pi-check"
                                                  actionListener="#{bean.formContext.newFieldManager.saveNewField}"
                                                  value="Ajouter le champ"
+                                                 process="@this editorPanel"
                                                  update="@form"/>
                                 <p:commandButton icon="pi pi-times"
                                                  actionListener="#{bean.formContext.newFieldManager.cancelNewField}"
