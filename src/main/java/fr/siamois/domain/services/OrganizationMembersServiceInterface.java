@@ -48,11 +48,14 @@ public interface OrganizationMembersServiceInterface {
 
     /**
      * Removes a member from the given institution.
+     * <p>
+     * Refuses to remove the last remaining {@code ORGANIZATION_MANAGER} of the institution.
      *
      * @param institution the institution the person is removed from
      * @param member      the member to remove
+     * @return true if the member was actually removed, false if the removal was refused
      */
-    void removeMemberFromInstitution(InstitutionDTO institution, InstitutionMemberDTO member);
+    boolean removeMemberFromInstitution(InstitutionDTO institution, InstitutionMemberDTO member);
 
     /**
      * Assigns a profile to an institution member.

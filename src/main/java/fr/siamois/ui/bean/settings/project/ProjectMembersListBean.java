@@ -118,7 +118,10 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
             displayWarnMessage(langBean, PROJECT_SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
-        projectMembersService.removeMemberFromProject(project, member);
+        if (!projectMembersService.removeMemberFromProject(project, member)) {
+            displayWarnMessage(langBean, "projectSettings.error.lastManager");
+            return;
+        }
         refMembers.remove(member);
         filter();
     }

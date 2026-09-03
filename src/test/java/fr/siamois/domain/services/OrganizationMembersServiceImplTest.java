@@ -180,6 +180,32 @@ class OrganizationMembersServiceImplTest {
     }
 
     @Test
+    void removeMemberFromInstitution_shouldRemoveMember_whenNotLastOrganizationManager() {
+        InstitutionMemberDTO membertest = new InstitutionMemberDTO();
+        membertest.setPerson(memberDTO);
+
+        when(personProfileAssignmentService.isNotLastOrganizationManager(institution, memberDTO)).thenReturn(true);
+
+        boolean result = organizationMembersService.removeMemberFromInstitution(institution, membertest);
+
+        assertThat(result).isTrue();
+        verify(personProfileAssignmentService, times(1)).removeFromInstitution(institution, memberDTO);
+    }
+
+    @Test
+    void removeMemberFromInstitution_shouldNotRemoveMember_whenLastOrganizationManager() {
+        InstitutionMemberDTO membertest = new InstitutionMemberDTO();
+        membertest.setPerson(memberDTO);
+
+        when(personProfileAssignmentService.isNotLastOrganizationManager(institution, memberDTO)).thenReturn(false);
+
+        boolean result = organizationMembersService.removeMemberFromInstitution(institution, membertest);
+
+        assertThat(result).isFalse();
+        verify(personProfileAssignmentService, never()).removeFromInstitution(any(), any());
+    }
+
+    @Test
     void removeProfileFromMember_shouldRemove_whenProfileIsNotOrganizationManager() {
         InstitutionMemberDTO membertest = new InstitutionMemberDTO();
         membertest.setPerson(memberDTO);

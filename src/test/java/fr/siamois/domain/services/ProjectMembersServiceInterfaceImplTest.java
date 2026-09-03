@@ -178,8 +178,9 @@ class ProjectMembersServiceInterfaceImplTest {
 
         when(personProfileAssignmentService.isNotLastProjectManager(project, this.memberDTO)).thenReturn(true);
 
-        projectMembersService.removeMemberFromProject(project, projectMemberDTO);
+        boolean result = projectMembersService.removeMemberFromProject(project, projectMemberDTO);
 
+        assertThat(result).isTrue();
         verify(personProfileAssignmentService, times(1)).removeFromProject(project, this.memberDTO);
     }
 
@@ -190,8 +191,9 @@ class ProjectMembersServiceInterfaceImplTest {
 
         when(personProfileAssignmentService.isNotLastProjectManager(project, memberDTO)).thenReturn(false);
 
-        projectMembersService.removeMemberFromProject(project, projectMemberDTO);
+        boolean result = projectMembersService.removeMemberFromProject(project, projectMemberDTO);
 
+        assertThat(result).isFalse();
         verify(personProfileAssignmentService, never()).removeFromProject(any(), any());
     }
 
