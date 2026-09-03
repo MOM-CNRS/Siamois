@@ -131,7 +131,10 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
-        organizationMembersService.removeMemberFromInstitution(institution, member);
+        if (!organizationMembersService.removeMemberFromInstitution(institution, member)) {
+            displayWarnMessage(langBean, "organisationSettings.error.lastManager");
+            return;
+        }
         refMembers.remove(member);
         filter();
     }

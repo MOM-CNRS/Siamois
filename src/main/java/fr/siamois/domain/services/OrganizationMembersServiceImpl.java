@@ -71,10 +71,12 @@ public class OrganizationMembersServiceImpl implements OrganizationMembersServic
     }
 
     @Override
-    public void removeMemberFromInstitution(InstitutionDTO institution, InstitutionMemberDTO member) {
-        if (personProfileAssignmentService.isNotLastOrganizationManager(institution, member.getPerson())) {
-            personProfileAssignmentService.removeFromInstitution(institution, member.getPerson());
+    public boolean removeMemberFromInstitution(InstitutionDTO institution, InstitutionMemberDTO member) {
+        if (!personProfileAssignmentService.isNotLastOrganizationManager(institution, member.getPerson())) {
+            return false;
         }
+        personProfileAssignmentService.removeFromInstitution(institution, member.getPerson());
+        return true;
     }
 
     @Override
