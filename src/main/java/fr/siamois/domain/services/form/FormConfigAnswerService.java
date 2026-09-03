@@ -37,16 +37,14 @@ public class FormConfigAnswerService {
      * saved additional-field answers back into the form, where opening a form must not create rows.
      */
     public Optional<FormConfigAnswer> findFormConfigAnswer(FormConfig formConfig, RecordingUnitDTO recordingUnitDTO) {
-        UserInfo info = ExecutionContextHolder.get();
-        assert info != null;
+        UserInfo info = ExecutionContextHolder.getNonNull();
         RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
         Person person = personMapper.invertConvert(info.getUser());
         return formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit);
     }
 
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, RecordingUnitDTO recordingUnitDTO) {
-        UserInfo info = ExecutionContextHolder.get();
-        assert info != null;
+        UserInfo info = ExecutionContextHolder.getNonNull();
         RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
         Person person = personMapper.invertConvert(info.getUser());
 
@@ -64,8 +62,7 @@ public class FormConfigAnswerService {
     }
 
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, SpecimenDTO specimenDTO) {
-        UserInfo info = ExecutionContextHolder.get();
-        assert info != null;
+        UserInfo info = ExecutionContextHolder.getNonNull();
         Specimen specimen = specimenMapper.invertConvert(specimenDTO);
         Person person = personMapper.invertConvert(info.getUser());
 
@@ -83,8 +80,7 @@ public class FormConfigAnswerService {
     }
 
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, PhaseDTO phaseDTO) {
-        UserInfo info = ExecutionContextHolder.get();
-        assert info != null;
+        UserInfo info = ExecutionContextHolder.getNonNull();
         Phase phase = phaseMapper.invertConvert(phaseDTO);
         Person person = personMapper.invertConvert(info.getUser());
 
@@ -102,8 +98,7 @@ public class FormConfigAnswerService {
     }
 
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, ContainerDTO containerDTO) {
-        UserInfo info = ExecutionContextHolder.get();
-        assert info != null;
+        UserInfo info = ExecutionContextHolder.getNonNull();
         Container container = containerMapper.invertConvert(containerDTO);
         Person person = personMapper.invertConvert(info.getUser());
 

@@ -75,7 +75,7 @@
             **/ui/form/rules/**,
             **/ui/lazydatamodel/scope/**,
             **/ui/lazydatamodel/tree/**,
-            **/utils/ExecutionTimeAspect.java,
+            **/utils/**,
             **/ui/table/**,
             **/dto/**,
             **/ui/form/**,

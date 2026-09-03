@@ -96,8 +96,7 @@ public class ProjectListBean implements SettingsDatatableBean {
 
     public void init() {
         reset();
-        UserInfo info = ExecutionContextHolder.get();
-        assert info != null;
+        UserInfo info = ExecutionContextHolder.getNonNull();
         this.actionUnits = actionUnitService.findAllEditableByPerson(info.getUser());
         this.filteredActionUnits = new ArrayList<>(actionUnits);
         loadDerivedData();

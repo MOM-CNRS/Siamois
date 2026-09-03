@@ -634,7 +634,7 @@ class ActionUnitServiceTest {
         ActionUnitDTO dto = new ActionUnitDTO();
         dto.setName("name");
         dto.setIdentifier("ABC");
-        // creationTime null and fullIdentifier null
+        dto.setCreationTime(null); // creationTime null and fullIdentifier null
 
         ActionUnit entity = new ActionUnit();
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
@@ -2019,6 +2019,483 @@ class ActionUnitServiceTest {
         long result = actionUnitService.countByTeamMember(7L);
 
         assertThat(result).isEqualTo(4L);
+    }
+
+    // ------------------------------------------------------------------
+    // saveNotTransactional — unicité vis-à-vis de l'unité elle-même
+    // ------------------------------------------------------------------
+
+    @Test
+    void saveNotTransactional_existingUnitKeepsItsOwnNameAndIdentifier_doesNotThrow()
+            throws ActionUnitAlreadyExistsException {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setId(7L);
+        dto.setName("name");
+        dto.setIdentifier("id");
+
+        ActionUnit itself = new ActionUnit();
+        itself.setId(7L);
+        ActionUnit entity = new ActionUnit();
+
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId("name", 1L)).thenReturn(Optional.of(itself));
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId("id", 1L)).thenReturn(Optional.of(itself));
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(actionUnitRepository.save(entity)).thenReturn(entity);
+
+        ActionUnit saved = actionUnitService.saveNotTransactional(info, dto, new ConceptDTO());
+
+        assertSame(entity, saved);
+    }
+
+    @Test
+    void saveNotTransactional_nameTakenByAnotherUnit_throws() {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setId(7L);
+        dto.setName("dup");
+
+        ActionUnit other = new ActionUnit();
+        other.setId(9L);
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId("dup", 1L)).thenReturn(Optional.of(other));
+
+        ConceptDTO conceptDto = new ConceptDTO();
+        ActionUnitAlreadyExistsException ex = assertThrows(
+                ActionUnitAlreadyExistsException.class,
+                () -> actionUnitService.saveNotTransactional(info, dto, conceptDto));
+        assertThat(ex.getMessage()).contains("dup");
+    }
+
+    @Test
+    void saveNotTransactional_unknownMainLocation_throwsFailedSave() {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("name");
+        dto.setIdentifier("id");
+        SpatialUnitSummaryDTO missingLoc = new SpatialUnitSummaryDTO();
+        missingLoc.setId(42L);
+        dto.setMainLocation(missingLoc);
+
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(new ActionUnit());
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(spatialUnitRepository.findById(42L)).thenReturn(Optional.empty());
+
+        ConceptDTO conceptDto = new ConceptDTO();
+        FailedActionUnitSaveException ex = assertThrows(
+                FailedActionUnitSaveException.class,
+                () -> actionUnitService.saveNotTransactional(info, dto, conceptDto));
+
+        assertThat(ex.getMessage()).contains("42");
+        verify(actionUnitRepository, never()).save(any(ActionUnit.class));
+    }
+
+    @Test
+    void saveNotTransactional_nullSpatialContext_leavesEntityContextUntouched()
+            throws ActionUnitAlreadyExistsException {
+        info = userInfo(1L);
+        ActionUnitDTO dto = new ActionUnitDTO();
+        dto.setName("name");
+        dto.setIdentifier("id");
+        dto.setSpatialContext(null);
+
+        ActionUnit entity = new ActionUnit();
+        SpatialUnit untouched = new SpatialUnit();
+        untouched.setId(3L);
+        entity.setSpatialContext(new HashSet<>(Set.of(untouched)));
+
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(dto)).thenReturn(entity);
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(personMapper.invertConvert(any())).thenReturn(new Person());
+        when(actionUnitRepository.save(entity)).thenReturn(entity);
+
+        actionUnitService.saveNotTransactional(info, dto, new ConceptDTO());
+
+        assertThat(entity.getSpatialContext()).containsExactly(untouched);
+        verifyNoInteractions(spatialUnitRepository);
+    }
+
+    // ------------------------------------------------------------------
+    // fullIdentifierAlreadyExistInInstitution
+    // ------------------------------------------------------------------
+
+    @Test
+    void fullIdentifierAlreadyExistInInstitution_withoutInstitution_returnsFalse() {
+        ActionUnitDTO dto = buildActionUnitDTO(1L, "AU-2025-001");
+
+        assertFalse(actionUnitService.fullIdentifierAlreadyExistInInstitution(dto));
+
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInInstitution_noUnitWithThatFullIdentifier_returnsFalse() {
+        ActionUnitDTO dto = buildActionUnitDtoOfInstitution(1L, "AU-2025-001", 10L);
+        when(actionUnitRepository.findByFullIdentifier("AU-2025-001")).thenReturn(Optional.empty());
+
+        assertFalse(actionUnitService.fullIdentifierAlreadyExistInInstitution(dto));
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInInstitution_matchBelongsToAnotherInstitution_returnsFalse() {
+        ActionUnitDTO dto = buildActionUnitDtoOfInstitution(1L, "AU-2025-001", 10L);
+        ActionUnit otherInstitutionUnit = buildActionUnitOfInstitution(2L, "AU-2025-001", 20L);
+        when(actionUnitRepository.findByFullIdentifier("AU-2025-001")).thenReturn(Optional.of(otherInstitutionUnit));
+
+        assertFalse(actionUnitService.fullIdentifierAlreadyExistInInstitution(dto));
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInInstitution_matchHasNoInstitution_returnsFalse() {
+        ActionUnitDTO dto = buildActionUnitDtoOfInstitution(1L, "AU-2025-001", 10L);
+        ActionUnit orphan = buildActionUnitOfInstitution(2L, "AU-2025-001", null);
+        when(actionUnitRepository.findByFullIdentifier("AU-2025-001")).thenReturn(Optional.of(orphan));
+
+        assertFalse(actionUnitService.fullIdentifierAlreadyExistInInstitution(dto));
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInInstitution_matchIsTheUnitItself_returnsFalse() {
+        ActionUnitDTO dto = buildActionUnitDtoOfInstitution(1L, "AU-2025-001", 10L);
+        ActionUnit itself = buildActionUnitOfInstitution(1L, "AU-2025-001", 10L);
+        when(actionUnitRepository.findByFullIdentifier("AU-2025-001")).thenReturn(Optional.of(itself));
+
+        assertFalse(actionUnitService.fullIdentifierAlreadyExistInInstitution(dto));
+    }
+
+    @Test
+    void fullIdentifierAlreadyExistInInstitution_matchIsAnotherUnitOfSameInstitution_returnsTrue() {
+        ActionUnitDTO dto = buildActionUnitDtoOfInstitution(1L, "AU-2025-001", 10L);
+        ActionUnit sibling = buildActionUnitOfInstitution(2L, "AU-2025-001", 10L);
+        when(actionUnitRepository.findByFullIdentifier("AU-2025-001")).thenReturn(Optional.of(sibling));
+
+        assertTrue(actionUnitService.fullIdentifierAlreadyExistInInstitution(dto));
+    }
+
+    // ------------------------------------------------------------------
+    // findAllByPersonInInstitutionByNameCompletionWithEditPerm
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAllByPersonInInstitutionByNameCompletionWithEditPerm_returnsMappedDtos() {
+        bindExecutionContext(userInfo(1L));
+        actionUnit1.setFullIdentifier("COMPLETION-AU-1");
+        actionUnit2.setFullIdentifier("COMPLETION-AU-2");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        when(actionUnitRepository.findAll(any(Specification.class), pageableCaptor.capture())).thenReturn(page);
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+
+        List<ActionUnitDTO> result =
+                actionUnitService.findAllByPersonInInstitutionByNameCompletionWithEditPerm("ab", 5);
+
+        assertThat(result).containsExactly(actionUnit1dto, actionUnit2dto);
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(5);
+    }
+
+    @Test
+    void findAllByPersonInInstitutionByNameCompletionWithEditPerm_noMatch_returnsEmptyList() {
+        bindExecutionContext(userInfo(1L));
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        assertThat(actionUnitService.findAllByPersonInInstitutionByNameCompletionWithEditPerm("zz", 10)).isEmpty();
+
+        verifyNoInteractions(actionUnitMapper);
+    }
+
+    @Test
+    void findAllByPersonInInstitutionByNameCompletionWithEditPerm_withoutExecutionContext_throws() {
+        ExecutionContextHolder.clear();
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.findAllByPersonInInstitutionByNameCompletionWithEditPerm("ab", 5));
+
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    // ------------------------------------------------------------------
+    // tri et filtres restants de searchActionUnits*
+    // ------------------------------------------------------------------
+
+    @Test
+    void searchActionUnits_withRegularSort_keepsPageableSortIntact() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        Pageable sortedPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "name"));
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        when(actionUnitRepository.findAll(any(Specification.class), pageableCaptor.capture()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        actionUnitService.searchActionUnits(inst, filters, sortedPageable);
+
+        assertThat(pageableCaptor.getValue().getSort()).isEqualTo(Sort.by(Sort.Direction.ASC, "name"));
+    }
+
+    @Test
+    void searchActionUnits_withNonContainsNameFilter_ignoresNameSpec() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(ActionUnitSpec.NAME_FILTER, "foo", FilterDTO.FilterType.EQUAL);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        assertTrue(actionUnitService.searchActionUnits(inst, filters, pageable).isEmpty());
+    }
+
+    @Test
+    void searchActionUnits_withNonContainsGlobalFilter_ignoresGlobalSpec() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(ActionUnitSpec.GLOBAL_FILTER, "g", FilterDTO.FilterType.START_WITH);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        assertTrue(actionUnitService.searchActionUnits(inst, filters, pageable).isEmpty());
+    }
+
+    @Test
+    void searchActionUnits_withFullIdentifierUserFilter_appliesFullIdentifierSpec() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(ActionUnitSpec.FULL_IDENTIFIER_FILTER, "AU-2025", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        assertEquals(2, actionUnitService.searchActionUnits(inst, filters, pageable).getContent().size());
+    }
+
+    @Test
+    void searchActionUnitsInSpatialUnit_withNameFilter_mapsResults() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(false);
+        filters.add(ActionUnitSpec.NAME_FILTER, "foo", FilterDTO.FilterType.CONTAINS);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(actionUnit1dto);
+
+        Page<ActionUnitDTO> result =
+                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+    }
+
+    @Test
+    void searchActionUnitsInSpatialUnit_nullRecordingUnitCount_defaultsToZero() {
+        InstitutionDTO inst = new InstitutionDTO(); inst.setId(1L);
+        SpatialUnitDTO su   = new SpatialUnitDTO(); su.setId(3L);
+        FilterDTO filters   = new FilterDTO(false);
+        actionUnit1dto.setRecordingUnitCount(42);
+
+        when(actionUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1)));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countByActionContext(1L)).thenReturn(null);
+
+        Page<ActionUnitDTO> result =
+                actionUnitService.searchActionUnitsInSpatialUnit(inst, su, filters, pageable);
+
+        assertEquals(0, result.getContent().get(0).getRecordingUnitCount());
+    }
+
+    // ------------------------------------------------------------------
+    // findAccessibleProjects — périmètre nul et restriction à une organisation
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAccessibleProjects_nullInstitutions_returnsEmptyPageWithoutDb() {
+        Page<AccessibleProjectForApi> result =
+                actionUnitService.findAccessibleProjects(1L, null, null, null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isZero();
+        verifyNoInteractions(actionUnitRepository);
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    void findAccessibleProjects_withOrganizationId_stillMapsAggregateCounts() {
+        actionUnit1.setFullIdentifier("ORG-SCOPED-AU");
+        actionUnit1dto.setId(1L);
+
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1), PageRequest.of(0, 20), 1));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(1L)))
+                .thenReturn(Collections.singletonList(new Object[]{1L, 4L}));
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
+                .thenReturn(new ArrayList<>());
+
+        Page<AccessibleProjectForApi> result = actionUnitService.findAccessibleProjects(
+                1L, Set.of(10L, 20L), 20L, null, PageRequest.of(0, 20));
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).recordingUnitCount()).isEqualTo(4L);
+        assertThat(result.getContent().get(0).childActionUnitCount()).isZero();
+    }
+
+    // ------------------------------------------------------------------
+    // findAccessibleProjectByKey — clés invalides et projets hors périmètre
+    // ------------------------------------------------------------------
+
+    @Test
+    void findAccessibleProjectByKey_nullInstitutions_throws() {
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("1", null));
+
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_nullKey_throws() {
+        Set<Long> institutionIds = Set.of(100L);
+
+        ActionUnitNotFoundException ex = assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey(null, institutionIds));
+
+        assertThat(ex.getMessage()).contains("must not be empty");
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_blankKey_throws() {
+        Set<Long> institutionIds = Set.of(100L);
+
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("   ", institutionIds));
+
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_projectWithoutInstitution_throws() {
+        ActionUnit actionUnit = buildActionUnitWithFullIdentifier(5L, "NO-INST-AU");
+        when(actionUnitRepository.findByFullIdentifier("NO-INST-AU")).thenReturn(Optional.of(actionUnit));
+        when(actionUnitMapper.convert(actionUnit)).thenReturn(buildActionUnitDTO(5L, "NO-INST-AU"));
+
+        Set<Long> institutionIds = Set.of(100L);
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("NO-INST-AU", institutionIds));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_projectInstitutionWithoutId_throws() {
+        ActionUnit actionUnit = buildActionUnitWithFullIdentifier(5L, "INST-NO-ID-AU");
+        ActionUnitDTO dto = buildActionUnitDTO(5L, "INST-NO-ID-AU");
+        dto.setCreatedByInstitution(new InstitutionDTO());
+        when(actionUnitRepository.findByFullIdentifier("INST-NO-ID-AU")).thenReturn(Optional.of(actionUnit));
+        when(actionUnitMapper.convert(actionUnit)).thenReturn(dto);
+
+        Set<Long> institutionIds = Set.of(100L);
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("INST-NO-ID-AU", institutionIds));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_unknownShortIdentifierInEveryInstitution_throws() {
+        when(actionUnitRepository.findByFullIdentifier("NOPE")).thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(eq("NOPE"), anyLong()))
+                .thenReturn(Optional.empty());
+
+        Set<Long> institutionIds = new LinkedHashSet<>(List.of(100L, 200L));
+        ActionUnitNotFoundException ex = assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("NOPE", institutionIds));
+
+        assertThat(ex.getMessage()).contains("NOPE");
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("NOPE", 100L);
+        verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("NOPE", 200L);
+    }
+
+    @Test
+    void findAccessibleProjectByKey_nullCountRows_defaultsCountsToZero() {
+        ActionUnit actionUnit = buildActionUnitWithFullIdentifier(5L, "NULL-ROWS-AU");
+        ActionUnitDTO dto = buildActionUnitDtoOfInstitution(5L, "NULL-ROWS-AU", 100L);
+        when(actionUnitRepository.findByFullIdentifier("NULL-ROWS-AU")).thenReturn(Optional.of(actionUnit));
+        when(actionUnitMapper.convert(actionUnit)).thenReturn(dto);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(5L))).thenReturn(null);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(5L))).thenReturn(null);
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("NULL-ROWS-AU", Set.of(100L));
+
+        assertThat(result.recordingUnitCount()).isZero();
+        assertThat(result.childActionUnitCount()).isZero();
+    }
+
+    @Test
+    void findAccessibleProjectByKey_ignoresIncompleteCountRows() {
+        ActionUnit actionUnit = buildActionUnitWithFullIdentifier(5L, "BAD-ROWS-AU");
+        ActionUnitDTO dto = buildActionUnitDtoOfInstitution(5L, "BAD-ROWS-AU", 100L);
+        when(actionUnitRepository.findByFullIdentifier("BAD-ROWS-AU")).thenReturn(Optional.of(actionUnit));
+        when(actionUnitMapper.convert(actionUnit)).thenReturn(dto);
+
+        List<Object[]> truncatedAndNullRows = new ArrayList<>();
+        truncatedAndNullRows.add(new Object[]{5L});          // colonne count manquante
+        truncatedAndNullRows.add(new Object[]{null, 4L});    // id nul
+        truncatedAndNullRows.add(new Object[]{5L, null});    // count nul
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(5L)))
+                .thenReturn(truncatedAndNullRows);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(5L))).thenReturn(new ArrayList<>());
+
+        AccessibleProjectForApi result = actionUnitService.findAccessibleProjectByKey("BAD-ROWS-AU", Set.of(100L));
+
+        assertThat(result.recordingUnitCount()).isZero();
+        assertThat(result.childActionUnitCount()).isZero();
+    }
+
+    // ------------------------------------------------------------------
+    // deleteProjectWhenEmpty — autorisation portée par le projet seul
+    // ------------------------------------------------------------------
+
+    @Test
+    void deleteProjectWhenEmpty_allowedByProjectPermissionOnly_deletesEverything() {
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(), anyLong(), anyString())).thenReturn(true);
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
+
+        actionUnitService.deleteProjectWhenEmpty(1L);
+
+        verify(actionUnitRepository).deleteById(1L);
+    }
+
+    private void bindExecutionContext(UserInfo userInfo) {
+        ExecutionContextHolder.clear();
+        ExecutionContextHolder.set(userInfo);
+    }
+
+    private ActionUnit buildActionUnitOfInstitution(Long id, String fullIdentifier, Long institutionId) {
+        ActionUnit actionUnit = buildActionUnitWithFullIdentifier(id, fullIdentifier);
+        if (institutionId != null) {
+            Institution institution = new Institution();
+            institution.setId(institutionId);
+            actionUnit.setCreatedByInstitution(institution);
+        }
+        return actionUnit;
+    }
+
+    private ActionUnitDTO buildActionUnitDtoOfInstitution(Long id, String fullIdentifier, Long institutionId) {
+        ActionUnitDTO dto = buildActionUnitDTO(id, fullIdentifier);
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(institutionId);
+        dto.setCreatedByInstitution(institution);
+        return dto;
     }
 
     private ActionUnit buildActionUnitWithFullIdentifier(Long id, String fullIdentifier) {
