@@ -244,7 +244,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
             inviteEmail = q;
             inviteFirstName = "";
             inviteLastName = "";
-            inviteUsername = usernameFromEmail(q);
+            inviteUsername = personService.generateUniqueUsername("", "", q, reservedUsernames());
         } else {
             inviteEmail = "";
             inviteFirstName = "";
@@ -530,9 +530,23 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         draft.setName(row.getName());
         draft.setLastname(row.getLastname());
         draft.setEmail(row.getEmail());
-        draft.setUsername(usernameFromEmail(row.getEmail()));
+        draft.setUsername(personService.generateUniqueUsername(row.getName(), row.getLastname(), row.getEmail(), reservedUsernames()));
         draftPasswords.put(draft.getId(), null);
         selectedMembers.add(draft);
+    }
+
+    /**
+     * @return the usernames (lower-cased) already staged in {@link #selectedMembers} - draft or
+     * existing - so a freshly generated username can avoid colliding with one of them even though
+     * none of them exist in the database yet (e.g. two rows of the same CSV batch resolving to the
+     * same "firstname.lastname").
+     */
+    private Set<String> reservedUsernames() {
+        return selectedMembers.stream()
+                .map(PersonDTO::getUsername)
+                .filter(StringUtils::isNotBlank)
+                .map(u -> u.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -699,12 +713,6 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         }
         effective.addAll(profiles);
         return InvitationMessages.profilesLabel(langBean, effective);
-    }
-
-    private static String usernameFromEmail(String email) {
-        String local = email.contains("@") ? email.substring(0, email.indexOf('@')) : email;
-        String sanitized = local.replaceAll("[^a-zA-Z0-9.]", ".");
-        return sanitized.isBlank() ? "user" : sanitized;
     }
 
     /**

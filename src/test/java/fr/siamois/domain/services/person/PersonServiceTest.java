@@ -593,4 +593,115 @@ class PersonServiceTest {
         verify(personMapper, never()).convert(any(Person.class));
     }
 
+    @Test
+    void generateUniqueUsername_returnsPlainNameLastname_whenFree() {
+        when(personRepository.findByUsernameIgnoreCase("john.doe")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("John", "Doe", "john.doe@example.com", Set.of());
+
+        assertEquals("john.doe", result);
+    }
+
+    @Test
+    void generateUniqueUsername_stripsAccentsAndSpecialChars() {
+        when(personRepository.findByUsernameIgnoreCase("francois.mullerdupont")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("François", "Müller-Dupont", "f@example.com", Set.of());
+
+        assertEquals("francois.mullerdupont", result);
+    }
+
+    @Test
+    void generateUniqueUsername_fallsBackToEmailLocalPart_whenNamesBlank() {
+        when(personRepository.findByUsernameIgnoreCase("jane.smith")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("", "  ", "jane.smith@example.com", Set.of());
+
+        assertEquals("jane.smith", result);
+    }
+
+    @Test
+    void generateUniqueUsername_fallsBackToUser_whenNothingUsable() {
+        when(personRepository.findByUsernameIgnoreCase("user")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("", "", "", Set.of());
+
+        assertEquals("user", result);
+    }
+
+    @Test
+    void generateUniqueUsername_appendsRandomSuffix_whenAlreadyTakenInDatabase() {
+        when(personRepository.findByUsernameIgnoreCase(anyString())).thenAnswer(inv ->
+                "john.doe".equalsIgnoreCase(inv.getArgument(0)) ? Optional.of(person) : Optional.empty());
+        when(personMapper.convert(person)).thenReturn(personDto);
+
+        String result = personService.generateUniqueUsername("John", "Doe", "john.doe@example.com", Set.of());
+
+        assertNotEquals("john.doe", result);
+        assertTrue(result.matches("john\\.doe\\d+"), "Expected 'john.doe' followed by digits, got: " + result);
+    }
+
+    @Test
+    void generateUniqueUsername_avoidsReservedUsernames_evenWhenDatabaseIsFree() {
+        when(personRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("John", "Doe", "john.doe@example.com", Set.of("john.doe"));
+
+        assertNotEquals("john.doe", result);
+        assertTrue(result.matches("john\\.doe\\d+"), "Expected 'john.doe' followed by digits, got: " + result);
+    }
+
+    @Test
+    void generateUniqueUsername_reservedCheckIsCaseInsensitive() {
+        when(personRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("John", "Doe", "john.doe@example.com", Set.of("John.Doe"));
+
+        assertNotEquals("john.doe", result);
+        assertTrue(result.matches("john\\.doe\\d+"), "Expected 'john.doe' followed by digits, got: " + result);
+    }
+
+    @Test
+    void generateUniqueUsername_worksWithNullReservedUsernames() {
+        when(personRepository.findByUsernameIgnoreCase("john.doe")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("John", "Doe", "j@example.com", null);
+
+        assertEquals("john.doe", result);
+    }
+
+    @Test
+    void generateUniqueUsername_truncatesBase_whenLongerThanMaxLength() {
+        String firstName = "a".repeat(20);
+        String lastName = "b".repeat(20);
+        String expectedBase = (firstName + "." + lastName).substring(0, Person.USERNAME_MAX_LENGTH);
+        when(personRepository.findByUsernameIgnoreCase(expectedBase)).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername(firstName, lastName, "x@example.com", Set.of());
+
+        assertEquals(expectedBase, result);
+        assertEquals(Person.USERNAME_MAX_LENGTH, result.length());
+    }
+
+    @Test
+    void generateUniqueUsername_truncatesBaseBeforeAppendingSuffix_whenLongBaseIsTaken() {
+        String firstName = "a".repeat(20);
+        String lastName = "b".repeat(20);
+        String fullBase = (firstName + "." + lastName).substring(0, Person.USERNAME_MAX_LENGTH);
+        String truncatedForSuffix = fullBase.substring(0, Person.USERNAME_MAX_LENGTH - 5);
+
+        when(personRepository.findByUsernameIgnoreCase(fullBase)).thenReturn(Optional.of(person));
+        when(personRepository.findByUsernameIgnoreCase(
+                argThat(a -> a != null && !a.equals(fullBase) && a.startsWith(truncatedForSuffix))))
+                .thenReturn(Optional.empty());
+        when(personMapper.convert(person)).thenReturn(personDto);
+
+        String result = personService.generateUniqueUsername(firstName, lastName, "x@example.com", Set.of());
+
+        assertTrue(result.length() <= Person.USERNAME_MAX_LENGTH,
+                "Username must respect max length, got: " + result + " (" + result.length() + " chars)");
+        assertTrue(result.startsWith(truncatedForSuffix));
+        assertNotEquals(fullBase, result);
+    }
+
 }
