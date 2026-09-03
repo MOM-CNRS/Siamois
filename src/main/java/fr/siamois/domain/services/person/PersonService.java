@@ -453,7 +453,7 @@ public class PersonService {
     }
 
     private boolean isUsernameFree(String username, Set<String> reservedUsernames) {
-        if (reservedUsernames != null && reservedUsernames.contains(username.toLowerCase(Locale.ROOT))) {
+        if (reservedUsernames != null && reservedUsernames.stream().anyMatch(username::equalsIgnoreCase)) {
             return false;
         }
         return findByUsername(username).isEmpty();
@@ -482,6 +482,14 @@ public class PersonService {
         String lettersDigitsDots = withoutDiacritics.toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9.]", "")
                 .replaceAll("\\.{2,}", ".");
-        return lettersDigitsDots.replaceAll("^\\.+|\\.+$", "");
+        int start = 0;
+        while (start < lettersDigitsDots.length() && lettersDigitsDots.charAt(start) == '.') {
+            start++;
+        }
+        int end = lettersDigitsDots.length();
+        while (end > start && lettersDigitsDots.charAt(end - 1) == '.') {
+            end--;
+        }
+        return lettersDigitsDots.substring(start, end);
     }
 }
