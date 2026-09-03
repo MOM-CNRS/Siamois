@@ -319,6 +319,73 @@ class ActionUnitServiceTest {
         verify(personProfileAssignmentService).addToInstitution(eq(institutionDto), eq(personDto), anyList());
     }
 
+    @Test
+    void save_withUserInfo_update_doesNotReassignRoles() throws ActionUnitAlreadyExistsException {
+        // Arrange: editing an *existing* ActionUnit must not re-grant project roles to the
+        // editor, otherwise a previously removed member reappears as manager/member on every edit.
+        Long existingId = 42L;
+        String identifier = "Test";
+        String institutionIdentifier = "MOM";
+        String name = "Test Action Unit";
+
+        ActionUnitDTO actionUnitDto = new ActionUnitDTO();
+        actionUnitDto.setId(existingId);
+        actionUnitDto.setName(name);
+        actionUnitDto.setIdentifier(identifier);
+        actionUnitDto.setFullIdentifier(institutionIdentifier + "-" + identifier);
+
+        InstitutionDTO institutionDto = new InstitutionDTO();
+        institutionDto.setId(1L);
+        institutionDto.setIdentifier(institutionIdentifier);
+
+        ConceptDTO typeConceptDto = new ConceptDTO();
+        typeConceptDto.setId(10L);
+
+        PersonDTO personDto = new PersonDTO();
+        personDto.setId(1L);
+
+        UserInfo userInfo = new UserInfo(institutionDto, personDto, "fr");
+
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(existingId);
+        actionUnit.setName(name);
+        actionUnit.setIdentifier(identifier);
+
+        Concept typeConcept = new Concept();
+        typeConcept.setId(10L);
+
+        Person person = new Person();
+        person.setId(1L);
+
+        ActionUnitDTO expectedResult = new ActionUnitDTO();
+        expectedResult.setId(existingId);
+        expectedResult.setName(name);
+        expectedResult.setIdentifier(identifier);
+        expectedResult.setFullIdentifier(institutionIdentifier + "-" + identifier);
+        expectedResult.setType(typeConceptDto);
+        expectedResult.setCreatedBy(personDto);
+        expectedResult.setCreatedByInstitution(institutionDto);
+
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitRepository.findByNameAndCreatedByInstitutionId(name, 1L))
+                .thenReturn(Optional.empty());
+        when(actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(identifier, 1L))
+                .thenReturn(Optional.empty());
+        when(actionUnitMapper.invertConvert(actionUnitDto)).thenReturn(actionUnit);
+        when(conceptService.saveOrGetConcept(typeConceptDto)).thenReturn(typeConcept);
+        when(personMapper.invertConvert(personDto)).thenReturn(person);
+        when(actionUnitRepository.save(actionUnit)).thenReturn(actionUnit);
+        when(actionUnitMapper.convert(actionUnit)).thenReturn(expectedResult);
+
+        // Act
+        ActionUnitDTO result = actionUnitService.save(userInfo, actionUnitDto, typeConceptDto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(existingId, result.getId());
+        verifyNoInteractions(personProfileAssignmentService);
+    }
+
 
     @Test
     void findAllActionCodeByCodeIsContainingIgnoreCase_Success() {
