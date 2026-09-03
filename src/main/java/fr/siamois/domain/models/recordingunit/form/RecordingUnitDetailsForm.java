@@ -59,8 +59,8 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .addRow(
                         new CustomRowUiDto.Builder()
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(SPATIAL_UNIT_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(PARENTS_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(CHILDREN_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(PARENTS_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CHILDREN_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(RECORDING_UNIT_TYPE_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(NATURE_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(GEOMORPHO_AGENT_FIELD).build())

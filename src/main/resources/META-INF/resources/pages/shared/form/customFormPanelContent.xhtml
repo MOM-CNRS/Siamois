@@ -65,6 +65,7 @@
                                    rendered="#{!bean.formContext.newFieldManager.showEditor}"
                                    actionListener="#{bean.formContext.newFieldManager.prepareNewField(customFormPanel)}"
                                    update="@parent"
+                                   process="@this"
                                    styleClass="ui-button" filterMatchMode="contains">
                         <c:forEach items="#{bean.formContext.newFieldManager.addFieldOptions}" var="m">
                             <p:menuitem value="#{spatialUnitFieldBean.resolveCustomFieldLabel(m)}"
