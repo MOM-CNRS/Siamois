@@ -34,6 +34,11 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     )
     Integer countBySpatialContext(@Param("spatialUnitId") Long spatialUnitId);
 
+    @Query("SELECT COUNT(DISTINCT au.id) FROM ActionUnit au " +
+            "JOIN au.spatialContext sc " +
+            "WHERE sc.id = :spatialUnitId OR au.mainLocation.id = :spatialUnitId")
+    int countByLocation(@Param("spatialUnitId") Long spatialUnitId);
+
     long countByCreatedByInstitutionId(Long institutionId);
 
     Set<ActionUnit> findByCreatedByInstitutionId(Long id);
@@ -99,16 +104,6 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
             """, nativeQuery = true)
     List<ActionUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                         @Param("institutionId") Long institutionId);
-
-    @Query(value = """
-            SELECT su.*
-            FROM action_unit su
-            JOIN action_unit_spatial_context h
-              ON h.fk_action_unit_id = su.action_unit_id
-            WHERE h.fk_spatial_unit_id = :spatialId
-            ORDER BY su.creation_time DESC, su.action_unit_id DESC
-            """, nativeQuery = true)
-    List<ActionUnit> findBySpatialContext(@Param("spatialId") Long spatialId);
 
     @Query(value = """
             SELECT COUNT(1) > 0

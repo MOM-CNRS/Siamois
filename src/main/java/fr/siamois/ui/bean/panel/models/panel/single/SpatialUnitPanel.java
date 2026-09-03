@@ -395,7 +395,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     public void initActionTab() {
         ActionUnitLazyDataModel actionLazyDataModel = new ActionUnitLazyDataModel(actionUnitService, sessionSettings);
         actionLazyDataModel.withConstantFilter(ActionUnitSpec.SPATIAL_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
-        totalActionUnitCount = actionUnitService.countBySpatialContext(unit);
+        totalActionUnitCount = actionUnitService.countByLocation(unit);
 
         actionTabTableModel = new ActionUnitTableViewModel(
                 actionLazyDataModel,

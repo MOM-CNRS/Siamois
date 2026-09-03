@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.permissions.*;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import jakarta.persistence.criteria.Join;
@@ -23,10 +24,10 @@ public class ActionUnitSpec {
     public static final String FULL_IDENTIFIER_FILTER = "fullIdentifier";
     public static final String ID_FILTER = "id";
     public static final String SPATIAL_UNIT_FILTER = "mainLocation";
+    public static final String SPATIAL_CONTEXT = "spatialContext";
     public static final String CREATED_BY_INSTITUTION = "createdByInstitution";
     public static final String SCOPE = "scope";
     public static final String CODE = "code";
-    /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByRecordingUnitCount(Sort.Direction)}. */
     public static final String RECORDING_UNIT_COUNT_SORT = "recordingUnitCount";
     public static final String PROFILE = "profile";
     public static final String PERSON = "person";
@@ -200,13 +201,27 @@ public class ActionUnitSpec {
 
     @NonNull
     public static Specification<ActionUnit> actionUnitInSpatialUnit(long spatialUnitId) {
-        return (root, query, cb) ->
-                cb.equal(root.get(SPATIAL_UNIT_FILTER).get("id"), spatialUnitId);
+        return isInSpatialUnit(List.of(spatialUnitId));
     }
 
     @NonNull
     public static Specification<ActionUnit> isInSpatialUnit(List<Long> ids) {
-        return (root, query, cb) -> cb.in(root.get(SPATIAL_UNIT_FILTER).get("id")).value(ids);
+        return (root, query, cb) -> {
+            if (ids == null || ids.isEmpty()) {
+                return cb.disjunction();
+            }
+
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<ActionUnit> subRoot = subquery.from(ActionUnit.class);
+            Join<ActionUnit, SpatialUnit> preciseLocation = subRoot.join(SPATIAL_CONTEXT);
+            subquery.select(cb.literal(1L)).where(
+                    cb.equal(subRoot.get(ID_FILTER), root.get(ID_FILTER)),
+                    preciseLocation.get(ID_FILTER).in(ids));
+
+            return cb.or(
+                    root.get(SPATIAL_UNIT_FILTER).get(ID_FILTER).in(ids),
+                    cb.exists(subquery));
+        };
     }
 
     /**

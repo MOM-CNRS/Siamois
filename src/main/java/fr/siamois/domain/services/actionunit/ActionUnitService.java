@@ -358,14 +358,12 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
-    /**
-     * Count the number of ActionUnits associated with a specific SpatialUnit.
-     *
-     * @param spatialUnit The SpatialUnit to count ActionUnits for
-     * @return The count of ActionUnits associated with the SpatialUnit
-     */
     public Integer countBySpatialContext(SpatialUnitDTO spatialUnit) {
         return actionUnitRepository.countBySpatialContext(spatialUnit.getId());
+    }
+
+    public int countByLocation(SpatialUnitDTO spatialUnit) {
+        return actionUnitRepository.countByLocation(spatialUnit.getId());
     }
 
     /**
@@ -515,19 +513,6 @@ public class ActionUnitService implements ArkEntityService {
                 .toList();
     }
 
-    /**
-     * Get all ActionUnit in the institution that are linked to a spatial unit
-     *
-     * @param spatialId the spatial unit id
-     * @return The list of ActionUnit
-     */
-    public List<ActionUnitDTO> findBySpatialContext(Long spatialId) {
-        List<ActionUnit> res = actionUnitRepository.findBySpatialContext(spatialId);
-        return res.stream()
-                .map(actionUnitMapper::convert)
-                .toList();
-    }
-
 
     @Cacheable(value = "MyActionUnits", key = "#member.id + '-' + #institution.id + '-' + #limit")
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
@@ -632,17 +617,6 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
         return Math.toIntExact(actionUnitRepository.count(specs));
-    }
-
-    public Page<ActionUnitDTO> searchActionUnitsInSpatialUnit(InstitutionDTO institutionDTO,
-                                                              SpatialUnitDTO spatialUnitDTO, FilterDTO filters, Pageable pageable) {
-        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
-        specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
-        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-        if (filters.containsColumn("name")) {
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
-        }
-        return res.map(this::convertWithCount);
     }
 
     private ActionUnitDTO convertWithCount(ActionUnit au) {
