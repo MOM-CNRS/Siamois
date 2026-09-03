@@ -24,12 +24,10 @@ public class ActionUnitSpec {
     public static final String FULL_IDENTIFIER_FILTER = "fullIdentifier";
     public static final String ID_FILTER = "id";
     public static final String SPATIAL_UNIT_FILTER = "mainLocation";
-    /** Precise location ("Localisation précise") — the {@code ManyToMany} side of the location. */
     public static final String SPATIAL_CONTEXT = "spatialContext";
     public static final String CREATED_BY_INSTITUTION = "createdByInstitution";
     public static final String SCOPE = "scope";
     public static final String CODE = "code";
-    /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByRecordingUnitCount(Sort.Direction)}. */
     public static final String RECORDING_UNIT_COUNT_SORT = "recordingUnitCount";
     public static final String PROFILE = "profile";
     public static final String PERSON = "person";
