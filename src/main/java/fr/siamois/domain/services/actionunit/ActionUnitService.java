@@ -358,14 +358,12 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
-    /**
-     * Count the number of ActionUnits associated with a specific SpatialUnit.
-     *
-     * @param spatialUnit The SpatialUnit to count ActionUnits for
-     * @return The count of ActionUnits associated with the SpatialUnit
-     */
     public Integer countBySpatialContext(SpatialUnitDTO spatialUnit) {
         return actionUnitRepository.countBySpatialContext(spatialUnit.getId());
+    }
+
+    public int countByLocation(SpatialUnitDTO spatialUnit) {
+        return actionUnitRepository.countByLocation(spatialUnit.getId());
     }
 
     /**

@@ -34,6 +34,11 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     )
     Integer countBySpatialContext(@Param("spatialUnitId") Long spatialUnitId);
 
+    @Query("SELECT COUNT(DISTINCT au.id) FROM ActionUnit au " +
+            "JOIN au.spatialContext sc " +
+            "WHERE sc.id = :spatialUnitId OR au.mainLocation.id = :spatialUnitId")
+    int countByLocation(@Param("spatialUnitId") Long spatialUnitId);
+
     long countByCreatedByInstitutionId(Long institutionId);
 
     Set<ActionUnit> findByCreatedByInstitutionId(Long id);

@@ -981,6 +981,15 @@ class ActionUnitServiceTest {
     }
 
     @Test
+    void countByLocation_delegatesToRepository() {
+        SpatialUnitDTO su = new SpatialUnitDTO();
+        su.setId(3L);
+        when(actionUnitRepository.countByLocation(3L)).thenReturn(6);
+
+        assertEquals(6, actionUnitService.countByLocation(su));
+    }
+
+    @Test
     void countRootsInInstitution_delegatesToRepository() {
         when(actionUnitRepository.countRootsInInstitution(8L)).thenReturn(11);
         assertEquals(11, actionUnitService.countRootsInInstitution(8L));
