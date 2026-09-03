@@ -28,17 +28,21 @@
         <p:outputPanel id="inplace">
             <!-- ===== MODE DISPLAY ===== -->
             <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
-                <!-- Single value -->
-                <ui:fragment rendered="#{not cc.attrs.multiple}">
-                    <chip:conceptChip concept="#{cc.attrs.answer.value.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
-                </ui:fragment>
+                <div class="rum-wrapper">
+                    <div class="rum-items">
+                        <!-- Single value -->
+                        <ui:fragment rendered="#{not cc.attrs.multiple}">
+                            <chip:conceptChip concept="#{cc.attrs.answer.value.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
+                        </ui:fragment>
 
-                <!-- Multiple values -->
-                <ui:fragment rendered="#{cc.attrs.multiple}">
-                    <ui:repeat value="#{cc.attrs.answer.value}" var="conceptAnswer">
-                        <chip:conceptChip concept="#{conceptAnswer.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
-                    </ui:repeat>
-                </ui:fragment>
+                        <!-- Multiple values -->
+                        <ui:fragment rendered="#{cc.attrs.multiple}">
+                            <ui:repeat value="#{cc.attrs.answer.value}" var="conceptAnswer">
+                                <chip:conceptChip concept="#{conceptAnswer.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
+                            </ui:repeat>
+                        </ui:fragment>
+                    </div>
+                </div>
             </h:panelGroup>
 
             <!-- ===== MODE EDIT ===== -->

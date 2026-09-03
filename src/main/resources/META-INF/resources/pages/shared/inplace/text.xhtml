@@ -43,7 +43,10 @@
                 </h:panelGroup>
 
                 <h:panelGroup rendered="#{not cc.attrs.field.isTextArea}">
-                    <span>#{cc.attrs.answer.value}</span>
+                    <p:inputText value="#{cc.attrs.answer.value}"
+                                 style="width: 100%"
+                                 disabled="true"
+                                 label="#{cc.attrs.label}"/>
                 </h:panelGroup>
 
             </h:panelGroup>
