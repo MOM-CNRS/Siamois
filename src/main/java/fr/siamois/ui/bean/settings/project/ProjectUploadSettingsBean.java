@@ -43,11 +43,11 @@ public class ProjectUploadSettingsBean {
     public static final String ERREUR = " erreur";
     private static final String SEVERITY_ERROR = "error";
     private static final String SEVERITY_WARN = "warn";
-    private static final String SEVERITY_INFO = "info";
     public static final String PHASE = "phase";
     public static final String STRATI = "strati";
     public static final String UE_REL = "uerel";
     public static final String LIEU_REL = "lieurel";
+    public static final String LIGNE = " ligne";
 
     @Value
     public static class SheetMappingView {
@@ -69,6 +69,14 @@ public class ProjectUploadSettingsBean {
         String alias;
         String canonical;
         boolean columnUnmapped;
+    }
+
+    /** One row in the post-import summary, representing rows created for one entity type. */
+    @Value
+    public static class ImportSummaryRow {
+        String label;
+        int count;
+        public String getCountLabel() { return count + LIGNE + (count > 1 ? "s" : ""); }
     }
 
     /** One tab in the validation section, representing one entity type. */
@@ -96,6 +104,10 @@ public class ProjectUploadSettingsBean {
     boolean readyToUpload = false;
     String uploadedFileName = "";
     long uploadedFileSize = 0;
+
+    boolean importDone = false;
+    List<ImportSummaryRow> importSummary = new ArrayList<>();
+    int importedTotal = 0;
 
     final ImportProgress progress = new ImportProgress();
     // set by the background parse/persist task once it finishes, flushed to a real growl message
@@ -129,12 +141,25 @@ public class ProjectUploadSettingsBean {
     @EventListener(LoginEvent.class)
     public void reset() {
         project = null;
+        clearImportState();
+    }
+
+    /**
+     * Clears the parse/persist flow state but keeps {@link #project} set — used when finishing or
+     * restarting an import while staying on the page, so that {@code ProjectDetailsBean.checkProjectOrRedirect()}'s
+     * resync guard (triggered whenever {@link #project} is null) doesn't re-run {@link #init} and wipe
+     * the just-set {@link #importDone} summary before it can be rendered.
+     */
+    private void clearImportState() {
         readyToUpload = false;
         importResult = null;
         originalFile = null;
         persistenceErrors = new ArrayList<>();
         uploadedFileName = "";
         uploadedFileSize = 0;
+        importDone = false;
+        importSummary = new ArrayList<>();
+        importedTotal = 0;
     }
 
     public void resetForNewFile() {
@@ -328,12 +353,40 @@ public class ProjectUploadSettingsBean {
         int errors = getErrorCount();
         int rows = getTotalImportRows();
         if (errors > 0) return errors + ERREUR + (errors > 1 ? "s" : "") + " à corriger avant import";
-        return rows + " ligne" + (rows > 1 ? "s" : "") + " prête" + (rows > 1 ? "s" : "") + " à importer";
+        return rows + LIGNE + (rows > 1 ? "s" : "") + " prête" + (rows > 1 ? "s" : "") + " à importer";
     }
 
     public String getImportButtonLabel() {
         int rows = getTotalImportRows();
-        return "Importer " + rows + " ligne" + (rows > 1 ? "s" : "");
+        return "Importer " + rows + LIGNE + (rows > 1 ? "s" : "");
+    }
+
+    // ─── Post-import summary ────────────────────────────────────────────────
+
+    private List<ImportSummaryRow> buildImportSummary() {
+        List<ImportSummaryRow> rows = new ArrayList<>();
+        addSummaryRow(rows, "Lieu", getSpecCountForKey("lieu"));
+        addSummaryRow(rows, "Relations Lieu", getSpecCountForKey(LIEU_REL));
+        addSummaryRow(rows, "UE", getSpecCountForKey("ue"));
+        addSummaryRow(rows, "Relations UE", getSpecCountForKey(UE_REL));
+        addSummaryRow(rows, "Stratigraphie", getSpecCountForKey(STRATI));
+        addSummaryRow(rows, "Mobilier", getSpecCountForKey("mob"));
+        addSummaryRow(rows, "Phase", getSpecCountForKey(PHASE));
+        return rows;
+    }
+
+    private void addSummaryRow(List<ImportSummaryRow> rows, String label, int count) {
+        if (count > 0) rows.add(new ImportSummaryRow(label, count));
+    }
+
+    public String getImportDoneSummaryText() {
+        return "✓ Import terminé · " + importedTotal + LIGNE + (importedTotal > 1 ? "s" : "")
+                + " créée" + (importedTotal > 1 ? "s" : "") + " dans le projet";
+    }
+
+    /** Discards the completed-import summary and returns to the empty upload dropzone. */
+    public void startNewImport() {
+        clearImportState();
     }
 
     public String getValidationStatusLabel() {
@@ -419,8 +472,14 @@ public class ProjectUploadSettingsBean {
     }
 
     private void onPersistSuccess() {
-        setPendingGrowl(SEVERITY_INFO, TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL, "Données importées avec succès", null);
-        reset(); // pure field resets, no FacesContext — safe here; progress itself is reset separately by pollProgress()
+        List<ImportSummaryRow> summary = buildImportSummary();
+        int total = getTotalImportRows();
+        // pure field resets, no FacesContext — safe here; progress itself is reset separately by
+        // pollProgress(). Keeps project set (unlike reset()) — see clearImportState() javadoc.
+        clearImportState();
+        importDone = true;
+        importSummary = summary;
+        importedTotal = total;
     }
 
     private void onPersistError(Exception e) {
