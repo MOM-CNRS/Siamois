@@ -27,9 +27,19 @@ public final class PermissionConstants {
     public static final String ORGANIZATION_MANAGE_SETTINGS = "ORGANIZATION_MANAGE_SETTINGS";
 
     /**
-     * Allows the user to manage new {@link fr.siamois.domain.models.actionunit.ActionUnit} in specified {@link fr.siamois.domain.models.institution.Institution}
+     * Allows the user to manage every {@link fr.siamois.domain.models.actionunit.ActionUnit} in the
+     * specified {@link fr.siamois.domain.models.institution.Institution}, including ones the user is not
+     * a member of. See {@link #ORGANIZATION_CREATE_ACTIONS} for creation-only rights.
      */
     public static final String ORGANIZATION_MANAGE_ACTIONS = "ORGANIZATION_MANAGE_ACTIONS";
+
+    /**
+     * Allows the user to create new {@link fr.siamois.domain.models.actionunit.ActionUnit} in the
+     * specified {@link fr.siamois.domain.models.institution.Institution}, without granting the right to
+     * edit every existing one (see {@link #ORGANIZATION_MANAGE_ACTIONS}) — editing an existing action unit
+     * still requires a project-scoped role on it.
+     */
+    public static final String ORGANIZATION_CREATE_ACTIONS = "ORGANIZATION_CREATE_ACTIONS";
 
     /**
      * Allows the user to manage {@link fr.siamois.domain.models.spatialunit.SpatialUnit} in the specified {@link fr.siamois.domain.models.institution.Institution}

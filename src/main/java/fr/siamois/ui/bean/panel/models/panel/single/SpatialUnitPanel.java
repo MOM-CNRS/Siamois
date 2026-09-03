@@ -423,8 +423,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                                         .entityId(unit.getId())
                                         .build()
                         )
-                        .createAllowedSupplier(() -> profilePermissionService.hasOrganizationPermission(
-                                sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                        .createAllowedSupplier(() -> profilePermissionService.hasActionUnitCreatePermission(
+                                sessionSettings.getUserInfo()))
                         .build()
         );
     }

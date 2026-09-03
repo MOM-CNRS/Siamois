@@ -169,7 +169,7 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
         return switch (key) {
             case "writeMode" -> canUserEditRow(su);
             case "spatialUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES);
-            case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+            case "actionUnitCreateAllowed" -> profilePermissionService.hasActionUnitCreatePermission(flowBean.getSessionSettings().getUserInfo());
             default -> false;
         };
     }

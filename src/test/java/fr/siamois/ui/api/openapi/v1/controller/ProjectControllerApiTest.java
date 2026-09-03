@@ -614,7 +614,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(institutionService.findById(100L)).thenReturn(institutionDto);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(false);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(false);
 
         mockMvc.perform(post("/api/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -630,7 +630,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(institutionService.findById(100L)).thenReturn(institutionDto);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
 
         fr.siamois.domain.models.vocabulary.Concept typeConcept = mock(fr.siamois.domain.models.vocabulary.Concept.class);
         when(conceptService.findById(42L)).thenReturn(java.util.Optional.of(typeConcept));

@@ -251,7 +251,7 @@ public class ActionUnitService implements ArkEntityService {
 
     private void assertWritePermission(UserInfo info, ActionUnitDTO actionUnit) {
         boolean allowed = actionUnit.getId() == null
-                ? profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                ? profilePermissionService.hasActionUnitCreatePermission(info)
                 : profilePermissionService.hasActionUnitWritePermission(info, actionUnit);
         if (!allowed) {
             throw new ForbiddenOperationException("You are not allowed to save this action unit");

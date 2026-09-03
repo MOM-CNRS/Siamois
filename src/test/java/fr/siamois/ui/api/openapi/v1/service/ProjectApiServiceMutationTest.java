@@ -135,7 +135,7 @@ class ProjectApiServiceMutationTest {
     void createProject_notManager_throws403() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(false);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(false);
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -148,7 +148,7 @@ class ProjectApiServiceMutationTest {
     void createProject_success_savesAndReturnsAccessibleProject() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
 
         Concept typeConcept = new Concept();
         typeConcept.setId(42L);
@@ -172,7 +172,7 @@ class ProjectApiServiceMutationTest {
     void createProject_duplicateIdentifier_throws409() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
         when(actionUnitService.save(any(), any(), any()))
@@ -420,7 +420,7 @@ class ProjectApiServiceMutationTest {
     @Test
     void createProject_blankNameOrIdentifierOrMissingType_throws400() {
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)))
+        when(profilePermissionService.hasActionUnitCreatePermission(any()))
                 .thenReturn(true);
 
         ProjectCreateRequest blankName = validCreateRequest();

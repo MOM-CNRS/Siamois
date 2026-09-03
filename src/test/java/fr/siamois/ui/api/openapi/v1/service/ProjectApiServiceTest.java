@@ -147,7 +147,7 @@ class ProjectApiServiceTest {
         ProjectCreateRequest request = validCreateRequest();
         request.setName("   ");
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -160,7 +160,7 @@ class ProjectApiServiceTest {
         ProjectCreateRequest request = validCreateRequest();
         request.setIdentifier("   ");
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -173,7 +173,7 @@ class ProjectApiServiceTest {
         ProjectCreateRequest request = validCreateRequest();
         request.setTypeId(null);
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -185,7 +185,7 @@ class ProjectApiServiceTest {
     void createProject_unknownTypeConcept_throws404() {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
@@ -197,7 +197,7 @@ class ProjectApiServiceTest {
     void createProject_nullIdentifierOnSave_throws400() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
         when(actionUnitService.save(any(), any(), any()))
@@ -212,7 +212,7 @@ class ProjectApiServiceTest {
     void createProject_failedSave_throws400() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         when(institutionService.findById(10L)).thenReturn(institution);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
         when(actionUnitService.save(any(), any(), any()))

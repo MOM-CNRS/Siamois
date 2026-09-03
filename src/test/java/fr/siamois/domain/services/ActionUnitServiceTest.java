@@ -127,6 +127,7 @@ class ActionUnitServiceTest {
         info = new UserInfo(i,p,"fr");
         ExecutionContextHolder.set(info);
         lenient().when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         lenient().when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
         c1 = new Concept();
@@ -926,7 +927,7 @@ class ActionUnitServiceTest {
 
     @Test
     void save_AbstractEntity_throwsForbidden_whenPermissionDenied() {
-        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(false);
 
         assertThrows(ForbiddenOperationException.class,
                 () -> actionUnitService.save(actionUnit1dto));
@@ -942,7 +943,7 @@ class ActionUnitServiceTest {
     void save_withUserInfo_throwsForbidden_whenCreatingWithoutOrganizationPermission() {
         ActionUnitDTO newActionUnit = new ActionUnitDTO();
         ConceptDTO conceptDto = new ConceptDTO();
-        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(false);
 
         assertThrows(ForbiddenOperationException.class,
                 () -> actionUnitService.save(info, newActionUnit, conceptDto));

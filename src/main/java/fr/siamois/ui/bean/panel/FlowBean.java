@@ -692,7 +692,7 @@ public class FlowBean implements Serializable {
         UserInfo info = sessionSettings.getUserInfo();
         return profilePermissionService.hasInstancePermission(info.getUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS)
                 || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_PLACES)
-                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+                || profilePermissionService.hasActionUnitCreatePermission(info);
     }
 
     public String invokeOnClick(MethodExpression method, Long id, AbstractPanel panelModel) {
@@ -716,7 +716,7 @@ public class FlowBean implements Serializable {
      * @return true if creation is allowed
      */
     public boolean isActionUnitCreateAllowed() {
-        return profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+        return profilePermissionService.hasActionUnitCreatePermission(sessionSettings.getUserInfo());
     }
 
     /**

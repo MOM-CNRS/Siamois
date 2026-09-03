@@ -149,13 +149,9 @@ public class ProfileService {
     @NonNull
     public Profile createOrGetOrganizationProjectManagerProfile(@NonNull InstitutionDTO institutionDTO) {
         return createOrGetOrganizationProfile("Gestionnaire des projets", ProfileConstants.ORGANIZATION_PROJECT_MANAGER, List.of(
-                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
+                PermissionConstants.ORGANIZATION_CREATE_ACTIONS,
                 PermissionConstants.ORGANIZATION_MANAGE_PLACES,
-                PermissionConstants.ORGANIZATION_ACCESS,
-                PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
-                PermissionConstants.ORGANIZATION_EDIT_PHASES,
-                PermissionConstants.ORGANIZATION_EDIT_FINDS,
-                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS
+                PermissionConstants.ORGANIZATION_ACCESS
         ), institutionDTO);
     }
 

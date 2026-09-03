@@ -190,7 +190,8 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.ORGANIZATION_MANAGE_SETTINGS,
                     PermissionConstants.ORGANIZATION_ACCESS)),
             new PermissionThemeSpec("permission.theme.projects", List.of(
-                    PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)),
+                    PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
+                    PermissionConstants.ORGANIZATION_CREATE_ACTIONS)),
             new PermissionThemeSpec("permission.theme.spatialUnits", List.of(
                     PermissionConstants.ORGANIZATION_MANAGE_PLACES)),
             new PermissionThemeSpec(PERMISSION_THEME_RECORDING, List.of(

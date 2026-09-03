@@ -161,7 +161,7 @@ public class ProjectApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+        if (!profilePermissionService.hasActionUnitCreatePermission(userInfo)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de projet non autorisée");
         }
 

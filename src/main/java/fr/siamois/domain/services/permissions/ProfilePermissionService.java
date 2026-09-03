@@ -248,6 +248,21 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Checks if the user can create a new {@link fr.siamois.domain.models.actionunit.ActionUnit}, i.e.
+     * holds {@link PermissionConstants#ORGANIZATION_MANAGE_ACTIONS} (edit-everything) or
+     * {@link PermissionConstants#ORGANIZATION_CREATE_ACTIONS} (create-only) on the user's institution.
+     * Unlike {@link #hasActionUnitWritePermission}, this does not grant any right on existing action
+     * units.
+     *
+     * @param user the user information
+     * @return true if the user can create a new action unit
+     */
+    public boolean hasActionUnitCreatePermission(UserInfo user) {
+        return hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                || hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
+    }
+
+    /**
      * Checks if the person can activate the given institution, i.e. holds a profile in it or may
      * manage its settings.
      *
