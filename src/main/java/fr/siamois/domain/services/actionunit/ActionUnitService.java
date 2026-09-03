@@ -240,9 +240,12 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
+        boolean isCreation = actionUnit.getId() == null;
         assertWritePermission(info, actionUnit);
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
-        assignRoles(info, savedDTO);
+        if (isCreation) {
+            assignRoles(info, savedDTO);
+        }
         return savedDTO;
     }
 
