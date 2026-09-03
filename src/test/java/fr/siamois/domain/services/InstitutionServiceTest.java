@@ -307,7 +307,7 @@ class InstitutionServiceTest {
     }
 
     @Test
-    void countMembersOf_shouldCountDistinctMembersIncludingCreator() {
+    void countMembersOf_shouldCountDistinctAssignedMembers() {
         ActionUnitDTO au1 = new ActionUnitDTO();
         au1.setId(1L);
         PersonDTO creator1 = new PersonDTO();
@@ -319,7 +319,8 @@ class InstitutionServiceTest {
 
         when(personProfileAssignmentRepository.findPersonIdsByProfileActionUnitIds(List.of(1L, 2L)))
                 .thenReturn(List.of(
-                        new Object[]{1L, 100L}, // same person as au1's creator — must not be double counted
+                        new Object[]{1L, 100L}, // same person as au1's creator, who also holds an assignment
+                        new Object[]{1L, 100L}, // duplicate assignment row (e.g. manager + member) — not double counted
                         new Object[]{1L, 101L},
                         new Object[]{2L, 102L}
                 ));
@@ -330,7 +331,10 @@ class InstitutionServiceTest {
     }
 
     @Test
-    void countMembersOf_shouldAddCreatorEvenWhenNotAssigned() {
+    void countMembersOf_shouldNotCountCreatorWhenNotAssigned() {
+        // Matches ProjectMembersServiceInterfaceImpl#findMembersOf, which the project's Members page uses:
+        // a creator with no explicit PersonProfileAssignment is not shown there either, so it must not be
+        // counted here — otherwise the badge and the Members page disagree.
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(1L);
         PersonDTO creator = new PersonDTO();
@@ -342,7 +346,7 @@ class InstitutionServiceTest {
 
         Map<Long, Integer> result = institutionService.countMembersOf(List.of(au));
 
-        assertThat(result).containsEntry(1L, 1);
+        assertThat(result).containsEntry(1L, 0);
     }
 
     @Test
