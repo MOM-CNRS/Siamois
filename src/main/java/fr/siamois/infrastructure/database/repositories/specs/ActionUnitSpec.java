@@ -28,6 +28,10 @@ public class ActionUnitSpec {
     public static final String CODE = "code";
     /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByRecordingUnitCount(Sort.Direction)}. */
     public static final String RECORDING_UNIT_COUNT_SORT = "recordingUnitCount";
+    public static final String PROFILE = "profile";
+    public static final String PERSON = "person";
+    public static final String INSTITUTION = "institution";
+    public static final String ACTION_UNIT = "actionUnit";
 
     private ActionUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -70,10 +74,10 @@ public class ActionUnitSpec {
 
             Subquery<Long> subquery = query.subquery(Long.class);
             Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
-            Join<PersonProfileAssignment, Profile> profile = assignment.join("profile");
+            Join<PersonProfileAssignment, Profile> profile = assignment.join(PROFILE);
 
             subquery.select(criteriaBuilder.literal(1L)).where(
-                    criteriaBuilder.equal(assignment.get("person").get(ID_FILTER), personId),
+                    criteriaBuilder.equal(assignment.get(PERSON).get(ID_FILTER), personId),
                     criteriaBuilder.or(
                             criteriaBuilder.and(
                                     criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.INSTANCE),
@@ -81,12 +85,12 @@ public class ActionUnitSpec {
                             criteriaBuilder.and(
                                     criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.ORGANISATION),
                                     criteriaBuilder.equal(profile.get(CODE), ProfileConstants.ORGANIZATION_MANAGER),
-                                    criteriaBuilder.equal(profile.get("institution").get(ID_FILTER), institutionId)),
+                                    criteriaBuilder.equal(profile.get(INSTITUTION).get(ID_FILTER), institutionId)),
                             criteriaBuilder.and(
                                     criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
                                     criteriaBuilder.equal(profile.get(CODE), ProfileConstants.PROJECT_MEMBER),
-                                    criteriaBuilder.equal(profile.get("institution").get(ID_FILTER), institutionId),
-                                    criteriaBuilder.equal(profile.get("actionUnit").get(ID_FILTER), root.get(ID_FILTER)))
+                                    criteriaBuilder.equal(profile.get(INSTITUTION).get(ID_FILTER), institutionId),
+                                    criteriaBuilder.equal(profile.get(ACTION_UNIT).get(ID_FILTER), root.get(ID_FILTER)))
                     ));
 
             return criteriaBuilder.exists(subquery);
@@ -152,22 +156,22 @@ public class ActionUnitSpec {
         return (root, query, cb) -> {
             Subquery<Long> subquery = query.subquery(Long.class);
             Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
-            Join<PersonProfileAssignment, Profile> profile = assignment.join("profile");
+            Join<PersonProfileAssignment, Profile> profile = assignment.join(PROFILE);
             Join<Profile, Permission> permission = profile.join("permissions", JoinType.LEFT);
 
             subquery.select(cb.literal(1L)).where(
-                    cb.equal(assignment.get("person").get("id"), personId),
+                    cb.equal(assignment.get(PERSON).get("id"), personId),
                     cb.or(
                             cb.and(
                                     cb.equal(profile.get(SCOPE), PermissionScopeType.INSTANCE),
                                     cb.equal(permission.get(CODE), PermissionConstants.ORGANIZATION_ACCESS)),
                             cb.and(
                                     cb.equal(profile.get(SCOPE), PermissionScopeType.ORGANISATION),
-                                    cb.equal(profile.get("institution"), root.get(CREATED_BY_INSTITUTION)),
+                                    cb.equal(profile.get(INSTITUTION), root.get(CREATED_BY_INSTITUTION)),
                                     cb.equal(permission.get(CODE), PermissionConstants.ORGANIZATION_ACCESS)),
                             cb.and(
                                     cb.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
-                                    cb.equal(profile.get("actionUnit"), root))
+                                    cb.equal(profile.get(ACTION_UNIT), root))
                     ));
             return cb.exists(subquery);
         };
@@ -184,12 +188,12 @@ public class ActionUnitSpec {
         return (root, query, cb) -> {
             Subquery<Long> subquery = query.subquery(Long.class);
             Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
-            Join<PersonProfileAssignment, Profile> profile = assignment.join("profile");
+            Join<PersonProfileAssignment, Profile> profile = assignment.join(PROFILE);
 
             subquery.select(cb.literal(1L)).where(
-                    cb.equal(assignment.get("person").get("id"), personId),
+                    cb.equal(assignment.get(PERSON).get("id"), personId),
                     cb.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
-                    cb.equal(profile.get("actionUnit"), root));
+                    cb.equal(profile.get(ACTION_UNIT), root));
             return cb.exists(subquery);
         };
     }
