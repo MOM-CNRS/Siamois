@@ -60,7 +60,7 @@
 
                 <p:outputPanel>
 
-                    <p:splitButton value="Ajouter un champ" icon="pi pi-plus"
+                    <p:splitButton value="Ajouter une mesure" icon="pi pi-plus"
                                    filter="true"
                                    rendered="#{!bean.formContext.newFieldManager.showEditor}"
                                    actionListener="#{bean.formContext.newFieldManager.prepareNewField(customFormPanel)}"
@@ -69,7 +69,7 @@
                                    styleClass="ui-button" filterMatchMode="contains">
                         <c:forEach items="#{bean.formContext.newFieldManager.addFieldOptions}" var="m">
                             <p:menuitem value="#{spatialUnitFieldBean.resolveCustomFieldLabel(m)}"
-                                        icon="bi bi-rulers"
+                                        icon="bi bi-flask"
                                         actionListener="#{bean.formContext.newFieldManager.addFieldFromMeasurement(customFormPanel,m)}"
                                         process="@this"
                                         update="@form" />
@@ -84,21 +84,12 @@
                                     for="#{cc.attrs.forId}"
                                     indicateRequired="auto"
                                     style="color: var(--text-light)"
-                                    value="Nouveau champ"/>
+                                    value="Nouvelle mesure"/>
                         </div>
                         <div style="display:flex;
                 flex-direction: column; gap:0.5em; border-radius: 10px;border:1px dashed oklch(70.7% 0.022 261.325);
                 padding: 1rem; width: fit-content;">
                             <div style="display:flex;gap: 0.5em">
-
-                                <div>
-                                    <p:outputLabel for="fieldType" value="Type de champ"
-                                                   style="color:var(--text-light);display:block;"/>
-                                    <p:selectOneMenu id="fieldType" style="width:100%"
-                                                     disabled="true">
-                                        <f:selectItem itemLabel="Mesure" itemValue="STRING"/>
-                                    </p:selectOneMenu>
-                                </div>
 
                                 <div class="ui-fluid">
                                     <p:outputLabel for="newfieldTypeAutocomplete" value="Type de mesure"
@@ -119,6 +110,7 @@
                                                     maxResults="#{fieldConfigurationService.resultLimit()}"
                                     >
                                         <f:attribute name="fieldCode" value="SIAMD.TYPE"/>
+                                        <p:ajax event="itemSelect" process="@this" update="@form" immediate="true"/>
                                     </p:autoComplete>
                                 </div>
 
@@ -141,6 +133,7 @@
                                                     maxResults="#{fieldConfigurationService.resultLimit()}"
                                     >
                                         <f:attribute name="fieldCode" value="SIAMD.NATURE"/>
+                                        <p:ajax event="itemSelect" process="@this" update="@form" immediate="true"/>
                                     </p:autoComplete>
                                 </div>
 
@@ -165,7 +158,7 @@
                                 <p:commandButton icon="pi pi-check"
                                                  actionListener="#{bean.formContext.newFieldManager.saveNewField}"
                                                  value="Ajouter le champ"
-                                                 process="@this editorPanel"
+                                                 process="@this fieldUnit"
                                                  update="@form"/>
                                 <p:commandButton icon="pi pi-times"
                                                  actionListener="#{bean.formContext.newFieldManager.cancelNewField}"

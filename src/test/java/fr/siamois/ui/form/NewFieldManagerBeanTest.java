@@ -11,6 +11,7 @@ import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ class NewFieldManagerBeanTest {
     @Mock private CustomFieldMeasurementService customFieldMeasurementService;
     @Mock private RecordingUnitService recordingUnitService;
     @Mock private FormService formService;
+    @Mock private LangBean langBean;
 
     private CustomFormResponseViewModel formResponse;
     private CustomFieldMeasurement created;
@@ -60,6 +62,7 @@ class NewFieldManagerBeanTest {
                 recordingUnitService,
                 formService,
                 formResponse,
+                langBean,
                 owner,
                 options,
                 unitOptions);
@@ -198,5 +201,25 @@ class NewFieldManagerBeanTest {
 
         verifyNoInteractions(recordingUnitService);
         assertTrue(bean.getAddFieldOptions().contains(created));
+    }
+
+    /**
+     * Attaching the same field twice would render two columns bound to the same field id,
+     * which JSF rejects as a duplicate component id.
+     */
+    @Test
+    @DisplayName("A field already on the panel is not attached a second time")
+    void addFieldFromMeasurement_doesNotDuplicateAnAlreadyAttachedField() {
+        NewFieldManagerBean bean = beanFor(new SpecimenDTO(), new ArrayList<>());
+        CustomFormPanelUiDto panel = new CustomFormPanelUiDto();
+
+        bean.addFieldFromMeasurement(panel, created);
+        bean.addFieldFromMeasurement(panel, created);
+
+        long columnCount = panel.getRows().stream()
+                .flatMap(row -> row.getColumns().stream())
+                .filter(col -> created.equals(col.getField()))
+                .count();
+        assertEquals(1, columnCount);
     }
 }
