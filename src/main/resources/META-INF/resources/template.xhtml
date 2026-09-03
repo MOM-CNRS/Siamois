@@ -221,6 +221,14 @@
                             </h:outputLink>
                         </li>
                         <li class="nav-item">
+                            <h:outputLink value="https://github.com/MOM-CNRS/Siamois" styleClass="nav-link"
+                                          target="_blank" id="githubLink">
+                                <i class="bi bi-github" style="color:#000000;"/>
+                                <span class="menu-text">#{langBean.msg('nav.github')}</span>
+                                <p:tooltip for="githubLink" value="#{langBean.msg('nav.github')}"/>
+                            </h:outputLink>
+                        </li>
+                        <li class="nav-item">
                             <h:outputLink value="https://discord.gg/MMKxBvNVzt" styleClass="nav-link" target="_blank"
                                           id="discordLink">
                                 <i class="bi bi-discord" style="color:#7289da;"/>
@@ -237,29 +245,36 @@
                         <p:tooltip for="versionLink" value="#{appVersionBean.getVersion()}"/>
                         <hr class="sidebar-divider"/>
                         <form:csrfform formId="logoutForm">
-                            <div style="
+                            <h:panelGroup id="userAvatarBtn" style="
                                 padding: 12px 24px 12px 24px;
                                 width: 100%;
                                 display: flex;
-                                justify-content: center;
+                                justify-content: flex-start;
                                 align-items: center;
-                                gap: 2em;">
-                                <span class="menu-text">#{navBean.currentUser().email}</span>
-                                <p:commandButton action="#{navBean.logout()}"
-                                                 icon="bi bi-box-arrow-right"
-                                                 styleClass="nav-link logout-button">
+                                gap: 0.75em;
+                                cursor: pointer;">
+                                <span class="member-avatar">#{navBean.currentUser().initials()}</span>
+                                <span class="menu-text">#{navBean.currentUser().displayName()}</span>
+                            </h:panelGroup>
+                            <p:tooltip for="userAvatarBtn" value="#{navBean.currentUser().displayName()}"/>
+                            <p:menu overlay="true" trigger="userAvatarBtn" my="left top" at="left bottom">
+                                <p:menuitem value="#{langBean.msg('nav.header.profile')}"
+                                            icon="bi bi-person"
+                                            url="#{request.contextPath}/settings/profile"/>
+                                <p:menuitem value="#{langBean.msg('nav.logout')}"
+                                            icon="bi bi-box-arrow-right"
+                                            action="#{navBean.logout()}">
                                     <p:confirm header="#{langBean.msg('nav.logout')}"
                                                message="#{langBean.msg('logout.warning')}" icon="pi pi-info-circle"/>
-                                </p:commandButton>
-                                <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true"
-                                                 width="350">
-                                    <p:commandButton value="#{langBean.msg('common.label.no')}" type="button"
-                                                     styleClass="ui-confirmdialog-no ui-button-flat"/>
-                                    <p:commandButton value="#{langBean.msg('common.label.yes')}" type="button"
-                                                     styleClass="ui-confirmdialog-yes"/>
-                                </p:confirmDialog>
-                            </div>
-
+                                </p:menuitem>
+                            </p:menu>
+                            <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true"
+                                             width="350">
+                                <p:commandButton value="#{langBean.msg('common.label.no')}" type="button"
+                                                 styleClass="ui-confirmdialog-no ui-button-flat"/>
+                                <p:commandButton value="#{langBean.msg('common.label.yes')}" type="button"
+                                                 styleClass="ui-confirmdialog-yes"/>
+                            </p:confirmDialog>
                         </form:csrfform>
                     </div>
                 </div>
