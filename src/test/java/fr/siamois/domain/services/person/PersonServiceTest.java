@@ -593,4 +593,62 @@ class PersonServiceTest {
         verify(personMapper, never()).convert(any(Person.class));
     }
 
+    @Test
+    void generateUniqueUsername_returnsPlainNameLastname_whenFree() {
+        when(personRepository.findByUsernameIgnoreCase("john.doe")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("John", "Doe", "john.doe@example.com", Set.of());
+
+        assertEquals("john.doe", result);
+    }
+
+    @Test
+    void generateUniqueUsername_stripsAccentsAndSpecialChars() {
+        when(personRepository.findByUsernameIgnoreCase("francois.mullerdupont")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("François", "Müller-Dupont", "f@example.com", Set.of());
+
+        assertEquals("francois.mullerdupont", result);
+    }
+
+    @Test
+    void generateUniqueUsername_fallsBackToEmailLocalPart_whenNamesBlank() {
+        when(personRepository.findByUsernameIgnoreCase("jane.smith")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("", "  ", "jane.smith@example.com", Set.of());
+
+        assertEquals("jane.smith", result);
+    }
+
+    @Test
+    void generateUniqueUsername_fallsBackToUser_whenNothingUsable() {
+        when(personRepository.findByUsernameIgnoreCase("user")).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("", "", "", Set.of());
+
+        assertEquals("user", result);
+    }
+
+    @Test
+    void generateUniqueUsername_appendsRandomSuffix_whenAlreadyTakenInDatabase() {
+        when(personRepository.findByUsernameIgnoreCase(anyString())).thenAnswer(inv ->
+                "john.doe".equalsIgnoreCase(inv.getArgument(0)) ? Optional.of(person) : Optional.empty());
+        when(personMapper.convert(person)).thenReturn(personDto);
+
+        String result = personService.generateUniqueUsername("John", "Doe", "john.doe@example.com", Set.of());
+
+        assertNotEquals("john.doe", result);
+        assertTrue(result.matches("john\\.doe\\d+"), "Expected 'john.doe' followed by digits, got: " + result);
+    }
+
+    @Test
+    void generateUniqueUsername_avoidsReservedUsernames_evenWhenDatabaseIsFree() {
+        when(personRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.empty());
+
+        String result = personService.generateUniqueUsername("John", "Doe", "john.doe@example.com", Set.of("john.doe"));
+
+        assertNotEquals("john.doe", result);
+        assertTrue(result.matches("john\\.doe\\d+"), "Expected 'john.doe' followed by digits, got: " + result);
+    }
+
 }
