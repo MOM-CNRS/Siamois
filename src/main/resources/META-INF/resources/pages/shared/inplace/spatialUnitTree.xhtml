@@ -25,19 +25,23 @@
     <cc:implementation>
         <p:inplace id="inplace" mode="#{cc.attrs.mode}" toggleable="false">
             <f:facet name="output">
-                <!-- Affichage de la liste normalisé des USp séléctionnées -->
-                <h:panelGroup
-                        rendered="#{not empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
-                    <ui:repeat value="#{cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}" var="su">
-                            <span>
-                                <p:chip label="#{su.name}" styleClass="mr-2 mb-2" removable="false">
-                                </p:chip>
-                            </span>
-                    </ui:repeat>
-                </h:panelGroup>
-                <h:panelGroup rendered="#{empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
-                    <em>Aucune USp sélectionnée.</em>
-                </h:panelGroup>
+                <div class="rum-wrapper">
+                    <div class="rum-items">
+                        <!-- Affichage de la liste normalisé des USp séléctionnées -->
+                        <h:panelGroup
+                                rendered="#{not empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
+                            <ui:repeat value="#{cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}" var="su">
+                                    <span>
+                                        <p:chip label="#{su.name}" styleClass="mr-2 mb-2" removable="false">
+                                        </p:chip>
+                                    </span>
+                            </ui:repeat>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{empty cc.attrs.formCtx.getNormalizedSpatialUnits(cc.attrs.answer)}">
+                            <em>Aucune USp sélectionnée.</em>
+                        </h:panelGroup>
+                    </div>
+                </div>
             </f:facet>
             <f:facet name="input">
                 <!-- Affichage de la liste normalisé des USp séléctionnées -->
