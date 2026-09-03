@@ -213,6 +213,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 services.getRecordingUnitService(),
                 formService,
                 this.formResponse,
+                langBean,
                 unit,
                 measurementOptions,
                 services.getUnitDefinitionService().findOptions()

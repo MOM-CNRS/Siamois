@@ -44,7 +44,7 @@ public class CustomFieldMeasurement extends CustomFieldOnTheFly {
 
     @Override
     public String getIcon() {
-        return "bi bi-rulers";
+        return "bi bi-flask";
     }
 
     @Override
