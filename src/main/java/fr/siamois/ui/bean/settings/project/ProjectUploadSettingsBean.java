@@ -47,6 +47,7 @@ public class ProjectUploadSettingsBean {
     public static final String STRATI = "strati";
     public static final String UE_REL = "uerel";
     public static final String LIEU_REL = "lieurel";
+    public static final String LIGNE = " ligne";
 
     @Value
     public static class SheetMappingView {
@@ -75,7 +76,7 @@ public class ProjectUploadSettingsBean {
     public static class ImportSummaryRow {
         String label;
         int count;
-        public String getCountLabel() { return count + " ligne" + (count > 1 ? "s" : ""); }
+        public String getCountLabel() { return count + LIGNE + (count > 1 ? "s" : ""); }
     }
 
     /** One tab in the validation section, representing one entity type. */
@@ -352,12 +353,12 @@ public class ProjectUploadSettingsBean {
         int errors = getErrorCount();
         int rows = getTotalImportRows();
         if (errors > 0) return errors + ERREUR + (errors > 1 ? "s" : "") + " à corriger avant import";
-        return rows + " ligne" + (rows > 1 ? "s" : "") + " prête" + (rows > 1 ? "s" : "") + " à importer";
+        return rows + LIGNE + (rows > 1 ? "s" : "") + " prête" + (rows > 1 ? "s" : "") + " à importer";
     }
 
     public String getImportButtonLabel() {
         int rows = getTotalImportRows();
-        return "Importer " + rows + " ligne" + (rows > 1 ? "s" : "");
+        return "Importer " + rows + LIGNE + (rows > 1 ? "s" : "");
     }
 
     // ─── Post-import summary ────────────────────────────────────────────────
@@ -379,7 +380,7 @@ public class ProjectUploadSettingsBean {
     }
 
     public String getImportDoneSummaryText() {
-        return "✓ Import terminé · " + importedTotal + " ligne" + (importedTotal > 1 ? "s" : "")
+        return "✓ Import terminé · " + importedTotal + LIGNE + (importedTotal > 1 ? "s" : "")
                 + " créée" + (importedTotal > 1 ? "s" : "") + " dans le projet";
     }
 
