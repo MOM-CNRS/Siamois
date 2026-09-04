@@ -112,6 +112,9 @@ public class InstitutionDetailsBean implements Serializable {
     }
 
     public String backToInstitutionSettings() {
+        if (elements == null || elements.isEmpty()) {
+            init();
+        }
         return "/pages/settings/institutionSettings.xhtml?faces-redirect=true";
     }
 
