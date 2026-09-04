@@ -53,7 +53,7 @@
         <p:ajax event="select" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
         <p:ajax event="unselect" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
 
-        <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); }" />
+        <p:ajax event="filter" process="@this" oncomplete="if (args &amp;&amp; args.newRowCount !== undefined) { PF('#{cc.clientId}_entityTreeTable').getPaginator().setTotalRecords(args.newRowCount); } updateSelectedCountChip('#{cc.clientId}:entityTreeTable:selectedCountChip', args);" />
         <f:facet name="header">
             <ui:include src="/pages/shared/table/tableToolbar.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}"/>

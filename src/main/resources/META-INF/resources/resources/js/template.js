@@ -485,11 +485,16 @@ function ruInplaceOnBlur(clientId) {
     }, 150);
 }
 
+function updateSelectedCountChip(chipClientId, args) {
+    if (!args) return;
 
+    const total = args.totalRecords !== undefined ? args.totalRecords : args.newRowCount;
+    if (total === undefined) return;
 
+    const chip = document.getElementById(chipClientId);
+    const label = chip ? chip.querySelector('.ui-chip-text') : null;
+    if (!label) return;
 
-
-
-
-
-
+    const selected = (label.textContent || '').split('/')[0].trim();
+    label.textContent = `${selected}/${total}`;
+}

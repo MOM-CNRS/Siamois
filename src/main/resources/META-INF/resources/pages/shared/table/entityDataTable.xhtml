@@ -50,6 +50,9 @@
         <p:ajax event="rowUnselectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
         <p:ajax event="toggleSelect" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
 
+        <p:ajax event="filter" process="@this"
+                oncomplete="updateSelectedCountChip('#{cc.clientId}:entityDatatable:selectedCountChip', args)"/>
+
         <f:facet name="{RowReport}">
             <span class="ui-paginator-current">
                 #{tableModel.lazyDataModel.getFirstIndexOnPage()}-#{tableModel.lazyDataModel.getLastIndexOnPage()} of #{tableModel.lazyDataModel.rowCount}
