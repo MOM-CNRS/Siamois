@@ -93,10 +93,10 @@ public class ProjectUploadSettingsBean {
 
         public String getSummaryLabel() {
             List<String> parts = new ArrayList<>();
-            if (created > 0) parts.add(created + LIGNE + (created > 1 ? "s" : "") + " créée" + (created > 1 ? "s" : ""));
-            if (updated > 0) parts.add(updated + LIGNE + (updated > 1 ? "s" : "") + " modifiée" + (updated > 1 ? "s" : ""));
+            if (created > 0) parts.add(created + LIGNE + pluralSuffix(created) + " créée" + pluralSuffix(created));
+            if (updated > 0) parts.add(updated + LIGNE + pluralSuffix(updated) + " modifiée" + pluralSuffix(updated));
             if (skippedDuplicate > 0) {
-                parts.add(skippedDuplicate + " doublon" + (skippedDuplicate > 1 ? "s" : "") + " ignoré" + (skippedDuplicate > 1 ? "s" : ""));
+                parts.add(skippedDuplicate + " doublon" + pluralSuffix(skippedDuplicate) + " ignoré" + pluralSuffix(skippedDuplicate));
             }
             return parts.isEmpty() ? "0" + LIGNE : String.join(", ", parts);
         }
@@ -420,17 +420,21 @@ public class ProjectUploadSettingsBean {
     public String getImportDoneSummaryText() {
         List<String> parts = new ArrayList<>();
         if (importedCreated > 0) {
-            parts.add(importedCreated + LIGNE + (importedCreated > 1 ? "s" : "") + " créée" + (importedCreated > 1 ? "s" : ""));
+            parts.add(importedCreated + LIGNE + pluralSuffix(importedCreated) + " créée" + pluralSuffix(importedCreated));
         }
         if (importedUpdated > 0) {
-            parts.add(importedUpdated + LIGNE + (importedUpdated > 1 ? "s" : "") + " modifiée" + (importedUpdated > 1 ? "s" : ""));
+            parts.add(importedUpdated + LIGNE + pluralSuffix(importedUpdated) + " modifiée" + pluralSuffix(importedUpdated));
         }
         if (importedSkippedDuplicate > 0) {
-            parts.add(importedSkippedDuplicate + " doublon" + (importedSkippedDuplicate > 1 ? "s" : "")
-                    + " ignoré" + (importedSkippedDuplicate > 1 ? "s" : ""));
+            parts.add(importedSkippedDuplicate + " doublon" + pluralSuffix(importedSkippedDuplicate)
+                    + " ignoré" + pluralSuffix(importedSkippedDuplicate));
         }
         String detail = parts.isEmpty() ? "0" + LIGNE : String.join(", ", parts);
         return "✓ Import terminé · " + detail + " dans le projet";
+    }
+
+    private static String pluralSuffix(int n) {
+        return n > 1 ? "s" : "";
     }
 
     /** Discards the completed-import summary and returns to the empty upload dropzone. */

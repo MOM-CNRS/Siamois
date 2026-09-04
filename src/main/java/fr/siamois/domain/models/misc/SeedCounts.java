@@ -21,7 +21,7 @@ public class SeedCounts implements Serializable {
 
     private final Map<String, Counts> byTable = new HashMap<>();
 
-    public void record(String tableId, int created, int updated, int skippedDuplicate) {
+    public void recordCounts(String tableId, int created, int updated, int skippedDuplicate) {
         byTable.put(tableId, new Counts(created, updated, skippedDuplicate));
     }
 

@@ -258,7 +258,7 @@ class RecordingUnitSeederTest {
             var it = list.iterator();
             return it.hasNext() && it.next() == existing;
         }));
-        assertThat(existing.getDescription()).isEqualTo("");
+        assertThat(existing.getDescription()).isEmpty();
         SeedCounts.Counts counts = seedCounts.get(ImportSchema.RECORDING_UNIT);
         assertThat(counts.created()).isZero();
         assertThat(counts.updated()).isEqualTo(1);

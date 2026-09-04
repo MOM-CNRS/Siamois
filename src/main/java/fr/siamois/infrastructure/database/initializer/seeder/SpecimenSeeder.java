@@ -133,7 +133,7 @@ public class SpecimenSeeder {
         // specs skipped as in-batch duplicates never went into toInsert/toUpdate,
         // so they'd otherwise never be accounted for in the running total.
         progress.advance(specs.size() - toInsert.size() - toUpdate.size());
-        seedCounts.record(ImportSchema.SPECIMEN, toInsert.size(), toUpdate.size(),
+        seedCounts.recordCounts(ImportSchema.SPECIMEN, toInsert.size(), toUpdate.size(),
                 specs.size() - toInsert.size() - toUpdate.size());
     }
 

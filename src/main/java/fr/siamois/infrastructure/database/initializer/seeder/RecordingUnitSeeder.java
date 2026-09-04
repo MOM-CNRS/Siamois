@@ -184,7 +184,7 @@ public class RecordingUnitSeeder {
         // never be accounted for in the running total — advance for them too so the overall import
         // progress (summed across all 6 seeders in ProjectDataSeeder) still reaches exactly 100%.
         progress.advance(specs.size() - toInsert.size() - toUpdate.size());
-        seedCounts.record(ImportSchema.RECORDING_UNIT, toInsert.size(), toUpdate.size(),
+        seedCounts.recordCounts(ImportSchema.RECORDING_UNIT, toInsert.size(), toUpdate.size(),
                 specs.size() - toInsert.size() - toUpdate.size());
     }
 

@@ -78,7 +78,7 @@ public class SpatialUnitSeeder {
             spatialUnitRepository.saveAll(toUpdate);
             SeederUtils.logBatch("SpatialUnitSeeder", toUpdate.size(), toUpdate.size(), toUpdate.size());
         }
-        seedCounts.record(ImportSchema.SPATIAL_UNIT, toInsert.size(), toUpdate.size(),
+        seedCounts.recordCounts(ImportSchema.SPATIAL_UNIT, toInsert.size(), toUpdate.size(),
                 specs.size() - toInsert.size() - toUpdate.size());
 
         return result;
