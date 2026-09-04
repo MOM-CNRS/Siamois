@@ -3,8 +3,10 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
@@ -59,28 +61,64 @@ public class PhaseSeeder {
      * @param progress advanced by the number of specs accounted for (persisted or skipped as duplicates)
      */
     public void seed(List<PhaseSpecs> specs, ImportProgress progress) {
+        seed(specs, progress, new SeedCounts());
+    }
+
+    public void seed(List<PhaseSpecs> specs, ImportProgress progress, SeedCounts seedCounts) {
         if (specs.isEmpty()) return;
 
         Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey = fetchActionUnits(specs);
         Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey = fetchConcepts(specs);
         Map<String, Person> personCache = prefetchPersons(specs);
 
-        List<Phase> toInsert = new ArrayList<>();
+        List<Phase> built = new ArrayList<>();
         Set<String> queuedKeys = new HashSet<>();
         Map<Long, List<String>> existingIdsByActionUnitId = new HashMap<>();
 
         for (int i = 0; i < specs.size(); i++) {
             buildPhase(specs.get(i), i, actionUnitsByKey, conceptsByKey, personCache,
-                    queuedKeys, existingIdsByActionUnitId).ifPresent(toInsert::add);
+                    queuedKeys, existingIdsByActionUnitId).ifPresent(built::add);
         }
 
-        Set<String> existingKeys = fetchExistingPhaseKeys(existingIdsByActionUnitId);
-        toInsert.removeIf(phase -> existingKeys.contains(phase.getActionUnit().getId() + "|" + phase.getIdentifier()));
+        Map<String, Phase> existingByKey = fetchExistingPhases(existingIdsByActionUnitId);
+        List<Phase> toInsert = new ArrayList<>();
+        List<Phase> toUpdate = new ArrayList<>();
+        for (Phase phase : built) {
+            String key = phase.getActionUnit().getId() + "|" + phase.getIdentifier();
+            Phase existing = existingByKey.get(key);
+            if (existing != null) {
+                mergePhaseInto(phase, existing);
+                toUpdate.add(existing);
+            } else {
+                toInsert.add(phase);
+            }
+        }
 
         flushInBatches(toInsert, progress);
-        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
+        flushInBatches(toUpdate, progress);
+        // specs skipped as in-batch duplicates never went into toInsert/toUpdate,
         // so they'd otherwise never be accounted for in the running total.
-        progress.advance(specs.size() - toInsert.size());
+        progress.advance(specs.size() - toInsert.size() - toUpdate.size());
+        seedCounts.record(ImportSchema.PHASE, toInsert.size(), toUpdate.size(),
+                specs.size() - toInsert.size() - toUpdate.size());
+    }
+
+    /**
+     * Overwrites the content fields of an already-persisted phase with those of a freshly-built one
+     * from a re-import, so re-importing the same file with corrected values updates the existing row
+     * instead of being a no-op. Identity (actionUnit/identifier) and provenance (createdBy) are left
+     * untouched.
+     */
+    private void mergePhaseInto(Phase built, Phase existing) {
+        existing.setTitle(built.getTitle());
+        existing.setType(built.getType());
+        existing.setDescription(built.getDescription());
+        existing.setOrderNumber(built.getOrderNumber());
+        existing.setLowerBound(built.getLowerBound());
+        existing.setUpperBound(built.getUpperBound());
+        existing.setAuthor(built.getAuthor());
+        existing.setPeriods(built.getPeriods());
+        existing.setKeywords(built.getKeywords());
     }
 
     private Optional<Phase> buildPhase(PhaseSpecs s, int index,
@@ -164,11 +202,11 @@ public class PhaseSeeder {
         }
     }
 
-    private Set<String> fetchExistingPhaseKeys(Map<Long, List<String>> idsByActionUnitId) {
-        Set<String> result = new HashSet<>();
+    private Map<String, Phase> fetchExistingPhases(Map<Long, List<String>> idsByActionUnitId) {
+        Map<String, Phase> result = new HashMap<>();
         for (var entry : idsByActionUnitId.entrySet()) {
             for (Phase p : phaseRepository.findAllByIdentifierInAndActionUnitId(entry.getValue(), entry.getKey())) {
-                result.add(entry.getKey() + "|" + p.getIdentifier());
+                result.put(entry.getKey() + "|" + p.getIdentifier(), p);
             }
         }
         return result;

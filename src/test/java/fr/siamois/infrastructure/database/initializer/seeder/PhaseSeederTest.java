@@ -3,8 +3,10 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
@@ -92,20 +94,42 @@ class PhaseSeederTest {
     }
 
     // ------------------------------------------------------------------
-    // Already exists → saveAll never called
+    // Already exists → merged onto the existing entity and saved (upsert)
     // ------------------------------------------------------------------
 
     @Test
-    void seed_alreadyExists_saveNeverCalled() {
+    void seed_alreadyExists_updatesExistingInstead() {
         stubActionUnitFound();
         Phase existing = new Phase();
         existing.setIdentifier("PH-01");
         when(phaseRepository.findAllByIdentifierInAndActionUnitId(anyCollection(), eq(99L)))
                 .thenReturn(List.of(existing));
 
-        seeder.seed(List.of(spec("PH-01", null, null)));
+        SeedCounts seedCounts = new SeedCounts();
+        seeder.seed(List.of(spec("PH-01", null, null)), new fr.siamois.domain.models.misc.ImportProgress(), seedCounts);
 
-        verify(phaseRepository, never()).saveAll(any());
+        Phase saved = savedPhase();
+        assertThat(saved).isSameAs(existing);
+        assertThat(saved.getTitle()).isEqualTo("Titre test");
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.PHASE);
+        assertThat(counts.created()).isZero();
+        assertThat(counts.updated()).isEqualTo(1);
+        assertThat(counts.skippedDuplicate()).isZero();
+    }
+
+    @Test
+    void seed_inBatchDuplicate_recordedAsSkipped() {
+        stubActionUnitFound();
+        // phaseRepository bulk-existence lookup left unstubbed -> empty -> not already present
+
+        SeedCounts seedCounts = new SeedCounts();
+        seeder.seed(List.of(spec("PH-01", null, null), spec("PH-01", null, null)),
+                new fr.siamois.domain.models.misc.ImportProgress(), seedCounts);
+
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.PHASE);
+        assertThat(counts.created()).isEqualTo(1);
+        assertThat(counts.updated()).isZero();
+        assertThat(counts.skippedDuplicate()).isEqualTo(1);
     }
 
     // ------------------------------------------------------------------
@@ -238,7 +262,7 @@ class PhaseSeederTest {
     // ------------------------------------------------------------------
 
     @Test
-    void seed_multipleSpecs_twoCreatedOneSaved() {
+    void seed_multipleSpecs_oneCreatedOneUpdated() {
         stubActionUnitFound();
         Phase existingB = new Phase();
         existingB.setIdentifier("PH-B");
@@ -247,7 +271,8 @@ class PhaseSeederTest {
 
         seeder.seed(List.of(spec("PH-A", null, null), spec("PH-B", null, null)));
 
-        verify(phaseRepository, times(1)).saveAll(argThat(list -> {
+        // one saveAll for the single insert (PH-A), one for the single update (PH-B)
+        verify(phaseRepository, times(2)).saveAll(argThat(list -> {
             int count = 0;
             for (var ignored : list) count++;
             return count == 1;

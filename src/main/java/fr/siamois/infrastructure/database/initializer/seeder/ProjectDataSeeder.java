@@ -1,8 +1,10 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.dataimport.ImportSchema;
+import fr.siamois.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +23,7 @@ public class ProjectDataSeeder {
 
 
     @Transactional
-    public void seedAll(ImportSpecs spec, ActionUnitDTO project, ImportProgress progress) {
+    public void seedAll(ImportSpecs spec, ActionUnitDTO project, ImportProgress progress, SeedCounts seedCounts) {
         int total = spec.spatialUnits().size() + spec.phaseSpecs().size() + spec.recordingUnits().size()
                 + spec.specimenSpecs().size() + spec.recordingUnitStratiRelSpecs().size() + spec.recordingUnitRelSpecs().size()
                 + spec.spatialUnitRelSpecs().size();
@@ -32,14 +34,14 @@ public class ProjectDataSeeder {
         // those steps, that would double-count. SpatialUnitSeeder, RecordingUnitRelSeeder and
         // SpatialUnitRelSeeder use a single non-chunked saveAll (self-referencing children/hierarchy),
         // so there's no finer signal to report for those and they still advance in one lump after the step.
-        seedStep(ImportSchema.SPATIAL_UNIT, () -> spatialUnitSeeder.seed(spec.spatialUnits()));
+        seedStep(ImportSchema.SPATIAL_UNIT, () -> spatialUnitSeeder.seed(spec.spatialUnits(), seedCounts));
         progress.advance(spec.spatialUnits().size());
         seedStep(ImportSchema.SPATIAL_UNIT_REL, () -> spatialUnitRelSeeder.seed(spec.spatialUnitRelSpecs(),
                 project.getCreatedByInstitution().getId()));
         progress.advance(spec.spatialUnitRelSpecs().size());
-        seedStep(ImportSchema.PHASE, () -> phaseSeeder.seed(spec.phaseSpecs(), progress));
-        seedStep(ImportSchema.RECORDING_UNIT, () -> recordingUnitSeeder.seed(spec.recordingUnits(), progress));
-        seedStep(ImportSchema.SPECIMEN, () -> specimenSeeder.seed(spec.specimenSpecs(), project.getCreatedByInstitution().getId(), progress));
+        seedStep(ImportSchema.PHASE, () -> phaseSeeder.seed(spec.phaseSpecs(), progress, seedCounts));
+        seedStep(ImportSchema.RECORDING_UNIT, () -> recordingUnitSeeder.seed(spec.recordingUnits(), progress, seedCounts));
+        seedStep(ImportSchema.SPECIMEN, () -> specimenSeeder.seed(spec.specimenSpecs(), project.getCreatedByInstitution().getId(), progress, seedCounts));
         seedStep(ImportSchema.STRATI_REL, () -> recordingUnitStratiRelSeeder.seed(spec.recordingUnitStratiRelSpecs(),
                 project.getCreatedByInstitution().getId(), project.getFullIdentifier(), progress));
         seedStep(ImportSchema.RECORDING_REL, () -> recordingUnitRelSeeder.seed(spec.recordingUnitRelSpecs(),
@@ -52,7 +54,7 @@ public class ProjectDataSeeder {
         try {
             step.run();
         } catch (Exception e) {
-            throw new SeedException(tableId, e.getMessage(), e);
+            throw new SeedException(tableId, MessageUtils.describe(e), e);
         }
     }
 

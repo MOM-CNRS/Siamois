@@ -3,11 +3,13 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -46,6 +48,10 @@ public class SpatialUnitSeeder {
      * @return every resolved spatial unit (newly created or already-existing) keyed by name
      */
     public Map<String, SpatialUnit> seed(List<SpatialUnitSpecs> specs) {
+        return seed(specs, new SeedCounts());
+    }
+
+    public Map<String, SpatialUnit> seed(List<SpatialUnitSpecs> specs, SeedCounts seedCounts) {
         if (specs.isEmpty()) return Map.of();
 
         Map<String, Institution> institutionsByIdentifier = fetchInstitutions(specs);
@@ -58,15 +64,22 @@ public class SpatialUnitSeeder {
 
         Map<String, SpatialUnit> result = new LinkedHashMap<>();
         List<SpatialUnit> toInsert = new ArrayList<>();
+        List<SpatialUnit> toUpdate = new ArrayList<>();
         Set<String> queuedNames = new HashSet<>();
         for (int i = 0; i < specs.size(); i++) {
-            resolveSpatialUnit(specs.get(i), i, builtByName, existingByKey, institutionsByIdentifier, queuedNames, toInsert, result);
+            resolveSpatialUnit(specs.get(i), i, builtByName, existingByKey, institutionsByIdentifier, queuedNames, toInsert, toUpdate, result);
         }
 
         if (!toInsert.isEmpty()) {
             spatialUnitRepository.saveAll(toInsert);
             SeederUtils.logBatch("SpatialUnitSeeder", toInsert.size(), toInsert.size(), toInsert.size());
         }
+        if (!toUpdate.isEmpty()) {
+            spatialUnitRepository.saveAll(toUpdate);
+            SeederUtils.logBatch("SpatialUnitSeeder", toUpdate.size(), toUpdate.size(), toUpdate.size());
+        }
+        seedCounts.record(ImportSchema.SPATIAL_UNIT, toInsert.size(), toUpdate.size(),
+                specs.size() - toInsert.size() - toUpdate.size());
 
         return result;
     }
@@ -110,12 +123,19 @@ public class SpatialUnitSeeder {
 
     private void resolveSpatialUnit(SpatialUnitSpecs s, int index, Map<String, SpatialUnit> builtByName,
                                      Map<String, SpatialUnit> existingByKey, Map<String, Institution> institutionsByIdentifier,
-                                     Set<String> queuedNames, List<SpatialUnit> toInsert, Map<String, SpatialUnit> result) {
+                                     Set<String> queuedNames, List<SpatialUnit> toInsert, List<SpatialUnit> toUpdate,
+                                     Map<String, SpatialUnit> result) {
         try {
             SpatialUnit built = builtByName.get(s.name());
 
             SpatialUnit existing = findExistingSpatialUnit(s, institutionsByIdentifier, existingByKey);
             if (existing != null) {
+                // multiple spec rows can share the same name — merge and queue the existing entity
+                // for update only once, or saveAll would update the same object twice
+                if (queuedNames.add(s.name())) {
+                    mergeSpatialUnitInto(built, existing);
+                    toUpdate.add(existing);
+                }
                 result.put(s.name(), existing);
                 return;
             }
@@ -129,6 +149,16 @@ public class SpatialUnitSeeder {
             throw new IllegalStateException(
                     "[Lieu Ligne " + (index + 1) + "] '" + s.name() + "' : " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Overwrites the content fields of an already-persisted spatial unit with those of a
+     * freshly-built one from a re-import, so re-importing the same file with corrected values
+     * updates the existing row instead of being a no-op. Identity (name/institution) and
+     * provenance (createdBy/creationTime) are left untouched.
+     */
+    private void mergeSpatialUnitInto(SpatialUnit built, SpatialUnit existing) {
+        existing.setCategory(built.getCategory());
     }
 
     private SpatialUnit findExistingSpatialUnit(SpatialUnitSpecs s, Map<String, Institution> institutionsByIdentifier,

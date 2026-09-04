@@ -109,4 +109,16 @@ public class MessageUtils {
     public static void displayInternalError(LangBean langBean) {
         displayErrorMessage(langBean, "common.error.internal");
     }
+
+    /**
+     * Some exceptions (e.g. Hibernate/JDBC constraint violations) carry a null or blank message at
+     * the top level, which would otherwise surface as a blank error in the UI with no way to
+     * diagnose it — fall back to the exception's class name so there's always something to show.
+     *
+     * @param e the exception to describe
+     */
+    public static String describe(Throwable e) {
+        String message = e.getMessage();
+        return (message == null || message.isBlank()) ? e.getClass().getSimpleName() : message;
+    }
 }

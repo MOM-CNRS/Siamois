@@ -1,11 +1,13 @@
 package fr.siamois.domain.services.dataimport;
 
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ImportSpecs;
 import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
 import fr.siamois.infrastructure.dataimport.ImportResult;
 import fr.siamois.infrastructure.dataimport.OOXMLImportService;
+import fr.siamois.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -39,20 +41,20 @@ public class ImportAsyncRunner {
             progress.complete();
         } catch (Exception e) {
             onError.accept(e);
-            progress.fail(e.getMessage());
+            progress.fail(MessageUtils.describe(e));
         }
     }
 
     @Async("importTaskExecutor")
-    public void persistAsync(ImportSpecs specs, ActionUnitDTO project, ImportProgress progress,
+    public void persistAsync(ImportSpecs specs, ActionUnitDTO project, ImportProgress progress, SeedCounts seedCounts,
                               Runnable onSuccess, Consumer<Exception> onError) {
         try {
-            seeder.seedAll(specs, project, progress);
+            seeder.seedAll(specs, project, progress, seedCounts);
             onSuccess.run();
             progress.complete();
         } catch (Exception e) {
             onError.accept(e);
-            progress.fail(e.getMessage());
+            progress.fail(MessageUtils.describe(e));
         }
     }
 }

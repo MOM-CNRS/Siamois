@@ -261,31 +261,20 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
             @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
     );
 
-    /** Narrow projection so the bulk existing-specimen lookup below never has to touch the (lazy) recordingUnit association per row. */
-    interface ExistingSpecimenKey {
-        String getFullIdentifier();
-        String getRecordingUnitFullIdentifier();
-    }
-
     /**
      * Bulk variant of {@link #findByFullIdentifierAndInstitutionIdAndRecordingUnitFullIdentifierAndActionUnitFullIdentifier} —
      * one query per distinct (institution, action unit) rather than one per distinct recording unit, so it stays a
-     * handful of queries even when there are thousands of recording units each with a single specimen.
-     *
-     * @param institutionId institution to scope the lookup to
-     * @param actionUnitFullIdentifier full identifier of the action unit to scope the lookup to
-     * @return the full identifier of every specimen in that (institution, action unit), paired with its recording unit's full identifier
+     * handful of queries even when there are thousands of recording units each with a single specimen. Full entities
+     * (with recordingUnit/actionUnit eagerly fetched, since the dedup key needs both) are returned rather than a
+     * narrow projection, so an import re-run can merge new values onto an already-existing specimen instead of only
+     * detecting that it exists.
      */
-    @Query(
-            value = "SELECT s.full_identifier AS fullIdentifier, ru.full_identifier AS recordingUnitFullIdentifier " +
-                    "FROM specimen s " +
-                    "JOIN recording_unit ru ON s.fk_recording_unit_id = ru.recording_unit_id " +
-                    "JOIN action_unit au ON ru.fk_action_unit_id = au.action_unit_id " +
-                    "WHERE s.fk_institution_id = :institutionId " +
-                    "AND au.full_identifier = :actionUnitFullIdentifier",
-            nativeQuery = true
-    )
-    List<ExistingSpecimenKey> findAllKeysByInstitutionIdAndActionUnitFullIdentifier(
+    @Query("SELECT s FROM Specimen s " +
+            "JOIN FETCH s.recordingUnit ru " +
+            "JOIN FETCH s.actionUnit au " +
+            "WHERE s.createdByInstitution.id = :institutionId " +
+            "AND au.fullIdentifier = :actionUnitFullIdentifier")
+    List<Specimen> findAllByInstitutionIdAndActionUnitFullIdentifier(
             @Param("institutionId") Long institutionId,
             @Param("actionUnitFullIdentifier") String actionUnitFullIdentifier
     );
