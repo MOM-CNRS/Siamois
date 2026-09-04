@@ -664,13 +664,13 @@
                                         <span>Résumé de l'import</span>
                                         <span class="val-status-pill"
                                               style="color:#3a5a3c;background:#eaf3ea;border:1px solid #cfe3cf;">
-                                            ✓ #{projectUploadSettingsBean.importedTotal} ligne#{projectUploadSettingsBean.importedTotal > 1 ? 's' : ''} créée#{projectUploadSettingsBean.importedTotal > 1 ? 's' : ''}
+                                            ✓ #{projectUploadSettingsBean.importedTotal} ligne#{projectUploadSettingsBean.importedTotal > 1 ? 's' : ''} traitée#{projectUploadSettingsBean.importedTotal > 1 ? 's' : ''}
                                         </span>
                                     </div>
                                     <ui:repeat value="#{projectUploadSettingsBean.importSummary}" var="r">
                                         <div class="summary-row">
                                             <b>#{r.label}</b>
-                                            <span style="color:#666;">#{r.countLabel}</span>
+                                            <span style="color:#666;">#{r.summaryLabel}</span>
                                         </div>
                                     </ui:repeat>
                                 </div>

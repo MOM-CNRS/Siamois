@@ -1,8 +1,10 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
@@ -92,7 +94,7 @@ class SpatialUnitSeederTest {
     }
 
     @Test
-    void seed_AlreadyExists() {
+    void seed_AlreadyExists_updatesExistingInstead() {
         stubConceptFound();
         stubInstitutionFound(1L);
 
@@ -101,12 +103,21 @@ class SpatialUnitSeederTest {
         when(spatialUnitRepository.findAllByNameInAndInstitution(anyCollection(), eq(1L))).thenReturn(List.of(existing));
 
         List<SpatialUnitSeeder.SpatialUnitSpecs> toInsert = List.of(spec("name"));
+        SeedCounts seedCounts = new SeedCounts();
 
-        Map<String, SpatialUnit> res = seeder.seed(toInsert);
+        Map<String, SpatialUnit> res = seeder.seed(toInsert, seedCounts);
 
-        verify(spatialUnitRepository, never()).saveAll(any());
+        verify(spatialUnitRepository, times(1)).saveAll(argThat(list -> {
+            var it = list.iterator();
+            return it.hasNext() && it.next() == existing;
+        }));
         assertNotNull(res.get("name"));
         assertThat(res.get("name")).isSameAs(existing);
+        assertThat(existing.getCategory()).isNotNull();
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.SPATIAL_UNIT);
+        assertThat(counts.created()).isZero();
+        assertThat(counts.updated()).isEqualTo(1);
+        assertThat(counts.skippedDuplicate()).isZero();
     }
 
     @Test
@@ -116,8 +127,9 @@ class SpatialUnitSeederTest {
         // spatialUnitRepository bulk-existence lookup left unstubbed -> empty -> not already present
 
         List<SpatialUnitSeeder.SpatialUnitSpecs> toInsert = List.of(spec("created"));
+        SeedCounts seedCounts = new SeedCounts();
 
-        Map<String, SpatialUnit> res = seeder.seed(toInsert);
+        Map<String, SpatialUnit> res = seeder.seed(toInsert, seedCounts);
 
         verify(spatialUnitRepository, times(1)).saveAll(argThat(list -> {
             int count = 0;
@@ -125,5 +137,26 @@ class SpatialUnitSeederTest {
             return count == 1;
         }));
         assertNotNull(res.get("created"));
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.SPATIAL_UNIT);
+        assertThat(counts.created()).isEqualTo(1);
+        assertThat(counts.updated()).isZero();
+        assertThat(counts.skippedDuplicate()).isZero();
+    }
+
+    @Test
+    void seed_InBatchDuplicate_recordedAsSkipped() {
+        stubConceptFound();
+        stubInstitutionFound(1L);
+        // spatialUnitRepository bulk-existence lookup left unstubbed -> empty -> not already present
+
+        List<SpatialUnitSeeder.SpatialUnitSpecs> specs = List.of(spec("dup"), spec("dup"));
+        SeedCounts seedCounts = new SeedCounts();
+
+        seeder.seed(specs, seedCounts);
+
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.SPATIAL_UNIT);
+        assertThat(counts.created()).isEqualTo(1);
+        assertThat(counts.updated()).isZero();
+        assertThat(counts.skippedDuplicate()).isEqualTo(1);
     }
 }

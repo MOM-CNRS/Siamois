@@ -3,9 +3,11 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
@@ -84,6 +86,10 @@ public class SpecimenSeeder {
     }
 
     public void seed(List<SpecimenSpecs> specs, Long institutionId, ImportProgress progress) {
+        seed(specs, institutionId, progress, new SeedCounts());
+    }
+
+    public void seed(List<SpecimenSpecs> specs, Long institutionId, ImportProgress progress, SeedCounts seedCounts) {
         if (specs.isEmpty()) return;
 
         log.info("[SpecimenSeeder] starting seed of {} specs", specs.size());
@@ -102,24 +108,60 @@ public class SpecimenSeeder {
             built.add(buildSpecimen(specs.get(i), i, institutionsByIdentifier, personCache, conceptsByKey, recordingUnitsByKey));
         }
 
-        log.info("[SpecimenSeeder] {} specs built, resolving existing-specimen keys...", built.size());
-        Set<String> existingKeys = fetchExistingSpecimenKeys(built);
-        log.info("[SpecimenSeeder] existing-key lookup done ({} existing keys found)", existingKeys.size());
+        log.info("[SpecimenSeeder] {} specs built, resolving existing specimens...", built.size());
+        Map<String, Specimen> existingByKey = fetchExistingSpecimens(built);
+        log.info("[SpecimenSeeder] existing-specimen lookup done ({} existing found)", existingByKey.size());
 
         List<Specimen> toInsert = new ArrayList<>();
+        List<Specimen> toUpdate = new ArrayList<>();
         Set<String> queuedKeys = new HashSet<>();
         for (Specimen sp : built) {
             String key = dedupKey(sp);
-            if (!existingKeys.contains(key) && queuedKeys.add(key)) {
+            if (!queuedKeys.add(key)) continue; // in-batch duplicate, keep first build already queued
+            Specimen existing = existingByKey.get(key);
+            if (existing != null) {
+                mergeSpecimenInto(sp, existing);
+                toUpdate.add(existing);
+            } else {
                 toInsert.add(sp);
             }
         }
-        log.info("[SpecimenSeeder] {} to insert in batches of {}", toInsert.size(), FLUSH_CHUNK_SIZE);
+        log.info("[SpecimenSeeder] {} to insert, {} to update, in batches of {}", toInsert.size(), toUpdate.size(), FLUSH_CHUNK_SIZE);
 
         flushInBatches(toInsert, progress);
-        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
+        flushInBatches(toUpdate, progress);
+        // specs skipped as in-batch duplicates never went into toInsert/toUpdate,
         // so they'd otherwise never be accounted for in the running total.
-        progress.advance(specs.size() - toInsert.size());
+        progress.advance(specs.size() - toInsert.size() - toUpdate.size());
+        seedCounts.recordCounts(ImportSchema.SPECIMEN, toInsert.size(), toUpdate.size(),
+                specs.size() - toInsert.size() - toUpdate.size());
+    }
+
+    /**
+     * Overwrites the content fields of an already-persisted specimen with those of a freshly-built
+     * one from a re-import, so re-importing the same file with corrected values updates the existing
+     * row instead of being a no-op. Identity (fullIdentifier/recordingUnit/actionUnit) and provenance
+     * (createdBy/creationTime) are left untouched.
+     */
+    private void mergeSpecimenInto(Specimen built, Specimen existing) {
+        existing.setIdentifier(built.getIdentifier());
+        existing.setCategory(built.getCategory());
+        existing.setAuthors(built.getAuthors());
+        existing.setCollectors(built.getCollectors());
+        existing.setMaterial(built.getMaterial());
+        existing.setNormalizedInterpretation(built.getNormalizedInterpretation());
+        existing.setDescription(built.getDescription());
+        existing.setComments(built.getComments());
+        existing.setIsolationNumber(built.getIsolationNumber());
+        existing.setTaq(built.getTaq());
+        existing.setTpq(built.getTpq());
+        existing.setOtherIdentifier(built.getOtherIdentifier());
+        existing.setChronologicalAttribution(built.getChronologicalAttribution());
+        existing.setNumberOfElements(built.getNumberOfElements());
+        existing.setCollectionDate(built.getCollectionDate());
+        existing.setCollectionMethod(built.getCollectionMethod());
+        existing.setSanitaryState(built.getSanitaryState());
+        existing.setMaterialClass(built.getMaterialClass());
     }
 
     private Specimen buildSpecimen(SpecimenSpecs s, int index, Map<String, Institution> institutionsByIdentifier,
@@ -167,7 +209,9 @@ public class SpecimenSeeder {
             toGetOrCreate.setAuthors(authors);
             toGetOrCreate.setCollectors(collectors);
             toGetOrCreate.setCreationTime(s.creationTime);
-            toGetOrCreate.setMaterial(material != null ? Set.of(material) : Set.of());
+            // mutable — Hibernate needs to write into this collection when merging onto an already-
+            // persisted specimen during a re-import (Set.of() throws UnsupportedOperationException then)
+            toGetOrCreate.setMaterial(material != null ? new HashSet<>(Set.of(material)) : new HashSet<>());
             toGetOrCreate.setNormalizedInterpretation(interpretation);
             toGetOrCreate.setDescription(s.description());
             toGetOrCreate.setComments(s.comments());
@@ -180,7 +224,7 @@ public class SpecimenSeeder {
             toGetOrCreate.setCollectionDate(s.collectionDate());
             toGetOrCreate.setCollectionMethod(collectionMethod);
             toGetOrCreate.setSanitaryState(sanitaryState);
-            toGetOrCreate.setMaterialClass(materialClass != null ? Set.of(materialClass) : Set.of());
+            toGetOrCreate.setMaterialClass(materialClass != null ? new HashSet<>(Set.of(materialClass)) : new HashSet<>());
             return toGetOrCreate;
         } catch (Exception e) {
             throw new IllegalStateException(
@@ -219,18 +263,17 @@ public class SpecimenSeeder {
      * Grouping by recording unit here (as earlier revisions did) degenerates to one query per recording
      * unit for that common shape, which is effectively N+1 again and can silently stall this whole step.
      */
-    private Set<String> fetchExistingSpecimenKeys(List<Specimen> built) {
+    private Map<String, Specimen> fetchExistingSpecimens(List<Specimen> built) {
         record GroupKey(Long institutionId, String actionUnitFullIdentifier) {}
         Set<GroupKey> groups = new HashSet<>();
         for (Specimen sp : built) {
             groups.add(new GroupKey(sp.getCreatedByInstitution().getId(), sp.getRecordingUnit().getActionUnit().getFullIdentifier()));
         }
-        Set<String> result = new HashSet<>();
+        Map<String, Specimen> result = new HashMap<>();
         for (GroupKey key : groups) {
-            for (SpecimenRepository.ExistingSpecimenKey existing : specimenRepository.findAllKeysByInstitutionIdAndActionUnitFullIdentifier(
+            for (Specimen existing : specimenRepository.findAllByInstitutionIdAndActionUnitFullIdentifier(
                     key.institutionId(), key.actionUnitFullIdentifier())) {
-                result.add(key.institutionId() + "|" + existing.getRecordingUnitFullIdentifier() + "|" + key.actionUnitFullIdentifier()
-                        + "|" + existing.getFullIdentifier());
+                result.put(dedupKey(existing), existing);
             }
         }
         return result;

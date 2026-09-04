@@ -2,9 +2,11 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -237,7 +239,7 @@ class RecordingUnitSeederTest {
     }
 
     @Test
-    void seed_AlreadyExists() {
+    void seed_AlreadyExists_updatesExistingInstead() {
         stubConceptsFound();
         stubInstitutionFound();
         stubSpatialUnitFound();
@@ -249,9 +251,18 @@ class RecordingUnitSeederTest {
                 anyCollection(), any(), eq("action-01")))
                 .thenReturn(List.of(existing));
 
-        seeder.seed(oneSpec());
+        SeedCounts seedCounts = new SeedCounts();
+        seeder.seed(oneSpec(), new fr.siamois.domain.models.misc.ImportProgress(), seedCounts);
 
-        verify(recordingUnitRepository, never()).saveAll(any());
+        verify(recordingUnitRepository, times(1)).saveAll(argThat(list -> {
+            var it = list.iterator();
+            return it.hasNext() && it.next() == existing;
+        }));
+        assertThat(existing.getDescription()).isEmpty();
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.RECORDING_UNIT);
+        assertThat(counts.created()).isZero();
+        assertThat(counts.updated()).isEqualTo(1);
+        assertThat(counts.skippedDuplicate()).isZero();
     }
 
     @Test
@@ -262,7 +273,8 @@ class RecordingUnitSeederTest {
         stubActionUnitFound();
         // recordingUnitRepository bulk-existence lookup left unstubbed -> empty -> not already present
 
-        seeder.seed(oneSpec());
+        SeedCounts seedCounts = new SeedCounts();
+        seeder.seed(oneSpec(), new fr.siamois.domain.models.misc.ImportProgress(), seedCounts);
 
         verify(recordingUnitRepository, times(1)).saveAll(argThat(list -> {
             List<RecordingUnit> asList = new ArrayList<>();
@@ -271,6 +283,10 @@ class RecordingUnitSeederTest {
         }));
         verify(entityManager, times(1)).flush();
         verify(entityManager, times(1)).clear();
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.RECORDING_UNIT);
+        assertThat(counts.created()).isEqualTo(1);
+        assertThat(counts.updated()).isZero();
+        assertThat(counts.skippedDuplicate()).isZero();
     }
 
     @Test
