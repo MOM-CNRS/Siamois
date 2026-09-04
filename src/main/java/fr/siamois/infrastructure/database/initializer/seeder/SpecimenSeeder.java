@@ -134,6 +134,7 @@ public class SpecimenSeeder {
             Long institutionId = institution.getId();
 
             Concept cat = SeederUtils.field("category", () -> {
+                if (s.category() == null) throw new IllegalStateException("Catégorie obligatoire manquante");
                 Concept c = conceptsByKey.get(s.category());
                 if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.category(), institutionId));
                 return c;

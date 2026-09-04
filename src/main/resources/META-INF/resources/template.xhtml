@@ -257,7 +257,7 @@
                                 <span class="menu-text">#{navBean.currentUser().displayName()}</span>
                             </h:panelGroup>
                             <p:tooltip for="userAvatarBtn" value="#{navBean.currentUser().displayName()}"/>
-                            <p:menu overlay="true" trigger="userAvatarBtn" my="left top" at="left bottom">
+                            <p:menu overlay="true" appendTo="@(body)" trigger="userAvatarBtn" my="left bottom" at="right top">
                                 <p:menuitem value="#{langBean.msg('nav.header.profile')}"
                                             icon="bi bi-person"
                                             url="#{request.contextPath}/settings/profile"/>
