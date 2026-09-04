@@ -104,6 +104,9 @@ public class ProjectDetailsBean {
     }
 
     public String backToProjectSettings() {
+        if (elements == null || elements.isEmpty()) {
+            init();
+        }
         return "/pages/settings/project/projectSettings.xhtml?faces-redirect=true";
     }
 

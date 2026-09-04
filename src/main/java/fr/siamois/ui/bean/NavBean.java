@@ -3,6 +3,7 @@ package fr.siamois.ui.bean;
 import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.Bookmark;
+import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.BookmarkService;
@@ -293,6 +294,11 @@ public class NavBean implements Serializable {
     @EventListener(LoginEvent.class)
     public void reset() {
         bookmarkedPanels = null;
+    }
+
+    @EventListener(InstitutionChangeEvent.class)
+    public void resetBackUrlOnInstitutionChange() {
+        urlToGoBack = null;
     }
 
     public void backFromSettings() throws IOException {

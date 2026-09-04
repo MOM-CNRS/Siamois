@@ -83,7 +83,7 @@
         <!-- Barre latérale -->
         <h:panelGroup id="navBar" rendered="#{navBean.siamoisMode}" layout="none">
             <nav id="siamoisNav" class="sidebar collapsed" aria-label="General sidebar">
-                <div style="align-items: center;
+                <div style="
         display: flex;
         flex-direction: column;">
                     <button id="toggle-btn" type="button"
@@ -97,7 +97,7 @@
                         </li>
                     </ul>
 
-                    <form:csrfform formId="institutionSelectForm" id="institutionCsrfSelectForm" style="width:90%">
+                    <form:csrfform formId="institutionSelectForm" id="institutionCsrfSelectForm" style="width:90%;margin:auto;">
                         <article>
                             <h:panelGroup styleClass="ui-inputgroup change-instit ui-fluid">
                                 <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
@@ -135,11 +135,18 @@
                         </article>
                     </form:csrfform>
 
-                    <small class="menu-text" style="
-                           margin-left: 5%;
-                    margin-right: 5%;">
-                        Pour changer d’organisation, rendez-vous dans les <i style="color: var(--siamois-green-active)" class="bi bi-gear-fill"></i>️ Paramètres.
-                    </small>
+                    <form:csrfform formId="changeOrganisationForm" id="changeOrganisationCsrfForm">
+                        <small class="menu-text" style="
+                               margin-left: 5%;
+                        margin-right: 5%;">
+                            Pour changer d’organisation,
+                            <h:commandLink action="#{redirectBean.redirectTo('/settings/organisation')}"
+                                           onclick="captureUrl()"
+                                           id="changeOrganisationLink">
+                                cliquez ici
+                            </h:commandLink>.
+                        </small>
+                    </form:csrfform>
 
                     <form:csrfform id="navBarCsrfForm" formId="siamoisNavForm">
                         <ul class="nav flex-column">
@@ -257,7 +264,7 @@
                                 <span class="menu-text">#{navBean.currentUser().displayName()}</span>
                             </h:panelGroup>
                             <p:tooltip for="userAvatarBtn" value="#{navBean.currentUser().displayName()}"/>
-                            <p:menu overlay="true" trigger="userAvatarBtn" my="left top" at="left bottom">
+                            <p:menu overlay="true" appendTo="@(body)" trigger="userAvatarBtn" my="left bottom" at="right top">
                                 <p:menuitem value="#{langBean.msg('nav.header.profile')}"
                                             icon="bi bi-person"
                                             url="#{request.contextPath}/settings/profile"/>

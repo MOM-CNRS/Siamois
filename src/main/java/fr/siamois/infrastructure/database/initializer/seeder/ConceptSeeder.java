@@ -83,6 +83,7 @@ public class ConceptSeeder {
      * so the user can check whether it simply hasn't been loaded into Siamois yet.
      */
     public String describeMissingConcept(ConceptKey key, Long institutionId) {
+        if (key == null) return "Concept manquant (aucune valeur fournie)";
         String link = buildConceptLink(key, institutionId);
         StringBuilder base = new StringBuilder("Concept non chargé dans Siamois (vocabulaire ")
                 .append(key.vocabularyExtId()).append(", concept ").append(key.conceptExtId());
