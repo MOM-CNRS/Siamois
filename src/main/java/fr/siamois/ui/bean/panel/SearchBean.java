@@ -11,6 +11,7 @@ import jakarta.faces.event.AjaxBehaviorEvent;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.primefaces.PrimeFaces;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.lang.Nullable;
@@ -40,7 +41,14 @@ public class SearchBean implements Serializable {
         userInfo = sessionSettingsBean.getUserInfo();
     }
 
+    private static final String SNAKE_EASTER_EGG_KEYWORD = "motherload";
+
     public List<SearchResultDTO> completeText(String input) {
+        if (input != null && SNAKE_EASTER_EGG_KEYWORD.equalsIgnoreCase(input.trim())) {
+            PrimeFaces.current().ajax().update("snakeGameForm");
+            PrimeFaces.current().executeScript("PF('snakeGameDiag').show()");
+            return List.of();
+        }
         return searchRepository.findResultsFor(input,
                 sessionSettingsBean.getSelectedInstitution(),
                 userInfo.getUser());
