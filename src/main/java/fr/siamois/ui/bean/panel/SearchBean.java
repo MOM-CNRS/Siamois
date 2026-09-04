@@ -41,7 +41,7 @@ public class SearchBean implements Serializable {
         userInfo = sessionSettingsBean.getUserInfo();
     }
 
-    private static final String SNAKE_EASTER_EGG_KEYWORD = "motherload";
+    private static final String SNAKE_EASTER_EGG_KEYWORD = "motherlode";
 
     public List<SearchResultDTO> completeText(String input) {
         if (input != null && SNAKE_EASTER_EGG_KEYWORD.equalsIgnoreCase(input.trim())) {

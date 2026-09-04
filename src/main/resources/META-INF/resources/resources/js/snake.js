@@ -27,8 +27,6 @@
         running = true;
         placeFood();
         updateScoreDisplay();
-        var over = document.getElementById('siaSnakeGameOver');
-        if (over) over.style.display = 'none';
     }
 
     function placeFood() {
@@ -102,12 +100,44 @@
     function gameOver() {
         running = false;
         clearInterval(loopId);
-        var over = document.getElementById('siaSnakeGameOver');
-        if (over) over.style.display = 'block';
         if (typeof saveSnakeScoreRemote === 'function') {
             saveSnakeScoreRemote([{name: 'score', value: score}]);
+        } else {
+            window.siaSnakeShowLeaderboard();
         }
     }
+
+    /** Fades the board out and the ranking in; called once the score request completes. */
+    window.siaSnakeShowLeaderboard = function () {
+        var area = document.getElementById('siaSnakeGameArea');
+        var board = document.getElementById('siaSnakeLeaderboard');
+        if (!area || !board) return;
+        area.style.opacity = '0';
+        setTimeout(function () {
+            area.style.display = 'none';
+            board.style.display = 'block';
+            requestAnimationFrame(function () {
+                board.style.opacity = '1';
+            });
+        }, 600);
+    };
+
+    /** "Rejouer": fades the ranking out, restores the board, and starts a fresh run. */
+    window.siaSnakeRestart = function () {
+        var area = document.getElementById('siaSnakeGameArea');
+        var board = document.getElementById('siaSnakeLeaderboard');
+        if (board) board.style.opacity = '0';
+        setTimeout(function () {
+            if (board) board.style.display = 'none';
+            if (area) {
+                area.style.display = 'block';
+                requestAnimationFrame(function () {
+                    area.style.opacity = '1';
+                });
+            }
+            window.siaSnakeInit();
+        }, 600);
+    };
 
     function onKeyDown(e) {
         if (!running) return;
@@ -127,6 +157,11 @@
         canvas = document.getElementById('siaSnakeCanvas');
         if (!canvas) return;
         ctx = canvas.getContext('2d');
+
+        var area = document.getElementById('siaSnakeGameArea');
+        var board = document.getElementById('siaSnakeLeaderboard');
+        if (board) { board.style.display = 'none'; board.style.opacity = '0'; }
+        if (area) { area.style.display = 'block'; area.style.opacity = '1'; }
 
         if (!keyListenerBound) {
             document.addEventListener('keydown', onKeyDown);

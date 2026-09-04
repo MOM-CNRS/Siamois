@@ -23,30 +23,49 @@
             </f:facet>
 
             <div style="text-align:center;">
-                <canvas id="siaSnakeCanvas" width="480" height="480"
-                        style="background:#e8dcc3;border:4px solid #5a4632;border-radius:6px;max-width:100%;"/>
+                <div id="siaSnakeGameArea" style="transition:opacity 0.6s ease;opacity:1;">
+                    <canvas id="siaSnakeCanvas" width="480" height="480"
+                            style="background:#e8dcc3;border:4px solid #5a4632;border-radius:6px;max-width:100%;"/>
 
-                <div style="margin-top:0.6em;font-family:monospace;font-size:1.1em;color:#5a4632;">
-                    Score : <span id="siaSnakeScore">0</span>
-                    &#160;·&#160; Meilleur score :
-                    <h:panelGroup id="bestScoreDisplay">
-                        <span id="siaSnakeBest">#{snakeGameBean.bestScore}</span>
-                    </h:panelGroup>
-                </div>
+                    <div style="margin-top:0.6em;font-family:monospace;font-size:1.1em;color:#5a4632;">
+                        Score : <span id="siaSnakeScore">0</span>
+                        &#160;·&#160; Meilleur score :
+                        <h:panelGroup id="bestScoreDisplay">
+                            <span id="siaSnakeBest">#{snakeGameBean.bestScore}</span>
+                        </h:panelGroup>
+                    </div>
 
-                <div id="siaSnakeGameOver" style="display:none;margin-top:0.6em;color:#8a4a2c;font-weight:bold;">
-                    Fouille terminée — score enregistré !
-                    <div style="margin-top:0.5em;">
-                        <button type="button" class="ui-button ui-widget ui-state-default ui-corner-all"
-                                style="padding:0.4em 1.2em;cursor:pointer;" onclick="siaSnakeInit();">
-                            <i class="bi bi-arrow-clockwise" style="margin-right:0.4em;"/>Réessayer
-                        </button>
+                    <div style="margin-top:0.5em;font-size:0.85em;color:var(--gray-600);">
+                        Flèches ou Z-Q-S-D pour déplacer la truelle. Collectez les artefacts, évitez les murs
+                        et votre propre tranchée.
                     </div>
                 </div>
 
-                <div style="margin-top:0.5em;font-size:0.85em;color:var(--gray-600);">
-                    Flèches ou Z-Q-S-D pour déplacer la truelle. Collectez les artefacts, évitez les murs
-                    et votre propre tranchée.
+                <div id="siaSnakeLeaderboard" style="display:none;opacity:0;transition:opacity 0.6s ease;">
+                    <h4 style="margin:0 0 0.4em;color:#5a4632;">Fouille terminée — classement de l'organisation</h4>
+                    <h:panelGroup id="leaderboardPanel">
+                        <table style="margin:0 auto;border-collapse:collapse;font-size:0.95em;min-width:280px;">
+                            <ui:repeat value="#{snakeGameBean.leaderboard}" var="entry" varStatus="status">
+                                <tr>
+                                    <td style="padding:0.2em 0.8em;color:#5a4632;font-weight:bold;">
+                                        #{status.index + 1}
+                                    </td>
+                                    <td style="padding:0.2em 0.8em;text-align:left;">
+                                        #{entry.name} #{entry.lastname}
+                                    </td>
+                                    <td style="padding:0.2em 0.8em;font-family:monospace;">
+                                        #{entry.bestScore}
+                                    </td>
+                                </tr>
+                            </ui:repeat>
+                        </table>
+                    </h:panelGroup>
+                    <div style="margin-top:0.8em;">
+                        <button type="button" class="ui-button ui-widget ui-state-default ui-corner-all"
+                                style="padding:0.4em 1.2em;cursor:pointer;" onclick="siaSnakeRestart();">
+                            <i class="bi bi-arrow-clockwise" style="margin-right:0.4em;"/>Rejouer
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -55,6 +74,7 @@
         <p:remoteCommand name="saveSnakeScoreRemote"
                           action="#{snakeGameBean.saveScoreFromRequest}"
                           process="@this"
-                          update="snakeGameForm:bestScoreDisplay"/>
+                          update="snakeGameForm:bestScoreDisplay snakeGameForm:leaderboardPanel"
+                          oncomplete="siaSnakeShowLeaderboard();"/>
     </h:form>
 </ui:fragment>
