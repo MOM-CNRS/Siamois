@@ -42,6 +42,25 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
                                              @Param("institutionId") Long institutionId,
                                              @Param("permissionCode") String permissionCode);
 
+    /**
+     * Bulk version of {@link #personHasPermissionInInstitution} : which of the given institutions the
+     * person holds the permission on, in one query instead of one per institution — used to compute a
+     * whole institution list page's row-level permissions without an N+1.
+     */
+    @Query("""
+            SELECT DISTINCT prof.institution.id
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            JOIN prof.permissions perm
+            WHERE a.person.id = :personId
+              AND prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.ORGANISATION
+              AND prof.institution.id IN :institutionIds
+              AND perm.code = :permissionCode
+            """)
+    Set<Long> findInstitutionIdsWithPermission(@Param("personId") Long personId,
+                                               @Param("institutionIds") Collection<Long> institutionIds,
+                                               @Param("permissionCode") String permissionCode);
+
     @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a
@@ -87,15 +106,6 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
                                             @Param("actionUnitId") Long actionUnitId);
 
     @Query("""
-            SELECT COUNT(p) > 0
-            FROM PersonProfileAssignment ppa
-            JOIN ppa.person p
-            JOIN ppa.profile prof
-            WHERE prof.code = fr.siamois.domain.models.permissions.ProfileConstants.SUPERADMIN AND p = :admin
-            """)
-    boolean personIsSuperAdmin(Person admin);
-
-    @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a
             JOIN a.profile prof
@@ -112,6 +122,21 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             """)
     long countPersonsWithSuperAdminProfile();
 
+    /**
+     * Every person holding the {@link fr.siamois.domain.models.permissions.ProfileConstants#SUPERADMIN}
+     * profile. Used to assign them the organization manager profile of each organization, which is how
+     * a superadmin reaches organization data — see
+     * {@code PersonProfileAssignmentService#assignSuperAdminsAsOrganizationManagers}.
+     */
+    @Query("""
+            SELECT DISTINCT p
+            FROM PersonProfileAssignment a
+            JOIN a.person p
+            JOIN a.profile prof
+            WHERE prof.code = fr.siamois.domain.models.permissions.ProfileConstants.SUPERADMIN
+            """)
+    Set<Person> findAllSuperAdmins();
+
     @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a
@@ -122,17 +147,19 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
     boolean personHasAnyProfileInInstitution(@Param("personId") Long personId,
                                              @Param("institutionId") Long institutionId);
 
+    /**
+     * Bulk version of {@link #personHasAnyProfileInInstitution} : which of the given institutions the
+     * person holds any profile in, in one query instead of one per institution.
+     */
     @Query("""
-            SELECT COUNT(a) > 0
+            SELECT DISTINCT prof.institution.id
             FROM PersonProfileAssignment a
             JOIN a.profile prof
             WHERE a.person.id = :personId
-              AND prof.institution.id = :institutionId
-              AND prof.code = :profileCode
+              AND prof.institution.id IN :institutionIds
             """)
-    boolean personHasProfileWithCodeInInstitution(@Param("personId") Long personId,
-                                                  @Param("institutionId") Long institutionId,
-                                                  @Param("profileCode") String profileCode);
+    Set<Long> findInstitutionIdsWithAnyProfile(@Param("personId") Long personId,
+                                               @Param("institutionIds") Collection<Long> institutionIds);
 
     @Query("""
             SELECT DISTINCT p
@@ -153,6 +180,19 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
             WHERE prof.actionUnit.id = :actionUnitId
             """)
     Set<Person> findAllPersonsByProfileActionUnitId(@Param("actionUnitId") Long actionUnitId);
+
+    /**
+     * Bulk version of {@link #findAllPersonsByProfileActionUnitId} : (actionUnitId, personId) pairs for every
+     * action unit in the collection, in one query instead of one per action unit — used to compute member counts
+     * for a whole project list without an N+1.
+     */
+    @Query("""
+            SELECT prof.actionUnit.id, a.person.id
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            WHERE prof.actionUnit.id IN :actionUnitIds
+            """)
+    List<Object[]> findPersonIdsByProfileActionUnitIds(@Param("actionUnitIds") Collection<Long> actionUnitIds);
 
     void deleteAllByProfileActionUnitId(Long actionUnitId);
 
@@ -230,4 +270,12 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
     @Modifying
     @Query("DELETE FROM PersonProfileAssignment ppa WHERE ppa.profile.actionUnit.id = :actionUnitId AND ppa.person.id = :personId")
     void deleteByActionUnitIdAndPersonId(Long actionUnitId, Long personId);
+
+    @Query("""
+            SELECT COUNT(*) > 0
+            FROM PersonProfileAssignment ppa
+            WHERE ppa.profile.id IN :profilesId
+            AND ppa.person.id = :personId
+            """)
+    boolean personHasAnyProfile(Long personId, List<Long> profilesId);
 }

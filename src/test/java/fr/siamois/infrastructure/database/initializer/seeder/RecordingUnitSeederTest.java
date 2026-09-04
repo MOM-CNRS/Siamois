@@ -2,9 +2,11 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -51,6 +53,8 @@ class RecordingUnitSeederTest {
     InstitutionRepository institutionRepository;
     @Mock
     ConceptRepository conceptRepository;
+    @Mock
+    ConceptSeeder conceptSeeder;
     @Mock
     EntityManager entityManager;
 
@@ -119,14 +123,49 @@ class RecordingUnitSeederTest {
                         "",
                         "",
                         "",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
                         null
                 )
         );
     }
 
     @Test
+    void seed_errorMessage_usesRealExcelRowNumberWhenPresent() {
+        stubInstitutionFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
+
+        List<RecordingUnitSeeder.RecordingUnitSpecs> oneSpecList = oneSpec();
+        RecordingUnitSeeder.RecordingUnitSpecs original = oneSpecList.get(0);
+        RecordingUnitSeeder.RecordingUnitSpecs withRealRow = new RecordingUnitSeeder.RecordingUnitSpecs(
+                original.fullIdentifier(), original.identifier(), original.type(), original.geomorphologicalCycle(),
+                original.geomorphologicalAgent(), original.interpretation(), original.authorEmail(),
+                original.institutionIdentifier(), original.author(), original.createdBy(), original.excavators(),
+                original.creationTime(), original.beginDate(), original.endDate(), original.spatialUnitName(),
+                original.actionUnitIdentifier(), original.description(), original.matrixColor(),
+                original.matrixComposition(), original.matrixTexture(), original.phaseIdentifiers(),
+                original.comments(), original.taq(), original.tpq(), original.erosionShape(),
+                original.erosionOrientation(), original.erosionProfile(), original.chronologicalAttribution(),
+                42);
+
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specsWithRealRow = List.of(withRealRow);
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> seeder.seed(specsWithRealRow));
+
+        assertThat(ex.getMessage()).contains("[UE ligne 42]");
+    }
+
+    @Test
     void seed_ConceptDoesNotExist() {
         // conceptRepository left unstubbed -> returns empty list by default -> concept not found
+        stubInstitutionFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
         List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
 
         IllegalStateException ex = assertThrows(
@@ -134,7 +173,7 @@ class RecordingUnitSeederTest {
                 () -> seeder.seed(specs)
         );
 
-        assertThat(ex.getMessage()).contains("Concept").contains("introuvable");
+        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
     }
 
     @Test
@@ -200,7 +239,7 @@ class RecordingUnitSeederTest {
     }
 
     @Test
-    void seed_AlreadyExists() {
+    void seed_AlreadyExists_updatesExistingInstead() {
         stubConceptsFound();
         stubInstitutionFound();
         stubSpatialUnitFound();
@@ -212,9 +251,18 @@ class RecordingUnitSeederTest {
                 anyCollection(), any(), eq("action-01")))
                 .thenReturn(List.of(existing));
 
-        seeder.seed(oneSpec());
+        SeedCounts seedCounts = new SeedCounts();
+        seeder.seed(oneSpec(), new fr.siamois.domain.models.misc.ImportProgress(), seedCounts);
 
-        verify(recordingUnitRepository, never()).saveAll(any());
+        verify(recordingUnitRepository, times(1)).saveAll(argThat(list -> {
+            var it = list.iterator();
+            return it.hasNext() && it.next() == existing;
+        }));
+        assertThat(existing.getDescription()).isEmpty();
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.RECORDING_UNIT);
+        assertThat(counts.created()).isZero();
+        assertThat(counts.updated()).isEqualTo(1);
+        assertThat(counts.skippedDuplicate()).isZero();
     }
 
     @Test
@@ -225,7 +273,8 @@ class RecordingUnitSeederTest {
         stubActionUnitFound();
         // recordingUnitRepository bulk-existence lookup left unstubbed -> empty -> not already present
 
-        seeder.seed(oneSpec());
+        SeedCounts seedCounts = new SeedCounts();
+        seeder.seed(oneSpec(), new fr.siamois.domain.models.misc.ImportProgress(), seedCounts);
 
         verify(recordingUnitRepository, times(1)).saveAll(argThat(list -> {
             List<RecordingUnit> asList = new ArrayList<>();
@@ -234,6 +283,10 @@ class RecordingUnitSeederTest {
         }));
         verify(entityManager, times(1)).flush();
         verify(entityManager, times(1)).clear();
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.RECORDING_UNIT);
+        assertThat(counts.created()).isEqualTo(1);
+        assertThat(counts.updated()).isZero();
+        assertThat(counts.skippedDuplicate()).isZero();
     }
 
     @Test

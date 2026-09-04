@@ -1,8 +1,10 @@
 package fr.siamois.infrastructure.dataimport;
 
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -380,6 +382,13 @@ class OOXMLImportServiceTest {
         header.createCell(13).setCellValue("Date de fermeture");
         header.createCell(14).setCellValue("Unite spatiale");
         header.createCell(15).setCellValue("Unite d'action");
+        header.createCell(16).setCellValue("Commentaire");
+        header.createCell(17).setCellValue("Taq");
+        header.createCell(18).setCellValue("Tpq");
+        header.createCell(19).setCellValue("Erosion forme uri");
+        header.createCell(20).setCellValue("Erosion orientation uri");
+        header.createCell(21).setCellValue("Erosion profil uri");
+        header.createCell(22).setCellValue("Chronologie uri");
 
         Row row = s.createRow(1);
         row.createCell(0).setCellValue("123");
@@ -398,6 +407,13 @@ class OOXMLImportServiceTest {
         row.createCell(13).setCellValue("2023-02-20");
         row.createCell(14).setCellValue("US-01");
         row.createCell(15).setCellValue("UA-99");
+        row.createCell(16).setCellValue("Un commentaire");
+        row.createCell(17).setCellValue("-500");
+        row.createCell(18).setCellValue("-100");
+        row.createCell(19).setCellValue("uri?idt=th5&idc=50");
+        row.createCell(20).setCellValue("uri?idt=th6&idc=60");
+        row.createCell(21).setCellValue("uri?idt=th7&idc=70");
+        row.createCell(22).setCellValue("uri?idt=th8&idc=80");
 
         List<ImportError> errs = errors();
         List<RecordingUnitSeeder.RecordingUnitSpecs> specs =
@@ -408,34 +424,105 @@ class OOXMLImportServiceTest {
 
         RecordingUnitSeeder.RecordingUnitSpecs ru = specs.get(0);
 
-        assertThat(ru.fullIdentifier()).isEqualTo("123");
-        assertThat(ru.identifier()).isEqualTo(123);
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::fullIdentifier,
+                RecordingUnitSeeder.RecordingUnitSpecs::identifier
+        ).containsExactly("123", 123);
 
-        assertThat(ru.type()).isEqualTo(new ConceptSeeder.ConceptKey("th1", "10"));
-        assertThat(ru.geomorphologicalCycle()).isEqualTo(new ConceptSeeder.ConceptKey("th2", "20"));
-        assertThat(ru.geomorphologicalAgent()).isEqualTo(new ConceptSeeder.ConceptKey("th3", "30"));
-        assertThat(ru.interpretation()).isEqualTo(new ConceptSeeder.ConceptKey("th4", "40"));
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::type,
+                RecordingUnitSeeder.RecordingUnitSpecs::geomorphologicalCycle,
+                RecordingUnitSeeder.RecordingUnitSpecs::geomorphologicalAgent,
+                RecordingUnitSeeder.RecordingUnitSpecs::interpretation,
+                RecordingUnitSeeder.RecordingUnitSpecs::erosionShape,
+                RecordingUnitSeeder.RecordingUnitSpecs::erosionOrientation,
+                RecordingUnitSeeder.RecordingUnitSpecs::erosionProfile,
+                RecordingUnitSeeder.RecordingUnitSpecs::chronologicalAttribution
+        ).containsExactly(
+                new ConceptSeeder.ConceptKey("th1", "10"),
+                new ConceptSeeder.ConceptKey("th2", "20"),
+                new ConceptSeeder.ConceptKey("th3", "30"),
+                new ConceptSeeder.ConceptKey("th4", "40"),
+                new ConceptSeeder.ConceptKey("th5", "50"),
+                new ConceptSeeder.ConceptKey("th6", "60"),
+                new ConceptSeeder.ConceptKey("th7", "70"),
+                new ConceptSeeder.ConceptKey("th8", "80")
+        );
 
-        assertThat(ru.authorEmail()).isEqualTo("author@site.fr");
-        assertThat(ru.institutionIdentifier()).isEqualTo("INST");
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::authorEmail,
+                RecordingUnitSeeder.RecordingUnitSpecs::institutionIdentifier,
+                RecordingUnitSeeder.RecordingUnitSpecs::createdBy
+        ).containsExactly("author@site.fr", "INST", ImportSchema.SIAMOIS_SYSTEM);
+
         assertThat(ru.excavators()).containsExactly("a@b.fr", "c@d.fr");
 
-        assertThat(ru.beginDate()).isEqualTo(
-                OffsetDateTime.of(2023, 1, 10, 0, 0, 0, 0, ZoneOffset.UTC)
-        );
-        assertThat(ru.endDate()).isEqualTo(
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::beginDate,
+                RecordingUnitSeeder.RecordingUnitSpecs::endDate
+        ).containsExactly(
+                OffsetDateTime.of(2023, 1, 10, 0, 0, 0, 0, ZoneOffset.UTC),
                 OffsetDateTime.of(2023, 2, 20, 0, 0, 0, 0, ZoneOffset.UTC)
         );
 
         assertThat(ru.spatialUnitName().unitName()).isEqualTo("US-01");
         assertThat(ru.actionUnitIdentifier().fullIdentifier()).isEqualTo("UA-99");
 
-        assertThat(ru.matrixColor()).isEqualTo("Brun");
-        assertThat(ru.matrixComposition()).isEqualTo("Argile");
-        assertThat(ru.matrixTexture()).isEqualTo("Sableux");
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::matrixColor,
+                RecordingUnitSeeder.RecordingUnitSpecs::matrixComposition,
+                RecordingUnitSeeder.RecordingUnitSpecs::matrixTexture
+        ).containsExactly("Brun", "Argile", "Sableux");
 
-        assertThat(ru.createdBy()).isEqualTo(ImportSchema.SIAMOIS_SYSTEM);
         assertThat(ru.creationTime()).isNotNull();
+
+        assertThat(ru).extracting(
+                RecordingUnitSeeder.RecordingUnitSpecs::comments,
+                RecordingUnitSeeder.RecordingUnitSpecs::taq,
+                RecordingUnitSeeder.RecordingUnitSpecs::tpq
+        ).containsExactly("Un commentaire", -500, -100);
+
+        // header is Excel row 1, this is the first data row -> Excel row 2, not list position 1.
+        assertThat(ru.excelRowNumber()).isEqualTo(2);
+    }
+
+    @Test
+    void parseRecordingUnits_excelRowNumber_isRealSheetRowNotListPosition() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description");
+        row(s, 1, "", "");            // blank row, skipped by parsing -> never added to the specs list
+        row(s, 2, "UE-002", "desc");  // first spec actually produced -> Excel row 3
+
+        RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.ALL, null).get(0);
+
+        assertThat(spec.excelRowNumber()).isEqualTo(3);
+    }
+
+    @Test
+    void parseRecordingUnits_typeUriAndLabelBothPresent_keyCarriesLabelForErrorMessages() {
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description", "type uri", "type label");
+        row(s, 1, "UE-001", "desc", "uri?idt=th1&idc=10", "Fosse");
+
+        RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.ALL, null).get(0);
+
+        assertThat(spec.type()).isEqualTo(new ConceptSeeder.ConceptKey("th1", "10"));
+        assertThat(spec.type().label()).isEqualTo("Fosse");
+    }
+
+    @Test
+    void parseRecordingUnits_labelFallback_resolvesChronologicalAttributionViaConceptService() {
+        var au = actionUnitWithInstitution(7L);
+        when(conceptService.resolveConceptByLabel(7L, RecordingUnit.CHRONOLOGICAL_ATTRIBUTION_FIELD_CODE, "Age du fer"))
+                .thenReturn(conceptWithKey("th8", "80"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description", "chronologie uri", "chronologie label");
+        row(s, 1, "UE-001", "desc", "", "Age du fer");
+
+        RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.PROJECT, au).get(0);
+
+        assertThat(spec.chronologicalAttribution()).isEqualTo(new ConceptSeeder.ConceptKey("th8", "80"));
     }
 
     @Test
@@ -571,10 +658,44 @@ class OOXMLImportServiceTest {
         SpecimenSeeder.SpecimenSpecs sp = specs.get(0);
 
         assertThat(sp.fullIdentifier()).isEqualTo("SP-001");
-        assertThat(sp.type().vocabularyExtId()).isEqualTo("th12");
-        assertThat(sp.type().conceptExtId()).isEqualTo("89");
+        assertThat(sp.material().vocabularyExtId()).isEqualTo("th12");
+        assertThat(sp.material().conceptExtId()).isEqualTo("89");
+        assertThat(sp.category().vocabularyExtId()).isEqualTo("th12");
+        assertThat(sp.category().conceptExtId()).isEqualTo("88");
+        assertThat(sp.interpretation()).isNull();
         assertThat(sp.institutionIdentifier()).isEqualTo("INRAP");
         assertThat(sp.recordingUnitKey().fullIdentifier()).isEqualTo("US-001");
+    }
+
+    @Test
+    void parseSpecimens_newFields_uriAndLabelBothWork() {
+        var au = actionUnitWithInstitution(11L);
+        when(conceptService.resolveConceptByLabel(11L, Specimen.SANITARY_STATE_FIELD, "Bon état"))
+                .thenReturn(conceptWithKey("th50", "500"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Prelev",
+                "Identifiant", "Categorie uri", "Institution", "Unite d'enregistrement",
+                "Description", "Commentaire", "Numero isolat", "Taq", "Tpq",
+                "Autre identifiant", "Chronologie uri", "Nombre d'elements", "Date de collecte",
+                "Etat sanitaire uri", "Etat sanitaire label");
+        row(s, 1, "SP-010", "uri?idt=th12&idc=88", "INRAP", "US-001",
+                "Une description", "Un commentaire", "ISO-1", "-500", "-100",
+                "AUTRE-1", "uri?idt=th60&idc=600", "3", "2023-05-05",
+                "", "Bon état");
+
+        SpecimenSeeder.SpecimenSpecs sp = service.parseSpecimens(List.of(s), au, SheetMetadata.empty(), errors(), new ImportProgress()).get(0);
+
+        assertThat(sp.description()).isEqualTo("Une description");
+        assertThat(sp.comments()).isEqualTo("Un commentaire");
+        assertThat(sp.isolationNumber()).isEqualTo("ISO-1");
+        assertThat(sp.taq()).isEqualTo(-500);
+        assertThat(sp.tpq()).isEqualTo(-100);
+        assertThat(sp.otherIdentifier()).isEqualTo("AUTRE-1");
+        assertThat(sp.chronologicalAttribution()).isEqualTo(new ConceptSeeder.ConceptKey("th60", "600"));
+        assertThat(sp.numberOfElements()).isEqualTo(3);
+        assertThat(sp.collectionDate()).isEqualTo(OffsetDateTime.of(2023, 5, 5, 0, 0, 0, 0, ZoneOffset.UTC));
+        assertThat(sp.sanitaryState()).isEqualTo(new ConceptSeeder.ConceptKey("th50", "500"));
     }
 
     @Test
@@ -839,11 +960,12 @@ class OOXMLImportServiceTest {
         Sheet s = sheet(wb, "Phase",
                 "Identifiant", "Titre", "Type uri", "Description",
                 "Ordre", "Borne inferieure", "Borne superieure",
-                "Auteur", "Projet", "Institution");
+                "Auteur", "Projet", "Institution", "Periodes uri", "Mots cles uri");
         row(s, 1,
                 "PH-01", "Phase 1", "uri?idt=th240&idc=100", "Une description",
                 "2", "1000", "2000",
-                "author@site.fr", "UA-001", "INST");
+                "author@site.fr", "UA-001", "INST",
+                "uri?idt=th9&idc=90; uri?idt=th9&idc=91", "uri?idt=th10&idc=101");
 
         List<PhaseSeeder.PhaseSpecs> specs = service.parsePhases(s, null);
 
@@ -859,6 +981,28 @@ class OOXMLImportServiceTest {
         assertThat(ph.authorEmail()).isEqualTo("author@site.fr");
         assertThat(ph.actionUnitKey().fullIdentifier()).isEqualTo("UA-001");
         assertThat(ph.actionUnitKey().institutionIdentifier()).isEqualTo("INST");
+        assertThat(ph.periods()).containsExactlyInAnyOrder(
+                new ConceptSeeder.ConceptKey("th9", "90"), new ConceptSeeder.ConceptKey("th9", "91"));
+        assertThat(ph.keywords()).containsExactly(new ConceptSeeder.ConceptKey("th10", "101"));
+    }
+
+    @Test
+    void parsePhases_labelFallback_resolvesTypeAndCombinesPeriodsUriAndLabelColumns() {
+        var au = actionUnitWithInstitution(13L);
+        when(conceptService.resolveConceptByLabel(13L, Phase.TYPE_FIELD, "Occupation"))
+                .thenReturn(conceptWithKey("th20", "200"));
+        when(conceptService.resolveConceptByLabel(13L, Phase.PERIOD_FIELD, "Age du bronze"))
+                .thenReturn(conceptWithKey("th21", "210"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "Phase", "Identifiant", "type uri", "type label", "Periodes uri", "Periodes label");
+        row(s, 1, "PH-10", "", "Occupation", "uri?idt=th21&idc=209", "Age du bronze");
+
+        PhaseSeeder.PhaseSpecs ph = service.parsePhases(List.of(s), au, SheetMetadata.empty(), errors(), new ImportProgress()).get(0);
+
+        assertThat(ph.type()).isEqualTo(new ConceptSeeder.ConceptKey("th20", "200"));
+        assertThat(ph.periods()).containsExactlyInAnyOrder(
+                new ConceptSeeder.ConceptKey("th21", "209"), new ConceptSeeder.ConceptKey("th21", "210"));
     }
 
     @Test

@@ -2,17 +2,12 @@ package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,10 +16,18 @@ import java.util.stream.Collectors;
  * Checks user permissions against the profile-based permission system.
  * <p>
  * A permission is granted when one of the profiles assigned to the person
- * ({@code PersonProfileAssignment}) contains it within a matching scope.
- * Scopes cascade: an INSTANCE-scoped profile grants the permission everywhere,
- * an ORGANISATION-scoped profile grants it within its institution, and a
+ * ({@code PersonProfileAssignment}) contains it within a matching scope: an INSTANCE-scoped profile
+ * grants it everywhere, an ORGANISATION-scoped profile grants it within its institution, and a
  * PROJECT-scoped profile grants it on its action unit only.
+ * <p>
+ * Every {@link PermissionConstants} code belongs to exactly one scope — a profile only ever holds codes
+ * matching its own scope (see {@code ProfileService}). A capability available at more than one scope
+ * (e.g. "edit recording units") therefore has one distinct code per scope
+ * ({@code PROJECT_EDIT_RECORDING_UNITS} / {@code ORGANIZATION_EDIT_RECORDING_UNITS} /
+ * {@code INSTANCE_EDIT_RECORDING_UNITS}), and the methods below explicitly check each scope's own code in
+ * turn (instance, then organisation, then project) — see the 5-arg overload of
+ * {@link #hasProjectPermission(UserInfo, Long, String, String, String)} — rather than relying on the same
+ * code being reused across scopes.
  * <p>
  * Replaces the removed {@code PermissionService}.
  */
@@ -103,6 +106,25 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Same as {@link #hasProjectPermission(UserInfo, Long, String)}, for a capability whose organisation-
+     * and instance-wide counterparts are different permission codes than the project-level one (e.g.
+     * {@code PROJECT_EDIT_RECORDING_UNITS} vs. {@code ORGANIZATION_EDIT_RECORDING_UNITS} vs.
+     * {@code INSTANCE_EDIT_RECORDING_UNITS}) — checks instance, then organisation, then project.
+     *
+     * @param instanceCode     the counterpart code that grants this everywhere, held on an INSTANCE-scoped profile
+     * @param organizationCode the counterpart code that grants this org-wide, held on an ORGANISATION-scoped profile
+     * @param projectCode      the code granting this on the action unit itself
+     */
+    public boolean hasProjectPermission(UserInfo user, Long actionUnitId, String instanceCode, String organizationCode, String projectCode) {
+        if (hasInstancePermission(user.getUser(), instanceCode) || hasOrganizationPermission(user, organizationCode)) {
+            return true;
+        }
+        PersonDTO person = user.getUser();
+        return actionUnitId != null && person != null && person.getId() != null
+                && assignmentRepository.personHasPermissionInActionUnit(person.getId(), actionUnitId, projectCode);
+    }
+
+    /**
      * Bulk version of {@link #hasProjectPermission} : which of the given action units the user holds
      * {@code permissionCode} on, computed in at most one query total instead of one query (or up to
      * three, counting the org/instance checks) per action unit. Meant for a whole table page's worth of
@@ -154,7 +176,10 @@ public class ProfilePermissionService {
      */
     public boolean hasRecordingUnitWritePermission(UserInfo user, RecordingUnitDTO recordingUnit) {
         Long actionUnitId = recordingUnit.getActionUnit() != null ? recordingUnit.getActionUnit().getId() : null;
-        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+                PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
+                PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
     }
 
     /**
@@ -167,7 +192,10 @@ public class ProfilePermissionService {
      */
     public boolean hasSpecimenWritePermission(UserInfo user, SpecimenDTO specimen) {
         Long actionUnitId = specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null;
-        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS);
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_FINDS,
+                PermissionConstants.ORGANIZATION_EDIT_FINDS,
+                PermissionConstants.PROJECT_EDIT_FINDS);
     }
 
     /**
@@ -180,7 +208,10 @@ public class ProfilePermissionService {
      */
     public boolean hasPhaseWritePermission(UserInfo user, PhaseDTO phase) {
         Long actionUnitId = phase.getActionUnit() != null ? phase.getActionUnit().getId() : null;
-        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_PHASES);
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_PHASES,
+                PermissionConstants.ORGANIZATION_EDIT_PHASES,
+                PermissionConstants.PROJECT_EDIT_PHASES);
     }
 
     /**
@@ -193,7 +224,10 @@ public class ProfilePermissionService {
      */
     public boolean hasContainerWritePermission(UserInfo user, ContainerDTO container) {
         Long actionUnitId = container.getActionUnit() != null ? container.getActionUnit().getId() : null;
-        return hasProjectPermission(user, actionUnitId, PermissionConstants.PROJECT_EDIT_CONTAINERS);
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
+                PermissionConstants.PROJECT_EDIT_CONTAINERS);
     }
 
     /**
@@ -206,10 +240,105 @@ public class ProfilePermissionService {
      * @return true if the user can write the action unit
      */
     public boolean hasActionUnitWritePermission(UserInfo user, ActionUnitDTO actionUnit) {
-        if (hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+        if (hasInstancePermission(user.getUser(), PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)
+                || hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
             return true;
         }
         return actionUnit != null && hasProjectPermission(user, actionUnit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
+    }
+
+    /**
+     * Checks if the user can create a new {@link fr.siamois.domain.models.actionunit.ActionUnit}, i.e.
+     * holds {@link PermissionConstants#ORGANIZATION_MANAGE_ACTIONS} (edit-everything) or
+     * {@link PermissionConstants#ORGANIZATION_CREATE_ACTIONS} (create-only) on the user's institution.
+     * Unlike {@link #hasActionUnitWritePermission}, this does not grant any right on existing action
+     * units.
+     *
+     * @param user the user information
+     * @return true if the user can create a new action unit
+     */
+    public boolean hasActionUnitCreatePermission(UserInfo user) {
+        return hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                || hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
+    }
+
+    /**
+     * Checks if the person can activate the given institution, i.e. holds a profile in it or may
+     * manage its settings.
+     *
+     * @param person      the person to check
+     * @param institution the institution to activate
+     * @return true if the person can activate the institution
+     */
+    public boolean canAccessInstitution(PersonDTO person, InstitutionDTO institution) {
+        if (person == null || person.getId() == null || institution == null || institution.getId() == null) {
+            return false;
+        }
+        return assignmentRepository.personHasAnyProfileInInstitution(person.getId(), institution.getId())
+                || hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS)
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+    }
+
+    /**
+     * Bulk version of {@link #hasOrganizationPermission(PersonDTO, InstitutionDTO, String)} : which of the
+     * given institutions the person holds the permission on, in at most one query total instead of one (or
+     * two) per institution.
+     */
+    public Set<Long> institutionIdsWithOrganizationPermission(PersonDTO person, Collection<InstitutionDTO> institutions,
+                                                               String permissionCode) {
+        Set<Long> ids = institutionIds(institutions);
+        if (ids.isEmpty() || person == null || person.getId() == null) {
+            return Set.of();
+        }
+        if (hasInstancePermission(person, permissionCode)) {
+            return ids;
+        }
+        return assignmentRepository.findInstitutionIdsWithPermission(person.getId(), ids, permissionCode);
+    }
+
+    /**
+     * Bulk version of {@link #canAccessInstitution} : which of the given institutions the person may
+     * activate, in at most two queries total instead of up to four per institution — used for a whole
+     * institution list page's row-level "activate" toggle without an N+1.
+     */
+    public Set<Long> institutionIdsPersonCanAccess(PersonDTO person, Collection<InstitutionDTO> institutions) {
+        Set<Long> ids = institutionIds(institutions);
+        if (ids.isEmpty() || person == null || person.getId() == null) {
+            return Set.of();
+        }
+        if (hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS)) {
+            return ids;
+        }
+        Set<Long> accessibleIds = new HashSet<>(assignmentRepository.findInstitutionIdsWithAnyProfile(person.getId(), ids));
+        accessibleIds.addAll(institutionIdsWithOrganizationPermission(person, institutions, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS));
+        return accessibleIds;
+    }
+
+    /**
+     * Bulk version of the "may manage this institution's settings" check (holds
+     * {@link PermissionConstants#INSTANCE_MANAGE_SETTINGS} or
+     * {@link PermissionConstants#ORGANIZATION_MANAGE_SETTINGS} on it) — used for a whole institution list
+     * page's row-level settings button without an N+1.
+     */
+    public Set<Long> institutionIdsPersonCanManageSettings(PersonDTO person, Collection<InstitutionDTO> institutions) {
+        Set<Long> ids = institutionIds(institutions);
+        if (ids.isEmpty() || person == null || person.getId() == null) {
+            return Set.of();
+        }
+        if (hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)) {
+            return ids;
+        }
+        return institutionIdsWithOrganizationPermission(person, institutions, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+    }
+
+    private static Set<Long> institutionIds(Collection<InstitutionDTO> institutions) {
+        if (institutions == null) {
+            return Set.of();
+        }
+        return institutions.stream()
+                .map(InstitutionDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -222,7 +351,8 @@ public class ProfilePermissionService {
      * @return true if the institution data can be displayed
      */
     public boolean canViewInstitutionData(PersonDTO person, InstitutionDTO institution) {
-        return hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_ACCESS);
+        return hasInstancePermission(person, PermissionConstants.INSTANCE_ACCESS_ORGANIZATIONS)
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_ACCESS);
     }
 
     /**

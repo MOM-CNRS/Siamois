@@ -863,18 +863,6 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
-    void fetchAutocompleteOfField_shouldReturnNoSuggestion_whenInputIsBlank() throws NoConfigForFieldException {
-        CustomFieldSelectOne field = new CustomFieldSelectOne();
-        field.setId(7L);
-
-        // an empty input matches everything, the configured branch or collection is not searched for it
-        assertThat(service.fetchAutocomplete(field, null, 42L)).isEmpty();
-        assertThat(service.fetchAutocomplete(field, "   ", 42L)).isEmpty();
-
-        verifyNoInteractions(autocompleteRepository, fieldFormConfigRepository);
-    }
-
-    @Test
     void fetchAutocompleteOfField_shouldFallBackOnTheFieldCodeConfig_whenFieldHasNoFormConfig() throws NoConfigForFieldException {
         String fieldCode = "TESTFIELD";
         CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();

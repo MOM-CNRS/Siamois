@@ -36,7 +36,7 @@
                                             completeMethod="#{dialogBean.completeMember}"
                                             queryDelay="300"
                                             var="u"
-                                            itemLabel="#{u.displayName()}"
+                                            itemLabel="#{dialogBean.memberChipLabel(u)}"
                                             itemValue="#{u}"
                                             converter="#{personDTOConverter}"
                                             placeholder="#{langBean.msg('newOrganizationMember.placeholder.search')}"
@@ -46,23 +46,23 @@
                                             dropdown="false">
                                 <p:ajax event="itemSelect" process="@this" update="@form"/>
                                 <p:ajax event="itemUnselect" process="@this" update="@form"/>
-                                <f:facet name="footer">
-                                    <p:commandLink action="#{dialogBean.goToInvite()}"
-                                                   process="@this"
-                                                   update="@form"
-                                                   styleClass="invite-by-email-link">
-                                        <i class="bi bi-envelope"/>
-                                        #{langBean.msg('newOrganizationMember.action.inviteByEmail')}
-                                    </p:commandLink>
-                                </f:facet>
                             </p:autoComplete>
-                            <p:commandLink action="#{dialogBean.goToInvite()}"
-                                           process="@this"
-                                           update="@form"
-                                           styleClass="invite-by-email-link">
-                                <i class="bi bi-envelope"/>
-                                #{langBean.msg('newOrganizationMember.action.inviteByEmail')}
-                            </p:commandLink>
+                            <div class="new-member-secondary-actions">
+                                <p:commandLink action="#{dialogBean.goToInvite()}"
+                                               process="@this"
+                                               update="@form"
+                                               styleClass="invite-by-email-link">
+                                    <i class="bi bi-envelope"/>
+                                    #{langBean.msg('newOrganizationMember.action.inviteByEmail')}
+                                </p:commandLink>
+                                <p:commandLink action="#{dialogBean.goToCsvImport()}"
+                                               process="@this"
+                                               update="@form"
+                                               styleClass="invite-by-email-link">
+                                    <i class="bi bi-upload"/>
+                                    #{langBean.msg('newOrganizationMember.action.importCsv')}
+                                </p:commandLink>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -122,6 +122,60 @@
                         </div>
                     </h:panelGroup>
 
+                    <h:panelGroup layout="block" styleClass="csv-import-step"
+                                  rendered="#{dialogBean.stepCsvImport}">
+
+                        <h:panelGroup layout="block" rendered="#{empty dialogBean.csvPreviewRows}">
+                            <p class="csv-import-hint">#{langBean.msg('newOrganizationMember.csv.hint')}</p>
+                            <p:commandButton value="#{langBean.msg('newOrganizationMember.csv.action.downloadExample')}"
+                                             icon="pi pi-arrow-down"
+                                             styleClass="ui-button-outlined csv-download-example"
+                                             style="background-color: white;">
+                                <p:fileDownload value="#{dialogBean.csvImportTemplate}"/>
+                            </p:commandButton>
+                            <p:fileUpload listener="#{dialogBean.handleCsvUpload}"
+                                          mode="advanced"
+                                          dragDrop="true"
+                                          auto="true"
+                                          update="@form"
+                                          allowTypes="/(\.|\/)(csv)$/"
+                                          invalidSizeMessage="#{langBean.msg('newOrganizationMember.csv.error.tooLarge')}"
+                                          invalidFileMessage="#{langBean.msg('newOrganizationMember.csv.error.wrongType')}"
+                                          styleClass="modern-dropzone dropzone-csv"
+                                          label="#{langBean.msg('newOrganizationMember.csv.dropzone')}">
+                                <p:validateFile sizeLimit="1048576" allowTypes="/(\.|\/)(csv)$/"/>
+                            </p:fileUpload>
+                            <h:panelGroup layout="block" styleClass="csv-import-error"
+                                          rendered="#{not empty dialogBean.csvGlobalError}">
+                                <i class="bi bi-exclamation-triangle"/>
+                                #{dialogBean.csvGlobalError}
+                            </h:panelGroup>
+                        </h:panelGroup>
+
+                        <h:panelGroup layout="block" rendered="#{not empty dialogBean.csvPreviewRows}">
+                            <div class="csv-preview-table-wrapper">
+                                <p:dataTable value="#{dialogBean.csvPreviewRows}" var="row" styleClass="csv-preview-table">
+                                    <p:column headerText="#{langBean.msg('newOrganizationMember.label.firstname')}">
+                                        <p:outputLabel value="#{row.name}"/>
+                                    </p:column>
+                                    <p:column headerText="#{langBean.msg('newOrganizationMember.label.lastname')}">
+                                        <p:outputLabel value="#{row.lastname}"/>
+                                    </p:column>
+                                    <p:column headerText="#{langBean.msg('newOrganizationMember.label.email')}">
+                                        <p:outputLabel value="#{row.email}"/>
+                                    </p:column>
+                                    <p:column headerText="#{langBean.msg('newOrganizationMember.csv.column.status')}">
+                                        <span class="chip #{row.statusChipClass()}">#{dialogBean.csvRowStatusLabel(row)}</span>
+                                    </p:column>
+                                    <p:column headerText="#{langBean.msg('newOrganizationMember.csv.column.include')}">
+                                        <p:selectBooleanCheckbox value="#{row.included}" disabled="#{row.error != null}"/>
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
+                        </h:panelGroup>
+
+                    </h:panelGroup>
+
                 </div>
 
                 <div class="dialog-buttons">
@@ -131,6 +185,12 @@
                                      styleClass="ui-button-secondary"
                                      action="#{dialogBean.back()}"
                                      update="@form"/>
+                    <p:commandButton value="#{langBean.msg('newOrganizationMember.action.back')}"
+                                     rendered="#{dialogBean.stepCsvImport}"
+                                     immediate="true"
+                                     styleClass="ui-button-secondary"
+                                     action="#{dialogBean.cancelCsvImport()}"
+                                     update="@form"/>
                     <p:commandButton value="#{langBean.msg('common.action.cancel')}"
                                      rendered="#{dialogBean.stepMain}"
                                      immediate="true"
@@ -138,10 +198,17 @@
                                      action="#{dialogBean.exit()}"
                                      update="@form"/>
                     <p:commandButton value="#{dialogBean.primaryActionLabel}"
+                                     rendered="#{dialogBean.stepMain or dialogBean.stepInvite}"
                                      disabled="#{!dialogBean.primaryActionEnabled}"
                                      action="#{dialogBean.primaryAction()}"
                                      process="@form"
                                      update="@form #{updateTarget}"/>
+                    <p:commandButton value="#{langBean.msg('newOrganizationMember.csv.action.confirm', dialogBean.csvImportCount)}"
+                                     rendered="#{dialogBean.stepCsvImport and not empty dialogBean.csvPreviewRows}"
+                                     disabled="#{!dialogBean.csvImportEnabled}"
+                                     action="#{dialogBean.confirmCsvImport()}"
+                                     process="@form"
+                                     update="@form"/>
                 </div>
             </form:csrfform>
         </div>

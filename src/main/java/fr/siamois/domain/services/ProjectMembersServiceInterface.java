@@ -47,11 +47,14 @@ public interface ProjectMembersServiceInterface {
 
     /**
      * Removes a member from the given project.
+     * <p>
+     * Refuses to remove the last remaining {@code PROJECT_MANAGER} of the project.
      *
      * @param project the project the person is removed from
      * @param member  the member to remove
+     * @return true if the member was actually removed, false if the removal was refused
      */
-    void removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member);
+    boolean removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member);
 
     /**
      * Assigns a profile to a project member.

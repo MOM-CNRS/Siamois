@@ -692,7 +692,7 @@ public class FlowBean implements Serializable {
         UserInfo info = sessionSettings.getUserInfo();
         return profilePermissionService.hasInstancePermission(info.getUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS)
                 || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_PLACES)
-                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+                || profilePermissionService.hasActionUnitCreatePermission(info);
     }
 
     public String invokeOnClick(MethodExpression method, Long id, AbstractPanel panelModel) {
@@ -716,7 +716,7 @@ public class FlowBean implements Serializable {
      * @return true if creation is allowed
      */
     public boolean isActionUnitCreateAllowed() {
-        return profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+        return profilePermissionService.hasActionUnitCreatePermission(sessionSettings.getUserInfo());
     }
 
     /**
@@ -729,9 +729,7 @@ public class FlowBean implements Serializable {
             return;
         }
 
-        if (selectedInstitution != null
-                && (institutionService.personIsInInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)
-                || profilePermissionService.hasOrganizationPermission(sessionSettings.getUserInfo().getUser(), selectedInstitution, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))) {
+        if (profilePermissionService.canAccessInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)) {
             sessionSettings.setSelectedInstitution(selectedInstitution);
             PrimeFaces.current().ajax().update("navBar", "flow");
             institutionChangeEventPublisher.publishInstitutionChangeEvent();

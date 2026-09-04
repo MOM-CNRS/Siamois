@@ -27,10 +27,12 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
     boolean personIsInstitutionManagerOf(Long institutionId, Long personId);
 
     /**
-     * Institutions the person is allowed to display, based on the profile permission system:
-     * an INSTANCE-scoped profile holding one of {@code instancePermissionCodes} grants every institution,
-     * an ORGANISATION-scoped profile holding {@code organizationAccessCode} grants its institution,
-     * and a PROJECT-scoped profile grants the institution owning its action unit.
+     * Institutions the person is allowed to display: those carrying a profile assigned to the person,
+     * whether ORGANISATION-scoped (the institution itself) or PROJECT-scoped (the institution owning
+     * the action unit). INSTANCE-scoped profiles carry no institution and grant nothing here — the
+     * superadmin sees an organization because they are assigned its
+     * {@link fr.siamois.domain.models.permissions.ProfileConstants#ORGANIZATION_MANAGER} profile like
+     * any other manager.
      */
     @Query("""
             SELECT DISTINCT i FROM PersonProfileAssignment a

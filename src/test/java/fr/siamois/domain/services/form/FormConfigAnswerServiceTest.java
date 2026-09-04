@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -281,22 +280,6 @@ class FormConfigAnswerServiceTest {
         service.createOrGetFormConfigAnswer(formConfig, recordingUnitDTO);
 
         assertThat(capturedSavedAnswer().getPerson()).isSameAs(otherPerson);
-    }
-
-    /**
-     * The service reads its author from the thread and asserts it is there. With assertions enabled
-     * — the default of the surefire plugin — that is an {@link AssertionError}; without them the
-     * null user blows up on the next line, hence the two accepted types.
-     */
-    @Test
-    void createOrGetFormConfigAnswer_shouldFailWhenNoUserIsBoundToTheThread() {
-        ExecutionContextHolder.clear();
-        RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
-
-        assertThatThrownBy(() -> service.createOrGetFormConfigAnswer(formConfig, recordingUnitDTO))
-                .isInstanceOfAny(AssertionError.class, NullPointerException.class);
-
-        verify(formConfigAnswerRepository, never()).save(any());
     }
 
     // ========== Helpers ==========

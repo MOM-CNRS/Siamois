@@ -116,6 +116,9 @@ class RecordingUnitServiceTest {
     @Mock
     private jakarta.persistence.EntityManager entityManager;
 
+    @Mock
+    private RecordingUnitSortFilterService recordingUnitSortFilterService;
+
     @InjectMocks
     private RecordingUnitService recordingUnitService;
 
@@ -127,6 +130,17 @@ class RecordingUnitServiceTest {
         // @InjectMocks uses constructor injection here, which skips leftover fields like the
         // @PersistenceContext EntityManager - wire it explicitly so save() can call it.
         org.springframework.test.util.ReflectionTestUtils.setField(recordingUnitService, "entityManager", entityManager);
+        // The specification building moved to RecordingUnitSortFilterService, but the search/count
+        // tests below assert on the real closure behaviour (which repository calls it makes, and
+        // when). Route the collaborator through a real instance backed by the same repository mock
+        // rather than stubbing a specification per test.
+        RecordingUnitSortFilterService realSortFilter = new RecordingUnitSortFilterService(recordingUnitRepository);
+        lenient().when(recordingUnitSortFilterService.prepareSpecs(any(), any()))
+                .thenAnswer(invocation -> realSortFilter.prepareSpecs(invocation.getArgument(0), invocation.getArgument(1)));
+        lenient().when(recordingUnitSortFilterService.applySyntheticSort(any(), any()))
+                .thenAnswer(invocation -> realSortFilter.applySyntheticSort(invocation.getArgument(0), invocation.getArgument(1)));
+        lenient().when(recordingUnitSortFilterService.stripSyntheticSort(any()))
+                .thenAnswer(invocation -> realSortFilter.stripSyntheticSort(invocation.getArgument(0)));
     }
 
     @AfterEach
@@ -303,6 +317,24 @@ class RecordingUnitServiceTest {
     void countByInstitution_success() {
         when(recordingUnitRepository.countByCreatedByInstitutionId(3L)).thenReturn(3L);
         assertEquals(3, recordingUnitService.countByInstitutionId(3L));
+    }
+
+    @Test
+    void countByInstitutionIds_shouldReturnEmptyMap_whenNoIdsGiven() {
+        Map<Long, Long> result = recordingUnitService.countByInstitutionIds(List.of());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    void countByInstitutionIds_shouldMapCountsByInstitutionId() {
+        when(recordingUnitRepository.countByCreatedByInstitutionIds(List.of(3L, 4L)))
+                .thenReturn(List.of(new Object[]{3L, 7L}, new Object[]{4L, 2L}));
+
+        Map<Long, Long> result = recordingUnitService.countByInstitutionIds(List.of(3L, 4L));
+
+        assertThat(result).containsEntry(3L, 7L).containsEntry(4L, 2L);
     }
 
     @Test
@@ -836,66 +868,55 @@ class RecordingUnitServiceTest {
         }
 
         // ------------------------------------------------------------------
-        // autocompleteInActionUnit
+        // findMatchingInInstitutionByFullIdentifier
         // ------------------------------------------------------------------
 
         @Test
-        void autocompleteInActionUnit_withQuery_delegatesToRepositoryAndConverts() {
+        void findMatchingInInstitutionByFullIdentifier_convertsRepositoryResults() {
             RecordingUnitSummaryDTO summaryDTO = new RecordingUnitSummaryDTO();
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq("US-"), any(Pageable.class)))
-                    .thenReturn(List.of(ru));
-            when(conversionService.convert(ru, RecordingUnitSummaryDTO.class)).thenReturn(summaryDTO);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(ru)));
+            when(recordingUnitSummaryMapper.convert(ru)).thenReturn(summaryDTO);
 
             List<RecordingUnitSummaryDTO> result =
-                    recordingUnitService.autocompleteInActionUnit(10L, "US-", 5);
+                    recordingUnitService.findMatchingInInstitutionByFullIdentifier(institution, "US-", 5);
 
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0)).isSameAs(summaryDTO);
-            verify(recordingUnitRepository)
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq("US-"), any(Pageable.class));
+            assertThat(result).containsExactly(summaryDTO);
         }
 
         @Test
-        void autocompleteInActionUnit_nullQuery_treatedAsEmptyString() {
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq(""), any(Pageable.class)))
-                    .thenReturn(List.of());
+        void findMatchingInInstitutionByFullIdentifier_respectsLimit() {
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            when(recordingUnitRepository.findAll(any(Specification.class), pageableCaptor.capture()))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            recordingUnitService.findMatchingInInstitutionByFullIdentifier(institution, "US-", 3);
+
+            assertEquals(3, pageableCaptor.getValue().getPageSize());
+        }
+
+        @Test
+        void findMatchingInInstitutionByFullIdentifier_noMatch_returnsEmptyList() {
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
 
             List<RecordingUnitSummaryDTO> result =
-                    recordingUnitService.autocompleteInActionUnit(10L, null, 5);
+                    recordingUnitService.findMatchingInInstitutionByFullIdentifier(institution, "absent", 5);
 
             assertThat(result).isEmpty();
-            verify(recordingUnitRepository)
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            eq(10L), eq(""), any(Pageable.class));
+            verifyNoInteractions(recordingUnitSummaryMapper);
         }
 
         @Test
-        void autocompleteInActionUnit_respectsLimit() {
-            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            anyLong(), anyString(), pageableCaptor.capture()))
-                    .thenReturn(List.of());
+        void findMatchingInInstitutionByFullIdentifier_blankQuery_stillQueriesTheInstitution() {
+            // fullIdentifierContains contributes no predicate on a blank query; the institution
+            // scope must still apply, so the dropdown lists that institution's units only
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
 
-            recordingUnitService.autocompleteInActionUnit(10L, "x", 3);
+            recordingUnitService.findMatchingInInstitutionByFullIdentifier(institution, "", 5);
 
-            assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(3);
-        }
-
-        @Test
-        void autocompleteInActionUnit_noResults_returnsEmptyList() {
-            when(recordingUnitRepository
-                    .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                            anyLong(), anyString(), any()))
-                    .thenReturn(List.of());
-
-            assertThat(recordingUnitService.autocompleteInActionUnit(10L, "zzz", 10)).isEmpty();
-            verifyNoInteractions(conversionService);
+            verify(recordingUnitRepository).findAll(any(Specification.class), any(Pageable.class));
         }
 
         // ------------------------------------------------------------------
@@ -2291,135 +2312,12 @@ class RecordingUnitServiceTest {
     }
 
     // =====================================================================
-    // prepareSpecs / userFilterSpecs / resolveAncestorClosure /
-    // computeAncestorClosure / initializeHierarchy
+    // initializeHierarchy
+    // (prepareSpecs / userFilterSpecs / closures : voir RecordingUnitSortFilterServiceTest)
     // =====================================================================
 
     @Nested
-    class SpecsAndClosureAndHierarchyTests {
-
-        @Test
-        void userFilterSpecs_allColumnsSet_buildsSpecificationWithoutError() {
-            FilterDTO filters = new FilterDTO(false);
-            filters.add(RecordingUnitSpec.FULL_IDENTIFIER, "abc", FilterDTO.FilterType.CONTAINS);
-            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(1L), FilterDTO.FilterType.EQUAL);
-            filters.add(RecordingUnitSpec.MATRIX_FILTER, "clay", FilterDTO.FilterType.CONTAINS);
-            filters.add(RecordingUnitSpec.SPATIAL_UNIT_FILTER, List.of(2L), FilterDTO.FilterType.EQUAL);
-            filters.add(RecordingUnitSpec.ACTION_UNIT_FILTER, List.of(3L), FilterDTO.FilterType.EQUAL);
-            filters.add(RecordingUnitSpec.CONTRIBUTORS_FILTER, List.of(4L), FilterDTO.FilterType.EQUAL);
-            filters.add(RecordingUnitSpec.TYPE_FILTER, List.of(5L), FilterDTO.FilterType.EQUAL);
-            filters.add(RecordingUnitSpec.OPENING_DATE_FILTER,
-                    List.of(java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now()),
-                    FilterDTO.FilterType.EQUAL);
-            filters.add(RecordingUnitSpec.CLOSING_DATE_FILTER,
-                    List.of(java.time.OffsetDateTime.now()), FilterDTO.FilterType.EQUAL);
-            filters.add(RecordingUnitSpec.PARENTS_FILTER, List.of(6L), FilterDTO.FilterType.EQUAL);
-
-            Specification<RecordingUnit> spec = RecordingUnitService.userFilterSpecs(filters);
-
-            assertNotNull(spec);
-        }
-
-        @Test
-        void prepareSpecs_rootOnlyNoUserFilters_returnsRootSpecWithoutRepositoryCall() {
-            InstitutionDTO institution = new InstitutionDTO();
-            institution.setId(1L);
-            FilterDTO filters = new FilterDTO(true);
-
-            Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(institution, filters);
-
-            assertNotNull(spec);
-            verifyNoInteractions(recordingUnitRepository);
-        }
-
-        @Test
-        void prepareSpecs_rootOnlyWithUserFilters_emptyClosure_returnsDisjunctionSpec() {
-            InstitutionDTO institution = new InstitutionDTO();
-            institution.setId(1L);
-            FilterDTO filters = new FilterDTO(true);
-            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
-
-            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
-
-            Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(institution, filters);
-
-            assertNotNull(spec);
-            verify(recordingUnitRepository).findAll(any(Specification.class));
-            verify(recordingUnitRepository, never()).findAncestorClosure(any());
-        }
-
-        @Test
-        void prepareSpecs_rootOnlyWithUserFilters_nonEmptyClosure_returnsRootAndClosureSpec() {
-            InstitutionDTO institution = new InstitutionDTO();
-            institution.setId(1L);
-            FilterDTO filters = new FilterDTO(true);
-            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
-
-            RecordingUnit match = new RecordingUnit();
-            match.setId(42L);
-            match.setFullIdentifier("M42");
-            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
-            when(recordingUnitRepository.findAncestorClosure(new Long[]{42L})).thenReturn(List.of(42L, 1L));
-
-            Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(institution, filters);
-
-            assertNotNull(spec);
-        }
-
-        @Test
-        void prepareSpecs_notRootOnly_returnsUserFilterSpecWithoutRepositoryCall() {
-            InstitutionDTO institution = new InstitutionDTO();
-            institution.setId(1L);
-            FilterDTO filters = new FilterDTO(false);
-
-            Specification<RecordingUnit> spec = recordingUnitService.prepareSpecs(institution, filters);
-
-            assertNotNull(spec);
-            verifyNoInteractions(recordingUnitRepository);
-        }
-
-        @Test
-        void computeAncestorClosure_notRootOnly_returnsEmptySet() {
-            InstitutionDTO institution = new InstitutionDTO();
-            institution.setId(1L);
-            FilterDTO filters = new FilterDTO(false);
-            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
-
-            Set<Long> result = recordingUnitService.computeAncestorClosure(institution, filters);
-
-            assertTrue(result.isEmpty());
-            verifyNoInteractions(recordingUnitRepository);
-        }
-
-        @Test
-        void computeAncestorClosure_rootOnlyNoUserFilters_returnsEmptySet() {
-            InstitutionDTO institution = new InstitutionDTO();
-            institution.setId(1L);
-            FilterDTO filters = new FilterDTO(true);
-
-            Set<Long> result = recordingUnitService.computeAncestorClosure(institution, filters);
-
-            assertTrue(result.isEmpty());
-            verifyNoInteractions(recordingUnitRepository);
-        }
-
-        @Test
-        void computeAncestorClosure_rootOnlyWithUserFilters_returnsResolvedClosure() {
-            InstitutionDTO institution = new InstitutionDTO();
-            institution.setId(1L);
-            FilterDTO filters = new FilterDTO(true);
-            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
-
-            RecordingUnit match = new RecordingUnit();
-            match.setId(42L);
-            match.setFullIdentifier("M42");
-            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
-            when(recordingUnitRepository.findAncestorClosure(new Long[]{42L})).thenReturn(List.of(42L, 1L));
-
-            Set<Long> result = recordingUnitService.computeAncestorClosure(institution, filters);
-
-            assertEquals(Set.of(42L, 1L), result);
-        }
+    class HierarchyTests {
 
         @Test
         void initializeHierarchy_setsParentsAndChildrenFromRepository() {

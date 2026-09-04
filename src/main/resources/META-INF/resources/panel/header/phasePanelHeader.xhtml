@@ -25,12 +25,16 @@
         <p:tooltip autoHide="false" value="Fiche suivante" position="bottom" for="next"/>
     </div>
 
-    <chip:editableIdentifierChip panel="#{panelModel}"
+    <chip:editableIdentifierChip id="idChipComposite" panel="#{panelModel}"
                                   value="#{panelModel.unit != null ? panelModel.unit.identifier : panelModel.titleCodeOrTitle}"
                                   styleClass="phase-chip-alt"
                                   icon="#{panelModel.icon}"/>
 
-    <chip:conceptChip concept="#{panelModel.unit.type}" styleClass="mr-2 phase-type-chip"/>
+    <chip:editableCategoryChip id="categoryChipComposite" panel="#{panelModel}"/>
+
+    <ui:include src="/pages/shared/panel/headerEditControls.xhtml">
+        <ui:param name="panel" value="#{panelModel}"/>
+    </ui:include>
 
     <p:chip
             label="#{panelModel.unit.createdBy.displayName()}"

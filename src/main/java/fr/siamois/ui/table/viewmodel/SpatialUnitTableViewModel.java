@@ -167,9 +167,9 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
     @Override
     public boolean isRendered(TableColumn column, String key, SpatialUnitDTO su) {
         return switch (key) {
-            case "writeMode" -> flowBean.getIsWriteMode();
+            case "writeMode" -> canUserEditRow(su);
             case "spatialUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_PLACES);
-            case "actionUnitCreateAllowed" -> profilePermissionService.hasOrganizationPermission(flowBean.getSessionSettings().getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+            case "actionUnitCreateAllowed" -> profilePermissionService.hasActionUnitCreatePermission(flowBean.getSessionSettings().getUserInfo());
             default -> false;
         };
     }
@@ -197,17 +197,17 @@ public class SpatialUnitTableViewModel extends EntityTableViewModel<SpatialUnitD
                         .styleClass(SIA_ICON_BTN)
                         .build(),
 
-                // Add children
+                // Add Parent
                 RowAction.builder()
-                        .action(TableColumnAction.NEW_CHILDREN)
+                        .action(TableColumnAction.NEW_PARENT)
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)
                         .build(),
 
-                // Add Parent
+                // Add children
                 RowAction.builder()
-                        .action(TableColumnAction.NEW_PARENT)
+                        .action(TableColumnAction.NEW_CHILDREN)
                         .processExpr(THIS)
                         .updateSelfTable(true)
                         .styleClass(SIA_ICON_BTN)

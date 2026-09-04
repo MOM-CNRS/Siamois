@@ -3,11 +3,13 @@ package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.services.dataimport.ImportAsyncRunner;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.SeedException;
 import fr.siamois.infrastructure.dataimport.*;
+import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Data;
@@ -43,11 +45,11 @@ public class ProjectUploadSettingsBean {
     public static final String ERREUR = " erreur";
     private static final String SEVERITY_ERROR = "error";
     private static final String SEVERITY_WARN = "warn";
-    private static final String SEVERITY_INFO = "info";
     public static final String PHASE = "phase";
     public static final String STRATI = "strati";
     public static final String UE_REL = "uerel";
     public static final String LIEU_REL = "lieurel";
+    public static final String LIGNE = " ligne";
 
     @Value
     public static class SheetMappingView {
@@ -69,6 +71,35 @@ public class ProjectUploadSettingsBean {
         String alias;
         String canonical;
         boolean columnUnmapped;
+    }
+
+    /**
+     * One row in the post-import summary, representing what actually happened in the DB for one
+     * entity type: rows created, rows updated (upsert match onto an already-existing entity), and
+     * rows ignored as duplicates of another row within the same file. For entity types without an
+     * upsert-aware seeder, {@link #simple(String, int)} reports only a plain row count, matching
+     * today's behavior for those types.
+     */
+    @Value
+    public static class ImportSummaryRow {
+        String label;
+        int created;
+        int updated;
+        int skippedDuplicate;
+
+        public static ImportSummaryRow simple(String label, int count) {
+            return new ImportSummaryRow(label, count, 0, 0);
+        }
+
+        public String getSummaryLabel() {
+            List<String> parts = new ArrayList<>();
+            if (created > 0) parts.add(created + LIGNE + pluralSuffix(created) + " créée" + pluralSuffix(created));
+            if (updated > 0) parts.add(updated + LIGNE + pluralSuffix(updated) + " modifiée" + pluralSuffix(updated));
+            if (skippedDuplicate > 0) {
+                parts.add(skippedDuplicate + " doublon" + pluralSuffix(skippedDuplicate) + " ignoré" + pluralSuffix(skippedDuplicate));
+            }
+            return parts.isEmpty() ? "0" + LIGNE : String.join(", ", parts);
+        }
     }
 
     /** One tab in the validation section, representing one entity type. */
@@ -97,7 +128,15 @@ public class ProjectUploadSettingsBean {
     String uploadedFileName = "";
     long uploadedFileSize = 0;
 
+    boolean importDone = false;
+    List<ImportSummaryRow> importSummary = new ArrayList<>();
+    int importedTotal = 0;
+    int importedCreated = 0;
+    int importedUpdated = 0;
+    int importedSkippedDuplicate = 0;
+
     final ImportProgress progress = new ImportProgress();
+    final SeedCounts seedCounts = new SeedCounts();
     // set by the background parse/persist task once it finishes, flushed to a real growl message
     // by pollProgress() — never touched from the background thread itself, since FacesContext is
     // thread-local to the request thread and would be null/stale there.
@@ -129,12 +168,29 @@ public class ProjectUploadSettingsBean {
     @EventListener(LoginEvent.class)
     public void reset() {
         project = null;
+        clearImportState();
+    }
+
+    /**
+     * Clears the parse/persist flow state but keeps {@link #project} set — used when finishing or
+     * restarting an import while staying on the page, so that {@code ProjectDetailsBean.checkProjectOrRedirect()}'s
+     * resync guard (triggered whenever {@link #project} is null) doesn't re-run {@link #init} and wipe
+     * the just-set {@link #importDone} summary before it can be rendered.
+     */
+    private void clearImportState() {
         readyToUpload = false;
         importResult = null;
         originalFile = null;
         persistenceErrors = new ArrayList<>();
         uploadedFileName = "";
         uploadedFileSize = 0;
+        importDone = false;
+        importSummary = new ArrayList<>();
+        importedTotal = 0;
+        importedCreated = 0;
+        importedUpdated = 0;
+        importedSkippedDuplicate = 0;
+        seedCounts.reset();
     }
 
     public void resetForNewFile() {
@@ -328,12 +384,62 @@ public class ProjectUploadSettingsBean {
         int errors = getErrorCount();
         int rows = getTotalImportRows();
         if (errors > 0) return errors + ERREUR + (errors > 1 ? "s" : "") + " à corriger avant import";
-        return rows + " ligne" + (rows > 1 ? "s" : "") + " prête" + (rows > 1 ? "s" : "") + " à importer";
+        return rows + LIGNE + (rows > 1 ? "s" : "") + " prête" + (rows > 1 ? "s" : "") + " à importer";
     }
 
     public String getImportButtonLabel() {
         int rows = getTotalImportRows();
-        return "Importer " + rows + " ligne" + (rows > 1 ? "s" : "");
+        return "Importer " + rows + LIGNE + (rows > 1 ? "s" : "");
+    }
+
+    // ─── Post-import summary ────────────────────────────────────────────────
+
+    private List<ImportSummaryRow> buildImportSummary() {
+        List<ImportSummaryRow> rows = new ArrayList<>();
+        addUpsertSummaryRow(rows, "Lieu", ImportSchema.SPATIAL_UNIT);
+        addSummaryRow(rows, "Relations Lieu", getSpecCountForKey(LIEU_REL));
+        addUpsertSummaryRow(rows, "UE", ImportSchema.RECORDING_UNIT);
+        addSummaryRow(rows, "Relations UE", getSpecCountForKey(UE_REL));
+        addSummaryRow(rows, "Stratigraphie", getSpecCountForKey(STRATI));
+        addUpsertSummaryRow(rows, "Mobilier", ImportSchema.SPECIMEN);
+        addUpsertSummaryRow(rows, "Phase", ImportSchema.PHASE);
+        return rows;
+    }
+
+    private void addSummaryRow(List<ImportSummaryRow> rows, String label, int count) {
+        if (count > 0) rows.add(ImportSummaryRow.simple(label, count));
+    }
+
+    private void addUpsertSummaryRow(List<ImportSummaryRow> rows, String label, String tableId) {
+        SeedCounts.Counts c = seedCounts.get(tableId);
+        if (c.created() > 0 || c.updated() > 0 || c.skippedDuplicate() > 0) {
+            rows.add(new ImportSummaryRow(label, c.created(), c.updated(), c.skippedDuplicate()));
+        }
+    }
+
+    public String getImportDoneSummaryText() {
+        List<String> parts = new ArrayList<>();
+        if (importedCreated > 0) {
+            parts.add(importedCreated + LIGNE + pluralSuffix(importedCreated) + " créée" + pluralSuffix(importedCreated));
+        }
+        if (importedUpdated > 0) {
+            parts.add(importedUpdated + LIGNE + pluralSuffix(importedUpdated) + " modifiée" + pluralSuffix(importedUpdated));
+        }
+        if (importedSkippedDuplicate > 0) {
+            parts.add(importedSkippedDuplicate + " doublon" + pluralSuffix(importedSkippedDuplicate)
+                    + " ignoré" + pluralSuffix(importedSkippedDuplicate));
+        }
+        String detail = parts.isEmpty() ? "0" + LIGNE : String.join(", ", parts);
+        return "✓ Import terminé · " + detail + " dans le projet";
+    }
+
+    private static String pluralSuffix(int n) {
+        return n > 1 ? "s" : "";
+    }
+
+    /** Discards the completed-import summary and returns to the empty upload dropzone. */
+    public void startNewImport() {
+        clearImportState();
     }
 
     public String getValidationStatusLabel() {
@@ -410,24 +516,55 @@ public class ProjectUploadSettingsBean {
     public void uploadSpec() {
         if (importResult == null || isImportBlocked() || progress.isRunning()) return;
         persistenceErrors = new ArrayList<>();
+        seedCounts.reset();
         // set synchronously, before dispatching, so the initiating request's own response already
         // reflects PERSISTING — otherwise the progress panel/p:poll might not render on the first
         // response if the background thread hasn't reached its own progress.start(...) call yet,
         // and nothing would ever refresh the view again.
         progress.start(ImportProgress.Phase.PERSISTING, 0);
-        asyncRunner.persistAsync(importResult.specs(), project, progress, this::onPersistSuccess, this::onPersistError);
+        asyncRunner.persistAsync(importResult.specs(), project, progress, seedCounts, this::onPersistSuccess, this::onPersistError);
+    }
+
+    private static final List<String> UPSERT_TABLE_IDS = List.of(
+            ImportSchema.SPATIAL_UNIT, ImportSchema.RECORDING_UNIT, ImportSchema.SPECIMEN, ImportSchema.PHASE);
+
+    /** Sums created/updated/skipped-duplicate counts across the 4 upsert-aware entity types. */
+    private SeedCounts.Counts sumUpsertCounts() {
+        int created = 0;
+        int updated = 0;
+        int skippedDuplicate = 0;
+        for (String tableId : UPSERT_TABLE_IDS) {
+            SeedCounts.Counts c = seedCounts.get(tableId);
+            created += c.created();
+            updated += c.updated();
+            skippedDuplicate += c.skippedDuplicate();
+        }
+        return new SeedCounts.Counts(created, updated, skippedDuplicate);
     }
 
     private void onPersistSuccess() {
-        setPendingGrowl(SEVERITY_INFO, TEMPLATE_FORM_CC_TEMPLATE_FORM_TEMPLATE_GROWL, "Données importées avec succès", null);
-        reset(); // pure field resets, no FacesContext — safe here; progress itself is reset separately by pollProgress()
+        List<ImportSummaryRow> summary = buildImportSummary();
+        int total = getTotalImportRows();
+        SeedCounts.Counts upsertTotals = sumUpsertCounts();
+        // types without an upsert-aware seeder (relations) have no created/updated split — their rows
+        // are still counted as "created" for the top summary, matching today's behavior for them.
+        int created = upsertTotals.created() + getSpecCountForKey(LIEU_REL) + getSpecCountForKey(UE_REL) + getSpecCountForKey(STRATI);
+        // pure field resets, no FacesContext — safe here; progress itself is reset separately by
+        // pollProgress(). Keeps project set (unlike reset()) — see clearImportState() javadoc.
+        clearImportState();
+        importDone = true;
+        importSummary = summary;
+        importedTotal = total;
+        importedCreated = created;
+        importedUpdated = upsertTotals.updated();
+        importedSkippedDuplicate = upsertTotals.skippedDuplicate();
     }
 
     private void onPersistError(Exception e) {
         if (e instanceof SeedException se) {
-            persistenceErrors.add(new ImportError(se.getTableId(), 0, "—", se.getMessage()));
+            persistenceErrors.add(new ImportError(se.getTableId(), 0, "—", MessageUtils.describe(se)));
         } else {
-            persistenceErrors.add(new ImportError("Import", 0, "—", e.getMessage()));
+            persistenceErrors.add(new ImportError("Import", 0, "—", MessageUtils.describe(e)));
         }
         readyToUpload = false;
         // panels re-render via the poll's update attribute
@@ -471,7 +608,7 @@ public class ProjectUploadSettingsBean {
     }
 
     private void onParseError(Exception e) {
-        setPendingGrowl(SEVERITY_ERROR, null, "Erreur", "Échec du chargement du fichier : " + e.getMessage());
+        setPendingGrowl(SEVERITY_ERROR, null, "Erreur", "Échec du chargement du fichier : " + MessageUtils.describe(e));
     }
 
     private void setPendingGrowl(String severity, String target, String summary, String detail) {

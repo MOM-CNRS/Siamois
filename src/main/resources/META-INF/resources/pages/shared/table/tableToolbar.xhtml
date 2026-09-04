@@ -19,7 +19,7 @@
                             styleClass="rounded-button ui-button-flat"
                             icon="bi bi-gear"
                     />
-                    <p:overlayPanel for="tableParam">
+                    <p:overlayPanel for="tableParam" widgetVar="#{cc.clientId}_gearOverlay">
                         <div style="display: flex;
     flex-direction: column;
     gap: 1em;">
@@ -34,7 +34,7 @@
                                             update=":#{cc.clientId}:tableContainer, #{tableModel.parentPanel.actionToolbarId}"
                                             listener="#{tableModel.onSwitchTreeMode}"
                                             onstart="PF('#{cc.clientId}_buiTables').show()"
-                                            oncomplete="PF('#{cc.clientId}_buiTables').hide()"/>
+                                            oncomplete="PF('#{cc.clientId}_buiTables').hide(); PF('#{cc.clientId}_gearOverlay').show();"/>
 
                                 </p:toggleSwitch>
                                 <span>#{tableModel.treeMode ? 'Mode Arborescence' : 'Mode Liste'}</span>
@@ -48,7 +48,8 @@
                                         styleClass="vertical-align-middle ml-3">
 
                                     <p:ajax update=":#{cc.clientId}:#{tableId}, #{tableModel.parentPanel.actionToolbarId}"
-                                            listener="#{tableModel.onColumnFilteringToggle}" />
+                                            listener="#{tableModel.onColumnFilteringToggle}"
+                                            oncomplete="PF('#{cc.clientId}_gearOverlay').show();" />
                                 </p:toggleSwitch>
                                 <span>#{tableModel.columnFilteringEnabled ? 'Filtres activés' : 'Filtres désactivés'}</span>
                             </div>
@@ -65,7 +66,8 @@
                                     trigger=":#{cc.clientId}:#{tableId}:toggler">
                                 <p:ajax event="toggle"
                                         update="#{tableModel.parentPanel.actionToolbarId}"
-                                        listener="#{cc.attrs.tableModel.onToggle}"/>
+                                        listener="#{cc.attrs.tableModel.onToggle}"
+                                        oncomplete="PF('#{cc.clientId}_gearOverlay').show();"/>
                             </p:columnToggler>
                         </div>
                     </p:overlayPanel>

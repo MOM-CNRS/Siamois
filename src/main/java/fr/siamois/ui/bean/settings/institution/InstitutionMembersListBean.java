@@ -131,7 +131,10 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
             displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
             return;
         }
-        organizationMembersService.removeMemberFromInstitution(institution, member);
+        if (!organizationMembersService.removeMemberFromInstitution(institution, member)) {
+            displayWarnMessage(langBean, "organisationSettings.error.lastManager");
+            return;
+        }
         refMembers.remove(member);
         filter();
     }
@@ -189,7 +192,7 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
 
     private Boolean processPerson(PersonRole saved) {
         try {
-            if (isNotOrganisationManager(sessionSettingsBean.getSelectedInstitution())) {
+            if (isNotOrganisationManager(institution)) {
                 displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
                 return false;
             }
@@ -214,6 +217,7 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
         roles = null;
         availableProfiles = null;
         resetPendingInvitations();
+        resetProfileDetail();
         searchInput = null;
     }
 

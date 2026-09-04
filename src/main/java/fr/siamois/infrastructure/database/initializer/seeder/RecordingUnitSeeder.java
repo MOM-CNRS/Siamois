@@ -5,10 +5,12 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -38,6 +40,7 @@ public class RecordingUnitSeeder {
     private final PhaseRepository phaseRepository;
     private final InstitutionRepository institutionRepository;
     private final ConceptRepository conceptRepository;
+    private final ConceptSeeder conceptSeeder;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -61,7 +64,15 @@ public class RecordingUnitSeeder {
                                      String matrixColor,
                                      String matrixComposition,
                                      String matrixTexture,
-                                     List<String> phaseIdentifiers) {
+                                     List<String> phaseIdentifiers,
+                                     String comments,
+                                     Integer taq,
+                                     Integer tpq,
+                                     ConceptSeeder.ConceptKey erosionShape,
+                                     ConceptSeeder.ConceptKey erosionOrientation,
+                                     ConceptSeeder.ConceptKey erosionProfile,
+                                     ConceptSeeder.ConceptKey chronologicalAttribution,
+                                     Integer excelRowNumber) {
 
     }
 
@@ -116,6 +127,10 @@ public class RecordingUnitSeeder {
     }
 
     public void seed(List<RecordingUnitSpecs> specs, ImportProgress progress) {
+        seed(specs, progress, new SeedCounts());
+    }
+
+    public void seed(List<RecordingUnitSpecs> specs, ImportProgress progress, SeedCounts seedCounts) {
         if (specs.isEmpty()) return;
 
         Map<String, Institution> institutionsByIdentifier = fetchInstitutions(specs);
@@ -124,21 +139,28 @@ public class RecordingUnitSeeder {
         Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey = fetchActionUnits(specs);
         Map<SpatialUnitSeeder.SpatialUnitKey, SpatialUnit> spatialUnitsByKey = fetchSpatialUnits(specs, institutionsByIdentifier);
         Map<String, Phase> phasesByCompositeKey = fetchPhases(specs, actionUnitsByKey);
-        Map<RecordingUnitKey, Boolean> existingKeys = fetchExistingRecordingUnits(specs, institutionsByIdentifier, actionUnitsByKey);
+        Map<RecordingUnitKey, RecordingUnit> existingByKey = fetchExistingRecordingUnits(specs, institutionsByIdentifier, actionUnitsByKey);
 
         List<RecordingUnit> toInsert = new ArrayList<>();
+        List<RecordingUnit> toUpdate = new ArrayList<>();
+        Set<RecordingUnitKey> queuedKeys = new HashSet<>();
         for (int i = 0; i < specs.size(); i++) {
             var s = specs.get(i);
             try {
                 RecordingUnit built = buildRecordingUnit(s, institutionsByIdentifier, personCache, conceptsByKey,
                         actionUnitsByKey, spatialUnitsByKey, phasesByCompositeKey);
                 RecordingUnitKey key = new RecordingUnitKey(s.fullIdentifier(), built.getActionUnit().getFullIdentifier());
-                if (existingKeys.putIfAbsent(key, Boolean.TRUE) == null) {
+                if (!queuedKeys.add(key)) continue; // in-batch duplicate, keep last build already queued
+                RecordingUnit existing = existingByKey.get(key);
+                if (existing != null) {
+                    mergeRecordingUnitInto(built, existing);
+                    toUpdate.add(existing);
+                } else {
                     toInsert.add(built);
                 }
             } catch (Exception e) {
                 throw new IllegalStateException(
-                        "[UE ligne " + (i + 1) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
+                        "[UE ligne " + SeederUtils.lineNumber(s.excelRowNumber(), i) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
             }
         }
 
@@ -150,10 +172,20 @@ public class RecordingUnitSeeder {
             progress.advance(chunk.size());
             SeederUtils.logBatch("RecordingUnitSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toInsert.size());
         }
-        // specs that were skipped as already-existing never went into toInsert, so they'd otherwise
+        for (int i = 0; i < toUpdate.size(); i += FLUSH_CHUNK_SIZE) {
+            List<RecordingUnit> chunk = toUpdate.subList(i, Math.min(i + FLUSH_CHUNK_SIZE, toUpdate.size()));
+            recordingUnitRepository.saveAll(chunk);
+            entityManager.flush();
+            entityManager.clear();
+            progress.advance(chunk.size());
+            SeederUtils.logBatch("RecordingUnitSeeder", i + chunk.size(), FLUSH_CHUNK_SIZE, toUpdate.size());
+        }
+        // specs skipped as in-batch duplicates never went into toInsert/toUpdate, so they'd otherwise
         // never be accounted for in the running total — advance for them too so the overall import
         // progress (summed across all 6 seeders in ProjectDataSeeder) still reaches exactly 100%.
-        progress.advance(specs.size() - toInsert.size());
+        progress.advance(specs.size() - toInsert.size() - toUpdate.size());
+        seedCounts.recordCounts(ImportSchema.RECORDING_UNIT, toInsert.size(), toUpdate.size(),
+                specs.size() - toInsert.size() - toUpdate.size());
     }
 
     private RecordingUnit buildRecordingUnit(RecordingUnitSpecs s, Map<String, Institution> institutionsByIdentifier,
@@ -161,12 +193,18 @@ public class RecordingUnitSeeder {
                                               Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey,
                                               Map<SpatialUnitSeeder.SpatialUnitKey, SpatialUnit> spatialUnitsByKey,
                                               Map<String, Phase> phasesByCompositeKey) {
-        Concept type = SeederUtils.field("type", () -> resolveConcept(conceptsByKey, s.type));
-        Concept geoCycle = resolveOptionalConcept(conceptsByKey, "geomorphologicalCycle", s.geomorphologicalCycle);
-        Concept geoAgent = resolveOptionalConcept(conceptsByKey, "geomorphologicalAgent", s.geomorphologicalAgent);
-        Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation);
-
         Institution institution = resolveInstitution(s, institutionsByIdentifier);
+        Long institutionId = institution.getId();
+
+        Concept type = SeederUtils.field("type", () -> resolveConcept(conceptsByKey, s.type, institutionId));
+        Concept geoCycle = resolveOptionalConcept(conceptsByKey, "geomorphologicalCycle", s.geomorphologicalCycle, institutionId);
+        Concept geoAgent = resolveOptionalConcept(conceptsByKey, "geomorphologicalAgent", s.geomorphologicalAgent, institutionId);
+        Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation, institutionId);
+        Concept erosionShape = resolveOptionalConcept(conceptsByKey, "erosionShape", s.erosionShape, institutionId);
+        Concept erosionOrientation = resolveOptionalConcept(conceptsByKey, "erosionOrientation", s.erosionOrientation, institutionId);
+        Concept erosionProfile = resolveOptionalConcept(conceptsByKey, "erosionProfile", s.erosionProfile, institutionId);
+        Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution, institutionId);
+
         Person authorPerson = SeederUtils.field("author",    () -> personSeeder.resolveCached(personCache, s.author));
         Person createdBy    = SeederUtils.field("createdBy", () -> personSeeder.resolveCached(personCache, s.createdBy));
         List<Person> contributors = resolveContributors(s, personCache);
@@ -193,6 +231,13 @@ public class RecordingUnitSeeder {
         toGetOrCreate.setCreationTime(s.creationTime);
         toGetOrCreate.setActionUnit(au);
         toGetOrCreate.setSpatialUnit(su);
+        toGetOrCreate.setComments(s.comments);
+        toGetOrCreate.setTaq(s.taq);
+        toGetOrCreate.setTpq(s.tpq);
+        toGetOrCreate.setErosionShape(erosionShape);
+        toGetOrCreate.setErosionOrientation(erosionOrientation);
+        toGetOrCreate.setErosionProfile(erosionProfile);
+        toGetOrCreate.setChronologicalAttribution(chronologicalAttribution);
 
         if (s.phaseIdentifiers != null && !s.phaseIdentifiers.isEmpty()) {
             toGetOrCreate.setPhases(resolvePhases(s, au, phasesByCompositeKey));
@@ -201,15 +246,15 @@ public class RecordingUnitSeeder {
         return toGetOrCreate;
     }
 
-    private Concept resolveConcept(Map<ConceptSeeder.ConceptKey, Concept> cache, ConceptSeeder.ConceptKey key) {
+    private Concept resolveConcept(Map<ConceptSeeder.ConceptKey, Concept> cache, ConceptSeeder.ConceptKey key, Long institutionId) {
         Concept c = cache.get(key);
-        if (c == null) throw new IllegalStateException("Concept " + key + " introuvable");
+        if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(key, institutionId));
         return c;
     }
 
-    private Concept resolveOptionalConcept(Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, String fieldName, ConceptSeeder.ConceptKey key) {
+    private Concept resolveOptionalConcept(Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, String fieldName, ConceptSeeder.ConceptKey key, Long institutionId) {
         if (key == null) return null;
-        return SeederUtils.field(fieldName, () -> resolveConcept(conceptsByKey, key));
+        return SeederUtils.field(fieldName, () -> resolveConcept(conceptsByKey, key, institutionId));
     }
 
     private Institution resolveInstitution(RecordingUnitSpecs s, Map<String, Institution> institutionsByIdentifier) {
@@ -284,6 +329,10 @@ public class RecordingUnitSeeder {
             addConceptKey(lowerIdcsByVocab, s.geomorphologicalCycle());
             addConceptKey(lowerIdcsByVocab, s.geomorphologicalAgent());
             addConceptKey(lowerIdcsByVocab, s.interpretation());
+            addConceptKey(lowerIdcsByVocab, s.erosionShape());
+            addConceptKey(lowerIdcsByVocab, s.erosionOrientation());
+            addConceptKey(lowerIdcsByVocab, s.erosionProfile());
+            addConceptKey(lowerIdcsByVocab, s.chronologicalAttribution());
         }
         Map<ConceptSeeder.ConceptKey, Concept> result = new HashMap<>();
         for (var entry : lowerIdcsByVocab.entrySet()) {
@@ -354,7 +403,7 @@ public class RecordingUnitSeeder {
 
     private record InstitutionActionKey(Long institutionId, String actionUnitFullIdentifier) {}
 
-    private Map<RecordingUnitKey, Boolean> fetchExistingRecordingUnits(List<RecordingUnitSpecs> specs,
+    private Map<RecordingUnitKey, RecordingUnit> fetchExistingRecordingUnits(List<RecordingUnitSpecs> specs,
                                                                         Map<String, Institution> institutionsByIdentifier,
                                                                         Map<ActionUnitSeeder.ActionUnitKey, ActionUnit> actionUnitsByKey) {
         // group by (institutionId, actionUnitFullIdentifier) since both are needed for the exact-match query
@@ -366,15 +415,48 @@ public class RecordingUnitSeeder {
             fullIdsByInstitutionAndAction.computeIfAbsent(new InstitutionActionKey(inst.getId(), au.getFullIdentifier()), k -> new ArrayList<>())
                     .add(s.fullIdentifier());
         }
-        Map<RecordingUnitKey, Boolean> result = new HashMap<>();
+        Map<RecordingUnitKey, RecordingUnit> result = new HashMap<>();
         for (var entry : fullIdsByInstitutionAndAction.entrySet()) {
             Long institutionId = entry.getKey().institutionId();
             String actionUnitFullIdentifier = entry.getKey().actionUnitFullIdentifier();
             for (RecordingUnit ru : recordingUnitRepository.findAllByFullIdentifierInAndInstitutionIdAndActionUnitFullIdentifier(
                     entry.getValue(), institutionId, actionUnitFullIdentifier)) {
-                result.put(new RecordingUnitKey(ru.getFullIdentifier(), actionUnitFullIdentifier), Boolean.TRUE);
+                result.put(new RecordingUnitKey(ru.getFullIdentifier(), actionUnitFullIdentifier), ru);
             }
         }
         return result;
+    }
+
+    /**
+     * Overwrites the content fields of an already-persisted recording unit with those of a
+     * freshly-built one from a re-import, so re-importing the same file with corrected values
+     * updates the existing row instead of being a no-op. Identity (fullIdentifier/actionUnit) and
+     * provenance (createdBy/creationTime) are left untouched.
+     */
+    private void mergeRecordingUnitInto(RecordingUnit built, RecordingUnit existing) {
+        existing.setDescription(built.getDescription());
+        existing.setMatrixTexture(built.getMatrixTexture());
+        existing.setMatrixComposition(built.getMatrixComposition());
+        existing.setMatrixColor(built.getMatrixColor());
+        existing.setIdentifier(built.getIdentifier());
+        existing.setType(built.getType());
+        existing.setGeomorphologicalAgent(built.getGeomorphologicalAgent());
+        existing.setGeomorphologicalCycle(built.getGeomorphologicalCycle());
+        existing.setNormalizedInterpretation(built.getNormalizedInterpretation());
+        existing.setOpeningDate(built.getOpeningDate());
+        existing.setAuthor(built.getAuthor());
+        existing.setContributors(built.getContributors());
+        existing.setClosingDate(built.getClosingDate());
+        existing.setSpatialUnit(built.getSpatialUnit());
+        existing.setComments(built.getComments());
+        existing.setTaq(built.getTaq());
+        existing.setTpq(built.getTpq());
+        existing.setErosionShape(built.getErosionShape());
+        existing.setErosionOrientation(built.getErosionOrientation());
+        existing.setErosionProfile(built.getErosionProfile());
+        existing.setChronologicalAttribution(built.getChronologicalAttribution());
+        if (built.getPhases() != null && !built.getPhases().isEmpty()) {
+            existing.setPhases(built.getPhases());
+        }
     }
 }

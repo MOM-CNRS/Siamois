@@ -3,6 +3,8 @@
                 xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:comp="http://java.sun.com/jsf/composite/pages/settings/components"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
                 xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core">
 
     <ui:define name="metadata">
@@ -27,6 +29,40 @@
                     renderCreateButton="#{institutionListSettingsBean.userCanCreateInstitution()}"
                     createButtonLabel="#{langBean.msg('organisationManagement.create')}"
             >
+                <f:facet name="extraFilter">
+                    <!-- Kept in its own form, sibling to (not nested inside) either of
+                         comp:datatable's own forms: p:autoComplete's completeMethod silently
+                         never fires when its form is nested inside another <form> (invalid
+                         HTML - the browser breaks the inner form on parse). -->
+                    <form:csrfform formId="memberFilterForm" styleClass="member-filter-row">
+                        <p:autoComplete id="memberFilter"
+                                        value="#{institutionListSettingsBean.filterPerson}"
+                                        completeMethod="#{institutionListSettingsBean.completePerson}"
+                                        queryDelay="300"
+                                        var="u"
+                                        itemLabel="#{u.displayName()}"
+                                        itemValue="#{u}"
+                                        converter="#{personDTOConverter}"
+                                        placeholder="#{langBean.msg('organisationManagement.filterByMember.placeholder')}"
+                                        forceSelection="true"
+                                        appendTo="@(body)"
+                                        dropdown="false">
+                            <p:ajax event="itemSelect" listener="#{institutionListSettingsBean.initFilteredByPerson(institutionListSettingsBean.filterPerson)}" process="@this" update="@form :institutionManagerDatatable:formCC:institutionManagerForm"/>
+                        </p:autoComplete>
+                        <p:commandLink action="#{institutionListSettingsBean.toggleFilterByMe()}"
+                                       process="@this"
+                                       update="@form :institutionManagerDatatable:formCC:institutionManagerForm"
+                                       styleClass="member-filter-chip member-filter-me#{institutionListSettingsBean.isFilteredByMe() ? ' member-filter-me-active' : ''}">
+                            #{langBean.msg('organisationManagement.filterByMember.me')}
+                        </p:commandLink>
+                        <h:panelGroup rendered="#{not empty institutionListSettingsBean.filterPerson}">
+                            <span class="member-filter-chip">
+                                #{langBean.msg('organisationManagement.filterByMember.active', institutionListSettingsBean.filterPerson.displayName())}
+                                <p:commandLink action="#{institutionListSettingsBean.clearPersonFilter()}" update="@form :institutionManagerDatatable:formCC:institutionManagerForm" styleClass="member-filter-clear">✕</p:commandLink>
+                            </span>
+                        </h:panelGroup>
+                    </form:csrfform>
+                </f:facet>
                 <p:dataTable
                         id="organisationDatatable"
                         value="#{institutionListSettingsBean.filteredInstitutions}"
@@ -36,8 +72,9 @@
                         rowKey="#{organisation.id}"
                 >
 
-                    <p:column headerText="#{langBean.msg('organisationManagement.orgActive')}" rendered="#{institutionListSettingsBean.hasMoreThenOneInstitution()}">
-                        <p:toggleSwitch value="#{institutionListSettingsBean.toggleSwitchState[organisation.id]}">
+                    <p:column headerText="#{langBean.msg('organisationManagement.orgActive')}" rendered="#{institutionListSettingsBean.hasAnyActivatableInstitution()}">
+                        <p:toggleSwitch value="#{institutionListSettingsBean.toggleSwitchState[organisation.id]}"
+                                        rendered="#{institutionListSettingsBean.canActivateInstitution(organisation)}">
                             <p:ajax event="change" listener="#{institutionListSettingsBean.changeCurrentInstitution(organisation)}" update="@form"/>
                         </p:toggleSwitch>
                     </p:column>
@@ -46,7 +83,18 @@
                         <p:outputLabel value="#{organisation.name}"/>
                     </p:column>
                     <p:column headerText="#{langBean.msg('organisationManagement.orgMembers')}">
-                        <p:outputLabel value="#{institutionListSettingsBean.numberOfMemberInInstitution(organisation)}"/>
+                        <p:commandLink action="#{institutionListSettingsBean.redirectToInstitutionMembers(organisation)}" styleClass="chip-nav-link"
+                                       rendered="#{institutionListSettingsBean.canAccessInstitutionSettings(organisation)}"
+                                       immediate="true" process="@this">
+                            <span class="chip chip-profile entity-nav-chip">
+                                #{institutionListSettingsBean.numberOfMemberInInstitution(organisation)}
+                            </span>
+                        </p:commandLink>
+                        <h:panelGroup rendered="#{not institutionListSettingsBean.canAccessInstitutionSettings(organisation)}">
+                            <span class="chip chip-disabled">
+                                #{institutionListSettingsBean.numberOfMemberInInstitution(organisation)}
+                            </span>
+                        </h:panelGroup>
                     </p:column>
                     <p:column headerText="#{langBean.msg('organisationManagement.orgRecording')}">
                         <p:outputLabel value="#{institutionListSettingsBean.numberOfRecordingUnitInInstitution(organisation)}"/>

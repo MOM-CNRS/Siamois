@@ -2,6 +2,9 @@ package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.permissions.*;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
@@ -21,11 +24,15 @@ public class ActionUnitSpec {
     public static final String FULL_IDENTIFIER_FILTER = "fullIdentifier";
     public static final String ID_FILTER = "id";
     public static final String SPATIAL_UNIT_FILTER = "mainLocation";
+    public static final String SPATIAL_CONTEXT = "spatialContext";
     public static final String CREATED_BY_INSTITUTION = "createdByInstitution";
     public static final String SCOPE = "scope";
     public static final String CODE = "code";
-    /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByRecordingUnitCount(Sort.Direction)}. */
     public static final String RECORDING_UNIT_COUNT_SORT = "recordingUnitCount";
+    public static final String PROFILE = "profile";
+    public static final String PERSON = "person";
+    public static final String INSTITUTION = "institution";
+    public static final String ACTION_UNIT = "actionUnit";
 
     private ActionUnitSpec() {
         throw new UnsupportedOperationException("Spec should never be instantiated");
@@ -42,6 +49,52 @@ public class ActionUnitSpec {
             if (name == null || name.isBlank())
                 return null;
             return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+        });
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> nameStartsWith(@Nullable String name) {
+        return ((root, query, criteriaBuilder) -> {
+            if (name == null || name.isBlank())
+                return null;
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), name.toLowerCase() + "%");
+        });
+    }
+
+    @NonNull
+    public static Specification<ActionUnit> withEditPermission(@Nullable InstitutionDTO institutionDTO,
+                                                               @Nullable PersonDTO personDTO) {
+        return ((root, query, criteriaBuilder) -> {
+            if (institutionDTO == null || institutionDTO.getId() == null
+                    || personDTO == null || personDTO.getId() == null) {
+                return criteriaBuilder.disjunction();
+            }
+
+            Long institutionId = institutionDTO.getId();
+            Long personId = personDTO.getId();
+
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
+            Join<PersonProfileAssignment, Profile> profile = assignment.join(PROFILE);
+
+            subquery.select(criteriaBuilder.literal(1L)).where(
+                    criteriaBuilder.equal(assignment.get(PERSON).get(ID_FILTER), personId),
+                    criteriaBuilder.or(
+                            criteriaBuilder.and(
+                                    criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.INSTANCE),
+                                    criteriaBuilder.equal(profile.get(CODE), ProfileConstants.SUPERADMIN)),
+                            criteriaBuilder.and(
+                                    criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.ORGANISATION),
+                                    criteriaBuilder.equal(profile.get(CODE), ProfileConstants.ORGANIZATION_MANAGER),
+                                    criteriaBuilder.equal(profile.get(INSTITUTION).get(ID_FILTER), institutionId)),
+                            criteriaBuilder.and(
+                                    criteriaBuilder.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
+                                    criteriaBuilder.equal(profile.get(CODE), ProfileConstants.PROJECT_MEMBER),
+                                    criteriaBuilder.equal(profile.get(INSTITUTION).get(ID_FILTER), institutionId),
+                                    criteriaBuilder.equal(profile.get(ACTION_UNIT).get(ID_FILTER), root.get(ID_FILTER)))
+                    ));
+
+            return criteriaBuilder.exists(subquery);
         });
     }
 
@@ -104,36 +157,71 @@ public class ActionUnitSpec {
         return (root, query, cb) -> {
             Subquery<Long> subquery = query.subquery(Long.class);
             Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
-            Join<PersonProfileAssignment, Profile> profile = assignment.join("profile");
+            Join<PersonProfileAssignment, Profile> profile = assignment.join(PROFILE);
             Join<Profile, Permission> permission = profile.join("permissions", JoinType.LEFT);
 
             subquery.select(cb.literal(1L)).where(
-                    cb.equal(assignment.get("person").get("id"), personId),
+                    cb.equal(assignment.get(PERSON).get("id"), personId),
                     cb.or(
                             cb.and(
                                     cb.equal(profile.get(SCOPE), PermissionScopeType.INSTANCE),
                                     cb.equal(permission.get(CODE), PermissionConstants.ORGANIZATION_ACCESS)),
                             cb.and(
                                     cb.equal(profile.get(SCOPE), PermissionScopeType.ORGANISATION),
-                                    cb.equal(profile.get("institution"), root.get(CREATED_BY_INSTITUTION)),
+                                    cb.equal(profile.get(INSTITUTION), root.get(CREATED_BY_INSTITUTION)),
                                     cb.equal(permission.get(CODE), PermissionConstants.ORGANIZATION_ACCESS)),
                             cb.and(
                                     cb.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
-                                    cb.equal(profile.get("actionUnit"), root))
+                                    cb.equal(profile.get(ACTION_UNIT), root))
                     ));
+            return cb.exists(subquery);
+        };
+    }
+
+    /**
+     * Action units the person is a direct team member of: a PROJECT-scoped
+     * profile assigned on the unit itself. Unlike {@link #visibleToPerson},
+     * this excludes institution-wide access granted by INSTANCE/ORGANISATION
+     * {@link PermissionConstants#ORGANIZATION_ACCESS} profiles.
+     */
+    @NonNull
+    public static Specification<ActionUnit> hasProjectMembership(Long personId) {
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<PersonProfileAssignment> assignment = subquery.from(PersonProfileAssignment.class);
+            Join<PersonProfileAssignment, Profile> profile = assignment.join(PROFILE);
+
+            subquery.select(cb.literal(1L)).where(
+                    cb.equal(assignment.get(PERSON).get("id"), personId),
+                    cb.equal(profile.get(SCOPE), PermissionScopeType.PROJECT),
+                    cb.equal(profile.get(ACTION_UNIT), root));
             return cb.exists(subquery);
         };
     }
 
     @NonNull
     public static Specification<ActionUnit> actionUnitInSpatialUnit(long spatialUnitId) {
-        return (root, query, cb) ->
-                cb.equal(root.get(SPATIAL_UNIT_FILTER).get("id"), spatialUnitId);
+        return isInSpatialUnit(List.of(spatialUnitId));
     }
 
     @NonNull
     public static Specification<ActionUnit> isInSpatialUnit(List<Long> ids) {
-        return (root, query, cb) -> cb.in(root.get(SPATIAL_UNIT_FILTER).get("id")).value(ids);
+        return (root, query, cb) -> {
+            if (ids == null || ids.isEmpty()) {
+                return cb.disjunction();
+            }
+
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<ActionUnit> subRoot = subquery.from(ActionUnit.class);
+            Join<ActionUnit, SpatialUnit> preciseLocation = subRoot.join(SPATIAL_CONTEXT);
+            subquery.select(cb.literal(1L)).where(
+                    cb.equal(subRoot.get(ID_FILTER), root.get(ID_FILTER)),
+                    preciseLocation.get(ID_FILTER).in(ids));
+
+            return cb.or(
+                    root.get(SPATIAL_UNIT_FILTER).get(ID_FILTER).in(ids),
+                    cb.exists(subquery));
+        };
     }
 
     /**

@@ -82,14 +82,43 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
     )
     Set<Person> findClosestByUsernameLimit10(String input);
 
+    @Query(
+            nativeQuery = true,
+            value = "SELECT p.* FROM person p " +
+                    "WHERE p.name ILIKE CONCAT('%', :input, '%') " +
+                    "OR p.lastname ILIKE CONCAT('%', :input, '%') " +
+                    "OR CONCAT(p.name, ' ', p.lastname) ILIKE CONCAT('%', :input, '%') " +
+                    "ORDER BY similarity(CONCAT(p.name, ' ', p.lastname), :input) DESC " +
+                    "LIMIT 10"
+    )
+    Set<Person> findClosestByNameLimit10(String input);
+
     @Query("""
             SELECT COUNT(DISTINCT p.id)
             FROM PersonProfileAssignment a
             JOIN a.person p
             JOIN a.profile prof
-            WHERE prof.institution.id = :institutionId
+            WHERE prof.institution.id = :institutionId AND prof.actionUnit IS NULL
             """)
     long countPersonsInInstitution(Long institutionId);
+
+    /**
+     * Bulk version of {@link #countPersonsInInstitution} : member count per institution, in one query
+     * instead of one per institution — used to render an institution list page's member count column
+     * without an N+1. Counts the same population as {@code findAllAssignmentsByInstitutionId} (the
+     * institution's Members page): organisation-scoped assignments only ({@code actionUnit IS NULL}) —
+     * project-scoped profiles are excluded even though they also carry the institution's id, so a
+     * project-only member isn't counted as an institution member here either.
+     */
+    @Query("""
+            SELECT prof.institution.id, COUNT(DISTINCT p.id)
+            FROM PersonProfileAssignment a
+            JOIN a.person p
+            JOIN a.profile prof
+            WHERE prof.institution.id IN :institutionIds AND prof.actionUnit IS NULL
+            GROUP BY prof.institution.id
+            """)
+    List<Object[]> countPersonsByInstitutionIds(@Param("institutionIds") Collection<Long> institutionIds);
 
     /**
      * Personnes rattachées à une institution, c'est-à-dire ayant au moins un profil

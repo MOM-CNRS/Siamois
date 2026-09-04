@@ -161,7 +161,7 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
     @Override
     public boolean isRendered(TableColumn column, String key, SpecimenDTO s) {
         return switch (key) {
-            case "writeMode" -> flowBean.getIsWriteMode();
+            case "writeMode" -> canUserEditRow(s);
             default -> false;
         };
     }
@@ -215,6 +215,21 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
                             : "bi bi-bookmark";
             case DUPLICATE_ROW -> "bi bi-copy";
             default -> "";
+        };
+    }
+
+    @Override
+    public String getRowActionTooltipCode(RowAction action, SpecimenDTO s) {
+        return switch (action.getAction()) {
+
+            case TOGGLE_BOOKMARK -> sessionSettingsBean.getLangBean().msg(
+                    Boolean.TRUE.equals(navBean.isSpecimenBookmarkedByUser(s.getFullIdentifier()))
+                            ? "common.action.unbookmark"
+                            : "common.action.bookmark");
+
+            case DUPLICATE_ROW -> sessionSettingsBean.getLangBean().msg("common.action.duplicate");
+
+            default -> null;
         };
     }
 

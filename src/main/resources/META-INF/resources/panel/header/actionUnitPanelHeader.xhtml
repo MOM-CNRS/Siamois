@@ -25,18 +25,20 @@
         <p:tooltip autoHide="false" value="Fiche suivante" position="bottom" for="next"/>
     </div>
 
-    <p:chip label="#{panelModel.unit != null ? panelModel.unit.name : panelModel.titleCodeOrTitle}"
-            styleClass="mr-2 action-unit-chip-alt"
-            icon="#{panelModel.icon}"
-    />
-
-    <chip:editableIdentifierChip panel="#{panelModel}"
+    <chip:editableIdentifierChip id="idChipComposite" panel="#{panelModel}"
                                   value="#{panelModel.unit != null ? panelModel.unit.fullIdentifier : ''}"
                                   styleClass="action-unit-chip-alt"
-                                  icon="bi bi-hash"/>
+                                  icon="#{panelModel.icon}"/>
 
+    <chip:editableCategoryChip id="categoryChipComposite" panel="#{panelModel}"/>
 
-    <chip:conceptChip concept="#{panelModel.unit.type}" styleClass="mr-2 action-unit-type-chip"/>
+    <ui:include src="/pages/shared/panel/headerEditControls.xhtml">
+        <ui:param name="panel" value="#{panelModel}"/>
+    </ui:include>
+
+    <p:chip label="#{panelModel.unit != null ? panelModel.unit.name : panelModel.titleCodeOrTitle}"
+            styleClass="mr-2 action-unit-type-chip"
+    />
 
     <p:chip rendered="#{not empty panelModel.unit.mainLocation}" label="#{panelModel.unit.mainLocation.name}"
             styleClass="mr-2 action-unit-type-chip" icon="bi bi-geo-alt"

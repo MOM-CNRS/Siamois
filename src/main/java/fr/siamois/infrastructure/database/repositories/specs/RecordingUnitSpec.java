@@ -2,6 +2,8 @@ package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.domain.Sort;
@@ -24,10 +26,26 @@ public class RecordingUnitSpec {
     public static final String TYPE_FILTER = "type";
     public static final String ID_FILTER = "id";
     public static final String PARENTS_FILTER = "parents";
+    public static final String CHILDREN_FILTER = "children";
+    public static final String NATURE_FILTER = "geomorphologicalCycle";
+    public static final String AGENT_FILTER = "geomorphologicalAgent";
+    public static final String INTERPRETATION_FILTER = "normalizedInterpretation";
+    public static final String TPQ_FILTER = "tpq";
+    public static final String TAQ_FILTER = "taq";
     /** Synthetic sort key: not a real JPA path, resolved via {@link #orderBySpecimenCount(Sort.Direction)}. */
     public static final String SPECIMEN_COUNT_SORT = "specimenCount";
     /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByRelationshipCount(Sort.Direction)}. */
     public static final String RELATIONSHIP_COUNT_SORT = "relationshipCount";
+    /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByParentsCount(Sort.Direction)}. */
+    public static final String PARENTS_COUNT_SORT = "parentsCount";
+    /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByChildrenCount(Sort.Direction)}. */
+    public static final String CHILDREN_COUNT_SORT = "childrenCount";
+    /** Synthetic sort key: alphabetical on the nature's label, via {@link #orderByConceptLabel}. */
+    public static final String NATURE_LABEL_SORT = "geomorphologicalCycleLabel";
+    /** Synthetic sort key: alphabetical on the agent's label, via {@link #orderByConceptLabel}. */
+    public static final String AGENT_LABEL_SORT = "geomorphologicalAgentLabel";
+    /** Synthetic sort key: alphabetical on the interpretation's label, via {@link #orderByConceptLabel}. */
+    public static final String INTERPRETATION_LABEL_SORT = "normalizedInterpretationLabel";
 
 
     private RecordingUnitSpec() {
@@ -47,22 +65,62 @@ public class RecordingUnitSpec {
                 CONTRIBUTORS_FILTER,
                 TYPE_FILTER,
                 SPECIMEN_COUNT_SORT,
-                RELATIONSHIP_COUNT_SORT
+                RELATIONSHIP_COUNT_SORT,
+                PARENTS_COUNT_SORT,
+                CHILDREN_COUNT_SORT,
+                NATURE_LABEL_SORT,
+                AGENT_LABEL_SORT,
+                INTERPRETATION_LABEL_SORT,
+                TPQ_FILTER,
+                TAQ_FILTER
         );
     }
 
     /**
-     * Orders by the number of specimens attached to the recording unit, via {@code cb.size(...)}
-     * on the mapped {@code specimenList} collection — no subquery needed. Not a real filtering
-     * predicate: returns a neutral conjunction, the ordering is applied as a side effect on
-     * {@code query}. Callers must strip this synthetic sort key from the {@code Pageable}/{@code Sort}
-     * passed to the repository, since {@code specimenCount} is not a real JPA-mapped path.
+     * Orders by how many entities a mapped collection of the recording unit holds, via
+     * {@code cb.size(...)} — no subquery needed. Not a real filtering predicate: returns a neutral
+     * conjunction, the ordering is applied as a side effect on {@code query}. Callers must strip the
+     * synthetic sort key from the {@code Pageable}/{@code Sort} passed to the repository, since a
+     * collection size is not a real JPA-mapped path.
+     *
+     * @param attribute the collection attribute whose size orders the results
+     * @param direction the ordering direction
      */
     @NonNull
-    public static Specification<RecordingUnit> orderBySpecimenCount(Sort.Direction direction) {
+    private static Specification<RecordingUnit> orderByCollectionSize(String attribute, Sort.Direction direction) {
         return (root, query, cb) -> {
-            var countExpr = cb.size(root.get("specimenList"));
+            var countExpr = cb.size(root.get(attribute));
             query.orderBy(direction == Sort.Direction.ASC ? cb.asc(countExpr) : cb.desc(countExpr));
+            return cb.conjunction();
+        };
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> orderBySpecimenCount(Sort.Direction direction) {
+        return orderByCollectionSize("specimenList", direction);
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> orderByParentsCount(Sort.Direction direction) {
+        return orderByCollectionSize(PARENTS_FILTER, direction);
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> orderByChildrenCount(Sort.Direction direction) {
+        return orderByCollectionSize(CHILDREN_FILTER, direction);
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> orderByConceptLabel(String attribute, String langCode, Sort.Direction direction) {
+        return (root, query, cb) -> {
+            Subquery<String> subquery = query.subquery(String.class);
+            Root<ConceptPrefLabel> label = subquery.from(ConceptPrefLabel.class);
+            subquery.select(label.get("label"));
+            subquery.where(cb.and(
+                    cb.equal(label.get("concept"), root.get(attribute)),
+                    cb.equal(label.get("langCode"), langCode)
+            ));
+            query.orderBy(direction == Sort.Direction.ASC ? cb.asc(subquery) : cb.desc(subquery));
             return cb.conjunction();
         };
     }
@@ -136,6 +194,20 @@ public class RecordingUnitSpec {
     }
 
     @NonNull
+    public static Specification<RecordingUnit> integerFieldBetween(String fieldName, Integer from, Integer to) {
+        return (root, query, criteriaBuilder) -> {
+            if (from != null && to != null) {
+                return criteriaBuilder.between(root.get(fieldName), from, to);
+            } else if (from != null) {
+                return criteriaBuilder.greaterThanOrEqualTo(root.get(fieldName), from);
+            } else if (to != null) {
+                return criteriaBuilder.lessThanOrEqualTo(root.get(fieldName), to);
+            }
+            return null;
+        };
+    }
+
+    @NonNull
     public static Specification<RecordingUnit> authorIsIn(List<Long> personsIds) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.AUTHOR_FILTER).get("id")).value(personsIds);
     }
@@ -161,8 +233,13 @@ public class RecordingUnitSpec {
     }
 
     @NonNull
+    public static Specification<RecordingUnit> conceptIsIn(String attribute, List<Long> conceptIds) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(attribute).get("id")).value(conceptIds);
+    }
+
+    @NonNull
     public static Specification<RecordingUnit> typeIsIn(List<Long> conceptIds) {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(RecordingUnitSpec.TYPE_FILTER).get("id")).value(conceptIds);
+        return conceptIsIn(TYPE_FILTER, conceptIds);
     }
 
     @NonNull
@@ -178,8 +255,18 @@ public class RecordingUnitSpec {
     @NonNull
     public static Specification<RecordingUnit> isChildOf(List<Long> parentIds) {
         return (root, query, cb) -> {
-            jakarta.persistence.criteria.Join<RecordingUnit, RecordingUnit> parentsJoin = root.join(PARENTS_FILTER);
+            Join<RecordingUnit, RecordingUnit> parentsJoin = root.join(PARENTS_FILTER);
+            query.distinct(true);
             return cb.in(parentsJoin.get("id")).value(parentIds);
+        };
+    }
+
+    @NonNull
+    public static Specification<RecordingUnit> isParentOf(List<Long> childIds) {
+        return (root, query, cb) -> {
+            Join<RecordingUnit, RecordingUnit> childrenJoin = root.join(CHILDREN_FILTER);
+            query.distinct(true);
+            return cb.in(childrenJoin.get("id")).value(childIds);
         };
     }
 

@@ -7,6 +7,7 @@ import fr.siamois.domain.models.permissions.Permission;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
+import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
@@ -20,8 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Optional;
 
 @Slf4j
@@ -36,6 +35,7 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
     private final ProfileService profileService;
     private final InstitutionRepository institutionRepository;
     private final InstitutionMapper institutionMapper;
+    private final PersonProfileAssignmentService personProfileAssignmentService;
 
     @Value("${siamois.admin.username}")
     private String adminUsername;
@@ -51,17 +51,8 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
     }
 
     private void initializePermissions() {
-        for (Field field : PermissionConstants.class.getDeclaredFields()) {
-            int modifiers = field.getModifiers();
-            if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers) && field.getType().equals(String.class)) {
-                try {
-                    field.setAccessible(true);
-                    String code = (String) field.get(null);
-                    createPermissionIfNotExists(code);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+        for (String code : PermissionConstants.allCodes()) {
+            createPermissionIfNotExists(code);
         }
     }
 
@@ -75,10 +66,28 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
         }
     }
 
-    private void initializeDefaultInstitutionPermissions(InstitutionDTO institution) {
+    private void initializeInstitutionPermissions(InstitutionDTO institution) {
         profileService.createOrGetOrganizationManagerProfile(institution);
         profileService.createOrGetOrganizationProjectManagerProfile(institution);
         profileService.createOrGetOrganizationMemberProfile(institution);
+    }
+
+    /**
+     * Creates the organization profiles of every existing institution and puts every superadmin among
+     * its managers. A superadmin holds no instance-wide grant over organization data: they reach an
+     * organization only through its
+     * {@link fr.siamois.domain.models.permissions.ProfileConstants#ORGANIZATION_MANAGER} profile, which
+     * this catches up here for the organizations that existed before the superadmin did.
+     */
+    private void assignSuperAdminsToExistingInstitutions() {
+        for (Institution institution : institutionRepository.findAll()) {
+            InstitutionDTO institutionDTO = institutionMapper.convert(institution);
+            if (institutionDTO == null) {
+                continue;
+            }
+            initializeInstitutionPermissions(institutionDTO);
+            personProfileAssignmentService.assignSuperAdminsAsOrganizationManagers(institutionDTO);
+        }
     }
 
     @Override
@@ -91,14 +100,9 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
 
         assignProfilIfMissing(superAdmin, admin);
 
-        Institution defaultInstitution = institutionRepository.findInstitutionByIdentifier("siamois")
+        institutionRepository.findInstitutionByIdentifier("siamois")
                 .orElseThrow(() -> new DatabaseDataInitException("Default Institution not found"));
-        InstitutionDTO institutionDTO = institutionMapper.convert(defaultInstitution);
-        assert institutionDTO != null;
-        initializeDefaultInstitutionPermissions(institutionDTO);
-        Profile organizationManager = profileService
-                .createOrGetOrganizationManagerProfile(institutionDTO);
 
-        assignProfilIfMissing(organizationManager, admin);
+        assignSuperAdminsToExistingInstitutions();
     }
 }

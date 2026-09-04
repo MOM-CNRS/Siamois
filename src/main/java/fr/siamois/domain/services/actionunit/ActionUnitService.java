@@ -16,6 +16,7 @@ import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
@@ -45,11 +46,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,6 +82,7 @@ public class ActionUnitService implements ArkEntityService {
     private final PersonProfileAssignmentService personProfileAssignmentService;
     private final ProfileMapper profileMapper;
     private final ProfilePermissionService profilePermissionService;
+    private final InstitutionService institutionService;
 
 
     /**
@@ -242,15 +240,18 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
+        boolean isCreation = actionUnit.getId() == null;
         assertWritePermission(info, actionUnit);
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
-        assignRoles(info, savedDTO);
+        if (isCreation) {
+            assignRoles(info, savedDTO);
+        }
         return savedDTO;
     }
 
     private void assertWritePermission(UserInfo info, ActionUnitDTO actionUnit) {
         boolean allowed = actionUnit.getId() == null
-                ? profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                ? profilePermissionService.hasActionUnitCreatePermission(info)
                 : profilePermissionService.hasActionUnitWritePermission(info, actionUnit);
         if (!allowed) {
             throw new ForbiddenOperationException("You are not allowed to save this action unit");
@@ -360,14 +361,12 @@ public class ActionUnitService implements ArkEntityService {
         return actionUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
-    /**
-     * Count the number of ActionUnits associated with a specific SpatialUnit.
-     *
-     * @param spatialUnit The SpatialUnit to count ActionUnits for
-     * @return The count of ActionUnits associated with the SpatialUnit
-     */
     public Integer countBySpatialContext(SpatialUnitDTO spatialUnit) {
         return actionUnitRepository.countBySpatialContext(spatialUnit.getId());
+    }
+
+    public int countByLocation(SpatialUnitDTO spatialUnit) {
+        return actionUnitRepository.countByLocation(spatialUnit.getId());
     }
 
     /**
@@ -517,26 +516,13 @@ public class ActionUnitService implements ArkEntityService {
                 .toList();
     }
 
-    /**
-     * Get all ActionUnit in the institution that are linked to a spatial unit
-     *
-     * @param spatialId the spatial unit id
-     * @return The list of ActionUnit
-     */
-    public List<ActionUnitDTO> findBySpatialContext(Long spatialId) {
-        List<ActionUnit> res = actionUnitRepository.findBySpatialContext(spatialId);
-        return res.stream()
-                .map(actionUnitMapper::convert)
-                .toList();
-    }
-
 
     @Cacheable(value = "MyActionUnits", key = "#member.id + '-' + #institution.id + '-' + #limit")
     public List<ActionUnitDTO> findByTeamMember(PersonDTO member, InstitutionDTO institution, long limit) {
         Specification<ActionUnit> specs = prepareSpecs(institution, new FilterDTO());
         Pageable pageLimit = PageRequest.of(0, Math.toIntExact(limit));
 
-        specs = specs.and(ActionUnitSpec.visibleToPerson(member.getId()));
+        specs = specs.and(ActionUnitSpec.hasProjectMembership(member.getId()));
 
         Page<ActionUnit> actionUnits = actionUnitRepository.findAll(specs, pageLimit);
         return actionUnits.stream()
@@ -636,19 +622,9 @@ public class ActionUnitService implements ArkEntityService {
         return Math.toIntExact(actionUnitRepository.count(specs));
     }
 
-    public Page<ActionUnitDTO> searchActionUnitsInSpatialUnit(InstitutionDTO institutionDTO,
-                                                              SpatialUnitDTO spatialUnitDTO, FilterDTO filters, Pageable pageable) {
-        Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
-        specs = specs.and(ActionUnitSpec.actionUnitInSpatialUnit(spatialUnitDTO.getId()));
-        Page<ActionUnit> res = actionUnitRepository.findAll(specs, pageable);
-        if (filters.containsColumn("name")) {
-            log.trace("{} éléments trouvées pour {} (Page {}/{})", res.getTotalElements(), filters.valueOfAsString("name"), res.getNumber() + 1, res.getTotalPages());
-        }
-        return res.map(this::convertWithCount);
-    }
-
     private ActionUnitDTO convertWithCount(ActionUnit au) {
         ActionUnitDTO dto = actionUnitMapper.convert(au);
+        assert dto != null;
         Integer count = recordingUnitRepository.countByActionContext(au.getId());
         dto.setRecordingUnitCount(count != null ? count : 0);
         return dto;
@@ -664,14 +640,18 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> base = ActionUnitSpec.belongsToInstitution(institutionDTO.getId());
 
         if (filters.isRootOnly()) {
+            // Scope filters (e.g. "action units of this spatial unit") are always part of the
+            // fixed query context, even with no active user search — they must never be dropped
+            // in root-mode, otherwise roots from other contexts leak into the tree.
+            Specification<ActionUnit> scoped = base.and(scopeFilterSpecs(filters));
             if (filters.hasUserFilters()) {
                 Collection<Long> closure = resolveAncestorClosure(institutionDTO, filters);
                 if (closure.isEmpty()) {
-                    return base.and((root, q, cb) -> cb.disjunction());
+                    return scoped.and((root, q, cb) -> cb.disjunction());
                 }
-                return base.and(ActionUnitSpec.unitIsRoot()).and(ActionUnitSpec.idIn(closure));
+                return scoped.and(ActionUnitSpec.unitIsRoot()).and(ActionUnitSpec.idIn(closure));
             }
-            return base.and(ActionUnitSpec.unitIsRoot());
+            return scoped.and(ActionUnitSpec.unitIsRoot());
         }
 
         return base.and(userFilterSpecs(filters));
@@ -694,6 +674,21 @@ public class ActionUnitService implements ArkEntityService {
         }
 
         if (filters.containsColumn(ActionUnitSpec.FULL_IDENTIFIER_FILTER)) {
+            specs = specs.and(ActionUnitSpec.fullIdentifierContaining(filters.valueOfAsString(ActionUnitSpec.FULL_IDENTIFIER_FILTER)));
+        }
+
+        return specs;
+    }
+
+    private Specification<ActionUnit> scopeFilterSpecs(FilterDTO filters) {
+        Specification<ActionUnit> specs = Specification.where(null);
+        Set<String> scopeKeys = filters.getScopeFilterKeys();
+
+        if (scopeKeys.contains(ActionUnitSpec.SPATIAL_UNIT_FILTER) && filters.containsColumn(ActionUnitSpec.SPATIAL_UNIT_FILTER)) {
+            specs = specs.and(ActionUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(ActionUnitSpec.SPATIAL_UNIT_FILTER)));
+        }
+
+        if (scopeKeys.contains(ActionUnitSpec.FULL_IDENTIFIER_FILTER) && filters.containsColumn(ActionUnitSpec.FULL_IDENTIFIER_FILTER)) {
             specs = specs.and(ActionUnitSpec.fullIdentifierContaining(filters.valueOfAsString(ActionUnitSpec.FULL_IDENTIFIER_FILTER)));
         }
 
@@ -902,4 +897,69 @@ public class ActionUnitService implements ArkEntityService {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * Every action unit the person is a PROJECT-scoped member of, across every institution — no
+     * institution restriction and no limit, unlike {@link #findByTeamMember}. Used to filter the global
+     * project list by an arbitrary member.
+     *
+     * @param member the person whose projects to find
+     * @return the action units the person is a member of
+     */
+    public Set<ActionUnitDTO> findAllByTeamMember(PersonDTO member) {
+        if (member == null || member.getId() == null) {
+            return Collections.emptySet();
+        }
+        List<ActionUnit> actionUnits = actionUnitRepository.findAll(ActionUnitSpec.hasProjectMembership(member.getId()));
+        return actionUnits.stream()
+                .map(this::convertWithCount)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * @param personId the person whose projects to count
+     * @return how many action units, across every institution, the person is a PROJECT-scoped member of
+     */
+    public long countByTeamMember(Long personId) {
+        if (personId == null) {
+            return 0;
+        }
+        return actionUnitRepository.count(ActionUnitSpec.hasProjectMembership(personId));
+    }
+
+    /**
+     * All action units of every institution visible to the person, regardless of their role there —
+     * whether they may manage any given one of them is a separate, per-action-unit permission check
+     * (see {@code ProfilePermissionService#hasActionUnitWritePermission}), not a listing filter.
+     *
+     * @param user the person whose visible action units to find
+     * @return the action units the person can see
+     */
+    public Set<ActionUnitDTO> findAllEditableByPerson(PersonDTO user) {
+        if (user == null || user.getId() == null) {
+            return Collections.emptySet();
+        }
+
+        Set<ActionUnitDTO> actionUnits = new HashSet<>();
+
+        for (InstitutionDTO institutionDTO : institutionService.findInstitutionsOfPerson(user)) {
+            List<ActionUnit> institutionActionUnits = actionUnitRepository.findAllByCreatedByInstitutionId(institutionDTO.getId());
+            actionUnits.addAll(institutionActionUnits.stream().map(actionUnitMapper::convert).collect(Collectors.toSet()));
+        }
+
+        return actionUnits;
+    }
+
+    public List<ActionUnitDTO> findAllByPersonInInstitutionByNameCompletionWithEditPerm(String nameInput, int limit) {
+        UserInfo info = ExecutionContextHolder.getNonNull();
+
+        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.belongsToInstitution(info.getInstitution().getId()));
+        spec = spec.and(ActionUnitSpec.nameStartsWith(nameInput));
+        spec = spec.and(ActionUnitSpec.withEditPermission(info.getInstitution(), info.getUser()));
+        Page<ActionUnit> page = actionUnitRepository.findAll(spec, PageRequest.of(0, limit));
+
+        return page.getContent()
+                .stream()
+                .map(actionUnitMapper::convert)
+                .toList();
+    }
 }

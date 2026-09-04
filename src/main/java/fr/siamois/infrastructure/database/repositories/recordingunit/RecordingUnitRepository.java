@@ -89,20 +89,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Modifying
     int updateTypeByIds(@Param("type") Long type, @Param("ids") List<Long> ids);
 
-    /**
-     * @param spatialUnitId - The ID of the spatial unit
-     * @return List of recording units
-     */
-    @Query(
-            nativeQuery = true,
-            value = "SELECT ru.* FROM recording_unit ru " +
-                    "WHERE ru.fk_spatial_unit_id = :spatialUnitId"
-    )
-    List<RecordingUnit> findAllBySpatialUnitId(Long spatialUnitId);
-
     List<RecordingUnit> findAllByActionUnitId(Long actionUnitId);
-
-    Page<RecordingUnit> findAllByActionUnitId(Long actionUnitId, Pageable pageable);
 
     long countByActionUnit_Id(Long actionUnitId);
 
@@ -110,6 +97,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM recording_unit_contributors WHERE fk_recording_unit_id = :recordingUnitId")
     void deleteContributorLinksForRecordingUnit(@Param("recordingUnitId") Long recordingUnitId);
+
     List<RecordingUnit> findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(Long actionUnitId, String query, org.springframework.data.domain.Pageable pageable);
 
     @Transactional
@@ -142,6 +130,19 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     List<RecordingUnit> findAllWithoutArkOfInstitution(Long institutionId);
 
     long countByCreatedByInstitutionId(Long institutionId);
+
+    /**
+     * Bulk version of {@link #countByCreatedByInstitutionId} : recording unit count per institution, in
+     * one query instead of one per institution — used to render an institution list page's recording unit
+     * count column without an N+1.
+     */
+    @Query("""
+            SELECT ru.createdByInstitution.id, COUNT(ru)
+            FROM RecordingUnit ru
+            WHERE ru.createdByInstitution.id IN :institutionIds
+            GROUP BY ru.createdByInstitution.id
+            """)
+    List<Object[]> countByCreatedByInstitutionIds(@Param("institutionIds") Collection<Long> institutionIds);
 
     Optional<RecordingUnit> findByIdentifierAndCreatedByInstitution(Integer identifier, Institution institution);
 
@@ -401,4 +402,11 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 
+
+    @Query("SELECT ru FROM RecordingUnit ru " +
+            "WHERE ru.actionUnit.id = :actionUnitId " +
+            "AND ru.fullIdentifier LIKE CONCAT(:fullIdentifier, '%') " +
+            "ORDER BY ru.fullIdentifier ASC " +
+            "LIMIT :limit")
+    List<RecordingUnit> findByActionUnitIdAndFullIdentifierStartingWithLimited(Long actionUnitId, String fullIdentifier, int limit);
 }

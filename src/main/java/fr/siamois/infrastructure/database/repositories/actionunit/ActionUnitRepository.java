@@ -34,6 +34,11 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     )
     Integer countBySpatialContext(@Param("spatialUnitId") Long spatialUnitId);
 
+    @Query("SELECT COUNT(DISTINCT au.id) FROM ActionUnit au " +
+            "JOIN au.spatialContext sc " +
+            "WHERE sc.id = :spatialUnitId OR au.mainLocation.id = :spatialUnitId")
+    int countByLocation(@Param("spatialUnitId") Long spatialUnitId);
+
     long countByCreatedByInstitutionId(Long institutionId);
 
     Set<ActionUnit> findByCreatedByInstitutionId(Long id);
@@ -47,67 +52,58 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     List<ActionUnit> findAllByIdentifierInAndCreatedByInstitutionIdentifier(Collection<String> identifiers, String institutionId);
 
     @Query(value = """
-    SELECT su.*
-    FROM action_unit su
-    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
-    ORDER BY su.creation_time DESC, su.action_unit_id DESC
-        LIMIT :limit
-    """, nativeQuery = true)
+            SELECT su.*
+            FROM action_unit su
+            WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
+            ORDER BY su.creation_time DESC, su.action_unit_id DESC
+                LIMIT :limit
+            """, nativeQuery = true)
     List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId,
                                             @Param("limit") Long limit);
+
     @Query(value = """
-    SELECT su.*
-    FROM action_unit su
-    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
-    ORDER BY su.creation_time DESC, su.action_unit_id DESC
-        LIMIT :pageSize OFFSET :first
-    """, nativeQuery = true)
+            SELECT su.*
+            FROM action_unit su
+            WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
+            ORDER BY su.creation_time DESC, su.action_unit_id DESC
+                LIMIT :pageSize OFFSET :first
+            """, nativeQuery = true)
     List<ActionUnit> findRootsByInstitution(@Param("institutionId") Long institutionId,
                                             @Param("first") int first,
                                             @Param("pageSize") int pageSize
-                                            );
+    );
 
     @Query(value = """
-    SELECT su.*
-    FROM action_unit su
-    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens AND su.name ILIKE concat('%', :name, '%')
-    ORDER BY su.creation_time DESC, su.action_unit_id DESC
-        LIMIT :pageSize OFFSET :first
-    """, nativeQuery = true)
+            SELECT su.*
+            FROM action_unit su
+            WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens AND su.name ILIKE concat('%', :name, '%')
+            ORDER BY su.creation_time DESC, su.action_unit_id DESC
+                LIMIT :pageSize OFFSET :first
+            """, nativeQuery = true)
     List<ActionUnit> findRootsByInstitutionAndName(@Param("institutionId") Long institutionId,
                                                    @Param("name") String name,
                                                    @Param("first") int first,
                                                    @Param("pageSize") int pageSize);
 
     @Query(value = """
-    SELECT COUNT(*)
-    FROM action_unit su
-    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens AND su.name ILIKE concat('%', :name, '%')
-    """, nativeQuery = true)
+            SELECT COUNT(*)
+            FROM action_unit su
+            WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens AND su.name ILIKE concat('%', :name, '%')
+            """, nativeQuery = true)
     int countRootsByInstitutionAndName(@Param("institutionId") Long institutionId,
-                                                   @Param("name") String name);
+                                       @Param("name") String name);
 
     @Query(value = """
-    SELECT su.*
-    FROM action_unit su
-    JOIN action_hierarchy h
-      ON h.fk_child_id = su.action_unit_id
-    WHERE su.fk_institution_id = :institutionId
-      AND h.fk_parent_id = :parentId
-    ORDER BY su.creation_time DESC, su.action_unit_id DESC
-    """, nativeQuery = true)
+            SELECT su.*
+            FROM action_unit su
+            JOIN action_hierarchy h
+              ON h.fk_child_id = su.action_unit_id
+            WHERE su.fk_institution_id = :institutionId
+              AND h.fk_parent_id = :parentId
+            ORDER BY su.creation_time DESC, su.action_unit_id DESC
+            """, nativeQuery = true)
     List<ActionUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                         @Param("institutionId") Long institutionId);
-
-    @Query(value = """
-    SELECT su.*
-    FROM action_unit su
-    JOIN action_unit_spatial_context h
-      ON h.fk_action_unit_id = su.action_unit_id
-    WHERE h.fk_spatial_unit_id = :spatialId
-    ORDER BY su.creation_time DESC, su.action_unit_id DESC
-    """, nativeQuery = true)
-    List<ActionUnit> findBySpatialContext(@Param("spatialId") Long spatialId);
 
     @Query(value = """
             SELECT COUNT(1) > 0
@@ -138,7 +134,6 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
                   )
             """, nativeQuery = true)
     boolean existsRootChildrenByRelatedSpatialUnit(@Param("spatialUnitId") Long spatialUnitId);
-
 
 
     // --- NEXT ---
@@ -173,19 +168,19 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
 
     @Query(
             value = """
-    SELECT COUNT(*)
-    FROM action_unit su
-    WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
-"""
-    , nativeQuery = true)
+                        SELECT COUNT(*)
+                        FROM action_unit su
+                        WHERE su.fk_institution_id = :institutionId AND NOT su.has_childrens
+                    """
+            , nativeQuery = true)
     int countRootsInInstitution(Long institutionId);
 
     @Query(nativeQuery = true,
             value = """
-SELECT COUNT(*) > 1
-FROM action_unit au
-WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND action_unit_id = :actionUnitId
-"""
+                    SELECT COUNT(*) > 1
+                    FROM action_unit au
+                    WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND action_unit_id = :actionUnitId
+                    """
     )
     boolean isRoot(Long actionUnitId, Long institutionId);
 
@@ -227,7 +222,10 @@ WHERE au.fk_institution_id = :institutionId AND has_childrens IS FALSE AND actio
     @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM action_unit_spatial_context WHERE fk_spatial_unit_id = :spatialUnitId")
     void deleteSpatialContextLinksForSpatialUnit(@Param("spatialUnitId") Long spatialUnitId);
-           
+
     @Query("SELECT au FROM ActionUnit au JOIN FETCH au.createdBy WHERE au.createdBy.id = :personId")
     Set<ActionUnit> findAllByCreatedById(@Param("personId") Long personId);
+
+    @Query("SELECT au FROM ActionUnit au JOIN FETCH au.createdBy JOIN FETCH au.createdByInstitution WHERE au.createdByInstitution.id = :createdByInstitutionId")
+    List<ActionUnit> findAllByCreatedByInstitutionId(@Param("createdByInstitutionId") Long createdByInstitutionId);
 }

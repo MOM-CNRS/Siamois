@@ -5,6 +5,8 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 /**
  * Utility class for holding the execution context in a ThreadLocal.
@@ -34,6 +36,7 @@ public final class ExecutionContextHolder {
         CONTEXT.set(info);
     }
 
+    @Nullable
     public static UserInfo get() {
         UserInfo current = CONTEXT.get();
         if (current == null) {
@@ -45,6 +48,15 @@ public final class ExecutionContextHolder {
                     idOf(current.getUser()), Thread.currentThread().getName());
             CONTEXT.remove();
             return null;
+        }
+        return current;
+    }
+
+    @NonNull
+    public static UserInfo getNonNull() {
+        UserInfo current = CONTEXT.get();
+        if (current == null) {
+            throw new IllegalStateException("ExecutionContextHolder is null");
         }
         return current;
     }

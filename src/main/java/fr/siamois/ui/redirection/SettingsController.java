@@ -1,7 +1,11 @@
 package fr.siamois.ui.redirection;
 
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
@@ -24,6 +28,8 @@ public class SettingsController {
     private final SessionSettingsBean sessionSettingsBean;
     private final ProfilePermissionService profilePermissionService;
     private final ProjectListBean projectListBean;
+    private final PersonService personService;
+    private final PersonMapper personMapper;
 
 
 
@@ -31,13 +37,26 @@ public class SettingsController {
                                ApplicationMembersListBean applicationMembersListBean,
                                SessionSettingsBean sessionSettingsBean,
                                ProfilePermissionService profilePermissionService,
-                               ProjectListBean projectListBean) {
+                               ProjectListBean projectListBean,
+                               PersonService personService,
+                               PersonMapper personMapper) {
         this.navBean = navBean;
         this.institutionListSettingsBean = institutionListSettingsBean;
         this.applicationMembersListBean = applicationMembersListBean;
         this.sessionSettingsBean = sessionSettingsBean;
         this.profilePermissionService = profilePermissionService;
         this.projectListBean = projectListBean;
+        this.personService = personService;
+        this.personMapper = personMapper;
+    }
+
+    /** Resolves the {@code memberId} query param (if any) to a {@link PersonDTO}, or {@code null}. */
+    private PersonDTO resolveMember(Long memberId) {
+        if (memberId == null) {
+            return null;
+        }
+        Person person = personService.findById(memberId);
+        return person != null ? personMapper.convert(person) : null;
     }
 
     @GetMapping("/settings")
@@ -58,19 +77,29 @@ public class SettingsController {
     }
 
     @GetMapping("/settings/organisation")
-    public String goToAdminInstitutionSettings() {
+    public String goToAdminInstitutionSettings(@RequestParam(value = "memberId", required = false) Long memberId) {
         if (!profilePermissionService.canViewInstitutionData(sessionSettingsBean.getUserInfo().getUser(), sessionSettingsBean.getSelectedInstitution())) {
             throw new ForbiddenException();
         }
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
-        institutionListSettingsBean.init();
+        PersonDTO member = resolveMember(memberId);
+        if (member != null) {
+            institutionListSettingsBean.initFilteredByPerson(member);
+        } else {
+            institutionListSettingsBean.init();
+        }
         return "forward:/pages/settings/institutionListSettings.xhtml";
     }
 
     @GetMapping("/settings/project")
-    public String goToProjectsSettings() {
+    public String goToProjectsSettings(@RequestParam(value = "memberId", required = false) Long memberId) {
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
-        projectListBean.init();
+        PersonDTO member = resolveMember(memberId);
+        if (member != null) {
+            projectListBean.initFilteredByPerson(member);
+        } else {
+            projectListBean.init();
+        }
         return "forward:/pages/settings/project/projectList.xhtml";
     }
 

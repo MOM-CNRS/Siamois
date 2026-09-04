@@ -2,8 +2,11 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
@@ -40,6 +43,8 @@ class SpecimenSeederTest {
     @Mock
     RecordingUnitSeeder recordingUnitSeeder;
     @Mock
+    ConceptSeeder conceptSeeder;
+    @Mock
     EntityManager entityManager;
 
     @InjectMocks
@@ -56,15 +61,28 @@ class SpecimenSeederTest {
             new SpecimenSeeder.SpecimenSpecs(
                     "chartres-C309_01-1100-1",
                     1,
-                    new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
+                    null,
                     new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4286252"),
-                    new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4286252"),
+                    null,
                     "author@siamois.fr",
                     "chartres",
                     List.of("author@siamois.fr"),
                     List.of("author@siamois.fr"),
                     OffsetDateTime.of(2012, 6, 22, 0, 0, 0, 0, ZoneOffset.UTC),
-                    new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100", "")
+                    new RecordingUnitSeeder.RecordingUnitKey("chartres-C309_01-1100", ""),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
             )
     );
 
@@ -95,14 +113,17 @@ class SpecimenSeederTest {
     @Test
     void seed_CategoryDoesNotExist() {
         // conceptRepository left unstubbed -> empty -> category not found
+        stubInstitutionFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(toInsert, 1L));
 
-        assertThat(ex.getMessage()).contains("Concept").contains("introuvable");
+        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
     }
 
     @Test
     void seed_AuthorDoesNotExist() {
         stubCategoryFound();
+        stubInstitutionFound();
         when(personSeeder.resolveCached(any(), eq("author@siamois.fr")))
                 .thenThrow(new IllegalStateException("Person introuvable"));
 
@@ -131,21 +152,33 @@ class SpecimenSeederTest {
     }
 
     @Test
-    void seed_AlreadyExists() {
+    void seed_AlreadyExists_updatesExistingInstead() {
         stubCategoryFound();
         stubInstitutionFound();
         RecordingUnit ru = stubRecordingUnitFound();
 
-        SpecimenRepository.ExistingSpecimenKey existing = mock(SpecimenRepository.ExistingSpecimenKey.class);
-        when(existing.getFullIdentifier()).thenReturn("chartres-C309_01-1100-1");
-        when(existing.getRecordingUnitFullIdentifier()).thenReturn(ru.getFullIdentifier());
-        when(specimenRepository.findAllKeysByInstitutionIdAndActionUnitFullIdentifier(
+        fr.siamois.domain.models.specimen.Specimen existing = new fr.siamois.domain.models.specimen.Specimen();
+        existing.setFullIdentifier("chartres-C309_01-1100-1");
+        existing.setRecordingUnit(ru);
+        existing.setActionUnit(ru.getActionUnit());
+        // must match the built specimen's dedup key, whose institution id is null (stubInstitutionFound
+        // never sets it) — leaving this unset too, same as the pre-upsert version of this test did.
+        existing.setCreatedByInstitution(new Institution());
+        when(specimenRepository.findAllByInstitutionIdAndActionUnitFullIdentifier(
                 any(), eq(ru.getActionUnit().getFullIdentifier())))
                 .thenReturn(List.of(existing));
 
-        seeder.seed(toInsert, 1L);
+        SeedCounts seedCounts = new SeedCounts();
+        seeder.seed(toInsert, 1L, new ImportProgress(), seedCounts);
 
-        verify(specimenRepository, never()).saveAll(any());
+        verify(specimenRepository, times(1)).saveAll(argThat(list -> {
+            var it = list.iterator();
+            return it.hasNext() && it.next() == existing;
+        }));
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.SPECIMEN);
+        assertThat(counts.created()).isZero();
+        assertThat(counts.updated()).isEqualTo(1);
+        assertThat(counts.skippedDuplicate()).isZero();
     }
 
     @Test
@@ -155,7 +188,8 @@ class SpecimenSeederTest {
         stubRecordingUnitFound();
         // specimenRepository bulk-existence lookup left unstubbed -> empty -> not already present
 
-        seeder.seed(toInsert, 1L);
+        SeedCounts seedCounts = new SeedCounts();
+        seeder.seed(toInsert, 1L, new ImportProgress(), seedCounts);
 
         verify(specimenRepository, times(1)).saveAll(argThat(list -> {
             int count = 0;
@@ -164,5 +198,23 @@ class SpecimenSeederTest {
         }));
         verify(entityManager, times(1)).flush();
         verify(entityManager, times(1)).clear();
+        SeedCounts.Counts counts = seedCounts.get(ImportSchema.SPECIMEN);
+        assertThat(counts.created()).isEqualTo(1);
+        assertThat(counts.updated()).isZero();
+        assertThat(counts.skippedDuplicate()).isZero();
+    }
+
+    @Test
+    void seed_Created_setsActionUnitFromRecordingUnit() {
+        stubCategoryFound();
+        stubInstitutionFound();
+        RecordingUnit ru = stubRecordingUnitFound();
+
+        seeder.seed(toInsert, 1L);
+
+        verify(specimenRepository, times(1)).saveAll(argThat(list -> {
+            var it = list.iterator();
+            return it.hasNext() && it.next().getActionUnit() == ru.getActionUnit();
+        }));
     }
 }

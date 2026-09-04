@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.panel.models.panel.single;
 
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -191,14 +192,14 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = SpatialUnit.DETAILS_FORM;
+        detailsForm = CustomFormComposer.deepCopy(SpatialUnit.DETAILS_FORM);
         // Init system form answers
         initFormContext(forceInit);
     }
 
     @Override
     protected String getFormScopePropertyName() {
-        return "";
+        return "category";
     }
 
     @Override
@@ -394,7 +395,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
     public void initActionTab() {
         ActionUnitLazyDataModel actionLazyDataModel = new ActionUnitLazyDataModel(actionUnitService, sessionSettings);
         actionLazyDataModel.withConstantFilter(ActionUnitSpec.SPATIAL_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
-        totalActionUnitCount = actionUnitService.countBySpatialContext(unit);
+        totalActionUnitCount = actionUnitService.countByLocation(unit);
 
         actionTabTableModel = new ActionUnitTableViewModel(
                 actionLazyDataModel,
@@ -422,8 +423,8 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
                                         .entityId(unit.getId())
                                         .build()
                         )
-                        .createAllowedSupplier(() -> profilePermissionService.hasOrganizationPermission(
-                                sessionSettings.getUserInfo(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                        .createAllowedSupplier(() -> profilePermissionService.hasActionUnitCreatePermission(
+                                sessionSettings.getUserInfo()))
                         .build()
         );
     }

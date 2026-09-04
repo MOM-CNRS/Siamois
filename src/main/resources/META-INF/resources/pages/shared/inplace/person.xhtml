@@ -25,14 +25,18 @@
         <p:outputPanel id="inplace">
             <!-- ===== MODE DISPLAY ===== -->
             <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
-                <!-- Single value -->
-                <p:outputLabel rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}"
-                               value="#{cc.attrs.answer.value.displayName()}"/>
+                <div class="rum-wrapper">
+                    <div class="rum-items">
+                        <!-- Single value -->
+                        <p:outputLabel rendered="#{(not cc.attrs.multiple) and (not empty cc.attrs.answer.value)}"
+                                       value="#{cc.attrs.answer.value.displayName()}"/>
 
-                <!-- Multiple values -->
-                <ui:fragment rendered="#{cc.attrs.multiple}">
-                    <cellbody:cellBodyMultiplePersons persons="#{cc.attrs.answer.value}"/>
-                </ui:fragment>
+                        <!-- Multiple values -->
+                        <ui:fragment rendered="#{cc.attrs.multiple}">
+                            <cellbody:cellBodyMultiplePersons persons="#{cc.attrs.answer.value}"/>
+                        </ui:fragment>
+                    </div>
+                </div>
             </h:panelGroup>
 
             <!-- ===== MODE EDIT ===== -->

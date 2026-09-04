@@ -3,9 +3,11 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.dataimport.ImportSchema;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
@@ -31,12 +33,13 @@ public class SpecimenSeeder {
     private final SpecimenRepository specimenRepository;
     private final PersonSeeder personSeeder;
     private final ConceptRepository conceptRepository;
+    private final ConceptSeeder conceptSeeder;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     public record SpecimenSpecs(String fullIdentifier, Integer identifier,
-                                     ConceptSeeder.ConceptKey type,
+                                     ConceptSeeder.ConceptKey material,
                                      ConceptSeeder.ConceptKey category,
                                      ConceptSeeder.ConceptKey interpretation,
                                      String authorEmail,
@@ -44,7 +47,20 @@ public class SpecimenSeeder {
                                      List<String> authors,
                                      List<String> collectors,
                                      OffsetDateTime creationTime,
-                                     RecordingUnitSeeder.RecordingUnitKey recordingUnitKey) {
+                                     RecordingUnitSeeder.RecordingUnitKey recordingUnitKey,
+                                     String description,
+                                     String comments,
+                                     String isolationNumber,
+                                     Integer taq,
+                                     Integer tpq,
+                                     String otherIdentifier,
+                                     ConceptSeeder.ConceptKey chronologicalAttribution,
+                                     Integer numberOfElements,
+                                     OffsetDateTime collectionDate,
+                                     ConceptSeeder.ConceptKey collectionMethod,
+                                     ConceptSeeder.ConceptKey sanitaryState,
+                                     ConceptSeeder.ConceptKey materialClass,
+                                     Integer excelRowNumber) {
 
     }
 
@@ -70,6 +86,10 @@ public class SpecimenSeeder {
     }
 
     public void seed(List<SpecimenSpecs> specs, Long institutionId, ImportProgress progress) {
+        seed(specs, institutionId, progress, new SeedCounts());
+    }
+
+    public void seed(List<SpecimenSpecs> specs, Long institutionId, ImportProgress progress, SeedCounts seedCounts) {
         if (specs.isEmpty()) return;
 
         log.info("[SpecimenSeeder] starting seed of {} specs", specs.size());
@@ -88,41 +108,86 @@ public class SpecimenSeeder {
             built.add(buildSpecimen(specs.get(i), i, institutionsByIdentifier, personCache, conceptsByKey, recordingUnitsByKey));
         }
 
-        log.info("[SpecimenSeeder] {} specs built, resolving existing-specimen keys...", built.size());
-        Set<String> existingKeys = fetchExistingSpecimenKeys(built);
-        log.info("[SpecimenSeeder] existing-key lookup done ({} existing keys found)", existingKeys.size());
+        log.info("[SpecimenSeeder] {} specs built, resolving existing specimens...", built.size());
+        Map<String, Specimen> existingByKey = fetchExistingSpecimens(built);
+        log.info("[SpecimenSeeder] existing-specimen lookup done ({} existing found)", existingByKey.size());
 
         List<Specimen> toInsert = new ArrayList<>();
+        List<Specimen> toUpdate = new ArrayList<>();
         Set<String> queuedKeys = new HashSet<>();
         for (Specimen sp : built) {
             String key = dedupKey(sp);
-            if (!existingKeys.contains(key) && queuedKeys.add(key)) {
+            if (!queuedKeys.add(key)) continue; // in-batch duplicate, keep first build already queued
+            Specimen existing = existingByKey.get(key);
+            if (existing != null) {
+                mergeSpecimenInto(sp, existing);
+                toUpdate.add(existing);
+            } else {
                 toInsert.add(sp);
             }
         }
-        log.info("[SpecimenSeeder] {} to insert in batches of {}", toInsert.size(), FLUSH_CHUNK_SIZE);
+        log.info("[SpecimenSeeder] {} to insert, {} to update, in batches of {}", toInsert.size(), toUpdate.size(), FLUSH_CHUNK_SIZE);
 
         flushInBatches(toInsert, progress);
-        // specs skipped as already-existing or as in-batch duplicates never went into toInsert,
+        flushInBatches(toUpdate, progress);
+        // specs skipped as in-batch duplicates never went into toInsert/toUpdate,
         // so they'd otherwise never be accounted for in the running total.
-        progress.advance(specs.size() - toInsert.size());
+        progress.advance(specs.size() - toInsert.size() - toUpdate.size());
+        seedCounts.recordCounts(ImportSchema.SPECIMEN, toInsert.size(), toUpdate.size(),
+                specs.size() - toInsert.size() - toUpdate.size());
+    }
+
+    /**
+     * Overwrites the content fields of an already-persisted specimen with those of a freshly-built
+     * one from a re-import, so re-importing the same file with corrected values updates the existing
+     * row instead of being a no-op. Identity (fullIdentifier/recordingUnit/actionUnit) and provenance
+     * (createdBy/creationTime) are left untouched.
+     */
+    private void mergeSpecimenInto(Specimen built, Specimen existing) {
+        existing.setIdentifier(built.getIdentifier());
+        existing.setCategory(built.getCategory());
+        existing.setAuthors(built.getAuthors());
+        existing.setCollectors(built.getCollectors());
+        existing.setMaterial(built.getMaterial());
+        existing.setNormalizedInterpretation(built.getNormalizedInterpretation());
+        existing.setDescription(built.getDescription());
+        existing.setComments(built.getComments());
+        existing.setIsolationNumber(built.getIsolationNumber());
+        existing.setTaq(built.getTaq());
+        existing.setTpq(built.getTpq());
+        existing.setOtherIdentifier(built.getOtherIdentifier());
+        existing.setChronologicalAttribution(built.getChronologicalAttribution());
+        existing.setNumberOfElements(built.getNumberOfElements());
+        existing.setCollectionDate(built.getCollectionDate());
+        existing.setCollectionMethod(built.getCollectionMethod());
+        existing.setSanitaryState(built.getSanitaryState());
+        existing.setMaterialClass(built.getMaterialClass());
     }
 
     private Specimen buildSpecimen(SpecimenSpecs s, int index, Map<String, Institution> institutionsByIdentifier,
                                     Map<String, Person> personCache, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey,
                                     Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> recordingUnitsByKey) {
         try {
-            Concept cat = SeederUtils.field("category", () -> {
-                Concept c = conceptsByKey.get(s.category());
-                if (c == null) throw new IllegalStateException("Concept " + s.category() + " introuvable");
-                return c;
-            });
-            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
             Institution institution = SeederUtils.field("institutionIdentifier", () -> {
                 Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
                 if (inst == null) throw new IllegalStateException("Institution introuvable");
                 return inst;
             });
+            Long institutionId = institution.getId();
+
+            Concept cat = SeederUtils.field("category", () -> {
+                if (s.category() == null) throw new IllegalStateException("Catégorie obligatoire manquante");
+                Concept c = conceptsByKey.get(s.category());
+                if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.category(), institutionId));
+                return c;
+            });
+            Concept material = resolveOptionalConcept(conceptsByKey, "material", s.material(), institutionId);
+            Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation(), institutionId);
+            Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution(), institutionId);
+            Concept collectionMethod = resolveOptionalConcept(conceptsByKey, "collectionMethod", s.collectionMethod(), institutionId);
+            Concept sanitaryState = resolveOptionalConcept(conceptsByKey, "sanitaryState", s.sanitaryState(), institutionId);
+            Concept materialClass = resolveOptionalConcept(conceptsByKey, "materialClass", s.materialClass(), institutionId);
+            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
 
             List<Person> authors    = buildPersonList(personCache, s.authors,    "authors");
             List<Person> collectors = buildPersonList(personCache, s.collectors, "collectors");
@@ -140,14 +205,40 @@ public class SpecimenSeeder {
             toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setRecordingUnit(ru);
+            toGetOrCreate.setActionUnit(ru.getActionUnit());
             toGetOrCreate.setAuthors(authors);
             toGetOrCreate.setCollectors(collectors);
             toGetOrCreate.setCreationTime(s.creationTime);
+            // mutable — Hibernate needs to write into this collection when merging onto an already-
+            // persisted specimen during a re-import (Set.of() throws UnsupportedOperationException then)
+            toGetOrCreate.setMaterial(material != null ? new HashSet<>(Set.of(material)) : new HashSet<>());
+            toGetOrCreate.setNormalizedInterpretation(interpretation);
+            toGetOrCreate.setDescription(s.description());
+            toGetOrCreate.setComments(s.comments());
+            toGetOrCreate.setIsolationNumber(s.isolationNumber());
+            toGetOrCreate.setTaq(s.taq());
+            toGetOrCreate.setTpq(s.tpq());
+            toGetOrCreate.setOtherIdentifier(s.otherIdentifier());
+            toGetOrCreate.setChronologicalAttribution(chronologicalAttribution);
+            toGetOrCreate.setNumberOfElements(s.numberOfElements());
+            toGetOrCreate.setCollectionDate(s.collectionDate());
+            toGetOrCreate.setCollectionMethod(collectionMethod);
+            toGetOrCreate.setSanitaryState(sanitaryState);
+            toGetOrCreate.setMaterialClass(materialClass != null ? new HashSet<>(Set.of(materialClass)) : new HashSet<>());
             return toGetOrCreate;
         } catch (Exception e) {
             throw new IllegalStateException(
-                    "[Spécimen ligne " + (index + 1) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
+                    "[Spécimen ligne " + SeederUtils.lineNumber(s.excelRowNumber(), index) + "] '" + s.fullIdentifier() + "' : " + e.getMessage(), e);
         }
+    }
+
+    private Concept resolveOptionalConcept(Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, String fieldName, ConceptSeeder.ConceptKey key, Long institutionId) {
+        if (key == null) return null;
+        return SeederUtils.field(fieldName, () -> {
+            Concept c = conceptsByKey.get(key);
+            if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(key, institutionId));
+            return c;
+        });
     }
 
     private void flushInBatches(List<Specimen> toInsert, ImportProgress progress) {
@@ -172,18 +263,17 @@ public class SpecimenSeeder {
      * Grouping by recording unit here (as earlier revisions did) degenerates to one query per recording
      * unit for that common shape, which is effectively N+1 again and can silently stall this whole step.
      */
-    private Set<String> fetchExistingSpecimenKeys(List<Specimen> built) {
+    private Map<String, Specimen> fetchExistingSpecimens(List<Specimen> built) {
         record GroupKey(Long institutionId, String actionUnitFullIdentifier) {}
         Set<GroupKey> groups = new HashSet<>();
         for (Specimen sp : built) {
             groups.add(new GroupKey(sp.getCreatedByInstitution().getId(), sp.getRecordingUnit().getActionUnit().getFullIdentifier()));
         }
-        Set<String> result = new HashSet<>();
+        Map<String, Specimen> result = new HashMap<>();
         for (GroupKey key : groups) {
-            for (SpecimenRepository.ExistingSpecimenKey existing : specimenRepository.findAllKeysByInstitutionIdAndActionUnitFullIdentifier(
+            for (Specimen existing : specimenRepository.findAllByInstitutionIdAndActionUnitFullIdentifier(
                     key.institutionId(), key.actionUnitFullIdentifier())) {
-                result.add(key.institutionId() + "|" + existing.getRecordingUnitFullIdentifier() + "|" + key.actionUnitFullIdentifier()
-                        + "|" + existing.getFullIdentifier());
+                result.put(dedupKey(existing), existing);
             }
         }
         return result;
@@ -210,8 +300,13 @@ public class SpecimenSeeder {
     private Map<ConceptSeeder.ConceptKey, Concept> fetchConcepts(List<SpecimenSpecs> specs) {
         Map<String, Set<String>> lowerIdcsByVocab = new HashMap<>();
         for (SpecimenSpecs s : specs) {
-            if (s.category() == null) continue;
-            lowerIdcsByVocab.computeIfAbsent(s.category().vocabularyExtId(), k -> new HashSet<>()).add(s.category().conceptExtId().toLowerCase());
+            addConceptKey(lowerIdcsByVocab, s.category());
+            addConceptKey(lowerIdcsByVocab, s.material());
+            addConceptKey(lowerIdcsByVocab, s.interpretation());
+            addConceptKey(lowerIdcsByVocab, s.chronologicalAttribution());
+            addConceptKey(lowerIdcsByVocab, s.collectionMethod());
+            addConceptKey(lowerIdcsByVocab, s.sanitaryState());
+            addConceptKey(lowerIdcsByVocab, s.materialClass());
         }
         Map<ConceptSeeder.ConceptKey, Concept> result = new HashMap<>();
         for (var entry : lowerIdcsByVocab.entrySet()) {
@@ -220,5 +315,10 @@ public class SpecimenSeeder {
             }
         }
         return result;
+    }
+
+    private void addConceptKey(Map<String, Set<String>> lowerIdcsByVocab, ConceptSeeder.ConceptKey key) {
+        if (key == null) return;
+        lowerIdcsByVocab.computeIfAbsent(key.vocabularyExtId(), k -> new HashSet<>()).add(key.conceptExtId().toLowerCase());
     }
 }

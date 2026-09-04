@@ -4,6 +4,7 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:comp="http://java.sun.com/jsf/composite/pages/settings/components"
                 xmlns:p="http://primefaces.org/ui"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
                 xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core">
 
     <ui:define name="head">
@@ -18,6 +19,7 @@
         <main>
 
             <comp:datatable
+                    id="projectListDatatable"
                     createButtonLabel="NULL"
                     formId="projectListForm"
                     title="#{langBean.msg('projectList.breadcrumb')}"
@@ -27,11 +29,46 @@
                     addAction="#{projectListBean.filter()}"
                     renderCreateButton="false"
             >
+                <f:facet name="extraFilter">
+                    <!-- Kept in its own form, sibling to (not nested inside) either of
+                         comp:datatable's own forms: p:autoComplete's completeMethod silently
+                         never fires when its form is nested inside another <form> (invalid
+                         HTML - the browser breaks the inner form on parse). -->
+                    <form:csrfform formId="memberFilterForm" styleClass="member-filter-row">
+                        <p:autoComplete id="memberFilter"
+                                        value="#{projectListBean.filterPerson}"
+                                        completeMethod="#{projectListBean.completePerson}"
+                                        queryDelay="300"
+                                        var="u"
+                                        itemLabel="#{u.displayName()}"
+                                        itemValue="#{u}"
+                                        converter="#{personDTOConverter}"
+                                        placeholder="#{langBean.msg('projectList.filterByMember.placeholder')}"
+                                        forceSelection="true"
+                                        appendTo="@(body)"
+                                        dropdown="false">
+                            <p:ajax event="itemSelect" listener="#{projectListBean.initFilteredByPerson(projectListBean.filterPerson)}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"/>
+                        </p:autoComplete>
+                        <p:commandLink action="#{projectListBean.toggleFilterByMe()}"
+                                       process="@this"
+                                       update="@form :projectListDatatable:formCC:projectListForm"
+                                       styleClass="member-filter-chip member-filter-me#{projectListBean.isFilteredByMe() ? ' member-filter-me-active' : ''}">
+                            #{langBean.msg('projectList.filterByMember.me')}
+                        </p:commandLink>
+                        <h:panelGroup rendered="#{not empty projectListBean.filterPerson}">
+                            <span class="member-filter-chip">
+                                #{langBean.msg('projectList.filterByMember.active', projectListBean.filterPerson.displayName())}
+                                <p:commandLink action="#{projectListBean.clearPersonFilter()}" update="@form :projectListDatatable:formCC:projectListForm" styleClass="member-filter-clear">✕</p:commandLink>
+                            </span>
+                        </h:panelGroup>
+                    </form:csrfform>
+                </f:facet>
                 <p:commandButton action="#{navBean.goToActionUnitList('FOCUS')}"
                                  icon="bi bi-database"
                                  value="Voir et créer des projets dans l'application"
                                  process="@this"
-                                 styleClass="ui-button-flat">
+                                 styleClass="ui-button-outlined"
+                                 style="margin: 1em 3vw;">
                 </p:commandButton>
 
                 <p:dataTable
@@ -47,14 +84,25 @@
                         <p:outputLabel value="#{au.name}"/>
                     </p:column>
 
-                    <p:column headerText="Institution">
+                    <p:column headerText="Organisation">
                         <p:outputLabel value="#{au.createdByInstitution.name}"/>
                     </p:column>
                     <p:column headerText="Identifiant">
                         <p:outputLabel value="#{au.fullIdentifier}"/>
                     </p:column>
                     <p:column headerText="#{langBean.msg('actionManagers.header.numberOfMembers')}">
-                        <p:outputLabel value="#{projectListBean.numberOfMemberInActionUnit(au)}"/>
+                        <p:commandLink action="#{projectListBean.redirectToProjectMembers(au)}" styleClass="chip-nav-link"
+                                       rendered="#{projectListBean.canManageSettings(au)}"
+                                       immediate="true" process="@this">
+                            <span class="chip chip-profile entity-nav-chip">
+                                #{projectListBean.numberOfMemberInActionUnit(au)}
+                            </span>
+                        </p:commandLink>
+                        <h:panelGroup rendered="#{not projectListBean.canManageSettings(au)}">
+                            <span class="chip chip-disabled">
+                                #{projectListBean.numberOfMemberInActionUnit(au)}
+                            </span>
+                        </h:panelGroup>
                     </p:column>
                     <p:column headerText="#{langBean.msg('organisationSettings.titles.actionManager')}">
                         <p:outputLabel value="#{au.createdBy.displayName()}"/>
@@ -63,6 +111,7 @@
                         <p:commandButton
                                 icon="bi bi-three-dots"
                                 action="#{projectListBean.redirectToProject(au)}"
+                                rendered="#{projectListBean.canManageSettings(au)}"
                         />
                     </p:column>
                 </p:dataTable>

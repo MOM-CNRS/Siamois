@@ -213,6 +213,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 services.getRecordingUnitService(),
                 formService,
                 this.formResponse,
+                langBean,
                 unit,
                 measurementOptions,
                 services.getUnitDefinitionService().findOptions()
@@ -436,6 +437,34 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     }
 
     /**
+     * The system field driving this entity's "scope" (type/category), if any — the field whose
+     * change re-initializes the form via {@code formScopeChangeCallback}. Lets a header component
+     * reuse the same field/answer already tracked here instead of a second, parallel binding.
+     */
+    public CustomField getFormScopeField() {
+        if (formScopeValueBinding == null || formScopeValueBinding.isEmpty() || fieldSource == null) {
+            return null;
+        }
+        return fieldSource.getAllFields().stream()
+                .filter(this::isFormScopeField)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * The current answer for {@link #getFormScopeField()}, if the field exists and already has
+     * a single-concept answer in this form's response.
+     */
+    public CustomFieldAnswerSelectOneFromFieldCodeViewModel getFormScopeAnswer() {
+        CustomField field = getFormScopeField();
+        if (field == null) {
+            return null;
+        }
+        CustomFieldAnswerViewModel ans = getFieldAnswer(field);
+        return ans instanceof CustomFieldAnswerSelectOneFromFieldCodeViewModel single ? single : null;
+    }
+
+    /**
      * Resolves the project (Action Unit) id to check for a thesaurus override when resolving
      * concept-autocomplete fields on this entity; null for entities with no project scope
      * (SpatialUnit, Specimen, Container, Phase), which keeps the institution-only lookup.
@@ -630,7 +659,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
      */
     public List<ActionUnitSummaryDTO> completeActionUnitOptions(String query) {
         return services.getActionUnitService()
-                .findMatchingInInstitutionByName(sessionSettingsBean.getSelectedInstitution(), query, 20)
+                .findAllByPersonInInstitutionByNameCompletionWithEditPerm(query, 20)
                 .stream()
                 .map(ActionUnitSummaryDTO::new)
                 .toList();

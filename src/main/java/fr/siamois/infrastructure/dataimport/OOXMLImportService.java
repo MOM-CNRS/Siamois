@@ -1,8 +1,10 @@
 package fr.siamois.infrastructure.dataimport;
 
 import fr.siamois.domain.models.misc.ImportProgress;
+import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -31,6 +33,7 @@ public class OOXMLImportService {
     private static final String HEADER_READ_ERROR_PREFIX = "Erreur lecture en-tête: ";
     public static final String PARENT = "parent";
     public static final String ENFANT = "enfant";
+    public static final String TYPE_LABEL1 = "type label";
 
     private final ConceptService conceptService;
 
@@ -371,7 +374,7 @@ public class OOXMLImportService {
         Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
         String enfantsRaw  = getStringCellOrNull(row, cols, "enfants");
 
-        ConceptSeeder.ConceptKey typeKey = conceptKeyFromColumnOrLabel(row, cols, "uri type", "type label",
+        ConceptSeeder.ConceptKey typeKey = conceptKeyFromColumnOrLabel(row, cols, "uri type", TYPE_LABEL1,
                 SpatialUnit.CATEGORY_FIELD_CODE, institutionDbId);
 
         SpatialUnitSeeder.SpatialUnitSpecs spec = new SpatialUnitSeeder.SpatialUnitSpecs(
@@ -495,7 +498,8 @@ public class OOXMLImportService {
                 us1, us2, relKey,
                 "True".equals(direction),
                 "True".equals(asynchrone),
-                "True".equals(incertain)));
+                "True".equals(incertain),
+                row.getRowNum() + 1));
     }
 
     public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(Sheet sheet) {
@@ -642,7 +646,7 @@ public class OOXMLImportService {
         Integer identifier = parseIntegerSafe(identStr);
 
         Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
-        ConceptSeeder.ConceptKey type           = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, "type label",
+        ConceptSeeder.ConceptKey type           = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, TYPE_LABEL1,
                 RecordingUnit.TYPE_FIELD_CODE, institutionDbId);
         ConceptSeeder.ConceptKey geomorphCycle  = conceptKeyFromColumnOrLabel(row, cols, "cycle uri", "cycle label",
                 RecordingUnit.GEOMORPHO_CYCLE_FIELD_CODE, institutionDbId);
@@ -673,6 +677,19 @@ public class OOXMLImportService {
 
         List<String> phaseIdentifiers = parsePersonList(getStringCellOrNull(row, cols, "phases"));
 
+        String comments = getStringCellOrNull(row, cols, "commentaire");
+        Integer taq = getIntegerCellOrNull(row, cols, "taq");
+        Integer tpq = getIntegerCellOrNull(row, cols, "tpq");
+
+        ConceptSeeder.ConceptKey erosionShape = conceptKeyFromColumnOrLabel(row, cols, "erosion forme uri", "erosion forme label",
+                RecordingUnit.EROSION_SHAPE_FIELD_CODE, institutionDbId);
+        ConceptSeeder.ConceptKey erosionOrientation = conceptKeyFromColumnOrLabel(row, cols, "erosion orientation uri", "erosion orientation label",
+                RecordingUnit.EROSION_ORIENTATION_FIELD_CODE, institutionDbId);
+        ConceptSeeder.ConceptKey erosionProfile = conceptKeyFromColumnOrLabel(row, cols, "erosion profil uri", "erosion profil label",
+                RecordingUnit.EROSION_PROFILE_FIELD_CODE, institutionDbId);
+        ConceptSeeder.ConceptKey chronologicalAttribution = conceptKeyFromColumnOrLabel(row, cols, "chronologie uri", "chronologie label",
+                RecordingUnit.CHRONOLOGICAL_ATTRIBUTION_FIELD_CODE, institutionDbId);
+
         return Optional.of(new RecordingUnitSeeder.RecordingUnitSpecs(
                 identStr,
                 identifier,
@@ -694,7 +711,15 @@ public class OOXMLImportService {
                 matrixColor,
                 matrixComp,
                 matrixTexture,
-                phaseIdentifiers
+                phaseIdentifiers,
+                comments,
+                taq,
+                tpq,
+                erosionShape,
+                erosionOrientation,
+                erosionProfile,
+                chronologicalAttribution,
+                row.getRowNum() + 1
         ));
     }
 
@@ -748,22 +773,60 @@ public class OOXMLImportService {
         String identStr = getStringCellOrNull(row, cols, IDENTIFIANT);
         if (identStr == null || identStr.isBlank()) return Optional.empty();
 
+        Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
         String institutionId = actionUnit != null ? actionUnit.getCreatedByInstitution().getIdentifier() : getStringCellOrNull(row, cols, INSTITUTION);
         String auteurFiche   = getStringCellOrNull(row, cols, "auteur fiche email");
         List<String> authors = (auteurFiche == null || auteurFiche.isBlank()) ? List.of() : List.of(auteurFiche.trim());
 
+        ConceptSeeder.ConceptKey material = conceptKeyFromColumnOrLabelWithLegacy(row, cols, "matiere uri", "matiere", "matiere label",
+                Specimen.MATIERE_FIELD, institutionDbId);
+        ConceptSeeder.ConceptKey category = conceptKeyFromColumnOrLabelWithLegacy(row, cols, "categorie uri", "categorie", "categorie label",
+                Specimen.CAT_FIELD, institutionDbId);
+        ConceptSeeder.ConceptKey interpretation = conceptKeyFromColumnOrLabelWithLegacy(row, cols, "designation uri", "designation", "designation label",
+                Specimen.INTERPRETATION_FIELD, institutionDbId);
+        ConceptSeeder.ConceptKey chronologicalAttribution = conceptKeyFromColumnOrLabel(row, cols, "chronologie uri", "chronologie label",
+                Specimen.CHRONOLOGICAL_ATTRIBUTION_FIELD, institutionDbId);
+        ConceptSeeder.ConceptKey collectionMethod = conceptKeyFromColumnOrLabel(row, cols, "methode de collecte uri", "methode de collecte label",
+                Specimen.METHOD_FIELD, institutionDbId);
+        ConceptSeeder.ConceptKey sanitaryState = conceptKeyFromColumnOrLabel(row, cols, "etat sanitaire uri", "etat sanitaire label",
+                Specimen.SANITARY_STATE_FIELD, institutionDbId);
+        ConceptSeeder.ConceptKey materialClass = conceptKeyFromColumnOrLabel(row, cols, "classe matiere uri", "classe matiere label",
+                Specimen.CLASS_FIELD, institutionDbId);
+
+        String description = getStringCellOrNull(row, cols, DESCRIPTION);
+        String comments = getStringCellOrNull(row, cols, "commentaire");
+        String isolationNumber = getStringCellOrNull(row, cols, "numero isolat");
+        Integer taq = getIntegerCellOrNull(row, cols, "taq");
+        Integer tpq = getIntegerCellOrNull(row, cols, "tpq");
+        String otherIdentifier = getStringCellOrNull(row, cols, "autre identifiant");
+        Integer numberOfElements = getIntegerCellOrNull(row, cols, "nombre d'elements");
+        OffsetDateTime collectionDate = parseOptionalDate(row, cols, "date de collecte");
+
         return Optional.of(new SpecimenSeeder.SpecimenSpecs(
                 identStr,
                 parseIntegerSafe(identStr),
-                conceptKeyFromColumn(row, cols, "matiere"),
-                conceptKeyFromColumn(row, cols, "categorie"),
-                conceptKeyFromColumn(row, cols, "designation"),
+                material,
+                category,
+                interpretation,
                 SIAMOIS_SYSTEM,
                 institutionId,
                 authors,
                 parsePersonList(getStringCellOrNull(row, cols, "collecteurs emails")),
                 OffsetDateTime.now(ZoneOffset.UTC),
-                parseRecordingUnitKey(row, cols, actionUnit)
+                parseRecordingUnitKey(row, cols, actionUnit),
+                description,
+                comments,
+                isolationNumber,
+                taq,
+                tpq,
+                otherIdentifier,
+                chronologicalAttribution,
+                numberOfElements,
+                collectionDate,
+                collectionMethod,
+                sanitaryState,
+                materialClass,
+                row.getRowNum() + 1
         ));
     }
 
@@ -781,12 +844,14 @@ public class OOXMLImportService {
                 if (header == null) continue;
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
 
+                Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
                 forEachDataRow(sheet, errors, progress, row -> {
                     String identifier = getStringCellOrNull(row, cols, IDENTIFIANT);
                     if (identifier == null || identifier.isBlank()) return;
 
                     String title       = getStringCellOrNull(row, cols, "titre");
-                    ConceptSeeder.ConceptKey type = conceptKeyFromColumn(row, cols, TYPE_URI);
+                    ConceptSeeder.ConceptKey type = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, TYPE_LABEL1,
+                            Phase.TYPE_FIELD, institutionDbId);
                     String description  = getStringCellOrNull(row, cols, DESCRIPTION);
                     Integer orderNumber = getIntegerCellOrNull(row, cols, "ordre");
                     Integer lowerBound  = getIntegerCellOrNull(row, cols, "borne inferieure");
@@ -801,8 +866,14 @@ public class OOXMLImportService {
                                     getStringCellOrNull(row, cols, "projet"),
                                     getStringCellOrNull(row, cols, INSTITUTION));
 
+                    Set<ConceptSeeder.ConceptKey> periods = conceptKeySetFromUriAndLabelColumns(row, cols,
+                            "periodes uri", "periodes label", Phase.PERIOD_FIELD, institutionDbId);
+                    Set<ConceptSeeder.ConceptKey> keywords = conceptKeySetFromUriAndLabelColumns(row, cols,
+                            "mots cles uri", "mots cles label", Phase.KEYWORD_FIELD, institutionDbId);
+
                     result.add(new PhaseSeeder.PhaseSpecs(
-                            identifier, title, type, description, orderNumber, lowerBound, upperBound, authorEmail, actionKey));
+                            identifier, title, type, description, orderNumber, lowerBound, upperBound, authorEmail, actionKey,
+                            periods, keywords, row.getRowNum() + 1));
                 });
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
@@ -878,20 +949,75 @@ public class OOXMLImportService {
     private ConceptSeeder.ConceptKey conceptKeyFromColumnOrLabel(Row row, Map<String, Integer> cols, String uriKey, String labelKey,
                                                                   String fieldCode, Long institutionId) {
         String uri = getStringCellOrNull(row, cols, uriKey);
-        if (uri != null && !uri.isBlank()) {
-            return conceptKeyFromColumn(row, cols, uriKey);
-        }
         String label = getStringCellOrNull(row, cols, labelKey);
+        if (uri != null && !uri.isBlank()) {
+            ConceptSeeder.ConceptKey key = conceptKeyFromColumn(row, cols, uriKey);
+            if (key == null) return null;
+            // The label column may carry a human-readable hint even though the URI won the resolution —
+            // keep it on the key purely so a later "concept not found" error can show it, not for lookups.
+            return (label == null || label.isBlank()) ? key
+                    : new ConceptSeeder.ConceptKey(key.vocabularyExtId(), key.conceptExtId(), label);
+        }
         if (label == null || label.isBlank()) return null;
         if (institutionId == null) {
             throw new IllegalStateException("[colonne '" + labelKey + "'] : résolution par label indisponible hors contexte projet");
         }
         try {
             Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
-            return new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId());
+            return new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId(), label);
         } catch (Exception e) {
             throw new IllegalStateException("[colonne '" + labelKey + "'] : " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Same as {@link #conceptKeyFromColumnOrLabel}, but also accepts a legacy single-column header
+     * (pre-URI/label split) as a fallback source for the URI, so historical workbooks built before
+     * that split keep working unchanged.
+     */
+    private ConceptSeeder.ConceptKey conceptKeyFromColumnOrLabelWithLegacy(Row row, Map<String, Integer> cols, String uriKey,
+                                                                             String legacyUriKey, String labelKey,
+                                                                             String fieldCode, Long institutionId) {
+        String effectiveUriKey = cols.containsKey(uriKey) ? uriKey : legacyUriKey;
+        return conceptKeyFromColumnOrLabel(row, cols, effectiveUriKey, labelKey, fieldCode, institutionId);
+    }
+
+    /**
+     * Resolves a multi-valued concept column pair to a set of concept keys: a ';'/','-separated list
+     * of URIs from {@code uriKey} plus a ';'/','-separated list of labels from {@code labelKey}
+     * (each label resolved against the institution's thesaurus for the given field code), unioned
+     * into one set — the list-column equivalent of {@link #conceptKeyFromColumnOrLabel}.
+     */
+    private Set<ConceptSeeder.ConceptKey> conceptKeySetFromUriAndLabelColumns(Row row, Map<String, Integer> cols,
+                                                                                String uriKey, String labelKey,
+                                                                                String fieldCode, Long institutionId) {
+        Set<ConceptSeeder.ConceptKey> result = new LinkedHashSet<>();
+
+        String uriRaw = getStringCellOrNull(row, cols, uriKey);
+        for (String uri : parsePersonList(uriRaw)) {
+            try {
+                ConceptSeeder.ConceptKey key = conceptKeyFromUri(uri);
+                if (key != null) result.add(key);
+            } catch (Exception e) {
+                throw new IllegalStateException("[colonne '" + uriKey + "'] : " + e.getMessage(), e);
+            }
+        }
+
+        String labelRaw = getStringCellOrNull(row, cols, labelKey);
+        List<String> labels = parsePersonList(labelRaw);
+        if (!labels.isEmpty() && institutionId == null) {
+            throw new IllegalStateException("[colonne '" + labelKey + "'] : résolution par label indisponible hors contexte projet");
+        }
+        for (String label : labels) {
+            try {
+                Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
+                result.add(new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId(), label));
+            } catch (Exception e) {
+                throw new IllegalStateException("[colonne '" + labelKey + "'] : " + e.getMessage(), e);
+            }
+        }
+
+        return result;
     }
 
 }

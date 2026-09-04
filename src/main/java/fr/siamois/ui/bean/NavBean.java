@@ -3,6 +3,7 @@ package fr.siamois.ui.bean;
 import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.models.Bookmark;
+import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.BookmarkService;
@@ -131,6 +132,16 @@ public class NavBean implements Serializable {
     public void goToOrganisationSettings() {
         institutionListSettingsBean.init();
         redirectBean.redirectTo("/settings/organisation");
+    }
+
+    /**
+     * Same as {@link #goToOrganisationSettings()}, pre-filtered to the organisations the given member
+     * belongs to. The filter travels as a {@code memberId} query param — {@code SettingsController}'s
+     * {@code /settings/organisation} mapping applies it after the redirect, since it unconditionally
+     * (re)initialises {@code institutionListSettingsBean} on every request to that URL.
+     */
+    public void goToOrganisationSettings(PersonDTO person) {
+        redirectBean.redirectTo("/settings/organisation?memberId=" + person.getId());
     }
 
     public void goToUserManagementSettings() {
@@ -285,6 +296,11 @@ public class NavBean implements Serializable {
         bookmarkedPanels = null;
     }
 
+    @EventListener(InstitutionChangeEvent.class)
+    public void resetBackUrlOnInstitutionChange() {
+        urlToGoBack = null;
+    }
+
     public void backFromSettings() throws IOException {
         setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
         if (urlToGoBack != null && !urlToGoBack.isEmpty()) {
@@ -300,6 +316,15 @@ public class NavBean implements Serializable {
         setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         projectListBean.init();
         redirectBean.redirectTo("/settings/project");
+    }
+
+    /**
+     * Same as {@link #goToProjectsSettings()}, pre-filtered to the projects the given member belongs to.
+     * The filter travels as a {@code memberId} query param — see {@link #goToOrganisationSettings(PersonDTO)}.
+     */
+    public void goToProjectsSettings(PersonDTO person) {
+        setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        redirectBean.redirectTo("/settings/project?memberId=" + person.getId());
     }
 
     public enum ApplicationMode {

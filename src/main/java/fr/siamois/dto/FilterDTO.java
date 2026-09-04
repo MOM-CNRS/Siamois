@@ -89,6 +89,16 @@ public class FilterDTO {
         return filter.keySet().stream().anyMatch(k -> !scopeFilterKeys.contains(k));
     }
 
+    /**
+     * Keys added via {@link #addScopeFilter} — the fixed context of the query (e.g. "this action unit"),
+     * as opposed to an ad-hoc user search filter. Always applied, unlike user filters which only
+     * constrain root-mode queries when actively searching.
+     */
+    @NonNull
+    public Set<String> getScopeFilterKeys() {
+        return Collections.unmodifiableSet(scopeFilterKeys);
+    }
+
     /** Add a scope (constant) filter — applied to every query but never treated as a user-applied filter. */
     public void addScopeFilter(String key, Object value, FilterType type) {
         filter.put(key, new FilterInfo(value, type));
@@ -152,6 +162,34 @@ public class FilterDTO {
     }
 
     public record DateRange(OffsetDateTime from, OffsetDateTime to) {}
+
+    public IntRange valueAsIntRangeOf(@NonNull String column) {
+        if (!filter.containsKey(column)) {
+            throw new IllegalArgumentException("Column not found: " + column);
+        }
+        Object raw = filter.get(column).filter;
+        if (!(raw instanceof List<?> list) || list.isEmpty()) {
+            return new IntRange(null, null);
+        }
+        Integer from = toInteger(list.get(0));
+        Integer to = list.size() > 1 ? toInteger(list.get(1)) : null;
+        return new IntRange(from, to);
+    }
+
+    private static Integer toInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String text) {
+            return text.isBlank() ? null : Integer.valueOf(text.trim());
+        }
+        throw new IllegalArgumentException("Unsupported integer value: " + value.getClass());
+    }
+
+    public record IntRange(Integer from, Integer to) {}
 
     public String valueOfAsString(@NonNull String column) {
         if (!filter.containsKey(column)) {

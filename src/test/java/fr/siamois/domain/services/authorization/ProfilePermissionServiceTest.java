@@ -122,8 +122,9 @@ class ProfilePermissionServiceTest {
         RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
         recordingUnit.setActionUnit(actionUnit);
 
-        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(false);
-        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS)).thenReturn(false);
         when(assignmentRepository.personHasPermissionInActionUnit(1L, 5L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(true);
 
         assertTrue(service.hasRecordingUnitWritePermission(userInfo, recordingUnit));
@@ -133,8 +134,9 @@ class ProfilePermissionServiceTest {
     void hasRecordingUnitWritePermission_returnsFalse_whenRecordingUnitHasNoActionUnitAndNoWiderGrant() {
         RecordingUnitDTO recordingUnit = new RecordingUnitDTO();
 
-        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(false);
-        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS)).thenReturn(false);
 
         assertFalse(service.hasRecordingUnitWritePermission(userInfo, recordingUnit));
         verify(assignmentRepository, never()).personHasPermissionInActionUnit(anyLong(), anyLong(), anyString());
@@ -147,8 +149,9 @@ class ProfilePermissionServiceTest {
         SpecimenDTO specimen = new SpecimenDTO();
         specimen.setActionUnit(actionUnit);
 
-        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_FINDS)).thenReturn(false);
-        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_FINDS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_FINDS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_FINDS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_FINDS)).thenReturn(false);
         when(assignmentRepository.personHasPermissionInActionUnit(1L, 5L, PermissionConstants.PROJECT_EDIT_FINDS)).thenReturn(true);
 
         assertTrue(service.hasSpecimenWritePermission(userInfo, specimen));
@@ -158,8 +161,9 @@ class ProfilePermissionServiceTest {
     void hasSpecimenWritePermission_returnsFalse_whenSpecimenHasNoActionUnitAndNoWiderGrant() {
         SpecimenDTO specimen = new SpecimenDTO();
 
-        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_FINDS)).thenReturn(false);
-        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_FINDS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_FINDS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_FINDS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_FINDS)).thenReturn(false);
 
         assertFalse(service.hasSpecimenWritePermission(userInfo, specimen));
         verify(assignmentRepository, never()).personHasPermissionInActionUnit(anyLong(), anyLong(), anyString());
@@ -172,8 +176,9 @@ class ProfilePermissionServiceTest {
         PhaseDTO phase = new PhaseDTO();
         phase.setActionUnit(actionUnit);
 
-        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_PHASES)).thenReturn(false);
-        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_PHASES)).thenReturn(false);
         when(assignmentRepository.personHasPermissionInActionUnit(1L, 5L, PermissionConstants.PROJECT_EDIT_PHASES)).thenReturn(true);
 
         assertTrue(service.hasPhaseWritePermission(userInfo, phase));
@@ -183,8 +188,9 @@ class ProfilePermissionServiceTest {
     void hasPhaseWritePermission_returnsFalse_whenPhaseHasNoActionUnitAndNoWiderGrant() {
         PhaseDTO phase = new PhaseDTO();
 
-        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_PHASES)).thenReturn(false);
-        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_PHASES)).thenReturn(false);
 
         assertFalse(service.hasPhaseWritePermission(userInfo, phase));
         verify(assignmentRepository, never()).personHasPermissionInActionUnit(anyLong(), anyLong(), anyString());
@@ -197,8 +203,9 @@ class ProfilePermissionServiceTest {
         ContainerDTO container = new ContainerDTO();
         container.setActionUnit(actionUnit);
 
-        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_CONTAINERS)).thenReturn(false);
-        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_CONTAINERS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_CONTAINERS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_CONTAINERS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_CONTAINERS)).thenReturn(false);
         when(assignmentRepository.personHasPermissionInActionUnit(1L, 5L, PermissionConstants.PROJECT_EDIT_CONTAINERS)).thenReturn(true);
 
         assertTrue(service.hasContainerWritePermission(userInfo, container));
@@ -208,8 +215,9 @@ class ProfilePermissionServiceTest {
     void hasContainerWritePermission_returnsFalse_whenContainerHasNoActionUnitAndNoWiderGrant() {
         ContainerDTO container = new ContainerDTO();
 
-        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_EDIT_CONTAINERS)).thenReturn(false);
-        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.PROJECT_EDIT_CONTAINERS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_CONTAINERS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_CONTAINERS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_CONTAINERS)).thenReturn(false);
 
         assertFalse(service.hasContainerWritePermission(userInfo, container));
         verify(assignmentRepository, never()).personHasPermissionInActionUnit(anyLong(), anyLong(), anyString());
@@ -220,6 +228,7 @@ class ProfilePermissionServiceTest {
         ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(5L);
 
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(true);
 
@@ -232,6 +241,7 @@ class ProfilePermissionServiceTest {
         ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(5L);
 
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_MANAGE_SETTINGS)).thenReturn(false);
@@ -243,6 +253,7 @@ class ProfilePermissionServiceTest {
 
     @Test
     void hasActionUnitWritePermission_returnsFalse_whenActionUnitIsNullAndNoOrganizationGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
 
@@ -254,6 +265,7 @@ class ProfilePermissionServiceTest {
         ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(5L);
 
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)).thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.PROJECT_MANAGE_SETTINGS)).thenReturn(false);
@@ -323,5 +335,153 @@ class ProfilePermissionServiceTest {
 
         assertThat(result).containsExactlyInAnyOrder(5L, 6L);
         verify(assignmentRepository, never()).findActionUnitIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    // ------------------------------------------------------------------
+    // institutionIdsWithOrganizationPermission
+    // ------------------------------------------------------------------
+
+    private static InstitutionDTO institutionWithId(Long id) {
+        InstitutionDTO dto = new InstitutionDTO();
+        dto.setId(id);
+        return dto;
+    }
+
+    @Test
+    void institutionIdsWithOrganizationPermission_returnsEmpty_whenNoInstitutionsGiven() {
+        Set<Long> result = service.institutionIdsWithOrganizationPermission(person, List.of(), CODE);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsWithOrganizationPermission_returnsEmpty_whenPersonIsNull() {
+        Set<Long> result = service.institutionIdsWithOrganizationPermission(null, List.of(institution), CODE);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsWithOrganizationPermission_returnsEveryId_whenInstanceProfileGrantsIt() {
+        when(assignmentRepository.personHasInstancePermission(1L, CODE)).thenReturn(true);
+
+        Set<Long> result = service.institutionIdsWithOrganizationPermission(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)), CODE);
+
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+        verify(assignmentRepository, never()).findInstitutionIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void institutionIdsWithOrganizationPermission_batchesTheQuery_whenNoInstanceGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, CODE)).thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithPermission(1L, Set.of(10L, 20L), CODE))
+                .thenReturn(Set.of(10L));
+
+        Set<Long> result = service.institutionIdsWithOrganizationPermission(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)), CODE);
+
+        assertThat(result).containsExactly(10L);
+        // exactly one query for the whole batch, not one per institution
+        verify(assignmentRepository, times(1)).findInstitutionIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    // ------------------------------------------------------------------
+    // institutionIdsPersonCanAccess
+    // ------------------------------------------------------------------
+
+    @Test
+    void institutionIdsPersonCanAccess_returnsEmpty_whenNoInstitutionsGiven() {
+        Set<Long> result = service.institutionIdsPersonCanAccess(person, List.of());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsPersonCanAccess_returnsEmpty_whenPersonIsNull() {
+        Set<Long> result = service.institutionIdsPersonCanAccess(null, List.of(institution));
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsPersonCanAccess_returnsEveryId_whenInstanceManageOrganizationsSettingsGrantsIt() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS))
+                .thenReturn(true);
+
+        Set<Long> result = service.institutionIdsPersonCanAccess(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)));
+
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+        verify(assignmentRepository, never()).findInstitutionIdsWithAnyProfile(anyLong(), any());
+        verify(assignmentRepository, never()).findInstitutionIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void institutionIdsPersonCanAccess_returnsUnionOfMembershipAndManageSettings_whenNoInstanceGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS))
+                .thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithAnyProfile(1L, Set.of(10L, 20L)))
+                .thenReturn(Set.of(10L));
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithPermission(1L, Set.of(10L, 20L), PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(Set.of(20L));
+
+        Set<Long> result = service.institutionIdsPersonCanAccess(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)));
+
+        // 10L via membership, 20L via manage-settings permission — union of both sources
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+    }
+
+    // ------------------------------------------------------------------
+    // institutionIdsPersonCanManageSettings
+    // ------------------------------------------------------------------
+
+    @Test
+    void institutionIdsPersonCanManageSettings_returnsEmpty_whenNoInstitutionsGiven() {
+        Set<Long> result = service.institutionIdsPersonCanManageSettings(person, List.of());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsPersonCanManageSettings_returnsEmpty_whenPersonIsNull() {
+        Set<Long> result = service.institutionIdsPersonCanManageSettings(null, List.of(institution));
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void institutionIdsPersonCanManageSettings_returnsEveryId_whenInstanceManageSettingsGrantsIt() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_SETTINGS))
+                .thenReturn(true);
+
+        Set<Long> result = service.institutionIdsPersonCanManageSettings(
+                person, List.of(institutionWithId(10L), institutionWithId(20L)));
+
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+        verify(assignmentRepository, never()).findInstitutionIdsWithPermission(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void institutionIdsPersonCanManageSettings_delegatesToOrganizationPermission_whenNoInstanceGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_MANAGE_SETTINGS))
+                .thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithPermission(1L, Set.of(10L), PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(Set.of(10L));
+
+        Set<Long> result = service.institutionIdsPersonCanManageSettings(person, List.of(institutionWithId(10L)));
+
+        assertThat(result).containsExactly(10L);
     }
 }

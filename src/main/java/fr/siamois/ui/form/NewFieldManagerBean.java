@@ -9,11 +9,13 @@ import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.dto.field.CustomFieldMeasurementDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerMeasurementViewModel;
+import fr.siamois.utils.MessageUtils;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +31,7 @@ public class NewFieldManagerBean {
     private final RecordingUnitService recordingUnitService;
     private final FormService formService;
     private final CustomFormResponseViewModel formResponse;
+    private final LangBean langBean;
     private final AbstractEntityDTO owner; // entity whose form the fields are created from
     private final List<CustomFieldMeasurement> addFieldOptions; // options of existing fields when clicking the split button dropdown
     private final List<UnitDefinitionDTO> unitOptions; // units a new field can measure in
@@ -65,6 +68,11 @@ public class NewFieldManagerBean {
     public void saveNewField() {
         if (currentPanel == null) {
             throw new IllegalStateException("No panel selected. Call prepareNewField(panel) first.");
+        }
+
+        if (type == null) {
+            MessageUtils.displayErrorMessage(langBean, "newField.error.typeRequired");
+            return;
         }
 
         // 1. Prepare and persist the new field definition
@@ -113,6 +121,10 @@ public class NewFieldManagerBean {
             panel.setRows(new ArrayList<>());
         }
 
+        if (isFieldAlreadyInPanel(panel, field)) {
+            return;
+        }
+
         CustomColUiDto newCol = new CustomColUiDto();
         newCol.setCanBeRemoved(true);
         newCol.setField(field);
@@ -137,6 +149,13 @@ public class NewFieldManagerBean {
         CustomFieldAnswerMeasurementViewModel answer = new CustomFieldAnswerMeasurementViewModel();
         formService.initializeMeasurement(answer, field);
         formResponse.getAnswers().putIfAbsent(field, answer);
+    }
+
+    private boolean isFieldAlreadyInPanel(CustomFormPanelUiDto panel, CustomFieldMeasurement field) {
+        return panel.getRows().stream()
+                .filter(row -> row.getColumns() != null)
+                .flatMap(row -> row.getColumns().stream())
+                .anyMatch(col -> field.equals(col.getField()));
     }
 
     public void removeField(CustomFormPanelUiDto panel, CustomColUiDto colToRemove) {

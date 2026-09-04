@@ -73,6 +73,8 @@ import java.util.function.Consumer;
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private static final String NO_SOURCE = "—";
+    private static final int DEFAULT_MIN_CODE = 1;
+    private static final int DEFAULT_MAX_CODE = 999;
 
     private final FieldConfigurationService fieldConfigurationService;
     private final LabelService labelService;
@@ -162,8 +164,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .typeName(typeName)
                 .definition(valueConcept.map(this::definitionOf).orElse(""))
                 .identifierFormat(identifiers == null ? table.getDefaultIdentifierFormat() : identifiers.getIdentifierFormat())
-                .minCode(identifiers == null ? 0 : identifiers.getMinCode())
-                .maxCode(identifiers == null ? 999 : identifiers.getMaxCode())
+                .minCode(identifiers == null ? DEFAULT_MIN_CODE : identifiers.getMinCode())
+                .maxCode(identifiers == null ? DEFAULT_MAX_CODE : identifiers.getMaxCode())
                 .build();
     }
 
@@ -709,7 +711,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         config.setInstitution(project.getCreatedByInstitution());
         config.setFieldConcept(fieldConcept);
         config.setFieldConfigs(new ArrayList<>());
-        initializeIdentifierConfig(config, table);
+        initializeIdentifierConfig(config, table, projectId, DEFAULT_TYPE.equals(typeName));
         if (!DEFAULT_TYPE.equals(typeName)) {
             config.setValueConcept(findValueConcept(projectId, fieldConcept, typeName)
                     .orElseThrow(() -> new NoSuchElementException(
@@ -730,7 +732,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         config.setInstitution(project.getCreatedByInstitution());
         config.setFieldConcept(fieldConcept);
         config.setFieldConfigs(new ArrayList<>());
-        initializeIdentifierConfig(config, table);
+        initializeIdentifierConfig(config, table, projectId, typeConceptId == null);
         if (typeConceptId != null) {
             config.setValueConcept(conceptRepository.findById(typeConceptId)
                     .orElseThrow(() -> new NoSuchElementException("Unknown concept id " + typeConceptId)));
@@ -738,10 +740,23 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return formConfigRepository.save(config);
     }
 
-    private static void initializeIdentifierConfig(FormConfig config, ConfigurableTable table) {
-        config.setIdentifierFormat(table.getDefaultIdentifierFormat());
-        config.setMinCode(0);
-        config.setMaxCode(999);
+    /**
+     * Seeds the identifier configuration of a row being created. A type inherits the identifier
+     * configuration of the project's default configuration — the very one it was reading through
+     * {@link #getFormConfig(Long, ConfigurableTable, String)} until it got a row of its own — so
+     * materializing the row, whatever the change that triggers it, does not silently move the type
+     * back onto the built-in format and bounds.
+     */
+    private void initializeIdentifierConfig(FormConfig config, ConfigurableTable table, Long projectId,
+                                            boolean isDefault) {
+        Optional<FormConfig> inherited = isDefault
+                ? Optional.empty()
+                : findFormConfig(projectId, table, (Long) null);
+        config.setIdentifierFormat(inherited
+                .map(FormConfig::getIdentifierFormat)
+                .orElseGet(table::getDefaultIdentifierFormat));
+        config.setMinCode(inherited.map(FormConfig::getMinCode).orElse(DEFAULT_MIN_CODE));
+        config.setMaxCode(inherited.map(FormConfig::getMaxCode).orElse(DEFAULT_MAX_CODE));
     }
 
     private Optional<Concept> findFieldConcept(Long projectId, ConfigurableTable table) {

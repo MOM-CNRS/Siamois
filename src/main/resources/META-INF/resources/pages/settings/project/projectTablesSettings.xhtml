@@ -162,7 +162,7 @@
                                  icon="bi bi-database"
                                  value="Ouvrir le projet dans l'application"
                                  process="@this"
-                                 styleClass="ui-button-flat">
+                                 styleClass="ui-button-outlined">
                     <f:param name="id" value="#{projectTableFieldSettingsBean.project.id}"/>
                 </p:commandButton>
             </form:csrfform>
@@ -351,36 +351,36 @@
                                                 <ui:repeat value="#{projectTableFieldSettingsBean.identSegments}" var="seg" varStatus="status">
                                                     <h:panelGroup rendered="#{not seg.token}">
                                                         <div class="ptc-ident-segment-text">
-                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update="@form" process="@this"/>
+                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update="@form" process="@form"/>
                                                             <p:inputText value="#{projectTableFieldSettingsBean.identSegments[status.index].text}" placeholder="texte">
-                                                                <p:ajax event="change" update="@form" process="@this"/>
+                                                                <p:ajax event="change" update="@form" process="@form"/>
                                                             </p:inputText>
-                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update="@form" process="@this"/>
-                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update="@form" process="@this"/>
+                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update="@form" process="@form"/>
+                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update="@form" process="@form"/>
                                                         </div>
                                                     </h:panelGroup>
                                                     <h:panelGroup rendered="#{seg.token}">
                                                         <div class="ptc-ident-segment-token">
-                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update="@form" process="@this"/>
+                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update="@form" process="@form"/>
                                                             <span>#{seg.label}</span>
                                                             <h:panelGroup rendered="#{seg.numeric}">
                                                                 <div class="ptc-ident-digits-box">
                                                                     <span>#{langBean.msg('projectTables.ident.digits')}</span>
                                                                     <p:inputText value="#{projectTableFieldSettingsBean.identSegments[status.index].digits}">
-                                                                        <p:ajax event="change" update="@form" process="@this"/>
+                                                                        <p:ajax event="change" update="@form" process="@form"/>
                                                                     </p:inputText>
                                                                 </div>
                                                             </h:panelGroup>
-                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update="@form" process="@this"/>
-                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update="@form" process="@this"/>
+                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update="@form" process="@form"/>
+                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update="@form" process="@form"/>
                                                         </div>
                                                     </h:panelGroup>
                                                 </ui:repeat>
-                                                <p:commandButton value="+ #{langBean.msg('projectTables.ident.addText')}" styleClass="ptc-ident-add-text" actionListener="#{projectTableFieldSettingsBean.addIdentTextSegment()}" update="@form" process="@this"/>
+                                                <p:commandButton value="+ #{langBean.msg('projectTables.ident.addText')}" styleClass="ptc-ident-add-text" actionListener="#{projectTableFieldSettingsBean.addIdentTextSegment()}" update="@form" process="@form"/>
                                             </div>
                                             <div class="ptc-chip-row">
                                                 <ui:repeat value="#{projectTableFieldSettingsBean.identifierResolvers}" var="resolver">
-                                                    <p:commandButton value="{ } #{langBean.msg(resolver.titleCode)}" styleClass="ptc-ident-token-option" actionListener="#{projectTableFieldSettingsBean.addIdentTokenSegment(resolver.code)}" update="@form" process="@this"/>
+                                                    <p:commandButton value="{ } #{langBean.msg(resolver.titleCode)}" styleClass="ptc-ident-token-option" actionListener="#{projectTableFieldSettingsBean.addIdentTokenSegment(resolver.code)}" update="@form" process="@form"/>
                                                 </ui:repeat>
                                             </div>
                                         </div>

@@ -641,14 +641,18 @@ public class SpatialUnitService implements ArkEntityService {
 
         // Tree-mode shortcut: only roots, possibly restricted to "ancestors of a match"
         if (filterDTO.isRootOnly()) {
+            // Scope filters (e.g. "children of this spatial unit") are always part of the fixed
+            // query context, even with no active user search — they must never be dropped in
+            // root-mode, otherwise roots from other contexts leak into the tree.
+            Specification<SpatialUnit> scoped = base.and(scopeFilterSpecs(filterDTO));
             if (filterDTO.hasUserFilters()) {
                 Collection<Long> closure = resolveAncestorClosure(institutionDTO, filterDTO);
                 if (closure.isEmpty()) {
-                    return base.and((root, q, cb) -> cb.disjunction()); // no match → empty
+                    return scoped.and((root, q, cb) -> cb.disjunction()); // no match → empty
                 }
-                return base.and(SpatialUnitSpec.unitIsRoot()).and(SpatialUnitSpec.idIn(closure));
+                return scoped.and(SpatialUnitSpec.unitIsRoot()).and(SpatialUnitSpec.idIn(closure));
             }
-            return base.and(SpatialUnitSpec.unitIsRoot());
+            return scoped.and(SpatialUnitSpec.unitIsRoot());
         }
 
         return base.and(userFilterSpecs(filterDTO));
@@ -666,6 +670,25 @@ public class SpatialUnitService implements ArkEntityService {
         }
 
         if (filterDTO.containsColumn(SpatialUnitSpec.PARENT_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.isChildOf(filterDTO.valueAsIdListOf(SpatialUnitSpec.PARENT_FILTER)));
+        }
+
+        return specs;
+    }
+
+    private Specification<SpatialUnit> scopeFilterSpecs(FilterDTO filterDTO) {
+        Specification<SpatialUnit> specs = Specification.where(null);
+        Set<String> scopeKeys = filterDTO.getScopeFilterKeys();
+
+        if (scopeKeys.contains(SpatialUnitSpec.NAME_FILTER) && filterDTO.containsColumn(SpatialUnitSpec.NAME_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));
+        }
+
+        if (scopeKeys.contains(SpatialUnitSpec.CATEGORY_FILTER) && filterDTO.containsColumn(SpatialUnitSpec.CATEGORY_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.categoryIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.CATEGORY_FILTER)));
+        }
+
+        if (scopeKeys.contains(SpatialUnitSpec.PARENT_FILTER) && filterDTO.containsColumn(SpatialUnitSpec.PARENT_FILTER)) {
             specs = specs.and(SpatialUnitSpec.isChildOf(filterDTO.valueAsIdListOf(SpatialUnitSpec.PARENT_FILTER)));
         }
 

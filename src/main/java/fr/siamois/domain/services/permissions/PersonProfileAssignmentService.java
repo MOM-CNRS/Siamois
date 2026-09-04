@@ -42,6 +42,22 @@ public class PersonProfileAssignmentService {
         return addToInstitution(institution, person, profiles) != null;
     }
 
+    /**
+     * Assigns every superadmin the {@link ProfileConstants#ORGANIZATION_MANAGER} profile of the given
+     * institution, exactly as a manager added by hand. This is how a superadmin reaches the data of an
+     * organization: no query and no service grants them anything on the strength of their INSTANCE-scoped
+     * profile alone.
+     * <p>
+     * Called when an organization is created, and for every existing organization at instance startup.
+     *
+     * @param institution the institution whose managers the superadmins join
+     */
+    public void assignSuperAdminsAsOrganizationManagers(InstitutionDTO institution) {
+        for (Person superAdmin : personProfileAssignmentRepository.findAllSuperAdmins()) {
+            addToManagers(institution, personMapper.convert(superAdmin));
+        }
+    }
+
     public boolean addToProjectMembers(ActionUnitDTO actionUnit, PersonDTO person) {
         return addToProjectMembers(actionUnit, person, List.of()) != null;
     }
@@ -170,5 +186,11 @@ public class PersonProfileAssignmentService {
     @Transactional
     public void removeFromProject(ActionUnitDTO project, PersonDTO person) {
         personProfileAssignmentRepository.deleteByActionUnitIdAndPersonId(project.getId(), person.getId());
+    }
+
+    public boolean isOrganizationManagerOrProjectManager(InstitutionDTO institutionDTO, PersonDTO user) {
+        Profile organizationManager = profileService.createOrGetOrganizationManagerProfile(institutionDTO);
+        Profile projectmanager = profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO);
+        return personProfileAssignmentRepository.personHasAnyProfile(user.getId(), List.of(organizationManager.getId(), projectmanager.getId()));
     }
 }

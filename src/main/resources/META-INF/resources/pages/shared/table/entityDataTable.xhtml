@@ -50,6 +50,9 @@
         <p:ajax event="rowUnselectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
         <p:ajax event="toggleSelect" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
 
+        <p:ajax event="filter" process="@this"
+                oncomplete="updateSelectedCountChip('#{cc.clientId}:entityDatatable:selectedCountChip', args)"/>
+
         <f:facet name="{RowReport}">
             <span class="ui-paginator-current">
                 #{tableModel.lazyDataModel.getFirstIndexOnPage()}-#{tableModel.lazyDataModel.getLastIndexOnPage()} of #{tableModel.lazyDataModel.rowCount}
@@ -164,6 +167,7 @@
                     <div class="mca-row-actions">
                         <ui:repeat value="#{tableModel.rowActions}" var="action">
                             <p:commandButton
+                                    id="btnAction"
                                     disabled="#{not tableModel.isRendered(action, item)}"
                                     style="#{tableModel.isRendered(action, item) ? '' : 'visibility:hidden'}"
                                     icon="#{tableModel.resolveIcon(action, item)}"
@@ -171,6 +175,12 @@
                                     process="#{empty action.processExpr ? '@this' : action.processExpr}"
                                     update="#{action.updateSelfTable ? (':'.concat(cc.clientId).concat(':entityDatatable')) : action.updateExpr}"
                                     styleClass="#{action.styleClass}"/>
+                            <p:tooltip
+                                    id="btnActionTooltip"
+                                    autoHide="false"
+                                    value="#{tableModel.getRowActionTooltipCode(action, item)}"
+                                    position="bottom"
+                                    for="btnAction"/>
                         </ui:repeat>
                     </div>
 
@@ -191,7 +201,7 @@
                     visible="#{column.visible}"
                     field="#{column.field.valueBinding}"
                     filterBy="#{column.field.valueBinding}"
-                    sortBy="#{column.field != null ? column.field.valueBinding : column.sortField}"
+                    sortBy="#{not empty column.sortField ? column.sortField : column.field.valueBinding}"
                     toggleable="#{column.type != 'COMMAND_LINK'}"
             >
                 <ui:include src="/pages/shared/table/filterTemplate.xhtml">

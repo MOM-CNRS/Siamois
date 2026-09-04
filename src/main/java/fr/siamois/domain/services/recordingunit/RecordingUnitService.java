@@ -16,8 +16,8 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
@@ -25,7 +25,6 @@ import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
@@ -52,7 +51,10 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -75,7 +77,7 @@ import static fr.siamois.domain.models.ValidationStatus.*;
 @RequiredArgsConstructor
 public class RecordingUnitService implements ArkEntityService {
 
-    public static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
+    static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
     private final RecordingUnitRepository recordingUnitRepository;
     private final PersonRepository personRepository;
     private final ActionUnitService actionUnitService;
@@ -84,6 +86,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
     private final StatigraphicRelationshipMapper stratigraphicRelationshipMapper;
     private final RecordingUnitSummaryMapper recordingUnitSummaryMapper;
+    private final RecordingUnitSortFilterService recordingUnitSortFilterService;
     private final ConversionService conversionService;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
     private final DocumentRepository documentRepository;
@@ -817,6 +820,23 @@ public class RecordingUnitService implements ArkEntityService {
         return recordingUnitRepository.countByCreatedByInstitutionId(institutionId);
     }
 
+    /**
+     * Bulk version of {@link #countByInstitutionId} : recording unit count for every institution id in the
+     * collection, in one query instead of one per institution — used to render an institution list's
+     * recording unit count column without an N+1.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Long> countByInstitutionIds(Collection<Long> institutionIds) {
+        if (institutionIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : recordingUnitRepository.countByCreatedByInstitutionIds(institutionIds)) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+        return counts;
+    }
+
 
     /**
      * Verify if the user has the permission to create specimen in the context of a recording unit
@@ -1159,11 +1179,29 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
+    /**
+     * The recording units of an institution whose full identifier matches the query — what the
+     * table's parents/children filters autocomplete on, where the scope is the whole institution
+     * rather than one action unit.
+     *
+     * @param institution the institution to search in
+     * @param query       the text the full identifier must contain, null or blank matching everything
+     * @param limit       how many units to return at most
+     */
+    @Transactional(readOnly = true)
+    public List<RecordingUnitSummaryDTO> findMatchingInInstitutionByFullIdentifier(InstitutionDTO institution, String query, int limit) {
+        Specification<RecordingUnit> specs = RecordingUnitSpec.recordingUnitInInstitution(institution.getId())
+                .and(RecordingUnitSpec.fullIdentifierContains(query));
+
+        return recordingUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+                .stream()
+                .map(recordingUnitSummaryMapper::convert)
+                .toList();
+    }
+
     public List<RecordingUnitSummaryDTO> autocompleteInActionUnit(@NotNull Long actionUnitId, String query, int limit) {
         return recordingUnitRepository
-                .findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(
-                        actionUnitId, query == null ? "" : query,
-                        org.springframework.data.domain.PageRequest.of(0, limit))
+                .findByActionUnitIdAndFullIdentifierStartingWithLimited(actionUnitId, query == null ? "" : query, limit)
                 .stream()
                 .map(unit -> conversionService.convert(unit, RecordingUnitSummaryDTO.class))
                 .toList();
@@ -1267,7 +1305,7 @@ public class RecordingUnitService implements ArkEntityService {
 
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable,
                                                        boolean includeFullRelations) {
-        Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institution, filters);
         return pageAndEnrich(specs, pageable, includeFullRelations);
     }
 
@@ -1280,8 +1318,8 @@ public class RecordingUnitService implements ArkEntityService {
      */
     private Page<RecordingUnitDTO> pageAndEnrich(Specification<RecordingUnit> specs, Pageable pageable,
                                                  boolean includeFullRelations) {
-        specs = applyCountSort(specs, pageable.getSort());
-        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, stripCountSort(pageable))
+        specs = recordingUnitSortFilterService.applySyntheticSort(specs, pageable.getSort());
+        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, recordingUnitSortFilterService.stripSyntheticSort(pageable))
                 .map(recordingUnitMapper::toLightDto);
 
         List<Long> ids = page.getContent().stream()
@@ -1300,36 +1338,6 @@ public class RecordingUnitService implements ArkEntityService {
         return page;
     }
 
-    /**
-     * Composes a count-based ordering {@link Specification} when the requested sort targets a
-     * synthetic (non-JPA-path) count key, e.g. {@link RecordingUnitSpec#SPECIMEN_COUNT_SORT}.
-     */
-    private Specification<RecordingUnit> applyCountSort(Specification<RecordingUnit> specs, Sort sort) {
-        for (Sort.Order order : sort) {
-            if (RecordingUnitSpec.SPECIMEN_COUNT_SORT.equals(order.getProperty())) {
-                return specs.and(RecordingUnitSpec.orderBySpecimenCount(order.getDirection()));
-            }
-            if (RecordingUnitSpec.RELATIONSHIP_COUNT_SORT.equals(order.getProperty())) {
-                return specs.and(RecordingUnitSpec.orderByRelationshipCount(order.getDirection()));
-            }
-        }
-        return specs;
-    }
-
-    /**
-     * Strips the synthetic count sort key from the {@link Pageable} passed to the repository,
-     * since it is not a real JPA-mapped path (the ordering is applied via {@link #applyCountSort}
-     * as a {@link Specification} side effect instead).
-     */
-    private Pageable stripCountSort(Pageable pageable) {
-        boolean hasCountSort = pageable.getSort().stream()
-                .anyMatch(order -> RecordingUnitSpec.SPECIMEN_COUNT_SORT.equals(order.getProperty())
-                        || RecordingUnitSpec.RELATIONSHIP_COUNT_SORT.equals(order.getProperty()));
-        if (!hasCountSort) {
-            return pageable;
-        }
-        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-    }
 
     private void hydrateFullRelations(List<RecordingUnitDTO> rows, List<Long> ids) {
         Map<Long, Set<RecordingUnitSummaryDTO>> parentsByOwner = groupRecordingUnitsByOwner(
@@ -1422,7 +1430,7 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     public Page<RecordingUnitDTO> searchRecordingUnitInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters, Pageable pageable) {
-        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
         Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
         return results.map(recordingUnitMapper::convert);
@@ -1431,7 +1439,7 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> searchRecordingUnitInRecordingUnit(InstitutionDTO institutionDTO,
                                                                      @NonNull RecordingUnitDTO recordingUnitDTO,
                                                                      FilterDTO filters, Pageable pageable) {
-        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInRecordingUnit(recordingUnitDTO.getId()));
         Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
         return results.map(recordingUnitMapper::convert);
@@ -1440,125 +1448,37 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> searchRecordingUnitInSpatialUnit(InstitutionDTO institutionDTO,
                                                                    @NonNull SpatialUnitDTO spatialUnitDTO,
                                                                    FilterDTO filters, Pageable pageable) {
-        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInSpatialUnit(spatialUnitDTO.getId()));
         Page<RecordingUnit> results = recordingUnitRepository.findAll(specs, pageable);
         return results.map(recordingUnitMapper::convert);
     }
 
     public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO, FilterDTO filters) {
-        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
     public int countSearchResultsInRecordingUnit(InstitutionDTO institutionDTO,
                                                  @NonNull RecordingUnitDTO recordingUnitDTO, FilterDTO filters) {
-        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInRecordingUnit(recordingUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
     public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
                                                @NonNull SpatialUnitDTO spatialUnitDTO, FilterDTO filters) {
-        Specification<RecordingUnit> specs = prepareSpecs(institutionDTO, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institutionDTO, filters);
         specs = specs.and(RecordingUnitSpec.recordingUnitInSpatialUnit(spatialUnitDTO.getId()));
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
     public int countSearchResults(InstitutionDTO institution, FilterDTO filters) {
-        Specification<RecordingUnit> specs = prepareSpecs(institution, filters);
+        Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institution, filters);
         return Math.toIntExact(recordingUnitRepository.count(specs));
     }
 
-    public Specification<RecordingUnit> prepareSpecs(@NonNull InstitutionDTO institution, @NonNull FilterDTO filters) {
-        Specification<RecordingUnit> base = RecordingUnitSpec.recordingUnitInInstitution(institution.getId());
-
-        if (filters.isRootOnly()) {
-            if (filters.hasUserFilters()) {
-                Collection<Long> closure = resolveAncestorClosure(institution, filters);
-                if (closure.isEmpty()) {
-                    return base.and((root, q, cb) -> cb.disjunction());
-                }
-                return base.and(RecordingUnitSpec.unitIsRoot()).and(RecordingUnitSpec.idIn(closure));
-            }
-            return base.and(RecordingUnitSpec.unitIsRoot());
-        }
-
-        return base.and(userFilterSpecs(filters));
-    }
-
-    public static Specification<RecordingUnit> userFilterSpecs(@NonNull FilterDTO filters) {
-        Specification<RecordingUnit> specification = Specification.where(null);
-
-        if (filters.containsColumn(RecordingUnitSpec.FULL_IDENTIFIER)) {
-            specification = specification.and(RecordingUnitSpec.fullIdentifierContains(filters.valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)));
-        }
-
-        if (filters.containsColumn(RecordingUnitSpec.AUTHOR_FILTER)) {
-            specification = specification.and(RecordingUnitSpec.authorIsIn(filters.valueAsIdListOf(RecordingUnitSpec.AUTHOR_FILTER)));
-        }
-
-        if (filters.containsColumn(RecordingUnitSpec.MATRIX_FILTER)) {
-            specification = specification.and(RecordingUnitSpec.matrixContains(filters.valueOfAsString(RecordingUnitSpec.MATRIX_FILTER)));
-        }
-
-        if (filters.containsColumn(RecordingUnitSpec.SPATIAL_UNIT_FILTER)) {
-            specification = specification.and(RecordingUnitSpec.isInSpatialUnit(filters.valueAsIdListOf(RecordingUnitSpec.SPATIAL_UNIT_FILTER)));
-        }
-
-        if (filters.containsColumn(RecordingUnitSpec.ACTION_UNIT_FILTER)) {
-            specification = specification.and(RecordingUnitSpec.isInActionUnit(filters.valueAsIdListOf(RecordingUnitSpec.ACTION_UNIT_FILTER)));
-        }
-
-        if (filters.containsColumn(RecordingUnitSpec.CONTRIBUTORS_FILTER)) {
-            specification = specification.and(RecordingUnitSpec.isInContributors(filters.valueAsIdListOf(RecordingUnitSpec.CONTRIBUTORS_FILTER)));
-        }
-
-        if (filters.containsColumn(RecordingUnitSpec.TYPE_FILTER)) {
-            specification = specification.and(RecordingUnitSpec.typeIsIn(filters.valueAsIdListOf(RecordingUnitSpec.TYPE_FILTER)));
-        }
-
-        for (String dateFilter : new String[]{RecordingUnitSpec.OPENING_DATE_FILTER, RecordingUnitSpec.CLOSING_DATE_FILTER}) {
-            if (filters.containsColumn(dateFilter)) {
-                FilterDTO.DateRange range = filters.valueAsDateRangeOf(dateFilter);
-                specification = specification.and(RecordingUnitSpec.dateFieldBetween(dateFilter, range.from(), range.to()));
-            }
-        }
-
-        if (filters.containsColumn(RecordingUnitSpec.PARENTS_FILTER)) {
-            specification = specification.and(RecordingUnitSpec.isChildOf(filters.valueAsIdListOf(RecordingUnitSpec.PARENTS_FILTER)));
-        }
-
-        return specification;
-    }
-
-    private Collection<Long> resolveAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
-        if (filters.getAncestorClosure() != null) {
-            return filters.getAncestorClosure();
-        }
-        Specification<RecordingUnit> matchSpecs = RecordingUnitSpec
-                .recordingUnitInInstitution(institution.getId())
-                .and(userFilterSpecs(filters));
-
-        List<Long> matchIds = recordingUnitRepository.findAll(matchSpecs)
-                .stream()
-                .map(RecordingUnit::getId)
-                .toList();
-        Set<Long> closure = matchIds.isEmpty()
-                ? Collections.emptySet()
-                : new HashSet<>(recordingUnitRepository.findAncestorClosure(matchIds.toArray(Long[]::new)));
-        filters.setAncestorClosure(closure);
-        filters.setMatchIds(new HashSet<>(matchIds));
-        return closure;
-    }
-
-    public Set<Long> computeAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
-        if (!filters.isRootOnly() || !filters.hasUserFilters()) {
-            return Collections.emptySet();
-        }
-        return new HashSet<>(resolveAncestorClosure(institution, filters));
-    }
 
     @Transactional(readOnly = true)
     public void initializeHierarchy(RecordingUnitDTO unit) {

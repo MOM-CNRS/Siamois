@@ -160,10 +160,16 @@ public class InstitutionService {
         }
     }
 
+    /**
+     * Creates the three organization profiles of a freshly created institution and puts every
+     * superadmin among its managers, so a superadmin has the same organization-scoped rights on it as
+     * on any other organization of the instance.
+     */
     private void createInstitutionProfiles(InstitutionDTO institutionDTO) {
         profileService.createOrGetOrganizationManagerProfile(institutionDTO);
         profileService.createOrGetOrganizationProjectManagerProfile(institutionDTO);
         profileService.createOrGetOrganizationMemberProfile(institutionDTO);
+        personProfileAssignmentService.assignSuperAdminsAsOrganizationManagers(institutionDTO);
     }
 
 
@@ -187,6 +193,36 @@ public class InstitutionService {
         }
 
         return members;
+    }
+
+    /**
+     * Member count for every action unit in the collection, in one query instead of one per action unit —
+     * used to render a project list's member count column without an N+1. Counts exactly the same
+     * population as {@link ProjectMembersServiceInterfaceImpl#findMembersOf(ActionUnitDTO)} (the project's
+     * Members page): people holding an explicit {@code PersonProfileAssignment} on the action unit. The
+     * creator is not implicitly counted unless they also hold such an assignment, so this always agrees
+     * with what the Members page shows.
+     */
+    public Map<Long, Integer> countMembersOf(Collection<ActionUnitDTO> actionUnits) {
+        if (actionUnits.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Long> actionUnitIds = actionUnits.stream().map(ActionUnitDTO::getId).toList();
+        Map<Long, Set<Long>> memberIdsByActionUnitId = new HashMap<>();
+        for (Object[] row : personProfileAssignmentRepository.findPersonIdsByProfileActionUnitIds(actionUnitIds)) {
+            memberIdsByActionUnitId
+                    .computeIfAbsent((Long) row[0], k -> new HashSet<>())
+                    .add((Long) row[1]);
+        }
+
+        Map<Long, Integer> counts = new HashMap<>();
+        for (ActionUnitDTO actionUnit : actionUnits) {
+            counts.put(actionUnit.getId(),
+                    memberIdsByActionUnitId.getOrDefault(actionUnit.getId(), Set.of()).size());
+        }
+
+        return counts;
     }
 
     /**
@@ -262,6 +298,23 @@ public class InstitutionService {
      */
     public long countMembersInInstitution(InstitutionDTO institution) {
         return personRepository.countPersonsInInstitution(institution.getId());
+    }
+
+    /**
+     * Bulk version of {@link #countMembersInInstitution} : member count for every institution in the
+     * collection, in one query instead of one per institution — used to render an institution list's
+     * member count column without an N+1.
+     */
+    public Map<Long, Long> countMembersInInstitutions(Collection<InstitutionDTO> institutions) {
+        List<Long> institutionIds = institutions.stream().map(InstitutionDTO::getId).toList();
+        if (institutionIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : personRepository.countPersonsByInstitutionIds(institutionIds)) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+        return counts;
     }
 
     /**

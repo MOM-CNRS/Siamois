@@ -58,8 +58,7 @@
                 <!-- Multiple values (multiple=true) -->
                 <h:panelGroup rendered="#{cc.attrs.multiple and not empty cc.attrs.answer.value}">
                     <ui:repeat value="#{cc.attrs.answer.value}" var="c" varStatus="st">
-                        <span class="#{cc.attrs.compact and st.index ge 3 ? 'rum-extra' : ''}"
-                              style="#{cc.attrs.compact and st.index ge 3 ? 'display:none;' : ''}">
+                        <ui:fragment rendered="#{not cc.attrs.compact or st.index lt 3}">
                             <p:commandLink
                                     styleClass="rum-chip-link"
                                     style="white-space: nowrap;"
@@ -74,23 +73,18 @@
                                 <f:param name="id" value="#{c.id}"/>
                                 #{c.identifier}
                             </p:commandLink>
-                        </span>
+                        </ui:fragment>
                     </ui:repeat>
                 </h:panelGroup>
 
             </div>
 
-            <!-- +N / collapse — only in compact mode -->
+            <!-- +N — only in compact mode, opens the expand overlay -->
             <ui:fragment rendered="#{cc.attrs.compact and cc.attrs.multiple and not empty cc.attrs.answer.value and cc.attrs.answer.value.size() gt 3}">
                 <button type="button" class="rum-expand-badge rum-expand-btn"
                         style="background: var(--third-main-color)"
-                        onclick="rumExpand('#{cc.clientId.replace(':','_')}')">
+                        onclick="event.stopPropagation(); rumExpand('#{cc.clientId.replace(':','_')}')">
                     +#{cc.attrs.answer.value.size() - 3}
-                </button>
-                <button type="button" class="rum-action-btn rum-collapse-btn" style="display:none"
-                        title="Réduire"
-                        onclick="rumCollapse('#{cc.clientId.replace(':','_')}')">
-                    <i class="bi bi-chevron-double-left"/>
                 </button>
             </ui:fragment>
 
@@ -112,9 +106,47 @@
         </p:outputPanel>
 
         <!-- ═══════════════════════════════════════════════════════════
-             EDIT MODE (hidden by default, shown by rumEdit())
+             EXPAND OVERLAY — full list (compact mode only shows 3 + badge)
              ═══════════════════════════════════════════════════════════ -->
-        <div id="rum_e_#{cc.clientId.replace(':','_')}" class="rum-edit-wrapper" style="display:none">
+        <p:overlayPanel for="#{cc.clientId}:containerView" my="left top" at="left top" showEvent="none"
+                         widgetVar="#{cc.clientId.replace(':','_')}_expandOverlay"
+                         hideEvent="none"
+                         dismissable="true"
+                         styleClass="rum-overlay container"
+                         appendTo="#{cc.clientId}"
+                         onHide="rumOnOverlayHide('#{cc.clientId.replace(':','_')}_expandOverlay')"
+                         hideEffect="fade">
+            <div class="rum-items rum-overlay-items">
+                <ui:repeat value="#{cc.attrs.answer.value}" var="c">
+                    <p:commandLink
+                            styleClass="rum-chip-link"
+                            style="white-space: nowrap;"
+                            action="#{flowBean.addContainerToOverview(
+                                c.id,
+                                focusViewBean.mainPanel,
+                                null
+                            )}"
+                            process="@this"
+                            update="@none">
+                        <f:param name="id" value="#{c.id}"/>
+                        #{c.identifier}
+                    </p:commandLink>
+                </ui:repeat>
+            </div>
+        </p:overlayPanel>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             EDIT OVERLAY (hidden by default, shown by rumEdit())
+             ═══════════════════════════════════════════════════════════ -->
+        <p:overlayPanel for="#{cc.clientId}:containerView" my="left top" at="left top" showEvent="none"
+                         widgetVar="#{cc.clientId.replace(':','_')}_editOverlay"
+                         hideEvent="none"
+                         dismissable="true"
+                         styleClass="rum-overlay container"
+                         appendTo="#{cc.clientId}"
+                         onHide="rumOnEditOverlayHide('#{cc.clientId.replace(':','_')}', '#{cc.clientId}', '#{cc.clientId}:containerView')"
+                         hideEffect="fade">
+        <div class="rum-edit-wrapper">
 
             <p:autoComplete
                     value="#{cc.attrs.answer.value}"
@@ -224,7 +256,7 @@
             <!-- Close button: exit edit mode and refresh view panel -->
             <button type="button" class="rum-action-btn"
                     title="Fermer"
-                    onclick="rumClose('#{cc.clientId.replace(':','_')}'); PrimeFaces.ab({source:'#{cc.clientId}', process:'@none', update:'#{cc.clientId}:containerView'});">
+                    onclick="rumClose('#{cc.clientId.replace(':','_')}');">
                 <i class="bi bi-chevron-double-left"/>
             </button>
 
@@ -234,6 +266,7 @@
             </button>
 
         </div>
+        </p:overlayPanel>
 
     </cc:implementation>
 

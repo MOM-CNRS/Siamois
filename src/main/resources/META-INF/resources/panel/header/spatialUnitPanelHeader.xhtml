@@ -24,12 +24,16 @@
         <p:tooltip autoHide="false" value="Fiche suivante" position="bottom" for="next"/>
     </div>
 
-    <chip:editableIdentifierChip panel="#{panelModel}"
+    <chip:editableIdentifierChip id="idChipComposite" panel="#{panelModel}"
                                   value="#{panelModel.unit != null ? panelModel.unit.name : panelModel.titleCodeOrTitle}"
                                   styleClass="action-unit-chip-alt"
                                   icon="#{panelModel.icon}"/>
 
-    <chip:conceptChip concept="#{panelModel.unit.category}" styleClass="mr-2 spatial-unit-type-chip"/>
+    <chip:editableCategoryChip id="categoryChipComposite" panel="#{panelModel}"/>
+
+    <ui:include src="/pages/shared/panel/headerEditControls.xhtml">
+        <ui:param name="panel" value="#{panelModel}"/>
+    </ui:include>
 
     <p:chip rendered="#{panelModel.hasUnsavedModifications}" label="Modifications non enregistré"
             styleClass="mr-2 error-chip"

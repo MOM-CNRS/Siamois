@@ -15,14 +15,35 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
+
+    /**
+     * The genuinely INSTANCE-scope permission codes — every one of them is the instance-wide counterpart
+     * of an organisation- or project-scope permission (see {@link PermissionConstants}'s "Instance-wide
+     * counterparts" section), or an instance-only action like {@link PermissionConstants#ORGANIZATION_CREATE}.
+     * The superadmin profile holds exactly these — never an organisation- or project-scope code directly —
+     * and {@link ProfilePermissionService} explicitly checks each capability's own-scope code at every
+     * level, so this alone is enough for the superadmin to act everywhere.
+     */
+    private static final List<String> SUPERADMIN_PERMISSIONS = List.of(
+            PermissionConstants.INSTANCE_MANAGE_SETTINGS,
+            PermissionConstants.ORGANIZATION_CREATE,
+            PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS,
+            PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS,
+            PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_PLACES,
+            PermissionConstants.INSTANCE_ACCESS_ORGANIZATIONS,
+            PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+            PermissionConstants.INSTANCE_EDIT_PHASES,
+            PermissionConstants.INSTANCE_EDIT_FINDS,
+            PermissionConstants.INSTANCE_EDIT_CONTAINERS
+    );
 
     private final PermissionRepository permissionRepository;
     private final ProfileRepository profileRepository;
@@ -36,21 +57,47 @@ public class ProfileService {
         return permissionRepository.findByCode(permissionCode).orElseThrow(() -> new IllegalStateException(String.format("Permission with code %s not found", permissionCode)));
     }
 
+    /**
+     * Makes {@code profile}'s permission set exactly match {@code canonical} — adding anything missing
+     * and, importantly, removing anything that no longer belongs (e.g. a code granted by an earlier
+     * version of a system profile's definition). Without the removal half, a system profile only ever
+     * grows over successive app versions, so its held permissions silently drift out of sync with its
+     * scope's own catalog (see {@code AbstractMembersListBean#permissionCatalogOf}, which only displays a
+     * profile's own-scope codes) — the permission count keeps counting stale codes the UI can no longer show.
+     *
+     * @return {@code true} if the set actually changed (caller should persist)
+     */
+    private boolean reconcilePermissions(Profile profile, Set<Permission> canonical) {
+        Set<Permission> current = profile.getPermissions();
+        boolean removed = current.retainAll(canonical);
+        boolean added = current.addAll(canonical);
+        return removed || added;
+    }
 
+    /**
+     * @return the superadmin profile, creating it if missing and reconciling its permissions to exactly
+     *         {@link #SUPERADMIN_PERMISSIONS} if it already exists (adding anything missing, removing
+     *         anything stale from an earlier version of this list)
+     */
     @NonNull
     public Profile createOrGetSuperadminProfile() {
-        Optional<Profile> profile = profileRepository.findByCode(ProfileConstants.SUPERADMIN);
-        if (profile.isPresent()) return profile.get();
+        Set<Permission> allPermissions = SUPERADMIN_PERMISSIONS.stream()
+                .map(this::findOrThrowPermission)
+                .collect(Collectors.toSet());
 
-        Set<Permission> profilePermission = new HashSet<>();
-        profilePermission.add(findOrThrowPermission(PermissionConstants.INSTANCE_MANAGE_SETTINGS));
-        profilePermission.add(findOrThrowPermission(PermissionConstants.ORGANIZATION_CREATE));
-        profilePermission.add(findOrThrowPermission(PermissionConstants.ORGANIZATION_ACCESS));
+        Optional<Profile> existing = profileRepository.findByCode(ProfileConstants.SUPERADMIN);
+        if (existing.isPresent()) {
+            Profile profile = existing.get();
+            if (reconcilePermissions(profile, allPermissions)) {
+                return profileRepository.save(profile);
+            }
+            return profile;
+        }
 
         Profile superAdmin = Profile.builder()
                 .code(ProfileConstants.SUPERADMIN)
                 .name("Super administrateur")
-                .permissions(profilePermission)
+                .permissions(allPermissions)
                 .scope(PermissionScopeType.INSTANCE)
                 .build();
 
@@ -59,11 +106,17 @@ public class ProfileService {
 
     @NonNull
     private Profile createOrGetOrganizationProfile(String name, String code, List<String> permissions, @NonNull InstitutionDTO institutionDTO) {
-        Optional<Profile> profile = profileRepository.findByCodeAndInstitutionId(code, institutionDTO.getId());
-        if (profile.isPresent()) return profile.get();
-        Set<Permission> profilePermission = new HashSet<>();
-        for (String permissionCode : permissions) {
-            profilePermission.add(findOrThrowPermission(permissionCode));
+        Set<Permission> canonicalPermissions = permissions.stream()
+                .map(this::findOrThrowPermission)
+                .collect(Collectors.toSet());
+
+        Optional<Profile> existing = profileRepository.findByCodeAndInstitutionId(code, institutionDTO.getId());
+        if (existing.isPresent()) {
+            Profile profile = existing.get();
+            if (reconcilePermissions(profile, canonicalPermissions)) {
+                return profileRepository.save(profile);
+            }
+            return profile;
         }
 
         Institution institution = institutionRepository.findById(institutionDTO.getId()).orElseThrow(() -> new IllegalStateException(String.format("Institution with code %s not found", institutionDTO.getId())));
@@ -72,7 +125,7 @@ public class ProfileService {
                 .code(code)
                 .name(name)
                 .institution(institution)
-                .permissions(profilePermission)
+                .permissions(canonicalPermissions)
                 .scope(PermissionScopeType.ORGANISATION)
                 .build();
 
@@ -85,14 +138,18 @@ public class ProfileService {
                 PermissionConstants.ORGANIZATION_MANAGE_SETTINGS,
                 PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
                 PermissionConstants.ORGANIZATION_MANAGE_PLACES,
-                PermissionConstants.ORGANIZATION_ACCESS
+                PermissionConstants.ORGANIZATION_ACCESS,
+                PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
+                PermissionConstants.ORGANIZATION_EDIT_PHASES,
+                PermissionConstants.ORGANIZATION_EDIT_FINDS,
+                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS
         ), institutionDTO);
     }
 
     @NonNull
     public Profile createOrGetOrganizationProjectManagerProfile(@NonNull InstitutionDTO institutionDTO) {
         return createOrGetOrganizationProfile("Gestionnaire des projets", ProfileConstants.ORGANIZATION_PROJECT_MANAGER, List.of(
-                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
+                PermissionConstants.ORGANIZATION_CREATE_ACTIONS,
                 PermissionConstants.ORGANIZATION_MANAGE_PLACES,
                 PermissionConstants.ORGANIZATION_ACCESS
         ), institutionDTO);
@@ -106,11 +163,17 @@ public class ProfileService {
     }
 
     private Profile createOrGetProjectProfile(String name, String code, List<String> permissions, @NonNull InstitutionDTO institutionDTO, @NonNull ActionUnitDTO actionUnitDTO) {
-        Optional<Profile> profile = profileRepository.findByCodeAndInstitutionIdAndActionUnitId(code, institutionDTO.getId(), actionUnitDTO.getId());
-        if (profile.isPresent()) return profile.get();
-        Set<Permission> profilePermission = new HashSet<>();
-        for (String permissionCode : permissions) {
-            profilePermission.add(findOrThrowPermission(permissionCode));
+        Set<Permission> canonicalPermissions = permissions.stream()
+                .map(this::findOrThrowPermission)
+                .collect(Collectors.toSet());
+
+        Optional<Profile> existing = profileRepository.findByCodeAndInstitutionIdAndActionUnitId(code, institutionDTO.getId(), actionUnitDTO.getId());
+        if (existing.isPresent()) {
+            Profile profile = existing.get();
+            if (reconcilePermissions(profile, canonicalPermissions)) {
+                return profileRepository.save(profile);
+            }
+            return profile;
         }
 
         Institution institution = institutionRepository.findById(institutionDTO.getId()).orElseThrow(() -> new IllegalStateException(String.format("Institution with code %s not found", institutionDTO.getId())));
@@ -121,7 +184,7 @@ public class ProfileService {
                 .code(code)
                 .institution(institution)
                 .actionUnit(actionUnit)
-                .permissions(profilePermission)
+                .permissions(canonicalPermissions)
                 .scope(PermissionScopeType.PROJECT)
                 .build();
 

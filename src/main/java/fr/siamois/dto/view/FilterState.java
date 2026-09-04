@@ -27,6 +27,7 @@ public class FilterState {
         PERSON,
         ACTION_UNIT,
         SPATIAL_UNIT,
+        RECORDING_UNIT,
         BOOLEAN
     }
 }

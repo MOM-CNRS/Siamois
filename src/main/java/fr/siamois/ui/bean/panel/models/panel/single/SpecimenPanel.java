@@ -305,7 +305,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
             FormUiDto base = CustomFormComposer.withoutFields(form, inactiveSystemFieldBindings(projectId, typeName));
             form = CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additionalFields(projectId, typeName));
         }
-        detailsForm = form;
+        detailsForm = CustomFormComposer.deepCopy(form);
 
         // Init system form answers
         initFormContext(forceInit);
@@ -350,12 +350,12 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
 
     @Override
     protected String getFormScopePropertyName() {
-        return "";
+        return "category";
     }
 
     @Override
     protected void setFormScopePropertyValue(ConceptDTO concept) {
-        unit.setType(concept);
+        unit.setCategory(concept);
     }
 
 

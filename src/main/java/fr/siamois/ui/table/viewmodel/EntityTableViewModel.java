@@ -3,9 +3,12 @@ package fr.siamois.ui.table.viewmodel;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectPerson;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
@@ -33,6 +36,7 @@ import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.column.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.primefaces.event.ColumnToggleEvent;
 import org.primefaces.model.TreeNode;
 import org.primefaces.model.Visibility;
@@ -61,9 +65,10 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
  * - configureRowSystemFields(T entity, CustomForm form)
  */
 @Getter
+@Slf4j
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
-    private static final List<Integer> ROW_PER_PAGE = List.of(10, 50, 100);
+    private static final List<Integer> ROW_PER_PAGE = List.of(10, 25, 50);
     public static final String CONTAINER = "-container');";
     public static final int LIMIT = 100;
     public static final String LABEL = "label";
@@ -164,6 +169,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      * Unités spatiales sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
      */
     private final Map<String, List<SpatialUnitDTO>> spatialUnitFilterValues = new HashMap<>();
+
+    /**
+     * Unités d'enregistrement sélectionnées pour le filtre d'une colonne (clé = valueBinding de la
+     * colonne). Utilisé par les colonnes "parents" et "children", dont le filtre est une sélection
+     * multiple d'UE.
+     */
+    private final Map<String, List<RecordingUnitSummaryDTO>> recordingUnitFilterValues = new HashMap<>();
 
     /**
      * Bornes de dates sélectionnées pour le filtre d'une colonne (clé = valueBinding de la colonne).
@@ -268,6 +280,16 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                 && ffc.getField() instanceof CustomFieldSelectOneSpatialUnit;
     }
 
+    public boolean isRecordingUnitFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldSelectMultipleRecordingUnit;
+    }
+
+    public boolean isIntegerFilter(TableColumn column) {
+        return column instanceof FormFieldColumn ffc
+                && ffc.getField() instanceof CustomFieldInteger;
+    }
+
     public boolean isDateTimeFilter(TableColumn column) {
         return column instanceof FormFieldColumn ffc
                 && ffc.getField() instanceof CustomFieldDateTime;
@@ -301,6 +323,11 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                 .findMatchingInInstitutionByName(formContextServices.getSessionSettingsBean().getSelectedInstitution(), query, LIMIT);
     }
 
+    public List<RecordingUnitSummaryDTO> completeRecordingUnitForFilter(String query) {
+        return formContextServices.getRecordingUnitService()
+                .findMatchingInInstitutionByFullIdentifier(formContextServices.getSessionSettingsBean().getSelectedInstitution(), query, LIMIT);
+    }
+
     /**
      * Retourne (ou crée) le contexte de formulaire pour une ligne donnée.
      * Utilisable en EL : #{tableModel.rowContext(item)}
@@ -315,8 +342,9 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         }
 
         return rowContexts.computeIfAbsent(id, key -> {
-            // 1) Formulaire spécifique à cette entité (défini par la sous-classe)
-            FormUiDto rowForm = resolveRowFormFor(entity);
+            // 1) Formulaire spécifique à cette entité (défini par la sous-classe), copié pour ne
+            // jamais muter un formulaire partagé (cache, singleton statique, etc.)
+            FormUiDto rowForm = CustomFormComposer.deepCopy(resolveRowFormFor(entity));
 
             // 2) Configuration min/max des champs système pour CETTE ligne
             configureRowSystemFields(entity, rowForm);
@@ -382,12 +410,24 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     }
 
 
+    /**
+     * Number of non-toggleable columns rendered before the dynamic column block in
+     * entityDataTable.xhtml (selection checkbox + merged status/id/actions column).
+     * PrimeFaces' ColumnToggleEvent index is computed over the DataTable's full column
+     * list, so it must be offset by this amount to map onto {@code tableDefinition.getColumns()}.
+     */
+    private static final int FIXED_LEADING_COLUMNS = 2;
+
     @SuppressWarnings("unused")
     public void onToggle(ColumnToggleEvent e) {
         Integer index = (Integer) e.getData();
         Visibility visibility = e.getVisibility();
-        // 4 bc the first 4 columns are fixed
-        tableDefinition.getColumns().get(index).setVisible(visibility == Visibility.VISIBLE);
+        int adjustedIndex = index - FIXED_LEADING_COLUMNS;
+        if (adjustedIndex < 0 || adjustedIndex >= tableDefinition.getColumns().size()) {
+            log.warn("onToggle: column toggle index {} out of range after offset ({})", index, adjustedIndex);
+            return;
+        }
+        tableDefinition.getColumns().get(adjustedIndex).setVisible(visibility == Visibility.VISIBLE);
     }
 
 
@@ -873,6 +913,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         personFilterValues.clear();
         actionUnitFilterValues.clear();
         spatialUnitFilterValues.clear();
+        recordingUnitFilterValues.clear();
         dateFilterValues.clear();
 
         for (FilterState state : filters.values()) {
@@ -1014,6 +1055,38 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
                     );
                 }
 
+                case RECORDING_UNIT -> {
+
+                    List<Map<String, Object>> rawValues =
+                            (List<Map<String, Object>>) state.getValue();
+
+                    List<RecordingUnitSummaryDTO> values =
+                            rawValues.stream()
+                                    .map(raw -> {
+
+                                        Long id =
+                                                ((Number) raw.get("id")).longValue();
+
+                                        String label =
+                                                (String) raw.get(LABEL);
+
+                                        RecordingUnitSummaryDTO dto =
+                                                new RecordingUnitSummaryDTO();
+
+                                        dto.setId(id);
+
+                                        dto.setFullIdentifier(label);
+
+                                        return dto;
+                                    })
+                                    .toList();
+
+                    recordingUnitFilterValues.put(
+                            state.getColumnId(),
+                            values
+                    );
+                }
+
                 case DATE_RANGE -> {
 
                     List<Date> dates =
@@ -1123,6 +1196,27 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             filters.put(columnId, state);
         });
 
+        // recording units
+        recordingUnitFilterValues.forEach((columnId, values) -> {
+
+            FilterState state = new FilterState();
+
+            state.setColumnId(columnId);
+
+            state.setType(RECORDING_UNIT);
+
+            state.setValue(
+                    values.stream()
+                            .map(v -> Map.of(
+                                    "id", v.getId(),
+                                    LABEL, v.getFullIdentifier()
+                            ))
+                            .toList()
+            );
+
+            filters.put(columnId, state);
+        });
+
         // date ranges
         dateFilterValues.forEach((columnId, values) -> {
 
@@ -1142,9 +1236,13 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public String getSelectedAndTotalCount() {
         int selectedCount = treeMode
-                ? (checkboxSelectedTreeNodes == null ? 0 : checkboxSelectedTreeNodes.size())
+                ? getCount()
                 : lazyDataModel.getSelectedUnits().size();
         return selectedCount + "/" + lazyDataModel.getRowCount();
+    }
+
+    private int getCount() {
+        return checkboxSelectedTreeNodes == null ? 0 : checkboxSelectedTreeNodes.size();
     }
 
     public void handleSelectionChange() {

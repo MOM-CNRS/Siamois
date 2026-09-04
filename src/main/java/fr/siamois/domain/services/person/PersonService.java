@@ -25,7 +25,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.text.Normalizer;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Service to manage Person
@@ -336,9 +339,20 @@ public class PersonService {
     }
 
     /**
-     * Find a Person by its username or email. Case-insensitive. Uses the pg_trgm extension for fuzzy matching.
+     * Find a Person by its email, as a DTO.
      *
-     * @param usernameOrMailInput The username or email of the person to find.
+     * @param email The email of the person to find.
+     * @return An Optional containing the PersonDTO if found, or empty if not found.
+     */
+    public Optional<PersonDTO> findDtoByEmail(String email) {
+        return findByEmail(email).map(personMapper::convert);
+    }
+
+    /**
+     * Find a Person by its username, email, or first/last name. Case-insensitive. Uses the pg_trgm
+     * extension for fuzzy matching.
+     *
+     * @param usernameOrMailInput The username, email, or name of the person to find.
      * @return An Optional containing the Person if found, or empty if not found.
      */
     public List<PersonDTO> findClosestByUsernameOrEmail(String usernameOrMailInput) {
@@ -349,6 +363,7 @@ public class PersonService {
         Set<Person> result = new HashSet<>();
         result.addAll(personRepository.findClosestByEmailLimit10(usernameOrMailInput));
         result.addAll(personRepository.findClosestByUsernameLimit10(usernameOrMailInput));
+        result.addAll(personRepository.findClosestByNameLimit10(usernameOrMailInput));
 
         return result.stream()
                 .map(personMapper::convert)
@@ -393,5 +408,88 @@ public class PersonService {
     public Optional<PersonDTO> findByUsername(String username) {
         return personRepository.findByUsernameIgnoreCase(username)
                 .map(personMapper::convert);
+    }
+
+    private static final int USERNAME_RANDOM_SUFFIX_MAX_ATTEMPTS = 20;
+
+    /**
+     * Builds a username from the person's first/last name (falling back to their e-mail's local part,
+     * then to "user" when both are blank), picking one that is actually free: when the plain
+     * "firstname.lastname" form is already taken, appends a random numeric suffix and retries.
+     *
+     * @param firstName         the person's first name, may be blank
+     * @param lastName          the person's last name, may be blank
+     * @param emailFallback     their e-mail, used to derive a username only when both names are blank
+     * @param reservedUsernames usernames (case-insensitive) to also treat as taken in addition to the
+     *                          database - lets a caller avoid collisions within a batch of not-yet-persisted
+     *                          drafts (e.g. several rows of the same bulk CSV import) before any of them
+     *                          actually reaches the database
+     * @return a username guaranteed not to collide with the database or {@code reservedUsernames}
+     */
+    public String generateUniqueUsername(String firstName, String lastName, String emailFallback, Set<String> reservedUsernames) {
+        String rawBase = usernameBase(firstName, lastName, emailFallback);
+        String base = rawBase.length() > Person.USERNAME_MAX_LENGTH
+                ? rawBase.substring(0, Person.USERNAME_MAX_LENGTH) : rawBase;
+        if (isUsernameFree(base, reservedUsernames)) {
+            return base;
+        }
+
+        int maxBaseLength = Person.USERNAME_MAX_LENGTH - 5; // leaves room for up to a 4-digit suffix
+        String truncatedBase = base.length() > maxBaseLength ? base.substring(0, maxBaseLength) : base;
+
+        for (int attempt = 0; attempt < USERNAME_RANDOM_SUFFIX_MAX_ATTEMPTS; attempt++) {
+            String candidate = truncatedBase + (100 + SECURE_RANDOM.nextInt(9900));
+            if (isUsernameFree(candidate, reservedUsernames)) {
+                return candidate;
+            }
+        }
+
+        // Astronomically unlikely to be reached, but guarantees termination with a unique username.
+        String candidate;
+        do {
+            candidate = truncatedBase + SECURE_RANDOM.nextInt(1_000_000);
+        } while (!isUsernameFree(candidate, reservedUsernames));
+        return candidate;
+    }
+
+    private boolean isUsernameFree(String username, Set<String> reservedUsernames) {
+        if (reservedUsernames != null && reservedUsernames.stream().anyMatch(username::equalsIgnoreCase)) {
+            return false;
+        }
+        return findByUsername(username).isEmpty();
+    }
+
+    private static String usernameBase(String firstName, String lastName, String emailFallback) {
+        String base = Stream.of(firstName, lastName)
+                .map(PersonService::sanitizeUsernamePart)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.joining("."));
+        if (!base.isBlank()) {
+            return base;
+        }
+        String emailLocal = emailFallback != null && emailFallback.contains("@")
+                ? emailFallback.substring(0, emailFallback.indexOf('@'))
+                : emailFallback;
+        String sanitized = sanitizeUsernamePart(emailLocal);
+        return sanitized.isBlank() ? "user" : sanitized;
+    }
+
+    private static String sanitizeUsernamePart(String s) {
+        if (s == null) {
+            return "";
+        }
+        String withoutDiacritics = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        String lettersDigitsDots = withoutDiacritics.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9.]", "")
+                .replaceAll("\\.{2,}", ".");
+        int start = 0;
+        while (start < lettersDigitsDots.length() && lettersDigitsDots.charAt(start) == '.') {
+            start++;
+        }
+        int end = lettersDigitsDots.length();
+        while (end > start && lettersDigitsDots.charAt(end - 1) == '.') {
+            end--;
+        }
+        return lettersDigitsDots.substring(start, end);
     }
 }

@@ -5,6 +5,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
+import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.history.RevisionWithInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -341,7 +342,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     @Override
     public void initForms(boolean forceInit) {
 
-        detailsForm = ActionUnit.DETAILS_FORM;
+        detailsForm = CustomFormComposer.deepCopy(ActionUnit.DETAILS_FORM);
         // Init system form answers
         initFormContext(forceInit);
 
@@ -349,12 +350,12 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     @Override
     protected String getFormScopePropertyName() {
-        return "";
+        return "type";
     }
 
     @Override
     protected void setFormScopePropertyValue(ConceptDTO concept) {
-        // to be implemented
+        unit.setType(concept);
     }
 
 

@@ -29,6 +29,7 @@ class RecordingUnitStratiRelSeederTest {
     @Mock StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
     @Mock RecordingUnitSeeder recordingUnitSeeder;
     @Mock ConceptRepository conceptRepository;
+    @Mock ConceptSeeder conceptSeeder;
     @Mock EntityManager entityManager;
 
     @InjectMocks
@@ -71,7 +72,7 @@ class RecordingUnitStratiRelSeederTest {
         // "US1" isn't in the bulk lookup result -> missing
 
         var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", null, false, false, false));
+                "US1", "US2", null, false, false, false, null));
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
@@ -84,7 +85,7 @@ class RecordingUnitStratiRelSeederTest {
         stubRecordingUnits(unit("US1", 1L), unit("US2", 2L));
 
         var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", null, false, false, false));
+                "US1", "US2", null, false, false, false, null));
 
         seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID);
 
@@ -95,14 +96,15 @@ class RecordingUnitStratiRelSeederTest {
     void seed_conceptNotFound_throws() {
         stubRecordingUnits(unit("US1", 1L), unit("US2", 2L));
         // conceptRepository left unstubbed -> empty -> concept not found
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
 
         var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), false, false, false));
+                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), false, false, false, null));
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
 
-        assertThat(ex.getMessage()).contains("Concept").contains("introuvable");
+        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
     }
 
     @Test
@@ -121,7 +123,7 @@ class RecordingUnitStratiRelSeederTest {
                 });
 
         var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), false, false, false));
+                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), false, false, false, null));
 
         seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID);
 
@@ -135,7 +137,7 @@ class RecordingUnitStratiRelSeederTest {
         // stratigraphicRelationshipRepository bulk-existence lookup left unstubbed -> empty -> not already present
 
         var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), true, false, false));
+                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), true, false, false, null));
 
         seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID);
 

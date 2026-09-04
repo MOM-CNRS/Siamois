@@ -65,10 +65,12 @@ public class ProjectMembersServiceInterfaceImpl implements ProjectMembersService
     }
 
     @Override
-    public void removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member) {
-        if (personProfileAssignmentService.isNotLastProjectManager(project, member.getPerson())) {
-            personProfileAssignmentService.removeFromProject(project, member.getPerson());
+    public boolean removeMemberFromProject(ActionUnitDTO project, ProjectMemberDTO member) {
+        if (!personProfileAssignmentService.isNotLastProjectManager(project, member.getPerson())) {
+            return false;
         }
+        personProfileAssignmentService.removeFromProject(project, member.getPerson());
+        return true;
     }
 
     @Override

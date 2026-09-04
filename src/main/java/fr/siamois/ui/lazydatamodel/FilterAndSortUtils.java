@@ -173,7 +173,7 @@ public class FilterAndSortUtils {
 
                 case TEXT -> state.getValue();
 
-                case CONCEPT, PERSON, ACTION_UNIT, SPATIAL_UNIT -> {
+                case CONCEPT, PERSON, ACTION_UNIT, SPATIAL_UNIT, RECORDING_UNIT -> {
                     List<Map<String, Object>> raw =
                             (List<Map<String, Object>>) state.getValue();
 

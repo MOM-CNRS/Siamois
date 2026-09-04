@@ -22,13 +22,29 @@
         <cc:attribute name="panelStyleClass" type="String" required="false" default=""/>
         <cc:attribute name="dependsOnBaseConcept" type="fr.siamois.domain.models.vocabulary.Concept" required="false"/>
         <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="false"/>
+        <cc:attribute name="bare" type="java.lang.Boolean" required="false" default="false"
+                      shortDescription="When true, skip the bordered/boxed .rum-wrapper container in READ mode — for contexts (e.g. a panel header chip) where that boxed field look doesn't make sense and the chip should sit directly in its surroundings."/>
     </cc:interface>
 
     <cc:implementation>
         <p:outputPanel id="inplace">
             <!-- ===== MODE DISPLAY ===== -->
             <h:panelGroup rendered="#{cc.attrs.mode ne 'input'}">
-                <chip:conceptChip concept="#{cc.attrs.answer.value.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
+                <div class="#{cc.attrs.bare ? '' : 'rum-wrapper'}">
+                    <div class="rum-items">
+                        <!-- Single value -->
+                        <ui:fragment rendered="#{not cc.attrs.multiple}">
+                            <chip:conceptChip concept="#{cc.attrs.answer.value.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
+                        </ui:fragment>
+
+                        <!-- Multiple values -->
+                        <ui:fragment rendered="#{cc.attrs.multiple}">
+                            <ui:repeat value="#{cc.attrs.answer.value}" var="conceptAnswer">
+                                <chip:conceptChip concept="#{conceptAnswer.concept()}" styleClass="#{cc.attrs.field.styleClass}"/>
+                            </ui:repeat>
+                        </ui:fragment>
+                    </div>
+                </div>
             </h:panelGroup>
 
             <!-- ===== MODE EDIT ===== -->

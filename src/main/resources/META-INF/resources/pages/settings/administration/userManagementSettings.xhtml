@@ -24,6 +24,12 @@
                     <p:menuitem value="#{langBean.msg('nav.userManagement')}"/>
                 </p:breadCrumb>
             </form:csrfform>
+            <div class="settings-page-header">
+                <h2 class="dt-title">#{langBean.msg('administrationSettings.membersProfiles.title')}</h2>
+                <p class="dt-desc">#{langBean.msg('administrationSettings.membersProfiles.description')}</p>
+            </div>
+            <p:tabView id="applicationMembersTabs" dynamic="false" styleClass="settings-tabs">
+            <p:tab title="#{langBean.msg('common.label.members.tab')}">
             <settings:datatable
                     id="applicationMembersDatatable"
                     title="#{langBean.msg('administrationSettings.userManagement.title')}"
@@ -82,6 +88,20 @@
                             <p:ajax event="itemUnselect" listener="#{applicationMembersListBean.onProfileUnselect}" process="@this" update="profileSelect"/>
                         </p:selectCheckboxMenu>
                     </p:column>
+                    <p:column headerText="#{langBean.msg('administrationSettings.userManagement.columnOrganisations')}">
+                        <p:commandLink action="#{navBean.goToOrganisationSettings(member.person)}" styleClass="chip-nav-link">
+                            <span class="chip chip-profile entity-nav-chip">
+                                #{applicationMembersListBean.numberOfInstitutionsForMember(member)}
+                            </span>
+                        </p:commandLink>
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('administrationSettings.userManagement.columnProjects')}">
+                        <p:commandLink action="#{navBean.goToProjectsSettings(member.person)}" styleClass="chip-nav-link">
+                            <span class="chip chip-profile entity-nav-chip">
+                                #{applicationMembersListBean.numberOfProjectsForMember(member)}
+                            </span>
+                        </p:commandLink>
+                    </p:column>
                     <p:column headerText="#{langBean.msg('common.label.accountStatus')}">
                         <span class="chip #{applicationMembersListBean.accountStatusChipClass(member.person)}">
                             #{applicationMembersListBean.accountStatusLabel(member.person)}
@@ -95,6 +115,18 @@
                     </p:column>
                 </p:dataTable>
             </settings:datatable>
+            </p:tab>
+            <p:tab title="#{langBean.msg('profile.tab.label')}">
+                <settings:profilesList
+                        title="#{langBean.msg('administrationSettings.titles.profiles')}"
+                        description="#{langBean.msg('administrationSettings.profiles.description')}"
+                        profiles="#{applicationMembersListBean.availableProfiles}"
+                        onOpen="#{applicationMembersListBean.openProfileDetail}"/>
+            </p:tab>
+            </p:tabView>
+            <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
+                <ui:param name="bean" value="#{applicationMembersListBean}"/>
+            </ui:include>
         </main>
     </ui:define>
 
