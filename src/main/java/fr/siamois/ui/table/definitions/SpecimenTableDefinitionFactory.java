@@ -21,8 +21,6 @@ import static fr.siamois.ui.table.definitions.TableDefinitions.systemField;
 public final class SpecimenTableDefinitionFactory {
 
     private static final String THIS = "@this";
-    private static final String PF_BUI_CONTENT_SHOW = "PF('buiContent').show()";
-    private static final String PF_BUI_CONTENT_HIDE = "PF('buiContent').hide();";
 
     private SpecimenTableDefinitionFactory() {}
 
@@ -88,8 +86,6 @@ public final class SpecimenTableDefinitionFactory {
                         .action(TableColumnAction.GO_TO_SPECIMEN)
                         .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE)
                         .build()
         );
 

@@ -1,0 +1,215 @@
+<!-- /pages/shared/table/filterBarWidget.xhtml -->
+<!--
+    Renders the actual filter input for one active toolbar filter chip (see tableToolbar.xhtml).
+    This is the toolbar-bar equivalent of the old filterTemplate.xhtml, which rendered these same
+    widgets inside each column's <f:facet name="filter">. Moved out of the column, a widget's value
+    no longer reaches PrimeFaces' own Map<String, FilterMeta> automatically, so each one also mirrors
+    its value into tableModel.lazyDataModel.sidecarFilters via a "listener" call on its own p:ajax —
+    see BaseLazyDataModel#applySidecarFilters for where that map is actually read.
+-->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:c="http://java.sun.com/jsp/jstl/core"
+>
+
+    <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
+    <!--@elvariable id="column" type="fr.siamois.ui.table.column.TableColumn"-->
+
+    <c:if test="#{tableModel.isConceptFilter(column)}">
+        <div class="ui-fluid">
+            <p:autoComplete value="#{tableModel.conceptFilterValues[tableModel.getFilterKey(column)]}"
+                            completeMethod="#{spatialUnitFieldBean.completeWithFieldCode}"
+                            var="autocompleteDto"
+                            itemValue="#{autocompleteDto}"
+                            itemLabel="#{autocompleteDto.conceptLabelToDisplay.label}"
+                            converter="#{conceptAutocompleteDTOConverter}"
+                            multiple="true"
+                            dropdown="true"
+                            forceSelection="true"
+                            scrollHeight="300"
+                            showEmptyMessage="false"
+                            appendTo="@(body)"
+                            panelStyleClass="sia-autocomplete-panel"
+                            placeholder="#{langBean.msg('common.action.chooseConcept')}">
+                <f:attribute name="fieldCode" value="#{tableModel.getFieldCode(column)}"/>
+
+                <p:ajax event="itemSelect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.conceptFilterValues[tableModel.getFilterKey(column)])}"
+                        update="#{tableModel.parentPanel.actionToolbarId}"
+                        process="@this" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+
+                <p:ajax event="itemUnselect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.conceptFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:autoComplete>
+        </div>
+    </c:if>
+
+    <c:if test="#{tableModel.isPersonFilter(column)}">
+        <div class="ui-fluid">
+            <p:autoComplete value="#{tableModel.personFilterValues[tableModel.getFilterKey(column)]}"
+                            completeMethod="#{tableModel.completePersonForFilter}"
+                            var="personDto"
+                            itemValue="#{personDto}"
+                            itemLabel="#{personDto.displayName()}"
+                            converter="#{personDTOConverter}"
+                            multiple="true"
+                            dropdown="true"
+                            forceSelection="true"
+                            scrollHeight="300"
+                            showEmptyMessage="false"
+                            appendTo="@(body)"
+                            panelStyleClass="sia-autocomplete-panel">
+                <p:ajax event="itemSelect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.personFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                <p:ajax event="itemUnselect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.personFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:autoComplete>
+        </div>
+    </c:if>
+
+    <c:if test="#{tableModel.isActionUnitFilter(column)}">
+        <div class="ui-fluid">
+            <p:autoComplete value="#{tableModel.actionUnitFilterValues[tableModel.getFilterKey(column)]}"
+                            completeMethod="#{tableModel.completeActionUnitForFilter}"
+                            var="actionUnitDto"
+                            itemValue="#{actionUnitDto}"
+                            itemLabel="#{actionUnitDto.name}"
+                            converter="#{actionUnitDTOConverter}"
+                            multiple="true"
+                            dropdown="true"
+                            forceSelection="true"
+                            scrollHeight="300"
+                            showEmptyMessage="false"
+                            appendTo="@(body)"
+                            panelStyleClass="sia-autocomplete-panel">
+                <p:ajax event="itemSelect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.actionUnitFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                <p:ajax event="itemUnselect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.actionUnitFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:autoComplete>
+        </div>
+    </c:if>
+
+    <c:if test="#{tableModel.isSpatialUnitFilter(column)}">
+        <div class="ui-fluid">
+            <p:autoComplete value="#{tableModel.spatialUnitFilterValues[tableModel.getFilterKey(column)]}"
+                            completeMethod="#{tableModel.completeSpatialUnitForFilter}"
+                            var="spatialUnitDto"
+                            itemValue="#{spatialUnitDto}"
+                            itemLabel="#{spatialUnitDto.name}"
+                            converter="#{spatialUnitDTOConverter}"
+                            multiple="true"
+                            dropdown="true"
+                            forceSelection="true"
+                            scrollHeight="300"
+                            showEmptyMessage="false"
+                            appendTo="@(body)"
+                            panelStyleClass="sia-autocomplete-panel">
+                <p:ajax event="itemSelect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.spatialUnitFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                <p:ajax event="itemUnselect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.spatialUnitFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:autoComplete>
+        </div>
+    </c:if>
+
+    <c:if test="#{tableModel.isRecordingUnitFilter(column)}">
+        <div class="ui-fluid">
+            <p:autoComplete value="#{tableModel.recordingUnitFilterValues[tableModel.getFilterKey(column)]}"
+                            completeMethod="#{tableModel.completeRecordingUnitForFilter}"
+                            var="recordingUnitDto"
+                            itemValue="#{recordingUnitDto}"
+                            itemLabel="#{recordingUnitDto.fullIdentifier}"
+                            converter="#{recordingUnitSummaryConverter}"
+                            multiple="true"
+                            dropdown="true"
+                            forceSelection="true"
+                            scrollHeight="300"
+                            showEmptyMessage="false"
+                            appendTo="@(body)"
+                            panelStyleClass="sia-autocomplete-panel">
+                <p:ajax event="itemSelect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.recordingUnitFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                <p:ajax event="itemUnselect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.recordingUnitFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:autoComplete>
+        </div>
+    </c:if>
+
+    <c:if test="#{tableModel.isIntegerFilter(column)}">
+        <div class="ui-fluid sia-range-filter">
+            <p:inputNumber value="#{tableModel.lazyDataModel.rangeFilterFrom[tableModel.getFilterKey(column)]}"
+                           decimalPlaces="0"
+                           thousandSeparator=""
+                           placeholder="#{langBean.msg('common.filter.range.from')}">
+                <p:ajax event="change" process="@this" update="#{tableModel.parentPanel.actionToolbarId}"
+                        global="false" delay="500"
+                        listener="#{tableModel.lazyDataModel.onRangeFilterChange}"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:inputNumber>
+            <p:inputNumber value="#{tableModel.lazyDataModel.rangeFilterTo[tableModel.getFilterKey(column)]}"
+                           decimalPlaces="0"
+                           thousandSeparator=""
+                           placeholder="#{langBean.msg('common.filter.range.to')}">
+                <p:ajax event="change" process="@this" update="#{tableModel.parentPanel.actionToolbarId}"
+                        global="false" delay="500"
+                        listener="#{tableModel.lazyDataModel.onRangeFilterChange}"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:inputNumber>
+        </div>
+    </c:if>
+
+    <c:if test="#{tableModel.isDateTimeFilter(column)}">
+        <div class="ui-fluid">
+            <p:datePicker value="#{tableModel.dateFilterValues[tableModel.getFilterKey(column)]}"
+                          selectionMode="range"
+                          showIcon="true"
+                          showTime="#{tableModel.isDateTimeShowTime(column)}"
+                          showButtonBar="true"
+                          appendTo="@(body)"
+                          panelStyleClass="sia-autocomplete-panel">
+                <p:ajax event="dateSelect"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.dateFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+                <p:ajax event="change"
+                        listener="#{tableModel.syncSidecarFilter(tableModel.getFilterKey(column), tableModel.dateFilterValues[tableModel.getFilterKey(column)])}"
+                        process="@this" update="#{tableModel.parentPanel.actionToolbarId}" global="false" delay="500"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:datePicker>
+        </div>
+    </c:if>
+
+    <c:if test="#{tableModel.isPlainTextFilter(column)}">
+        <div class="ui-fluid">
+            <p:inputText value="#{tableModel.lazyDataModel.sidecarFilters[tableModel.getFilterKey(column)]}">
+                <p:ajax event="keyup" process="@this" update="#{tableModel.parentPanel.actionToolbarId}"
+                        global="false" delay="500"
+                        listener="#{tableModel.lazyDataModel.onSidecarFilterChange}"
+                        oncomplete="PF('#{cc.clientId}_#{tableModel.treeMode ? 'entityTreeTable' : 'entityDatatable'}').filter()"/>
+            </p:inputText>
+        </div>
+    </c:if>
+
+</ui:composition>

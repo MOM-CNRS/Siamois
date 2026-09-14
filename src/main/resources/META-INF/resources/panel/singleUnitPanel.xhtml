@@ -2,6 +2,8 @@
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
              xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:c="http://java.sun.com/jsp/jstl/core"
+             xmlns:siaInplace="http://xmlns.jcp.org/jsf/composite/pages/shared/inplace"
 >
 
     <!--@elvariable id="panelIndex" type="String"-->
@@ -97,6 +99,301 @@
 
                 </p:toolbarGroup>
             </p:toolbar>
+
+            <!--
+                Single shared field-edit overlay for this panel's form (see fieldCore.xhtml's
+                isLightTableCell fields with prefix ne 'table', and entityTable.xhtml's
+                cellEditOverlay, which this mirrors for a single unit instead of a table row).
+                Content is resolved from panelModel.formContext.activeColumn, not a loop variable,
+                since a panel edits exactly one unit at a time.
+            -->
+            <p:overlayPanel id="fieldEditOverlay" widgetVar="fieldEditOverlay_#{panelIndex}"
+                            for=":singlePanelUnitForm-#{panelIndex}"
+                            showEvent="none" hideEvent="none" dismissable="true"
+                            appendTo="@(body)" styleClass="rum-overlay recording-unit sia-field-edit-overlay"
+                            onHide="siaOnFieldEditOverlayHide()">
+
+                <ui:param name="formCtx" value="#{panelModel.formContext}"/>
+                <ui:param name="activeColumn" value="#{formCtx.activeColumn}"/>
+                <ui:param name="activeField" value="#{activeColumn.field}"/>
+
+                <h:panelGroup rendered="#{activeColumn ne null and activeField ne null}">
+                    <ui:param name="answer" value="#{formCtx.getFieldAnswer(activeField)}"/>
+                    <ui:param name="hasBeenModified" value="#{answer ne null and answer.hasBeenModified}"/>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldText'}">
+                        <siaInplace:text id="ovText"
+                                         field="#{activeField}"
+                                         required="#{activeColumn.required}"
+                                         label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                         hasBeenModified="#{hasBeenModified}"
+                                         answer="#{answer}"
+                                         mode="input"
+                                         updateTargetsOnBlur="@this"
+                                         onModified="#{formCtx.onFieldAnswerModifiedListener}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'
+                               or activeField['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'
+                               or activeField['class'].simpleName eq 'CustomFieldSelectOne'
+                               or activeField['class'].simpleName eq 'CustomFieldSelectMultiple'}">
+                        <siaInplace:concept id="ovConcept"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            multiple="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode' or activeField['class'].simpleName eq 'CustomFieldSelectMultiple'}"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            mode="input"
+                                            updateTargetsOnBlur="@this"
+                                            answer="#{answer}"
+                                            onConceptChanged="#{formCtx.setFieldConceptAnswerHasBeenModified}"
+                                            dependsOnBaseConcept="#{formCtx.getDependsOnBaseConcept(activeField)}"
+                                            formCtx="#{formCtx}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleRecordingUnit'
+                               or activeField['class'].simpleName eq 'CustomFieldSelectOneRecordingUnit'}">
+                        <siaInplace:recordingUnitMultiple id="ovRecordingUnit"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            formCtx="#{formCtx}"
+                                            multiple="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleRecordingUnit'}"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            mode="input"
+                                            compact="false"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            spatialUnitOptions="#{formCtx.getSpatialUnitOptions()}"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldInteger'}">
+                        <siaInplace:integer id="ovInteger"
+                                            panelModel="#{formCtx}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            answer="#{answer}"
+                                            mode="input"
+                                            updateTargetsOnBlur="@this"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldDecimal'}">
+                        <siaInplace:decimal id="ovDecimal"
+                                            panelModel="#{formCtx}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            answer="#{answer}"
+                                            mode="input"
+                                            updateTargetsOnBlur="@this"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldDateTime'}">
+                        <siaInplace:datePicker id="ovDatePicker"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            answer="#{answer}"
+                                            mode="input"
+                                            updateTargetsOnBlur="@this"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneActionUnit'}">
+                        <siaInplace:action id="ovAction"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            mode="input"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            updateTargetsOnBlur="@this"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}">
+                        <siaInplace:spatial id="ovSpatial"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            formCtx="#{formCtx}"
+                                            mode="input"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            spatialUnitOptions="#{formCtx.getSpatialUnitOptions()}"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOnePerson'}">
+                        <siaInplace:person id="ovOnePerson"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            mode="input"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultiplePerson'}">
+                        <siaInplace:person id="ovMultiplePerson"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            multiple="true"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            mode="input"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleContainer'}">
+                        <siaInplace:containerMultiple id="ovContainerMultiple"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            formCtx="#{formCtx}"
+                                            multiple="true"
+                                            mode="input"
+                                            compact="false"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultiplePhase'}">
+                        <siaInplace:phaseMultiple id="ovPhaseMultiple"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            formCtx="#{formCtx}"
+                                            multiple="true"
+                                            mode="input"
+                                            compact="false"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}">
+                        <siaInplace:spatialMultiple id="ovSpatialMultiple"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            formCtx="#{formCtx}"
+                                            multiple="true"
+                                            mode="input"
+                                            compact="false"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            spatialUnitOptions="#{formCtx.getSpatialUnitOptions()}"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleSpecimen'}">
+                        <siaInplace:specimen id="ovSpecimen"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            formCtx="#{formCtx}"
+                                            multiple="true"
+                                            mode="input"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            spatialUnitOptions="#{formCtx.getSpatialUnitOptions()}"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneActionCode'}">
+                        <siaInplace:actionCode id="ovActionCode"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            answer="#{answer}"
+                                            mode="input"
+                                            updateTargetsOnBlur="@this"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneAddress'}">
+                        <siaInplace:address id="ovAddress"
+                                            formCtx="#{formCtx}"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            mode="input"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            answer="#{answer}"/>
+                    </c:if>
+
+                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldMeasurement'}">
+                        <siaInplace:measurement id="ovMeasurement"
+                                            formCtx="#{formCtx}"
+                                            hasBeenModified="#{hasBeenModified}"
+                                            field="#{activeField}"
+                                            required="#{activeColumn.required}"
+                                            mode="input"
+                                            label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
+                                            onModified="#{formCtx.onFieldAnswerModifiedListener}"
+                                            updateTargetsOnBlur="@this"
+                                            answer="#{answer}"/>
+                    </c:if>
+                </h:panelGroup>
+            </p:overlayPanel>
+
+            <!--
+                Single shared "field info" popover for this panel's form (documentation link,
+                "Supprimer" for a removable field) — mirrors #fieldEditOverlay just above: one
+                overlay per panel instead of every field building its own p:menu (see
+                panelField.xhtml, which used to do exactly that). Content is resolved from
+                panelModel.formContext.activeInfoColumn/activeInfoPanel, set by whichever field's
+                info button was last clicked.
+            -->
+            <p:overlayPanel id="fieldInfoOverlay" widgetVar="fieldInfoOverlay_#{panelIndex}"
+                            for=":singlePanelUnitForm-#{panelIndex}"
+                            showEvent="none" hideEvent="none" dismissable="true"
+                            appendTo="@(body)">
+
+                <ui:param name="formCtx" value="#{panelModel.formContext}"/>
+                <ui:param name="infoColumn" value="#{formCtx.activeInfoColumn}"/>
+                <ui:param name="infoPanel" value="#{formCtx.activeInfoPanel}"/>
+
+                <h:panelGroup rendered="#{infoColumn ne null}">
+                    <ul class="ui-menu-list ui-helper-reset" style="margin:0;padding:0;">
+                        <li class="ui-menuitem ui-widget">
+                            <h:outputLink value="#{infoColumn.field.conceptUri}" target="_blank"
+                                          styleClass="ui-menuitem-link">
+                                <span class="ui-menuitem-icon ui-icon bi bi-info-circle ui-menuitem-icon-left"/>
+                                <span class="ui-menuitem-text">Documentation</span>
+                            </h:outputLink>
+                        </li>
+                        <ui:fragment rendered="#{infoColumn.canBeRemoved}">
+                            <li class="ui-menuitem ui-widget" style="border-top:1px solid var(--surface-border);">
+                                <p:commandLink styleClass="ui-menuitem-link ui-menuitem-danger"
+                                               actionListener="#{formCtx.newFieldManager.removeField(infoPanel, infoColumn)}"
+                                               update="@form"
+                                               process="@this">
+                                    <span class="ui-menuitem-icon ui-icon bi bi-trash ui-menuitem-icon-left"/>
+                                    <span class="ui-menuitem-text">Supprimer</span>
+                                </p:commandLink>
+                            </li>
+                        </ui:fragment>
+                    </ul>
+                </h:panelGroup>
+            </p:overlayPanel>
 
         </h:form>
 

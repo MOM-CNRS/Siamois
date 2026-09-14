@@ -8,6 +8,7 @@ import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.panel.models.panel.list.RecordingUnitListPanel;
 import fr.siamois.utils.MessageUtils;
@@ -28,6 +29,7 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
 
     protected final transient RecordingUnitService recordingUnitService;
     protected final transient LangBean langBean;
+    protected final transient LabelBean labelBean;
 
     private ConceptDTO bulkEditTypeValue;
 
@@ -36,10 +38,24 @@ public abstract class BaseRecordingUnitLazyDataModel extends BaseLazyDataModel<R
     // Fields definition for cell/bulk edit
     CustomFieldSelectOneFromFieldCode typeField = new CustomFieldSelectOneFromFieldCode();
 
-    BaseRecordingUnitLazyDataModel(RecordingUnitService recordingUnitService, LangBean langBean) {
+    BaseRecordingUnitLazyDataModel(RecordingUnitService recordingUnitService, LangBean langBean, LabelBean labelBean) {
         this.recordingUnitService = recordingUnitService;
         this.langBean = langBean;
+        this.labelBean = labelBean;
         typeField.setFieldCode("SIARU.TYPE");
+    }
+
+    /**
+     * Batch-primes the "type" concept's label for the whole page in one query (see
+     * {@link LabelBean#primeLabels}) instead of leaving each row's category cell
+     * (see fieldCore.xhtml) trigger its own individual label lookup — an N+1 across the page.
+     */
+    @Override
+    protected void onPageLoaded(List<RecordingUnitDTO> rows) {
+        labelBean.primeLabels(rows.stream()
+                .map(RecordingUnitDTO::getType)
+                .filter(java.util.Objects::nonNull)
+                .toList());
     }
 
     static {

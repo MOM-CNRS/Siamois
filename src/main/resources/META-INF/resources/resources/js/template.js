@@ -498,3 +498,139 @@ function updateSelectedCountChip(chipClientId, args) {
     const selected = (label.textContent || '').split('/')[0].trim();
     label.textContent = `${selected}/${total}`;
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Shared table cell-edit overlay (see entityTable.xhtml #cellEditOverlay
+// and fieldCore.xhtml's isOptimizedLightType cells). One overlay instance
+// per table serves every row/column instead of each cell building its own
+// edit widget; its content is swapped server-side (activateCell) before
+// this shows it positioned over whichever cell was clicked.
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Element the user actually clicked into (set by the cell's own onclick, before the ajax
+ * request that activates it even starts) — passing the live element to PrimeFaces' overlay
+ * .show() sidesteps building/escaping a client-id string for positioning entirely.
+ */
+let siaLastClickedCell = null;
+
+/**
+ * Shows the overlay immediately on click — before its ajax request has even reached the server,
+ * let alone come back with the real editor widget for the newly active cell — so opening a cell
+ * never feels blocked while that round trip happens. At this point the overlay's content is
+ * whatever was left over from the last cell that used it (or empty, the first time); adding
+ * sia-loading dims that stale content and shows a spinner in its place (see chip.scss) until
+ * siaShowCellOverlay below swaps it out. No corresponding "remove sia-loading" is needed: the
+ * ajax "update" replaces this whole overlay's DOM outright, taking the class with it.
+ */
+function siaShowCellOverlayLoading(compositeClientId) {
+    let w = PF(compositeClientId + '_cellEditOverlay');
+    if (!w || !siaLastClickedCell) return;
+    w.show(siaLastClickedCell);
+    if (w.jq) w.jq.addClass('sia-loading');
+}
+
+/**
+ * Shows the table's shared cell-edit overlay anchored on the cell just activated.
+ * Called from the ajax "click" listener's oncomplete, after the overlay's content
+ * has already been re-rendered server-side for the newly active cell.
+ */
+function siaShowCellOverlay(compositeClientId) {
+    let w = PF(compositeClientId + '_cellEditOverlay');
+    if (!w || !siaLastClickedCell) return;
+    w.show(siaLastClickedCell);
+    // The ajax "update" just replaced this whole overlay's DOM with the freshly rendered editor
+    // for the newly active cell, so whatever siaShowCellOverlayLoading (below) put on the old node
+    // is already gone with it — nothing to clean up here.
+    setTimeout(function () {
+        if (!w.jq) return;
+        let input = w.jq.find('input[type="text"]').get(0);
+        if (!input) return;
+        input.focus();
+        siaLaunchAutocompleteIfAny(input);
+    }, 150);
+}
+
+/**
+ * If the just-shown overlay's input is a PrimeFaces AutoComplete (the concept field), launch its
+ * search immediately instead of waiting for the user to type or click the dropdown themselves:
+ * an empty field gets a blank query (the same default suggestion list a dropdown click would
+ * show), a field that already holds a value searches on that value instead of blanking it out —
+ * calling search() directly with the input's own current text rather than searchWithDropdown()
+ * (which always runs a blank query under this app's default dropdownMode="blank", ignoring
+ * whatever the field already held). Calling the widget method directly rather than dispatching a
+ * click on the (hidden, see chip.scss) dropdown button, since PrimeFaces binds that button's
+ * handler to "mouseup", not "click" — a simulated .click() never reaches it.
+ */
+function siaLaunchAutocompleteIfAny(input) {
+    let widgetId = $(input).data(PrimeFaces.CLIENT_ID_DATA);
+    let widget = widgetId && PrimeFaces.getWidgetById(widgetId);
+    if (widget && typeof widget.search === 'function') {
+        widget.search(widget.input.val());
+    }
+}
+
+/** No-op placeholder for the overlay's onHide — kept so a stray close never errors. */
+function siaOnCellOverlayHide() {
+    // The server-side "active cell" pointer (tableModel.activeCellItemId/activeCellColumn) is
+    // simply overwritten the next time a cell is clicked, so nothing needs cleaning up here.
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Shared single-entity form field-edit overlay (see #fieldEditOverlay in
+// singleUnitPanel.xhtml and fieldCore.xhtml's isLightTableCell fields).
+// One overlay per open panel serves every field on that panel's form
+// instead of each field building its own edit widget — the same idea as
+// the table's cellEditOverlay above, just keyed by field instead of by
+// row/column. A page can have several such overlays open at once (a main
+// panel and its overview both showing a form), each with its own
+// widgetVar ("fieldEditOverlay_" + panelIndex), so they never collide.
+// ═══════════════════════════════════════════════════════════════════════
+
+/** Per-panel counterpart of siaLastClickedCell — see its own doc comment above. */
+let siaLastClickedFieldCell = null;
+
+/** Per-panel counterpart of siaShowCellOverlayLoading — see its own doc comment above. */
+function siaShowFieldEditOverlayLoading(widgetVar) {
+    let w = PF(widgetVar);
+    if (!w || !siaLastClickedFieldCell) return;
+    w.show(siaLastClickedFieldCell);
+    if (w.jq) w.jq.addClass('sia-loading');
+}
+
+/** Per-panel counterpart of siaShowCellOverlay — see its own doc comment above. */
+function siaShowFieldEditOverlay(widgetVar) {
+    let w = PF(widgetVar);
+    if (!w || !siaLastClickedFieldCell) return;
+    w.show(siaLastClickedFieldCell);
+    setTimeout(function () {
+        if (!w.jq) return;
+        let input = w.jq.find('input[type="text"]').get(0);
+        if (!input) return;
+        input.focus();
+        siaLaunchAutocompleteIfAny(input);
+    }, 150);
+}
+
+/** No-op placeholder for the field overlay's onHide — kept so a stray close never errors. */
+function siaOnFieldEditOverlayHide() {
+    // The server-side "active field" pointer (EntityFormContext.activeColumn) is simply
+    // overwritten the next time a field is clicked, so nothing needs cleaning up here.
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Shared single-entity form field-info overlay (see #fieldInfoOverlay in
+// singleUnitPanel.xhtml and panelField.xhtml). One overlay per open panel
+// serves every field's "Documentation"/"Supprimer" popover instead of each
+// field building its own p:menu — same idea as the edit overlay above.
+// ═══════════════════════════════════════════════════════════════════════
+
+/** Per-panel counterpart of siaLastClickedFieldCell, for the info overlay. */
+let siaLastClickedInfoButton = null;
+
+/** Shows the shared field-info overlay next to the button that was just clicked. */
+function siaShowFieldInfoOverlay(widgetVar) {
+    let w = PF(widgetVar);
+    if (!w || !siaLastClickedInfoButton) return;
+    w.show(siaLastClickedInfoButton);
+}

@@ -9,6 +9,7 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitTreeService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.dialog.duplicate.DuplicateStructureDialogBean;
@@ -57,6 +58,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     private final transient NavBean navBean;
     private final transient FormContextServices formContextServices;
     private final transient EffectiveFormResolver effectiveFormResolver;
+    private final transient LabelBean labelBean;
 
     // locals
     private String actionUnitListErrorMessage;
@@ -88,6 +90,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
         this.navBean = context.getBean(NavBean.class);
         this.formContextServices = context.getBean(FormContextServices.class);
         this.effectiveFormResolver = context.getBean(EffectiveFormResolver.class);
+        this.labelBean = context.getBean(LabelBean.class);
     }
 
     @Override
@@ -103,7 +106,7 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     @Override
     protected BaseLazyDataModel<RecordingUnitDTO> createLazyDataModel() {
         BaseRecordingUnitLazyDataModel lazy =
-                new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
+                new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean, labelBean);
 
         // construction de la vue de table autour du lazy
         tableModel = new RecordingUnitTableViewModel(

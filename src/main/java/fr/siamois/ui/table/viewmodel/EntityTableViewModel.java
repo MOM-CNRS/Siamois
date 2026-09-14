@@ -29,7 +29,6 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.TableRowFieldSource;
 import fr.siamois.ui.lazydatamodel.BaseLazyDataModel;
-import fr.siamois.ui.lazydatamodel.FilterAndSortUtils;
 import fr.siamois.ui.table.RowAction;
 import fr.siamois.ui.table.TableDefinition;
 import fr.siamois.ui.table.ToolbarCreateConfig;
@@ -68,7 +67,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Slf4j
 public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
-    private static final List<Integer> ROW_PER_PAGE = List.of(10, 25, 50);
+    private static final List<Integer> ROW_PER_PAGE = List.of(25, 50, 100);
     public static final String CONTAINER = "-container');";
     public static final int LIMIT = 100;
     public static final String LABEL = "label";
@@ -81,7 +80,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     protected final BaseLazyDataModel<T> lazyDataModel;
 
     @Setter
-    public int defaultPageSize = 10;
+    public int defaultPageSize = 25;
 
     /**
      * The row list {@link #canEditByActionUnit}/{@link #canEditFlat} last computed their permission
@@ -182,6 +181,12 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
      * Contient jusqu'à 2 éléments : [from, to].
      */
     private final Map<String, java.util.List<java.util.Date>> dateFilterValues = new HashMap<>();
+
+    /**
+     * Columns currently shown as a filter chip in the toolbar filter bar (Notion-style: filters are
+     * opt-in per column, not always-on inputs under every header).
+     */
+    private final List<TableColumn> activeFilterColumns = new ArrayList<>();
 
     // tree mode selection
     @Setter
@@ -299,6 +304,98 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         return column instanceof FormFieldColumn ffc
                 && ffc.getField() instanceof CustomFieldDateTime dt
                 && Boolean.TRUE.equals(dt.getShowTime());
+    }
+
+    /**
+     * True for a filterable column with no dedicated widget above (concept, person, action unit,
+     * spatial unit, recording unit, integer range, date range) — it gets a plain text filter chip.
+     * The merged id/status/actions column (a {@link fr.siamois.ui.table.column.CommandLinkColumn},
+     * no {@link fr.siamois.domain.models.form.customfield.CustomField} of its own) always falls
+     * here.
+     */
+    public boolean isPlainTextFilter(TableColumn column) {
+        return column.isFilterable()
+                && !isConceptFilter(column)
+                && !isPersonFilter(column)
+                && !isActionUnitFilter(column)
+                && !isSpatialUnitFilter(column)
+                && !isRecordingUnitFilter(column)
+                && !isIntegerFilter(column)
+                && !isDateTimeFilter(column);
+    }
+
+    /**
+     * The key a column's filter value is stored under in the sidecar maps. Most columns key off
+     * their {@link fr.siamois.domain.models.form.customfield.CustomField}'s value binding; the
+     * merged id/status/actions column has none, so it keys off its sort field instead (the same
+     * field it was already filtered/sorted by before this filter bar existed).
+     */
+    public String getFilterKey(TableColumn column) {
+        if (column == null) {
+            return null;
+        }
+        if (column.getField() != null) {
+            return column.getField().getValueBinding();
+        }
+        return column.getSortField();
+    }
+
+    /**
+     * Adds a filter chip for {@code column} to the toolbar filter bar, if not already present.
+     */
+    public void addFilterColumn(TableColumn column) {
+        if (column != null && !activeFilterColumns.contains(column)) {
+            activeFilterColumns.add(column);
+        }
+    }
+
+    /**
+     * Removes a column's filter chip and clears whatever value it held, then forces the next
+     * load/count to re-query without it.
+     */
+    public void removeFilterColumn(TableColumn column) {
+        activeFilterColumns.remove(column);
+        String key = getFilterKey(column);
+        if (key != null) {
+            conceptFilterValues.remove(key);
+            personFilterValues.remove(key);
+            actionUnitFilterValues.remove(key);
+            spatialUnitFilterValues.remove(key);
+            recordingUnitFilterValues.remove(key);
+            dateFilterValues.remove(key);
+            lazyDataModel.getRangeFilterFrom().remove(key);
+            lazyDataModel.getRangeFilterTo().remove(key);
+            lazyDataModel.getSidecarFilters().remove(key);
+        }
+        lazyDataModel.onSidecarFilterChange();
+    }
+
+    /**
+     * Filterable columns not already shown as a filter chip — the "+ Filter" picker's choices.
+     * Includes the merged id/status/actions column, which lives outside {@link #getColumns()}.
+     */
+    public List<TableColumn> getAvailableFilterColumns() {
+        List<TableColumn> available = new ArrayList<>(getColumns().stream()
+                .filter(TableColumn::isFilterable)
+                .filter(c -> !activeFilterColumns.contains(c))
+                .toList());
+        TableColumn commandLinkColumn = tableDefinition.getCommandLinkColumn();
+        if (commandLinkColumn != null
+                && commandLinkColumn.isFilterable()
+                && !activeFilterColumns.contains(commandLinkColumn)) {
+            available.add(0, commandLinkColumn);
+        }
+        return available;
+    }
+
+    /**
+     * Mirrors a filter widget's current value into {@link BaseLazyDataModel#getSidecarFilters()},
+     * the facet-independent map {@code load}/{@code count} actually read. Needed because the widget
+     * now lives in a toolbar overlay rather than inside the column's own filter facet, so PrimeFaces
+     * can no longer pick its value up on its own (see {@link BaseLazyDataModel#applySidecarFilters}).
+     */
+    public void syncSidecarFilter(String key, Object value) {
+        lazyDataModel.setSidecarFilter(key, value);
     }
 
     public String getFieldCode(TableColumn column) {
@@ -509,6 +606,28 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
     public void deactivateCell() {
         this.activeCellItemId = null;
         this.activeCellColumn = null;
+    }
+
+    /**
+     * The row of the currently active cell (see {@link #activeCellItemId}), or {@code null} if
+     * none is active or it has fallen off the current page (e.g. a filter/sort/page change since
+     * it was activated). Backs the table's single shared edit overlay, which lives outside the
+     * row loop and so cannot rely on a {@code var="item"} binding the way an inline cell would.
+     */
+    public T getActiveCellItem() {
+        if (activeCellItemId == null || lazyDataModel == null) {
+            return null;
+        }
+        List<T> result = lazyDataModel.getQueryResult();
+        if (result == null) {
+            return null;
+        }
+        for (T candidate : result) {
+            if (activeCellItemId.equals(candidate.getId())) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     public void handleRelationAction(RelationColumn column, T item, TableColumnAction action) {
@@ -729,17 +848,17 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
 
     public String getOnCompleteJs(T unit) {
         if (unit instanceof RecordingUnitDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-recording-unit-" + unit.getId() + CONTAINER;
+            return "onCompleteCallback('panel-recording-unit-" + unit.getId() + CONTAINER;
         } else if (unit instanceof SpecimenDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-specimen-" + unit.getId() + CONTAINER;
+            return "onCompleteCallback('panel-specimen-" + unit.getId() + CONTAINER;
         } else if (unit instanceof ActionUnitDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-action-unit-" + unit.getId() + CONTAINER;
+            return "onCompleteCallback('panel-action-unit-" + unit.getId() + CONTAINER;
         } else if (unit instanceof SpatialUnitDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-spatial-unit-" + unit.getId() + CONTAINER;
+            return "onCompleteCallback('panel-spatial-unit-" + unit.getId() + CONTAINER;
         } else if (unit instanceof ContainerDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-container-" + unit.getId() + CONTAINER;
+            return "onCompleteCallback('panel-container-" + unit.getId() + CONTAINER;
         } else if (unit instanceof PhaseDTO) {
-            return "PF('buiContent').hide();onCompleteCallback('panel-phase-" + unit.getId() + CONTAINER;
+            return "onCompleteCallback('panel-phase-" + unit.getId() + CONTAINER;
         } else {
             throw new IllegalArgumentException("Non handled type  : " + unit.getClass().getName());
         }
@@ -958,6 +1077,7 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
         spatialUnitFilterValues.clear();
         recordingUnitFilterValues.clear();
         dateFilterValues.clear();
+        activeFilterColumns.clear();
 
         for (FilterState state : filters.values()) {
 
@@ -1145,10 +1265,34 @@ public abstract class EntityTableViewModel<T extends AbstractEntityDTO, ID> {
             }
         }
 
-        // Init lazy
-        lazyDataModel.setInitialFilter(
-                FilterAndSortUtils.toFilterMetaMap(filters)
-        );
+        // Restore the toolbar filter chips and the facet-independent values they drive (see
+        // BaseLazyDataModel#applySidecarFilters) — filtering no longer goes through PrimeFaces'
+        // column-facet-driven FilterMeta, so restoring only the display maps above would leave the
+        // query itself unfiltered.
+        for (FilterState state : filters.values()) {
+            if (state == null) {
+                continue;
+            }
+            addFilterColumn(findColumnByFilterKey(state.getColumnId()));
+            Object value = switch (state.getType()) {
+                case CONCEPT -> conceptFilterValues.get(state.getColumnId());
+                case PERSON -> personFilterValues.get(state.getColumnId());
+                case ACTION_UNIT -> actionUnitFilterValues.get(state.getColumnId());
+                case SPATIAL_UNIT -> spatialUnitFilterValues.get(state.getColumnId());
+                case RECORDING_UNIT -> recordingUnitFilterValues.get(state.getColumnId());
+                case DATE_RANGE -> dateFilterValues.get(state.getColumnId());
+                default -> null;
+            };
+            syncSidecarFilter(state.getColumnId(), value);
+        }
+    }
+
+    /** Finds the column whose filter key (see {@link #getFilterKey}) matches a persisted one. */
+    private TableColumn findColumnByFilterKey(String key) {
+        return getColumns().stream()
+                .filter(c -> key.equals(getFilterKey(c)))
+                .findFirst()
+                .orElse(null);
     }
 
     public Map<String, FilterState> extractFilterStates() {

@@ -291,6 +291,10 @@
                                         <ui:include rendered="#{panel.displayHeader() != null}"
                                                     src="#{panel.displayHeader()}">
                                             <ui:param name="panelModel" value="#{panel}"/>
+                                            <!-- Where the prev/next arrows (goToNext/goToPrevious, now an in-place
+                                                 unit switch rather than a page redirect) ajax-update afterwards —
+                                                 same target the refresh button below already uses. -->
+                                            <ui:param name="navUpdateTarget" value="panel-#{panel.prefixPanelIndex}"/>
                                         </ui:include>
                                     </p:outputPanel>
                                 </f:facet>

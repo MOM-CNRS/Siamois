@@ -146,6 +146,10 @@
                                             src="#{panelModel.parentOrOverview.displayHeader()}">
                                     <ui:param name="formSuffix" value="_overview"/>
                                     <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
+                                    <!-- Where the prev/next arrows (goToNext/goToPrevious, now an in-place
+                                         unit switch rather than a page redirect) ajax-update afterwards —
+                                         same target the refresh button above already uses. -->
+                                    <ui:param name="navUpdateTarget" value="sideview-${panelIndex}"/>
                                 </ui:include>
                             </div>
                         </h:form>
@@ -154,6 +158,16 @@
                     <p:progressBar widgetVar="pbBarAjax_#{panelIndex}-overview" id="overviewProgressBar"
                                    class="panel-progressbar"
                                    style="height:3px" mode="indeterminate"/>
+                    <!--
+                        The overview panel's own init()/loadData() failure (not-found, forbidden,
+                        etc. — see AbstractSingleEntityPanel.init()) was previously never surfaced
+                        anywhere: only the main panel's errorMessage (above, outside this splitter
+                        panel) was ever displayed, so a failed overview silently rendered as an
+                        empty sideview with no explanation.
+                    -->
+                    <p:staticMessage severity="error" summary="Error" closable="false"
+                                     detail="#{panelModel.parentOrOverview.errorMessage}"
+                                     rendered="#{not empty panelModel.parentOrOverview.errorMessage}"/>
                     <!-- Include the reusable dynamic content for the right panel -->
                     <ui:include src="#{panelModel.parentOrOverview.display()}" id="overview-panel-body">
                         <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>

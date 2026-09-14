@@ -55,8 +55,17 @@
                 (tableModel.isActiveCell), everything else stays a lightweight display
                 ('lightTable', handled in fieldCore.xhtml) until clicked. Non-table usage keeps
                 the previous panel-wide behavior.
+
+                col.readOnly (a field-level "this column is never editable" flag, e.g. the
+                recording unit table's action-unit/"Projet" column) must NOT bypass 'lightTable'
+                the way !canUserEditRow (a row-level permission gate) does: that used to force
+                straight to 'output', so read-only columns never got the lightweight display and
+                always paid for a full inline widget per row. canUserEditRow is a real permission
+                check and still forces 'output' unconditionally; col.readOnly is instead handled
+                inside fieldCore.xhtml, which shows the same lightweight chip but never makes it
+                clickable/openable in the shared overlay for a column that was never editable.
             -->
-            <ui:param name="mode" value="#{(col.readOnly or not canUserEditRow) ? 'output' : (prefix eq 'table' ? (tableModel.isActiveCell(rowItem, col) ? 'input' : 'lightTable') : flowBean.getInPlaceFieldMode())}"/>
+            <ui:param name="mode" value="#{not canUserEditRow ? 'output' : (prefix eq 'table' ? (tableModel.isActiveCell(rowItem, col) ? 'input' : 'lightTable') : (col.readOnly ? 'output' : flowBean.getInPlaceFieldMode()))}"/>
             <ui:param name="compact" value="true"/>
             <ui:param name="tableModel" value="#{tableModel}"/>
             <ui:param name="rowItem" value="#{rowItem}"/>

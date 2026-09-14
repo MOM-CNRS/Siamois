@@ -5,6 +5,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.SortDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import org.jspecify.annotations.NonNull;
@@ -20,8 +21,8 @@ public class RecordingUnitLazyDataModel extends BaseRecordingUnitLazyDataModel {
 
     private final transient SessionSettingsBean sessionSettings;
 
-    public RecordingUnitLazyDataModel(RecordingUnitService recordingUnitService, SessionSettingsBean sessionSettings, LangBean langBean) {
-        super(recordingUnitService, langBean);
+    public RecordingUnitLazyDataModel(RecordingUnitService recordingUnitService, SessionSettingsBean sessionSettings, LangBean langBean, LabelBean labelBean) {
+        super(recordingUnitService, langBean, labelBean);
         this.sessionSettings = sessionSettings;
 
     }

@@ -11,6 +11,7 @@
                        process="@this"
                        rendered="#{panelModel.hasPreviousNext()}"
                        action="#{panelModel.goToPrevious()}"
+                       update="#{navUpdateTarget}"
                        styleClass="sideview-topbar-button">
             <h:outputText styleClass='ui-icon bi bi-caret-up' style="color: var(--main-color)"/>
         </p:commandLink>
@@ -19,6 +20,7 @@
                        process="@this"
                        rendered="#{panelModel.hasPreviousNext()}"
                        action="#{panelModel.goToNext()}"
+                       update="#{navUpdateTarget}"
                        styleClass="sideview-topbar-button">
             <h:outputText styleClass='ui-icon bi bi-caret-down' style="color: var(--main-color)"/>
         </p:commandLink>
@@ -36,7 +38,7 @@
         <ui:param name="panel" value="#{panelModel}"/>
     </ui:include>
 
-    <p:chip label="#{panelModel.unit != null ? panelModel.unit.name : panelModel.titleCodeOrTitle}"
+    <p:chip label="#{panelModel.unit != null ? panelModel.unit.name : panelModel.resolveTitleOrTitleCode()}"
             styleClass="mr-2 action-unit-type-chip"
     />
 

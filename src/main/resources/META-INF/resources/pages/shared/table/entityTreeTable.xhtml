@@ -9,7 +9,14 @@
 
     <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
 
-    <p:blockUI block="entityTreeTable" trigger="#{cc.clientId}:entityTreeTable" widgetVar="#{cc.clientId}_buiTreeTables">
+    <!--
+        rendered must mirror the table's own below: block="entityTreeTable" is otherwise resolved
+        at widget init against an id that was never rendered whenever list mode is active, which
+        throws deep in PrimeFaces' BlockUI (bindResizer -> registerMutationObserver, target empty)
+        on every such page load.
+    -->
+    <p:blockUI block="entityTreeTable" trigger="#{cc.clientId}:entityTreeTable" widgetVar="#{cc.clientId}_buiTreeTables"
+               rendered="#{tableModel.treeMode}">
         <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
     </p:blockUI>
 
@@ -78,8 +85,7 @@
                   sortable="#{tableModel.tableDefinition.commandLinkColumn.sortable}"
                   field="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
                   sortBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
-                  filterable="#{tableModel.tableDefinition.commandLinkColumn.filterable}"
-                  filterBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}">
+                  filterable="false">
 
             <p:outputPanel id="mergedCell" layout="block" styleClass="siamois-row-ajax-target">
                 <div class="mca-wrapper">
@@ -185,17 +191,11 @@
                 resizable="true"
                 sortable="#{column.sortable}"
                 visible="#{column.visible}"
-                filterable="#{column.filterable}"
+                filterable="false"
                 field="#{column.field == null ? null : column.field.valueBinding}"
-                filterBy="#{column.field.valueBinding}"
                 sortBy="#{not empty column.sortField ? column.sortField : column.field.valueBinding}"
                 toggleable="#{column.type != 'COMMAND_LINK'}"
         >
-
-            <ui:include src="/pages/shared/table/filterTemplate.xhtml">
-                <ui:param name="tableModel" value="#{tableModel}"/>
-                <ui:param name="column" value="#{column}"/>
-            </ui:include>
 
             <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                 <ui:param name="tableModel" value="#{tableModel}"/>

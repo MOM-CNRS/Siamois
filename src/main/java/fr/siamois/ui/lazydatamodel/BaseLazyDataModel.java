@@ -109,6 +109,42 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
     }
 
     /**
+     * Column filter values edited from the toolbar filter bar instead of a column header. Like
+     * {@link #rangeFilterFrom}, these bypass PrimeFaces' {@code Map<String, FilterMeta>} entirely:
+     * that map is only populated for a column that still has a live {@code <f:facet name="filter">}
+     * for the framework to decode at filter time, and the toolbar filter bar deliberately removes
+     * that facet so no widget renders under the column header. Widgets write here directly (either
+     * bound straight to this map, or mirrored into it via {@link #setSidecarFilter}), and
+     * {@link #applySidecarFilters(FilterDTO)} folds them into the query on every load and count.
+     */
+    @Getter
+    private final transient Map<String, Object> sidecarFilters = new HashMap<>();
+
+    /** Sets a toolbar filter value and invalidates the page cache so the next load re-queries. */
+    public void setSidecarFilter(String key, Object value) {
+        sidecarFilters.put(key, value);
+        resetCache();
+    }
+
+    /** Cache-invalidation hook for widgets bound directly to {@link #sidecarFilters} via EL. */
+    public void onSidecarFilterChange() {
+        resetCache();
+    }
+
+    /**
+     * Adds every non-empty sidecar filter to the query, the same way {@link #applyRangeFilters}
+     * does for interval bounds.
+     */
+    protected void applySidecarFilters(FilterDTO filterDTO) {
+        sidecarFilters.forEach((key, value) -> {
+            if (value == null) return;
+            if (value instanceof Collection<?> collection && collection.isEmpty()) return;
+            if (value instanceof String text && text.isBlank()) return;
+            filterDTO.add(key, value, FilterDTO.FilterType.CONTAINS);
+        });
+    }
+
+    /**
      * Normalizes a bound coming from the filter input, which submits an empty string when the user
      * clears it. The numeric type is left to {@link FilterDTO} to coerce, since the input's
      * converter is free to hand back any {@link Number}.
@@ -166,6 +202,16 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
      * @return The specified data contained within a page
      */
     protected abstract Page<T> loadData(FilterDTO filter, Pageable pageable);
+
+    /**
+     * Hook called once per freshly-loaded page (not on a cache hit), with the exact rows about to
+     * be rendered. A no-op by default; a subclass that displays concept-valued columns (type,
+     * category, ...) can override it to batch-prime {@link fr.siamois.ui.bean.LabelBean} for those
+     * concepts in one query, instead of each row's cell triggering its own label lookup.
+     */
+    protected void onPageLoaded(List<T> rows) {
+        // no-op by default
+    }
 
     // Filters & Selection
     private String globalFilter;
@@ -289,6 +335,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         }
         constantFilters.forEach((k, v) -> filterDTO.addScopeFilter(k, v.getFilter(), v.getType()));
         applyRangeFilters(filterDTO);
+        applySidecarFilters(filterDTO);
         return countWithFilter(filterDTO);
     }
 
@@ -332,6 +379,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         prepareFilterDTO(activeFilters, filterDTO);
         constantFilters.forEach((k, v) -> filterDTO.addScopeFilter(k, v.getFilter(), v.getType()));
         applyRangeFilters(filterDTO);
+        applySidecarFilters(filterDTO);
         prepareSortDTO(activeSorts, sortDTO);
 
         Pageable pageable = PageRequest.of(pageNumber, pageSizeState, buildSort(sortDTO));
@@ -341,6 +389,7 @@ public abstract class BaseLazyDataModel<T> extends LazyDataModel<T> implements L
         captureClosureSnapshot(filterDTO);
         setRowCount((int) result.getTotalElements());
         updateCache(result, activeFilters, activeSorts, first, pageSize);
+        onPageLoaded(result.getContent());
 
         log.debug("Temps d'exécution de {}#load : {} ms", this.getClass().getSimpleName(), Instant.now().toEpochMilli() - before.toEpochMilli());
         return result.getContent();

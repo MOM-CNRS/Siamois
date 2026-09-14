@@ -34,27 +34,198 @@
     <c:if test="#{(col['class'].simpleName eq 'FormFieldColumn') or col['class'].simpleName eq 'CustomColUiDto'}">
 
         <!--
-            'lightTable' (table cells only, see customFormFieldContentForTable.xhtml): the cell
-            isn't the active one, so it must not instantiate a real edit widget. Text fields get a
-            genuinely plain-text rendering here; every other field type keeps its existing
-            'output' display (effectiveMode below), wrapped so a click still switches it to
-            'input'. Either way, clicking activates tableModel.activateCell and re-renders just
-            this cell (cellUpdateTarget) — never the whole row or table.
+            'lightTable' (table cells, see customFormFieldContentForTable.xhtml) and 'lightPanel'
+            (single-entity form fields, see customFormFieldContentForPanel.xhtml): this cell/field
+            isn't the active one, so it must not instantiate a real edit widget. Every field type
+            gets a genuinely lightweight read-only rendering here — plain text or read-only chips,
+            no PrimeFaces input/autocomplete components at all — and editing happens in a single
+            shared overlay instead of inline (the table's #cellEditOverlay in entityTable.xhtml, or
+            a form's own #fieldEditOverlay in singleUnitPanel.xhtml), so a table/panel never
+            instantiates one edit widget per row/field. Clicking calls tableModel.activateCell or
+            formCtx.activateField and opens the relevant shared overlay (see template.js); the
+            cell/field's own markup doesn't change. isLightTableCell is a slightly stale name at
+            this point (kept to limit the diff) — it now covers both cases equally.
         -->
-        <ui:param name="effectiveMode" value="#{mode eq 'lightTable' ? 'output' : mode}"/>
-        <ui:param name="isLightTableCell" value="#{mode eq 'lightTable'}"/>
+        <ui:param name="effectiveMode" value="#{(mode eq 'lightTable' or mode eq 'lightPanel') ? 'output' : mode}"/>
+        <ui:param name="isLightTableCell" value="#{mode eq 'lightTable' or mode eq 'lightPanel'}"/>
 
-        <c:if test="#{isLightTableCell and col.field['class'].simpleName eq 'CustomFieldText'}">
-            <p:commandLink styleClass="sia-cell-activate sia-cell-text" ajax="true" process="@this"
-                           action="#{tableModel.activateCell(rowItem, col)}"
-                           update="#{cellUpdateTarget}">
-                <h:outputText value="#{answer.value}"/>
-            </p:commandLink>
-        </c:if>
+        <!--
+            This wrapper deliberately uses a real component 'rendered' attribute rather than a
+            JSTL c:if: c:if's test is decided once when this cell's tag tree is first built (using
+            whatever row happens to be current then, often none), not per row/request, whereas the
+            fallback h:panelGroup below already relies on 'rendered' being re-checked on every row.
+            A c:if here would freeze isLightTableCell's very first (row-less) value forever, so real
+            rows could evaluate the two branches as both hidden or both shown instead of exactly one.
+            Every inner block that reads answer.value (row-scoped) below follows the same rule:
+            h:panelGroup + rendered for a single value, plain c:if (type check only, not row-scoped)
+            wrapping a ui:repeat for a list of values. Field-type branches (which widget a given
+            CustomField subtype gets) use c:if on purpose: col.field's type is fixed for a given
+            column/field position, never row-scoped, so excluding the other ~18 candidate widgets
+            from the tree entirely (c:if) instead of building-then-hiding all of them (rendered) is
+            both correct and far cheaper — see 2026-09 perf regression when this was tried the other
+            way (~19x more composite subtrees built per field for no behavioral gain).
+        -->
+        <!--
+            col.readOnly columns (e.g. the recording unit table's action-unit/"Projet" column)
+            still get the lightweight display below, but never the click-to-activate affordance
+            or the shared overlay — there is nothing to edit, so it must not look or act clickable.
+        -->
+        <h:panelGroup layout="block" styleClass="sia-cell-light #{col.readOnly ? '' : 'sia-cell-activate'}"
+                      onclick="#{col.readOnly ? '' : (prefix eq 'table' ? 'siaLastClickedCell=this;' : 'siaLastClickedFieldCell=this;')}"
+                      rendered="#{isLightTableCell}">
+                <!--
+                    global="false": this ajax must never trip any page-wide ajax-status/blocking
+                    UI (there's no reason opening one cell/field's editor should visually block
+                    anything beyond the overlay itself). onstart shows the overlay right away —
+                    see siaShowCellOverlayLoading/siaShowFieldEditOverlayLoading — instead of
+                    waiting for oncomplete, so the table/form never looks frozen while the real
+                    editor widget loads. prefix is fixed per column/field (never row-scoped), so
+                    branching on it with c:if here is safe — see the comment above the wrapping
+                    h:panelGroup two levels up about why that's NOT true of row-scoped state.
+                -->
+                <c:if test="#{prefix eq 'table'}">
+                    <p:ajax event="click" process="@this" disabled="#{col.readOnly}" global="false"
+                            listener="#{tableModel.activateCell(rowItem, col)}"
+                            update=":#{cc.clientId}:cellEditOverlay"
+                            onstart="siaShowCellOverlayLoading('#{cc.clientId}')"
+                            oncomplete="siaShowCellOverlay('#{cc.clientId}')"/>
+                </c:if>
+                <c:if test="#{prefix ne 'table'}">
+                    <p:ajax event="click" process="@this" disabled="#{col.readOnly}" global="false"
+                            listener="#{formCtx.activateField(col)}"
+                            update=":singlePanelUnitForm-#{panelIndex}:fieldEditOverlay"
+                            onstart="siaShowFieldEditOverlayLoading('fieldEditOverlay_#{panelIndex}')"
+                            oncomplete="siaShowFieldEditOverlay('fieldEditOverlay_#{panelIndex}')"/>
+                </c:if>
 
-        <p:outputPanel rendered="#{not (isLightTableCell and col.field['class'].simpleName eq 'CustomFieldText')}"
-                       styleClass="#{isLightTableCell ? 'sia-cell-activate' : ''}">
-            <p:ajax event="click" process="@this" disabled="#{not isLightTableCell}"
+                <c:if test="#{col.field['class'].simpleName eq 'CustomFieldText'
+                           or col.field['class'].simpleName eq 'CustomFieldInteger'
+                           or col.field['class'].simpleName eq 'CustomFieldDecimal'
+                           or col.field['class'].simpleName eq 'CustomFieldDateTime'}">
+                    <h:outputText value="#{answer.value}"/>
+                </c:if>
+
+                <!--
+                    CONCEPT (single). Checks answer.value.concept() ne null rather than just
+                    "not empty answer.value": some answers carry a non-null ConceptAutocompleteDTO
+                    placeholder with no actual concept inside (e.g. a dependsOnBaseConcept stub),
+                    which "empty" doesn't catch since it isn't null/blank-string/empty-collection —
+                    that left a labelless, borderless-looking chip (just its own padding/border).
+                -->
+                <h:panelGroup styleClass="sia-light-chip"
+                              rendered="#{(col.field['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'
+                                       or col.field['class'].simpleName eq 'CustomFieldSelectOne') and not empty answer.value and answer.value.concept() ne null}">
+                    #{labelBean.findLabelOf(answer.value.concept())}
+                </h:panelGroup>
+
+                <!-- CONCEPT (multiple) -->
+                <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'
+                           or col.field['class'].simpleName eq 'CustomFieldSelectMultiple'}">
+                    <ui:repeat value="#{answer.value}" var="conceptAnswer">
+                        <h:panelGroup styleClass="sia-light-chip" rendered="#{conceptAnswer.concept() ne null}">
+                            #{labelBean.findLabelOf(conceptAnswer.concept())}
+                        </h:panelGroup>
+                    </ui:repeat>
+                </c:if>
+
+                <!-- ACTION UNIT (single, not user-editable — same read-only link as its full 'output' mode) -->
+                <h:panelGroup styleClass="sia-light-chip"
+                              rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionUnit' and not empty answer.value}">
+                    #{answer.value.name}
+                </h:panelGroup>
+
+                <!-- SPATIAL UNIT (single) -->
+                <h:panelGroup styleClass="sia-light-chip"
+                              rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit' and not empty answer.value}">
+                    #{answer.value.name}
+                </h:panelGroup>
+
+                <!-- PERSON (single) -->
+                <h:panelGroup styleClass="sia-light-chip"
+                              rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOnePerson' and not empty answer.value}">
+                    #{answer.value.displayName()}
+                </h:panelGroup>
+
+                <!-- PERSON (multiple) -->
+                <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultiplePerson'}">
+                    <ui:repeat value="#{answer.value}" var="person">
+                        <span class="sia-light-chip">#{person.displayName()}</span>
+                    </ui:repeat>
+                </c:if>
+
+                <!-- CONTAINER (multiple) -->
+                <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleContainer'}">
+                    <ui:repeat value="#{answer.value}" var="container">
+                        <span class="sia-light-chip">#{container.identifier}</span>
+                    </ui:repeat>
+                </c:if>
+
+                <!-- PHASE (multiple) -->
+                <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultiplePhase'}">
+                    <ui:repeat value="#{answer.value}" var="phase">
+                        <span class="sia-light-chip">#{phase.identifier}</span>
+                    </ui:repeat>
+                </c:if>
+
+                <!-- SPATIAL UNIT TREE (multiple) -->
+                <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}">
+                    <ui:repeat value="#{answer.value}" var="spatialUnit">
+                        <span class="sia-light-chip">#{spatialUnit.name}</span>
+                    </ui:repeat>
+                </c:if>
+
+                <!-- SPECIMEN (multiple) -->
+                <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleSpecimen'}">
+                    <ui:repeat value="#{answer.value}" var="specimen">
+                        <span class="sia-light-chip">#{specimen.fullIdentifier}</span>
+                    </ui:repeat>
+                </c:if>
+
+                <!-- RECORDING UNIT (single) -->
+                <h:panelGroup styleClass="sia-light-chip"
+                              rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneRecordingUnit' and not empty answer.value}">
+                    #{answer.value.fullIdentifier}
+                </h:panelGroup>
+
+                <!-- RECORDING UNIT (multiple) -->
+                <c:if test="#{col.field['class'].simpleName eq 'CustomFieldSelectMultipleRecordingUnit'}">
+                    <ui:repeat value="#{answer.value}" var="ru">
+                        <span class="sia-light-chip">#{ru.fullIdentifier}</span>
+                    </ui:repeat>
+                </c:if>
+
+                <!-- ACTION CODE (single) -->
+                <h:panelGroup styleClass="sia-light-chip"
+                              rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneActionCode' and not empty answer.value}">
+                    #{answer.value.code}
+                </h:panelGroup>
+
+                <!-- ADDRESS (single) -->
+                <h:panelGroup styleClass="sia-light-chip"
+                              rendered="#{col.field['class'].simpleName eq 'CustomFieldSelectOneAddress' and not empty answer.value}">
+                    #{answer.value.label}
+                </h:panelGroup>
+
+                <!--
+                    MEASUREMENT. Checks numericValue ne null rather than just "not empty
+                    answer.value": an unset measurement still carries a non-null
+                    MeasurementAnswerDTO (with just a default unit), so "empty" alone doesn't
+                    catch it — that left a chip showing only the unit symbol (e.g. "kg").
+                -->
+                <h:panelGroup styleClass="sia-light-chip"
+                              rendered="#{col.field['class'].simpleName eq 'CustomFieldMeasurement' and not empty answer.value and answer.value.numericValue ne null}">
+                    #{answer.value.numericValue} #{answer.value.unit.symbol}
+                </h:panelGroup>
+            </h:panelGroup>
+
+        <!--
+            Reached only outside table context now (single-panel/form usage), since every field
+            type is handled by the light branch above when isLightTableCell is true. Kept as-is
+            for non-table 'output'/'input' rendering.
+        -->
+        <h:panelGroup layout="block"
+                       rendered="#{not isLightTableCell}">
+            <p:ajax event="click" process="@this" disabled="true"
                     listener="#{tableModel.activateCell(rowItem, col)}"
                     update="#{cellUpdateTarget}"/>
 
@@ -395,7 +566,7 @@
             />
         </c:if>
 
-        </p:outputPanel>
+        </h:panelGroup>
 
     </c:if>
 

@@ -169,6 +169,9 @@ public class PhaseTableViewModel extends EntityTableViewModel<PhaseDTO, Long> {
 
     @Override
     public boolean canUserEditRow(PhaseDTO unit) {
+        if (unit == null) {
+            return false;
+        }
         Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
         return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
                 PermissionConstants.PROJECT_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES,

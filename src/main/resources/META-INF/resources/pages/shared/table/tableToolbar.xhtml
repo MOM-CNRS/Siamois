@@ -3,6 +3,7 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
     <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
@@ -40,22 +41,6 @@
                                 <span>#{tableModel.treeMode ? 'Mode Arborescence' : 'Mode Liste'}</span>
                             </div>
 
-                            <div style="display: flex; gap:1em; align-items: center">
-                                <p:toggleSwitch
-                                        id="manualColumnToggle"
-                                        value="#{tableModel.columnFilteringEnabled}"
-                                        onIcon="pi pi-filter" offIcon="pi pi-filter-slash"
-                                        styleClass="vertical-align-middle ml-3">
-
-                                    <p:ajax update=":#{cc.clientId}:#{tableId}, #{tableModel.parentPanel.actionToolbarId}"
-                                            listener="#{tableModel.onColumnFilteringToggle}"
-                                            oncomplete="PF('#{cc.clientId}_gearOverlay').show();" />
-                                </p:toggleSwitch>
-                                <span>#{tableModel.columnFilteringEnabled ? 'Filtres activés' : 'Filtres désactivés'}</span>
-                            </div>
-
-
-
                             <!-- Column Toggler -->
                             <p:commandButton
                                     id="toggler" type="button"
@@ -82,6 +67,57 @@
                                      disabled="true"
                         />
                     </span>
+
+                    <!-- Filter bar: Notion-style opt-in filter chips, replacing per-column header filters -->
+                    <h:panelGroup id="filterBar" layout="block" style="display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center;">
+
+                        <p:commandButton
+                                type="button"
+                                id="addFilterBtn"
+                                styleClass="ui-button-flat"
+                                icon="pi pi-filter"
+                                value="#{langBean.msg('common.action.addFilter')}"
+                                rendered="#{not empty tableModel.getAvailableFilterColumns()}"
+                        />
+                        <p:overlayPanel for="addFilterBtn" widgetVar="#{cc.clientId}_addFilterOverlay" dismissable="true">
+                            <ul class="sia-filter-column-picker">
+                                <c:forEach var="pickColumn" items="#{tableModel.getAvailableFilterColumns()}">
+                                    <li>
+                                        <p:commandLink value="#{langBean.msg(pickColumn.headerKey)}"
+                                                       process="@this"
+                                                       action="#{tableModel.addFilterColumn(pickColumn)}"
+                                                       update=":#{cc.clientId}:#{tableId}:filterBar"
+                                                       oncomplete="PF('#{cc.clientId}_addFilterOverlay').hide();"/>
+                                    </li>
+                                </c:forEach>
+                            </ul>
+                        </p:overlayPanel>
+
+                        <c:forEach var="filterColumn" items="#{tableModel.activeFilterColumns}" varStatus="chipStatus">
+                            <span class="sia-filter-chip">
+                                <p:commandButton type="button"
+                                                 id="filterChipBtn_#{chipStatus.index}"
+                                                 styleClass="ui-button-flat sia-filter-chip-btn"
+                                                 value="#{langBean.msg(filterColumn.headerKey)}"
+                                                 icon="pi pi-filter"/>
+                                <p:commandButton type="button"
+                                                 id="removeFilterChipBtn_#{chipStatus.index}"
+                                                 styleClass="ui-button-flat sia-filter-chip-remove"
+                                                 icon="pi pi-times"
+                                                 process="@this"
+                                                 action="#{tableModel.removeFilterColumn(filterColumn)}"
+                                                 update=":#{cc.clientId}:#{tableId}:filterBar, #{tableModel.parentPanel.actionToolbarId}"
+                                                 oncomplete="PF('#{cc.clientId}_#{tableId}').filter();"/>
+                                <p:overlayPanel for="filterChipBtn_#{chipStatus.index}" dismissable="true" styleClass="sia-filter-chip-overlay">
+                                    <ui:include src="/pages/shared/table/filterBarWidget.xhtml">
+                                        <ui:param name="tableModel" value="#{tableModel}"/>
+                                        <ui:param name="column" value="#{filterColumn}"/>
+                                    </ui:include>
+                                </p:overlayPanel>
+                            </span>
+                        </c:forEach>
+
+                    </h:panelGroup>
 
                 </div>
             </p:toolbarGroup>

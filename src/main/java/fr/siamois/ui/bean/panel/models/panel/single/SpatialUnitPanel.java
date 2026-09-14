@@ -164,6 +164,7 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
 
     }
 
+
     @Override
     protected String getFocusPath(Long id) {
         return "";

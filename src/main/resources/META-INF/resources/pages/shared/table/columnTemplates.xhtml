@@ -59,13 +59,7 @@
         </ui:include>
     </ui:fragment>
 
-    <style>
-        /* Lightweight, non-active table cells (see fieldCore.xhtml): signal they're clickable
-           without looking like a hyperlink, and show where the click will land. */
-        .sia-cell-activate { cursor: pointer; }
-        .sia-cell-activate:hover { background-color: var(--siamois-green-light-100, #eef6ee); }
-        .sia-cell-text.ui-link { color: inherit; text-decoration: none; display: block; width: 100%; }
-    </style>
+    <!-- .sia-cell-light / .sia-cell-activate now live in chip.scss (shared with form panels). -->
 
     <!-- RELATION Column -->
     <ui:fragment rendered="#{column.type eq 'RELATION'}">
