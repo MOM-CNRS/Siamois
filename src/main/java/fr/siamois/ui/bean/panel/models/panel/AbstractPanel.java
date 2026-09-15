@@ -149,12 +149,21 @@ public abstract class AbstractPanel implements Serializable {
     }
 
     /**
-     * True for panel types that render their overview (side) slot with the React panel instead of the
-     * JSF header+body includes — see panelContent.xhtml. The outer sideview chrome (close/focus/bookmark/
-     * duplicate/refresh icons) stays JSF for every panel type either way; this only swaps the header and
-     * tab content underneath it. False by default; overridden by RecordingUnitPanel.
+     * True for panel types that render themselves with the React panel instead of JSF — consulted both
+     * for the root/main slot (see focus.xhtml) and the overview slot (see overviewContent.xhtml), since
+     * the same panel instance/class can be either depending on {@link #isRoot}. False by default;
+     * overridden by RecordingUnitPanel.
      */
-    public boolean isReactOverviewEnabled() {
+    public boolean isReactPanelEnabled() {
+        return false;
+    }
+
+    /**
+     * True for list panels (e.g. {@code AbstractListPanel}), false for single-entity panels — lets
+     * focus.xhtml pick the right React mount function ({@code mountRecordingUnitList} vs
+     * {@code mountRecordingUnitPanel}) for a React-enabled panel without an EL {@code instanceof} check.
+     */
+    public boolean isListPanel() {
         return false;
     }
 

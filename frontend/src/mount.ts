@@ -10,6 +10,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import "./theme.css";
 import { App } from "./App";
+import { RecordingUnitList } from "./panel/RecordingUnitList";
 import { fetchSessionToken } from "./auth/sessionAuth";
 import { configureTokenRefresh } from "./api/client";
 import { configureBasePath } from "./api/basePath";
@@ -67,11 +68,41 @@ export function unmountRecordingUnitPanel(container: HTMLElement): void {
   }
 }
 
+export interface MountListOptions {
+  organizationId: string | number;
+  csrfToken: string;
+  basePath?: string;
+  /** Opens a row as the overview slot next to the list — see focus.xhtml's ruOpenOverviewMain bridge. */
+  onRowOpen?: (recordingUnitId: number) => void;
+}
+
+/** Entry point for the RU list main panel — see mountRecordingUnitPanel above for the auth/basePath contract. */
+export async function mountRecordingUnitList(container: HTMLElement, options: MountListOptions): Promise<void> {
+  configureBasePath(options.basePath ?? "");
+  configureTokenRefresh(options.csrfToken);
+  await fetchSessionToken(options.csrfToken);
+
+  const root = createRoot(container);
+  roots.set(container, root);
+  root.render(
+    createElement(RecordingUnitList, {
+      organizationId: options.organizationId,
+      onRowOpen: options.onRowOpen,
+    }),
+  );
+}
+
+export function unmountRecordingUnitList(container: HTMLElement): void {
+  unmountRecordingUnitPanel(container);
+}
+
 declare global {
   interface Window {
     SiamoisRecordingUnitPanel: {
       mount: typeof mountRecordingUnitPanel;
       unmount: typeof unmountRecordingUnitPanel;
+      mountList: typeof mountRecordingUnitList;
+      unmountList: typeof unmountRecordingUnitList;
     };
   }
 }
@@ -79,4 +110,6 @@ declare global {
 window.SiamoisRecordingUnitPanel = {
   mount: mountRecordingUnitPanel,
   unmount: unmountRecordingUnitPanel,
+  mountList: mountRecordingUnitList,
+  unmountList: unmountRecordingUnitList,
 };

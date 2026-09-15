@@ -38,10 +38,10 @@ export function RecordingUnitOverviewPanel({ recordingUnitId, actions, bookmarke
       .then(async (ru) => {
         if (cancelled) return;
         setUnit(ru);
-        if (ru.type) {
-          const type = await fetchFormForType(ru.projectId, ru.type.id);
-          if (!cancelled) setFormType(type);
-        }
+        // Falls back to the project's "_default" form when the type (or the unit itself) has none of
+        // its own — see recordingUnitType.ts's fetchFormForType.
+        const type = await fetchFormForType(ru.projectId, ru.type?.id ?? null);
+        if (!cancelled) setFormType(type);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));

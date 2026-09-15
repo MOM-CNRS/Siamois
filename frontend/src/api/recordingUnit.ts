@@ -81,6 +81,39 @@ export function duplicateRecordingUnit(id: string | number): Promise<RecordingUn
   );
 }
 
+export interface RecordingUnitListMeta {
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface RecordingUnitListResponse {
+  data: RecordingUnitResource[];
+  meta: RecordingUnitListMeta;
+}
+
+export interface ListRecordingUnitsParams {
+  organizationId: string | number;
+  offset: number;
+  limit: number;
+  q?: string;
+  sort?: string;
+}
+
+/**
+ * MVP list surface: search-by-identifier + basic sort — see OrganizationRecordingUnitsControllerApi.
+ * Advanced JSF-list filters (parents/children, tpq/taq, nature/agent, etc.) aren't threaded through yet.
+ */
+export function listRecordingUnits(params: ListRecordingUnitsParams): Promise<RecordingUnitListResponse> {
+  const query = new URLSearchParams({
+    offset: String(params.offset),
+    limit: String(params.limit),
+    ...(params.q ? { q: params.q } : {}),
+    ...(params.sort ? { sort: params.sort } : {}),
+  });
+  return apiFetch<RecordingUnitListResponse>(`/organizations/${params.organizationId}/recording-units?${query}`);
+}
+
 /** Next status in the JSF header's toggle cycle: INCOMPLETE -> COMPLETE -> VALIDATED -> INCOMPLETE. */
 export function nextValidationStatus(current: ValidationStatus): ValidationStatus {
   switch (current) {

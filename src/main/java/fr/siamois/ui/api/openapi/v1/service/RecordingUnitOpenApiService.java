@@ -698,6 +698,97 @@ public class RecordingUnitOpenApiService {
         return fields;
     }
 
+    private static final Set<String> LIST_COLUMN_BINDINGS = Set.of(
+            "type", "actionUnit", "spatialUnit", "author", "matrixColor", "openingDate", "closingDate",
+            "geomorphologicalCycle", "geomorphologicalAgent", "normalizedInterpretation", "tpq", "taq",
+            "chronologicalPhase", "erosionShape", "erosionProfile", "erosionOrientation",
+            "description", "comments", "zInf", "zSup", "contributors");
+
+    /**
+     * Cheap, values-only column set for the institution-wide Recording Unit list (React) — unlike
+     * {@link #buildFieldsWithFallback}, this never resolves a project's effective custom form (no
+     * {@code formService.initOrReuseResponse}); it reads straight off the already-loaded
+     * {@link RecordingUnitDTO} and the static {@link fr.siamois.ui.table.definitions.SystemFieldCatalog},
+     * so it's safe to call once per row of a page without the N-times cost of the full form engine.
+     * {@code parents}/{@code children}/{@code phases} are left out: list rows don't hydrate the full
+     * relation sets (see {@code RecordingUnitService#pageAndEnrich}'s {@code includeFullRelations=false}),
+     * only their counts (already on {@code RecordingUnitResource._counts}).
+     */
+    public Map<String, FieldAnswer> buildListColumnAnswers(RecordingUnitDTO dto, String lang) {
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, FieldAnswer> out = new LinkedHashMap<>();
+        for (CustomField field : fr.siamois.ui.table.definitions.SystemFieldCatalog.fieldsOf(ConfigurableTable.UE)) {
+            String binding = field.getValueBinding();
+            if (binding == null || !LIST_COLUMN_BINDINGS.contains(binding) || field.getId() == null) continue;
+            FieldResource fieldResource = toFieldResource(field, locale);
+            FieldAnswer answer = buildListAnswerFor(binding, fieldResource, dto, lang);
+            if (answer != null) {
+                out.put(fieldResource.id(), answer);
+            }
+        }
+        return out;
+    }
+
+    @SuppressWarnings("java:S1479") // one branch per system-field binding — no useful common abstraction
+    private FieldAnswer buildListAnswerFor(String binding, FieldResource fr, RecordingUnitDTO dto, String lang) {
+        return switch (binding) {
+            case "type" -> new SelectOneFieldAnswer(fr.answerType(), fr, toConceptRef(dto.getType(), lang));
+            case "actionUnit" -> new SelectOneFieldAnswer(fr.answerType(), fr, toActionUnitRef(dto.getActionUnit()));
+            case "spatialUnit" -> new SelectOneFieldAnswer(fr.answerType(), fr, toSpatialUnitRef(dto.getSpatialUnit()));
+            case "author" -> new SelectOneFieldAnswer(fr.answerType(), fr, toPersonRef(dto.getAuthor()));
+            case "matrixColor" -> new TextFieldAnswer(fr.answerType(), fr, dto.getMatrixColor());
+            case "openingDate" -> new DateFieldAnswer(fr.answerType(), fr, dto.getOpeningDate());
+            case "closingDate" -> new DateFieldAnswer(fr.answerType(), fr, dto.getClosingDate());
+            case "geomorphologicalCycle" -> new SelectOneFieldAnswer(fr.answerType(), fr, toConceptRef(dto.getGeomorphologicalCycle(), lang));
+            case "geomorphologicalAgent" -> new SelectOneFieldAnswer(fr.answerType(), fr, toConceptRef(dto.getGeomorphologicalAgent(), lang));
+            case "normalizedInterpretation" -> new SelectOneFieldAnswer(fr.answerType(), fr, toConceptRef(dto.getNormalizedInterpretation(), lang));
+            case "tpq" -> new IntegerFieldAnswer(fr.answerType(), fr, dto.getTpq());
+            case "taq" -> new IntegerFieldAnswer(fr.answerType(), fr, dto.getTaq());
+            case "chronologicalPhase" -> new SelectOneFieldAnswer(fr.answerType(), fr, toConceptRef(dto.getChronologicalPhase(), lang));
+            case "erosionShape" -> new SelectOneFieldAnswer(fr.answerType(), fr, toConceptRef(dto.getErosionShape(), lang));
+            case "erosionProfile" -> new SelectOneFieldAnswer(fr.answerType(), fr, toConceptRef(dto.getErosionProfile(), lang));
+            case "erosionOrientation" -> new SelectOneFieldAnswer(fr.answerType(), fr, toConceptRef(dto.getErosionOrientation(), lang));
+            case "description" -> new TextFieldAnswer(fr.answerType(), fr, dto.getDescription());
+            case "comments" -> new TextFieldAnswer(fr.answerType(), fr, dto.getComments());
+            case "zInf" -> new MeasurementFieldAnswer(fr.answerType(), fr, toMeasurementRef(dto.getZInf()));
+            case "zSup" -> new MeasurementFieldAnswer(fr.answerType(), fr, toMeasurementRef(dto.getZSup()));
+            case "contributors" -> new SelectManyFieldAnswer(fr.answerType(), fr, toPersonRefs(dto.getContributors()));
+            default -> null;
+        };
+    }
+
+    private ResourceRef toConceptRef(ConceptDTO concept, String lang) {
+        if (concept == null) return null;
+        return new ResourceRef(String.valueOf(concept.getId()), "concepts", labelService.findLabelOf(concept, lang).getLabel());
+    }
+
+    private ResourceRef toActionUnitRef(ActionUnitSummaryDTO au) {
+        if (au == null) return null;
+        String label = au.getFullIdentifier() != null ? au.getFullIdentifier() : au.getName();
+        return new ResourceRef(String.valueOf(au.getId()), "action-units", label);
+    }
+
+    private ResourceRef toSpatialUnitRef(SpatialUnitSummaryDTO su) {
+        if (su == null) return null;
+        return new ResourceRef(String.valueOf(su.getId()), "spatial-units", su.getName());
+    }
+
+    private ResourceRef toPersonRef(PersonDTO person) {
+        if (person == null) return null;
+        return new ResourceRef(String.valueOf(person.getId()), "persons", person.displayName());
+    }
+
+    private List<ResourceRef> toPersonRefs(List<PersonDTO> people) {
+        if (people == null || people.isEmpty()) return List.of();
+        return people.stream().map(this::toPersonRef).filter(Objects::nonNull).toList();
+    }
+
+    private MeasurementRef toMeasurementRef(MeasurementAnswerDTO m) {
+        if (m == null) return null;
+        return new MeasurementRef(m.getNumericValue(), m.getUnit() != null ? m.getUnit().getSymbol() : null,
+                m.getNormalizedValue(), m.getComment());
+    }
+
     private FieldResource toFieldResource(CustomField field, Locale locale) {
         String label = langService.resolveMessage(field.getLabel(), locale);
         String hint = langService.resolveMessage(field.getHint(), locale);

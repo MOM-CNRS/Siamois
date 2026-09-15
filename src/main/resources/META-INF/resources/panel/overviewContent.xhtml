@@ -1,0 +1,215 @@
+<!-- overviewContent.xhtml
+     The overview (side) slot's content: JSF chrome+header+body for every panel type except a
+     React-enabled one (RecordingUnitPanel), which renders as a single React app instead. Extracted from
+     panelContent.xhtml's "overview" splitterPanel so it can be included both from there (flow.xhtml's
+     multi-panel splitter, unchanged) and directly as a page-level sibling of the main panel from
+     focus.xhtml, once the main panel is also React-enabled — see focus.xhtml.
+-->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:h="http://xmlns.jcp.org/jsf/html">
+
+    <!--@elvariable id="panelIndex" type="String"-->
+    <!--@elvariable id="mode" type="String"-->
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"-->
+
+    <p:outputPanel id="sideview-${panelIndex}" styleClass="sideview #{panelModel.parentOrOverview.panelClass}"
+                   style="border-radius: 1em 0 0 0;">
+        <h:panelGroup rendered="#{not empty panelModel.parentOrOverview}">
+
+            <!--
+                JSF chrome + header + body, unchanged, for every panel type EXCEPT a Recording
+                Unit overview (isReactPanelEnabled) — see the React branch below, which
+                replaces this entire block (titlebar toolbar included) with one React app.
+            -->
+            <h:panelGroup rendered="#{not panelModel.parentOrOverview.reactPanelEnabled}">
+            <div class="sideview-titlebar" style="
+                    background: var(--siamois-green-light-100);
+                    display: flex;
+                    flex-direction: column;
+                    flex-wrap: wrap;
+                    column-gap: 2em;
+                    row-gap: 0.5em;">
+
+                <h:form style="
+                    width: fit-content;" id="actionForm-${panelModel.prefixPanelIndex}-overview">
+                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                    <div style="display:flex;flex-direction: row;gap:0.5em;padding: 3px;
+                                                    border: 1px solid var(--siamois-green-light);
+                                                    align-items: center;
+                                                    border-radius: 15px;">
+
+
+
+
+                        <p:commandLink styleClass="sideview-topbar-button"
+                                       id="closeSideview"
+                                       action="#{panelModel.closeOverview()}">
+                            <h:outputText styleClass="bi bi-chevron-double-right"/>
+                        </p:commandLink>
+                        <p:tooltip
+                                autoHide="false" value="Fermer l'aperçu latéral"
+                                position="bottom"
+                                for="closeSideview"
+                        />
+                        <p:commandLink styleClass="sideview-topbar-button"
+                                       action="#{flowBean.fullScreen(panelModel.parentOrOverview)}"
+                                       ajax="false"
+                                       id="focusButton">
+                            <h:outputText styleClass="bi bi-arrows-angle-expand"/>
+                        </p:commandLink>
+                        <p:tooltip
+                                autoHide="false" value="Ouvrir en mode focus"
+                                position="bottom"
+                                for="focusButton"
+                        />
+                        <p:commandLink id="bookmarkToggleButton"
+                                       process="@this"
+                                       styleClass="sideview-topbar-button"
+                                       action="#{panelModel.parentOrOverview.togglePanelBookmark()}"
+                                       update="bookmarkToggleButton, navBarCsrfForm:siamoisNavForm, subSidebarForm, actionForm-${panelModel.prefixPanelIndex}-overview">
+                            <h:outputText styleClass="#{panelModel.parentOrOverview.isBookmarked() ?
+                                            'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
+                        </p:commandLink>
+
+                        <p:commandLink id="createEntityBtn"
+                                       rendered="#{panelModel.parentOrOverview.creationUnitKind != null and flowBean.isWriteMode}"
+                                       styleClass="sideview-topbar-button"
+                                       action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.parentOrOverview.creationUnitKind, panelModel.parentOrOverview)}"
+                                       update="newUnitForm"
+                                       oncomplete="PF('newUnitDiag').show();"
+                                       immediate="true">
+                            <h:outputText styleClass="bi bi-plus-square"/>
+                        </p:commandLink>
+                        <p:tooltip autoHide="false" value="Créer" position="bottom" for="createEntityBtn"/>
+
+                        <p:commandLink id="duplicateBtn"
+                                       rendered="#{panelModel.parentOrOverview.canDuplicate() and flowBean.isWriteMode}"
+                                       styleClass="sideview-topbar-button"
+                                       action="#{panelModel.parentOrOverview.duplicate()}"
+                                       update="sideview-${panelIndex}"
+                                       immediate="true">
+                            <h:outputText styleClass="bi bi-copy"/>
+                        </p:commandLink>
+                        <p:tooltip autoHide="false" for="duplicateBtn" value="Dupliquer" position="bottom"/>
+
+                        <h:commandLink id="duplicateBtnDisabled"
+                                      rendered="#{panelModel.parentOrOverview.creationUnitKind != null
+                                                  and not panelModel.parentOrOverview.canDuplicate()
+                                                  and flowBean.isWriteMode}"
+                                      styleClass="sideview-topbar-button ui-commandlink ui-widget"
+                                      style="opacity:0.4; cursor:not-allowed;">
+                            <i class="bi bi-copy"/>
+                        </h:commandLink>
+                        <p:tooltip autoHide="false" for="duplicateBtnDisabled" value="À venir" position="bottom"/>
+
+                        <p:commandLink id="refreshPanelButton"
+                                       process="@this"
+                                       styleClass="sideview-topbar-button"
+                                       action="#{panelModel.parentOrOverview.refresh()}"
+                                       onclick="event.stopPropagation();"
+                                       update="sideview-${panelIndex}">
+                            <h:outputText styleClass="bi bi-arrow-clockwise"/>
+                        </p:commandLink>
+
+                        <p:commandLink id="openInProjectSettingsButton"
+                                       rendered="#{panelModel.parentOrOverview.canOpenInProjectSettings()}"
+                                       process="@this"
+                                       styleClass="sideview-topbar-button"
+                                       action="#{navBean.redirectToActionUnitSettings(panelModel.parentOrOverview.unit)}"
+                                       title="#{langBean.msg('panel.header.settings')}">
+                            <h:outputText styleClass="bi bi-gear"/>
+                        </p:commandLink>
+                        <p:tooltip rendered="#{panelModel.parentOrOverview.canOpenInProjectSettings()}" autoHide="false" for="openInProjectSettingsButton" value="#{langBean.msg('panel.header.settings')}" position="bottom"/>
+
+
+                    </div>
+                </h:form>
+        <h:form>
+                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                    <div style="display: flex;
+                            gap: 0.5em;
+                            align-items: center;
+                            flex-wrap: wrap;">
+                        <ui:include rendered="#{panelModel.parentOrOverview.displayHeader() != null}"
+                                    src="#{panelModel.parentOrOverview.displayHeader()}">
+                            <ui:param name="formSuffix" value="_overview"/>
+                            <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
+                        </ui:include>
+                    </div>
+                </h:form>
+
+            </div>
+            <p:progressBar widgetVar="pbBarAjax_#{panelIndex}-overview" id="overviewProgressBar"
+                           class="panel-progressbar"
+                           style="height:3px" mode="indeterminate"/>
+            <!-- Include the reusable dynamic content for the right panel -->
+            <ui:include src="#{panelModel.parentOrOverview.display()}" id="overview-panel-body">
+                <ui:param name="panelModel" value="#{panelModel.parentOrOverview}"/>
+                <ui:param name="panelIndex" value="#{panelIndex}-overview"/>
+                <ui:param name="mode" value="#{mode}"/>
+            </ui:include>
+            </h:panelGroup>
+
+            <!--
+                Recording Unit overview: FULL React panel — toolbar, header and Détails tab —
+                see RecordingUnitPanel.isReactPanelEnabled(). The visible chrome (close,
+                duplicate, refresh, bookmark) is entirely PrimeReact-rendered now; each action
+                calls back into one of the p:remoteCommands below so FlowBean's server-side state
+                (which panel is bookmarked, which unit an overview slot points at, etc.) stays
+                authoritative — React never mutates that state directly. "Fullscreen/focus mode"
+                and "create a new sibling unit" are NOT bridged yet (both need either a
+                non-AJAX navigation or opening a separate JSF dialog defined elsewhere on the
+                page — deferred rather than rushed).
+            -->
+            <h:panelGroup rendered="#{panelModel.parentOrOverview.reactPanelEnabled}">
+                <!--
+                    p:remoteCommand's `name` becomes a global JS function name — it must be a
+                    valid identifier, unlike the `${panelIndex}`-based ids used elsewhere in this
+                    file (which allow hyphens). panelIndexSafe sanitizes for exactly this; see
+                    AbstractPanel.getPanelIndexSafe().
+                -->
+                <h:form id="reactBridgeForm-${panelIndex}">
+                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                    <p:remoteCommand name="ruCloseOverview_${panelModel.panelIndexSafe}"
+                                     action="#{panelModel.closeOverview()}"/>
+                    <p:remoteCommand name="ruDuplicate_${panelModel.panelIndexSafe}"
+                                     action="#{panelModel.parentOrOverview.duplicate()}"
+                                     update="sideview-${panelIndex}"/>
+                    <p:remoteCommand name="ruRefresh_${panelModel.panelIndexSafe}"
+                                     action="#{panelModel.parentOrOverview.refresh()}"
+                                     update="sideview-${panelIndex}"/>
+                    <p:remoteCommand name="ruToggleBookmark_${panelModel.panelIndexSafe}"
+                                     action="#{panelModel.parentOrOverview.togglePanelBookmark()}"
+                                     update="navBarCsrfForm:siamoisNavForm, subSidebarForm"/>
+                </h:form>
+
+                <link rel="stylesheet" href="#{request.contextPath}/resources/react-ru-panel/recording-unit-panel.css"/>
+                <div id="react-ru-overview-${panelIndex}" class="react-ru-overview-root" style="height:100%;overflow:auto;display:flex;flex-direction:column;"></div>
+                <script src="#{request.contextPath}/resources/react-ru-panel/recording-unit-panel.js"></script>
+                <script>
+                    (function () {
+                        var container = document.getElementById('react-ru-overview-${panelIndex}');
+                        if (container &amp;&amp; window.SiamoisRecordingUnitPanel) {
+                            window.SiamoisRecordingUnitPanel.unmount(container);
+                            window.SiamoisRecordingUnitPanel.mount(container, {
+                                recordingUnitId: ${panelModel.parentOrOverview.unit.id},
+                                csrfToken: '${_csrf.token}',
+                                basePath: '${request.contextPath}',
+                                bookmarked: ${panelModel.parentOrOverview.isBookmarked()},
+                                actions: {
+                                    close: function () { ruCloseOverview_${panelModel.panelIndexSafe}(); },
+                                    duplicate: function () { ruDuplicate_${panelModel.panelIndexSafe}(); },
+                                    refresh: function () { ruRefresh_${panelModel.panelIndexSafe}(); },
+                                    toggleBookmark: function () { ruToggleBookmark_${panelModel.panelIndexSafe}(); }
+                                }
+                            });
+                        }
+                    })();
+                </script>
+            </h:panelGroup>
+        </h:panelGroup>
+    </p:outputPanel>
+
+</ui:composition>

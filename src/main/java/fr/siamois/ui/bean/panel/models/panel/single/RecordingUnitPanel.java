@@ -154,14 +154,13 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     }
 
     /**
-     * Recording Unit overview panels render as the React panel (header + Détails tab) instead of the
-     * JSF header/body includes — phase 4 of the RU React migration. Documents/Hiérarchie/Mobiliers stay
+     * Recording Unit panels — root/main and overview alike — render as the React panel (toolbar + header
+     * + Détails tab) instead of the JSF chrome/header/body includes. Documents/Hiérarchie/Mobiliers stay
      * JSF-only for now (React panel shows them as disabled stubs); Stratigraphie is absent entirely from
-     * the React panel by design. The main (non-overview) RecordingUnitPanel is unaffected — this flag is
-     * only consulted for the overview slot, see panelContent.xhtml.
+     * the React panel by design. See focus.xhtml (root slot) and overviewContent.xhtml (overview slot).
      */
     @Override
-    public boolean isReactOverviewEnabled() {
+    public boolean isReactPanelEnabled() {
         return true;
     }
 

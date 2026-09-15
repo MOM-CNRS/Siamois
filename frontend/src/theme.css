@@ -68,3 +68,41 @@
   color: var(--error-main, #d32f2f);
   padding: 1rem;
 }
+
+/* Compact rows, never wrap: mirrors the JSF table's single-line cells (entityDataTable.xhtml). A
+   fixed cell height + overflow:hidden clips a taller nested block (e.g. fieldRegistry.tsx's
+   UnsupportedField hint line) instead of growing the row. */
+.ru-list-panel .p-datatable-tbody > tr > td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 2.25rem;
+  max-height: 2.25rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+  vertical-align: middle;
+}
+.ru-list-panel .p-datatable-tbody > tr > td .p-inputtext,
+.ru-list-panel .p-datatable-tbody > tr > td .p-inputnumber,
+.ru-list-panel .p-datatable-tbody > tr > td .p-autocomplete,
+.ru-list-panel .p-datatable-tbody > tr > td .p-calendar {
+  width: 100%;
+}
+
+/* Frozen (sticky) columns default to background:inherit (PrimeReact core CSS), which is transparent
+   here — scrolled-past columns show through underneath instead of disappearing behind. Give frozen
+   cells their own opaque background (header + body, including the hover state so it doesn't visibly
+   mismatch the rest of the hovered row). PrimeReact's own CSS also only sets z-index on frozen `th`,
+   not frozen `td` (core datatable.esm.js styles$1) — without it, later (non-frozen) body cells paint
+   over the sticky one on scroll since z-index:auto siblings stack in DOM order. */
+.ru-list-panel .p-datatable-thead > tr > th.p-frozen-column {
+  background: var(--surface-card, #ffffff);
+}
+.ru-list-panel .p-datatable-tbody > tr > td.p-frozen-column {
+  background: var(--surface-card, #ffffff);
+  z-index: 1;
+}
+.ru-list-panel .p-datatable-tbody > tr.p-datatable-row-hover > td.p-frozen-column,
+.ru-list-panel .p-datatable-tbody > tr:hover > td.p-frozen-column {
+  background: var(--surface-hover, #f6f9fc);
+}
