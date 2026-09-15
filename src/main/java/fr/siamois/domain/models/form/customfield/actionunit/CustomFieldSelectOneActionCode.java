@@ -20,4 +20,9 @@ public class CustomFieldSelectOneActionCode extends CustomField {
     public String getIcon() {
         return "bi bi-qr-code";
     }
+
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/actionCode.xhtml";
+    }
 }

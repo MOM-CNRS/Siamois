@@ -26,4 +26,9 @@ public class CustomFieldSelectMultipleSpatialUnitTree extends CustomField {
         return "bi bi-geo-alt";
     }
 
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/spatialMultiple.xhtml";
+    }
+
 }

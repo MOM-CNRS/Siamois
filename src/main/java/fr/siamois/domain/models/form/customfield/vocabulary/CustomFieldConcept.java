@@ -13,4 +13,11 @@ public abstract class CustomFieldConcept extends CustomField {
         return "sia-icon-opentheso";
     }
 
+    // Covers CustomFieldSelectOne/Multiple directly, and CustomFieldSelectOne/MultipleFromFieldCode
+    // via CustomFieldConceptFromFieldCode — all four share the same edit widget.
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/concept.xhtml";
+    }
+
 }

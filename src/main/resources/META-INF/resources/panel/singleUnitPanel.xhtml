@@ -120,8 +120,10 @@
                 <h:panelGroup rendered="#{activeColumn ne null and activeField ne null}">
                     <ui:param name="answer" value="#{formCtx.getFieldAnswer(activeField)}"/>
                     <ui:param name="hasBeenModified" value="#{answer ne null and answer.hasBeenModified}"/>
+                    <!-- See fieldCore.xhtml's fieldTypeName: resolved once instead of inside each 'eq' check below. -->
+                    <ui:param name="activeFieldTypeName" value="#{activeField['class'].simpleName}"/>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldText'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldText'}">
                         <siaInplace:text id="ovText"
                                          field="#{activeField}"
                                          required="#{activeColumn.required}"
@@ -133,15 +135,15 @@
                                          onModified="#{formCtx.onFieldAnswerModifiedListener}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneFromFieldCode'
-                               or activeField['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode'
-                               or activeField['class'].simpleName eq 'CustomFieldSelectOne'
-                               or activeField['class'].simpleName eq 'CustomFieldSelectMultiple'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectOneFromFieldCode'
+                               or activeFieldTypeName eq 'CustomFieldSelectMultipleFromFieldCode'
+                               or activeFieldTypeName eq 'CustomFieldSelectOne'
+                               or activeFieldTypeName eq 'CustomFieldSelectMultiple'}">
                         <siaInplace:concept id="ovConcept"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
                                             required="#{activeColumn.required}"
-                                            multiple="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleFromFieldCode' or activeField['class'].simpleName eq 'CustomFieldSelectMultiple'}"
+                                            multiple="#{activeFieldTypeName eq 'CustomFieldSelectMultipleFromFieldCode' or activeFieldTypeName eq 'CustomFieldSelectMultiple'}"
                                             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
                                             mode="input"
                                             updateTargetsOnBlur="@this"
@@ -151,14 +153,14 @@
                                             formCtx="#{formCtx}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleRecordingUnit'
-                               or activeField['class'].simpleName eq 'CustomFieldSelectOneRecordingUnit'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectMultipleRecordingUnit'
+                               or activeFieldTypeName eq 'CustomFieldSelectOneRecordingUnit'}">
                         <siaInplace:recordingUnitMultiple id="ovRecordingUnit"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
                                             required="#{activeColumn.required}"
                                             formCtx="#{formCtx}"
-                                            multiple="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleRecordingUnit'}"
+                                            multiple="#{activeFieldTypeName eq 'CustomFieldSelectMultipleRecordingUnit'}"
                                             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
                                             mode="input"
                                             compact="false"
@@ -167,7 +169,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldInteger'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldInteger'}">
                         <siaInplace:integer id="ovInteger"
                                             panelModel="#{formCtx}"
                                             field="#{activeField}"
@@ -180,7 +182,7 @@
                                             updateTargetsOnBlur="@this"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldDecimal'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldDecimal'}">
                         <siaInplace:decimal id="ovDecimal"
                                             panelModel="#{formCtx}"
                                             field="#{activeField}"
@@ -193,7 +195,7 @@
                                             updateTargetsOnBlur="@this"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldDateTime'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldDateTime'}">
                         <siaInplace:datePicker id="ovDatePicker"
                                             label="#{spatialUnitFieldBean.resolveCustomFieldLabel(activeField)}"
                                             field="#{activeField}"
@@ -205,7 +207,7 @@
                                             onModified="#{formCtx.onFieldAnswerModifiedListener}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneActionUnit'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectOneActionUnit'}">
                         <siaInplace:action id="ovAction"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
@@ -216,7 +218,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneSpatialUnit'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectOneSpatialUnit'}">
                         <siaInplace:spatial id="ovSpatial"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
@@ -230,7 +232,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOnePerson'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectOnePerson'}">
                         <siaInplace:person id="ovOnePerson"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
@@ -242,7 +244,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultiplePerson'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectMultiplePerson'}">
                         <siaInplace:person id="ovMultiplePerson"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
@@ -255,7 +257,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleContainer'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectMultipleContainer'}">
                         <siaInplace:containerMultiple id="ovContainerMultiple"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
@@ -270,7 +272,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultiplePhase'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectMultiplePhase'}">
                         <siaInplace:phaseMultiple id="ovPhaseMultiple"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
@@ -285,7 +287,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleSpatialUnitTree'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectMultipleSpatialUnitTree'}">
                         <siaInplace:spatialMultiple id="ovSpatialMultiple"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
@@ -301,7 +303,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectMultipleSpecimen'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectMultipleSpecimen'}">
                         <siaInplace:specimen id="ovSpecimen"
                                             hasBeenModified="#{hasBeenModified}"
                                             field="#{activeField}"
@@ -316,7 +318,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneActionCode'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectOneActionCode'}">
                         <siaInplace:actionCode id="ovActionCode"
                                             field="#{activeField}"
                                             required="#{activeColumn.required}"
@@ -327,7 +329,7 @@
                                             updateTargetsOnBlur="@this"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldSelectOneAddress'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldSelectOneAddress'}">
                         <siaInplace:address id="ovAddress"
                                             formCtx="#{formCtx}"
                                             hasBeenModified="#{hasBeenModified}"
@@ -339,7 +341,7 @@
                                             answer="#{answer}"/>
                     </c:if>
 
-                    <c:if test="#{activeField['class'].simpleName eq 'CustomFieldMeasurement'}">
+                    <c:if test="#{activeFieldTypeName eq 'CustomFieldMeasurement'}">
                         <siaInplace:measurement id="ovMeasurement"
                                             formCtx="#{formCtx}"
                                             hasBeenModified="#{hasBeenModified}"

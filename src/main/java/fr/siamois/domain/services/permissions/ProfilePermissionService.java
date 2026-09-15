@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
+import fr.siamois.utils.context.PermissionCheckCache;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -51,7 +52,8 @@ public class ProfilePermissionService {
         if (person == null || person.getId() == null) {
             return false;
         }
-        return assignmentRepository.personHasInstancePermission(person.getId(), permissionCode);
+        return PermissionCheckCache.computeIfAbsent("INSTANCE", person.getId(), null, permissionCode,
+                () -> assignmentRepository.personHasInstancePermission(person.getId(), permissionCode));
     }
 
     /**
@@ -71,8 +73,13 @@ public class ProfilePermissionService {
         if (hasInstancePermission(person, permissionCode)) {
             return true;
         }
-        return institution != null && institution.getId() != null
-                && assignmentRepository.personHasPermissionInInstitution(person.getId(), institution.getId(), permissionCode);
+        if (institution == null || institution.getId() == null) {
+            return false;
+        }
+        Long personId = person.getId();
+        Long institutionId = institution.getId();
+        return PermissionCheckCache.computeIfAbsent("ORGANISATION", personId, institutionId, permissionCode,
+                () -> assignmentRepository.personHasPermissionInInstitution(personId, institutionId, permissionCode));
     }
 
     /**
@@ -101,8 +108,12 @@ public class ProfilePermissionService {
             return true;
         }
         PersonDTO person = user.getUser();
-        return actionUnitId != null && person != null && person.getId() != null
-                && assignmentRepository.personHasPermissionInActionUnit(person.getId(), actionUnitId, permissionCode);
+        if (actionUnitId == null || person == null || person.getId() == null) {
+            return false;
+        }
+        Long personId = person.getId();
+        return PermissionCheckCache.computeIfAbsent("PROJECT", personId, actionUnitId, permissionCode,
+                () -> assignmentRepository.personHasPermissionInActionUnit(personId, actionUnitId, permissionCode));
     }
 
     /**
@@ -120,8 +131,12 @@ public class ProfilePermissionService {
             return true;
         }
         PersonDTO person = user.getUser();
-        return actionUnitId != null && person != null && person.getId() != null
-                && assignmentRepository.personHasPermissionInActionUnit(person.getId(), actionUnitId, projectCode);
+        if (actionUnitId == null || person == null || person.getId() == null) {
+            return false;
+        }
+        Long personId = person.getId();
+        return PermissionCheckCache.computeIfAbsent("PROJECT", personId, actionUnitId, projectCode,
+                () -> assignmentRepository.personHasPermissionInActionUnit(personId, actionUnitId, projectCode));
     }
 
     /**

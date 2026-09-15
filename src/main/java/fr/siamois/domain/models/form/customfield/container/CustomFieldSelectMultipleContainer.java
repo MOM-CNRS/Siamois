@@ -24,4 +24,9 @@ public class CustomFieldSelectMultipleContainer extends CustomField {
         return "bi bi-box-seam";
     }
 
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/containerMultiple.xhtml";
+    }
+
 }

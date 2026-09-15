@@ -22,4 +22,9 @@ public class CustomFieldSelectMultiplePhase extends CustomField {
     public String getIcon() {
         return "bi bi-layers";
     }
+
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/phaseMultiple.xhtml";
+    }
 }
