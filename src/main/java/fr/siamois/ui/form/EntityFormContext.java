@@ -133,40 +133,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private EnabledRulesEngine enabledEngine;
 
     /**
-     * The one column on this panel currently switched into its full edit widget (see
-     * {@link #isActiveField}) — same "only one editable at a time, everything else stays a
-     * lightweight display" model as {@link fr.siamois.ui.table.viewmodel.EntityTableViewModel}'s
-     * active-cell tracking, applied to a single-entity form's own fields instead of a table's
-     * cells. The whole column (not just its field) is kept so the overlay can read
-     * {@code activeColumn.required} the same way a table's activeCellColumn does.
-     */
-    private CustomColUiDto activeColumn;
-
-    /** @return true if {@code field} is the one currently switched into its full edit widget. */
-    public boolean isActiveField(CustomField field) {
-        return field != null && activeColumn != null && field.equals(activeColumn.getField());
-    }
-
-    /** @return the column currently switched into its full edit widget, or null. */
-    public CustomColUiDto getActiveColumn() {
-        return activeColumn;
-    }
-
-    /** Switches {@code col} into its full edit widget, replacing whichever field was active. */
-    public void activateField(CustomColUiDto col) {
-        this.activeColumn = col;
-    }
-
-    /** Switches the currently active field (if any) back to its lightweight display. */
-    public void deactivateField() {
-        this.activeColumn = null;
-    }
-
-    /**
      * The column (and its owning panel, needed to remove a field — see {@link NewFieldManagerBean#removeField})
      * whose info popover (documentation link, "Supprimer" for a removable field) is currently open.
-     * One shared overlay per form serves every field the same way {@link #activeColumn} does for the
-     * edit widget, instead of every field building its own menu (see panelField.xhtml).
+     * One shared overlay per form serves every field's info popover, instead of every field
+     * building its own menu (see panelField.xhtml).
      */
     private CustomColUiDto activeInfoColumn;
     private CustomFormPanelUiDto activeInfoPanel;

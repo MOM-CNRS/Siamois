@@ -70,18 +70,7 @@
                               value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
                     <ui:param name="updateTargetsOnBlur" value="#{bean.getPanelHeaderUpdateId()}"/>
                     <ui:param name="spatialUnitOptions" value="#{bean.formContext.getSpatialUnitOptions('')}"/>
-                    <!--
-                        Same "lightweight read display by default, full edit widget only for the
-                        one field actually being edited" model as a table's cells (see
-                        fieldCore.xhtml's isLightCell / entityTable.xhtml's cellEditOverlay) — here
-                        applied per-panel instead of per-row: bean.formContext.activeColumn tracks
-                        which single field on THIS panel is switched into its real widget, and
-                        every other field stays a plain chip/text until clicked. flowBean's global
-                        write-mode switch remains the outer permission gate, same as col.readOnly
-                        and canUserEditUnit() — a panel in read mode never becomes editable no
-                        matter what's clicked.
-                    -->
-                    <ui:param name="mode" value="#{(col.readOnly or not bean.canUserEditUnit() or not flowBean.isWriteMode) ? 'output' : (bean.formContext.isActiveField(col.field) ? 'input' : 'lightPanel')}"/>
+                    <ui:param name="mode" value="#{(col.readOnly or not bean.canUserEditUnit() or not flowBean.isWriteMode) ? 'output' : 'input'}"/>
                     <ui:param name="compact" value="false"/>
                 </ui:include>
             </div>

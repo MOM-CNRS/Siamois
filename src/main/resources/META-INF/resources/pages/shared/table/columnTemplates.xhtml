@@ -30,7 +30,7 @@
         output panel's own "rendered" is data-dependent) risks matching nothing at all when
         that inner condition happens to be false.
     -->
-    <p:outputPanel id="fieldCell_#{colIndex}" layout="block" styleClass="siamois-row-ajax-target">
+    <p:outputPanel layout="block" styleClass="siamois-row-ajax-target">
 
     <ui:fragment rendered="#{column.type eq 'FORM_FIELD'}" >
         <ui:include src="/pages/shared/form/customFormFieldContentForTable.xhtml">
@@ -51,15 +51,8 @@
             <ui:param name="updateTargetsOnBlur" value="#{updateTableString}" />
             <!--@elvariable id="canUserEditRow" type="java.lang.Boolean"-->
             <ui:param name="allowEdit" value="#{canUserEditRow}"/>
-            <!-- Click-to-activate: cell starts as plain text, and only becomes its full
-                 PrimeFaces edit widget once the user clicks it (see fieldCore.xhtml). -->
-            <ui:param name="tableModel" value="#{tableModel}"/>
-            <ui:param name="rowItem" value="#{item}"/>
-            <ui:param name="cellUpdateTarget" value="fieldCell_#{colIndex}"/>
         </ui:include>
     </ui:fragment>
-
-    <!-- .sia-cell-light / .sia-cell-activate now live in chip.scss (shared with form panels). -->
 
     <!-- RELATION Column -->
     <ui:fragment rendered="#{column.type eq 'RELATION'}">
