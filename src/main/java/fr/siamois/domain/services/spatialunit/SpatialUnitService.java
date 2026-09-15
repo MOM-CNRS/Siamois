@@ -554,6 +554,9 @@ public class SpatialUnitService implements ArkEntityService {
             Long institutionId, String name, Long[] categoryIds, String fullIdentifier, String global, String langCode, Pageable pageable) {
         Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionId)
                 .and(SpatialUnitSpec.nameContaining(name));
+        if (categoryIds != null && categoryIds.length > 0) {
+            specs = specs.and(SpatialUnitSpec.categoryIsIn(List.of(categoryIds)));
+        }
         return spatialUnitRepository.findAll(specs, pageable).map(spatialUnitMapper::convert);
     }
 

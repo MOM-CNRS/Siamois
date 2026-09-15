@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -96,6 +97,8 @@ class OrganizationControllerApiTest {
     @Mock
     private PhaseService phaseService;
     @Mock
+    private ContainerService containerService;
+    @Mock
     private PlaceOpenApiService placeOpenApiService;
 
     private MockMvc mockMvc;
@@ -121,7 +124,7 @@ class OrganizationControllerApiTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService, containerService);
 
         OrganizationControllerApi controller = new OrganizationControllerApi(
                 recordingUnitService,

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Recording Unit panel — dev harness</title>
+    <style>
+      /*
+        Only this standalone dev harness needs these — when mounted for real inside a JSF page, these
+        exact variable names already come from primefaces-siamois-theme/_variables.scss's :root block,
+        loaded once by the page itself. Duplicating them here would be harmless in this file (never
+        shipped in the built bundle) but WOULD be wrong inside theme.css — see its header comment.
+      */
+      :root {
+        --surface-border: #dee2e6;
+        --text-color: #495057;
+        --text-light: #6b7280;
+        --text-main: #2a2c30;
+        --primary-color: #699369;
+        --border-radius: 6px;
+        --siamois-green-light-100: #e6f0e6;
+        --siamois-green-light-200: #c0dac0;
+        --main-content-background: #fafafa;
+        --error-main: #d32f2f;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Local-dev-only harness: the real host is a JSF page (see mount.ts). This just lets
+      `npm run dev` render the panel standalone against a real backend running on the same origin
+      (use the Vite dev server's proxy, or run this through the same host/port as the Spring app).
+    -->
+    <div id="ru-panel-root" style="max-width: 480px; margin: 2rem auto"></div>
+    <script type="module">
+      import { mountRecordingUnitPanel } from "/src/mount.ts";
+
+      const container = document.getElementById("ru-panel-root");
+      mountRecordingUnitPanel(container, {
+        recordingUnitId: 1,
+        csrfToken: "dev-harness-token",
+        // Match your local Spring app's server.servlet.context-path (e.g. "/siamois" for application-dev.yaml).
+        basePath: "/siamois",
+      });
+    </script>
+  </body>
+</html>

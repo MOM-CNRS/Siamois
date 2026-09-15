@@ -30,6 +30,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -68,6 +69,10 @@ import fr.siamois.ui.api.openapi.v1.resource.type.FindType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitIdentifierConfig;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
+import fr.siamois.domain.models.history.InfoRevisionEntity;
+import fr.siamois.ui.api.openapi.v1.resource.person.PersonResource;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitAdjacentResponse;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitHistoryResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
@@ -121,6 +126,7 @@ public class RecordingUnitOpenApiService {
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
     private final TableFieldConfigService tableFieldConfigService;
+    private final HistoryAuditService historyAuditService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -162,6 +168,62 @@ public class RecordingUnitOpenApiService {
 
         resource.setAnswers(fields);
         return resource;
+    }
+
+    /**
+     * Unité précédente/suivante dans la même unité d'action, par ordre de création (miroir de
+     * {@code RecordingUnitPanel}'s prev/next header navigation, JSF-only jusqu'ici).
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitAdjacentResponse resolveAdjacent(String recordingUnitKey, PersonDTO personDto,
+                                                          Set<Long> accessibleInstitutionIds) {
+        RecordingUnitService.AccessibleRecordingUnit bundle =
+                recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null);
+        RecordingUnitDTO dto = bundle.dto();
+
+        if (!profilePermissionService.canViewRecordingUnit(personDto, dto)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
+        }
+
+        ActionUnitSummaryDTO actionUnit = dto.getActionUnit();
+        if (actionUnit == null) {
+            return new RecordingUnitAdjacentResponse(null, null);
+        }
+
+        RecordingUnitDTO previous = recordingUnitService.findPreviousByActionUnit(actionUnit, dto);
+        RecordingUnitDTO next = recordingUnitService.findNextByActionUnit(actionUnit, dto);
+        return new RecordingUnitAdjacentResponse(
+                previous != null ? previous.getId() : null,
+                next != null ? next.getId() : null);
+    }
+
+    /**
+     * Dernière révision + contributeurs distincts, miroir de {@code HistoryAuditService} tel qu'utilisé
+     * dans le header JSF. Pas de diff/restauration de révision : non implémenté côté application non plus.
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitHistoryResponse resolveHistory(String recordingUnitKey, PersonDTO personDto,
+                                                        Set<Long> accessibleInstitutionIds) {
+        RecordingUnitService.AccessibleRecordingUnit bundle =
+                recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null);
+        RecordingUnitDTO dto = bundle.dto();
+
+        if (!profilePermissionService.canViewRecordingUnit(personDto, dto)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
+        }
+
+        InfoRevisionEntity lastRevision = historyAuditService.findLastRevisionInfoFor(RecordingUnitDTO.class, dto.getId());
+        List<Person> contributors = historyAuditService.findAllContributorsFor(RecordingUnitDTO.class, dto.getId());
+
+        return new RecordingUnitHistoryResponse(
+                lastRevision != null ? lastRevision.getRevisionDate() : null,
+                lastRevision != null ? toPersonResource(lastRevision.getUpdatedBy()) : null,
+                contributors.stream().map(this::toPersonResource).toList());
+    }
+
+    private PersonResource toPersonResource(Person person) {
+        if (person == null) return null;
+        return new PersonResource(String.valueOf(person.getId()), person.getUsername(), person.getName(), person.getLastname());
     }
 
     private FieldAnswer toTypedAnswer(String answerType, FieldResource field, Object raw, String lang) {
@@ -850,6 +912,31 @@ public class RecordingUnitOpenApiService {
         return shell;
     }
 
+    /**
+     * Porte {@code RecordingUnitPanel.duplicate()} (JSF) : copie superficielle (type, unité d'action,
+     * institution, description, unité spatiale, couleur matrice), parents réinitialisés, auteur/créateur
+     * repositionnés sur l'appelant, nouvel identifiant généré. Les enfants ne sont volontairement pas
+     * réinitialisés ici non plus, à l'identique du comportement JSF actuel (ils restent {@code null} sur
+     * la copie, {@link RecordingUnitDTO} n'a pas d'initialiseur par défaut pour ce champ).
+     */
+    @Transactional
+    public RecordingUnitResource duplicate(String recordingUnitKey, PersonDTO personDto,
+                                           Set<Long> accessibleInstitutionIds, String lang) {
+        RecordingUnitService.AccessibleRecordingUnit bundle =
+                recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null);
+        RecordingUnitDTO original = bundle.dto();
+        assertWritePermission(original, personDto);
+
+        RecordingUnitDTO copy = new RecordingUnitDTO(original);
+        copy.setParents(new HashSet<>());
+        copy.setAuthor(personDto);
+        copy.setCreatedBy(personDto);
+
+        RecordingUnitDTO created = saveWithGeneratedIdentifier(copy);
+        String key = created.getId() != null ? String.valueOf(created.getId()) : created.getFullIdentifier();
+        return resolveMobileDetail(key, personDto, accessibleInstitutionIds, null, lang);
+    }
+
     private RecordingUnitDTO saveWithGeneratedIdentifier(RecordingUnitDTO dto) {
         RecordingUnitDTO saved;
         try {
@@ -901,20 +988,31 @@ public class RecordingUnitOpenApiService {
         }
 
         Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        if (answers.isEmpty()) {
+        if (answers.isEmpty() && request.getValidated() == null) {
             return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
         }
 
         Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
 
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
-                    dto.getType() != null ? dto.getType().getId() : null);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-            mergeFieldAnswers(dto, response, fieldSource, answers, lang);
-            formService.updateJpaEntityFromResponse(response, dto);
+            if (!answers.isEmpty()) {
+                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                        RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
+                        dto.getType() != null ? dto.getType().getId() : null);
+                FieldSource fieldSource = new PanelFieldSource(formUiDto);
+                CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+                mergeFieldAnswers(dto, response, fieldSource, answers, lang);
+                formService.updateJpaEntityFromResponse(response, dto);
+            }
+
+            if (request.getValidated() != null) {
+                dto.setValidated(request.getValidated());
+            }
+
+            if (recordingUnitService.fullIdentifierAlreadyExistInAction(dto)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "fullIdentifier '" + dto.getFullIdentifier() + "' already exists in this action unit");
+            }
 
             try {
                 recordingUnitService.save(dto);

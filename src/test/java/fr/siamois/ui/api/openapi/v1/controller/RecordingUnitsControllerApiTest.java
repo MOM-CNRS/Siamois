@@ -7,6 +7,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -100,6 +101,8 @@ class RecordingUnitsControllerApiTest {
     @Mock
     private PhaseService phaseService;
     @Mock
+    private ContainerService containerService;
+    @Mock
     private DocumentWriteOpenApiService documentWriteOpenApiService;
 
     private MockMvc mockMvc;
@@ -129,7 +132,8 @@ class RecordingUnitsControllerApiTest {
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService,
-                phaseService);
+                phaseService,
+                containerService);
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,

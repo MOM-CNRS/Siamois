@@ -1,10 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.person.PersonResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
@@ -43,6 +45,11 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
     @Mapping(target = "count", expression = "java(new fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts(null, null, null, null))")
     @Mapping(target = "links", expression = "java(fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceLinks.of(dto.getFullIdentifier()))")
     public abstract RecordingUnitResource toResource(RecordingUnitSummaryDTO dto);
+
+    PersonResource toPersonResource(Person person) {
+        if (person == null) return null;
+        return new PersonResource(String.valueOf(person.getId()), person.getUsername(), person.getName(), person.getLastname());
+    }
 
     ResolvedConceptResource toResolvedConcept(ConceptDTO concept) {
         if (concept == null) return null;

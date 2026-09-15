@@ -70,11 +70,12 @@ public class ProjectConceptsControllerApi {
         }
 
         ProjectApiCaller caller = projectApiService.requireCaller();
-        long organizationId = resolveOrganizationId(caller, id);
+        AccessibleProjectForApi project = projectApiService.requireAccessibleProject(caller, String.valueOf(id));
+        long organizationId = resolveOrganizationId(project);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
         List<ConceptAutocompleteDTO> all = vocabularyOpenApiService.getConceptsForOrganization(
-                organizationId, fieldCode, q, lang, caller.person());
+                organizationId, fieldCode, q, lang, caller.person(), project.actionUnit().getId());
 
         boolean isSuggestMode = q != null;
         List<ResolvedConceptResource> page = (isSuggestMode ? all : paginate(all, offset, limit))
@@ -103,7 +104,8 @@ public class ProjectConceptsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
-        long organizationId = resolveOrganizationId(caller, id);
+        AccessibleProjectForApi project = projectApiService.requireAccessibleProject(caller, String.valueOf(id));
+        long organizationId = resolveOrganizationId(project);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
         List<String> fieldCodes = vocabularyOpenApiService.getAvailableFieldCodesForOrganization(
@@ -112,8 +114,7 @@ public class ProjectConceptsControllerApi {
         return ResponseEntity.ok(new ProjectFieldCodesResponse(fieldCodes));
     }
 
-    private long resolveOrganizationId(ProjectApiCaller caller, long projectId) {
-        AccessibleProjectForApi project = projectApiService.requireAccessibleProject(caller, String.valueOf(projectId));
+    private long resolveOrganizationId(AccessibleProjectForApi project) {
         InstitutionDTO institution = project.actionUnit().getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");

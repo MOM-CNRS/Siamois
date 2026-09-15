@@ -5,7 +5,9 @@ import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateReq
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitAdjacentResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormResponse;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitHistoryResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -116,6 +118,77 @@ public class RecordingUnitsControllerApi {
         RecordingUnitResource resource = recordingUnitOpenApiService.buildMobileDetail(
                 id, caller.person(), caller.accessibleInstitutionIds(), counts, lang);
         return ResponseEntity.ok(new RecordingUnitResponse(resource));
+    }
+
+    @GetMapping("/{id}/adjacent")
+    @Operation(
+            summary = "UE précédente/suivante dans la même unité d'action",
+            description = "Ordre de création. Boucle aux extrémités (la suivante de la plus récente est la plus "
+                    + "ancienne, et inversement). `previousId`/`nextId` sont nuls si l'UE n'a pas d'unité d'action."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable")
+    })
+    public ResponseEntity<RecordingUnitAdjacentResponse> getAdjacent(
+            @PathVariable @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    schema = @Schema(type = "string", example = "12")
+            ) String id) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        RecordingUnitAdjacentResponse response = recordingUnitOpenApiService.resolveAdjacent(
+                id, caller.person(), caller.accessibleInstitutionIds());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @Operation(
+            summary = "Dupliquer une unité d'enregistrement",
+            description = "Crée une copie de l'UE (sans ses unités filles) avec un nouvel identifiant généré. "
+                    + "Droit d'écriture requis sur le projet."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Créée"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Non autorisé"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable"),
+            @ApiResponse(responseCode = "409", description = "Identifiant généré déjà existant")
+    })
+    public ResponseEntity<RecordingUnitResponse> duplicate(
+            @PathVariable @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    schema = @Schema(type = "string", example = "12")
+            ) String id,
+            @Parameter(description = "Langue préférée pour les libellés (première entrée utilisée).")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        RecordingUnitResource resource = recordingUnitOpenApiService.duplicate(
+                id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new RecordingUnitResponse(resource));
+    }
+
+    @GetMapping("/{id}/history")
+    @Operation(
+            summary = "Historique de l'unité d'enregistrement",
+            description = "Dernière révision (auteur, date) et liste des contributeurs distincts. "
+                    + "Ne couvre pas le diff/la restauration d'une révision (non implémenté côté application non plus)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable")
+    })
+    public ResponseEntity<RecordingUnitHistoryResponse> getHistory(
+            @PathVariable @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
+                    schema = @Schema(type = "string", example = "12")
+            ) String id) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        RecordingUnitHistoryResponse response = recordingUnitOpenApiService.resolveHistory(
+                id, caller.person(), caller.accessibleInstitutionIds());
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")

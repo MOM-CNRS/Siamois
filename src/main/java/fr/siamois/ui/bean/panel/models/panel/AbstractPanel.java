@@ -148,6 +148,16 @@ public abstract class AbstractPanel implements Serializable {
         return false;
     }
 
+    /**
+     * True for panel types that render their overview (side) slot with the React panel instead of the
+     * JSF header+body includes — see panelContent.xhtml. The outer sideview chrome (close/focus/bookmark/
+     * duplicate/refresh icons) stays JSF for every panel type either way; this only swaps the header and
+     * tab content underneath it. False by default; overridden by RecordingUnitPanel.
+     */
+    public boolean isReactOverviewEnabled() {
+        return false;
+    }
+
     public void duplicate() {
         // no-op by default
     }
@@ -184,6 +194,18 @@ public abstract class AbstractPanel implements Serializable {
             return getPrefixPanelIndex();
         }
         return getPrefixPanelIndex() + "-overview";
+    }
+
+    /**
+     * {@link #getPanelIndex()}, sanitized into a valid JavaScript identifier fragment — subclasses'
+     * prefixes contain hyphens (e.g. {@code RecordingUnitPanel} → {@code "recording-unit-" + id}), which
+     * are fine in an HTML id/CSS class but break as part of a bare JS function name. Used only where a
+     * panel index needs to become (part of) a global function name, e.g. a {@code p:remoteCommand}'s
+     * {@code name} in panelContent.xhtml's React bridge — everywhere else, keep using
+     * {@link #getPanelIndex()} as-is.
+     */
+    public String getPanelIndexSafe() {
+        return getPanelIndex().replace('-', '_');
     }
 
     public String getPanelTypeClass() {

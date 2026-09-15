@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -63,6 +64,8 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
     private PhaseService phaseService;
+    @Mock
+    private ContainerService containerService;
 
     private ProjectApiService projectApiService;
 
@@ -87,7 +90,7 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService, containerService);
     }
 
     private ProjectApiCaller caller() {

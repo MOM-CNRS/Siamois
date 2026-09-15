@@ -7,6 +7,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -105,6 +106,8 @@ class ProjectControllerApiTest {
     @Mock
     private PhaseService phaseService;
     @Mock
+    private ContainerService containerService;
+    @Mock
     private DocumentWriteOpenApiService documentWriteOpenApiService;
 
     private MockMvc mockMvc;
@@ -133,7 +136,8 @@ class ProjectControllerApiTest {
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService,
-                phaseService);
+                phaseService,
+                containerService);
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
                 projectResponseMapper,
