@@ -25,6 +25,10 @@ public class TimingPhaseListener implements PhaseListener {
 
     @Override
     public void beforePhase(PhaseEvent event) {
+        if (event.getPhaseId() == PhaseId.RESTORE_VIEW) {
+            CurrentPhaseHolder.clear();
+        }
+        CurrentPhaseHolder.set(event.getPhaseId());
         STARTS.get().put(event.getPhaseId(), Instant.now());
     }
 
@@ -38,6 +42,7 @@ public class TimingPhaseListener implements PhaseListener {
         if (event.getPhaseId() == PhaseId.RENDER_RESPONSE) {
             RenderCallStats.dumpAndClear();
             STARTS.remove();
+            CurrentPhaseHolder.clear();
         }
     }
 
