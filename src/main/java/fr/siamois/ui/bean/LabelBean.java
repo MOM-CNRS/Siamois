@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +57,49 @@ public class LabelBean implements Serializable {
 
     private void addToCache(String lang, ConceptDTO concept, String label) {
         prefLabelCache.computeIfAbsent(lang, k -> new HashMap<>()).put(concept, label);
+    }
+
+    /**
+     * Batch-loads and caches the preferred label of every given concept in a single query.
+     * Meant to be called once per rendered page of table rows (each concept-valued cell would
+     * otherwise call {@link #findLabelOf(ConceptDTO)} individually, and a cache miss there fires
+     * one {@code findAllPrefLabelsByConcept} query per distinct concept on the page — an N+1).
+     * Concepts already cached for the current language are skipped, so calling this repeatedly
+     * (e.g. once per page navigation) only ever fetches what's actually missing.
+     *
+     * @param concepts the concepts appearing on the page about to render
+     */
+    public void primeLabels(Collection<ConceptDTO> concepts) {
+        if (concepts == null || concepts.isEmpty()) {
+            return;
+        }
+        String lang = resolveLangCode();
+        Map<ConceptDTO, String> cacheForLang = prefLabelCache.get(lang);
+
+        Map<ConceptDTO, Concept> toFetch = new LinkedHashMap<>();
+        for (ConceptDTO dto : concepts) {
+            if (dto == null) {
+                continue;
+            }
+            if (cacheForLang != null && cacheForLang.containsKey(dto)) {
+                continue;
+            }
+            toFetch.putIfAbsent(dto, conversionService.convert(dto, Concept.class));
+        }
+        if (toFetch.isEmpty()) {
+            return;
+        }
+
+        Set<ConceptPrefLabel> allLabels = conceptLabelRepository.findAllPrefLabelsByConceptIn(toFetch.values());
+        Map<Concept, List<ConceptPrefLabel>> byConcept = allLabels.stream()
+                .collect(Collectors.groupingBy(ConceptPrefLabel::getConcept));
+
+        for (Map.Entry<ConceptDTO, Concept> entry : toFetch.entrySet()) {
+            byConcept.getOrDefault(entry.getValue(), List.of()).stream()
+                    .filter(label -> label.getLangCode().equalsIgnoreCase(lang))
+                    .findFirst()
+                    .ifPresent(label -> addToCache(lang, entry.getKey(), label.getLabel()));
+        }
     }
 
     /**

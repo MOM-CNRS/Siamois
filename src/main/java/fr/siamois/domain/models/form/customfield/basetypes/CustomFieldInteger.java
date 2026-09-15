@@ -49,4 +49,9 @@ public class CustomFieldInteger extends CustomField {
         return "bi bi-123";
     }
 
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/integer.xhtml";
+    }
+
 }

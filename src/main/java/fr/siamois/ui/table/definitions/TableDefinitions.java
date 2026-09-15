@@ -27,8 +27,6 @@ final class TableDefinitions {
     private static final String IDENTIFIER_COLUMN_ID = "identifierCol";
     private static final String THIS = "@this";
     private static final String FLOW = "flow";
-    private static final String SHOW_CONTENT_JS = "PF('buiContent').show()";
-    private static final String HIDE_CONTENT_JS = "PF('buiContent').hide();";
 
     private TableDefinitions() {
         throw new UnsupportedOperationException();
@@ -88,8 +86,6 @@ final class TableDefinitions {
                 .editable(editable)
                 .processExpr(THIS)
                 .updateExpr(FLOW)
-                .onstartJs(SHOW_CONTENT_JS)
-                .oncompleteJs(HIDE_CONTENT_JS)
                 .build();
     }
 

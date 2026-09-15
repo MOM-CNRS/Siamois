@@ -172,6 +172,7 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
         return List.of();
     }
 
+
     @Override
     protected String getFocusPath(Long id) {
         return "/phase/" + id;

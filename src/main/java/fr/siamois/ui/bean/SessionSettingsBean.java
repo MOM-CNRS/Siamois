@@ -48,6 +48,8 @@ public class SessionSettingsBean implements Serializable {
     private InstitutionDTO selectedInstitution;
     private InstitutionSettings institutionSettings;
     private PersonSettings personSettings;
+    /** Thème d'affichage courant : "light" (défaut), "dark" ou "syslat". Prototype, non persisté en base. */
+    private String selectedTheme = "light";
     private final FlowBean flowBean;
     private final transient ConversionService conversionService;
 

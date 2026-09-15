@@ -172,6 +172,7 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
         return List.of();
     }
 
+
     @Override
     protected String getFocusPath(Long id) {
         return "/container/" + id;

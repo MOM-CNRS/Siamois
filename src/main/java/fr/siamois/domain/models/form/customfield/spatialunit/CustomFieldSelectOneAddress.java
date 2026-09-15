@@ -22,4 +22,9 @@ public class CustomFieldSelectOneAddress extends CustomField {
     public String getIcon() {
         return "bi bi-mailbox";
     }
+
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/address.xhtml";
+    }
 }

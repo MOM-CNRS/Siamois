@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .sia-root { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .sia-scroll { overflow-y: auto; overflow-x: hidden; }
+    .sia-scroll::-webkit-scrollbar { width: 10px; }
+    .sia-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    .crumb a { color: var(--text-secondary); text-decoration: none; }
+    .crumb a:hover { color: var(--text); text-decoration: underline; }
+    .tpl-card { transition: box-shadow .15s ease, border-color .15s ease; cursor: pointer; }
+    .tpl-card:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
+    .btn-primary { background: var(--primary); border: 1px solid var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn-flat { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-flat:hover { background: var(--surface-hover); }
+    .icon-btn { background: transparent; border: 1px solid transparent; color: var(--text-secondary); border-radius: var(--radius-sm); }
+    .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .menu-item { background: transparent; border: none; text-align: left; color: var(--text); }
+    .menu-item:hover { background: var(--surface-hover); }
+    .menu-item.danger { color: var(--danger); }
+    .menu-item.danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+    a { color: var(--primary); }
+    a:hover { color: var(--primary-dark); }
+  </style>
+</helmet>
+
+<div class="sia-root" style="height:100%;width:100%;display:flex;flex-direction:column;{{theme.vars}}background:var(--bg);color:var(--text);font-size:14px;">
+
+  <!-- Top bar -->
+  <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--surface);">
+    <div class="crumb" style="display:flex;align-items:center;gap:8px;font-size:13px;">
+      <a href="#">Réglages</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+      <span style="color:var(--text);font-weight:600;">Export de données</span>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-secondary);cursor:pointer;">
+      <input type="checkbox" checked="{{dark}}" onChange="{{toggleDark}}" style="accent-color:var(--primary);width:14px;height:14px;" />
+      Mode sombre
+    </label>
+  </div>
+
+  <div class="sia-scroll" style="flex:1 1 auto;padding:28px;">
+    <div style="max-width:1180px;margin:0 auto;">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;gap:20px;">
+        <div>
+          <h1 style="margin:0 0 6px 0;font-size:22px;font-weight:700;color:var(--text);">Modèles d'export</h1>
+          <p style="margin:0;color:var(--text-secondary);font-size:13.5px;max-width:560px;line-height:1.5;">
+            Définissez comment vos tables, types et champs internes se convertissent vers un format d'échange externe. Un modèle peut être partagé entre plusieurs projets.
+          </p>
+        </div>
+        <button class="btn-primary" style="display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;white-space:nowrap;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nouveau modèle
+        </button>
+      </div>
+
+      <!-- filter row -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+        <span style="position:relative;flex:0 0 260px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-secondary);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input placeholder="Rechercher un modèle" style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;" />
+        </span>
+        <div style="display:flex;gap:6px;">
+          <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="3">
+            <button class="btn-flat" style="padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;{{tab.style}}" onClick="{{tab.select}}">{{tab.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- template cards -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <sc-for list="{{templates}}" as="tpl" hint-placeholder-count="3">
+          <div class="tpl-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 18px;display:flex;align-items:center;gap:16px;">
+
+            <div style="flex:0 0 44px;height:44px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;{{tpl.iconWrapStyle}}">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            </div>
+
+            <div style="flex:1 1 auto;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                <span style="font-weight:600;font-size:14.5px;color:var(--text);">{{tpl.name}}</span>
+                <span style="font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:999px;{{tpl.badgeStyle}}">{{tpl.badge}}</span>
+              </div>
+              <div style="font-size:12.5px;color:var(--text-secondary);">{{tpl.description}}</div>
+            </div>
+
+            <div style="flex:0 0 auto;display:flex;align-items:center;gap:22px;">
+              <div style="text-align:right;font-size:12px;color:var(--text-secondary);line-height:1.5;">
+                <div><strong style="color:var(--text);">{{tpl.sheetCount}}</strong> fiches cibles</div>
+                <div>Modifié {{tpl.updated}}</div>
+              </div>
+
+              <div style="position:relative;">
+                <button class="icon-btn" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;" onClick="{{tpl.toggleMenu}}">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>
+                </button>
+                <sc-if value="{{tpl.menuOpen}}" hint-placeholder-val="{{false}}">
+                  <div style="position:absolute;right:0;top:36px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);min-width:170px;padding:5px;z-index:20;display:flex;flex-direction:column;">
+                    <button class="menu-item" style="padding:8px 10px;border-radius:6px;font-size:13px;display:flex;align-items:center;gap:9px;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                      Modifier
+                    </button>
+                    <button class="menu-item" style="padding:8px 10px;border-radius:6px;font-size:13px;display:flex;align-items:center;gap:9px;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      Dupliquer
+                    </button>
+                    <div style="height:1px;background:var(--border);margin:4px 2px;"></div>
+                    <button class="menu-item danger" style="padding:8px 10px;border-radius:6px;font-size:13px;display:flex;align-items:center;gap:9px;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      Supprimer
+                    </button>
+                  </div>
+                </sc-if>
+              </div>
+
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "dark": {"editor": "boolean", "default": false, "section": "Thème"}
+}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { activeTab: "all", openMenu: null };
+  }
+
+  theme() {
+    const d = !!this.props.dark;
+    return d ? {
+      vars: "--bg:#181C19;--surface:#20251F;--surface-hover:#2A312A;--border:#37403A;--text:#ECEFEA;--text-secondary:#93A392;--primary:#7FB37F;--primary-dark:#9CC79C;--accent-lime:#C9DE55;--context:#3FB0CB;--third:#E67A3D;--danger:#E06A62;--shadow-sm:0 1px 3px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3);--shadow-lg:0 10px 28px rgba(0,0,0,.5);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;"
+    } : {
+      vars: "--bg:#FAFAFA;--surface:#FFFFFF;--surface-hover:#F3F7F3;--border:#dee2e6;--text:#2A2C30;--text-secondary:#6B7280;--primary:#669966;--primary-dark:#547d54;--accent-lime:#BED730;--context:#068DA9;--third:#E55807;--danger:#C0463D;--shadow-sm:0 1px 3px rgba(30,40,30,.08),0 1px 2px rgba(30,40,30,.06);--shadow-lg:0 8px 24px rgba(30,40,30,.14),0 2px 6px rgba(30,40,30,.08);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;"
+    };
+  }
+
+  toggleDark() { this.props.dark = !this.props.dark; this.forceUpdate(); }
+
+  renderVals() {
+    const theme = this.theme();
+    const badgeOfficial = "background:var(--surface-hover);color:var(--primary-dark);";
+    const badgeCustom = "background:var(--surface-hover);color:var(--context);";
+    const iconOfficial = "background:color-mix(in srgb, var(--primary) 14%, transparent);color:var(--primary-dark);";
+    const iconCustom = "background:color-mix(in srgb, var(--context) 14%, transparent);color:var(--context);";
+
+    const tabsDef = [
+      { id: "all", label: "Tous" },
+      { id: "official", label: "Officiels" },
+      { id: "custom", label: "Personnalisés" },
+    ];
+    const tabs = tabsDef.map(t => ({
+      label: t.label,
+      style: this.state.activeTab === t.id
+        ? "background:var(--primary);color:#fff;border-color:var(--primary);"
+        : "background:transparent;color:var(--text-secondary);",
+      select: () => this.setState({ activeTab: t.id }),
+    }));
+
+    const raw = [
+      { id: "sda", name: "SDA — Référentiel national", badge: "OFFICIEL", badgeStyle: badgeOfficial, iconWrapStyle: iconOfficial,
+        description: "8 fiches · mapping complet des unités, du mobilier et des opérations", sheetCount: 8, updated: "il y a 3 jours" },
+      { id: "sda-chantier", name: "SDA — Chantier Sainte-Ursule (dérivé)", badge: "PERSONNALISÉ", badgeStyle: badgeCustom, iconWrapStyle: iconCustom,
+        description: "Dupliqué depuis SDA — colonnes chronologie ajustées", sheetCount: 8, updated: "il y a 2 semaines" },
+      { id: "csv-simple", name: "Export CSV simple", badge: "PERSONNALISÉ", badgeStyle: badgeCustom, iconWrapStyle: iconCustom,
+        description: "1 feuille à plat, pour tableur — sans chemins relationnels", sheetCount: 1, updated: "il y a 2 mois" },
+    ];
+
+    const templates = raw.map(t => ({
+      ...t,
+      menuOpen: this.state.openMenu === t.id,
+      toggleMenu: () => this.setState({ openMenu: this.state.openMenu === t.id ? null : t.id }),
+    }));
+
+    return {
+      theme,
+      dark: !!this.props.dark,
+      toggleDark: () => this.toggleDark(),
+      tabs,
+      templates,
+    };
+  }
+}
+</script>
+</body>
+</html>

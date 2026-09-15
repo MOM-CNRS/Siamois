@@ -23,5 +23,9 @@ public class CustomFieldSelectMultiplePerson extends CustomFieldSelectPerson {
         return "bi bi-people";
     }
 
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/personMultiple.xhtml";
+    }
 
 }

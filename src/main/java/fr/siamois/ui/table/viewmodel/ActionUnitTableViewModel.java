@@ -298,6 +298,9 @@ public class ActionUnitTableViewModel extends EntityTableViewModel<ActionUnitDTO
 
     @Override
     public boolean canUserEditRow(ActionUnitDTO unit) {
+        if (unit == null) {
+            return false;
+        }
         // hasActionUnitWritePermission's org-level short-circuit (ORGANIZATION_MANAGE_ACTIONS) is not
         // the same code as its project-level check (PROJECT_MANAGE_SETTINGS) — unlike the other
         // entities' canUserEditRow, so both are passed through explicitly here.

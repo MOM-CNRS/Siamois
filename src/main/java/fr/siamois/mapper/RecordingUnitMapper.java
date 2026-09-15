@@ -17,6 +17,8 @@ public interface RecordingUnitMapper extends Converter<RecordingUnit, RecordingU
 
     @Override
     @Mapping(source = "chronologicalAttribution", target = "chronologicalPhase")
+    @Mapping(target = "parents", ignore = true)
+    @Mapping(target = "children", ignore = true)
     @Nullable RecordingUnitDTO convert(@NonNull RecordingUnit source);
 
     @InheritInverseConfiguration(name = "convert")

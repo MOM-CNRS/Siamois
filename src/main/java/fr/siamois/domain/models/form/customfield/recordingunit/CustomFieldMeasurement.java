@@ -56,4 +56,9 @@ public class CustomFieldMeasurement extends CustomFieldOnTheFly {
     public int hashCode() {
         return super.hashCode();
     }
+
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/measurement.xhtml";
+    }
 }

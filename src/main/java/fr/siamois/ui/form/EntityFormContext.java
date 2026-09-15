@@ -8,6 +8,8 @@ import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasur
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customform.DependsOnJson;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.GeoApiService;
 import fr.siamois.domain.services.GeoPlatService;
@@ -87,7 +89,10 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
 
     private boolean autoSave = true;
 
-    @Getter
+    // Lazy: only the single-entity panel's "add a new field" flow needs this (see
+    // getNewFieldManager()), but init() runs once per table row too (EntityTableViewModel's
+    // getRowContext) — building it eagerly there meant every visible row paid for two DB queries
+    // (existing measurement fields + unit definitions) that only ever get used from a panel.
     private NewFieldManagerBean newFieldManager;
 
     private final FieldSource fieldSource;
@@ -126,6 +131,29 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
     private boolean hasUnsavedModifications = false;
 
     private EnabledRulesEngine enabledEngine;
+
+    /**
+     * The column (and its owning panel, needed to remove a field — see {@link NewFieldManagerBean#removeField})
+     * whose info popover (documentation link, "Supprimer" for a removable field) is currently open.
+     * One shared overlay per form serves every field's info popover, instead of every field
+     * building its own menu (see panelField.xhtml).
+     */
+    private CustomColUiDto activeInfoColumn;
+    private CustomFormPanelUiDto activeInfoPanel;
+
+    public CustomColUiDto getActiveInfoColumn() {
+        return activeInfoColumn;
+    }
+
+    public CustomFormPanelUiDto getActiveInfoPanel() {
+        return activeInfoPanel;
+    }
+
+    /** Opens the shared info popover for {@code col}, owned by {@code panel}. */
+    public void activateInfoField(CustomFormPanelUiDto panel, CustomColUiDto col) {
+        this.activeInfoPanel = panel;
+        this.activeInfoColumn = col;
+    }
 
     private final BiConsumer<CustomField, ConceptDTO> formScopeChangeCallback;
     private final String formScopeValueBinding;
@@ -203,22 +231,37 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
 
-        // Prepare new field manager; the list stays mutable so a field created here shows up in the
-        // "existing fields" dropdown without waiting for the next form init
-        List<CustomFieldMeasurement> measurementOptions = new ArrayList<>(
-                services.getCustomFieldMeasurementService()
-                        .findOptionsForRecordingUnit(recordingUnitIdOrNull(), 10));
+        // Built lazily (see getNewFieldManager()) against the formResponse just set above, so drop
+        // any manager built against a previous formResponse rather than let it go stale.
+        this.newFieldManager = null;
+    }
 
-        this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
-                services.getRecordingUnitService(),
-                formService,
-                this.formResponse,
-                langBean,
-                unit,
-                measurementOptions,
-                services.getUnitDefinitionService().findOptions()
-                );
+    /**
+     * The "add a new field" manager for this row/panel's form, built (and its two backing DB
+     * queries run) only the first time it's actually needed — the panel-only "add a new field"
+     * flow (see customFormPanelContent.xhtml), never the table's read-only row display. Building
+     * it eagerly in init() meant every row of a table paid for both queries whether or not that
+     * row's "add field" UI was ever opened.
+     */
+    public NewFieldManagerBean getNewFieldManager() {
+        if (newFieldManager == null) {
+            // the list stays mutable so a field created here shows up in the "existing fields"
+            // dropdown without waiting for the next form init
+            List<CustomFieldMeasurement> measurementOptions = new ArrayList<>(
+                    services.getCustomFieldMeasurementService()
+                            .findOptionsForRecordingUnit(recordingUnitIdOrNull(), 10));
 
+            newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
+                    services.getRecordingUnitService(),
+                    formService,
+                    this.formResponse,
+                    langBean,
+                    unit,
+                    measurementOptions,
+                    services.getUnitDefinitionService().findOptions()
+            );
+        }
+        return newFieldManager;
     }
 
     private Long recordingUnitIdOrNull() {

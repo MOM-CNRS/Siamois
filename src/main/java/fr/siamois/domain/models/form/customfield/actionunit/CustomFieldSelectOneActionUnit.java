@@ -23,4 +23,9 @@ public class CustomFieldSelectOneActionUnit extends CustomField {
         return "bi bi-arrow-down-square";
     }
 
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/actionUnit.xhtml";
+    }
+
 }

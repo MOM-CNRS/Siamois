@@ -91,8 +91,6 @@ public final class RecordingUnitTableDefinitionFactory {
                         // CommandLink behavior
                         .processExpr(THIS)
                         .updateExpr(THIS)
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
         definition.addColumn(

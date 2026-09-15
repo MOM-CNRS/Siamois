@@ -24,4 +24,9 @@ public class CustomFieldSelectMultipleSpecimen extends CustomField {
         return "bi bi-bucket";
     }
 
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/specimenMultiple.xhtml";
+    }
+
 }

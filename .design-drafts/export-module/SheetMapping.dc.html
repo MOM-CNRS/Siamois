@@ -1,0 +1,366 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .sia-root { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .sia-scroll { overflow: auto; }
+    .sia-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+    .sia-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    .crumb a { color: var(--text-secondary); text-decoration: none; }
+    .crumb a:hover { color: var(--text); text-decoration: underline; }
+    .btn-primary { background: var(--primary); border: 1px solid var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn-flat { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-flat:hover { background: var(--surface-hover); }
+    .icon-btn { background: transparent; border: 1px solid transparent; color: var(--text-secondary); border-radius: var(--radius-sm); }
+    .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .map-cell { background: transparent; border: 1px dashed transparent; width: 100%; text-align: left; border-radius: var(--radius-sm); cursor: pointer; }
+    .map-cell:hover { background: var(--surface-hover); }
+    .map-cell.selected { outline: 2px solid var(--primary); outline-offset: -1px; }
+    .drawer-tab { background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); }
+    .drawer-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .drawer-tab:hover:not(.active) { color: var(--text); }
+    .path-seg { background: var(--surface-hover); border: 1px solid var(--border); }
+    .path-seg:hover { border-color: var(--context); }
+    .opt-row { background: transparent; border: 1px solid var(--border); text-align: left; }
+    .opt-row:hover { background: var(--surface-hover); }
+    .opt-row.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--surface)); }
+    .backdrop { background: rgba(0,0,0,.22); }
+    a { color: var(--primary); }
+  </style>
+</helmet>
+
+<div class="sia-root" style="height:100%;width:100%;display:flex;flex-direction:column;position:relative;{{theme.vars}}background:var(--bg);color:var(--text);font-size:14px;overflow:hidden;">
+
+  <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--surface);">
+    <div class="crumb" style="display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap;">
+      <a href="#">Réglages</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+      <a href="#">Export de données</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+      <a href="#">SDA — Référentiel national</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+      <span style="color:var(--text);font-weight:600;">Situation géographique</span>
+    </div>
+    <button class="btn-primary" style="padding:8px 15px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;">Enregistrer</button>
+  </div>
+
+  <!-- sources strip -->
+  <div style="flex:0 0 auto;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.03em;margin-right:4px;">Sources de cette fiche</span>
+    <sc-for list="{{bindings}}" as="b" hint-placeholder-count="2">
+      <span style="display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:var(--surface-hover);border:1px solid var(--border);font-size:12.5px;">
+        <span style="width:7px;height:7px;border-radius:50%;{{b.dotStyle}}"></span>
+        <strong>{{b.table}}</strong>
+        <span style="color:var(--text-secondary);">· type : {{b.types}}</span>
+      </span>
+    </sc-for>
+    <button class="btn-flat" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12.5px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Ajouter une source
+    </button>
+  </div>
+
+  <div class="sia-scroll" style="flex:1 1 auto;padding:20px 28px 32px 28px;">
+    <div style="max-width:1220px;margin:0 auto;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm);">
+        <table style="border-collapse:collapse;width:100%;table-layout:fixed;">
+          <colgroup>
+            <col style="width:170px;">
+            <sc-for list="{{bindings}}" as="b" hint-placeholder-count="2"><col></sc-for>
+          </colgroup>
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:10px 14px;font-size:11px;color:var(--text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border);background:var(--surface-hover);">Colonne SDA</th>
+              <sc-for list="{{bindings}}" as="b" hint-placeholder-count="2">
+                <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;border-bottom:1px solid var(--border);background:var(--surface-hover);">
+                  {{b.table}} <span style="font-weight:500;color:var(--text-secondary);">· {{b.types}}</span>
+                </th>
+              </sc-for>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{targetColumns}}" as="col" hint-placeholder-count="9">
+              <tr>
+                <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;vertical-align:top;">{{col.name}}</td>
+                <sc-for list="{{col.cells}}" as="cell" hint-placeholder-count="2">
+                  <td style="padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;">
+                    <button class="map-cell {{cell.selectedClass}}" onClick="{{cell.open}}" style="padding:7px 9px;display:flex;align-items:center;gap:7px;">
+                      <sc-if value="{{cell.isEmpty}}" hint-placeholder-val="{{false}}">
+                        <span style="font-size:12px;color:var(--text-secondary);font-style:italic;">Non mappé</span>
+                      </sc-if>
+                      <sc-if value="{{cell.isNotEmpty}}" hint-placeholder-val="{{true}}">
+                        <span style="width:6px;height:6px;border-radius:2px;flex:0 0 auto;{{cell.dotStyle}}"></span>
+                        <span style="display:flex;flex-direction:column;min-width:0;">
+                          <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;{{cell.kindColor}}">{{cell.kindLabel}}</span>
+                          <span style="font-size:12.5px;font-family:'SFMono-Regular',Consolas,monospace;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{cell.value}}</span>
+                        </span>
+                      </sc-if>
+                    </button>
+                  </td>
+                </sc-for>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- drawer -->
+  <sc-if value="{{drawerOpen}}" hint-placeholder-val="{{false}}">
+    <div class="backdrop" style="position:absolute;inset:0;z-index:30;" onClick="{{closeDrawer}}"></div>
+    <div style="position:absolute;top:0;right:0;bottom:0;width:400px;background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadow-lg);z-index:31;display:flex;flex-direction:column;">
+      <div style="flex:0 0 auto;padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:11px;color:var(--text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px;">Édition du mapping</div>
+          <div style="font-size:15px;font-weight:700;">{{drawerTitle}}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">{{drawerSubtitle}}</div>
+        </div>
+        <button class="icon-btn" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;" onClick="{{closeDrawer}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div style="flex:0 0 auto;padding:0 18px;border-bottom:1px solid var(--border);display:flex;gap:16px;">
+        <sc-for list="{{drawerTabs}}" as="t" hint-placeholder-count="4">
+          <button class="drawer-tab {{t.activeClass}}" onClick="{{t.select}}" style="padding:10px 0;font-size:12.5px;">{{t.label}}</button>
+        </sc-for>
+      </div>
+
+      <div class="sia-scroll" style="flex:1 1 auto;padding:18px;">
+
+        <sc-if value="{{isDirect}}" hint-placeholder-val="{{true}}">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;">Champ de la source</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <sc-for list="{{directOptions}}" as="opt" hint-placeholder-count="5">
+              <button class="opt-row {{opt.activeClass}}" onClick="{{opt.select}}" style="padding:9px 11px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:13px;font-family:'SFMono-Regular',Consolas,monospace;">{{opt.name}}</span>
+                <span style="font-size:11px;color:var(--text-secondary);">{{opt.type}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isJoined}}" hint-placeholder-val="{{false}}">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;">Chemin relationnel</div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px;">
+            <sc-for list="{{pathSegments}}" as="seg" hint-placeholder-count="4">
+              <span class="path-seg" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;">
+                {{seg.label}}
+                <sc-if value="{{seg.removable}}" hint-placeholder-val="{{true}}">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);cursor:pointer;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </sc-if>
+              </span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+            </sc-for>
+            <button class="btn-flat" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);background:var(--surface-hover);border-radius:var(--radius-sm);padding:10px 12px;line-height:1.5;">
+            Traverse la relation vers <strong>Phase</strong> puis lit le champ <strong>libellé</strong> — arbitrairement profond, utile quand le champ n'existe pas sur la table source elle-même.
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isConstant}}" hint-placeholder-val="{{false}}">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;">Valeur constante</div>
+          <input value="{{constantValue}}" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:'SFMono-Regular',Consolas,monospace;" />
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">Écrite telle quelle sur chaque ligne générée par cette source, indépendamment des données.</div>
+        </sc-if>
+
+        <sc-if value="{{isShared}}" hint-placeholder-val="{{false}}">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;">Champ partagé du modèle</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <sc-for list="{{sharedOptions}}" as="opt" hint-placeholder-count="2">
+              <button class="opt-row {{opt.activeClass}}" onClick="{{opt.select}}" style="padding:10px 11px;border-radius:var(--radius-sm);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                  <span style="font-size:13px;font-weight:600;">{{opt.name}}</span>
+                  <span style="font-size:10.5px;color:var(--text-secondary);">utilisé ×{{opt.usage}}</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-secondary);font-family:'SFMono-Regular',Consolas,monospace;">{{opt.path}}</div>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <div style="flex:0 0 auto;padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn-flat" style="padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;" onClick="{{closeDrawer}}">Annuler</button>
+        <button class="btn-primary" style="padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;" onClick="{{closeDrawer}}">Appliquer</button>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "dark": {"editor": "boolean", "default": false, "section": "Thème"}
+}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { drawer: null, drawerTab: "direct" };
+  }
+
+  theme() {
+    const d = !!this.props.dark;
+    return d ? {
+      vars: "--bg:#181C19;--surface:#20251F;--surface-hover:#2A312A;--border:#37403A;--text:#ECEFEA;--text-secondary:#93A392;--primary:#7FB37F;--primary-dark:#9CC79C;--accent-lime:#C9DE55;--context:#3FB0CB;--third:#E88A50;--danger:#E06A62;--shadow-sm:0 1px 3px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3);--shadow-lg:0 10px 28px rgba(0,0,0,.5);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;"
+    } : {
+      vars: "--bg:#FAFAFA;--surface:#FFFFFF;--surface-hover:#F3F7F3;--border:#dee2e6;--text:#2A2C30;--text-secondary:#6B7280;--primary:#669966;--primary-dark:#547d54;--accent-lime:#BED730;--context:#068DA9;--third:#C98A2E;--danger:#C0463D;--shadow-sm:0 1px 3px rgba(30,40,30,.08),0 1px 2px rgba(30,40,30,.06);--shadow-lg:0 8px 24px rgba(30,40,30,.14),0 2px 6px rgba(30,40,30,.08);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;"
+    };
+  }
+
+  kindMeta(kind) {
+    const map = {
+      direct:   { label: "Direct",   color: "color:var(--text-secondary);", dot: "background:var(--text-secondary);" },
+      joined:   { label: "Chemin",   color: "color:var(--context);",        dot: "background:var(--context);" },
+      constant: { label: "Constante",color: "color:var(--third);",          dot: "background:var(--third);" },
+      shared:   { label: "Partagé",  color: "color:var(--primary);",        dot: "background:var(--primary);" },
+    };
+    return map[kind];
+  }
+
+  renderVals() {
+    const theme = this.theme();
+
+    const bindingsDef = [
+      { id: "b1", table: "Unité d'enregistrement", types: "Fait, Structure", dotStyle: "background:var(--context);" },
+      { id: "b2", table: "Unité spatiale", types: "Parcelle", dotStyle: "background:var(--third);" },
+    ];
+    const bindings = bindingsDef.map(b => ({ ...b }));
+
+    const colDefs = [
+      { name: "Numéro", cells: [
+        { kind: "direct", value: "numero" },
+        { kind: "direct", value: "numeroParcelle" },
+      ]},
+      { name: "Nature", cells: [
+        { kind: "direct", value: "type.libelle" },
+        { kind: "constant", value: "\"Parcelle\"" },
+      ]},
+      { name: "Interprétation", cells: [
+        { kind: "direct", value: "interpretation" },
+        { kind: "empty", value: "" },
+      ]},
+      { name: "Chronologie", cells: [
+        { kind: "joined", value: "phase.libelle" },
+        { kind: "empty", value: "" },
+      ]},
+      { name: "X", cells: [
+        { kind: "joined", value: "geometrie.x" },
+        { kind: "joined", value: "geometrie.x" },
+      ]},
+      { name: "Y", cells: [
+        { kind: "joined", value: "geometrie.y" },
+        { kind: "joined", value: "geometrie.y" },
+      ]},
+      { name: "Z", cells: [
+        { kind: "direct", value: "altitude" },
+        { kind: "empty", value: "" },
+      ]},
+      { name: "Code OA", cells: [
+        { kind: "shared", value: "Code OA" },
+        { kind: "shared", value: "Code OA" },
+      ]},
+      { name: "Commentaire", cells: [
+        { kind: "direct", value: "commentaire" },
+        { kind: "direct", value: "commentaire" },
+      ]},
+    ];
+
+    const drawer = this.state.drawer;
+
+    const targetColumns = colDefs.map((col, ri) => ({
+      name: col.name,
+      cells: col.cells.map((c, bi) => {
+        const meta = c.kind === "empty" ? null : this.kindMeta(c.kind);
+        const isSel = drawer && drawer.row === ri && drawer.col === bi;
+        return {
+          isEmpty: c.kind === "empty",
+          isNotEmpty: c.kind !== "empty",
+          kindLabel: meta ? meta.label : "",
+          kindColor: meta ? meta.color : "",
+          dotStyle: meta ? meta.dot : "",
+          value: c.value,
+          selectedClass: isSel ? "selected" : "",
+          open: () => this.setState({ drawer: { row: ri, col: bi }, drawerTab: c.kind === "empty" ? "direct" : c.kind }),
+        };
+      }),
+    }));
+
+    let drawerOpen = false, drawerTitle = "", drawerSubtitle = "";
+    let isDirect = false, isJoined = false, isConstant = false, isShared = false;
+    let directOptions = [], pathSegments = [], sharedOptions = [], constantValue = "";
+
+    if (drawer) {
+      drawerOpen = true;
+      const col = colDefs[drawer.row];
+      const binding = bindingsDef[drawer.col];
+      drawerTitle = col.name;
+      drawerSubtitle = `${binding.table} · ${binding.types}`;
+
+      const tab = this.state.drawerTab;
+      isDirect = tab === "direct";
+      isJoined = tab === "joined";
+      isConstant = tab === "constant";
+      isShared = tab === "shared";
+
+      directOptions = ["numero", "interpretation", "altitude", "commentaire", "dateCreation"].map(n => ({
+        name: n, type: n === "altitude" ? "float" : "text",
+        activeClass: col.cells[drawer.col].kind === "direct" && col.cells[drawer.col].value === n ? "active" : "",
+        select: () => {},
+      }));
+
+      pathSegments = [
+        { label: binding.table, removable: false },
+        { label: "phase", removable: true },
+        { label: "Phase", removable: false },
+        { label: "libelle", removable: true },
+      ];
+
+      sharedOptions = [
+        { name: "Code OA", path: "actionUnit.oaCode", usage: 7,
+          activeClass: col.cells[drawer.col].kind === "shared" ? "active" : "", select: () => {} },
+        { name: "Numéro de site", path: "actionUnit.site.numero", usage: 2,
+          activeClass: "", select: () => {} },
+      ];
+
+      constantValue = col.cells[drawer.col].kind === "constant" ? col.cells[drawer.col].value.replace(/"/g, "") : "";
+    }
+
+    const drawerTabsDef = [
+      { id: "direct", label: "Champ direct" },
+      { id: "joined", label: "Chemin relationnel" },
+      { id: "constant", label: "Constante" },
+      { id: "shared", label: "Champ partagé" },
+    ];
+    const drawerTabs = drawerTabsDef.map(t => ({
+      label: t.label,
+      activeClass: this.state.drawerTab === t.id ? "active" : "",
+      select: () => this.setState({ drawerTab: t.id }),
+    }));
+
+    return {
+      theme, bindings, targetColumns,
+      drawerOpen, drawerTitle, drawerSubtitle, drawerTabs,
+      isDirect, isJoined, isConstant, isShared,
+      directOptions, pathSegments, sharedOptions, constantValue,
+      closeDrawer: () => this.setState({ drawer: null }),
+    };
+  }
+}
+</script>
+</body>
+</html>

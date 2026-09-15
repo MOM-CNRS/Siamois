@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import fr.siamois.utils.context.ExecutionContextHolder;
+import fr.siamois.utils.context.PermissionCheckCache;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +32,7 @@ public class UserInfoContextFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             ExecutionContextHolder.clear();
+            PermissionCheckCache.clear();
         }
     }
 

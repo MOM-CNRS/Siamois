@@ -102,7 +102,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
 
     protected RecordingUnitPanel(ApplicationContext context)  {
 
-        super("common.entity.recordingunit",
+        super("common.entity.recordingUnit",
                 "bi bi-pencil-square",
                 "siamois-panel recording-unit-panel single-panel",
                 context);
@@ -223,7 +223,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
             specimenListLazyDataModel.setSelectedUnits(new ArrayList<>());
 
             // Get  the CHILDREN of the recording unit
-            RecordingUnitLazyDataModel lazyDataModelChildren = new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean);
+            RecordingUnitLazyDataModel lazyDataModelChildren = new RecordingUnitLazyDataModel(recordingUnitService, sessionSettingsBean, langBean, labelBean);
             lazyDataModelChildren.withConstantFilter(RecordingUnitSpec.PARENTS_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
             selectedCategoriesChildren = new ArrayList<>();
             totalChildrenCount = 0;
@@ -414,6 +414,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     public List<PersonDTO> authorsAvailable() {
         return List.of();
     }
+
 
     @Override
     protected String getFocusPath(Long id) {

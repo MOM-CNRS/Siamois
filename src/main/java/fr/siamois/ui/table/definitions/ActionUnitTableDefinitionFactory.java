@@ -76,8 +76,6 @@ public final class ActionUnitTableDefinitionFactory {
                         // CommandLink behavior
                         .processExpr(THIS)
                         .updateExpr("@none")
-                        .onstartJs("PF('buiContent').show()")
-                        .oncompleteJs("PF('buiContent').hide();")
                         .build()
         );
 

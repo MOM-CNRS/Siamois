@@ -32,15 +32,16 @@
         <sharedInput:panelField
                 icon="#{col.field.icon}"
                 uncertain="#{answer.uncertain}"
-                conceptUri="#{col.field.conceptUri}"
                 id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}-#{col.field.id}"
                 required="#{col.required}"
                 onToggle="#{bean.formContext.toggleUncertainty(answer)}"
                 title="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                 forId="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}:input"
                 fluid="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree'}"
-                canBeRemoved="#{canBeRemoved}"
-                onRemove="#{newFieldManagerBean.removeField(customFormPanel, col)}"
+                col="#{col}"
+                formCtx="#{bean.formContext}"
+                customFormPanel="#{customFormPanel}"
+                panelIndex="#{panelIndex}"
 
         >
             <div >
@@ -69,7 +70,7 @@
                               value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
                     <ui:param name="updateTargetsOnBlur" value="#{bean.getPanelHeaderUpdateId()}"/>
                     <ui:param name="spatialUnitOptions" value="#{bean.formContext.getSpatialUnitOptions('')}"/>
-                    <ui:param name="mode" value="#{(col.readOnly or not bean.canUserEditUnit()) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
+                    <ui:param name="mode" value="#{(col.readOnly or not bean.canUserEditUnit() or not flowBean.isWriteMode) ? 'output' : 'input'}"/>
                     <ui:param name="compact" value="false"/>
                 </ui:include>
             </div>

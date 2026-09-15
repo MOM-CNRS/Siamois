@@ -42,4 +42,9 @@ public class CustomFieldDateTime extends CustomField {
     public int hashCode() {
         return super.hashCode();
     }
+
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/dateTime.xhtml";
+    }
 }

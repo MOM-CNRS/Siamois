@@ -1,0 +1,240 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .sia-root { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .sia-scroll { overflow: auto; }
+    .sia-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+    .sia-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    .crumb a { color: var(--text-secondary); text-decoration: none; }
+    .crumb a:hover { color: var(--text); text-decoration: underline; }
+    .tab-btn { background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+    .btn-primary { background: var(--primary); border: 1px solid var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .rowhead { background: transparent; border: none; text-align: left; color: var(--text); width: 100%; }
+    .rowhead:hover { background: var(--surface-hover); }
+    .colhead { background: transparent; border: none; color: var(--text); }
+    .colhead:hover .colhead-label { color: var(--primary-dark); }
+    .cell-dot { transition: transform .1s ease; }
+    .matrix-row:hover .cell-dot { transform: scale(1.12); }
+    a { color: var(--primary); }
+  </style>
+</helmet>
+
+<div class="sia-root" style="height:100%;width:100%;display:flex;flex-direction:column;{{theme.vars}}background:var(--bg);color:var(--text);font-size:14px;">
+
+  <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--surface);">
+    <div class="crumb" style="display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap;">
+      <a href="#">Réglages</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+      <a href="#">Export de données</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+      <span style="color:var(--text);font-weight:600;">SDA — Référentiel national</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <span style="font-size:12px;color:var(--text-secondary);">Enregistré il y a 3 jours</span>
+      <button class="btn-primary" style="padding:8px 15px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;">Enregistrer</button>
+    </div>
+  </div>
+
+  <div style="flex:0 0 auto;padding:16px 28px 0 28px;background:var(--surface);border-bottom:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:24px;">
+      <button class="tab-btn active" style="padding:0 0 12px 0;font-size:13.5px;">Vue d'ensemble</button>
+      <button class="tab-btn" style="padding:0 0 12px 0;font-size:13.5px;">Champs partagés</button>
+      <button class="tab-btn" style="padding:0 0 12px 0;font-size:13.5px;">Aperçu de l'export</button>
+    </div>
+  </div>
+
+  <div class="sia-scroll" style="flex:1 1 auto;padding:24px 28px 32px 28px;">
+    <div style="max-width:1220px;margin:0 auto;">
+
+      <div style="margin-bottom:16px;">
+        <h1 style="margin:0 0 5px 0;font-size:18px;font-weight:700;">Carte des correspondances</h1>
+        <p style="margin:0;color:var(--text-secondary);font-size:13px;max-width:680px;line-height:1.5;">
+          Chaque ligne est un type de donnée interne, chaque colonne une fiche du référentiel SDA. Un point plein signifie que le mapping des colonnes est complet, un anneau qu'il reste des colonnes non mappées. Cliquez une ligne ou une colonne pour tracer ses correspondances.
+        </p>
+      </div>
+
+      <!-- legend -->
+      <div style="display:flex;align-items:center;gap:18px;margin-bottom:16px;font-size:12px;color:var(--text-secondary);">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--primary);display:inline-block;"></span>Mapping complet</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;border:2px solid var(--third);display:inline-block;"></span>Mapping partiel</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--border);display:inline-block;"></span>Non utilisé</span>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:auto;box-shadow:var(--shadow-sm);">
+        <table style="border-collapse:collapse;width:100%;min-width:980px;">
+          <thead>
+            <tr>
+              <th style="position:sticky;left:0;background:var(--surface);z-index:2;text-align:left;padding:10px 14px;font-size:11.5px;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border);border-right:1px solid var(--border);min-width:230px;">Source interne</th>
+              <sc-for list="{{columns}}" as="col" hint-placeholder-count="8">
+                <th style="padding:8px 6px;border-bottom:1px solid var(--border);text-align:center;{{col.headStyle}}">
+                  <button class="colhead" onClick="{{col.select}}" style="display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;padding:4px 2px;border-radius:6px;">
+                    <span class="colhead-label" style="font-size:11px;font-weight:700;color:var(--text);writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;letter-spacing:.01em;height:78px;display:flex;align-items:center;">{{col.name}}</span>
+                  </button>
+                </th>
+              </sc-for>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="row" hint-placeholder-count="11">
+              <tr class="matrix-row" style="{{row.rowBg}}">
+                <td style="position:sticky;left:0;background:{{row.stickyBg}};padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);z-index:1;">
+                  <button class="rowhead" onClick="{{row.select}}" style="padding:9px 14px;display:flex;flex-direction:column;gap:1px;">
+                    <span style="font-size:12.5px;font-weight:600;">{{row.table}}</span>
+                    <sc-if value="{{row.type}}" hint-placeholder-val="{{true}}">
+                      <span style="font-size:11px;color:var(--text-secondary);">Type : {{row.type}}</span>
+                    </sc-if>
+                  </button>
+                </td>
+                <sc-for list="{{row.cells}}" as="cell" hint-placeholder-count="8">
+                  <td style="text-align:center;border-bottom:1px solid var(--border);padding:9px 6px;{{cell.cellBg}}">
+                    <sc-if value="{{cell.full}}" hint-placeholder-val="{{false}}">
+                      <span class="cell-dot" style="width:11px;height:11px;border-radius:50%;background:var(--primary);display:inline-block;"></span>
+                    </sc-if>
+                    <sc-if value="{{cell.partial}}" hint-placeholder-val="{{false}}">
+                      <span class="cell-dot" style="width:11px;height:11px;border-radius:50%;border:2px solid var(--third);display:inline-block;"></span>
+                    </sc-if>
+                    <sc-if value="{{cell.empty}}" hint-placeholder-val="{{true}}">
+                      <span style="width:6px;height:6px;border-radius:50%;background:var(--border);display:inline-block;"></span>
+                    </sc-if>
+                  </td>
+                </sc-for>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- selection summary -->
+      <sc-if value="{{selection}}" hint-placeholder-val="{{true}}">
+        <div style="margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin-bottom:4px;">{{selection.kindLabel}}</div>
+            <div style="font-size:14.5px;font-weight:600;margin-bottom:4px;">{{selection.title}}</div>
+            <div style="font-size:12.5px;color:var(--text-secondary);">{{selection.detail}}</div>
+          </div>
+          <button class="btn-primary" style="padding:8px 15px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;white-space:nowrap;">Configurer le mapping</button>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "dark": {"editor": "boolean", "default": false, "section": "Thème"}
+}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { selRow: null, selCol: null };
+  }
+
+  theme() {
+    const d = !!this.props.dark;
+    return d ? {
+      vars: "--bg:#181C19;--surface:#20251F;--surface-hover:#2A312A;--border:#37403A;--text:#ECEFEA;--text-secondary:#93A392;--primary:#7FB37F;--primary-dark:#9CC79C;--accent-lime:#C9DE55;--context:#3FB0CB;--third:#E88A50;--danger:#E06A62;--shadow-sm:0 1px 3px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3);--shadow-lg:0 10px 28px rgba(0,0,0,.5);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;"
+    } : {
+      vars: "--bg:#FAFAFA;--surface:#FFFFFF;--surface-hover:#F3F7F3;--border:#dee2e6;--text:#2A2C30;--text-secondary:#6B7280;--primary:#669966;--primary-dark:#547d54;--accent-lime:#BED730;--context:#068DA9;--third:#C98A2E;--danger:#C0463D;--shadow-sm:0 1px 3px rgba(30,40,30,.08),0 1px 2px rgba(30,40,30,.06);--shadow-lg:0 8px 24px rgba(30,40,30,.14),0 2px 6px rgba(30,40,30,.08);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;"
+    };
+  }
+
+  renderVals() {
+    const theme = this.theme();
+
+    const colDefs = [
+      "Opération arch.", "Site", "Situation géo.", "Unité d'enreg.",
+      "Objet", "Matériel", "Décompte", "Datation",
+    ];
+
+    // 0=empty 1=partial 2=full, indexed per column above
+    const rowDefs = [
+      { table: "Opération archéologique", type: null, cells: [2,0,0,0,0,0,0,0] },
+      { table: "Unité spatiale", type: "Parcelle", cells: [0,2,1,0,0,0,0,0] },
+      { table: "Unité spatiale", type: "Emprise", cells: [0,0,0,0,0,0,0,0] },
+      { table: "Unité d'enregistrement", type: "US", cells: [0,0,0,2,0,0,0,0] },
+      { table: "Unité d'enregistrement", type: "Fait", cells: [0,0,2,0,0,0,0,0] },
+      { table: "Unité d'enregistrement", type: "Structure", cells: [0,0,2,0,0,0,0,0] },
+      { table: "Mobilier", type: "Céramique", cells: [0,0,0,0,2,2,1,0] },
+      { table: "Mobilier", type: "Faune", cells: [0,0,0,0,2,1,2,0] },
+      { table: "Mobilier", type: "Lithique", cells: [0,0,0,0,1,0,2,0] },
+      { table: "Contenant", type: "Caisse", cells: [0,0,0,0,0,0,0,0] },
+      { table: "Phase", type: null, cells: [0,0,0,0,0,0,0,2] },
+    ];
+
+    const selRow = this.state.selRow;
+    const selCol = this.state.selCol;
+
+    const columns = colDefs.map((name, ci) => {
+      const isSel = selCol === ci;
+      return {
+        name,
+        headStyle: isSel ? "background:var(--surface-hover);" : "",
+        select: () => this.setState({ selCol: isSel ? null : ci, selRow: null }),
+      };
+    });
+
+    const rows = rowDefs.map((r, ri) => {
+      const rowKey = r.table + "|" + r.type;
+      const isRowSel = selRow === rowKey;
+      return {
+        table: r.table,
+        type: r.type,
+        rowBg: "",
+        stickyBg: isRowSel ? "var(--surface-hover)" : "var(--surface)",
+        select: () => this.setState({ selRow: isRowSel ? null : rowKey, selCol: null }),
+        cells: r.cells.map((v, ci) => {
+          const highlightRow = selRow === rowKey;
+          const highlightCol = selCol === ci;
+          const active = (selRow === null && selCol === null) || highlightRow || highlightCol;
+          const op = active ? 1 : 0.28;
+          return {
+            full: v === 2,
+            partial: v === 1,
+            empty: v === 0,
+            cellBg: `opacity:${op};` + ((highlightRow || highlightCol) ? "background:var(--surface-hover);" : ""),
+          };
+        }),
+      };
+    });
+
+    let selection = null;
+    if (selRow !== null) {
+      const r = rowDefs.find(x => (x.table + "|" + x.type) === selRow);
+      const feeds = r.cells.map((v,i)=>({v,name:colDefs[i]})).filter(x=>x.v>0);
+      selection = {
+        kindLabel: "Source sélectionnée",
+        title: r.type ? `${r.table} · ${r.type}` : r.table,
+        detail: feeds.length
+          ? `Alimente ${feeds.length} fiche${feeds.length>1?"s":""} : ${feeds.map(f=>f.name).join(", ")}`
+          : "N'alimente aucune fiche dans ce modèle — source inutilisée.",
+      };
+    } else if (selCol !== null) {
+      const feeders = rowDefs.map((r,i)=>({r,v:r.cells[selCol]})).filter(x=>x.v>0);
+      selection = {
+        kindLabel: "Fiche sélectionnée",
+        title: colDefs[selCol],
+        detail: feeders.length
+          ? `Alimentée par ${feeders.length} source${feeders.length>1?"s":""} : ${feeders.map(f=>f.r.type?`${f.r.table} · ${f.r.type}`:f.r.table).join(", ")}`
+          : "Aucune source ne mappe encore vers cette fiche.",
+      };
+    }
+
+    return { theme, columns, rows, selection };
+  }
+}
+</script>
+</body>
+</html>

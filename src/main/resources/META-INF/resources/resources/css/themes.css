@@ -1,0 +1,220 @@
+/*
+ * Theme variants: "dark" and "syslat".
+ * Overrides the CSS custom properties defined by the compiled PrimeFaces theme
+ * (see primefaces-themes/themes/primefaces-siamois-theme/_variables.scss).
+ * Selected via the [data-theme] attribute on <html>, set from SessionSettingsBean#selectedTheme.
+ * Prototype only - values are a starting point, not a validated palette.
+ */
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+
+    --surface-a: #1c1f24;
+    --surface-b: #22262c;
+    --surface-c: #2a2f36;
+    --surface-d: #343a42;
+    --surface-e: #22262c;
+    --surface-f: #1c1f24;
+    --surface-0: #14161a;
+    --surface-50: #1c1f24;
+    --surface-100: #22262c;
+    --surface-200: #2a2f36;
+    --surface-300: #343a42;
+    --surface-400: #4a5057;
+    --surface-500: #6b7178;
+    --surface-600: #9096a0;
+    --surface-700: #b5bac2;
+    --surface-800: #d7dae0;
+    --surface-900: #f0f2f4;
+
+    --gray-50: #22262c;
+    --gray-100: #2a2f36;
+    --gray-200: #343a42;
+    --gray-300: #4a5057;
+    --gray-400: #6b7178;
+    --gray-500: #9096a0;
+    --gray-600: #b5bac2;
+    --gray-700: #d7dae0;
+    --gray-800: #e7e9ec;
+    --gray-900: #f5f6f7;
+
+    --text-color: #e7e9ec;
+    --text-color-secondary: #a6acb5;
+    --text-main: #e7e9ec;
+    --text-light: #a6acb5;
+
+    --surface-ground: #14161a;
+    --surface-section: #1c1f24;
+    --surface-card: #1c1f24;
+    --surface-overlay: #22262c;
+    --surface-border: #343a42;
+    --surface-hover: #2a2f36;
+
+    --main-content-background: #1c1f24;
+    --main-content-top-stroke: #343a42;
+
+    --primary-color: #80b480;
+    --primary-color-text: #10140f;
+
+    --siamois-green: #80b480;
+    --siamois-green-active: #9ccf9c;
+    --siamois-primary: #cfe36a;
+    --siamois-green-unknown: #22262c;
+    --siamois-primary-green: #cfe36a;
+    --siamois-green-light-100: #24312a;
+    --siamois-green-light-350: #3a4f40;
+    --siamois-green-light-200: #2c3c32;
+    --siamois-green-light-50: #1e2621;
+    --siamois-over-grey: #22262c;
+
+    --main-color: #80b480;
+    --light-color-50: #1e2621;
+    --light-color-100: #24312a;
+    --light-color-200: #2c3c32;
+    --dark-color: #9ccf9c;
+
+    --context-main-color: #4fb8d1;
+    --context-light-color-50: #172a2e;
+    --context-light-color-100: #1c363c;
+    --context-light-color-200: #234550;
+    --context-dark-color: #7bd0e4;
+
+    --ground-main-color: #c77373;
+    --ground-light-color-100: #3a2323;
+    --ground-light-color-200: #472b2b;
+    --ground-light-color-50: #2c1c1c;
+    --ground-dark-color: #e0a0a0;
+
+    --third-main-color: #ff8a3d;
+    --third-light-color-100: #3d2a1a;
+    --third-light-color-200: #4a3320;
+    --third-light-color-50: #2e2115;
+    --third-dark-color: #ffb27a;
+
+    --error-main: #ef5350;
+    --green-valid: #4ade80;
+}
+
+/*
+ * "syslat" palette sampled from real Syslat-Terminal 5 screenshots (syslat.fr):
+ * pale sage-green form panels, near-black charcoal toolbar, dark forest-green
+ * module buttons, bright red for critical actions ("Quitter"), amber accent icon.
+ */
+html[data-theme="syslat"] {
+    color-scheme: light;
+
+    --surface-a: #eef3ea;
+    --surface-b: #e6ede0;
+    --surface-c: #dbe5d3;
+    --surface-d: #cddac2;
+    --surface-e: #eef3ea;
+    --surface-f: #ffffff;
+    --surface-0: #ffffff;
+    --surface-50: #eef3ea;
+    --surface-100: #e6ede0;
+    --surface-200: #dbe5d3;
+    --surface-300: #cddac2;
+    --surface-400: #b9c9ac;
+    --surface-500: #8fa27e;
+    --surface-600: #5f6f52;
+    --surface-700: #454f3d;
+    --surface-800: #2a2a28;
+    --surface-900: #1c1c1a;
+
+    --gray-50: #eef3ea;
+    --gray-100: #e6ede0;
+    --gray-200: #dbe5d3;
+    --gray-300: #cddac2;
+    --gray-400: #b9c9ac;
+    --gray-500: #8fa27e;
+    --gray-600: #5f6f52;
+    --gray-700: #454f3d;
+    --gray-800: #2a2a28;
+    --gray-900: #1c1c1a;
+
+    --text-color: #1c1c1a;
+    --text-color-secondary: #4a4a44;
+    --text-main: #1c1c1a;
+    --text-light: #55554d;
+
+    --surface-ground: #e6ede0;
+    --surface-section: #eef3ea;
+    --surface-card: #eef3ea;
+    --surface-overlay: #ffffff;
+    --surface-border: #b9c9ac;
+    --surface-hover: #dbe5d3;
+
+    --main-content-background: #e6ede0;
+    --main-content-top-stroke: #b9c9ac;
+
+    --primary-color: #1f3d28;
+    --primary-color-text: #ffffff;
+
+    --siamois-green: #1f3d28;
+    --siamois-green-active: #16301e;
+    --siamois-primary: #d98a2a;
+    --siamois-green-unknown: #e6ede0;
+    --siamois-primary-green: #d98a2a;
+    --siamois-green-light-100: #dbe5d3;
+    --siamois-green-light-350: #a9c093;
+    --siamois-green-light-200: #c8d6ba;
+    --siamois-green-light-50: #eef3ea;
+    --siamois-over-grey: #e6ede0;
+
+    --main-color: #1f3d28;
+    --light-color-50: #eef3ea;
+    --light-color-100: #dbe5d3;
+    --light-color-200: #c8d6ba;
+    --dark-color: #16301e;
+
+    --context-main-color: #d98a2a;
+    --context-light-color-50: #faf1e2;
+    --context-light-color-100: #f3ddb3;
+    --context-light-color-200: #ecc989;
+    --context-dark-color: #a86a1f;
+
+    --ground-main-color: #d81f1f;
+    --ground-light-color-100: #f6d3d3;
+    --ground-light-color-200: #f0b8b8;
+    --ground-light-color-50: #fbe8e8;
+    --ground-dark-color: #a11616;
+
+    --third-main-color: #454f3d;
+    --third-light-color-100: #d7dcce;
+    --third-light-color-200: #c1c9b3;
+    --third-light-color-50: #e8ebe3;
+    --third-dark-color: #2f3629;
+
+    --error-main: #d81f1f;
+    --green-valid: #2f6b3a;
+}
+
+/* Sidebar theme switch */
+.theme-switch {
+    display: flex;
+    gap: 0.4em;
+    justify-content: flex-start;
+    padding: 0 24px 12px 24px;
+}
+
+.theme-switch .theme-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2em;
+    height: 2em;
+    border-radius: 6px;
+    color: var(--text-light);
+    background: transparent;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.theme-switch .theme-switch-btn:hover {
+    background: var(--surface-hover);
+}
+
+.theme-switch .theme-switch-btn.active {
+    background: var(--siamois-green-light-100);
+    color: var(--siamois-green-active);
+}

@@ -23,6 +23,8 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMul
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.events.publisher.FormConfigChangeEventPublisher;
+import fr.siamois.domain.models.events.FormConfigChangeEvent;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
@@ -45,12 +47,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -92,6 +97,26 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final CustomFieldAnswerRepository customFieldAnswerRepository;
     private final PersonRepository personRepository;
     private final ObjectProvider<TableFieldConfigServiceImpl> selfProvider;
+    private final FormConfigChangeEventPublisher formConfigChangeEventPublisher;
+
+    /**
+     * Caches {@link #findFormConfig(Long, ConfigurableTable, Long)} — a {@code FormConfig} only
+     * changes when someone edits the field configuration screen (rare), yet it was otherwise
+     * re-resolved (2 queries: {@link #findFieldConcept} + the repository lookup) on every single
+     * row of every table showing a type-dependent form, once per row context built (see
+     * {@code EntityTableViewModel#getRowContext}) — an N+1 across the whole page. Cleared on
+     * {@link FormConfigChangeEvent} rather than kept fresh per-write, same pattern as
+     * {@code LabelBean}'s concept label cache.
+     */
+    private final Map<FormConfigCacheKey, Optional<FormConfig>> formConfigCache = new ConcurrentHashMap<>();
+
+    private record FormConfigCacheKey(Long projectId, ConfigurableTable table, Long typeConceptId) {
+    }
+
+    @EventListener(FormConfigChangeEvent.class)
+    public void resetFormConfigCache() {
+        formConfigCache.clear();
+    }
 
     @Override
     public List<ConfigurableTable> listTables() {
@@ -194,6 +219,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         stored.setMinCode(config.getMinCode());
         stored.setMaxCode(config.getMaxCode());
         formConfigRepository.save(stored);
+        formConfigChangeEventPublisher.publishEvent();
     }
 
     @Override
@@ -212,6 +238,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         stored.setMinCode(config.getMinCode());
         stored.setMaxCode(config.getMaxCode());
         formConfigRepository.save(stored);
+        formConfigChangeEventPublisher.publishEvent();
     }
 
     @Override
@@ -631,13 +658,44 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     @Override
     public Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        FormConfigCacheKey key = new FormConfigCacheKey(projectId, table, typeConceptId);
+        Optional<FormConfig> cached = formConfigCache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        // A "not found" result is never cached: it means the type has no configuration row yet
+        // (see the class javadoc — rows are created lazily), and is one step away from being
+        // created (see createOrGetFormConfig / createOrRecoverFormConfig's concurrent-insert
+        // recovery, which re-queries expecting the fresh row) — caching it would risk serving a
+        // stale "empty" right through that creation.
+        Optional<FormConfig> result = resolveFormConfig(projectId, table, typeConceptId);
+        result.ifPresent(config -> formConfigCache.put(key, result));
+        return result;
+    }
+
+    private Optional<FormConfig> resolveFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
         if (fieldConcept.isEmpty()) return Optional.empty();
 
-        if (typeConceptId == null) {
-            return formConfigRepository.findDefaultByActionUnitAndField(projectId, fieldConcept.get().getId());
-        }
-        return formConfigRepository.findByActionUnitAndFieldAndValue(projectId, fieldConcept.get().getId(), typeConceptId);
+        Optional<FormConfig> result = typeConceptId == null
+                ? formConfigRepository.findDefaultByActionUnitAndField(projectId, fieldConcept.get().getId())
+                : formConfigRepository.findByActionUnitAndFieldAndValue(projectId, fieldConcept.get().getId(), typeConceptId);
+        result.ifPresent(this::initializeForCaching);
+        return result;
+    }
+
+    /**
+     * Forces this {@code FormConfig}'s lazy associations to load now, inside the still-open
+     * session — the entity is kept in {@link #formConfigCache} across requests, and a later cache
+     * hit reads it after its originating Hibernate session has long closed; an association still
+     * lazy at that point would throw {@code LazyInitializationException} (see {@link #getFormConfig}
+     * reading {@code valueConcept}).
+     */
+    private void initializeForCaching(FormConfig config) {
+        if (config.getValueConcept() != null) Hibernate.initialize(config.getValueConcept());
+        if (config.getFieldConcept() != null) Hibernate.initialize(config.getFieldConcept());
+        if (config.getInstitution() != null) Hibernate.initialize(config.getInstitution());
+        if (config.getActionUnit() != null) Hibernate.initialize(config.getActionUnit());
     }
 
     /**
@@ -697,6 +755,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         change.accept(config);
         assert config != null;
         fieldFormConfigRepository.save(config);
+        formConfigChangeEventPublisher.publishEvent();
     }
 
     private static void warnNoFieldOnType(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
@@ -796,7 +855,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                     .orElseThrow(() -> new NoSuchElementException(
                             "Unknown type '" + typeName + "' for table " + table)));
         }
-        return formConfigRepository.save(config);
+        FormConfig saved = formConfigRepository.save(config);
+        formConfigChangeEventPublisher.publishEvent();
+        return saved;
     }
 
     private FormConfig createFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
@@ -816,7 +877,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             config.setValueConcept(conceptRepository.findById(typeConceptId)
                     .orElseThrow(() -> new NoSuchElementException("Unknown concept id " + typeConceptId)));
         }
-        return formConfigRepository.save(config);
+        FormConfig saved = formConfigRepository.save(config);
+        formConfigChangeEventPublisher.publishEvent();
+        return saved;
     }
 
     /**

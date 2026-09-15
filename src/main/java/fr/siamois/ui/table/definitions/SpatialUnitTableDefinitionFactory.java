@@ -82,8 +82,6 @@ public final class SpatialUnitTableDefinitionFactory {
 
                         .processExpr(THIS)
                         .updateExpr("flow")
-                        .onstartJs(PF_BUI_CONTENT_SHOW)
-                        .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
 

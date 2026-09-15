@@ -304,6 +304,7 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return List.of();
     }
 
+
     @Override
     protected String getFocusPath(Long id) {
         return "/action-unit/"+id;
@@ -444,7 +445,8 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         RecordingUnitLazyDataModel actionLazyDataModel = new RecordingUnitLazyDataModel(
                 recordingUnitService,
                 sessionSettingsBean,
-                langBean
+                langBean,
+                labelBean
         );
 
         actionLazyDataModel.withConstantFilter(ACTION_UNIT_FILTER, List.of(unit.getId()), CONTAINS);

@@ -215,6 +215,7 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         return List.of();
     }
 
+
     @Override
     protected String getFocusPath(Long id) {
         return "/specimen/"+id;

@@ -24,4 +24,9 @@ public class CustomFieldSelectOneRecordingUnit extends CustomField {
         return "bi bi-pencil-square";
     }
 
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/recordingUnitOne.xhtml";
+    }
+
 }

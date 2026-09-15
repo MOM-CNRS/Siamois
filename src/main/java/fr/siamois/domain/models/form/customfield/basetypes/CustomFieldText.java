@@ -36,4 +36,9 @@ public class CustomFieldText extends CustomField {
         return "bi bi-alphabet";
     }
 
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/text.xhtml";
+    }
+
 }
