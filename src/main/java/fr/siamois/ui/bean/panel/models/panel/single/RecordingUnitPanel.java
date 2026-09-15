@@ -153,6 +153,17 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return true;
     }
 
+    /**
+     * Recording Unit panels — root/main and overview alike — render as the React panel (toolbar + header
+     * + Détails tab) instead of the JSF chrome/header/body includes. Documents/Hiérarchie/Mobiliers stay
+     * JSF-only for now (React panel shows them as disabled stubs); Stratigraphie is absent entirely from
+     * the React panel by design. See focus.xhtml (root slot) and overviewContent.xhtml (overview slot).
+     */
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
     @Override
     public void duplicate() {
         if (!profilePermissionService.hasRecordingUnitWritePermission(sessionSettingsBean.getUserInfo(), unit)) {

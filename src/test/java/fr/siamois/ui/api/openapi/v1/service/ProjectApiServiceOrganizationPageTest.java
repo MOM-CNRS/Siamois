@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -45,6 +46,7 @@ class ProjectApiServiceOrganizationPageTest {
     @Mock private ConceptMapper conceptMapper;
     @Mock private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock private PhaseService phaseService;
+    @Mock private ContainerService containerService;
 
     private ProjectApiService projectApiService;
 
@@ -66,7 +68,7 @@ class ProjectApiServiceOrganizationPageTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService, containerService);
     }
 
     private ProjectApiCaller caller(List<InstitutionDTO> institutions) {

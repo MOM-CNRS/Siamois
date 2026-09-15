@@ -378,4 +378,9 @@ public abstract class AbstractListPanel<T extends AbstractEntityDTO> extends Abs
     public boolean hasPreviousNext() {
         return false;
     }
+
+    @Override
+    public boolean isListPanel() {
+        return true;
+    }
 }

@@ -86,13 +86,28 @@ public class VocabularyOpenApiService {
                                                                     @Nullable String q,
                                                                     String lang,
                                                                     PersonDTO person) {
+        return getConceptsForOrganization(organizationId, fieldCode, q, lang, person, null);
+    }
+
+    /**
+     * @param actionUnitId Portée projet pour une éventuelle surcharge de thésaurus (même paramètre que
+     *                      {@code EntityFormContext.getActionUnitIdForThesaurus()} côté JSF). Optionnel :
+     *                      sans lui, le vocabulaire résolu est celui de l'institution seule, comme avant.
+     */
+    @Transactional(readOnly = true)
+    public List<ConceptAutocompleteDTO> getConceptsForOrganization(long organizationId,
+                                                                    String fieldCode,
+                                                                    @Nullable String q,
+                                                                    String lang,
+                                                                    PersonDTO person,
+                                                                    @Nullable Long actionUnitId) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
         }
         UserInfo userInfo = new UserInfo(institution, person, lang);
         try {
-            return fieldConfigurationService.fetchAutocomplete(userInfo, fieldCode, q);
+            return fieldConfigurationService.fetchAutocomplete(userInfo, fieldCode, q, actionUnitId);
         } catch (NoConfigForFieldException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Aucun vocabulaire configuré pour le fieldCode : " + fieldCode);

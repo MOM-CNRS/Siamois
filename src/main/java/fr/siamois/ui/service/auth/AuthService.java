@@ -9,6 +9,7 @@ import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.auth.dto.AuthUserResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.LoginResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.OrganizationSummaryResponse;
+import fr.siamois.ui.api.openapi.v1.auth.dto.SessionTokenResponse;
 import fr.siamois.ui.config.security.jwt.JwtService;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +63,20 @@ public class AuthService {
         Person person = AuthenticatedUserUtils.getAuthenticatedUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         return buildAuthUserResponse(person);
+    }
+
+    /**
+     * Émet un access token JWT pour l'utilisateur de la session JSF courante (authentifié par cookie
+     * de session, pas par Bearer). Permet à un widget React embarqué dans une page JSF de s'authentifier
+     * contre l'API stateless {@code /api/v1/**} sans redemander les identifiants.
+     */
+    @Transactional(readOnly = true)
+    public SessionTokenResponse sessionToken() {
+        Person person = AuthenticatedUserUtils.getAuthenticatedUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        String access = jwtService.createAccessToken(person);
+        AuthUserResponse user = buildAuthUserResponse(person);
+        return new SessionTokenResponse(access, jwtService.accessTokenExpiresInSeconds(), AuthConstants.TOKEN_TYPE_BEARER, user);
     }
 
     private AuthUserResponse buildAuthUserResponse(Person person) {

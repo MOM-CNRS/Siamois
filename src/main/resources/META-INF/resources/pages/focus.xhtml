@@ -5,6 +5,7 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:f="http://xmlns.jcp.org/jsf/core"
+                xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
     <ui:define name="head">
@@ -184,11 +185,28 @@
                         styleClass="focus"
                         id="flow-panels">
 
-                    <p:outputPanel id="panel-${focusViewBean.mainPanel.prefixPanelIndex}-container" styleClass="focus">
-                        <h:panelGroup
-                                styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
-                                style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
-                                id="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+                    <p:outputPanel id="panel-${focusViewBean.mainPanel.prefixPanelIndex}-container" styleClass="focus"
+                                   style="display:flex;flex-direction:row;overflow:hidden;height:100%;width:100%;">
+
+                    <h:panelGroup
+                            styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
+                            style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color); flex: 1 1 auto; min-width: 0;"
+                            id="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+
+                        <!--
+                            JSF chrome + panelContent.xhtml include, unchanged, for every panel type
+                            EXCEPT a React-enabled one (RecordingUnitPanel) — see the React branch below,
+                            which replaces this entire block (titlebar toolbar included) with one React
+                            app, and moves the overview slot out to a page-level sibling (see below).
+
+                            c:if (build-time), not rendered (runtime): panelContent.xhtml includes
+                            overviewContent.xhtml, which declares a fixed "sideview-${panelIndex}" id —
+                            with a plain `rendered` attribute JSF would still build (and register the id
+                            of) this whole branch even while hidden, colliding with the React branch's own
+                            direct include of overviewContent.xhtml below (JSF1073 duplicate id). c:if
+                            excludes the branch from the tree entirely instead.
+                        -->
+                        <c:if test="#{not focusViewBean.mainPanel.reactPanelEnabled}">
 
                             <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
                                 <h:form style="float:right;display: flex;
@@ -318,14 +336,246 @@
                                     <ui:param name="panelIndex" value="#{focusViewBean.mainPanel.panelIndex}"/>
                                 </ui:include>
                             </p:outputPanel>
+                        </c:if>
+
+                        <!--
+                            Recording Unit main panel: FULL React panel — toolbar, header and Détails tab
+                            for a single unit, or the list, depending on RecordingUnitPanel/
+                            RecordingUnitListPanel.isReactPanelEnabled(). Mirrors overviewContent.xhtml's
+                            React branch, bridged to focusViewBean.mainPanel directly instead of
+                            panelModel.parentOrOverview. "Close" (single-unit only) means leaving the
+                            focus page entirely (goBackUrl), not collapsing a slot, so it's a plain
+                            redirect — no remoteCommand needed for it.
+
+                            c:if, not rendered — see the comment on the JSF branch above; this branch's
+                            own direct include of overviewContent.xhtml would otherwise collide with it.
+                        -->
+                        <c:if test="#{focusViewBean.mainPanel.reactPanelEnabled}">
+                        <h:panelGroup style="display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;">
+                            <h:form id="reactBridgeForm-main-${focusViewBean.mainPanel.panelIndexSafe}">
+                                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                <p:remoteCommand name="ruDuplicateMain_${focusViewBean.mainPanel.panelIndexSafe}"
+                                                 action="#{focusViewBean.mainPanel.duplicate()}"
+                                                 update="react-ru-main-container-${focusViewBean.mainPanel.panelIndex}"/>
+                                <p:remoteCommand name="ruRefreshMain_${focusViewBean.mainPanel.panelIndexSafe}"
+                                                 action="#{focusViewBean.mainPanel.refresh()}"
+                                                 update="react-ru-main-container-${focusViewBean.mainPanel.panelIndex}"/>
+                                <p:remoteCommand name="ruToggleBookmarkMain_${focusViewBean.mainPanel.panelIndexSafe}"
+                                                 action="#{focusViewBean.mainPanel.togglePanelBookmark()}"
+                                                 update="navBarCsrfForm:siamoisNavForm, subSidebarForm"/>
+                                <!--
+                                    List panel only: opens a row as the overview slot next to the list —
+                                    the React equivalent of RecordingUnitTableViewModel.handleCommandLink's
+                                    flowBean.addRecordingUnitToOverview. Targets the always-rendered
+                                    overview wrapper below so PrimeFaces can reveal it even though it's
+                                    currently not rendered (rendered="false" components can't self-update).
+                                -->
+                                <!--
+                                    Both the wrapper AND the resizer must be in the update list: each has
+                                    its own EL-computed display:none/visible style (keyed off
+                                    parentOrOverview), evaluated at render time — a plain HTML <div> can't
+                                    be a PrimeFaces update target at all, which is why the resizer below is
+                                    an h:panelGroup, not a <div>, despite rendering identically.
+                                -->
+                                <p:remoteCommand name="ruOpenOverviewMain_${focusViewBean.mainPanel.panelIndexSafe}"
+                                                 action="#{focusViewBean.openOverview(param.openId)}"
+                                                 update="focus-overview-wrapper-${focusViewBean.mainPanel.panelIndex} focus-overview-resizer-${focusViewBean.mainPanel.panelIndex}">
+                                    <f:param name="openId"/>
+                                </p:remoteCommand>
+                            </h:form>
+
+                            <p:outputPanel id="react-ru-main-container-${focusViewBean.mainPanel.panelIndex}"
+                                           style="height:100%;width:100%;min-width:0;display:flex;flex-direction:column;overflow:hidden;">
+                                <link rel="stylesheet" href="#{request.contextPath}/resources/react-ru-panel/recording-unit-panel.css"/>
+                                <div id="react-ru-main-${focusViewBean.mainPanel.panelIndex}" class="react-ru-main-root" style="height:100%;width:100%;min-width:0;overflow:auto;display:flex;flex-direction:column;"></div>
+                                <script src="#{request.contextPath}/resources/react-ru-panel/recording-unit-panel.js"></script>
+
+                                <h:panelGroup rendered="#{not focusViewBean.mainPanel.listPanel}">
+                                    <script>
+                                        (function () {
+                                            var container = document.getElementById('react-ru-main-${focusViewBean.mainPanel.panelIndex}');
+                                            if (container &amp;&amp; window.SiamoisRecordingUnitPanel) {
+                                                window.SiamoisRecordingUnitPanel.unmount(container);
+                                                window.SiamoisRecordingUnitPanel.mount(container, {
+                                                    recordingUnitId: ${focusViewBean.mainPanel.unit.id},
+                                                    csrfToken: '${_csrf.token}',
+                                                    basePath: '${request.contextPath}',
+                                                    bookmarked: ${focusViewBean.mainPanel.isBookmarked()},
+                                                    actions: {
+                                                        close: function () {
+                                                            window.location.href = '#{not empty focusViewBean.mainPanel.goBackUrl ? focusViewBean.mainPanel.goBackUrl : "javascript:history.back()"}';
+                                                        },
+                                                        duplicate: function () { ruDuplicateMain_${focusViewBean.mainPanel.panelIndexSafe}(); },
+                                                        refresh: function () { ruRefreshMain_${focusViewBean.mainPanel.panelIndexSafe}(); },
+                                                        toggleBookmark: function () { ruToggleBookmarkMain_${focusViewBean.mainPanel.panelIndexSafe}(); }
+                                                    }
+                                                });
+                                            }
+                                        })();
+                                    </script>
+                                </h:panelGroup>
+
+                                <h:panelGroup rendered="#{focusViewBean.mainPanel.listPanel}">
+                                    <script>
+                                        (function () {
+                                            var container = document.getElementById('react-ru-main-${focusViewBean.mainPanel.panelIndex}');
+                                            if (container &amp;&amp; window.SiamoisRecordingUnitPanel) {
+                                                window.SiamoisRecordingUnitPanel.unmountList(container);
+                                                window.SiamoisRecordingUnitPanel.mountList(container, {
+                                                    organizationId: ${sessionSettingsBean.selectedInstitution.id},
+                                                    csrfToken: '${_csrf.token}',
+                                                    basePath: '${request.contextPath}',
+                                                    onRowOpen: function (id) { ruOpenOverviewMain_${focusViewBean.mainPanel.panelIndexSafe}({ openId: id }); }
+                                                });
+                                            }
+                                        })();
+                                    </script>
+                                </h:panelGroup>
+                            </p:outputPanel>
                         </h:panelGroup>
+
                         <p:blockUI block="panel-${focusViewBean.mainPanel.panelIndex}"
                                    widgetVar="buiPanel_${focusViewBean.mainPanel.panelIndex}">
                             <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
                         </p:blockUI>
+                        </c:if>
+                    </h:panelGroup>
+
+                    <!--
+                        Overview pane, promoted to a true page-level sibling of the main panel (not
+                        nested inside it) — only reached when the main panel is React-enabled; the JSF
+                        branch above still renders its own overview via panelContent.xhtml's splitter,
+                        unchanged, for every other panel type combination. Always rendered as a wrapper
+                        (visibility toggled by CSS/inner rendered) so ruOpenOverviewMain's AJAX update can
+                        reveal it — a component that starts with rendered="false" can't be PrimeFaces
+                        `update` target. c:if around it (not rendered) for the same duplicate-id reason as
+                        above — its own include of overviewContent.xhtml must not coexist in the tree with
+                        the JSF branch's copy.
+                    -->
+                    <c:if test="#{focusViewBean.mainPanel.reactPanelEnabled}">
+                    <!--
+                        Drag handle mimicking p:splitter's gutter (bypassed for this React sibling-pane
+                        layout — see the "sibling, not nested" architecture note earlier in this file).
+                        Mirrors visibility with the panel below (both keyed off parentOrOverview) so
+                        there's nothing to grab when there's no overview open.
+                    -->
+                    <style>
+                        .focus-overview-resizer {
+                            position: relative;
+                            background: var(--surface-border, #dee2e6);
+                            transition: background 0.1s ease-in-out;
+                        }
+                        .focus-overview-resizer:hover,
+                        .focus-overview-resizer:active {
+                            background: var(--main-color, #4a90d9);
+                        }
+                        /* Visible grip so the handle reads as draggable, not just a divider line. */
+                        .focus-overview-resizer::after {
+                            content: "";
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            width: 2px;
+                            height: 28px;
+                            border-radius: 2px;
+                            background: rgba(0, 0, 0, 0.25);
+                        }
+                    </style>
+
+                    <!--
+                        h:panelGroup, not a plain <div>: it must be a real JSF component so
+                        ruOpenOverviewMain's `update` (see above) can actually refresh its
+                        display:none/visible style after opening an overview — a raw <div> can never be a
+                        PrimeFaces AJAX update target.
+                    -->
+                    <h:panelGroup id="focus-overview-resizer-${focusViewBean.mainPanel.panelIndex}"
+                                  layout="block"
+                                  styleClass="focus-overview-resizer"
+                                  style="#{empty focusViewBean.mainPanel.parentOrOverview ? 'display:none;' : 'flex:0 0 10px;width:10px;min-width:10px;flex-shrink:0;align-self:stretch;height:100%;cursor:col-resize;position:relative;z-index:5;'}"/>
+
+                    <h:panelGroup id="focus-overview-wrapper-${focusViewBean.mainPanel.panelIndex}"
+                                  layout="block"
+                                  style="#{empty focusViewBean.mainPanel.parentOrOverview ? 'display:none;' : 'flex:0 0 420px;max-width:70%;min-width:240px;overflow:hidden;'}">
+                        <ui:fragment rendered="#{not empty focusViewBean.mainPanel.parentOrOverview}">
+                            <ui:include src="/panel/overviewContent.xhtml">
+                                <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
+                                <ui:param name="panelIndex" value="#{focusViewBean.mainPanel.panelIndex}"/>
+                                <ui:param name="mode" value="FOCUS"/>
+                            </ui:include>
+                        </ui:fragment>
+                    </h:panelGroup>
+
+                    <script>
+                        (function () {
+                            var PANEL_ID = 'focus-overview-wrapper-${focusViewBean.mainPanel.panelIndex}';
+                            var RESIZER_ID = 'focus-overview-resizer-${focusViewBean.mainPanel.panelIndex}';
+                            var STORAGE_KEY = 'siamois-focus-overview-width';
+                            var MIN_WIDTH = 240;
+
+                            // Re-applied on every full page load (this script isn't part of the AJAX
+                            // fragment that ruOpenOverviewMain updates, so a saved width doesn't survive
+                            // opening the overview mid-session — acceptable, it's restored on next load).
+                            var initialPanel = document.getElementById(PANEL_ID);
+                            var savedWidth = window.localStorage.getItem(STORAGE_KEY);
+                            if (savedWidth &amp;&amp; initialPanel &amp;&amp; initialPanel.style.display !== 'none') {
+                                initialPanel.style.flexBasis = savedWidth + 'px';
+                            }
+
+                            if (window.__focusOverviewResizerWired) {
+                                return;
+                            }
+                            window.__focusOverviewResizerWired = true;
+
+                            var dragging = false;
+                            var startX = 0;
+                            var startWidth = 0;
+
+                            document.addEventListener('mousedown', function (e) {
+                                if (!e.target.closest || !e.target.closest('#' + RESIZER_ID)) {
+                                    return;
+                                }
+                                var panel = document.getElementById(PANEL_ID);
+                                if (!panel) {
+                                    return;
+                                }
+                                dragging = true;
+                                startX = e.clientX;
+                                startWidth = panel.getBoundingClientRect().width;
+                                document.body.style.userSelect = 'none';
+                                e.preventDefault();
+                            });
+
+                            document.addEventListener('mousemove', function (e) {
+                                if (!dragging) {
+                                    return;
+                                }
+                                var panel = document.getElementById(PANEL_ID);
+                                if (!panel) {
+                                    return;
+                                }
+                                // Overview sits on the right: dragging left grows it, right shrinks it.
+                                var delta = startX - e.clientX;
+                                var next = Math.min(Math.max(startWidth + delta, MIN_WIDTH), window.innerWidth * 0.7);
+                                panel.style.flexBasis = next + 'px';
+                            });
+
+                            document.addEventListener('mouseup', function () {
+                                if (!dragging) {
+                                    return;
+                                }
+                                dragging = false;
+                                document.body.style.userSelect = '';
+                                var panel = document.getElementById(PANEL_ID);
+                                if (panel) {
+                                    window.localStorage.setItem(STORAGE_KEY, Math.round(panel.getBoundingClientRect().width));
+                                }
+                            });
+                        })();
+                    </script>
+                    </c:if>
+
                     </p:outputPanel>
-
-
                 </h:panelGroup>
             </p:outputPanel>
         </p:outputPanel>

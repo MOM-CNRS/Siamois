@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -79,6 +80,8 @@ class ProjectApiServiceMutationTest {
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
     private PhaseService phaseService;
+    @Mock
+    private ContainerService containerService;
 
     private ProjectApiService service;
     private ProjectApiCaller caller;
@@ -101,7 +104,7 @@ class ProjectApiServiceMutationTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService, containerService);
 
         personDto = new PersonDTO();
         personDto.setId(1L);

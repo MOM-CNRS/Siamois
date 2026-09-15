@@ -121,7 +121,7 @@ class ProjectConceptsControllerApiTest {
     @Test
     void getConcepts_noVocabularyConfiguredForFieldCode_returns404() throws Exception {
         stubAccessibleProject(9L, institutionDto);
-        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.UNKNOWN"), isNull(), anyString(), eq(personDto)))
+        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.UNKNOWN"), isNull(), anyString(), eq(personDto), eq(9L)))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucun vocabulaire configuré pour le fieldCode : SIARU.UNKNOWN"));
 
         mockMvc.perform(get("/api/v1/projects/9/concepts").param("fieldCode", "SIARU.UNKNOWN"))
@@ -135,7 +135,7 @@ class ProjectConceptsControllerApiTest {
                 conceptAutocomplete(1L, "Céramique"),
                 conceptAutocomplete(2L, "Céramique fine"),
                 conceptAutocomplete(3L, "Céramique commune"));
-        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), eq("cera"), anyString(), eq(personDto)))
+        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), eq("cera"), anyString(), eq(personDto), eq(9L)))
                 .thenReturn(all);
 
         mockMvc.perform(get("/api/v1/projects/9/concepts")
@@ -155,7 +155,7 @@ class ProjectConceptsControllerApiTest {
                 conceptAutocomplete(1L, "A"),
                 conceptAutocomplete(2L, "B"),
                 conceptAutocomplete(3L, "C"));
-        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), isNull(), anyString(), eq(personDto)))
+        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), isNull(), anyString(), eq(personDto), eq(9L)))
                 .thenReturn(all);
 
         mockMvc.perform(get("/api/v1/projects/9/concepts")
@@ -172,7 +172,7 @@ class ProjectConceptsControllerApiTest {
     void getConcepts_offsetBeyondSize_returnsEmptyPage() throws Exception {
         stubAccessibleProject(9L, institutionDto);
         List<ConceptAutocompleteDTO> all = List.of(conceptAutocomplete(1L, "A"));
-        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), isNull(), anyString(), eq(personDto)))
+        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), isNull(), anyString(), eq(personDto), eq(9L)))
                 .thenReturn(all);
 
         mockMvc.perform(get("/api/v1/projects/9/concepts")
@@ -187,7 +187,7 @@ class ProjectConceptsControllerApiTest {
     @Test
     void getConcepts_defaultPagination_usesOffsetZeroAndLimit50() throws Exception {
         stubAccessibleProject(9L, institutionDto);
-        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), isNull(), anyString(), eq(personDto)))
+        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), isNull(), anyString(), eq(personDto), eq(9L)))
                 .thenReturn(List.of(conceptAutocomplete(1L, "A")));
 
         mockMvc.perform(get("/api/v1/projects/9/concepts").param("fieldCode", "SIARU.TYPE"))

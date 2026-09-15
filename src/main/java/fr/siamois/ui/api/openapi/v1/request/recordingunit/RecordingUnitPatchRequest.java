@@ -2,9 +2,11 @@ package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.springframework.lang.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +24,11 @@ public class RecordingUnitPatchRequest {
 
     @Schema(description = "Valeurs par fieldId à fusionner. Clé absente = ne pas toucher. value:null = vider. values:[] = vider multi.")
     private Map<String, AnswerInput> answers = new HashMap<>();
+
+    @Schema(description = "Statut de validation à fixer explicitement (INCOMPLETE, COMPLETE, VALIDATED). "
+            + "Absent = ne pas toucher au statut actuel. Ce n'est pas un champ de formulaire, il n'est pas piloté via answers.")
+    @Nullable
+    private ValidationStatus validated;
 
     /**
      * Contrat legacy client mobile : scalaires / listes bruts indexés par fieldId.

@@ -7,6 +7,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.io.IOException;
+
+/**
+ * flow.xhtml (multi-panel/tab bar) is being retired — every entry point here now redirects through
+ * {@link FlowBean#redirectToFocus} to the single-panel focus.xhtml instead of forwarding to flow.xhtml,
+ * so the React main-panel/list migration (only reachable from focus.xhtml) is actually exercised.
+ */
 @Controller
 @Scope(value = "session")
 public class RecordingUnitController {
@@ -21,17 +28,15 @@ public class RecordingUnitController {
     }
 
     @GetMapping("/recording-unit")
-    public String toRecordingUnitList() {
+    public void toRecordingUnitList() throws IOException {
         navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        flowBean.addRecordingUnitListPanel();
-        return FORWARD_FLOW_XHTML;
+        flowBean.redirectToFocus("/recording-unit");
     }
 
     @GetMapping("/recording-unit/{id}")
-    public String toRecordingUnit(@PathVariable Long id) {
+    public void toRecordingUnit(@PathVariable Long id) throws IOException {
         navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        flowBean.addRecordingUnitPanel(id);
-        return FORWARD_FLOW_XHTML;
+        flowBean.redirectToFocus("/recording-unit/" + id);
     }
 
     @GetMapping("/action-unit/{id}/recording-unit/new")

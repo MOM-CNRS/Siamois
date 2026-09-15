@@ -63,6 +63,8 @@ public class PlaceSearchControllerApi {
             @RequestParam("q") String q,
             @Parameter(description = "Nombre max de résultats (1 à 50, défaut 20).")
             @RequestParam(defaultValue = "20") int limit,
+            @Parameter(description = "Filtre optionnel par catégorie (concept_id de la catégorie d'unité spatiale). Plusieurs valeurs = OU.")
+            @RequestParam(required = false) Long[] categories,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
@@ -87,7 +89,7 @@ public class PlaceSearchControllerApi {
         Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
                 organizationId,
                 query,
-                null,
+                categories,
                 null,
                 null,
                 lang,

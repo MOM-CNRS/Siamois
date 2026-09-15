@@ -259,4 +259,13 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     public String getPanelTypeClass() {
         return "recording-unit";
     }
+
+    /**
+     * MVP React list (search + basic sort) — see focus.xhtml's react-enabled main-panel branch and
+     * frontend/src/panel/RecordingUnitList.tsx. Columns/filters beyond the MVP stay JSF-only for now.
+     */
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
 }

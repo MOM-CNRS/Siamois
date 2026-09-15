@@ -148,6 +148,25 @@ public abstract class AbstractPanel implements Serializable {
         return false;
     }
 
+    /**
+     * True for panel types that render themselves with the React panel instead of JSF — consulted both
+     * for the root/main slot (see focus.xhtml) and the overview slot (see overviewContent.xhtml), since
+     * the same panel instance/class can be either depending on {@link #isRoot}. False by default;
+     * overridden by RecordingUnitPanel.
+     */
+    public boolean isReactPanelEnabled() {
+        return false;
+    }
+
+    /**
+     * True for list panels (e.g. {@code AbstractListPanel}), false for single-entity panels — lets
+     * focus.xhtml pick the right React mount function ({@code mountRecordingUnitList} vs
+     * {@code mountRecordingUnitPanel}) for a React-enabled panel without an EL {@code instanceof} check.
+     */
+    public boolean isListPanel() {
+        return false;
+    }
+
     public void duplicate() {
         // no-op by default
     }
@@ -184,6 +203,18 @@ public abstract class AbstractPanel implements Serializable {
             return getPrefixPanelIndex();
         }
         return getPrefixPanelIndex() + "-overview";
+    }
+
+    /**
+     * {@link #getPanelIndex()}, sanitized into a valid JavaScript identifier fragment — subclasses'
+     * prefixes contain hyphens (e.g. {@code RecordingUnitPanel} → {@code "recording-unit-" + id}), which
+     * are fine in an HTML id/CSS class but break as part of a bare JS function name. Used only where a
+     * panel index needs to become (part of) a global function name, e.g. a {@code p:remoteCommand}'s
+     * {@code name} in panelContent.xhtml's React bridge — everywhere else, keep using
+     * {@link #getPanelIndex()} as-is.
+     */
+    public String getPanelIndexSafe() {
+        return getPanelIndex().replace('-', '_');
     }
 
     public String getPanelTypeClass() {

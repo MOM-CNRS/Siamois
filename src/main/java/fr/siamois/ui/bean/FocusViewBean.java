@@ -188,4 +188,20 @@ public class FocusViewBean implements Serializable {
         return new String(Base64.getUrlDecoder().decode(token));
     }
 
+    /**
+     * Opens a Recording Unit as the overview slot next to the current main panel — the focus.xhtml
+     * equivalent of {@code RecordingUnitTableViewModel.handleCommandLink}'s
+     * {@code flowBean.addRecordingUnitToOverview}, bridged from the React list's row click via a
+     * {@code p:remoteCommand} in focus.xhtml. Mirrors {@link #beforeInit()}'s root/overview pairing.
+     */
+    public void openOverview(String recordingUnitId) {
+        if (mainPanel == null || recordingUnitId == null || recordingUnitId.isBlank()) {
+            return;
+        }
+        AbstractPanel overviewPanel = panelFactory.createRecordingUnitPanel(Long.parseLong(recordingUnitId));
+        overviewPanel.setRoot(false);
+        mainPanel.setParentOrOverview(overviewPanel);
+        overviewPanel.setParentOrOverview(mainPanel);
+    }
+
 }
