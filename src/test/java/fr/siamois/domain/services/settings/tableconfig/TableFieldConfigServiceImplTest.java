@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
+import fr.siamois.domain.events.publisher.FormConfigChangeEventPublisher;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -100,6 +101,8 @@ class TableFieldConfigServiceImplTest {
     private PersonRepository personRepository;
     @Mock
     private ObjectProvider<TableFieldConfigServiceImpl> selfProvider;
+    @Mock
+    private FormConfigChangeEventPublisher formConfigChangeEventPublisher;
 
     @InjectMocks
     private TableFieldConfigServiceImpl service;

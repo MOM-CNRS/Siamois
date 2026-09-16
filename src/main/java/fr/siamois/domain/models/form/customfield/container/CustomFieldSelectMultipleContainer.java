@@ -3,7 +3,6 @@ package fr.siamois.domain.models.form.customfield.container;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,7 +13,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @Entity
 @DiscriminatorValue("SELECT_MULTIPLE_CONTAINER")
-@Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
 public class CustomFieldSelectMultipleContainer extends CustomField {
@@ -22,6 +20,11 @@ public class CustomFieldSelectMultipleContainer extends CustomField {
     @Override
     public String getIcon() {
         return "bi bi-box-seam";
+    }
+
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/containerMultiple.xhtml";
     }
 
 }

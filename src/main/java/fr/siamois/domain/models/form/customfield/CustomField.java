@@ -91,4 +91,12 @@ public abstract class CustomField implements Serializable {
         return vocabularyUri+"&idc="+concept.getExternalId();
     }
 
+    /**
+     * Path of the Facelets fragment (ui:include src) rendering this field type's edit widget in
+     * fieldCore.xhtml. Resolved once per field through polymorphic dispatch instead of a chain of
+     * "field['class'].simpleName eq '...'" EL comparisons re-evaluated for every candidate type —
+     * that chain (not the actual work) was found to dominate RENDER_RESPONSE CPU time when profiled.
+     */
+    public abstract String getEditFieldTemplatePath();
+
 }

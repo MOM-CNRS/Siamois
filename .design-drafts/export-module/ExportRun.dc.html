@@ -1,0 +1,207 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .sia-root { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .sia-scroll { overflow: auto; }
+    .sia-scroll::-webkit-scrollbar { width: 10px; }
+    .sia-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    .crumb a { color: var(--text-secondary); text-decoration: none; }
+    .crumb a:hover { color: var(--text); text-decoration: underline; }
+    .btn-primary { background: var(--primary); border: 1px solid var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn-primary:disabled { opacity:.55; cursor:default; }
+    .btn-flat { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-flat:hover { background: var(--surface-hover); }
+    select.sel { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 0.9s linear infinite; transform-origin: 50% 50%; }
+    a { color: var(--primary); }
+  </style>
+</helmet>
+
+<div class="sia-root" style="height:100%;width:100%;display:flex;flex-direction:column;{{theme.vars}}background:var(--bg);color:var(--text);font-size:14px;">
+
+  <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--surface);">
+    <div class="crumb" style="display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap;">
+      <a href="#">Réglages</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+      <a href="#">Export de données</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><polyline points="9 18 15 12 9 6"/></svg>
+      <span style="color:var(--text);font-weight:600;">Lancer un export</span>
+    </div>
+  </div>
+
+  <div class="sia-scroll" style="flex:1 1 auto;padding:28px;">
+    <div style="max-width:760px;margin:0 auto;">
+
+      <h1 style="margin:0 0 6px 0;font-size:18px;font-weight:700;">Lancer un export</h1>
+      <p style="margin:0 0 22px 0;color:var(--text-secondary);font-size:13px;line-height:1.5;">
+        Choisissez un projet et le modèle de correspondance à appliquer. Chaque fiche cible du modèle devient un onglet du fichier généré.
+      </p>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;box-shadow:var(--shadow-sm);margin-bottom:18px;">
+        <div style="display:flex;gap:14px;margin-bottom:4px;">
+          <div style="flex:1 1 0;">
+            <label style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.02em;display:block;margin-bottom:6px;">Projet</label>
+            <select class="sel" disabled="{{running}}" style="width:100%;padding:9px 10px;border-radius:var(--radius-sm);font-size:13px;">
+              <option>Sainte-Ursule — campagne 2026</option>
+            </select>
+          </div>
+          <div style="flex:1 1 0;">
+            <label style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.02em;display:block;margin-bottom:6px;">Modèle de mapping</label>
+            <select class="sel" disabled="{{running}}" style="width:100%;padding:9px 10px;border-radius:var(--radius-sm);font-size:13px;">
+              <option>SDA — Référentiel national</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:20px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:12.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.02em;">Aperçu par fiche</span>
+          <span style="font-size:12px;color:var(--text-secondary);">{{totalRows}} lignes au total</span>
+        </div>
+        <sc-for list="{{sheets}}" as="s" hint-placeholder-count="8">
+          <div style="display:flex;align-items:center;gap:14px;padding:11px 16px;{{s.borderStyle}}">
+            <div style="flex:0 0 20px;display:flex;align-items:center;justify-content:center;">
+              <sc-if value="{{s.iconState}}" hint-placeholder-val="{{true}}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);">
+                  <circle cx="12" cy="12" r="9" opacity="0.25"/>
+                  <path d="M4 12a8 8 0 0 1 8-8" class="spin" style="transform-origin:12px 12px;"/>
+                </svg>
+              </sc-if>
+              <sc-if value="{{s.iconDone}}" hint-placeholder-val="{{false}}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);"><polyline points="20 6 9 17 4 12"/></svg>
+              </sc-if>
+              <sc-if value="{{s.iconIdle}}" hint-placeholder-val="{{false}}">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--border);display:inline-block;"></span>
+              </sc-if>
+              <sc-if value="{{s.iconWarn}}" hint-placeholder-val="{{false}}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--third);"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </sc-if>
+            </div>
+            <span style="flex:1 1 auto;font-size:13px;font-weight:600;">{{s.name}}</span>
+            <span style="font-size:12.5px;color:var(--text-secondary);width:100px;text-align:right;">{{s.rowsLabel}}</span>
+            <span style="font-size:11.5px;width:110px;text-align:right;{{s.statusColor}}">{{s.statusLabel}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{idle}}" hint-placeholder-val="{{true}}">
+        <button class="btn-primary" onClick="{{run}}" style="display:flex;align-items:center;gap:8px;padding:11px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Lancer l'export
+        </button>
+      </sc-if>
+
+      <sc-if value="{{running}}" hint-placeholder-val="{{false}}">
+        <button class="btn-primary" disabled style="display:flex;align-items:center;gap:8px;padding:11px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="spin"><circle cx="12" cy="12" r="9" opacity="0.25"/><path d="M4 12a8 8 0 0 1 8-8"/></svg>
+          Export en cours…
+        </button>
+      </sc-if>
+
+      <sc-if value="{{done}}" hint-placeholder-val="{{false}}">
+        <div style="background:color-mix(in srgb, var(--primary) 8%, var(--surface));border:1px solid var(--primary);border-radius:var(--radius-md);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:700;">Export terminé</div>
+              <div style="font-size:12.5px;color:var(--text-secondary);">{{totalRows}} lignes réparties sur 8 feuilles · 1 avertissement (Contenant · Caisse non mappé)</div>
+            </div>
+          </div>
+          <button class="btn-primary" style="display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;white-space:nowrap;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger le fichier
+          </button>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "dark": {"editor": "boolean", "default": false, "section": "Thème"}
+}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { phase: "idle" };
+  }
+
+  theme() {
+    const d = !!this.props.dark;
+    return d ? {
+      vars: "--bg:#181C19;--surface:#20251F;--surface-hover:#2A312A;--border:#37403A;--text:#ECEFEA;--text-secondary:#93A392;--primary:#7FB37F;--primary-dark:#9CC79C;--accent-lime:#C9DE55;--context:#3FB0CB;--third:#E88A50;--danger:#E06A62;--shadow-sm:0 1px 3px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3);--shadow-lg:0 10px 28px rgba(0,0,0,.5);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;"
+    } : {
+      vars: "--bg:#FAFAFA;--surface:#FFFFFF;--surface-hover:#F3F7F3;--border:#dee2e6;--text:#2A2C30;--text-secondary:#6B7280;--primary:#669966;--primary-dark:#547d54;--accent-lime:#BED730;--context:#068DA9;--third:#C98A2E;--danger:#C0463D;--shadow-sm:0 1px 3px rgba(30,40,30,.08),0 1px 2px rgba(30,40,30,.06);--shadow-lg:0 8px 24px rgba(30,40,30,.14),0 2px 6px rgba(30,40,30,.08);--radius-sm:6px;--radius-md:10px;--radius-lg:14px;"
+    };
+  }
+
+  run() {
+    if (this.state.phase !== "idle") return;
+    this.setState({ phase: "running" });
+    setTimeout(() => this.setState({ phase: "done" }), 1400);
+  }
+
+  renderVals() {
+    const theme = this.theme();
+    const phase = this.state.phase;
+
+    const sheetDefs = [
+      { name: "Opération archéologique", rows: 1, warn: false },
+      { name: "Site", rows: 1, warn: false },
+      { name: "Situation géographique", rows: 214, warn: false },
+      { name: "Unité d'enregistrement", rows: 486, warn: false },
+      { name: "Objet", rows: 1042, warn: false },
+      { name: "Matériel", rows: 1042, warn: false },
+      { name: "Décompte", rows: 1042, warn: false },
+      { name: "Datation", rows: 6, warn: false },
+    ];
+
+    const totalRows = sheetDefs.reduce((a, s) => a + s.rows, 0);
+
+    const sheets = sheetDefs.map((s, i) => {
+      let iconState = false, iconDone = false, iconIdle = false;
+      let statusLabel = "", statusColor = "", rowsLabel = "";
+      if (phase === "idle") {
+        iconIdle = true; statusLabel = "En attente"; statusColor = "color:var(--text-secondary);"; rowsLabel = "—";
+      } else if (phase === "running") {
+        iconState = true; statusLabel = "Génération…"; statusColor = "color:var(--primary);"; rowsLabel = "—";
+      } else {
+        iconDone = true; rowsLabel = s.rows.toLocaleString("fr-FR") + " lignes";
+        statusLabel = "Terminé"; statusColor = "color:var(--primary);";
+      }
+      return {
+        name: s.name, borderStyle: i < sheetDefs.length - 1 ? "border-bottom:1px solid var(--border);" : "",
+        iconState, iconDone, iconIdle, iconWarn: false, statusLabel, statusColor, rowsLabel,
+      };
+    });
+
+    return {
+      theme,
+      idle: phase === "idle",
+      running: phase === "running",
+      done: phase === "done",
+      totalRows: totalRows.toLocaleString("fr-FR"),
+      sheets,
+      run: () => this.run(),
+    };
+  }
+}
+</script>
+</body>
+</html>

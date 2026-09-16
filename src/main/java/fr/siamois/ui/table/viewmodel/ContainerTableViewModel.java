@@ -250,6 +250,9 @@ public class ContainerTableViewModel extends EntityTableViewModel<ContainerDTO, 
 
     @Override
     public boolean canUserEditRow(ContainerDTO unit) {
+        if (unit == null) {
+            return false;
+        }
         Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
         return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
                 PermissionConstants.PROJECT_EDIT_CONTAINERS, PermissionConstants.PROJECT_EDIT_CONTAINERS,

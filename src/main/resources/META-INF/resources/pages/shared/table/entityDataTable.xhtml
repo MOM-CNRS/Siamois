@@ -8,7 +8,14 @@
 
     <!--@elvariable id="tableModel" type="fr.siamois.ui.table.viewmodel.EntityTableViewModel"-->
 
-    <p:blockUI block="entityDatatable" trigger="#{cc.clientId}:entityDatatable" widgetVar="#{cc.clientId}_buiDataTables">
+    <!--
+        rendered must mirror the table's own below: block="entityDatatable" is otherwise resolved
+        at widget init against an id that was never rendered whenever tree mode is active, which
+        throws deep in PrimeFaces' BlockUI (bindResizer -> registerMutationObserver, target empty)
+        on every such page load.
+    -->
+    <p:blockUI block="entityDatatable" trigger="#{cc.clientId}:entityDatatable" widgetVar="#{cc.clientId}_buiDataTables"
+               rendered="#{not tableModel.treeMode}">
         <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
     </p:blockUI>
 
@@ -44,7 +51,7 @@
                  tableStyleClass="datatable-hoverable-table"
                  rowStyleClass="#{tableModel.getRowStyleClass(item)}"
                  value="#{tableModel.lazyDataModel}"
-                 styleClass="sia-entity-table #{tableClass} #{not tableModel.columnFilteringEnabled ? 'filter-table-column-hidden' : ''}">
+                 styleClass="sia-entity-table #{tableClass}">
 
         <p:ajax event="rowSelectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
         <p:ajax event="rowUnselectCheckbox" process="@this" action="#{tableModel.handleSelectionChange()}" update="selectedCountChip"/>
@@ -84,8 +91,7 @@
                   sortable="#{tableModel.tableDefinition.commandLinkColumn.sortable}"
                   field="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
                   sortBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}"
-                  filterable="#{tableModel.tableDefinition.commandLinkColumn.filterable}"
-                  filterBy="#{tableModel.tableDefinition.commandLinkColumn.sortField}">
+                  filterable="false">
 
             <p:outputPanel id="mergedCell" layout="block" styleClass="siamois-row-ajax-target">
                 <div class="mca-wrapper">
@@ -197,17 +203,12 @@
                     style="min-width: #{column.type != 'COMMAND_LINK' ? '10em' : ''};"
                     sortable="#{column.sortable}"
                     resizable="true"
-                    filterable="#{column.filterable}"
+                    filterable="false"
                     visible="#{column.visible}"
                     field="#{column.field.valueBinding}"
-                    filterBy="#{column.field.valueBinding}"
                     sortBy="#{not empty column.sortField ? column.sortField : column.field.valueBinding}"
                     toggleable="#{column.type != 'COMMAND_LINK'}"
             >
-                <ui:include src="/pages/shared/table/filterTemplate.xhtml">
-                    <ui:param name="tableModel" value="#{tableModel}"/>
-                </ui:include>
-
                 <ui:include src="/pages/shared/table/columnTemplates.xhtml">
                     <ui:param name="tableModel" value="#{tableModel}" />
                     <ui:param name="column" value="#{column}" />

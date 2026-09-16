@@ -9,4 +9,9 @@
         <component-class>fr.siamois.ui.custom.LazyTreeTable</component-class>
     </component>
 
+    <!-- Logs the duration of each JSF lifecycle phase — see TimingPhaseListener's own javadoc. -->
+    <lifecycle>
+        <phase-listener>fr.siamois.ui.config.TimingPhaseListener</phase-listener>
+    </lifecycle>
+
 </faces-config>

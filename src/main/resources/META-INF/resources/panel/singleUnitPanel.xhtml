@@ -2,6 +2,8 @@
              xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
              xmlns:p="http://primefaces.org/ui"
              xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:c="http://java.sun.com/jsp/jstl/core"
+             xmlns:siaInplace="http://xmlns.jcp.org/jsf/composite/pages/shared/inplace"
 >
 
     <!--@elvariable id="panelIndex" type="String"-->
@@ -97,6 +99,46 @@
 
                 </p:toolbarGroup>
             </p:toolbar>
+
+            <!--
+                Single shared "field info" popover for this panel's form (documentation link,
+                "Supprimer" for a removable field) — one overlay per panel instead of every field
+                building its own p:menu (see panelField.xhtml, which used to do exactly that).
+                Content is resolved from panelModel.formContext.activeInfoColumn/activeInfoPanel,
+                set by whichever field's info button was last clicked.
+            -->
+            <p:overlayPanel id="fieldInfoOverlay" widgetVar="fieldInfoOverlay_#{panelIndex}"
+                            for=":singlePanelUnitForm-#{panelIndex}"
+                            showEvent="none" hideEvent="none" dismissable="true"
+                            appendTo="@(body)">
+
+                <ui:param name="formCtx" value="#{panelModel.formContext}"/>
+                <ui:param name="infoColumn" value="#{formCtx.activeInfoColumn}"/>
+                <ui:param name="infoPanel" value="#{formCtx.activeInfoPanel}"/>
+
+                <h:panelGroup rendered="#{infoColumn ne null}">
+                    <ul class="ui-menu-list ui-helper-reset" style="margin:0;padding:0;">
+                        <li class="ui-menuitem ui-widget">
+                            <h:outputLink value="#{infoColumn.field.conceptUri}" target="_blank"
+                                          styleClass="ui-menuitem-link">
+                                <span class="ui-menuitem-icon ui-icon bi bi-info-circle ui-menuitem-icon-left"/>
+                                <span class="ui-menuitem-text">Documentation</span>
+                            </h:outputLink>
+                        </li>
+                        <ui:fragment rendered="#{infoColumn.canBeRemoved}">
+                            <li class="ui-menuitem ui-widget" style="border-top:1px solid var(--surface-border);">
+                                <p:commandLink styleClass="ui-menuitem-link ui-menuitem-danger"
+                                               actionListener="#{formCtx.newFieldManager.removeField(infoPanel, infoColumn)}"
+                                               update="@form"
+                                               process="@this">
+                                    <span class="ui-menuitem-icon ui-icon bi bi-trash ui-menuitem-icon-left"/>
+                                    <span class="ui-menuitem-text">Supprimer</span>
+                                </p:commandLink>
+                            </li>
+                        </ui:fragment>
+                    </ul>
+                </h:panelGroup>
+            </p:overlayPanel>
 
         </h:form>
 

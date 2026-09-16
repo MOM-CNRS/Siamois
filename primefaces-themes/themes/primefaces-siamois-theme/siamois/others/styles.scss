@@ -1,3 +1,4 @@
+@import '../../variables';
 
 :root {
   --green-valid: #22c55e;
@@ -47,7 +48,7 @@ html, body {
   flex-grow: 1;
   background-color: #bed730;
   padding: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: $shadowSm;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -64,7 +65,7 @@ html, body {
 }
 
 .shadow {
-  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+  box-shadow: $shadowLg !important;
 }
 
 .main-content {
@@ -153,8 +154,8 @@ body .ui-datatable .ui-datatable-data > tr.ui-state-highlight {
   z-index: 2000;
   background: var(--siamois-green-light-100);
   padding: 0.3rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border-radius: $radiusSm;
+  box-shadow: $shadowSm;
 }
 
 .rotate-90 {
@@ -280,7 +281,7 @@ body .strati-rel-card.ui-card .ui-chip .ui-chip-text {
   color: white;
   border: none;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: $radiusSm;
   font-weight: 500;
   cursor: pointer;
   width: 100%;
@@ -437,7 +438,7 @@ body .ui-tabmenu.panel-menu-text {
   margin-left: 50px; /* Offset by the width of the primary menu */
 
   ul {
-    box-shadow: 1px 5px 5px #e0e0e0;
+    box-shadow: $shadowSm;
   }
 }
 
@@ -600,7 +601,7 @@ body .history .ui-datascroller-content {
 .key-badge {
   background: #f3f4f6;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
+  border-radius: $radiusSm;
   padding: 1px 6px;
   font-family: sans-serif;
   font-size: 0.75rem;
@@ -745,7 +746,7 @@ body .view-edit-button.ui-splitbutton {
 /* Redéfinition de la Dropzone PrimeFaces */
 .modern-dropzone.ui-fileupload {
   border: 2px dashed #d1d5db !important;
-  border-radius: 8px !important;
+  border-radius: $radiusMd !important;
   background: #ffffff !important;
   padding: 40px 20px !important;
   text-align: center;
@@ -832,7 +833,7 @@ body .view-edit-button.ui-splitbutton {
   background: white;
   padding: 0.2em;
   border: 1px solid #ced4da;
-  border-radius: 3px;
+  border-radius: $radiusSm;
 }
 
 .rum-wrapper:hover {
@@ -890,7 +891,7 @@ body .view-edit-button.ui-splitbutton {
   cursor: pointer;
   color: var(--text-secondary, #6c757d);
   padding: 0.15rem 0.25rem;
-  border-radius: 3px;
+  border-radius: $radiusSm;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -912,7 +913,7 @@ body .view-edit-button.ui-splitbutton {
   color: #fff;
   border: none;
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: $radiusSm;
   padding: 0.1rem 0.35rem;
   font-size: 0.75rem;
   line-height: 1.4;
@@ -1134,7 +1135,7 @@ body .view-edit-button.ui-splitbutton {
   cursor: pointer;
   color: var(--text-secondary, #6c757d);
   padding: 0.15rem 0.25rem;
-  border-radius: 3px;
+  border-radius: $radiusSm;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -1154,7 +1155,7 @@ body .view-edit-button.ui-splitbutton {
   gap: 0.25rem;
   background: var(--siamois-green);
   color: var(--text-light, #fff);
-  border-radius: 12px;
+  border-radius: $radiusLg;
   padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
   text-decoration: none;
@@ -1171,7 +1172,7 @@ body .view-edit-button.ui-splitbutton {
   color: #fff;
   border: none;
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: $radiusSm;
   padding: 0.1rem 0.35rem;
   font-size: 0.75rem;
   line-height: 1.4;

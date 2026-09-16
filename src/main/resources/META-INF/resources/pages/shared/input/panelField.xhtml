@@ -2,22 +2,22 @@
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite"
                 xmlns:p="http://primefaces.org/ui"
+                xmlns:c="http://java.sun.com/jsp/jstl/core"
 >
 
     <cc:interface>
         <cc:attribute name="title" type="java.lang.String" required="true"/>
         <cc:attribute name="icon" type="java.lang.String" required="false"/>
-        <cc:attribute name="conceptUri" type="java.lang.String" required="false"/>
         <cc:attribute name="isTheso" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="forId" type="java.lang.String" required="false"/>
         <cc:attribute name="required" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="fluid" type="java.lang.Boolean" required="false" default="true"/>
-        <cc:attribute name="canBeRemoved" type="java.lang.Boolean" required="false" default="false"/>
         <cc:attribute name="uncertain" type="java.lang.Boolean" required="false" default="false"/>
-        <cc:attribute name="onRemove"
-                      method-signature="void onRemove(java.lang.Object, java.lang.Object)"
-                      required="false"/>
         <cc:attribute name="onToggle" method-signature="void toggle()" required="false"/>
+        <cc:attribute name="col" type="fr.siamois.ui.form.dto.CustomColUiDto" required="false"/>
+        <cc:attribute name="formCtx" type="fr.siamois.ui.form.EntityFormContext" required="false"/>
+        <cc:attribute name="customFormPanel" type="fr.siamois.ui.form.dto.CustomFormPanelUiDto" required="false"/>
+        <cc:attribute name="panelIndex" type="java.lang.String" required="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -29,14 +29,30 @@
             <div style="    display: flex;
             gap:0.5em;
                     align-items: center;" class="header-toggle-container">
+                <!--
+                    Used to build a p:menu + p:tooltip per field — for a page with dozens of fields,
+                    that meant as many PrimeFaces widgets built and initialized client-side just for
+                    a static "Documentation" link (+ optionally "Supprimer"). Replaced by: a native
+                    title attribute (no widget at all, browser-native tooltip) and a single shared
+                    #fieldInfoOverlay per form (see singleUnitPanel.xhtml) whose content is driven by
+                    formCtx.activeInfoColumn — this button's click just points that state at this
+                    field and shows the one shared overlay next to it.
+                -->
                 <p:commandButton
                         styleClass="ui-button-flat ellipsis-btn #{cc.attrs.required ? 'required-btn' : ''}"
                         icon="#{cc.attrs.icon}"
                         type="button"
                         id="btn"
+                        title="#{cc.attrs.title}"
                         style="color: var(--text-light); display:flex; max-width: 180px; width: fit-content;"
-                        value="#{cc.attrs.title}">
-
+                        value="#{cc.attrs.title}"
+                        onclick="#{cc.attrs.formCtx ne null ? 'siaLastClickedInfoButton=this;' : ''}">
+                    <c:if test="#{cc.attrs.formCtx ne null}">
+                        <p:ajax event="click" process="@this" global="false"
+                                listener="#{cc.attrs.formCtx.activateInfoField(cc.attrs.customFormPanel, cc.attrs.col)}"
+                                update=":singlePanelUnitForm-#{cc.attrs.panelIndex}:fieldInfoOverlay"
+                                oncomplete="siaShowFieldInfoOverlay('fieldInfoOverlay_#{cc.attrs.panelIndex}')"/>
+                    </c:if>
                 </p:commandButton>
 
                 <!-- The Toggle Switch -->
@@ -48,26 +64,6 @@
 
                     </p:selectBooleanCheckbox>
                 </div>
-                <p:menu overlay="true" trigger="btn" my="left top" at="left bottom">
-                    <p:menuitem value="Documentation" icon="bi bi-info-circle"
-                                target="_blank" url="#{cc.attrs.conceptUri}"/>
-                    <p:divider rendered="#{cc.attrs.canBeRemoved}"/>
-
-                    <p:menuitem value="Supprimer"
-                                icon="bi bi-trash"
-                                rendered="#{cc.attrs.canBeRemoved}"
-                                actionListener="#{cc.attrs.onRemove}"
-                                update="@form"
-                                styleClass="ui-menuitem-danger"/>
-
-                </p:menu>
-
-                <p:tooltip
-                        for="btn"
-                        value="#{cc.attrs.title}"
-                        position="left" />
-
-
             </div>
 
             <div>

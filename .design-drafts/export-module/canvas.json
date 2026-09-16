@@ -1,0 +1,17 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1440, "h": 900 },
+    { "file": "Overview.dc.html", "x": 1560, "y": 0, "w": 1440, "h": 900 },
+    { "file": "SheetMapping.dc.html", "x": 3120, "y": 0, "w": 1440, "h": 900 },
+    { "file": "SharedFields.dc.html", "x": 4680, "y": 0, "w": 1440, "h": 900 },
+    { "file": "ExportRun.dc.html", "x": 6240, "y": 0, "w": 1440, "h": 900 }
+  ],
+  "annotations": [
+    { "id": "note-1", "x": 0, "y": -90, "w": 320, "text": "1. Modèles d'export — liste, créer/dupliquer" },
+    { "id": "note-2", "x": 1560, "y": -90, "w": 320, "text": "2. Vue d'ensemble — matrice sources × fiches (fan-in / fan-out)" },
+    { "id": "note-3", "x": 3120, "y": -90, "w": 320, "text": "3. Mapping d'une fiche — colonnes × sources, tiroir d'édition" },
+    { "id": "note-4", "x": 4680, "y": -90, "w": 320, "text": "4. Champs partagés — chemins réutilisables (ex. code OA)" },
+    { "id": "note-5", "x": 6240, "y": -90, "w": 320, "text": "5. Lancer un export — projet + modèle, aperçu, téléchargement" }
+  ],
+  "launch": { "view": "focused", "file": "Main.dc.html" }
+}

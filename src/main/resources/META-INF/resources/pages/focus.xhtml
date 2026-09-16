@@ -300,6 +300,10 @@
                                         <ui:include rendered="#{focusViewBean.mainPanel.displayHeader() != null}"
                                                     src="#{focusViewBean.mainPanel.displayHeader()}">
                                             <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
+                                            <!-- Where the prev/next arrows (goToNext/goToPrevious, now an in-place
+                                                 unit switch rather than a page redirect) ajax-update afterwards —
+                                                 same target the refresh button above already uses. -->
+                                            <ui:param name="navUpdateTarget" value="panel-#{focusViewBean.mainPanel.prefixPanelIndex}"/>
                                         </ui:include>
                                     </div>
                                 </h:form>

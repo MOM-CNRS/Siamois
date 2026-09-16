@@ -256,6 +256,9 @@ public class SpecimenTableViewModel extends EntityTableViewModel<SpecimenDTO, Lo
 
     @Override
     public boolean canUserEditRow(SpecimenDTO unit) {
+        if (unit == null) {
+            return false;
+        }
         Long actionUnitId = unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
         return canEditByActionUnit(profilePermissionService, sessionSettingsBean.getUserInfo(),
                 PermissionConstants.PROJECT_EDIT_FINDS, PermissionConstants.PROJECT_EDIT_FINDS,

@@ -18,6 +18,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
@@ -29,11 +30,13 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitSummaryProjection;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.*;
@@ -154,7 +157,10 @@ public class RecordingUnitService implements ArkEntityService {
             RecordingUnit recordingUnit =
                     recordingUnitMapper.invertConvert(recordingUnitDTO);
 
-            return recordingUnitMapper.convert(save(recordingUnit));
+            RecordingUnit saved = save(recordingUnit);
+            RecordingUnitDTO dto = recordingUnitMapper.convert(saved);
+            populateHierarchySummaries(dto, saved.getId());
+            return dto;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage());
@@ -470,11 +476,58 @@ public class RecordingUnitService implements ArkEntityService {
                     .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + id));
             RecordingUnitDTO dto = recordingUnitMapper.convert(recordingUnit);
             dto.setSpecimenCount(recordingUnitRepository.countSpecimensByRecordingUnitId(id));
+            populateHierarchySummaries(dto, id);
             return dto;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
         }
+    }
+
+    /**
+     * Fills {@code dto.parents}/{@code dto.children} from the light hierarchy projection
+     * ({@link RecordingUnitSummaryProjection}) instead of {@link RecordingUnit#getParents()}/
+     * {@link RecordingUnit#getChildren()}, which {@link RecordingUnitMapper#convert} no longer touches
+     * ({@code parents}/{@code children} are mapped {@code ignore = true} there) — see
+     * {@link RecordingUnitSummaryProjection}'s javadoc for why.
+     */
+    private void populateHierarchySummaries(RecordingUnitDTO dto, Long id) {
+        if (id == null) {
+            return;
+        }
+        Set<RecordingUnitSummaryDTO> parents = recordingUnitRepository.findParentSummariesOf(id).stream()
+                .map(this::toSummaryDto)
+                .collect(Collectors.toSet());
+        Set<RecordingUnitSummaryDTO> children = recordingUnitRepository.findChildSummariesOf(id).stream()
+                .map(this::toSummaryDto)
+                .collect(Collectors.toSet());
+        dto.setParents(parents);
+        dto.setChildren(children);
+    }
+
+    private RecordingUnitSummaryDTO toSummaryDto(RecordingUnitSummaryProjection projection) {
+        RecordingUnitSummaryDTO summary = new RecordingUnitSummaryDTO();
+        summary.setId(projection.getId());
+        summary.setIdentifier(projection.getIdentifier() == null ? null : projection.getIdentifier().toString());
+        summary.setFullIdentifier(projection.getFullIdentifier());
+        if (projection.getTypeId() != null) {
+            VocabularyType vocabularyType = new VocabularyType();
+            vocabularyType.setId(projection.getVocabularyTypeId());
+            vocabularyType.setLabel(projection.getVocabularyTypeLabel());
+            VocabularyDTO vocabulary = VocabularyDTO.builder()
+                    .id(projection.getVocabularyId())
+                    .externalVocabularyId(projection.getVocabularyExternalId())
+                    .baseUri(projection.getVocabularyBaseUri())
+                    .type(vocabularyType)
+                    .build();
+            summary.setType(ConceptDTO.builder()
+                    .id(projection.getTypeId())
+                    .externalId(projection.getTypeExternalId())
+                    .deleted(projection.isTypeDeleted())
+                    .vocabulary(vocabulary)
+                    .build());
+        }
+        return summary;
     }
 
     /**
@@ -513,6 +566,9 @@ public class RecordingUnitService implements ArkEntityService {
                                                                    List<String> counts) {
         RecordingUnit entity = resolveRecordingUnitEntityByKey(idOrKey, accessibleInstitutionIds);
         RecordingUnitDTO dto = recordingUnitMapper.convert(entity);
+        if (dto.getId() != null) {
+            populateHierarchySummaries(dto, dto.getId());
+        }
         if (counts != null && counts.contains("specimen") && dto.getId() != null) {
             dto.setSpecimenCount(recordingUnitRepository.countSpecimensByRecordingUnitId(dto.getId()));
         }
@@ -549,6 +605,7 @@ public class RecordingUnitService implements ArkEntityService {
         if (instId == null || !accessibleInstitutionIds.contains(instId)) {
             throw new RecordingUnitNotFoundException("Recording unit not found or not accessible: " + recordingUnitId);
         }
+        populateHierarchySummaries(dto, recordingUnitId);
         return dto;
     }
 
@@ -799,7 +856,9 @@ public class RecordingUnitService implements ArkEntityService {
     public RecordingUnitDTO save(AbstractEntityDTO toSave) {
         assertWritePermission((RecordingUnitDTO) toSave);
         RecordingUnit toReturn = recordingUnitRepository.save(Objects.requireNonNull(recordingUnitMapper.invertConvert((RecordingUnitDTO) toSave)));
-        return recordingUnitMapper.convert(toReturn);
+        RecordingUnitDTO dto = recordingUnitMapper.convert(toReturn);
+        populateHierarchySummaries(dto, toReturn.getId());
+        return dto;
     }
 
     private void assertWritePermission(RecordingUnitDTO recordingUnitDTO) {
@@ -1286,7 +1345,9 @@ public class RecordingUnitService implements ArkEntityService {
                 throw new IllegalStateException("Unknown status: " + unit.getValidated());
         }
 
-        return recordingUnitMapper.convert(recordingUnitRepository.save(unit));
+        RecordingUnitDTO dto = recordingUnitMapper.convert(recordingUnitRepository.save(unit));
+        populateHierarchySummaries(dto, id);
+        return dto;
     }
 
 

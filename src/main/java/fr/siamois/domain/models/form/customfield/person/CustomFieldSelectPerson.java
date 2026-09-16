@@ -28,4 +28,11 @@ public class CustomFieldSelectPerson extends CustomField {
         return super.hashCode();
     }
 
+    // Default/single-person template; CustomFieldSelectMultiplePerson overrides it for the
+    // multiple-select widget.
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/personOne.xhtml";
+    }
+
 }

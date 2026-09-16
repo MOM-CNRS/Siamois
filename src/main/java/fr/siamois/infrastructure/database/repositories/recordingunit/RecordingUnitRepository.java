@@ -319,6 +319,28 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     )
     Set<RecordingUnit> findParentsOf(Long recordingUnitId);
 
+    /**
+     * Light projection of the direct parents of a recording unit — id/identifier/type only, none of
+     * {@code RecordingUnitParent}'s other EAGER associations (action unit, spatial unit, the seven
+     * other concept fields) that {@link #findParentsOf} pulls in via full entity hydration.
+     * See {@link RecordingUnitSummaryProjection}.
+     */
+    @Query(
+            nativeQuery = true,
+            value = "SELECT DISTINCT su.recording_unit_id AS id, su.identifier AS identifier, " +
+                    "su.full_identifier AS fullIdentifier, " +
+                    "c.concept_id AS typeId, c.external_id AS typeExternalId, c.is_deleted AS typeDeleted, " +
+                    "v.vocabulary_id AS vocabularyId, v.base_uri AS vocabularyBaseUri, v.external_id AS vocabularyExternalId, " +
+                    "vt.vocabulary_type_id AS vocabularyTypeId, vt.label AS vocabularyTypeLabel " +
+                    "FROM recording_unit su " +
+                    "JOIN recording_unit_hierarchy sh ON sh.fk_parent_id = su.recording_unit_id " +
+                    "LEFT JOIN concept c ON c.concept_id = su.fk_type " +
+                    "LEFT JOIN public.vocabulary v ON v.vocabulary_id = c.fk_vocabulary_id " +
+                    "LEFT JOIN vocabulary_type vt ON vt.vocabulary_type_id = v.fk_type_id " +
+                    "WHERE sh.fk_child_id = :recordingUnitId"
+    )
+    List<RecordingUnitSummaryProjection> findParentSummariesOf(@Param("recordingUnitId") Long recordingUnitId);
+
 
     @Query(value = """
     SELECT ru.*
@@ -390,6 +412,23 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     WHERE ruh.fk_parent_id = :parentRecordingUnitId
 """)
     List<RecordingUnit> findChildrensOf(Long parentRecordingUnitId);
+
+    /**
+     * Light projection counterpart of {@link #findChildrensOf} — see {@link #findParentSummariesOf}.
+     */
+    @Query(nativeQuery = true, value = """
+    SELECT ru.recording_unit_id AS id, ru.identifier AS identifier, ru.full_identifier AS fullIdentifier,
+           c.concept_id AS typeId, c.external_id AS typeExternalId, c.is_deleted AS typeDeleted,
+           v.vocabulary_id AS vocabularyId, v.base_uri AS vocabularyBaseUri, v.external_id AS vocabularyExternalId,
+           vt.vocabulary_type_id AS vocabularyTypeId, vt.label AS vocabularyTypeLabel
+    FROM recording_unit ru
+    JOIN recording_unit_hierarchy ruh ON ru.recording_unit_id = ruh.fk_child_id
+    LEFT JOIN concept c ON c.concept_id = ru.fk_type
+    LEFT JOIN public.vocabulary v ON v.vocabulary_id = c.fk_vocabulary_id
+    LEFT JOIN vocabulary_type vt ON vt.vocabulary_type_id = v.fk_type_id
+    WHERE ruh.fk_parent_id = :parentRecordingUnitId
+""")
+    List<RecordingUnitSummaryProjection> findChildSummariesOf(@Param("parentRecordingUnitId") Long parentRecordingUnitId);
 
     @Query(value = """
             WITH RECURSIVE ascend(id) AS (

@@ -71,6 +71,17 @@ public class LangBean implements Serializable {
     }
 
     /**
+     * Resolves a message key, falling back to the key itself instead of throwing when no
+     * message is found. Use this for header/label keys that may be free text (e.g. a custom
+     * field's own label) rather than a guaranteed i18n bundle key.
+     * @param code the message key, or free-text fallback
+     * @return the resolved message, or {@code code} unchanged if no message matches
+     */
+    public String resolveMessage(String code) {
+        return langService().resolveMessage(code, locale);
+    }
+
+    /**
      * Changes the language with the given language code (e.g. "en", "fr", "de")
      * @param lang language code
      */

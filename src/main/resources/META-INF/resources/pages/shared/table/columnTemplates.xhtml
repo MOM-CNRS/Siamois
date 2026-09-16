@@ -13,7 +13,7 @@
     <f:facet name="header">
         <p:outputPanel rendered="#{column.type ne 'COMMAND_LINK'}" layout="inline" style="display:flex; align-items:center; gap:0.5em;">
             <i class="#{column.type eq 'FORM_FIELD' ? column.field.icon : ''}"></i>
-            #{langBean.msg(column.headerKey)}
+            #{langBean.resolveMessage(column.headerKey)}
         </p:outputPanel>
         <p:outputPanel rendered="#{column.type eq 'COMMAND_LINK'}" layout="inline">
 
@@ -57,7 +57,7 @@
     <!-- RELATION Column -->
     <ui:fragment rendered="#{column.type eq 'RELATION'}">
         <f:facet name="header">
-            <cellheader:withIcon icon="#{column.headerIcon}" text="#{langBean.msg(column.headerKey)}"/>
+            <cellheader:withIcon icon="#{column.headerIcon}" text="#{langBean.resolveMessage(column.headerKey)}"/>
         </f:facet>
         <style>
             .relation-col-btn { visibility: hidden; }

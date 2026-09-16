@@ -4,7 +4,6 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,7 +15,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @Entity
 @DiscriminatorValue("DECIMAL")
-@Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -41,6 +39,11 @@ public class CustomFieldDecimal extends CustomField {
     @Override
     public String getIcon() {
         return "bi bi-123";
+    }
+
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/decimal.xhtml";
     }
 
 }

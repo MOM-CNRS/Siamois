@@ -524,7 +524,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     @Override
     public boolean hasPreviousNext() {
-        return true;
+        return unit != null;
     }
 
     @Override

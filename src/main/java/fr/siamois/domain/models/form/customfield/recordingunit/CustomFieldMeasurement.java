@@ -14,7 +14,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @Entity
 @DiscriminatorValue("MEASUREMENT")
-@Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
 public class CustomFieldMeasurement extends CustomFieldOnTheFly {
@@ -55,5 +54,10 @@ public class CustomFieldMeasurement extends CustomFieldOnTheFly {
     @Override
     public int hashCode() {
         return super.hashCode();
+    }
+
+    @Override
+    public String getEditFieldTemplatePath() {
+        return "/pages/shared/field/types/measurement.xhtml";
     }
 }

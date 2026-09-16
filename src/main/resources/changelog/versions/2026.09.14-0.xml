@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+        form_config_answer has no index beyond its primary key: every lookup by
+        (form_config, person, <owning entity>) — see FormConfigAnswerRepository — was doing a
+        sequential scan of the whole table, once per row of every table/panel that resolves
+        additional field answers (see CustomFieldAnswerService#loadAdditionalFieldAnswers), and
+        getting slower as the table grows. Foreign keys are not indexed automatically by Postgres.
+    -->
+    <changeSet id="2026.09.14-0" author="Claude" failOnError="true">
+        <createIndex tableName="form_config_answer" indexName="idx_form_config_answer_recording_unit">
+            <column name="fk_form_config_id"/>
+            <column name="fk_person_id"/>
+            <column name="fk_recording_unit_id"/>
+        </createIndex>
+        <createIndex tableName="form_config_answer" indexName="idx_form_config_answer_specimen">
+            <column name="fk_form_config_id"/>
+            <column name="fk_person_id"/>
+            <column name="fk_specimen_id"/>
+        </createIndex>
+        <createIndex tableName="form_config_answer" indexName="idx_form_config_answer_phase">
+            <column name="fk_form_config_id"/>
+            <column name="fk_person_id"/>
+            <column name="fk_phase_id"/>
+        </createIndex>
+        <createIndex tableName="form_config_answer" indexName="idx_form_config_answer_container">
+            <column name="fk_form_config_id"/>
+            <column name="fk_person_id"/>
+            <column name="fk_container_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

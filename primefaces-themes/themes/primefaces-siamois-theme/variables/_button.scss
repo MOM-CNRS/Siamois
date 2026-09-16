@@ -142,7 +142,7 @@ $secondaryButtonFocusShadow: 0 0 0 0.2rem #B0BEC5;
 
 /// Background of an info button
 /// @group button
-$infoButtonBg: #03A9F4;
+$infoButtonBg: #3E8AA0;
 
 /// Text color of an info button
 /// @group button
@@ -150,11 +150,11 @@ $infoButtonTextColor: #ffffff;
 
 /// Border of an info button
 /// @group button
-$infoButtonBorder: 1px solid #03A9F4;
+$infoButtonBorder: 1px solid #3E8AA0;
 
 /// Background of an info button in hover state
 /// @group button
-$infoButtonHoverBg: #039BE5;
+$infoButtonHoverBg: #357589;
 
 /// Text color of an info button in hover state
 /// @group button
@@ -162,11 +162,11 @@ $infoButtonTextHoverColor: #ffffff;
 
 /// Border color of an info button in hover state
 /// @group button
-$infoButtonHoverBorderColor: #039BE5;
+$infoButtonHoverBorderColor: #357589;
 
 /// Background of an info button in pressed state
 /// @group button
-$infoButtonActiveBg: #0288D1;
+$infoButtonActiveBg: #2C6072;
 
 /// Text color of an info button in pressed state
 /// @group button
@@ -174,7 +174,7 @@ $infoButtonTextActiveColor: #ffffff;
 
 /// Border color of an info button in pressed state
 /// @group button
-$infoButtonActiveBorderColor: #0288D1;
+$infoButtonActiveBorderColor: #2C6072;
 
 /// Box shadow of an info button in focused state
 /// @group button
@@ -182,7 +182,7 @@ $infoButtonFocusShadow: 0 0 0 0.2rem color.adjust($infoButtonBg, $lightness: 35%
 
 /// Background of a success button
 /// @group button
-$successButtonBg: #4CAF50;
+$successButtonBg: #4C9A5A;
 
 /// Text color of a success button
 /// @group button
@@ -190,11 +190,11 @@ $successButtonTextColor: #ffffff;
 
 /// Border of a success button
 /// @group button
-$successButtonBorder: 1px solid #4CAF50;
+$successButtonBorder: 1px solid #4C9A5A;
 
 /// Background of a success button in hover state
 /// @group button
-$successButtonHoverBg: #43A047;
+$successButtonHoverBg: #40834C;
 
 /// Text color of a success button in hover state
 /// @group button
@@ -202,11 +202,11 @@ $successButtonTextHoverColor: #ffffff;
 
 /// Border color of a success button in hover state
 /// @group button
-$successButtonHoverBorderColor: #43A047;
+$successButtonHoverBorderColor: #40834C;
 
 /// Background of a success button in pressed state
 /// @group button
-$successButtonActiveBg: #388E3C;
+$successButtonActiveBg: #366C40;
 
 /// Text Color of a success button in pressed state
 /// @group button
@@ -214,7 +214,7 @@ $successButtonTextActiveColor: #ffffff;
 
 /// Border color of a success button in pressed state
 /// @group button
-$successButtonActiveBorderColor: #388E3C;
+$successButtonActiveBorderColor: #366C40;
 
 /// Box shadow of a success button in focused state
 /// @group button
@@ -222,39 +222,39 @@ $successButtonFocusShadow: 0 0 0 0.2rem color.adjust($successButtonBg, $lightnes
 
 /// Background of a warning button
 /// @group button
-$warningButtonBg: #FFC107;
+$warningButtonBg: #C98A2E;
 
 /// Text color of a warning button
 /// @group button
-$warningButtonTextColor: $textColor;
+$warningButtonTextColor: #ffffff;
 
 /// Border of a warning button
 /// @group button
-$warningButtonBorder: 1px solid #FFC107;
+$warningButtonBorder: 1px solid #C98A2E;
 
 /// Background of a warning button in hover state
 /// @group button
-$warningButtonHoverBg: #FFB300;
+$warningButtonHoverBg: #B27827;
 
 /// Text color of a warning button in hover state
 /// @group button
-$warningButtonTextHoverColor: $textColor;
+$warningButtonTextHoverColor: #ffffff;
 
 /// Border color of a warning button in hover state
 /// @group button
-$warningButtonHoverBorderColor: #FFB300;
+$warningButtonHoverBorderColor: #B27827;
 
 /// Background of a warning button in pressed state
 /// @group button
-$warningButtonActiveBg: #FFA000;
+$warningButtonActiveBg: #9B6620;
 
 /// Text color of a warning button in pressed state
 /// @group button
-$warningButtonTextActiveColor: $textColor;
+$warningButtonTextActiveColor: #ffffff;
 
 /// Border color of a warning button in pressed state
 /// @group button
-$warningButtonActiveBorderColor: #FFA000;
+$warningButtonActiveBorderColor: #9B6620;
 
 /// Box shadow of a warning button in focused state
 /// @group button
@@ -262,7 +262,7 @@ $warningButtonFocusShadow: 0 0 0 0.2rem color.adjust($warningButtonBg, $lightnes
 
 /// Background of a help button
 /// @group button
-$helpButtonBg: #9C27B0;
+$helpButtonBg: #8B6BA8;
 
 /// Text color of a help button
 /// @group button
@@ -270,11 +270,11 @@ $helpButtonTextColor: #ffffff;
 
 /// Border of a help button
 /// @group button
-$helpButtonBorder: 1px solid #9C27B0;
+$helpButtonBorder: 1px solid #8B6BA8;
 
 /// Background of a help help in hover state
 /// @group button
-$helpButtonHoverBg: #8E24AA;
+$helpButtonHoverBg: #785A93;
 
 /// Text color of a help button in hover state
 /// @group button
@@ -282,11 +282,11 @@ $helpButtonTextHoverColor: #ffffff;
 
 /// Border color of a help button in hover state
 /// @group button
-$helpButtonHoverBorderColor: #8E24AA;
+$helpButtonHoverBorderColor: #785A93;
 
 /// Background of a help button in pressed state
 /// @group button
-$helpButtonActiveBg: #7B1FA2;
+$helpButtonActiveBg: #654A7E;
 
 /// Text color of a help button in pressed state
 /// @group button
@@ -294,7 +294,7 @@ $helpButtonTextActiveColor: #ffffff;
 
 /// Border color of a help button in pressed state
 /// @group button
-$helpButtonActiveBorderColor: #7B1FA2;
+$helpButtonActiveBorderColor: #654A7E;
 
 /// Box shadow of a help button in focused state
 /// @group button
@@ -302,7 +302,7 @@ $helpButtonFocusShadow: 0 0 0 0.2rem #CE93D8;
 
 /// Background of a danger button
 /// @group button
-$dangerButtonBg: #f44336;
+$dangerButtonBg: #C0463D;
 
 /// Text color of a danger button
 /// @group button
@@ -310,11 +310,11 @@ $dangerButtonTextColor: #ffffff;
 
 /// Border of a danger button
 /// @group button
-$dangerButtonBorder: 1px solid #f44336;
+$dangerButtonBorder: 1px solid #C0463D;
 
 /// Background of a danger button in hover state
 /// @group button
-$dangerButtonHoverBg: #e53935;
+$dangerButtonHoverBg: #A83B33;
 
 /// Text color of a danger button in hover state
 /// @group button
@@ -322,11 +322,11 @@ $dangerButtonTextHoverColor: #ffffff;
 
 /// Border color of a danger button in hover state
 /// @group button
-$dangerButtonHoverBorderColor: #e53935;
+$dangerButtonHoverBorderColor: #A83B33;
 
 /// Background of a danger button in pressed state
 /// @group button
-$dangerButtonActiveBg: #d32f2f;
+$dangerButtonActiveBg: #90312A;
 
 /// Text color of a danger button in pressed state
 /// @group button
@@ -334,7 +334,7 @@ $dangerButtonTextActiveColor: #ffffff;
 
 /// Border color of a danger button in pressed state
 /// @group button
-$dangerButtonActiveBorderColor: #d32f2f;
+$dangerButtonActiveBorderColor: #90312A;
 
 /// Box shadow of a danger button in focused state
 /// @group button

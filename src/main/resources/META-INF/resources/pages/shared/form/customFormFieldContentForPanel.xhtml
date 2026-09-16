@@ -24,23 +24,45 @@
     <!--@elvariable id="canBeRemoved" type="java.lang.Boolean" -->
     <!--@elvariable id="newFieldManagerBean" type="fr.siamois.ui.form.NewFieldManagerBean" -->
 
+    <!--
+        Read by default, edit on click: a field only shows its real edit widget while it's the
+        one EntityFormContext.activeColumn currently points at (see 'mode' below); every other
+        field stays on its lightweight read display, so only one edit widget is ever built at a
+        time instead of one per field. Clicking a field activates it; a successful autosave
+        (see EntityFormContext#handleAutoSave / #onFieldAnswerModifiedListener) deactivates it
+        again.
+    -->
+    <ui:param name="fieldIsClickableToActivate"
+              value="#{not col.readOnly and bean.canUserEditUnit() and flowBean.isWriteMode and not bean.formContext.isActiveField(col)}"/>
+
     <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
                    style="display: flex"
                    id="field-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}-#{col.field.id}">
 
+        <!--
+            p:outputPanel doesn't support a click client-behavior event, so the activation click is
+            carried by a p:commandLink instead — disabled (renders as a plain, non-clickable <span>,
+            same as PrimeFaces' own read-only rendering) whenever the field isn't actually clickable,
+            so this never introduces an extra wrapper element to work around.
+        -->
+        <p:commandLink style="display:flex; text-decoration:none; color:inherit; width:100%;"
+                       disabled="#{not fieldIsClickableToActivate}"
+                       actionListener="#{bean.formContext.activateField(col)}"
+                       process="@this" update="@form" ajax="true">
 
         <sharedInput:panelField
                 icon="#{col.field.icon}"
                 uncertain="#{answer.uncertain}"
-                conceptUri="#{col.field.conceptUri}"
                 id="panelField-#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}-#{col.field.id}"
                 required="#{col.required}"
                 onToggle="#{bean.formContext.toggleUncertainty(answer)}"
                 title="#{spatialUnitFieldBean.resolveCustomFieldLabel(col.field)}"
                 forId="#{prefix}-#{statusIndex}-#{rowIndex}-#{colIndex}:input"
                 fluid="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree'}"
-                canBeRemoved="#{canBeRemoved}"
-                onRemove="#{newFieldManagerBean.removeField(customFormPanel, col)}"
+                col="#{col}"
+                formCtx="#{bean.formContext}"
+                customFormPanel="#{customFormPanel}"
+                panelIndex="#{panelIndex}"
 
         >
             <div >
@@ -69,13 +91,14 @@
                               value="#{bean.getConceptFieldsUpdateTargetsOnBlur()}"/>
                     <ui:param name="updateTargetsOnBlur" value="#{bean.getPanelHeaderUpdateId()}"/>
                     <ui:param name="spatialUnitOptions" value="#{bean.formContext.getSpatialUnitOptions('')}"/>
-                    <ui:param name="mode" value="#{(col.readOnly or not bean.canUserEditUnit()) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
+                    <ui:param name="mode" value="#{(col.readOnly or not bean.canUserEditUnit() or not flowBean.isWriteMode or not bean.formContext.isActiveField(col)) ? 'output' : 'input'}"/>
                     <ui:param name="compact" value="false"/>
                 </ui:include>
             </div>
 
         </sharedInput:panelField>
 
+        </p:commandLink>
 
     </p:outputPanel>
 

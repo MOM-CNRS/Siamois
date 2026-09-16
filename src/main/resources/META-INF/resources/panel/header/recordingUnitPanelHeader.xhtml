@@ -20,6 +20,7 @@
                            process="@this"
                            rendered="#{panelModel.hasPreviousNext()}"
                            action="#{panelModel.goToPrevious()}"
+                           update="#{navUpdateTarget}"
                            styleClass="sideview-topbar-button">
                 <h:outputText styleClass='ui-icon bi bi-caret-up' style="color: var(--main-color)"/>
             </p:commandLink>
@@ -32,6 +33,7 @@
                            process="@this"
                            rendered="#{panelModel.hasPreviousNext()}"
                            action="#{panelModel.goToNext()}"
+                           update="#{navUpdateTarget}"
                            styleClass="sideview-topbar-button">
                 <h:outputText styleClass='ui-icon bi bi-caret-down' style="color: var(--main-color)"/>
             </p:commandLink>
@@ -46,7 +48,7 @@
 
     <chip:editableIdentifierChip id="idChipComposite"
                                   panel="#{panelModel}"
-                                  value="#{panelModel.unit != null ? panelModel.unit.fullIdentifier : panelModel.titleCodeOrTitle}"
+                                  value="#{panelModel.unit != null ? panelModel.unit.fullIdentifier : panelModel.resolveTitleOrTitleCode()}"
                                   styleClass="recording-unit-chip-alt"
                                   icon="#{panelModel.icon}"/>
     <h:form id="contextMenuForm" styleClass="sia-settings-form">

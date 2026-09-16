@@ -1,3 +1,5 @@
+@import '../../variables';
+
 .content-body {
   background: var(--siamois-green-unknown);
 }
@@ -23,7 +25,7 @@
 }
 
 .siamois-panel {
-  border-radius: 8px;
+  border-radius: $radiusLg;
   font-family: 'Inter', sans-serif;
   border: 1px solid var(--siamois-green-light-100);
   border-top: 2px solid var(--main-color);

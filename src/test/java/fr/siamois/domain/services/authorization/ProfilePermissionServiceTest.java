@@ -12,6 +12,7 @@ import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
+import fr.siamois.utils.context.PermissionCheckCache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +45,10 @@ class ProfilePermissionServiceTest {
 
     @BeforeEach
     void setUp() {
+        // The permission cache is a per-request ThreadLocal in production (cleared by
+        // UserInfoContextFilter); tests run on a reused thread with no such filter, so it must be
+        // cleared explicitly or a result cached by an earlier test leaks into this one.
+        PermissionCheckCache.clear();
         person = new PersonDTO();
         person.setId(1L);
         institution = new InstitutionDTO();

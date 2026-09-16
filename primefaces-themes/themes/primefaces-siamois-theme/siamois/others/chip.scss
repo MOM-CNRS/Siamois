@@ -1,8 +1,85 @@
+@import '../../variables';
+
 body .ui-chip.error-chip {
     background-color: var(--error-main);
     border: none;
     color: white;
     font-size: 16px;
+}
+
+// Lightweight table-cell chip for the "optimized" light-read types (see fieldCore.xhtml's
+// isOptimizedLightType) — a plain span, not a whole autocomplete/commandLink, styled to still
+// read as a chip like the panel-scoped .rum-chip-link it stands in for in table cells.
+.sia-light-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.1rem 0.25rem 0.1rem 0;
+    color: var(--text-main);
+    border-radius: $radiusLg;
+    padding: 0.25rem 0.6rem;
+    background: var(--surface-hover, #f3f4f6);
+    border: 1px solid var(--light-color-200);
+}
+
+// Lightweight, non-active table cells AND single-entity form fields (see fieldCore.xhtml).
+// min-height keeps an empty cell/field (no chip/text to give it height) from collapsing to 0px —
+// sia-cell-light applies to every light cell/field, readOnly columns included, since those never
+// get sia-cell-activate (nothing to click) but must still take up their row's/field's height.
+.sia-cell-light {
+    display: block;
+    min-height: 1.5em;
+}
+.sia-cell-activate {
+    cursor: pointer;
+}
+.sia-cell-activate:hover {
+    background-color: var(--siamois-green-light-100, #eef6ee);
+}
+
+// The shared table cell-edit overlay's concept field, and its single-entity form counterpart's
+// (see #fieldEditOverlay in singleUnitPanel.xhtml), drop the visible dropdown button (see
+// template.js's siaLaunchAutocompleteIfAny, which calls the widget's own search() directly
+// instead of reimplementing "fetch the default/matching list" from scratch).
+.sia-cell-edit-overlay .ui-autocomplete-dropdown,
+.sia-field-edit-overlay .ui-autocomplete-dropdown {
+    display: none;
+}
+
+// Shown between siaShowCellOverlayLoading/siaShowFieldEditOverlayLoading (on ajax onstart, before
+// the real editor widget for the newly active cell/field has even been fetched) and
+// siaShowCellOverlay/siaShowFieldEditOverlay (oncomplete, once the ajax "update" has replaced this
+// whole node with that widget) — see template.js. Dims whatever was left over from the previously
+// active cell/field instead of letting it flash by, and shows a spinner in its place, so opening a
+// new one never looks blocked while the round trip happens.
+.sia-cell-edit-overlay.sia-loading .ui-overlaypanel-content,
+.sia-field-edit-overlay.sia-loading .ui-overlaypanel-content {
+    position: relative;
+    min-height: 2.5em;
+
+    > * {
+        visibility: hidden;
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 1.2em;
+        height: 1.2em;
+        margin: -0.6em 0 0 -0.6em;
+        border: 2px solid var(--light-color-200);
+        border-top-color: var(--main-color);
+        border-radius: 50%;
+        animation: sia-cell-overlay-spin 0.6s linear infinite;
+    }
+}
+
+@keyframes sia-cell-overlay-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 
@@ -24,4 +101,47 @@ td {
             font-size: 12px;
         }
     }
+}
+
+// Toolbar filter bar (Notion-style "+ Filter" chips, see tableToolbar.xhtml)
+.sia-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--surface-border);
+    border-radius: $radiusSm;
+    background: var(--surface-hover);
+    overflow: hidden;
+
+    .sia-filter-chip-btn,
+    .sia-filter-chip-remove {
+        border: none;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .sia-filter-chip-remove {
+        padding-inline: 0.4em;
+        color: var(--text-color-secondary);
+    }
+}
+
+.sia-filter-column-picker {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-width: 12em;
+
+    li {
+        padding: 0.3em 0.5em;
+        border-radius: $radiusSm;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--surface-hover);
+        }
+    }
+}
+
+.sia-filter-chip-overlay {
+    min-width: 18em;
 }
