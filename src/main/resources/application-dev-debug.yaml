@@ -23,7 +23,7 @@ siamois:
     email: admin@siamois.fr
   documents:
     folder-path: C:\Users\pccnr\Documents\SiamoisDevStorage\Document
-    allowed-types: image/jpeg, image/png, image/svg+xml, image/tiff, image/webp, image/apng, application/pdf
+    allowed-types: "*/*"
 
 spring:
   main:
