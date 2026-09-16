@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.document.compressor.FileCompressor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
 
@@ -51,6 +53,14 @@ public class DocumentContentOpenApiService {
         Document doc = resolveAccessibleDocument(documentId, accessibleInstitutionIds);
         InputStream stream = documentService.findInputStreamOfDocument(doc)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
+        // Files are stored compressed on disk (see FileCompressor); a REST client expects the
+        // original bytes back, not the storage-level encoding, so decompress before serving.
+        FileCompressor compressor = documentService.findCompressorOf(doc);
+        try {
+            stream = compressor.decompress(stream);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to read file", e);
+        }
         MediaType mediaType = resolveMediaType(doc.getMimeType());
         return new DocumentFilePayload(stream, mediaType, doc.contentFileName());
     }
