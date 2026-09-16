@@ -38,6 +38,18 @@ public interface FileCompressor {
     String encodingTypes();
 
     /**
+     * Reverses {@link #compress(InputStream)}: turns a stored file's raw bytes back into
+     * the original content. The default is a no-op passthrough for compressors that don't
+     * actually transform the bytes (e.g. {@link BrowserDisplayableCompressor}).
+     *
+     * @param inputStream the stream of stored (possibly compressed) bytes
+     * @return a stream of the original, uncompressed content
+     */
+    default InputStream decompress(InputStream inputStream) throws IOException {
+        return inputStream;
+    }
+
+    /**
      * Updates the stored filename of the given document.
      *
      * @param document the document whose stored filename needs to be updated

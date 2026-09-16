@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.document.compressor.BrowserDisplayableCompressor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,6 +100,7 @@ class DocumentContentOpenApiServiceTest {
         when(doc.getMimeType()).thenReturn("application/pdf");
         byte[] bytes = new byte[]{0x25, 0x50};
         when(documentService.findInputStreamOfDocument(doc)).thenReturn(Optional.of(new ByteArrayInputStream(bytes)));
+        when(documentService.findCompressorOf(doc)).thenReturn(new BrowserDisplayableCompressor());
         when(doc.contentFileName()).thenReturn("CODE.pdf");
 
         DocumentContentOpenApiService.DocumentFilePayload payload = service.requireDownloadableContent(11L, SCOPE);

@@ -27,6 +27,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
+import org.locationtech.jts.geom.MultiPolygon;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -60,6 +61,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
         setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
         setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
         setSpatialUnit(recordingUnit.getSpatialUnit());
+        setGeom(recordingUnit.getGeom());
     }
 
     @Id
@@ -74,6 +76,10 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Version
     @Column(name = "sync_revision", nullable = false)
     private Long syncRevision = 0L;
+
+    @Column(name = "geom", columnDefinition = "geometry")
+    @JsonIgnore
+    protected MultiPolygon geom;
 
     @OneToMany(mappedBy = "unit1", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore

@@ -2,6 +2,8 @@ package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -22,6 +24,19 @@ public class RecordingUnitPatchRequest {
 
     @Schema(description = "Valeurs par fieldId à fusionner. Clé absente = ne pas toucher. value:null = vider. values:[] = vider multi.")
     private Map<String, AnswerInput> answers = new HashMap<>();
+
+    @Schema(description = "Géométrie de l'UE (GeoJSON), dans le SRID fourni ; aucune reprojection n'est effectuée. " +
+            "Champ absent = inchangé ; null explicite = supprime la géométrie")
+    private GeometryDTO geom;
+
+    @JsonIgnore
+    private boolean geomPresent;
+
+    @JsonSetter("geom")
+    public void setGeom(GeometryDTO geom) {
+        this.geom = geom;
+        this.geomPresent = true;
+    }
 
     /**
      * Contrat legacy client mobile : scalaires / listes bruts indexés par fieldId.

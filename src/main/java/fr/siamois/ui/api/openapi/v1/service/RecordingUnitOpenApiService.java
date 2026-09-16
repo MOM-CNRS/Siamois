@@ -812,6 +812,7 @@ public class RecordingUnitOpenApiService {
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
 
         RecordingUnitDTO shell = initRecordingUnitShell(typeDto, au, institution, personDto);
+        shell.setGeom(request.getGeom());
 
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
@@ -901,20 +902,25 @@ public class RecordingUnitOpenApiService {
         }
 
         Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        if (answers.isEmpty()) {
+        if (answers.isEmpty() && !request.isGeomPresent()) {
             return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
         }
 
         Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
 
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
-                    dto.getType() != null ? dto.getType().getId() : null);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-            mergeFieldAnswers(dto, response, fieldSource, answers, lang);
-            formService.updateJpaEntityFromResponse(response, dto);
+            if (request.isGeomPresent()) {
+                dto.setGeom(request.getGeom());
+            }
+            if (!answers.isEmpty()) {
+                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
+                        RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
+                        dto.getType() != null ? dto.getType().getId() : null);
+                FieldSource fieldSource = new PanelFieldSource(formUiDto);
+                CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+                mergeFieldAnswers(dto, response, fieldSource, answers, lang);
+                formService.updateJpaEntityFromResponse(response, dto);
+            }
 
             try {
                 recordingUnitService.save(dto);

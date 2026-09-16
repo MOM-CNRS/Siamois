@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -29,6 +30,9 @@ public class RecordingUnitCreateRequest {
 
     @Schema(description = "Valeurs par fieldId ({ value } / { values })")
     private Map<String, AnswerInput> answers = new HashMap<>();
+
+    @Schema(description = "Géométrie de l'UE (GeoJSON), dans le SRID fourni ; aucune reprojection n'est effectuée")
+    private GeometryDTO geom;
 
     /**
      * Contrat legacy client mobile : scalaires / listes bruts indexés par fieldId.

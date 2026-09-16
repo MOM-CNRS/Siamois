@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.request.place;
 
 import fr.siamois.dto.entity.FullAddress;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -23,4 +24,7 @@ public class PlaceCreateRequest {
 
     @Schema(description = "Numéro de regroupement du lieu (optionnel, non unique)")
     private Integer placeNumber;
+
+    @Schema(description = "Géométrie du lieu (GeoJSON), dans le SRID fourni ; aucune reprojection n'est effectuée")
+    private GeometryDTO geom;
 }

@@ -8,6 +8,7 @@ import org.springframework.util.MimeType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 @Service
@@ -40,6 +41,11 @@ public class OtherCompressor implements FileCompressor {
     @Override
     public String encodingTypes() {
         return "gzip";
+    }
+
+    @Override
+    public InputStream decompress(InputStream inputStream) throws IOException {
+        return new GZIPInputStream(inputStream);
     }
 
 

@@ -17,6 +17,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.envers.Audited;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -97,6 +98,10 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
             inverseJoinColumns = {@JoinColumn(name = "fk_spatial_unit_id")}
     )
     private Set<SpatialUnit> spatialContext = new HashSet<>();
+
+    @Column(name = "geom", columnDefinition = "geometry")
+    @JsonIgnore
+    protected MultiPolygon geom;
 
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIAAU.TYPE";

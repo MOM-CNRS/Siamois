@@ -1,6 +1,7 @@
 package fr.siamois.dto.entity;
 
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -21,6 +22,7 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
         relatedActionUnitList = spatialUnitDTO.relatedActionUnitList;
         address = spatialUnitDTO.address;
         placeNumber = spatialUnitDTO.placeNumber;
+        geom = spatialUnitDTO.geom;
     }
 
     private String name;
@@ -33,6 +35,7 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private Long recordingUnitCount;
     private String code;
     private Integer placeNumber;
+    private GeometryDTO geom;
 
     public List<String> getBindableFieldNames() {
         return List.of("category", "name", "address", "code", "placeNumber");

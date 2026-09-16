@@ -31,6 +31,8 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepo
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.*;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryDtoMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -73,6 +75,7 @@ public class SpatialUnitService implements ArkEntityService {
     private final RecordingUnitRepository recordingUnitRepository;
     private final DocumentRepository documentRepository;
     private final ConceptMapper conceptMapper;
+    private final GeometryDtoMapper geometryDtoMapper;
 
     /**
      * Find a spatial unit by its ID
@@ -189,6 +192,7 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
         spatialUnit.setCategory(conceptService.saveOrGetConcept(su.getCategory()));
         spatialUnit.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
+        spatialUnit.setGeom(su.getGeom() != null ? geometryDtoMapper.toMultiPolygon(su.getGeom()) : null);
 
         InstitutionSettings settings = institutionService.createOrGetSettingsOf(info.getInstitution());
         if (settings.hasEnabledArkConfig()) {
@@ -732,7 +736,7 @@ public class SpatialUnitService implements ArkEntityService {
                                       String newName,
                                       ConceptDTO newCategory,
                                       FullAddress newAddress) throws SpatialUnitAlreadyExistsException {
-        return updatePlace(info, placeId, newName, newCategory, newAddress, null, false);
+        return updatePlace(info, placeId, newName, newCategory, newAddress, null, false, null, false);
     }
 
     @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
@@ -743,6 +747,19 @@ public class SpatialUnitService implements ArkEntityService {
                                       FullAddress newAddress,
                                       Integer newPlaceNumber,
                                       boolean updatePlaceNumber) throws SpatialUnitAlreadyExistsException {
+        return updatePlace(info, placeId, newName, newCategory, newAddress, newPlaceNumber, updatePlaceNumber, null, false);
+    }
+
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlace(UserInfo info,
+                                      long placeId,
+                                      String newName,
+                                      ConceptDTO newCategory,
+                                      FullAddress newAddress,
+                                      Integer newPlaceNumber,
+                                      boolean updatePlaceNumber,
+                                      GeometryDTO newGeom,
+                                      boolean updateGeom) throws SpatialUnitAlreadyExistsException {
         SpatialUnitDTO dto = loadDtoById(placeId);
         Long institutionId = info.getInstitution().getId();
 
@@ -765,6 +782,9 @@ public class SpatialUnitService implements ArkEntityService {
         }
         if (updatePlaceNumber) {
             dto.setPlaceNumber(newPlaceNumber);
+        }
+        if (updateGeom) {
+            dto.setGeom(newGeom);
         }
         return persistSpatialUnitDto(dto);
     }

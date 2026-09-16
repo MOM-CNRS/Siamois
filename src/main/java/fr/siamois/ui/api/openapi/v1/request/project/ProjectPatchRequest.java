@@ -1,8 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.request.project;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -42,4 +44,17 @@ public class ProjectPatchRequest {
 
     @Schema(description = "Localisations précises (identifiants d'unités spatiales)")
     private List<String> spatialContextSpatialUnitIds;
+
+    @Schema(description = "Emprise du projet (GeoJSON), dans le SRID fourni ; aucune reprojection n'est effectuée. " +
+            "Champ absent = inchangé ; null explicite = supprime la géométrie")
+    private GeometryDTO geom;
+
+    @JsonIgnore
+    private boolean geomPresent;
+
+    @JsonSetter("geom")
+    public void setGeom(GeometryDTO geom) {
+        this.geom = geom;
+        this.geomPresent = true;
+    }
 }

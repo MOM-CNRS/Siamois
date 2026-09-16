@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.siamois</groupId>
     <artifactId>siamois</artifactId>
-    <version>0.14.26</version>
+    <version>0.14.27</version>
     <packaging>jar</packaging>
     <name>siamois</name>
 
@@ -133,6 +133,13 @@
             <groupId>org.locationtech.jts</groupId>
             <artifactId>jts-core</artifactId>
             <version>${jts.version}</version>
+        </dependency>
+
+        <!-- Maps JTS geometry types (MultiPolygon, ...) to PostGIS `geometry` columns.
+             Without it Hibernate has no JDBC binding for org.locationtech.jts.geom.* types. -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-spatial</artifactId>
         </dependency>
 
 
