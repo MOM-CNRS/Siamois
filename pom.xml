@@ -135,6 +135,13 @@
             <version>${jts.version}</version>
         </dependency>
 
+        <!-- Maps JTS geometry types (MultiPolygon, ...) to PostGIS `geometry` columns.
+             Without it Hibernate has no JDBC binding for org.locationtech.jts.geom.* types. -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-spatial</artifactId>
+        </dependency>
+
 
         <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-web -->
         <dependency>

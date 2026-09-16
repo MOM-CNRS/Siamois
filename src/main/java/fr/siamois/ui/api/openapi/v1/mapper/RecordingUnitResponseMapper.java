@@ -27,7 +27,7 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
     @Mapping(target = "id", expression = "java(String.valueOf(dto.getId()))")
     @Mapping(target = "projectId", expression = "java(dto.getActionUnit() != null ? String.valueOf(dto.getActionUnit().getId()) : null)")
     @Mapping(target = "type", source = "type")
-    @Mapping(target = "geom", ignore = true)
+    @Mapping(target = "geom", source = "geom")
     @Mapping(target = "answers", expression = "java(java.util.Map.of())")
     @Mapping(target = "count", expression = "java(toResourceCounts(dto))")
     @Mapping(target = "links", expression = "java(fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceLinks.of(dto.getFullIdentifier()))")

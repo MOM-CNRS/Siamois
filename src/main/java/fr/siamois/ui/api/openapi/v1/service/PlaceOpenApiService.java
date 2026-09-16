@@ -100,6 +100,7 @@ public class PlaceOpenApiService {
         toSave.setName(name);
         toSave.setCategory(category);
         toSave.setPlaceNumber(request.getPlaceNumber());
+        toSave.setGeom(request.getGeom());
         if (request.getAddress() != null) {
             toSave.setAddress(request.getAddress());
         }
@@ -139,9 +140,10 @@ public class PlaceOpenApiService {
         }
 
         try {
-            SpatialUnitDTO saved = patch.isPlaceNumberPresent()
+            SpatialUnitDTO saved = (patch.isPlaceNumberPresent() || patch.isGeomPresent())
                     ? spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress(),
-                            patch.getPlaceNumber(), true)
+                            patch.getPlaceNumber(), patch.isPlaceNumberPresent(),
+                            patch.getGeom(), patch.isGeomPresent())
                     : spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress());
             return new PlaceCreatedResponse.PlaceCreatedItem(
                     saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());

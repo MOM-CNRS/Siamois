@@ -27,6 +27,7 @@ public class PlaceOpenApiMapper {
         }
         resource.setName(dto.getName());
         resource.setPlaceNumber(dto.getPlaceNumber());
+        resource.setGeom(dto.getGeom());
 
         ConceptDTO category = dto.getCategory();
         if (category != null) {

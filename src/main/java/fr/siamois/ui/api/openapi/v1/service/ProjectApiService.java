@@ -241,6 +241,9 @@ public class ProjectApiService {
         if (patch.getSpatialContextSpatialUnitIds() != null) {
             applySpatialContext(dto, patch.getSpatialContextSpatialUnitIds());
         }
+        if (patch.isGeomPresent()) {
+            dto.setGeom(patch.getGeom());
+        }
         try {
             actionUnitService.save(userInfo, dto, type);
         } catch (ActionUnitAlreadyExistsException e) {

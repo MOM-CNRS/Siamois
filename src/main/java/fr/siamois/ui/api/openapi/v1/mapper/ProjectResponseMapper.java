@@ -44,6 +44,7 @@ public class ProjectResponseMapper {
 
         r.setBeginDate(dto.getBeginDate());
         r.setEndDate(dto.getEndDate());
+        r.setGeom(dto.getGeom());
 
         if (dto.getType() != null) {
             r.setType(toConceptFieldValue(dto.getType(), lang));
