@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.io.Serializable;
+
 @Schema(
         description = "GeoJSON Geometry",
         discriminatorProperty = "type",
@@ -23,7 +25,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
         @JsonSubTypes.Type(value = PolygonDTO.class, name = "Polygon"),
         @JsonSubTypes.Type(value = MultiPolygonDTO.class, name = "MultiPolygon")
 })
-public abstract class GeometryDTO {
+public abstract class GeometryDTO implements Serializable {
 
     @Schema(
             description = "GeoJSON type",
