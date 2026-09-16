@@ -38,7 +38,7 @@ public class RecordingUnitDocumentsControllerApi {
             description = "Crée un document et le lie à l'UE (recording_unit_document). "
                     + "Champs multipart : title (obligatoire), file (obligatoire), description, "
                     + "natureConceptId, scaleConceptId, formatConceptId. "
-                    + "Modification, suppression et téléchargement : /api/v1/documents/{id}."
+                    + "Modification et suppression : /api/v1/documents/{id}. Téléchargement : /api/v1/documents/{id}/file."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Créé"),
