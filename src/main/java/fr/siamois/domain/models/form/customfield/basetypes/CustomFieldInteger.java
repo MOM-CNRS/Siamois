@@ -4,7 +4,6 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,7 +16,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @Entity
 @DiscriminatorValue("INTEGER")
-@Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor

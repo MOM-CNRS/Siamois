@@ -23,9 +23,28 @@
     <!--@elvariable id="onGenerateValue" type="javax.el.MethodExpression" -->
 
 
+    <!--
+        Read by default, edit on click: see the matching comment in
+        customFormFieldContentForPanel.xhtml. Here 'bean' is the row's own EntityFormContext
+        directly (see columnTemplates.xhtml), so isActiveField/activateField are called on it
+        without a '.formContext' indirection.
+    -->
+    <ui:param name="fieldIsClickableToActivate"
+              value="#{not col.readOnly and canUserEditRow and flowBean.isWriteMode and not bean.isActiveField(col)}"/>
+
     <p:outputPanel rendered="#{bean.isColumnEnabled(col.field)}"
                    styleClass="#{answer['class'].simpleName ne 'CustomFieldAnswerSelectMultipleSpatialUnitTree' ? 'ui-fluid' : ''}"
                    >
+        <!--
+            p:outputPanel doesn't support a click client-behavior event, so the activation click is
+            carried by a p:commandLink instead — disabled (renders as a plain, non-clickable <span>,
+            same as PrimeFaces' own read-only rendering) whenever the cell isn't actually clickable.
+        -->
+        <p:commandLink style="display:flex; text-decoration:none; color:inherit; width:100%;"
+                       disabled="#{not fieldIsClickableToActivate}"
+                       actionListener="#{bean.activateField(col)}"
+                       process="@this" update="#{updateTargetsOnBlur}" ajax="true">
+
         <ui:include src="/pages/shared/form/fieldCore.xhtml">
             <ui:param name="panelId" value="#{panelId}"/>
             <ui:param name="bean" value="#{bean}"/>
@@ -49,10 +68,12 @@
             <ui:param name="spatialUnitOptions" value="#{bean.getSpatialUnitOptions()}" />
             <ui:param name="updateTargetsOnBlur" value="#{updateTargetsOnBlur}"/>
             <ui:param name="formCtx" value="#{bean}"/>
-            <ui:param name="mode" value="#{(col.readOnly or not canUserEditRow) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
+            <ui:param name="mode" value="#{(col.readOnly or not canUserEditRow or not bean.isActiveField(col)) ? 'output' : flowBean.getInPlaceFieldMode()}"/>
             <ui:param name="compact" value="true"/>
 
         </ui:include>
+
+        </p:commandLink>
 
     </p:outputPanel>
 

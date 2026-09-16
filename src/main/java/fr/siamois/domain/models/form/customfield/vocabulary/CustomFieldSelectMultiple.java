@@ -14,7 +14,6 @@ import java.util.Set;
 @Setter
 @Entity
 @DiscriminatorValue("SELECT_MULTIPLE")
-@Table(name = "custom_field")
 public class CustomFieldSelectMultiple extends CustomFieldConcept {
 
     @ManyToMany(fetch = FetchType.EAGER)

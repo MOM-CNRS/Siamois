@@ -83,7 +83,7 @@
                             <ul class="sia-filter-column-picker">
                                 <c:forEach var="pickColumn" items="#{tableModel.getAvailableFilterColumns()}">
                                     <li>
-                                        <p:commandLink value="#{langBean.msg(pickColumn.headerKey)}"
+                                        <p:commandLink value="#{langBean.resolveMessage(pickColumn.headerKey)}"
                                                        process="@this"
                                                        action="#{tableModel.addFilterColumn(pickColumn)}"
                                                        update=":#{cc.clientId}:#{tableId}:filterBar"
@@ -98,7 +98,7 @@
                                 <p:commandButton type="button"
                                                  id="filterChipBtn_#{chipStatus.index}"
                                                  styleClass="ui-button-flat sia-filter-chip-btn"
-                                                 value="#{langBean.msg(filterColumn.headerKey)}"
+                                                 value="#{langBean.resolveMessage(filterColumn.headerKey)}"
                                                  icon="pi pi-filter"/>
                                 <p:commandButton type="button"
                                                  id="removeFilterChipBtn_#{chipStatus.index}"

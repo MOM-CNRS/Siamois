@@ -3,7 +3,6 @@ package fr.siamois.domain.models.form.customfieldanswer.person;
 import fr.siamois.domain.models.auth.Person;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,7 +14,6 @@ import java.util.Objects;
 @Data
 @Entity
 @DiscriminatorValue("SELECT_ONE_PERSON")
-@Table(name = "custom_field_answer")
 public class CustomFieldAnswerSelectOnePerson extends CustomFieldAnswerSelectPerson {
     @Override
     public Object getValue() {

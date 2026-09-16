@@ -133,12 +133,13 @@ public class RootChildList<T extends AbstractEntityDTO> extends DefaultTreeNodeC
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof RootChildList<?> that)) return false;
-        if (!super.equals(o)) return false;
-        return totalEntityCount == that.totalEntityCount && first == that.first && Objects.equals(actualChildren, that.actualChildren) && Objects.equals(rootParent, that.rootParent);
+        // rootParent is excluded: it back-references the owning RootTreeNode, whose own
+        // equals()/hashCode() includes this list, so comparing it here would recurse forever.
+        return totalEntityCount == that.totalEntityCount && first == that.first && Objects.equals(actualChildren, that.actualChildren);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), totalEntityCount, actualChildren, rootParent, first);
+        return Objects.hash(totalEntityCount, actualChildren, first);
     }
 }

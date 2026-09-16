@@ -155,6 +155,42 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.activeInfoColumn = col;
     }
 
+    /**
+     * The single field currently switched to its edit widget — every other field stays on its
+     * lightweight read display (see the {@code mode} computation in
+     * customFormFieldContentForPanel.xhtml / customFormFieldContentForTable.xhtml). Only one
+     * field is active at a time, so opening another one implicitly closes the previous.
+     * <p>
+     * Keyed on {@link CustomField} itself rather than a column wrapper: the panel path passes a
+     * {@link CustomColUiDto} and the table path a {@code fr.siamois.ui.table.column.TableColumn}
+     * (two unrelated types), but both expose the same underlying {@code CustomField}.
+     */
+    private CustomField activeField;
+
+    public boolean isActiveField(CustomColUiDto col) {
+        return col != null && isActiveField(col.getField());
+    }
+
+    public boolean isActiveField(fr.siamois.ui.table.column.TableColumn col) {
+        return col != null && isActiveField(col.getField());
+    }
+
+    private boolean isActiveField(CustomField field) {
+        return activeField != null && activeField.equals(field);
+    }
+
+    public void activateField(CustomColUiDto col) {
+        this.activeField = col == null ? null : col.getField();
+    }
+
+    public void activateField(fr.siamois.ui.table.column.TableColumn col) {
+        this.activeField = col == null ? null : col.getField();
+    }
+
+    public void deactivateField() {
+        this.activeField = null;
+    }
+
     private final BiConsumer<CustomField, ConceptDTO> formScopeChangeCallback;
     private final String formScopeValueBinding;
 
@@ -471,6 +507,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         if (autoSave) {
             if (save()) {
                 markFieldNotModified(field);
+                deactivateField();
             } else {
                 setFieldAnswerHasBeenModified(field);
             }
@@ -782,6 +819,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
             boolean status = save();
             if (status) {
                 markFieldNotModified(field);
+                deactivateField();
             } else {
                 setFieldAnswerHasBeenModified(field);
             }

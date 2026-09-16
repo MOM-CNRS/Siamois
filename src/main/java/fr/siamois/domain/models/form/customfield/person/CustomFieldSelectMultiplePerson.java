@@ -2,7 +2,6 @@ package fr.siamois.domain.models.form.customfield.person;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,7 +12,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @Entity
 @DiscriminatorValue("SELECT_MULTIPLE_PERSON")
-@Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
 public class CustomFieldSelectMultiplePerson extends CustomFieldSelectPerson {

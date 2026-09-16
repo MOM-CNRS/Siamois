@@ -14,7 +14,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @Entity
 @DiscriminatorValue("MEASUREMENT")
-@Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
 public class CustomFieldMeasurement extends CustomFieldOnTheFly {

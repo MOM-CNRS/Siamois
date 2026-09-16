@@ -3,7 +3,6 @@ package fr.siamois.domain.models.form.customfield.basetypes;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,7 +16,6 @@ import java.time.Month;
 @Setter
 @Entity
 @DiscriminatorValue("DATETIME")
-@Table(name = "custom_field")
 @SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 public class CustomFieldDateTime extends CustomField {

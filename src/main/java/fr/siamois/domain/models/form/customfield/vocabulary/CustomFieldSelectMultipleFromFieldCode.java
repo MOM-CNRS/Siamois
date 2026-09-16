@@ -3,7 +3,6 @@ package fr.siamois.domain.models.form.customfield.vocabulary;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,7 +15,6 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @SuperBuilder
 @DiscriminatorValue("SELECT_MULTIPLE_FROM_FIELD_CODE")
-@Table(name = "custom_field")
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomFieldSelectMultipleFromFieldCode extends CustomFieldConceptFromFieldCode {
