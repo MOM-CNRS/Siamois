@@ -2000,11 +2000,13 @@ class ActionUnitServiceTest {
 
         when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(au1));
         when(actionUnitMapper.convert(au1)).thenReturn(dto1);
-        when(recordingUnitRepository.countByActionContext(11L)).thenReturn(3);
+        when(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(List.of(11L)))
+                .thenReturn(Collections.singletonList(new Object[]{11L, 3L}));
 
         Set<ActionUnitDTO> result = actionUnitService.findAllByTeamMember(member);
 
         assertThat(result).containsExactly(dto1);
+        assertThat(dto1.getRecordingUnitCount()).isEqualTo(3);
     }
 
     @Test

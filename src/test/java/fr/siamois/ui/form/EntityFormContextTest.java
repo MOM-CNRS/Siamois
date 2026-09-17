@@ -150,10 +150,6 @@ class EntityFormContextTest {
 
         // build a response containing a spatial-unit-tree answer
         CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel treeAnswer = mock(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class);
-        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
-        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
-        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         Map<CustomField, CustomFieldAnswerViewModel> answers = new HashMap<>();
         answers.put(mock(CustomField.class), treeAnswer);
@@ -190,12 +186,8 @@ class EntityFormContextTest {
         CustomFormResponseViewModel r = new CustomFormResponseViewModel();
         r.setAnswers(null);
         // hack: set via init() stubbing
-        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(r);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
-        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
-        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
-        when(unitDefinitionService.findOptions()).thenReturn(List.of());
 
         ctx.init(false);
         assertNull(ctx.getFieldAnswer(f));
@@ -228,10 +220,6 @@ class EntityFormContextTest {
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>(Map.of(field, ans)));
-        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
-        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
-        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -255,10 +243,6 @@ class EntityFormContextTest {
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>());
-        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
-        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
-        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
@@ -283,10 +267,6 @@ class EntityFormContextTest {
 
         CustomFormResponseViewModel response = new CustomFormResponseViewModel();
         response.setAnswers(new HashMap<>());
-        when(formContextServices.getCustomFieldMeasurementService()).thenReturn(customFieldMeasurementService);
-        when(formContextServices.getCustomFieldMeasurementService().findOptionsForRecordingUnit(any(), anyInt())).thenReturn(List.of());
-        when(formContextServices.getUnitDefinitionService()).thenReturn(unitDefinitionService);
-        when(unitDefinitionService.findOptions()).thenReturn(List.of());
         when(formService.initOrReuseResponse(any(), any(), any(), anyBoolean())).thenReturn(response);
         when(formService.buildEnabledEngine(any())).thenReturn(enabledRulesEngine);
 
