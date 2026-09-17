@@ -26,10 +26,12 @@ import org.springframework.stereotype.Service;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -690,14 +692,26 @@ public class FormService {
     }
 
 
-    @SuppressWarnings("unchecked")
+    private static final Map<Class<?>, List<String>> BINDABLE_FIELD_CACHE = new ConcurrentHashMap<>();
+
     private static List<String> getBindableFieldNames(Object entity) {
         if (entity == null) return Collections.emptyList();
+        Class<?> type = entity.getClass();
+        List<String> cached = BINDABLE_FIELD_CACHE.get(type);
+        if (cached != null) {
+            return cached;
+        }
         try {
-            Method method = entity.getClass().getMethod("getBindableFieldNames");
-            return (List<String>) method.invoke(entity);
+            Method method = type.getMethod("getBindableFieldNames");
+            @SuppressWarnings("unchecked")
+            List<String> names = (List<String>) method.invoke(
+                    Modifier.isStatic(method.getModifiers()) ? null : entity);
+            List<String> copy = names != null ? List.copyOf(names) : List.of();
+            BINDABLE_FIELD_CACHE.put(type, copy);
+            return copy;
         } catch (Exception e) {
-            return Collections.emptyList();
+            BINDABLE_FIELD_CACHE.put(type, List.of());
+            return List.of();
         }
     }
 

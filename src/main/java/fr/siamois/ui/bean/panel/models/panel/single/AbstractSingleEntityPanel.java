@@ -69,11 +69,15 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     protected transient RevisionWithInfo<T> revisionToDisplay = null;
     protected Long unitId;  // ID of the spatial unit
     protected transient List<Document> documents;
+    protected Integer documentsCount;
+    protected boolean documentsLoaded;
     protected transient Map<String, ConceptFieldConfig> fieldConfigs = new HashMap<>();
 
     // lazy model for children of entity
     protected long totalChildrenCount = 0;
     protected transient List<Concept> selectedCategoriesChildren;
+
+    private transient boolean historyMetaLoaded;
 
 
     // lazy model for parents of entity
@@ -83,6 +87,10 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     protected transient List<PanelTab> tabs;
 
     protected transient InfoRevisionEntity lastRevisionInfo;
+    private transient String cachedLastUpdateDate;
+    private transient String cachedLastUpdater;
+    private transient String cachedAllUpdaters;
+    private transient List<MenuModel> cachedBreadcrumbModels;
 
     // Inline identifier editing (panel header chip)
     protected boolean editingIdentifier;
@@ -124,6 +132,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     public abstract void refreshUnit();
 
     public void refresh() {
+        clearPresentationCache();
         refreshUnit();
         if (tabs != null) {
             tabs.stream()
@@ -281,17 +290,22 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
     }
 
     public List<MenuModel> getAllParentBreadcrumbModels() {
+        if (cachedBreadcrumbModels != null) {
+            return cachedBreadcrumbModels;
+        }
         if (getUnit() == null) {
             MenuModel breadcrumbModel = new DefaultMenuModel();
             breadcrumbModel.getElements().add(createHomeItem());
-            return List.of(breadcrumbModel);
+            cachedBreadcrumbModels = List.of(breadcrumbModel);
+            return cachedBreadcrumbModels;
         }
 
         MenuModel breadcrumbModel = new DefaultMenuModel();
         breadcrumbModel.getElements().add(createHomeItem());
         breadcrumbModel.getElements().add(createRootTypeItem());
 
-        return List.of(breadcrumbModel);
+        cachedBreadcrumbModels = List.of(breadcrumbModel);
+        return cachedBreadcrumbModels;
     }
 
     protected DefaultMenuItem createHomeItem() {
@@ -413,6 +427,7 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
         log.trace("Document added to unit: {}", unit);
 
         documents.add(created);
+        documentsCount = (documentsCount == null ? 0 : documentsCount) + 1;
         PrimeFaces.current().executeScript("PF('newDocumentDiag').hide()");
 
         String panelIndex = isRoot ? "panel-".concat(getPrefixPanelIndex()) : "sideview-".concat(parentOrOverview.getPrefixPanelIndex());
@@ -442,12 +457,25 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
 
     public void onTabChange(TabChangeEvent<?> event) {
         activeTabIndex = event.getIndex();
+        ensureContentForActiveTab();
+    }
+
+    /**
+     * Hook for subclasses to lazy-load tab content when the user opens a tab.
+     */
+    protected void ensureContentForActiveTab() {
+        // no-op by default
     }
 
     @Nullable
     public Boolean emptyTabFor(PanelTab tabItem) {
         if (tabItem instanceof MultiHierarchyTab) return isHierarchyTabEmpty();
-        if (tabItem instanceof DocumentTab) return documents.isEmpty();
+        if (tabItem instanceof DocumentTab) {
+            if (documentsCount != null) {
+                return documentsCount == 0;
+            }
+            return documents == null || documents.isEmpty();
+        }
         if(tabItem instanceof EntityListTab) return ((EntityListTab<?>) tabItem).getTotalCount() == 0;
         return null; // N/A for others
     }
@@ -465,18 +493,49 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
         return revision;
     }
 
-    public String lastUpdateDate() {
+    protected void clearPresentationCache() {
+        lastRevisionInfo = null;
+        cachedLastUpdateDate = null;
+        cachedLastUpdater = null;
+        cachedAllUpdaters = null;
+        historyMetaLoaded = false;
+        cachedBreadcrumbModels = null;
+    }
+
+    /**
+     * Loads Envers revision metadata for the footer. Called from a deferred panel so the
+     * first paint of the fiche does not wait on history queries.
+     */
+    public void loadHistoryMeta() {
+        if (historyMetaLoaded || unit == null || unitId == null) {
+            return;
+        }
         lastRevisionInfo = findLastRevisionInfo();
-        return this.formatUtcDateTime(lastRevisionInfo.getRevisionDate());
+        cachedLastUpdateDate = formatUtcDateTime(lastRevisionInfo.getRevisionDate());
+        if (lastRevisionInfo.getUpdatedBy() != null) {
+            cachedLastUpdater = lastRevisionInfo.getUpdatedBy().displayName();
+        }
+        cachedAllUpdaters = historyAuditService.findAllContributorsFor(unit.getClass(), unitId)
+                .stream()
+                .map(Person::displayName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.joining(", "));
+        historyMetaLoaded = true;
+    }
+
+    public String lastUpdateDate() {
+        if (!historyMetaLoaded) {
+            return "…";
+        }
+        return cachedLastUpdateDate != null ? cachedLastUpdateDate : "";
     }
 
     public String lastUpdater() {
-        if (lastRevisionInfo == null) {
-            lastRevisionInfo = findLastRevisionInfo();
+        if (!historyMetaLoaded) {
+            return "…";
         }
-        String result = lastRevisionInfo.getUpdatedBy().displayName();
-        lastRevisionInfo = null;
-        return result;
+        return cachedLastUpdater != null ? cachedLastUpdater : "";
     }
 
     /**
@@ -484,12 +543,10 @@ public abstract class AbstractSingleEntityPanel<T extends AbstractEntityDTO> ext
      * @return the list of contributors as a string
      */
     public String allUpdaters() {
-        return historyAuditService.findAllContributorsFor(unit.getClass(), unitId)
-                .stream()
-                .map(Person::displayName)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.joining(", "));
+        if (!historyMetaLoaded) {
+            return "…";
+        }
+        return cachedAllUpdaters != null ? cachedAllUpdaters : "";
     }
 
 

@@ -238,19 +238,19 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "appendix_count")
     protected Integer appendixCount;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_status")
     protected Concept status;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_field_status")
     protected Concept fieldStatus;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_system")
     protected Concept system;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_development_nature")
     protected Concept developmentNature;
 

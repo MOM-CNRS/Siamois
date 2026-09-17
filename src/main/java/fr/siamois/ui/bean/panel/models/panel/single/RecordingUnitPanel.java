@@ -97,6 +97,8 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
     // Strati
     private CustomFieldAnswerStratigraphyViewModel stratigraphyViewModel;
 
+    private transient List<SpatialUnitSummaryDTO> cachedSpatialUnitOptions;
+
 
 
 
@@ -184,9 +186,13 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
      */
     @Override
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptions() {
-
-        if(unit == null) return Collections.emptyList();
-        return spatialUnitService.getSpatialUnitOptionsFor(unit);
+        if (unit == null) {
+            return Collections.emptyList();
+        }
+        if (cachedSpatialUnitOptions == null) {
+            cachedSpatialUnitOptions = spatialUnitService.getSpatialUnitOptionsFor(unit);
+        }
+        return cachedSpatialUnitOptions;
     }
 
 
@@ -206,6 +212,7 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         // reinit
         errorMessage = null;
         unit = null;
+        cachedSpatialUnitOptions = null;
 
         try {
 

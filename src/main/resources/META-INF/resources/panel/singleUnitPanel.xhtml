@@ -50,40 +50,44 @@
                                     </span>
                                     </i>
                                 </small>
-                                <small>
-                                    <i>
-                                        Modifié le
-                                        <span class="panel-history-colored-span">
-                                      #{panelModel.lastUpdateDate()}
-                                    </span>
-                                        par
-                                        <span class="panel-history-colored-span">
-                                      #{panelModel.lastUpdater()}
-                                    </span>
-                                    </i>
-                                </small>
-                                <h:panelGroup rendered="#{panelModel.unit.validated == 'VALIDATED'}">
+                                <p:outputPanel deferred="true" deferredMode="visible" id="historyMeta-#{panelIndex}">
+                                    <p:ajax event="load" listener="#{panelModel.loadHistoryMeta()}"
+                                            update="@this"/>
                                     <small>
                                         <i>
-                                            Validé le
+                                            Modifié le
                                             <span class="panel-history-colored-span">
-                                      #{panelModel.formatUtcDateTime(panelModel.unit.validatedAt, false)}
-                                    </span>
+                                          #{panelModel.lastUpdateDate()}
+                                        </span>
                                             par
                                             <span class="panel-history-colored-span">
-                                      #{panelModel.unit.createdBy.displayName()}
-                                    </span>
+                                          #{panelModel.lastUpdater()}
+                                        </span>
                                         </i>
                                     </small>
-                                </h:panelGroup>
-                                <small>
-                                    <i>
-                                        Contributeurs:
-                                        <span class="panel-history-colored-span">
-                                      #{panelModel.allUpdaters()}
-                                    </span>
-                                    </i>
-                                </small>
+                                    <h:panelGroup rendered="#{panelModel.unit.validated == 'VALIDATED'}">
+                                        <small>
+                                            <i>
+                                                Validé le
+                                                <span class="panel-history-colored-span">
+                                          #{panelModel.formatUtcDateTime(panelModel.unit.validatedAt, false)}
+                                        </span>
+                                                par
+                                                <span class="panel-history-colored-span">
+                                          #{panelModel.unit.createdBy.displayName()}
+                                        </span>
+                                            </i>
+                                        </small>
+                                    </h:panelGroup>
+                                    <small>
+                                        <i>
+                                            Contributeurs:
+                                            <span class="panel-history-colored-span">
+                                          #{panelModel.allUpdaters()}
+                                        </span>
+                                        </i>
+                                    </small>
+                                </p:outputPanel>
                             </div>
 
 

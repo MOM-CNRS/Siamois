@@ -99,13 +99,59 @@ public class ActionUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public ActionUnitDTO findById(long id) {
         try {
-            ActionUnit actionUnit = actionUnitRepository.findById(id)
-                    .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
-            return convertWithCount(actionUnit);
+            return convertWithCount(loadDetailedEntity(id));
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw e;
         }
+    }
+
+    /**
+     * Fiche projet: EntityGraph load without the recording-unit COUNT
+     * (badges are loaded separately via {@link #findPanelBadgeCounts}).
+     */
+    @Transactional(readOnly = true)
+    public ActionUnitDTO findDetailedWithoutCount(long id) {
+        try {
+            ActionUnit actionUnit = loadDetailedEntity(id);
+            ActionUnitDTO dto = actionUnitMapper.convert(actionUnit);
+            assert dto != null;
+            return dto;
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    private ActionUnit loadDetailedEntity(long id) {
+        return actionUnitRepository.findDetailedById(id)
+                .or(() -> actionUnitRepository.findById(id))
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
+    }
+
+    /**
+     * Tab badge counts for an ActionUnit panel: recording units, containers, phases, documents.
+     */
+    @Transactional(readOnly = true)
+    public int[] findPanelBadgeCounts(long actionUnitId) {
+        List<Object[]> rows = actionUnitRepository.findPanelBadgeCounts(actionUnitId);
+        if (rows == null || rows.isEmpty() || rows.get(0) == null) {
+            return new int[]{0, 0, 0, 0};
+        }
+        Object[] row = rows.get(0);
+        return new int[]{
+                toInt(row[0]),
+                toInt(row[1]),
+                toInt(row[2]),
+                toInt(row[3])
+        };
+    }
+
+    private static int toInt(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return 0;
     }
 
     private Map<String, Profile> createProjectProfiles(ActionUnitDTO actionUnitDTO) {
@@ -542,9 +588,11 @@ public class ActionUnitService implements ArkEntityService {
         specs = specs.and(ActionUnitSpec.hasProjectMembership(member.getId()));
 
         Page<ActionUnit> actionUnits = actionUnitRepository.findAll(specs, pageLimit);
-        return actionUnits.stream()
-                .map(this::convertWithCount)
+        List<ActionUnitDTO> dtos = actionUnits.stream()
+                .map(actionUnitMapper::convert)
                 .toList();
+        attachRecordingUnitCounts(dtos);
+        return dtos;
     }
 
 
@@ -601,7 +649,11 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> specs = prepareSpecs(institutionDTO, filters);
         specs = applyCountSort(specs, pageable.getSort());
         Page<ActionUnit> res = actionUnitRepository.findAll(specs, stripCountSort(pageable));
-        return res.map(this::convertWithCount);
+        List<ActionUnitDTO> dtos = res.getContent().stream()
+                .map(actionUnitMapper::convert)
+                .toList();
+        attachRecordingUnitCounts(dtos);
+        return new PageImpl<>(dtos, res.getPageable(), res.getTotalElements());
     }
 
     /**
@@ -645,6 +697,31 @@ public class ActionUnitService implements ArkEntityService {
         Integer count = recordingUnitRepository.countByActionContext(au.getId());
         dto.setRecordingUnitCount(count != null ? count : 0);
         return dto;
+    }
+
+    /**
+     * Batch-loads recording-unit counts for a page of action units (avoids N+1 in list search).
+     */
+    private void attachRecordingUnitCounts(List<ActionUnitDTO> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return;
+        }
+        List<Long> ids = dtos.stream()
+                .map(ActionUnitDTO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        Map<Long, Integer> counts = new HashMap<>();
+        for (Object[] row : recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(ids)) {
+            Long actionUnitId = (Long) row[0];
+            Number count = (Number) row[1];
+            counts.put(actionUnitId, count != null ? count.intValue() : 0);
+        }
+        for (ActionUnitDTO dto : dtos) {
+            dto.setRecordingUnitCount(counts.getOrDefault(dto.getId(), 0));
+        }
     }
 
 
@@ -927,9 +1004,11 @@ public class ActionUnitService implements ArkEntityService {
             return Collections.emptySet();
         }
         List<ActionUnit> actionUnits = actionUnitRepository.findAll(ActionUnitSpec.hasProjectMembership(member.getId()));
-        return actionUnits.stream()
-                .map(this::convertWithCount)
-                .collect(Collectors.toSet());
+        List<ActionUnitDTO> dtos = actionUnits.stream()
+                .map(actionUnitMapper::convert)
+                .toList();
+        attachRecordingUnitCounts(dtos);
+        return new HashSet<>(dtos);
     }
 
     /**

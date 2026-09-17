@@ -210,6 +210,13 @@ public class DocumentService implements ArkEntityService {
         return documentRepository.findDocumentsByActionUnit(actionUnit.getId());
     }
 
+    public long countForActionUnit(ActionUnitDTO actionUnit) {
+        if (actionUnit == null || actionUnit.getId() == null) {
+            return 0L;
+        }
+        return documentRepository.countDocumentsByActionUnit(actionUnit.getId());
+    }
+
     /**
      * Finds documents associated with a specific recording unit.
      *

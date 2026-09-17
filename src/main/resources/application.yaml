@@ -35,6 +35,8 @@ siamois:
       label: feedback
       screenshot-branch: feedback-screenshots
       issues-url: https://github.com/MOM-CNRS/Siamois/issues?q=is%3Aissue+label%3Afeedback
+  jsf:
+    development: ${SIAMOIS_JSF_DEVELOPMENT:false}
 
 
 spring:
@@ -62,6 +64,11 @@ spring:
         show_sql: false
         jdbc:
           batch_size: 50
+        # Batches lazy-association initialization (e.g. ActionUnit.status/fieldStatus/system/
+        # developmentNature, now FetchType.LAZY) into IN(...) queries instead of one SELECT per
+        # distinct id -- avoids N+1 round-trips when a list view (e.g. project list) maps rows
+        # through a converter that touches those lazy fields.
+        default_batch_fetch_size: 25
         order_inserts: true
         order_updates: true
         envers:

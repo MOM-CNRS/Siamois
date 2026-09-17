@@ -14,8 +14,17 @@ public interface ConceptFieldConfigRepository extends CrudRepository<ConceptFiel
     @Query("SELECT cfc FROM ConceptFieldConfig cfc " +
             "WHERE cfc.institution.id = :institutionId " +
             "AND cfc.fieldCode = :fieldCode " +
-            "AND cfc.actionUnit IS NULL")
-    Optional<ConceptFieldConfig> findOneByFieldCodeForInstitution(Long institutionId, String fieldCode);
+            "AND cfc.actionUnit IS NULL " +
+            "ORDER BY cfc.id ASC")
+    List<ConceptFieldConfig> findAllByFieldCodeForInstitutionOrdered(Long institutionId, String fieldCode);
+
+    /**
+     * Institution-level field config. Tolerates historical duplicates by returning the oldest row.
+     */
+    default Optional<ConceptFieldConfig> findOneByFieldCodeForInstitution(Long institutionId, String fieldCode) {
+        List<ConceptFieldConfig> matches = findAllByFieldCodeForInstitutionOrdered(institutionId, fieldCode);
+        return matches.isEmpty() ? Optional.empty() : Optional.of(matches.get(0));
+    }
 
 
     @Query("SELECT DISTINCT cfc.fieldCode " +

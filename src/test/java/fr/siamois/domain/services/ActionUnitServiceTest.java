@@ -192,8 +192,9 @@ class ActionUnitServiceTest {
         expectedDto.setId(actionUnitId);
 
         // Configuration des mocks
-        when(actionUnitRepository.findById(actionUnitId)).thenReturn(Optional.of(actionUnit));
+        when(actionUnitRepository.findDetailedById(actionUnitId)).thenReturn(Optional.of(actionUnit));
         when(actionUnitMapper.convert(actionUnit)).thenReturn(expectedDto);
+        when(recordingUnitRepository.countByActionContext(actionUnitId)).thenReturn(0);
 
         // Act
         ActionUnitDTO actualResult = actionUnitService.findById(actionUnitId);
@@ -204,7 +205,7 @@ class ActionUnitServiceTest {
         assertEquals(expectedDto, actualResult, "Les DTOs doivent être égaux");
 
         // Vérification des appels
-        verify(actionUnitRepository).findById(actionUnitId);
+        verify(actionUnitRepository).findDetailedById(actionUnitId);
         verify(actionUnitMapper).convert(actionUnit);
     }
 
@@ -212,6 +213,7 @@ class ActionUnitServiceTest {
     @Test
     void findById_Exception() {
 
+        when(actionUnitRepository.findDetailedById(actionUnit1.getId())).thenReturn(Optional.empty());
         when(actionUnitRepository.findById(actionUnit1.getId())).thenReturn(Optional.empty());
 
 

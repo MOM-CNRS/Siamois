@@ -5,6 +5,7 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,37 @@ import java.util.Set;
 
 @Repository
 public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, RevisionRepository<ActionUnit, Long, Long>, JpaSpecificationExecutor<ActionUnit> {
+
+    /**
+     * Fiche projet: fetch associations needed by the details form in one graph instead of EAGER fan-out.
+     */
+    @EntityGraph(attributePaths = {
+            "type",
+            "ark",
+            "primaryActionCode",
+            "status",
+            "fieldStatus",
+            "system",
+            "developmentNature",
+            "mainLocation",
+            "createdBy",
+            "createdByInstitution",
+            "validatedBy"
+    })
+    @Query("SELECT au FROM ActionUnit au WHERE au.id = :id")
+    Optional<ActionUnit> findDetailedById(@Param("id") Long id);
+
+    /**
+     * Badge counts for the ActionUnit panel tabs (RU / container / phase / documents) in one round-trip.
+     */
+    @Query(value = """
+            SELECT
+              (SELECT COUNT(*) FROM recording_unit WHERE fk_action_unit_id = :actionUnitId),
+              (SELECT COUNT(*) FROM container WHERE fk_action_unit_id = :actionUnitId),
+              (SELECT COUNT(*) FROM phase WHERE fk_action_unit_id = :actionUnitId),
+              (SELECT COUNT(*) FROM action_unit_document WHERE fk_action_unit_id = :actionUnitId)
+            """, nativeQuery = true)
+    List<Object[]> findPanelBadgeCounts(@Param("actionUnitId") Long actionUnitId);
 
     Optional<ActionUnit> findByFullIdentifier(String fullIdentifier);
 

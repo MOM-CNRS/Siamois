@@ -203,11 +203,14 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
         this.enabledEngine = formService.buildEnabledEngine(fieldSource);
         this.enabledEngine.applyAll(vp, applier);
 
-        // Prepare new field manager; the list stays mutable so a field created here shows up in the
-        // "existing fields" dropdown without waiting for the next form init
-        List<CustomFieldMeasurement> measurementOptions = new ArrayList<>(
-                services.getCustomFieldMeasurementService()
-                        .findOptionsForRecordingUnit(recordingUnitIdOrNull(), 10));
+        List<CustomFieldMeasurement> measurementOptions = new ArrayList<>();
+        List<UnitDefinitionDTO> unitOptions = new ArrayList<>();
+        if (unit instanceof RecordingUnitDTO) {
+            measurementOptions.addAll(
+                    services.getCustomFieldMeasurementService()
+                            .findOptionsForRecordingUnit(recordingUnitIdOrNull(), 10));
+            unitOptions.addAll(services.getUnitDefinitionService().findOptions());
+        }
 
         this.newFieldManager = new NewFieldManagerBean(services.getCustomFieldMeasurementService(),
                 services.getRecordingUnitService(),
@@ -216,7 +219,7 @@ public class EntityFormContext<T extends AbstractEntityDTO> {
                 langBean,
                 unit,
                 measurementOptions,
-                services.getUnitDefinitionService().findOptions()
+                unitOptions
                 );
 
     }

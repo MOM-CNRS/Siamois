@@ -15,7 +15,6 @@ import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -26,7 +25,6 @@ import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
 import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
-import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -37,12 +35,12 @@ import fr.siamois.ui.bean.dialog.newunit.UnitKind;
 import fr.siamois.ui.bean.panel.models.PanelBreadcrumb;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.ContainerTab;
+import fr.siamois.ui.bean.panel.models.panel.single.tab.EntityListTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.PhaseTab;
 import fr.siamois.ui.bean.panel.models.panel.single.tab.RecordingTab;
 import fr.siamois.ui.lazydatamodel.ContainerLazyDataModel;
 import fr.siamois.ui.lazydatamodel.PhaseLazyDataModel;
 import fr.siamois.ui.lazydatamodel.RecordingUnitLazyDataModel;
-import fr.siamois.ui.lazydatamodel.SpecimenLazyDataModel;
 import fr.siamois.ui.table.ToolbarCreateConfig;
 import fr.siamois.ui.table.definitions.ContainerTableDefinitionFactory;
 import fr.siamois.ui.table.definitions.PhaseTableDefinitionFactory;
@@ -87,7 +85,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
     private final RedirectBean redirectBean;
     private final transient LabelService labelService;
     private final transient RecordingUnitService recordingUnitService;
-    private final transient SpecimenService specimenService;
     private final transient NavBean navBean;
     private final transient GenericNewUnitDialogBean<?> genericNewUnitDialogBean;
     private final transient DuplicateStructureDialogBean duplicateStructureDialogBean;
@@ -126,7 +123,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
 
     // Linked recording units
     private Integer totalRecordingUnitCount;
-    private Integer totalSpecimenCount;
     private Integer totalContainerCount;
     private Integer totalPhaseCount;
 
@@ -138,7 +134,6 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         this.redirectBean = context.getBean(RedirectBean.class);
         this.labelService = context.getBean(LabelService.class);
         this.recordingUnitService = context.getBean(RecordingUnitService.class);
-        this.specimenService = context.getBean(SpecimenService.class);
         this.navBean = context.getBean(NavBean.class);
         this.genericNewUnitDialogBean = context.getBean(GenericNewUnitDialogBean.class);
         this.duplicateStructureDialogBean = context.getBean(DuplicateStructureDialogBean.class);
@@ -169,31 +164,83 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         unit = null;
         newCode = new ActionCode();
         secondaryActionCodes = new ArrayList<>();
+        documents = new ArrayList<>();
+        documentsLoaded = false;
+        documentsCount = 0;
+        recordingTabTableModel = null;
+        containerTabTableModel = null;
+        phaseTabTableModel = null;
 
         try {
-
-            unit = actionUnitService.findById(unitId);
-            this.setTitleCodeOrTitle(unit.getName()); // Set panel title
-
+            // Load entity first (EntityGraph) — forms only after permission check in init()
+            // RU count comes from findPanelBadgeCounts in loadDetailsAfterPermission
+            unit = actionUnitService.findDetailedWithoutCount(unitId);
+            this.setTitleCodeOrTitle(unit.getName());
             this.titleCodeOrTitle = unit.getName();
 
-            initForms(true);
-
-
-            // Get all the CHILDREN of the spatial unit
             selectedCategoriesChildren = new ArrayList<>();
             totalChildrenCount = 0;
-            // Get all the Parentsof the spatial unit
             selectedCategoriesParents = new ArrayList<>();
             totalParentsCount = 0;
-
 
         } catch (RuntimeException e) {
             this.errorMessage = "Failed to load action unit: " + e.getMessage();
         }
+    }
 
+    /** Forms + badge counts — called only after canViewProject succeeds. */
+    private void loadDetailsAfterPermission() {
+        initForms(true);
+        int[] badges = actionUnitService.findPanelBadgeCounts(unitId);
+        totalRecordingUnitCount = badges[0];
+        totalContainerCount = badges[1];
+        totalPhaseCount = badges[2];
+        documentsCount = badges[3];
+        unit.setRecordingUnitCount(totalRecordingUnitCount);
+    }
 
-        documents = documentService.findForActionUnit(unit);
+    @Override
+    public void refresh() {
+        clearPresentationCache();
+        refreshUnit();
+        if (unit != null) {
+            loadDetailsAfterPermission();
+            // Reset tab shells so counts stay correct; models rebuild on next tab open
+            while (tabs.size() > 2) {
+                tabs.remove(tabs.size() - 1);
+            }
+            tabs.add(new RecordingTab(
+                    "common.entity.recordingUnits",
+                    "bi bi-pencil-square",
+                    "recordingTab",
+                    null,
+                    totalRecordingUnitCount));
+            tabs.add(new ContainerTab(
+                    "common.entity.containers",
+                    "bi bi-box-seam",
+                    "containerTab",
+                    null,
+                    totalContainerCount));
+            tabs.add(new PhaseTab(
+                    "common.entity.phases",
+                    "bi bi-layers",
+                    "phaseTab",
+                    null,
+                    totalPhaseCount));
+            if (activeTabIndex != null && activeTabIndex > 0) {
+                ensureContentForActiveTab();
+            }
+        }
+        if (tabs != null) {
+            tabs.stream()
+                    .filter(EntityListTab.class::isInstance)
+                    .map(t -> (EntityListTab<?>) t)
+                    .forEach(t -> {
+                        if (t.getTableModel() != null) {
+                            t.getTableModel().resetRowContexts();
+                        }
+                    });
+        }
     }
 
     @Override
@@ -244,49 +291,44 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
                 return;
             }
 
-            if (!profilePermissionService.canViewProject(sessionSettingsBean.getUserInfo().getUser(), unit.getCreatedByInstitution(), unit.getId())) {
-                log.warn("Person {} tried to access action unit {} without permission", sessionSettingsBean.getUserInfo().getUser(), unitId);
+            if (!profilePermissionService.canViewProject(
+                    sessionSettingsBean.getUserInfo().getUser(),
+                    unit.getCreatedByInstitution(),
+                    unit.getId())) {
+                log.warn("Person {} tried to access action unit {} without permission",
+                        sessionSettingsBean.getUserInfo().getUser(), unitId);
+                unit = null;
                 redirectBean.redirectTo(HttpStatus.FORBIDDEN);
                 return;
             }
 
-            initRecordingTab();
-            initContainerTab();
-            initPhaseTab();
+            loadDetailsAfterPermission();
 
-            SpecimenLazyDataModel specimenLazyDataModel = new SpecimenLazyDataModel(specimenService, sessionSettingsBean, langBean);
-            specimenLazyDataModel.withConstantFilter(SpecimenSpec.ACTION_UNIT_FILTER, List.of(unit.getId()), FilterDTO.FilterType.CONTAINS);
-            specimenLazyDataModel.setSelectedUnits(new ArrayList<>());
-
-            totalSpecimenCount = specimenService.countByActionContext(unit);
-
-            RecordingTab recordingTab = new RecordingTab(
+            // Lightweight tab shells — heavy table models are built on first tab open
+            tabs.add(new RecordingTab(
                     "common.entity.recordingUnits",
                     "bi bi-pencil-square",
                     "recordingTab",
-                    recordingTabTableModel,
-                    totalRecordingUnitCount);
+                    null,
+                    totalRecordingUnitCount));
 
-            tabs.add(recordingTab);
-
-            ContainerTab containerTab = new ContainerTab(
+            tabs.add(new ContainerTab(
                     "common.entity.containers",
                     "bi bi-box-seam",
                     "containerTab",
-                    containerTabTableModel,
-                    totalContainerCount);
+                    null,
+                    totalContainerCount));
 
-            tabs.add(containerTab);
-
-            PhaseTab phaseTab = new PhaseTab(
+            tabs.add(new PhaseTab(
                     "common.entity.phases",
                     "bi bi-layers",
                     "phaseTab",
-                    phaseTabTableModel,
-                    totalPhaseCount);
+                    null,
+                    totalPhaseCount));
 
-            tabs.add(phaseTab);
-
+            if (activeTabIndex != null && activeTabIndex > 0) {
+                ensureContentForActiveTab();
+            }
 
         } catch (
                 ActionUnitNotFoundException e) {
@@ -297,6 +339,70 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
             this.errorMessage = "Failed to load action unit: " + e.getMessage();
             redirectBean.redirectTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Override
+    protected void ensureContentForActiveTab() {
+        if (activeTabIndex == null || unit == null) {
+            return;
+        }
+        if (activeTabIndex == 1) {
+            ensureDocumentsLoaded();
+        } else if (activeTabIndex == 2) {
+            ensureRecordingTab();
+        } else if (activeTabIndex == 3) {
+            ensureContainerTab();
+        } else if (activeTabIndex == 4) {
+            ensurePhaseTab();
+        }
+    }
+
+    private void ensureDocumentsLoaded() {
+        if (documentsLoaded || unit == null) {
+            return;
+        }
+        documents = documentService.findForActionUnit(unit);
+        documentsCount = documents.size();
+        documentsLoaded = true;
+    }
+
+    private void ensureRecordingTab() {
+        if (recordingTabTableModel != null) {
+            return;
+        }
+        initRecordingTab();
+        tabs.set(2, new RecordingTab(
+                "common.entity.recordingUnits",
+                "bi bi-pencil-square",
+                "recordingTab",
+                recordingTabTableModel,
+                totalRecordingUnitCount));
+    }
+
+    private void ensureContainerTab() {
+        if (containerTabTableModel != null) {
+            return;
+        }
+        initContainerTab();
+        tabs.set(3, new ContainerTab(
+                "common.entity.containers",
+                "bi bi-box-seam",
+                "containerTab",
+                containerTabTableModel,
+                totalContainerCount));
+    }
+
+    private void ensurePhaseTab() {
+        if (phaseTabTableModel != null) {
+            return;
+        }
+        initPhaseTab();
+        tabs.set(4, new PhaseTab(
+                "common.entity.phases",
+                "bi bi-layers",
+                "phaseTab",
+                phaseTabTableModel,
+                totalPhaseCount));
     }
 
     @Override

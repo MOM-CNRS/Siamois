@@ -9,4 +9,8 @@
         <component-class>fr.siamois.ui.custom.LazyTreeTable</component-class>
     </component>
 
+    <lifecycle>
+        <phase-listener>fr.siamois.ui.config.TimingPhaseListener</phase-listener>
+    </lifecycle>
+
 </faces-config>

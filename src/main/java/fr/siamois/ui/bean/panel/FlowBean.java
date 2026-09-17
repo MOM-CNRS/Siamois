@@ -157,7 +157,16 @@ public class FlowBean implements Serializable {
             panels = new ArrayList<>(panels.subList(0, MAX_NUMBER_OF_PANEL));
         }
 
-        panels.get(0).setCollapsed(false);
+        // Accordion: only the top panel keeps a heavy body in the JSF tree (RESTORE_VIEW cost).
+        for (int i = 0; i < panels.size(); i++) {
+            AbstractPanel p = panels.get(i);
+            if (i == 0) {
+                p.setCollapsed(false);
+            } else {
+                p.setCollapsed(true);
+                p.setLoaded(false);
+            }
+        }
 
         //if fullscreen set this new panel as the active one
         if (fullscreenPanelIndex >= 0) {
@@ -541,9 +550,59 @@ public class FlowBean implements Serializable {
             return;
         }
         AbstractPanel panel = panels.get(idx);
+        boolean expanding = Boolean.TRUE.equals(panel.getCollapsed());
         panel.setCollapsed(!panel.getCollapsed());
 
+        if (expanding) {
+            // Accordion: unload sibling bodies so only one heavy panel stays in view state
+            for (int i = 0; i < panels.size(); i++) {
+                if (i == idx) {
+                    continue;
+                }
+                AbstractPanel sibling = panels.get(i);
+                sibling.setCollapsed(true);
+                sibling.setLoaded(false);
+            }
+            panel.setLoaded(false);
+        } else {
+            // Collapsing: drop body from the tree on next render
+            panel.setLoaded(false);
+        }
+    }
 
+    /**
+     * Only expanded panels include their body. Combined with accordion behaviour in
+     * {@link #addPanel} / {@link #handleToggleOfPanel}, typically a single heavy body is restored.
+     * Also normalizes legacy sessions that still have several panels expanded.
+     */
+    public boolean shouldIncludePanelBody(int index) {
+        if (panels == null || index < 0 || index >= panels.size()) {
+            return false;
+        }
+        normalizeAccordionBodies();
+        if (fullscreenPanelIndex >= 0) {
+            return fullscreenPanelIndex == index;
+        }
+        AbstractPanel panel = panels.get(index);
+        return !Boolean.TRUE.equals(panel.getCollapsed());
+    }
+
+    /** Keep at most one expanded panel so only one heavy body stays in JSF view state. */
+    private void normalizeAccordionBodies() {
+        if (panels == null || panels.isEmpty() || fullscreenPanelIndex >= 0) {
+            return;
+        }
+        boolean keepExpanded = false;
+        for (AbstractPanel panel : panels) {
+            if (!Boolean.TRUE.equals(panel.getCollapsed())) {
+                if (keepExpanded) {
+                    panel.setCollapsed(true);
+                    panel.setLoaded(false);
+                } else {
+                    keepExpanded = true;
+                }
+            }
+        }
     }
 
     private int getPanelIndex(String panelId) {

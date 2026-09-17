@@ -39,6 +39,12 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
 
     @Query(
             nativeQuery = true,
+            value = "SELECT COUNT(*) FROM action_unit_document WHERE fk_action_unit_id = :actionUnitId"
+    )
+    long countDocumentsByActionUnit(@Param("actionUnitId") Long actionUnitId);
+
+    @Query(
+            nativeQuery = true,
             value = "SELECT d.* FROM siamois_document d " +
                     "JOIN recording_unit_document sud ON d.document_id = sud.fk_document_id " +
                     "WHERE sud.fk_recording_unit_id = :recordingUnitId"
