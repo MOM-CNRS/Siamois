@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:f="http://java.sun.com/jsf/core"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:c="http://java.sun.com/jsp/jstl/core">
+
+<h:head>
+    <title>Gestion des exports</title>
+</h:head>
+
+<h:body>
+    <ui:composition template="/template.xhtml">
+        <ui:define name="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h1 class="page-header">Export de données</h1>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Modèles d'export</h2>
+                            </div>
+                            <div class="card-body">
+                                <!-- Simple navigation buttons that redirect -->
+                                <p:toolbar>
+                                    <p:toolbarGroup>
+                                        <p:commandButton value="Nouveau modèle" 
+                                                        action="#{exportTemplateBean.createTemplate}" 
+                                                        icon="pi pi-plus"
+                                                        ajax="false"
+                                                        onclick="window.location.href='/pages/settings/project/exportTemplateForm.xhtml'"/>
+                                        <p:commandButton value="Exécuter un export" 
+                                                        action="#{exportExecutionBean.init()}" 
+                                                        icon="pi pi-play"
+                                                        ajax="false"
+                                                        onclick="window.location.href='/pages/settings/project/exportExecution.xhtml'"/>
+                                    </p:toolbarGroup>
+                                </p:toolbar>
+                                
+                                <p:dataTable value="#{exportTemplateBean.templates}" 
+                                             var="template" 
+                                             paginator="true" 
+                                             rows="10"
+                                             sortBy="#{template.name}">
+                                    <p:column headerText="Nom" sortBy="#{template.name}">
+                                        <h:outputText value="#{template.name}" />
+                                    </p:column>
+                                    <p:column headerText="Description" sortBy="#{template.description}">
+                                        <h:outputText value="#{template.description}" />
+                                    </p:column>
+                                    <p:column headerText="Feuilles">
+                                        <h:outputText value="#{template.sheets.size()}" />
+                                    </p:column>
+                                    <p:column headerText="Actions">
+                                        <p:commandButton icon="pi pi-pencil" 
+                                                        action="#{exportTemplateBean.editTemplate(template)}" 
+                                                        ajax="false"
+                                                        onclick="window.location.href='/pages/settings/project/exportTemplateForm.xhtml'"
+                                                        title="Modifier"/>
+                                        <p:commandButton icon="pi pi-copy" 
+                                                        action="#{exportTemplateBean.duplicateTemplate(template)}" 
+                                                        ajax="false"
+                                                        onclick="window.location.href='/pages/settings/project/exportTemplateForm.xhtml'"
+                                                        title="Dupliquer"/>
+                                        <p:commandButton icon="pi pi-trash" 
+                                                        action="#{exportTemplateBean.deleteTemplate(template)}" 
+                                                        confirm="Êtes-vous sûr de vouloir supprimer ce modèle ?"
+                                                        title="Supprimer"/>
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ui:define>
+    </ui:composition>
+</h:body>
+</html>

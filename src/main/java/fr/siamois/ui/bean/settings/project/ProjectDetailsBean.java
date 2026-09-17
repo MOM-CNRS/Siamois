@@ -73,6 +73,12 @@ public class ProjectDetailsBean {
             return "/pages/settings/project/projectThesaurusSettings.xhtml?faces-redirect=true";
         }));
 
+        // Add export settings
+        elements.add(new OptionElement("bi bi-file-spreadsheet", langBean.msg("projectSettings.titles.export"),
+                langBean.msg("projectSettings.descriptions.export"), () -> {
+            return "/pages/settings/project/exportSettings.xhtml?faces-redirect=true";
+        }));
+
 
     }
 

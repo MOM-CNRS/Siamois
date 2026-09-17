@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:f="http://java.sun.com/jsf/core"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:c="http://java.sun.com/jsp/jstl/core">
+
+<h:head>
+    <title>Configuration de feuille d'export</title>
+</h:head>
+
+<h:body>
+    <ui:composition template="/template.xhtml">
+        <ui:define name="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h1 class="page-header">Configuration de feuille d'export</h1>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>#{exportSheetBean.sheet.name != null ? 'Modification' : 'Création'} d'une feuille</h2>
+                            </div>
+                            <div class="card-body">
+                                <h:form id="sheetForm">
+                                    <p:panelGrid columns="2" styleClass="p-fluid">
+                                        <p:outputLabel for="name" value="Nom de la feuille *" />
+                                        <p:inputText id="name" value="#{exportSheetBean.sheet.name}" required="true" />
+                                        
+                                        <p:commandButton value="Enregistrer" 
+                                                        action="#{exportSheetBean.saveSheet}" 
+                                                        ajax="false"
+                                                        icon="pi pi-save"/>
+                                        <p:commandButton value="Annuler" 
+                                                        action="#{exportSheetBean.cancel}" 
+                                                        immediate="true"
+                                                        ajax="false"
+                                                        icon="pi pi-times"/>
+                                    </p:panelGrid>
+                                </h:form>
+                                
+                                <h3>Sources de données</h3>
+                                <p:dataTable value="#{exportSheetBean.sheet.sources}" 
+                                             var="source" 
+                                             paginator="true" 
+                                             rows="10">
+                                    <p:column headerText="Table">
+                                        <h:outputText value="#{source.table}" />
+                                    </p:column>
+                                    <p:column headerText="Types">
+                                        <h:outputText value="#{source.types}" />
+                                    </p:column>
+                                    <p:column headerText="Colonnes">
+                                        <h:outputText value="#{source.mappings.size()} colonnes" />
+                                    </p:column>
+                                    <p:column headerText="Actions">
+                                        <p:commandButton icon="pi pi-pencil" 
+                                                        action="#{exportSheetBean.editSource(source)}" 
+                                                        ajax="false"
+                                                        onclick="window.location.href='/pages/settings/project/exportSheetForm.xhtml'"
+                                                        title="Modifier"/>
+                                    </p:column>
+                                </p:dataTable>
+                                
+                                <p:commandButton value="Ajouter une source" 
+                                                action="#{exportSheetBean.addSource}" 
+                                                ajax="false"
+                                                onclick="window.location.href='/pages/settings/project/exportSheetForm.xhtml'"
+                                                icon="pi pi-plus"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ui:define>
+    </ui:composition>
+</h:body>
+</html>
