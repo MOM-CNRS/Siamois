@@ -10,10 +10,15 @@
 <h:head>
 
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css" integrity="sha512-t7Few9xlddEmgd3oKZQahkNI4dS6l80+eGEzFQiqtyVYdvcSG2D3Iub77R20BdotfRPA9caaRkg1tyaJiPmO0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous"/>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css"
+          integrity="sha512-t7Few9xlddEmgd3oKZQahkNI4dS6l80+eGEzFQiqtyVYdvcSG2D3Iub77R20BdotfRPA9caaRkg1tyaJiPmO0g=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous"/>
     <h:outputStylesheet library="css" name="settings.css"/>
-    <link rel="preload" href="#{request.contextPath}/jakarta.faces.resources/fonts/siamois.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href="#{request.contextPath}/jakarta.faces.resources/fonts/siamois.woff2" as="font"
+          type="font/woff2" crossorigin="anonymous"/>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"
             integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"
@@ -97,7 +102,8 @@
                         </li>
                     </ul>
 
-                    <form:csrfform formId="institutionSelectForm" id="institutionCsrfSelectForm" style="width:90%;margin:auto;">
+                    <form:csrfform formId="institutionSelectForm" id="institutionCsrfSelectForm"
+                                   style="width:90%;margin:auto;">
                         <article>
                             <h:panelGroup styleClass="ui-inputgroup change-instit ui-fluid">
                                 <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
@@ -264,7 +270,8 @@
                                 <span class="menu-text">#{navBean.currentUser().displayName()}</span>
                             </h:panelGroup>
                             <p:tooltip for="userAvatarBtn" value="#{navBean.currentUser().displayName()}"/>
-                            <p:menu overlay="true" appendTo="@(body)" trigger="userAvatarBtn" my="left bottom" at="right top">
+                            <p:menu overlay="true" appendTo="@(body)" trigger="userAvatarBtn" my="left bottom"
+                                    at="right top">
                                 <p:menuitem value="#{langBean.msg('nav.header.profile')}"
                                             icon="bi bi-person"
                                             url="#{request.contextPath}/settings/profile"/>
@@ -303,7 +310,6 @@
                     </ul>
 
                     <ul class="nav flex-column">
-                        <li class="nav-header">#{langBean.msg('nav.header.profile')}</li>
                         <li class="nav-item">
                             <h:commandLink action="#{redirectBean.redirectTo('/settings/profile')}"
                                            styleClass="nav-link" id="myProfileLink">
@@ -312,10 +318,6 @@
                                 <p:tooltip for="myProfileLink" value="#{langBean.msg('nav.myProfile.hint')}"/>
                             </h:commandLink>
                         </li>
-                    </ul>
-
-                    <ul class="nav flex-column">
-                        <li class="nav-header">#{langBean.msg("nav.header.organisations")}</li>
                         <li class="nav-item">
                             <h:commandLink action="#{navBean.goToOrganisationSettings()}" styleClass="nav-link"
                                            id="organisationManagementLink">
@@ -325,10 +327,6 @@
                                            value="#{langBean.msg('nav.organisationManagement.hint')}"/>
                             </h:commandLink>
                         </li>
-                    </ul>
-
-                    <ul class="nav flex-column">
-                        <li class="nav-header">#{langBean.msg("nav.header.projects")}</li>
                         <li class="nav-item">
                             <h:commandLink action="#{navBean.goToProjectsSettings()}" styleClass="nav-link"
                                            id="projectsManagementLink">
@@ -338,22 +336,18 @@
                                            value="#{langBean.msg('nav.projectsManagement.hint')}"/>
                             </h:commandLink>
                         </li>
-                    </ul>
-
-                    <ui:fragment rendered="#{navBean.administrationVisible}">
-                        <ul class="nav flex-column">
-                            <li class="nav-header">#{langBean.msg("nav.header.administration")}</li>
+                        <ui:fragment rendered="#{navBean.administrationVisible}">
                             <li class="nav-item">
                                 <h:commandLink action="#{navBean.goToUserManagementSettings()}" styleClass="nav-link"
                                                id="userManagementLink">
                                     <i class="bi bi-shield-lock"/>
-                                    <span class="menu-text">#{langBean.msg('nav.userManagement')}</span>
+                                    <span class="menu-text">#{langBean.msg("nav.header.administration")}</span>
                                     <p:tooltip for="userManagementLink"
                                                value="#{langBean.msg('nav.userManagement.hint')}"/>
                                 </h:commandLink>
                             </li>
-                        </ul>
-                    </ui:fragment>
+                        </ui:fragment>
+                    </ul>
 
 
                     <div class="sidebar-footer">
