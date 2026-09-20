@@ -5,11 +5,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
-import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -32,9 +33,8 @@ import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
-import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -106,6 +106,10 @@ class ProjectControllerApiTest {
     private PhaseService phaseService;
     @Mock
     private DocumentWriteOpenApiService documentWriteOpenApiService;
+    @Mock
+    private BookmarkService bookmarkService;
+    @Mock
+    private HistoryAuditService historyAuditService;
 
     private MockMvc mockMvc;
 
@@ -133,12 +137,13 @@ class ProjectControllerApiTest {
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService,
-                phaseService);
+                phaseService,
+                bookmarkService,
+                historyAuditService);
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
                 projectResponseMapper,
                 recordingUnitResourceMapper,
-                recordingUnitOpenApiService,
                 documentWriteOpenApiService);
 
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
@@ -240,7 +245,7 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("1");
         resource.setName("Fouille A");
-        when(projectResponseMapper.toResource(eq(row), anyString())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean())).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects").param("offset", "0").param("limit", "20"))
                 .andExpect(status().isOk())
@@ -273,7 +278,7 @@ class ProjectControllerApiTest {
 
         ProjectResource resource = new ProjectResource();
         resource.setId("1");
-        when(projectResponseMapper.toResource(row, "en")).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), eq("en"), any(), anyBoolean())).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects")
                         .param("offset", "0")
@@ -281,7 +286,7 @@ class ProjectControllerApiTest {
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
                 .andExpect(status().isOk());
 
-        verify(projectResponseMapper).toResource(row, "en");
+        verify(projectResponseMapper).toResource(eq(row), eq("en"), any(), anyBoolean());
     }
 
     @Test
@@ -322,7 +327,7 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("5");
         resource.setName("Projet test");
-        when(projectResponseMapper.toResource(eq(row), anyString())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean())).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/5"))
                 .andExpect(status().isOk())
@@ -331,28 +336,6 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.id").value("5"));
 
         verify(actionUnitService).findAccessibleProjectByKey("5", Set.of(100L));
-    }
-
-    @Test
-    void getProjectUiForm_success_returnsPayload() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        ProjectFormData formData = new ProjectFormData(
-                new FormResource("{}"),
-                Map.of());
-        when(recordingUnitOpenApiService.buildProjectUiForm(100L, personDto, "fr"))
-                .thenReturn(formData);
-
-        mockMvc.perform(get("/api/v1/projects/form")
-                        .param("organizationId", "100")
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, "fr"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.form.layoutJson").value("{}"))
-                .andExpect(jsonPath("$.data.vocabulariesByFieldCode").doesNotExist());
-
-        verify(recordingUnitOpenApiService).buildProjectUiForm(100L, personDto, "fr");
     }
 
     /**
@@ -376,7 +359,7 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("12");
         resource.setName("Par full id");
-        when(projectResponseMapper.toResource(eq(row), anyString())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean())).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/{id}", "INST-PROJ-2025"))
                 .andExpect(status().isOk())
@@ -398,12 +381,12 @@ class ProjectControllerApiTest {
 
         ProjectResource resource = new ProjectResource();
         resource.setId("3");
-        when(projectResponseMapper.toResource(row, "de")).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), eq("de"), any(), anyBoolean())).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/3").header(HttpHeaders.ACCEPT_LANGUAGE, "de-DE"))
                 .andExpect(status().isOk());
 
-        verify(projectResponseMapper).toResource(row, "de");
+        verify(projectResponseMapper).toResource(eq(row), eq("de"), any(), anyBoolean());
     }
 
     @Test
@@ -421,7 +404,7 @@ class ProjectControllerApiTest {
         ProjectResource resource = new ProjectResource();
         resource.setId("33");
         resource.setName("Chartres");
-        when(projectResponseMapper.toResource(eq(row), anyString())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean())).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/C309_01"))
                 .andExpect(status().isOk())
@@ -651,7 +634,7 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("77");
         resource.setName("Nouveau");
-        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString())).thenReturn(resource);
+        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString(), any(), anyBoolean())).thenReturn(resource);
 
         mockMvc.perform(post("/api/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -688,7 +671,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("1", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(false);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(false);
 
         mockMvc.perform(patch("/api/v1/projects/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -712,14 +695,14 @@ class ProjectControllerApiTest {
         when(actionUnitService.findAccessibleProjectByKey("8", Set.of(100L)))
                 .thenReturn(row)
                 .thenAnswer(invocation -> new AccessibleProjectForApi(au, 0L, 0L));
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         when(actionUnitService.save(any(), any(), any())).thenReturn(au);
 
         ProjectResource resource = new ProjectResource();
         resource.setResourceType("projects");
         resource.setId("8");
         resource.setName("Après");
-        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString())).thenReturn(resource);
+        when(projectResponseMapper.toResource(any(AccessibleProjectForApi.class), anyString(), any(), anyBoolean())).thenReturn(resource);
 
         mockMvc.perform(patch("/api/v1/projects/8")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -752,7 +735,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("3", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/3"))
                 .andExpect(status().isConflict());
@@ -771,7 +754,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 1L);
         when(actionUnitService.findAccessibleProjectByKey("4", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/4"))
                 .andExpect(status().isConflict());
@@ -790,7 +773,7 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/9"))
                 .andExpect(status().isNoContent());

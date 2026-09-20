@@ -61,11 +61,11 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectOneFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.form.TextFieldAnswer;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectTypeListResponse;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
@@ -451,16 +451,16 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectUiForm_unknownOrganization_throws404() {
+    void buildProjectTypes_unknownOrganization_throws404() {
         when(institutionService.findById(10L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.buildProjectUiForm(10L, personDto, "fr"))
+        assertThatThrownBy(() -> service.buildProjectTypes(10L, personDto, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
     }
 
     @Test
-    void buildProjectUiForm_returnsMetadataOnly() {
+    void buildProjectTypes_returnsDefaultTypeWithFieldConfigsAndEmptyData() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         when(institutionService.findById(10L)).thenReturn(inst);
@@ -473,13 +473,18 @@ class RecordingUnitOpenApiServiceTest {
         textField.setIsSystemField(true);
 
         FormUiDto formUiDto = formUiDtoWithOneField(textField);
-        when(conversionService.convert(ActionUnit.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUiDto);
+        when(conversionService.convert(ActionUnit.DETAILS_FORM, FormUiDto.class)).thenReturn(formUiDto);
 
-        ProjectFormData data = service.buildProjectUiForm(10L, personDto, "fr");
+        ProjectTypeListResponse response = service.buildProjectTypes(10L, personDto, "fr");
 
-        assertThat(data.form()).isNotNull();
-        assertThat(data.fields()).containsKey("301");
-        assertThat(data.fields().get("301").label()).isEqualTo("Libellé projet");
+        assertThat(response.getData()).isEmpty();
+        assertThat(response.getDefaultType().getForm()).isNotNull();
+        assertThat(response.getFields()).containsKey("301");
+        assertThat(response.getFields().get("301").label()).isEqualTo("Libellé projet");
+        assertThat(response.getDefaultType().getFieldConfigs()).hasSize(1);
+        assertThat(response.getDefaultType().getFieldConfigs().get(0).field()).isEqualTo("301");
+        assertThat(response.getDefaultType().getFieldConfigs().get(0).active()).isTrue();
+        assertThat(response.getDefaultType().getFieldConfigs().get(0).institutionLocked()).isTrue();
     }
 
     @Test

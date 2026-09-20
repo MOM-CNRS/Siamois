@@ -39,7 +39,8 @@ import org.springframework.context.annotation.Configuration;
                 @Tag(name = OpenApiTags.FIND, description = "Mobilier : formulaire, création et mise à jour."),
                 @Tag(name = OpenApiTags.DOCUMENT, description = "Fichiers et formulaires documentaires."),
                 @Tag(name = OpenApiTags.SPATIAL_UNIT, description = "Recherche de lieux pour l'autocomplétion (contexte spatial des projets)."),
-                @Tag(name = OpenApiTags.USER, description = "Utilisateurs rattachés à une organisation (équipes, gestionnaires).")
+                @Tag(name = OpenApiTags.USER, description = "Utilisateurs rattachés à une organisation (équipes, gestionnaires)."),
+                @Tag(name = OpenApiTags.BOOKMARK, description = "Favoris de l'utilisateur, génériques pour tout type de ressource.")
         },
         security = @SecurityRequirement(name = "bearer-jwt")
 )

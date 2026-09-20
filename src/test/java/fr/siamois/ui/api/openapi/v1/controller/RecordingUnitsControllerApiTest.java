@@ -6,10 +6,12 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -101,6 +103,10 @@ class RecordingUnitsControllerApiTest {
     private PhaseService phaseService;
     @Mock
     private DocumentWriteOpenApiService documentWriteOpenApiService;
+    @Mock
+    private BookmarkService bookmarkService;
+    @Mock
+    private HistoryAuditService historyAuditService;
 
     private MockMvc mockMvc;
 
@@ -129,7 +135,9 @@ class RecordingUnitsControllerApiTest {
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService,
-                phaseService);
+                phaseService,
+                bookmarkService,
+                historyAuditService);
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,

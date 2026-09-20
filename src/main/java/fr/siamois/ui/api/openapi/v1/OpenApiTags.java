@@ -16,6 +16,7 @@ public final class OpenApiTags {
     public static final String VOCABULARY = "Vocabulaires";
     public static final String SPATIAL_UNIT = "Lieux";
     public static final String USER = "Utilisateurs";
+    public static final String BOOKMARK = "Favoris";
 
     private OpenApiTags() {
     }

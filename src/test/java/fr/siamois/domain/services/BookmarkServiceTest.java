@@ -28,6 +28,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -198,6 +200,33 @@ class BookmarkServiceTest {
 
         verify(bookmarkRepository).deleteBookmarkByPersonAndInstitutionAndResourceUri(
                 person, institution, "resource-uri");
+    }
+
+    // ---- findBookmarkedResourceUris (bulk, plan §5/§6) -----------------------------------
+
+    @Test
+    void findBookmarkedResourceUris_returnsOnlyTheBookmarkedSubset() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+
+        Bookmark bookmarked = new Bookmark();
+        bookmarked.setResourceUri("/action-unit/1");
+        when(bookmarkRepository.findByPersonAndInstitutionAndResourceUriIn(
+                eq(person), eq(institution), anyCollection()))
+                .thenReturn(List.of(bookmarked));
+
+        java.util.Set<String> result = bookmarkService.findBookmarkedResourceUris(
+                userInfo, List.of("/action-unit/1", "/action-unit/2"));
+
+        assertEquals(java.util.Set.of("/action-unit/1"), result);
+    }
+
+    @Test
+    void findBookmarkedResourceUris_emptyInput_returnsEmptySetWithoutQuerying() {
+        java.util.Set<String> result = bookmarkService.findBookmarkedResourceUris(userInfo, List.of());
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(bookmarkRepository);
     }
 
 }

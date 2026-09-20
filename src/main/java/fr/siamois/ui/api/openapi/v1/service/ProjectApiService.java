@@ -6,12 +6,13 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
-import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -29,6 +30,9 @@ import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectHistoryAuthorResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectHistoryEntryResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -79,6 +83,19 @@ public class ProjectApiService {
     private final ConceptMapper conceptMapper;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
     private final PhaseService phaseService;
+    private final BookmarkService bookmarkService;
+    private final HistoryAuditService historyAuditService;
+
+    private static final String ACTION_UNIT_RESOURCE_URI_PREFIX = "/action-unit/";
+
+    /**
+     * Resource URI a Project bookmark is stored under — must match JSF's own
+     * {@code ActionUnitPanel.entityRessourceUri()} exactly (plan §5), not the REST {@code _links.self}
+     * path, since bookmarks created from JSF and from the React main-panel share the same row.
+     */
+    public static String actionUnitResourceUri(Long actionUnitId) {
+        return actionUnitId == null ? null : ACTION_UNIT_RESOURCE_URI_PREFIX + actionUnitId;
+    }
 
     public void validatePagedListRequest(int offset, int limit) {
         if (offset < 0 || limit <= 0 || limit > MAX_PAGE_SIZE) {
@@ -143,6 +160,77 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Projet introuvable ou non accessible");
         }
         return row;
+    }
+
+    /**
+     * {@code _permissions} for a single project (detail/create/patch response) — one direct check,
+     * not batched, since there's only one row.
+     */
+    public ProjectResourcePermissions permissionsFor(ProjectApiCaller caller, AccessibleProjectForApi row) {
+        ActionUnitDTO dto = row.actionUnit();
+        boolean canWrite = profilePermissionService.hasActionUnitWritePermission(
+                caller.person(), dto.getCreatedByInstitution(), dto.getId());
+        return ProjectResourcePermissions.of(canWrite);
+    }
+
+    /**
+     * {@code _permissions} for a whole list page, batched (plan §5) — see
+     * {@link ProfilePermissionService#actionUnitIdsWithWritePermission}, which is itself institution-aware
+     * since a list page can span several institutions (unlike JSF's always-one-institution table views).
+     */
+    public Map<Long, ProjectResourcePermissions> permissionsFor(ProjectApiCaller caller, Collection<AccessibleProjectForApi> rows) {
+        Map<Long, InstitutionDTO> institutionByActionUnitId = new LinkedHashMap<>();
+        for (AccessibleProjectForApi row : rows) {
+            Long id = row.actionUnit().getId();
+            if (id != null) {
+                institutionByActionUnitId.put(id, row.actionUnit().getCreatedByInstitution());
+            }
+        }
+        Set<Long> canWriteIds = profilePermissionService.actionUnitIdsWithWritePermission(caller.person(), institutionByActionUnitId);
+        Map<Long, ProjectResourcePermissions> result = new LinkedHashMap<>();
+        for (Long id : institutionByActionUnitId.keySet()) {
+            result.put(id, ProjectResourcePermissions.of(canWriteIds.contains(id)));
+        }
+        return result;
+    }
+
+    /**
+     * {@code bookmarked} for a single project — one direct check.
+     */
+    public boolean isBookmarked(ProjectApiCaller caller, AccessibleProjectForApi row, String lang) {
+        ActionUnitDTO dto = row.actionUnit();
+        String uri = actionUnitResourceUri(dto.getId());
+        InstitutionDTO institution = dto.getCreatedByInstitution();
+        if (uri == null || institution == null) {
+            return false;
+        }
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return Boolean.TRUE.equals(bookmarkService.isRessourceBookmarkedByUser(userInfo, uri));
+    }
+
+    /**
+     * {@code bookmarked} for a whole list page, batched (plan §5) — see
+     * {@link BookmarkService#findBookmarkedResourceUris}. Grouped by institution first, same reasoning
+     * as {@link #permissionsFor(ProjectApiCaller, Collection)}: a bookmark row is
+     * {@code (person, institution, resourceUri)}, so the lookup itself is institution-scoped.
+     */
+    public Set<String> bookmarkedResourceUris(ProjectApiCaller caller, Collection<AccessibleProjectForApi> rows, String lang) {
+        Map<Long, List<AccessibleProjectForApi>> rowsByInstitutionId = rows.stream()
+                .filter(row -> row.actionUnit().getCreatedByInstitution() != null
+                        && row.actionUnit().getCreatedByInstitution().getId() != null)
+                .collect(Collectors.groupingBy(row -> row.actionUnit().getCreatedByInstitution().getId()));
+
+        Set<String> bookmarked = new HashSet<>();
+        for (List<AccessibleProjectForApi> group : rowsByInstitutionId.values()) {
+            InstitutionDTO institution = group.get(0).actionUnit().getCreatedByInstitution();
+            UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+            Set<String> uris = group.stream()
+                    .map(row -> actionUnitResourceUri(row.actionUnit().getId()))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            bookmarked.addAll(bookmarkService.findBookmarkedResourceUris(userInfo, uris));
+        }
+        return bookmarked;
     }
 
     /**
@@ -224,7 +312,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+        if (!profilePermissionService.hasActionUnitWritePermission(userInfo, dto)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
         }
         applyProjectPatch(dto, patch);
@@ -269,7 +357,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+        if (!profilePermissionService.hasActionUnitWritePermission(userInfo, dto)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression du projet non autorisée");
         }
         if (row.recordingUnitCount() > 0) {
@@ -371,6 +459,33 @@ public class ProjectApiService {
     public List<DocumentResource> listDocumentsForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
         return toSortedDocumentResources(documentService.findForActionUnit(row.actionUnit()));
+    }
+
+    /**
+     * Revision history for the fiche header (plan §4/§5), not a separate tab — thin wrapper over
+     * {@link HistoryAuditService}, which is already entity-agnostic and used the same way by JSF's
+     * {@code AbstractSingleEntityPanel} for every entity type, not just Project.
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectHistoryEntryResource> listHistoryForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        Long actionUnitId = row.actionUnit().getId();
+        if (actionUnitId == null) {
+            return List.of();
+        }
+        return historyAuditService.findAllRevisionForEntity(ActionUnitDTO.class, actionUnitId).stream()
+                .sorted()
+                .map(revision -> {
+                    Person author = revision.revisionEntity().getUpdatedBy();
+                    ProjectHistoryAuthorResource authorResource = author == null ? null
+                            : new ProjectHistoryAuthorResource(author.getId(), author.getName(), author.getLastname());
+                    return new ProjectHistoryEntryResource(
+                            revision.revisionEntity().getRevId(),
+                            revision.getDate(),
+                            revision.revisionType().name(),
+                            authorResource);
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)

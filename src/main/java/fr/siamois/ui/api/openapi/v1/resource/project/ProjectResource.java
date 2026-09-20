@@ -52,4 +52,11 @@ public class ProjectResource extends ProjectResourceIdentifier {
     @JsonProperty("_links")
     private ProjectResourceLinks links;
 
+    @JsonProperty("_permissions")
+    @Schema(description = "Droits du caller sur ce projet")
+    private ProjectResourcePermissions permissions;
+
+    @Schema(description = "Le projet est dans les favoris du caller")
+    private boolean bookmarked;
+
 }

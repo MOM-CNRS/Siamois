@@ -1,10 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -69,6 +71,10 @@ class ProjectApiServiceRecordingUnitFindsTest {
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
     private PhaseService phaseService;
+    @Mock
+    private BookmarkService bookmarkService;
+    @Mock
+    private HistoryAuditService historyAuditService;
 
     private ProjectApiService projectApiService;
 
@@ -92,7 +98,8 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService,
+                bookmarkService, historyAuditService);
     }
 
     private ProjectApiCaller caller() {

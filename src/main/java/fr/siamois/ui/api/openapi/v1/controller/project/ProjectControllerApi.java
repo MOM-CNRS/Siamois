@@ -8,13 +8,12 @@ import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectFormResponse;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,6 +31,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -42,7 +43,6 @@ public class ProjectControllerApi {
     private final ProjectApiService projectApiService;
     private final ProjectResponseMapper projectResponseMapper;
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
-    private final RecordingUnitOpenApiService recordingUnitOpenApiService;
     private final DocumentWriteOpenApiService documentWriteOpenApiService;
 
     @GetMapping
@@ -69,8 +69,21 @@ public class ProjectControllerApi {
                 caller, organizationId, search, offset, limit, sort);
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+
+        // Both batched once for the whole page, not per row — see ProjectApiService#permissionsFor /
+        // #bookmarkedResourceUris.
+        Map<Long, ProjectResourcePermissions> permissionsByActionUnitId =
+                projectApiService.permissionsFor(caller, rows.getContent());
+        Set<String> bookmarkedUris = projectApiService.bookmarkedResourceUris(caller, rows.getContent(), lang);
+
         List<ProjectResource> resources = rows.getContent().stream()
-                .map(row -> projectResponseMapper.toResource(row, lang))
+                .map(row -> {
+                    Long id = row.actionUnit().getId();
+                    ProjectResourcePermissions permissions = permissionsByActionUnitId.getOrDefault(
+                            id, ProjectResourcePermissions.of(false));
+                    boolean bookmarked = bookmarkedUris.contains(ProjectApiService.actionUnitResourceUri(id));
+                    return projectResponseMapper.toResource(row, lang, permissions, bookmarked);
+                })
                 .toList();
 
         ListMeta meta = new ListMeta(rows.getTotalElements(), limit, (long) offset);
@@ -95,7 +108,9 @@ public class ProjectControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         AccessibleProjectForApi row = projectApiService.requireAccessibleProject(caller, id);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang)));
+        ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
+        boolean bookmarked = projectApiService.isBookmarked(caller, row, lang);
+        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, bookmarked)));
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -119,38 +134,11 @@ public class ProjectControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         AccessibleProjectForApi row = projectApiService.createProject(caller, body, lang);
+        ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
+        // A just-created project is never already bookmarked.
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ProjectResponse(projectResponseMapper.toResource(row, lang)));
+                .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
     }
-
-    @GetMapping("/form")
-    @Operation(
-            summary = "Gabarit UI du formulaire de création projet",
-            description = "Retourne le layout et la définition des champs du formulaire de création projet "
-                    + "(ActionUnit.NEW_UNIT_FORM, comme le dialog web). "
-                    + "Vocabulaires : GET /api/v1/vocabularies."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
-            @ApiResponse(responseCode = "404", description = "Organisation introuvable"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    public ResponseEntity<ProjectFormResponse> getProjectUiForm(
-            @Parameter(description = "Institution (doit être dans le périmètre JWT).", example = "10", required = true)
-            @RequestParam("organizationId") long organizationId,
-            @Parameter(description = "Langue des libellés de champs (première entrée utilisée).")
-            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
-        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        return ResponseEntity.ok(new ProjectFormResponse(
-                recordingUnitOpenApiService.buildProjectUiForm(organizationId, caller.person(), lang)));
-    }
-
-
 
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Mise à jour partielle d'un projet",
@@ -173,7 +161,9 @@ public class ProjectControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         AccessibleProjectForApi row = projectApiService.patchProject(caller, id, body, lang);
-        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang)));
+        ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
+        boolean bookmarked = projectApiService.isBookmarked(caller, row, lang);
+        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, bookmarked)));
     }
 
     @DeleteMapping("/{id}")

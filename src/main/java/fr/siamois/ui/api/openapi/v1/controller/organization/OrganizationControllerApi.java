@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller.organization;
 
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
@@ -7,6 +8,7 @@ import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.OrganizationOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResource;
+import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.OrganizationListResponse;
 import fr.siamois.ui.api.openapi.v1.response.OrganizationResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/organizations")
@@ -38,6 +41,7 @@ public class OrganizationControllerApi {
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final ProjectApiService projectApiService;
     private final OrganizationOpenApiMapper organizationOpenApiMapper;
+    private final ProfilePermissionService profilePermissionService;
 
     @GetMapping
     @Operation(
@@ -63,8 +67,15 @@ public class OrganizationControllerApi {
 
         Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(caller, offset, limit, sort);
 
+        // Batched once for the whole page (not per row) — see
+        // ProfilePermissionService#institutionIdsWithActionUnitCreatePermission.
+        Set<Long> canCreateProjectsIds = profilePermissionService.institutionIdsWithActionUnitCreatePermission(
+                caller.person(), page.getContent());
+
         List<OrganizationResource> resources = page.getContent().stream()
-                .map(organizationOpenApiMapper::toResource)
+                .map(inst -> organizationOpenApiMapper.toResource(
+                        inst,
+                        new OrganizationResourcePermissions(canCreateProjectsIds.contains(inst.getId()))))
                 .toList();
 
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);

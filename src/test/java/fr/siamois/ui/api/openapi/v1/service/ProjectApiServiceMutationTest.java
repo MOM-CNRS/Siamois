@@ -2,12 +2,13 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
-import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -79,6 +80,10 @@ class ProjectApiServiceMutationTest {
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
     private PhaseService phaseService;
+    @Mock
+    private BookmarkService bookmarkService;
+    @Mock
+    private HistoryAuditService historyAuditService;
 
     private ProjectApiService service;
     private ProjectApiCaller caller;
@@ -101,7 +106,8 @@ class ProjectApiServiceMutationTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService,
+                bookmarkService, historyAuditService);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -188,7 +194,7 @@ class ProjectApiServiceMutationTest {
         ActionUnitDTO au = projectWithInstitution();
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(false);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(false);
 
         var patchRequest = new ProjectPatchRequest();
         assertThatThrownBy(() -> service.patchProject(caller, "7", patchRequest, "fr"))
@@ -203,7 +209,7 @@ class ProjectApiServiceMutationTest {
         au.setType(new ConceptDTO());
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
 
         ProjectPatchRequest patch = new ProjectPatchRequest();
@@ -221,7 +227,7 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -234,7 +240,7 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
 
         service.deleteProject(caller, "7", "fr");
 
@@ -247,7 +253,7 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         doThrow(new IllegalStateException("blocked")).when(actionUnitService).deleteProjectWhenEmpty(7L);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
@@ -453,7 +459,7 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 2L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)))
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -260,6 +261,84 @@ public class ProfilePermissionService {
     public boolean hasActionUnitCreatePermission(UserInfo user) {
         return hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
                 || hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
+    }
+
+    /**
+     * Same as {@link #hasActionUnitWritePermission(UserInfo, ActionUnitDTO)}, for callers that don't
+     * have a single-institution {@link UserInfo} to work with — the REST API's project list/detail
+     * endpoints, which can serve action units across several institutions in one request, unlike the
+     * JSF table views (always scoped to {@code sessionSettingsBean}'s one current institution).
+     */
+    public boolean hasActionUnitWritePermission(PersonDTO person, InstitutionDTO institution, Long actionUnitId) {
+        if (person == null || person.getId() == null) {
+            return false;
+        }
+        if (hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)) {
+            return true;
+        }
+        return actionUnitId != null
+                && assignmentRepository.personHasPermissionInActionUnit(person.getId(), actionUnitId, PermissionConstants.PROJECT_MANAGE_SETTINGS);
+    }
+
+    /**
+     * Bulk version of {@link #hasActionUnitWritePermission(PersonDTO, InstitutionDTO, Long)} for a page
+     * of action units that may span several institutions. The org-level short-circuit is
+     * institution-scoped, so it can't be applied blanket across a mixed-institution page like
+     * {@link #actionUnitIdsWithPermission} does — this groups by institution first (reusing
+     * {@link #institutionIdsWithOrganizationPermission}, itself one query) and only falls through to a
+     * per-action-unit project-level check for the action units left over, in one more query.
+     *
+     * @param institutionByActionUnitId each action unit id to check, mapped to its owning institution
+     */
+    public Set<Long> actionUnitIdsWithWritePermission(PersonDTO person, Map<Long, InstitutionDTO> institutionByActionUnitId) {
+        if (person == null || person.getId() == null || institutionByActionUnitId == null || institutionByActionUnitId.isEmpty()) {
+            return Set.of();
+        }
+        if (hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)) {
+            return new HashSet<>(institutionByActionUnitId.keySet());
+        }
+
+        Set<Long> orgGrantedInstitutionIds = institutionIdsWithOrganizationPermission(
+                person, institutionByActionUnitId.values(), PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+
+        Set<Long> result = new HashSet<>();
+        Set<Long> remaining = new HashSet<>();
+        for (Map.Entry<Long, InstitutionDTO> entry : institutionByActionUnitId.entrySet()) {
+            InstitutionDTO institution = entry.getValue();
+            if (institution != null && institution.getId() != null && orgGrantedInstitutionIds.contains(institution.getId())) {
+                result.add(entry.getKey());
+            } else {
+                remaining.add(entry.getKey());
+            }
+        }
+        if (!remaining.isEmpty()) {
+            result.addAll(assignmentRepository.findActionUnitIdsWithPermission(
+                    person.getId(), remaining, PermissionConstants.PROJECT_MANAGE_SETTINGS));
+        }
+        return result;
+    }
+
+    /**
+     * Same as {@link #hasActionUnitCreatePermission(UserInfo)}, for a {@link PersonDTO}/{@link InstitutionDTO}
+     * pair rather than the caller's current-institution {@link UserInfo} — mirrors the same dual-overload
+     * pattern {@link #hasOrganizationPermission(PersonDTO, InstitutionDTO, String)} already has.
+     */
+    public boolean hasActionUnitCreatePermission(PersonDTO person, InstitutionDTO institution) {
+        return hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_CREATE_ACTIONS);
+    }
+
+    /**
+     * Bulk version of {@link #hasActionUnitCreatePermission(PersonDTO, InstitutionDTO)} : which of the
+     * given institutions the person can create a project in, in at most two queries total — same
+     * batching principle as {@link #institutionIdsPersonCanAccess}.
+     */
+    public Set<Long> institutionIdsWithActionUnitCreatePermission(PersonDTO person, Collection<InstitutionDTO> institutions) {
+        Set<Long> result = new HashSet<>(
+                institutionIdsWithOrganizationPermission(person, institutions, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS));
+        result.addAll(institutionIdsWithOrganizationPermission(person, institutions, PermissionConstants.ORGANIZATION_CREATE_ACTIONS));
+        return result;
     }
 
     /**

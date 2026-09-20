@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.resource.place.PlaceLightResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceCounts;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourceLinks;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -74,6 +75,21 @@ public class ProjectResponseMapper {
         }
 
 
+        return r;
+    }
+
+    /**
+     * Same as {@link #toResource(AccessibleProjectForApi, String)}, plus the {@code _permissions} and
+     * {@code bookmarked} fields — computed by the caller (batched across a whole list page, or a single
+     * check for a detail response), never re-derived here. This mapper stays a pure DTO->resource step
+     * for the fields it already handled; it doesn't call ProfilePermissionService or BookmarkService
+     * itself.
+     */
+    public ProjectResource toResource(AccessibleProjectForApi row, String langCode,
+                                      ProjectResourcePermissions permissions, boolean bookmarked) {
+        ProjectResource r = toResource(row, langCode);
+        r.setPermissions(permissions);
+        r.setBookmarked(bookmarked);
         return r;
     }
 

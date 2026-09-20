@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.siamois</groupId>
     <artifactId>siamois</artifactId>
-    <version>0.14.28</version>
+    <version>0.15.0</version>
     <packaging>jar</packaging>
     <name>siamois</name>
 
@@ -485,6 +485,54 @@
                 </configuration>
             </plugin>
 
+            <!-- Build the React main-panel app (frontend/) and stage its dist/ output for the
+                 copy-resources execution below. A separate, later frontend-maven-plugin execution
+                 will build the RU side-panel app once feat/ru-react-panel-phase1 is reconciled
+                 (plan §9) — kept as a distinct plugin block/workDirectory then, not merged into
+                 this one, since the two apps have independent package.json/lockfiles. -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.1</version>
+                <configuration>
+                    <workingDirectory>frontend</workingDirectory>
+                    <installDirectory>${project.build.directory}/frontend-tools</installDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <nodeVersion>v20.17.0</nodeVersion>
+                            <npmVersion>10.8.2</npmVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <arguments>ci</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-build</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Compile SCSS to CSS -->
             <plugin>
                 <groupId>io.github.cleydyr</groupId>
@@ -554,6 +602,28 @@
                                         <include>login.css</include>
                                     </includes>
                                     <targetPath>css</targetPath>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+
+                    <!-- Copy the React main-panel build output into the classpath, at a resource
+                         path distinct from the (unmerged) RU branch's react-ru-panel/, so both
+                         can coexist once that branch is reconciled (plan §3/§9). Runs after the
+                         npm-build execution above (same generate-resources -> process-resources
+                         ordering as the theme CSS it sits next to). -->
+                    <execution>
+                        <id>copy-react-main-panel</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/META-INF/resources/resources/react-main-panel
+                            </outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>frontend/dist</directory>
                                 </resource>
                             </resources>
                         </configuration>

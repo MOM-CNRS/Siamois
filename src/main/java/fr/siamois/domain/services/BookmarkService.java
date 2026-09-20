@@ -16,6 +16,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * Service for managing bookmarks.
  * This service provides methods to find, save, and delete bookmarks for a user.
@@ -131,6 +135,31 @@ public class BookmarkService {
                 person,
                 institution,
                 ressourceUri) > 0;
+    }
+
+    /**
+     * Bulk version of {@link #isRessourceBookmarkedByUser} : which of the given resource URIs are
+     * bookmarked by the user, in one query instead of one per URI — used for a whole list page (plan
+     * §5/§6) rather than a row at a time. Institution-scoped like every other method on this service
+     * (a {@code Bookmark} is {@code (person, institution, resourceUri)}, not just
+     * {@code (person, resourceUri)}) — a caller whose page spans several institutions calls this once
+     * per institution, same principle as {@code ProfilePermissionService}'s per-institution grouping.
+     *
+     * @param userInfo     the user information containing the user and institution
+     * @param resourceUris the resource URIs to check
+     * @return the subset of {@code resourceUris} bookmarked by the user in this institution
+     */
+    @Transactional(readOnly = true)
+    public Set<String> findBookmarkedResourceUris(UserInfo userInfo, Collection<String> resourceUris) {
+        if (resourceUris == null || resourceUris.isEmpty()) {
+            return Set.of();
+        }
+        Person person = personMapper.invertConvert(userInfo.getUser());
+        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
+        return bookmarkRepository.findByPersonAndInstitutionAndResourceUriIn(person, institution, resourceUris)
+                .stream()
+                .map(Bookmark::getResourceUri)
+                .collect(Collectors.toSet());
     }
 
     /**

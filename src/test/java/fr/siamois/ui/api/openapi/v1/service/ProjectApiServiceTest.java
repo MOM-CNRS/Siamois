@@ -4,12 +4,13 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
-import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -82,6 +83,10 @@ class ProjectApiServiceTest {
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
     private PhaseService phaseService;
+    @Mock
+    private BookmarkService bookmarkService;
+    @Mock
+    private HistoryAuditService historyAuditService;
 
     @InjectMocks
     private ProjectApiService service;
@@ -249,7 +254,7 @@ class ProjectApiServiceTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         when(conceptService.findById(99L)).thenReturn(Optional.empty());
 
         var patch = new ProjectPatchRequest();
@@ -271,7 +276,7 @@ class ProjectApiServiceTest {
         AccessibleProjectForApi resultRow = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row, resultRow);
         when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
 
         Concept concept = new Concept();
         concept.setId(99L);
@@ -304,7 +309,7 @@ class ProjectApiServiceTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         when(actionUnitService.save(any(), any(), any()))
                 .thenThrow(new ActionUnitAlreadyExistsException("identifier", "already exists"));
 
@@ -323,7 +328,7 @@ class ProjectApiServiceTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         when(actionUnitService.save(any(), any(), any()))
                 .thenThrow(new NullActionUnitIdentifierException("identifier is null"));
 
@@ -373,7 +378,7 @@ class ProjectApiServiceTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))).thenReturn(false);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -455,7 +460,7 @@ class ProjectApiServiceTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
-        when(profilePermissionService.hasOrganizationPermission(any(), eq(PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)))
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any()))
                 .thenReturn(true);
     }
 

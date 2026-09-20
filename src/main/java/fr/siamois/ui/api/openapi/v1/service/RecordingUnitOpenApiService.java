@@ -60,7 +60,8 @@ import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.*;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFormData;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectDefaultType;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFieldConfigResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.type.FindDefaultType;
@@ -70,6 +71,7 @@ import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitIdentifierConfig;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
@@ -422,13 +424,39 @@ public class RecordingUnitOpenApiService {
      * Gabarit UI du formulaire de création projet ({@link ActionUnit#NEW_UNIT_FORM}) : layout et métadonnées des champs.
      * Vocabulaires : {@code GET /api/v1/vocabularies}.
      */
+    /**
+     * {@code GET /api/v1/organizations/{id}/project-types} (plan §5/§6) — supersedes
+     * {@link #buildProjectUiForm}/{@code GET /api/v1/projects/form}: layout, field configs and the
+     * shared field catalog in one call. Phase 1 populates only {@code _default}, simulated from the
+     * hardcoded {@link ActionUnit#DETAILS_FORM} — the fiche's schema, not {@link ActionUnit#NEW_UNIT_FORM}
+     * (the create-dialog schema {@code buildProjectUiForm} used) — since this endpoint drives the
+     * Detail panel, not project creation. {@code data} stays empty: Project isn't plugged into the real
+     * {@code ConfigurableTable}/{@code FieldFormConfig} machinery this phase.
+     */
     @Transactional(readOnly = true)
-    public ProjectFormData buildProjectUiForm(long organizationId, PersonDTO personDto, String lang) {
+    public ProjectTypeListResponse buildProjectTypes(long organizationId, PersonDTO personDto, String lang) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
         }
-        return buildProjectFormBundle(institution, personDto, lang);
+
+        FormUiDto systemForm = ActionUnit.DETAILS_FORM;
+        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
+        FieldSource fieldSource = new PanelFieldSource(formUiDto);
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
+        FormResource form = new FormResource(layoutJson);
+
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
+                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
+
+        List<ProjectFieldConfigResource> fieldConfigs = fields.keySet().stream()
+                .map(fieldId -> new ProjectFieldConfigResource(fieldId, true, true))
+                .toList();
+
+        ProjectDefaultType defaultType = new ProjectDefaultType(form, fieldConfigs);
+        return new ProjectTypeListResponse(List.of(), defaultType, fields);
     }
 
     /**
@@ -454,22 +482,6 @@ public class RecordingUnitOpenApiService {
             mergeFieldAnswers(shell, response, fieldSource, fieldAnswers, lang);
             formService.updateJpaEntityFromResponse(response, shell);
         });
-    }
-
-    private ProjectFormData buildProjectFormBundle(InstitutionDTO institution,
-                                                   PersonDTO personDto,
-                                                   String lang) {
-        FormUiDto systemForm = ActionUnit.NEW_UNIT_FORM;
-        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
-        FormResource formBundle = new FormResource(layoutJson);
-
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
-        return new ProjectFormData(formBundle, fields);
     }
 
     /**

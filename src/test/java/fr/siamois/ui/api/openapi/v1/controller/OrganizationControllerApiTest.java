@@ -3,8 +3,10 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -97,6 +99,10 @@ class OrganizationControllerApiTest {
     private PhaseService phaseService;
     @Mock
     private PlaceOpenApiService placeOpenApiService;
+    @Mock
+    private BookmarkService bookmarkService;
+    @Mock
+    private HistoryAuditService historyAuditService;
 
     private MockMvc mockMvc;
 
@@ -121,19 +127,24 @@ class OrganizationControllerApiTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService,
+                bookmarkService,
+                historyAuditService);
 
         OrganizationControllerApi controller = new OrganizationControllerApi(
                 recordingUnitService,
                 recordingUnitResponseMapper,
                 projectApiService,
-                new OrganizationOpenApiMapper());
+                new OrganizationOpenApiMapper(),
+                profilePermissionService);
 
         OrganizationPlacesControllerApi placesController = new OrganizationPlacesControllerApi(
                 projectApiService,
                 placeOpenApiService);
 
-        OrganizationProjectsControllerApi projectsController = new OrganizationProjectsControllerApi();
+        OrganizationProjectsControllerApi projectsController = new OrganizationProjectsControllerApi(
+                projectApiService,
+                recordingUnitOpenApiService);
 
         OrganizationRecordingUnitsControllerApi recordingUnitsController = new OrganizationRecordingUnitsControllerApi(
                 recordingUnitService,
