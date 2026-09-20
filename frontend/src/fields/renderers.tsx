@@ -81,7 +81,26 @@ export function DateRenderer({ value, readOnly, required, onChange }: FieldRende
 export function FallbackRenderer({ field, value }: FieldRendererProps) {
   return (
     <span className="field-renderer-unsupported" title={`answerType "${field.answerType}" has no renderer yet`}>
-      {value == null ? "—" : String(value)}
+      {formatFallbackValue(value)}
     </span>
   );
+}
+
+// Values bound to a resource object (ProjectResource.type/mainLocation, both ResolvedConcept/
+// PlaceLight-shaped, and spatialContext, an array of the latter) would otherwise print
+// "[object Object]" via a plain String(value) — this is the fallback's own display logic, not a
+// per-entity concern, since any future entity's SELECT_*-typed fields hit the same shape before
+// their real renderer exists.
+function formatFallbackValue(value: unknown): string {
+  if (value == null) return "—";
+  if (Array.isArray(value)) {
+    const labels = value.map(formatFallbackValue).filter((label) => label !== "—");
+    return labels.length ? labels.join(", ") : "—";
+  }
+  if (typeof value === "object") {
+    const label = (value as { resolvedLabel?: unknown; name?: unknown }).resolvedLabel
+      ?? (value as { name?: unknown }).name;
+    return typeof label === "string" && label ? label : "—";
+  }
+  return String(value);
 }

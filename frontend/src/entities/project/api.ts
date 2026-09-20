@@ -41,3 +41,19 @@ export async function getProject(id: string | number): Promise<ProjectDetail> {
   const body = await apiFetch<ProjectResponseBody>(`/api/v1/projects/${id}`);
   return body.data;
 }
+
+// Mirrors ProjectPatchRequest's fields — a strict subset (name/identifier/beginDate/endDate;
+// typeId/mainLocationId/spatialContextSpatialUnitIds/geom exist server-side too but have no
+// working editor yet, fields/registerDefaultRenderers.ts). Absent keys are left unchanged
+// server-side (partial update), never sent as null.
+export interface ProjectPatch {
+  name?: string;
+  identifier?: string;
+  beginDate?: string | null;
+  endDate?: string | null;
+}
+
+export async function patchProject(id: string | number, patch: ProjectPatch): Promise<ProjectDetail> {
+  const body = await apiFetch<ProjectResponseBody>(`/api/v1/projects/${id}`, { method: "PATCH", body: patch });
+  return body.data;
+}

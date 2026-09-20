@@ -17,7 +17,7 @@ export interface EntityDetailPanelProps {
 export function EntityDetailPanel({ entityType, entityId }: EntityDetailPanelProps) {
   const config = getEntityType(entityType);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["entity-detail", entityType, entityId],
     queryFn: () => config!.api.get(entityId),
     enabled: config != null,
@@ -40,7 +40,7 @@ export function EntityDetailPanel({ entityType, entityId }: EntityDetailPanelPro
     <TabView>
       {config.detail.tabs.map((tab) => (
         <TabPanel key={tab.key} header={tab.label}>
-          {tab.render(data)}
+          {tab.render(data, { refetch: () => void refetch() })}
         </TabPanel>
       ))}
     </TabView>

@@ -212,4 +212,34 @@ public abstract class AbstractPanel implements Serializable {
 
 
     public abstract boolean hasPreviousNext() ;
+
+    /**
+     * Whether this panel's whole body (both the main pane and, when present, the overview pane —
+     * panel/panelContent.xhtml) should be rendered by the React main-panel bundle instead of the
+     * legacy JSF templates. Default false: every unmigrated entity type keeps its exact current
+     * behavior, deferred loading included. See the migration plan §7/§8 phase 8.
+     */
+    public boolean isReactPanelEnabled() {
+        return false;
+    }
+
+    /** "home" | "list" | "detail" — matches window.SiamoisMainPanel.mount's panelKind, or null when {@link #isReactPanelEnabled()} is false. */
+    public String reactPanelKind() {
+        return null;
+    }
+
+    /** Registry key matching a frontend entities/&lt;type&gt;/config.tsx (e.g. "project"), or null for a panel with no single entity (Home). */
+    public String reactEntityType() {
+        return null;
+    }
+
+    /** The panel's own entity id for a "detail" reactPanelKind, or null otherwise. */
+    public Long reactEntityId() {
+        return null;
+    }
+
+    /** Institution/organization id scoping this panel's data, or null when not applicable. */
+    public Long reactOrganizationId() {
+        return null;
+    }
 }

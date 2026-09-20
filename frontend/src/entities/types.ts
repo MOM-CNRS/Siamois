@@ -26,10 +26,30 @@ export interface ColumnDef<TSummary> {
   sortable?: boolean;
 }
 
+// Passed to a tab's render alongside the entity (plan §8 phase 6) — currently just `refetch`, so
+// a tab that mutates the entity (Project's fiche: field edits, identifier rename) can ask
+// EntityDetailPanel's own query to reload rather than each tab wiring its own cache invalidation.
+export interface DetailTabHelpers {
+  refetch: () => void;
+}
+
 export interface DetailTabDef<TDetail> {
   key: string;
   label: string;
-  render: (entity: TDetail) => ReactNode;
+  render: (entity: TDetail, helpers: DetailTabHelpers) => ReactNode;
+}
+
+// Passed to an entity's home.widgets factory (plan §8 phase 7) — organizationId comes from
+// MountOptions, onNavigate from the same bridge EntityListPanel already uses, so a "recent
+// projects" widget's rows link to the real detail route the same way list rows do.
+export interface HomeWidgetContext {
+  organizationId?: number;
+  onNavigate?: (entityType: string, id: string | number) => void;
+}
+
+export interface HomeWidgetDef {
+  key: string;
+  render: () => ReactNode;
 }
 
 export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
@@ -50,5 +70,10 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   routes: {
     list: string;
     detail: (id: string | number) => string;
+  };
+  // Optional — most future entities won't have a Home presence on day one, unlike list/detail
+  // which every registered entity needs.
+  home?: {
+    widgets: (ctx: HomeWidgetContext) => HomeWidgetDef[];
   };
 }

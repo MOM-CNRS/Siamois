@@ -19,3 +19,12 @@ export function registerEntityType(config: EntityTypeConfig<any, any>): void {
 export function getEntityType(key: string): EntityTypeConfig<any, any> | undefined {
   return registry.get(key);
 }
+
+// Lets Home assemble its widget list by asking every registered entity for its own (plan §8
+// phase 7) instead of App.tsx importing entities/project/homeWidgets.tsx directly — the same
+// "registry, not a switch" principle List/Detail already follow. A future entity that also
+// registers a `home.widgets` factory needs no change here or in App.tsx.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getAllEntityTypes(): EntityTypeConfig<any, any>[] {
+  return Array.from(registry.values());
+}

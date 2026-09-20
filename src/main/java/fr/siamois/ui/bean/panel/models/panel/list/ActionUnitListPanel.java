@@ -200,6 +200,26 @@ public class ActionUnitListPanel extends AbstractListPanel<ActionUnitDTO> implem
         return "action-unit";
     }
 
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
+    @Override
+    public String reactPanelKind() {
+        return "list";
+    }
+
+    @Override
+    public String reactEntityType() {
+        return "project";
+    }
+
+    @Override
+    public Long reactOrganizationId() {
+        return sessionSettingsBean.getSelectedInstitution().getId();
+    }
+
 
 
 

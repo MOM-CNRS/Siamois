@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../../api/client";
-import { getProject, listProjects } from "./api";
+import { getProject, listProjects, patchProject } from "./api";
 
 vi.mock("../../api/client", () => ({
   apiFetch: vi.fn(),
@@ -64,6 +64,21 @@ describe("getProject", () => {
     const result = await getProject(5);
 
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5");
+    expect(result).toEqual(project);
+  });
+});
+
+describe("patchProject", () => {
+  it("sends a PATCH with the given fields and unwraps the data envelope", async () => {
+    const project = { resourceType: "projects", id: "5", name: "Renamed", fullIdentifier: "B-1", identifier: "B-1" };
+    mockedApiFetch.mockResolvedValueOnce({ data: project });
+
+    const result = await patchProject(5, { name: "Renamed" });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5", {
+      method: "PATCH",
+      body: { name: "Renamed" },
+    });
     expect(result).toEqual(project);
   });
 });

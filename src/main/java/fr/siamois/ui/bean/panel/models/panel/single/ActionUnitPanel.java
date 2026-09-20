@@ -605,5 +605,29 @@ public class ActionUnitPanel extends AbstractSingleEntityPanel<ActionUnitDTO> im
         return "spatial-unit";
     }
 
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
+    @Override
+    public String reactPanelKind() {
+        return "detail";
+    }
+
+    @Override
+    public String reactEntityType() {
+        return "project";
+    }
+
+    @Override
+    public Long reactEntityId() {
+        return unit != null ? unit.getId() : null;
+    }
+
+    @Override
+    public Long reactOrganizationId() {
+        return unit != null && unit.getCreatedByInstitution() != null ? unit.getCreatedByInstitution().getId() : null;
+    }
 
 }

@@ -87,6 +87,21 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
         return false;
     }
 
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
+    @Override
+    public String reactPanelKind() {
+        return "home";
+    }
+
+    @Override
+    public Long reactOrganizationId() {
+        return sessionSettingsBean.getSelectedInstitution().getId();
+    }
+
     public String getPrefixPanelIndex() {
         return "welcome-panel";
     }

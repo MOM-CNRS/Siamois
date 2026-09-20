@@ -42,12 +42,29 @@ async function doFetch<T>(path: string, options: RequestOptions, allowRetry: boo
   }
 
   if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new ApiError(response.status, message || response.statusText);
+    throw new ApiError(response.status, await extractErrorMessage(response));
   }
 
   if (response.status === 204) {
     return undefined as T;
   }
-  return (await response.json()) as T;
+  // A successful response can still have no body (e.g. BookmarkControllerApi's 201 Created) —
+  // response.json() throws a SyntaxError on an empty string, so check first rather than assuming
+  // every non-204 success carries JSON.
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
+
+// OpenApiRestExceptionHandler always answers errors as JSON {error, message} — surface that
+// human-readable message rather than the raw response body (previously shown verbatim, e.g. to
+// the identifier inline-edit error in the Project fiche).
+async function extractErrorMessage(response: Response): Promise<string> {
+  const text = await response.text().catch(() => "");
+  if (!text) return response.statusText;
+  try {
+    const body = JSON.parse(text) as { message?: string };
+    return body.message || response.statusText;
+  } catch {
+    return text;
+  }
 }

@@ -185,6 +185,20 @@
                         id="flow-panels">
 
                     <p:outputPanel id="panel-${focusViewBean.mainPanel.prefixPanelIndex}-container" styleClass="focus">
+
+                        <!--
+                        React main-panel migration (plan §7/§8 phase 8): when the main panel (and,
+                        if one is open, its overview) is React-enabled, the whole block below
+                        (titlebar + panelContent's splitter, both panes) is replaced by a single
+                        window.SiamoisMainPanel.mount() call, which renders its own two titlebars
+                        (PanelToolbar) and both panes' bodies. Any *unmigrated* entity type keeps
+                        rendering exactly the legacy markup beneath, completely untouched — this
+                        `rendered` gate is the only change to that path.
+                        The overview fallback rule lives in this same condition: if an overview is
+                        open but its entity type hasn't migrated, the WHOLE panel (main included)
+                        falls back to legacy rendering rather than a hybrid render.
+                        -->
+                        <h:panelGroup rendered="#{not (focusViewBean.mainPanel.isReactPanelEnabled() and (focusViewBean.mainPanel.parentOrOverview == null or focusViewBean.mainPanel.parentOrOverview.isReactPanelEnabled()))}">
                         <h:panelGroup
                                 styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
                                 style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
@@ -319,6 +333,39 @@
                                 </ui:include>
                             </p:outputPanel>
                         </h:panelGroup>
+                        </h:panelGroup>
+
+                        <h:panelGroup rendered="#{focusViewBean.mainPanel.isReactPanelEnabled() and (focusViewBean.mainPanel.parentOrOverview == null or focusViewBean.mainPanel.parentOrOverview.isReactPanelEnabled())}"
+                                      styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
+                                      style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color); flex: 1; min-height: 0;"
+                                      id="react-panel-${focusViewBean.mainPanel.prefixPanelIndex}">
+
+                            <ui:include src="/panel/reactPanelActions.xhtml">
+                                <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
+                            </ui:include>
+
+                            <div id="react-main-panel-mount-${focusViewBean.mainPanel.panelIndex}"
+                                 class="react-main-panel-mount"
+                                 style="flex: 1; min-height: 0; display: flex; flex-direction: column;"
+                                 data-panel-kind="#{focusViewBean.mainPanel.reactPanelKind()}"
+                                 data-entity-type="#{focusViewBean.mainPanel.reactEntityType()}"
+                                 data-entity-id="#{focusViewBean.mainPanel.reactEntityId()}"
+                                 data-organization-id="#{focusViewBean.mainPanel.reactOrganizationId()}"
+                                 data-overview-entity-type="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.reactEntityType() : ''}"
+                                 data-overview-entity-id="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.reactEntityId() : ''}"
+                                 data-overview-organization-id="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.reactOrganizationId() : ''}"
+                                 data-base-path="#{request.contextPath}"
+                                 data-csrf-header="${_csrf.headerName}"
+                                 data-csrf-token="${_csrf.token}"
+                                 data-main-resource-uri="#{focusViewBean.mainPanel.ressourceUri()}"
+                                 data-main-title="#{focusViewBean.mainPanel.resolveTitleOrTitleCode()}"
+                                 data-main-bookmarked="#{focusViewBean.mainPanel.isBookmarked()}"
+                                 data-overview-resource-uri="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.ressourceUri() : ''}"
+                                 data-overview-title="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.resolveTitleOrTitleCode() : ''}"
+                                 data-overview-bookmarked="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.isBookmarked() : false}"
+                            ></div>
+                        </h:panelGroup>
+
                         <p:blockUI block="panel-${focusViewBean.mainPanel.panelIndex}"
                                    widgetVar="buiPanel_${focusViewBean.mainPanel.panelIndex}">
                             <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>

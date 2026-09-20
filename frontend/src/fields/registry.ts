@@ -24,6 +24,13 @@ export function registerFallbackFieldRenderer(renderer: FieldRenderer): void {
   fallback = renderer;
 }
 
+// Lets a consumer tell "has a real renderer" apart from "will silently fall back to read-only
+// display" (plan §8 phase 6 — the Project fiche uses this to decide whether a schema-driven
+// field can go into edit mode at all, rather than presenting a fake-editable control).
+export function hasFieldRenderer(answerType: string): boolean {
+  return renderers.has(answerType);
+}
+
 export function getFieldRenderer(answerType: string): FieldRenderer {
   const renderer = renderers.get(answerType);
   if (renderer) return renderer;
