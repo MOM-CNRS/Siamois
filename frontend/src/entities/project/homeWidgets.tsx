@@ -107,7 +107,12 @@ function ProjectCountCardWidget({ organizationId, onNavigate }: HomeWidgetContex
 
 export function projectHomeWidgets(ctx: HomeWidgetContext): HomeWidgetDef[] {
   return [
+    // Standalone panel ("Mes derniers projets" / here "Projets récents" — see the relabeling
+    // note above), self-wrapped in its own <Panel> already.
     { key: "project-recent", render: () => <RecentProjectsWidget {...ctx} /> },
-    { key: "project-count", render: () => <ProjectCountCardWidget {...ctx} /> },
+    // A tile for the shared "Accéder aux bases de données" panel/grid (dbAccessPanelGrid) —
+    // HomePanel groups every "card"-kind widget from every entity into that one panel, never
+    // gives this its own top-level panel.
+    { key: "project-count", kind: "card", render: () => <ProjectCountCardWidget {...ctx} /> },
   ];
 }

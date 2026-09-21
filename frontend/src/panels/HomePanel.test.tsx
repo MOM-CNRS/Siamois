@@ -33,4 +33,28 @@ describe("HomePanel", () => {
     );
     expect(html).toContain("bi-arrow-clockwise");
   });
+
+  // homePanel.xhtml is two separate sibling p:panels ("Mes derniers projets"/myActionUnits and
+  // "Accéder aux bases de données"/dbAccess), not one panel holding everything.
+  it("renders a 'panel'-kind widget standalone, not grouped with the database-access panel", () => {
+    const html = renderToStaticMarkup(
+      <HomePanel widgets={[{ key: "recent", render: () => <span>Recent projects panel</span> }]} />,
+    );
+    expect(html).toContain("Recent projects panel");
+    expect(html).not.toContain("Accéder aux bases de données");
+  });
+
+  it("groups every 'card'-kind widget into the shared 'Accéder aux bases de données' panel", () => {
+    const html = renderToStaticMarkup(
+      <HomePanel
+        widgets={[
+          { key: "card-a", kind: "card", render: () => <span>Card A</span> },
+          { key: "card-b", kind: "card", render: () => <span>Card B</span> },
+        ]}
+      />,
+    );
+    expect(html).toContain("Accéder aux bases de données");
+    expect(html).toContain("Card A");
+    expect(html).toContain("Card B");
+  });
 });
