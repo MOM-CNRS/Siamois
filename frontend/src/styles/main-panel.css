@@ -1,0 +1,246 @@
+/*
+ * Styles owned by the React main panel. Until now every class name this bundle emitted
+ * (entity-list-panel-*, cell-edit-overlay, ...) existed only as a hook with nothing behind it —
+ * the bundle imported the PrimeReact theme and nothing else, so the JSF theme's own rules were the
+ * only thing painting these panels.
+ *
+ * Variables (--main-color, --context-main-color, --siamois-green-light-100) come from the host
+ * page's theme (target/generated-resources/css/theme.css) — each is used with a fallback so the
+ * bundle also renders standalone (vite dev server, tests).
+ */
+
+/* ---------------------------------------------------------------- list toolbar */
+
+.entity-list-panel-toolbar .p-toolbar-group-start {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* The gear acts on the table's whole shape, so it reads larger than the search box next to it. */
+.entity-list-panel-gear-button.p-button.p-button-icon-only {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.entity-list-panel-gear-button .p-button-icon {
+  font-size: 1.35rem;
+}
+
+/* ---------------------------------------------------------- column header lines */
+
+/* One line, always: a wrapped header raises every row in the table. */
+.entity-list-panel-column-header {
+  display: block;
+  max-width: 12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- filter chip bar */
+
+.entity-list-panel-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--surface-300, #dee2e6);
+  border-radius: 999px;
+  background: var(--surface-0, #fff);
+  font-size: 0.85rem;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+.filter-chip-body,
+.filter-chip-remove,
+.filter-chip-add {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+}
+
+.filter-chip-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-right: 0.25rem;
+}
+
+.filter-chip-label {
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.filter-chip-value {
+  max-width: 16em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* A chip added but not yet given a value — visibly provisional, not an applied filter. */
+.filter-chip-empty {
+  border-style: dashed;
+}
+
+.filter-chip-remove {
+  padding-left: 0.15rem;
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.filter-chip-body:hover,
+.filter-chip-remove:hover,
+.filter-chip-add:hover {
+  background: var(--surface-100, #f1f3f5);
+}
+
+.filter-chip-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-style: dashed;
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.entity-list-panel-filter-picker .filter-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 14rem;
+  max-height: 20rem;
+  overflow: auto;
+}
+
+.filter-picker-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+}
+
+.filter-picker-item:hover {
+  background: var(--surface-100, #f1f3f5);
+}
+
+.entity-list-panel-range-filter {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+/* --------------------------------------------- merged status + identifier cell */
+
+.entity-list-panel-identifier-cell,
+.entity-list-panel-cell-with-leading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+/* Same icon/colour vocabulary as /panel/header/validationButton.xhtml, minus the button: the JSF
+   list renders that control disabled, so it is a badge here. */
+.validation-status-badge {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.validation-status-badge.validated {
+  color: var(--siamois-green, #4d7c3a);
+}
+
+.validation-status-badge.complete {
+  color: var(--siamois-green-light-100, #8bb87a);
+}
+
+.validation-status-badge.incomplete {
+  color: var(--surface-400, #ced4da);
+}
+
+/* Mirrors the p:chip CommandLinkColumn renders (chipColor = --context-main-color, white text). */
+.entity-nav-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--context-main-color, var(--main-color, #4d7c3a));
+  color: #fff;
+  cursor: pointer;
+}
+
+.entity-nav-chip:hover {
+  filter: brightness(1.1);
+}
+
+.entity-nav-chip-label {
+  max-width: 18em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ click-to-edit cell */
+
+.entity-list-panel-editable-cell {
+  display: inline-block;
+  min-width: 2rem;
+  max-width: 100%;
+  padding: 0.1rem 0.35rem;
+  margin: -0.1rem -0.35rem;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.entity-list-panel-editable-cell:hover,
+.entity-list-panel-editable-cell:focus-visible {
+  background: var(--surface-100, #f1f3f5);
+  border-color: var(--surface-300, #dee2e6);
+  outline: none;
+}
+
+.entity-list-panel-editable-cell-empty {
+  color: var(--text-color-secondary, #6c757d);
+}
+
+/* In-place editor: sits on top of the cell it edits, showing only the field's widget. */
+.cell-edit-overlay {
+  z-index: 1200;
+  box-sizing: border-box;
+  padding: 0.15rem;
+  border-radius: 4px;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.cell-edit-overlay .p-inputtext,
+.cell-edit-overlay .p-inputnumber,
+.cell-edit-overlay .p-autocomplete,
+.cell-edit-overlay .p-calendar {
+  width: 100%;
+}
+
+.cell-edit-overlay-saving {
+  opacity: 0.7;
+}
+
+.cell-edit-overlay-error {
+  margin-top: 0.25rem;
+  color: var(--red-500, #d32f2f);
+  font-size: 0.8rem;
+}

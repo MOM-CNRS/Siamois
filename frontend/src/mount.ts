@@ -3,6 +3,7 @@ import { createElement } from "react";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
+import "./styles/main-panel.css";
 import { configureBasePath } from "./api/basePath";
 import { configureCsrf } from "./auth/sessionAuth";
 import { registerDefaultFieldRenderers } from "./fields/registerDefaultRenderers";

@@ -50,7 +50,15 @@ export interface ColumnDef<TSummary> {
   // Marks the one column whose cell opens the row's entity (plan §8 phase 5) — mirrors JSF's
   // CommandLinkColumn, the only clickable cell in the real table. At most one column per entity
   // type should set this; EntityListPanel wires its click handler onto whichever column does.
+  // EntityListPanel renders `render`'s output inside a navigation chip (icon + label), matching
+  // CommandLinkColumn's own p:chip — so this column's `render` should return the label text only.
   identifier?: boolean;
+  // Static, non-interactive content rendered in the same cell but OUTSIDE the clickable part —
+  // JSF merges the validation-status badge and the identifier chip into a single column
+  // (entityDataTable.xhtml's statusIdActionsCol), and only the chip navigates. Kept generic rather
+  // than a `validated` flag: any column may want a leading badge, and only the entity's own
+  // columns.tsx knows where that badge's data lives on its rows.
+  leading?: (row: TSummary) => ReactNode;
 }
 
 // One entry in a list's field catalog — visibility/order default plus the field metadata needed to

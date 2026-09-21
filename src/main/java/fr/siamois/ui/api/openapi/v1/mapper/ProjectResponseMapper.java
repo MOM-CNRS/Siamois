@@ -60,6 +60,7 @@ public class ProjectResponseMapper {
 
         r.setBeginDate(dto.getBeginDate());
         r.setEndDate(dto.getEndDate());
+        r.setValidated(dto.getValidated());
         r.setGeom(dto.getGeom());
 
         if (dto.getType() != null) {

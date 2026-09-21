@@ -24,6 +24,12 @@ function renderCell(key: string, row: ProjectSummary): string {
   return renderToStaticMarkup(<>{findColumn(key).render(row)}</>);
 }
 
+function renderLeading(key: string, row: ProjectSummary): string {
+  const leading = findColumn(key).leading;
+  if (!leading) throw new Error(`column "${key}" has no leading content`);
+  return renderToStaticMarkup(<>{leading(row)}</>);
+}
+
 describe("projectColumns", () => {
   it("is exactly the three pinned, non-form columns", () => {
     expect(projectColumns.map((c) => c.key)).toEqual(["fullIdentifier", "name", "recordingUnitCount"]);
@@ -47,6 +53,17 @@ describe("projectColumns", () => {
   it("renders the actual recording-unit count when present", () => {
     const row = project({ _counts: { children: 0, recordingUnits: 7 } });
     expect(renderCell("recordingUnitCount", row)).toBe("7");
+  });
+
+  it("renders the validation-status badge as the identifier column's leading content (JSF's merged statusIdActionsCol)", () => {
+    expect(renderLeading("fullIdentifier", project({ validated: "VALIDATED" }))).toContain("bi bi-check-circle");
+    expect(renderLeading("fullIdentifier", project({ validated: "COMPLETE" }))).toContain("bi bi-circle-fill");
+    expect(renderLeading("fullIdentifier", project({ validated: "INCOMPLETE" }))).toContain("bi bi-circle");
+  });
+
+  it("falls back to the incomplete badge when the API sends no validation status", () => {
+    const markup = renderLeading("fullIdentifier", project({ validated: undefined }));
+    expect(markup).toContain("incomplete");
   });
 
   it("marks every pinned column as sortable, matching ALLOWED_PROJECT_SORT_FIELDS", () => {

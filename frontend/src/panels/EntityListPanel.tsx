@@ -12,10 +12,10 @@ import { getEntityType } from "../entities/registry";
 import type { ColumnDef, FilterValue, ListParams } from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
-import { ColumnFilter } from "../components/table/ColumnFilter";
+import { FilterChipBar, type FilterSpec } from "../components/table/FilterChipBar";
 import { ColumnToggler, type ColumnTogglerOption } from "../components/table/ColumnToggler";
 import { renderAnswerValue } from "../fields/display";
-import { filterKindForAnswerType, optionSourceFor, type FilterKind } from "../fields/optionSources";
+import { filterKindForAnswerType, optionSourceFor, type FilterKind, type FilterOption } from "../fields/optionSources";
 import { resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { DEFAULT_LIMIT } from "./tableState";
@@ -93,10 +93,9 @@ export function EntityListPanel({
   const columnTogglerRef = useRef<OverlayPanel>(null);
   const queryClient = useQueryClient();
 
-  // The one shared edit surface for every editable cell (plan phase 4b) — a single OverlayPanel
-  // instance, re-anchored and re-seeded per click, not one per cell/column.
+  // The one shared edit surface for every editable cell (plan phase 4b) — a single instance,
+  // re-anchored (to the clicked cell's own rect) and re-seeded per click, not one per cell/column.
   const [editTarget, setEditTarget] = useState<CellEditTarget<RowRecord> | null>(null);
-  const editOverlayRef = useRef<OverlayPanel>(null);
 
   const hasSchema = config?.list.schema != null;
   const { data: catalog } = useQuery({
@@ -145,14 +144,15 @@ export function EntityListPanel({
     return permissions?.canEdit === true;
   }
 
-  // Opens the shared overlay for one (row, field) — and, critically, stops the click from
-  // bubbling to DataTable's onRowClick, which is how a click on an editable cell doesn't also
-  // navigate away (the plan's "collision" between row-click-navigates and click-to-edit).
+  // Opens the shared editor for one (row, field), anchored to the clicked cell's own rect so it
+  // renders on top of that cell rather than as a popover below it — and, critically, stops the
+  // click from bubbling to DataTable's onRowClick, which is how a click on an editable cell
+  // doesn't also navigate away (the plan's "collision" between row-click-navigates and
+  // click-to-edit).
   function openCellEditor(e: SyntheticEvent, row: RowRecord, field: FieldResource) {
     e.stopPropagation();
     if (!canPatchAnswers || !canEditRow(row)) return;
-    setEditTarget({ row, field });
-    editOverlayRef.current?.show(e, e.currentTarget as HTMLElement);
+    setEditTarget({ row, field, anchor: (e.currentTarget as HTMLElement).getBoundingClientRect() });
   }
 
   const dynamicColumns = useMemo<ColumnDef<RowRecord>[]>(() => {
@@ -178,9 +178,12 @@ export function EntityListPanel({
             return (
               <span
                 className="entity-list-panel-editable-cell"
+                role="button"
+                tabIndex={0}
+                title={`Modifier « ${field.label} »`}
                 onClick={(e) => openCellEditor(e, row, field)}
               >
-                {display}
+                {display || <span className="entity-list-panel-editable-cell-empty">—</span>}
               </span>
             );
           },
@@ -197,20 +200,19 @@ export function EntityListPanel({
       .map((c) => ({ fieldId: c.fieldId, label: catalog.fields[c.fieldId]?.label ?? c.fieldId }));
   }, [catalog]);
 
-  // "Filtres activés"/"Filtres désactivés" (tableToolbar.xhtml's gear-overlay toggle) — the filter
-  // row is opt-in, not shown by default, matching a collapsed-by-default reading of that toggle
-  // (JSF's own default isn't independently observable from the migration source).
-  const [filtersEnabled, setFiltersEnabled] = useState(false);
+  // Labels for the ids an "in" filter carries — FilterValue itself is ids-only (the wire shape),
+  // so the chip bar needs this to print "Statut: En cours" rather than "Statut: 4711".
+  const [filterOptionsByKey, setFilterOptionsByKey] = useState<Record<string, FilterOption[]>>({});
 
   // Filterable columns: pinned ones marked `filterable` (their own key doubles as the f.<key>
   // query param — see ColumnDef.filterable) plus visible catalog columns whose answerType maps to
   // a FilterKind. A column not currently visible gets no filter widget, same as it gets no cell:
   // requesting f.<key> for a column ProjectListFilter doesn't know about is a 400, and a column
   // that isn't shown has nothing for the user to correlate the filter with anyway.
-  const filterSpecs = useMemo(() => {
+  const filterSpecs = useMemo<FilterSpec[]>(() => {
     const pinned = (config?.list.columns ?? [])
       .filter((c): c is ColumnDef<RowRecord> & { filterable: true } => c.filterable === true)
-      .map((c) => ({ key: c.key, label: c.header, kind: "contains" as FilterKind, loadOptions: undefined }));
+      .map((c): FilterSpec => ({ key: c.key, label: c.header, kind: "contains" as FilterKind }));
 
     if (!catalog) return pinned;
     const byFieldId = new Map(catalog.columns.map((c) => [c.fieldId, c]));
@@ -223,16 +225,17 @@ export function EntityListPanel({
         const kind = filterKindForAnswerType(field.answerType);
         if (!kind) return [];
         const loadOptions = organizationId != null ? (optionSourceFor(field, organizationId) ?? undefined) : undefined;
-        return [{ key: c.columnId, label: field.label, kind, loadOptions }];
+        return [{ key: c.columnId, label: field.label, kind, loadOptions } satisfies FilterSpec];
       });
     return [...pinned, ...dynamic];
   }, [config, catalog, state.visibleColumns, organizationId]);
 
-  function onFilterChange(key: string, value: FilterValue | undefined) {
+  function onFilterChange(key: string, value: FilterValue | undefined, options?: FilterOption[]) {
     const next = { ...state.filters };
     if (value) next[key] = value;
     else delete next[key];
     setFilters(next);
+    if (options) setFilterOptionsByKey((byKey) => ({ ...byKey, [key]: options }));
   }
 
   // Re-fetches the list (so the saved row's new value shows without a full page reload) and, in
@@ -296,16 +299,34 @@ export function EntityListPanel({
         />
       }
     >
-      {(config.list.searchable || onCreate || hasSchema || filterSpecs.length > 0) && (
+      {(config.list.searchable || onCreate || hasSchema) && (
         // p:toolbar (pages/shared/table/tableToolbar.xhtml) → PrimeReact Toolbar, not a plain
         // div — its own generated classes are what render the chrome the stock theme actually
-        // paints, the legacy class name alone doesn't. Search + gear (column toggler, filter
-        // enable/disable) on the left, create on the right, same as the real toolbar's two
-        // toolbarGroups.
+        // paints, the legacy class name alone doesn't. Gear (column show/hide only) then search on
+        // the left, create on the right. The gear leads because it acts on the table's shape,
+        // which the search box does not; filtering moved out of it entirely, into the chip bar in
+        // the table header below.
         <Toolbar
           className="entity-list-panel-toolbar"
           start={
             <>
+              {hasSchema && (
+                <>
+                  <Button
+                    icon="bi bi-gear"
+                    text
+                    rounded
+                    size="large"
+                    aria-label="Colonnes"
+                    tooltip="Afficher / masquer des colonnes"
+                    className="entity-list-panel-gear-button"
+                    onClick={(e) => columnTogglerRef.current?.toggle(e)}
+                  />
+                  <OverlayPanel ref={columnTogglerRef}>
+                    <ColumnToggler options={togglerOptions} value={state.visibleColumns} onChange={setVisibleColumns} />
+                  </OverlayPanel>
+                </>
+              )}
               {config.list.searchable && (
                 <span className="p-input-icon-left">
                   <i className="bi bi-search" />
@@ -316,62 +337,27 @@ export function EntityListPanel({
                   />
                 </span>
               )}
-              {(hasSchema || filterSpecs.length > 0) && (
-                <>
-                  <Button
-                    icon="bi bi-gear"
-                    text
-                    rounded
-                    aria-label="Colonnes"
-                    className="entity-list-panel-gear-button"
-                    onClick={(e) => columnTogglerRef.current?.toggle(e)}
-                  />
-                  <OverlayPanel ref={columnTogglerRef}>
-                    {hasSchema && (
-                      <ColumnToggler options={togglerOptions} value={state.visibleColumns} onChange={setVisibleColumns} />
-                    )}
-                    {filterSpecs.length > 0 && (
-                      <div className="entity-list-panel-filter-toggle">
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={filtersEnabled}
-                            onChange={(e) => setFiltersEnabled(e.target.checked)}
-                          />
-                          {filtersEnabled ? "Filtres activés" : "Filtres désactivés"}
-                        </label>
-                      </div>
-                    )}
-                  </OverlayPanel>
-                </>
-              )}
             </>
           }
           end={onCreate && <Button label="Créer" icon="bi bi-plus-square" onClick={onCreate} />}
         />
       )}
-      {filtersEnabled && filterSpecs.length > 0 && (
-        // Deliberately a standalone row above the table rather than PrimeReact's native
-        // filterDisplay="row" per-column headers: filtering here is server-side and lazy (our own
-        // ProjectListFilter contract), not PrimeReact's built-in client filter model, so its own
-        // per-column filter UI doesn't fit without fighting it. One ColumnFilter per filterable,
-        // currently-visible column, matching filterTemplate.xhtml's filter widget types.
-        <div className="entity-list-panel-filters">
-          {filterSpecs.map((spec) => (
-            <ColumnFilter
-              key={spec.key}
-              label={spec.label}
-              kind={spec.kind}
-              value={state.filters[spec.key]}
-              onChange={(value) => onFilterChange(spec.key, value)}
-              loadOptions={spec.loadOptions}
-            />
-          ))}
-        </div>
-      )}
       {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}
       <DataTable
         value={rows}
+        // The table's own header, not a strip above it: the filter chips belong to the table, and
+        // this is where JSF puts its filter affordance too (entityDataTable.xhtml's header facet).
+        // Rendered only when there is at least one filterable column.
+        header={
+          filterSpecs.length > 0 ? (
+            <FilterChipBar
+              specs={filterSpecs}
+              filters={state.filters}
+              optionsByKey={filterOptionsByKey}
+              onChange={onFilterChange}
+            />
+          ) : undefined
+        }
         lazy
         paginator
         first={state.offset}
@@ -409,41 +395,57 @@ export function EntityListPanel({
           <Column
             key={col.key}
             field={col.key}
-            header={col.header}
+            // Header text is always one line, truncated with an ellipsis past the CSS max-width
+            // (.entity-list-panel-column-header); the full label stays available as the title
+            // tooltip. A wrapping header makes every row in the table taller for one long label.
+            header={
+              <span className="entity-list-panel-column-header" title={col.header}>
+                {col.header}
+              </span>
+            }
             sortable={col.sortable}
             // Only the identifier column is clickable (plan §8 phase 5) — matches JSF's own
             // CommandLinkColumn, the only cell in the real table that navigates/opens anything.
+            // `leading` (the validation-status badge) renders in the same cell but outside the
+            // clickable chip, exactly like JSF's merged statusIdActionsCol.
             body={
               col.identifier
                 ? (row: RowRecord) => (
-                    <span
-                      className="entity-list-panel-identifier-link"
-                      style={{ cursor: "pointer", color: "var(--main-color)" }}
-                      onClick={(e) => openIdentifier(e, row)}
-                    >
-                      {col.render(row)}
+                    <span className="entity-list-panel-identifier-cell">
+                      {col.leading?.(row)}
+                      <span
+                        className="entity-list-panel-identifier-link entity-nav-chip"
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => openIdentifier(e, row)}
+                      >
+                        <i className={config.icon} aria-hidden="true" />
+                        <span className="entity-nav-chip-label">{col.render(row)}</span>
+                      </span>
                     </span>
                   )
-                : col.render
+                : col.leading
+                  ? (row: RowRecord) => (
+                      <span className="entity-list-panel-cell-with-leading">
+                        {col.leading?.(row)}
+                        {col.render(row)}
+                      </span>
+                    )
+                  : col.render
             }
           />
         ))}
       </DataTable>
       {canPatchAnswers && (
-        // The one shared edit surface (plan phase 4b) — re-anchored per click via
-        // editOverlayRef.current.show(event, anchorEl) in openCellEditor, not one instance per cell.
-        <OverlayPanel
-          ref={editOverlayRef}
-          onHide={() => setEditTarget(null)}
-        >
-          <CellEditOverlay
-            target={editTarget}
-            organizationId={organizationId}
-            onSave={(id, answers) => config.api.patchAnswers!(id, answers)}
-            onSaved={onCellEditSaved}
-            onClose={() => editOverlayRef.current?.hide()}
-          />
-        </OverlayPanel>
+        // The one shared edit surface (plan phase 4b) — re-anchored per click to the clicked
+        // cell's own rect (it renders on top of that cell), not one instance per cell.
+        <CellEditOverlay
+          target={editTarget}
+          organizationId={organizationId}
+          onSave={(id, answers) => config.api.patchAnswers!(id, answers)}
+          onSaved={onCellEditSaved}
+          onClose={() => setEditTarget(null)}
+        />
       )}
     </Panel>
   );

@@ -31,6 +31,11 @@ export interface ProjectPermissions {
   canDelete: boolean;
 }
 
+// Mirrors fr.siamois.domain.models.ValidationStatus — the merged "statut + identifiant" column's
+// left-hand badge (JSF: /panel/header/validationButton.xhtml). Read-only on the API: toggling it
+// is still a JSF-side action (panelModel.toggleValidate()).
+export type ValidationStatus = "INCOMPLETE" | "COMPLETE" | "VALIDATED";
+
 export interface ProjectResource {
   resourceType: string;
   id: string;
@@ -39,6 +44,7 @@ export interface ProjectResource {
   identifier: string;
   beginDate?: string | null;
   endDate?: string | null;
+  validated?: ValidationStatus | null;
   type?: ResolvedConcept | null;
   mainLocation?: PlaceLight | null;
   spatialContext?: PlaceLight[];

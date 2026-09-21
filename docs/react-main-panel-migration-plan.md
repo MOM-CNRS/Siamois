@@ -550,19 +550,35 @@ already have the right shape (`/places/autocomplete?organizationId=`).
 
 Frontend: **new** `frontend/src/components/table/ColumnFilter.tsx` (dispatches on `field.answerType` →
 `MultiSelect` / `AutoComplete` / range inputs / `Calendar` range) and **new** `frontend/src/fields/optionSources.ts`
-(`answerType + fieldCode` → a `useQuery` fn). The gear overlay's filter enable/disable toggle lives in
-`EntityListPanel`.
+(`answerType + fieldCode` → a `useQuery` fn).
+
+> **Superseded (post-phase review).** The filter UI is *not* a JSF-style per-column input row behind a
+> "Filtres activés/désactivés" switch in the gear overlay. It is a Notion-style chip bar in the table's own
+> header (**new** `frontend/src/components/table/FilterChipBar.tsx`): one chip per active filter — click to
+> edit, × to drop — plus a single "Ajouter un filtre" chip offering the columns not yet filtered. No enable/
+> disable toggle at all. `ColumnFilter` stays the per-kind widget, now rendered inside a chip's editor
+> overlay, and its selected-option *labels* are owned by `EntityListPanel` (`FilterValue` is ids-only, and a
+> chip has to print names). The gear consequently does one thing only — show/hide columns — and sits
+> **before** the search box, sized larger than it.
 
 ---
 
 ### Phase 4 — click-to-edit overlay
 
-One shared `OverlayPanel` owned by `EntityListPanel`, anchored to the clicked cell and initialised from
+One shared editor owned by `EntityListPanel`, anchored to the clicked cell and initialised from
 `(row, field)` — no pencil buttons, no per-cell inline widgets.
 
-- **New** `frontend/src/components/table/CellEditOverlay.tsx` — state `{ row, field, anchorEl } | null`,
-  `op.show(event, anchorEl)` on cell click. Contents: field label + the edit-mode renderer + Save/Cancel +
-  inline error. Escape/outside-click cancels, Enter saves scalars.
+- **New** `frontend/src/components/table/CellEditOverlay.tsx` — state `{ row, field, anchor } | null`.
+
+> **Superseded (post-phase review).** Not a PrimeReact `OverlayPanel`: that always drops *below* its target
+> with an arrow, i.e. a popover rather than an in-place editor. The editor is a `position: fixed` box
+> portalled to `document.body` at the clicked cell's own client rect, so it renders **on top of** the cell.
+> It shows the field widget and nothing else — no label, **no Save/Cancel buttons**. Saving happens on value
+> change: immediately for `SELECT_*`/`DATETIME` (one interaction = one final value), and on Enter or on focus
+> leaving the editor for text/number (per-keystroke saving would be one PATCH + one refetch per character).
+> Escape still cancels; a failed save keeps the editor open with the server's message. An unchanged value
+> issues no PATCH. Editable cells get a hover/focus style and a pointer cursor so the affordance is visible
+> before clicking.
 - **Fix a collision first:** `EntityListPanel`'s `onRowClick` currently fires on *any* cell. Once cells are
   editable, navigation must move onto the identifier column's body only — matching JSF, where only the
   `CommandLinkColumn` navigates. Non-editable cells then do nothing.

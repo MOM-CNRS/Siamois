@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.resource.project;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
@@ -33,6 +34,15 @@ public class ProjectResource extends ProjectResourceIdentifier {
 
     @Schema(description = "Date de fin d'un projet")
     private OffsetDateTime endDate;
+
+    /**
+     * Statut de validation ({@code TraceableEntity.validated}) — la donnée que la colonne fusionnée
+     * « statut + identifiant » de la table JSF affiche via {@code /panel/header/validationButton.xhtml}.
+     * Exposée en lecture seule : la bascule elle-même reste côté JSF ({@code panelModel.toggleValidate()}),
+     * l'API ne propose pas encore d'endpoint pour la changer.
+     */
+    @Schema(description = "Statut de validation du projet")
+    private ValidationStatus validated;
 
     private ResolvedConceptResource type;
 

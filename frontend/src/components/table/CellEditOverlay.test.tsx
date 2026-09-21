@@ -24,6 +24,10 @@ const textField: FieldResource = {
   valueBinding: "oaCode",
 };
 
+// jsdom gives every element a zero rect; the exact numbers don't matter to any assertion here,
+// only that the overlay is positioned from one.
+const ANCHOR = { top: 120, left: 40, width: 200, height: 24 } as DOMRect;
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -48,6 +52,22 @@ afterEach(() => {
   container.remove();
 });
 
+// The editor portals to document.body (it is position: fixed over the cell), so every query goes
+// through the body, not through `container`.
+function overlayEl(): HTMLElement | null {
+  return document.body.querySelector(".cell-edit-overlay");
+}
+
+function overlayInput(): HTMLInputElement {
+  return document.body.querySelector(".cell-edit-overlay input") as HTMLInputElement;
+}
+
+function type(input: HTMLInputElement, value: string) {
+  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+  nativeSetter.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 function renderOverlay(opts: {
   target: CellEditTarget<Row> | null;
   onSave?: ReturnType<typeof vi.fn>;
@@ -69,39 +89,46 @@ describe("CellEditOverlay", () => {
   it("renders nothing when there is no target", async () => {
     renderOverlay({ target: null });
     await flush();
-    expect(container.innerHTML).toBe("");
+    expect(overlayEl()).toBeNull();
   });
 
   it("seeds the draft from the target row's current value via the field's binding", async () => {
-    renderOverlay({ target: { row: { id: "1", oaCode: "OA-2024" }, field: textField } });
+    renderOverlay({ target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR } });
     await flush();
 
-    const input = container.querySelector("input") as HTMLInputElement;
-    expect(input.value).toBe("OA-2024");
+    expect(overlayInput().value).toBe("OA-2024");
   });
 
-  it("shows the field label", async () => {
-    renderOverlay({ target: { row: { id: "1", oaCode: "OA-2024" }, field: textField } });
+  it("shows only the field widget — no label, no Save/Cancel buttons", async () => {
+    renderOverlay({ target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR } });
     await flush();
-    expect(container.textContent).toContain("Code OA");
+
+    expect(overlayEl()!.textContent).not.toContain("Code OA");
+    expect(overlayEl()!.querySelectorAll("button")).toHaveLength(0);
   });
 
-  it("calls onSave with the row id and an AnswerInput-shaped map keyed by field id", async () => {
+  it("positions itself over the anchor cell", async () => {
+    renderOverlay({ target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR } });
+    await flush();
+
+    const style = overlayEl()!.style;
+    expect(style.position).toBe("fixed");
+    expect(style.top).toBe("120px");
+    expect(style.left).toBe("40px");
+  });
+
+  it("saves on Enter with the row id and an AnswerInput-shaped map keyed by field id, then closes", async () => {
     const { onSave, onSaved, onClose } = renderOverlay({
-      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField },
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
     });
     await flush();
 
-    const input = container.querySelector("input") as HTMLInputElement;
-    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    const input = overlayInput();
     await act(async () => {
-      nativeSetter.call(input, "OA-2025");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      type(input, "OA-2025");
     });
-
-    const saveButton = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Enregistrer")!;
     await act(async () => {
-      saveButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     });
     await flush();
 
@@ -110,26 +137,50 @@ describe("CellEditOverlay", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("saves on Enter for a scalar field", async () => {
-    const { onSave } = renderOverlay({ target: { row: { id: "1", oaCode: "OA-2024" }, field: textField } });
-    await flush();
-
-    const input = container.querySelector("input") as HTMLInputElement;
-    await act(async () => {
-      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  it("saves when focus leaves the editor (a click elsewhere finishes the edit)", async () => {
+    const { onSave, onClose } = renderOverlay({
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
     });
     await flush();
 
-    expect(onSave).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      type(overlayInput(), "OA-2025");
+    });
+    await act(async () => {
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
+    await flush();
+
+    expect(onSave).toHaveBeenCalledWith("1", { "-109": { value: "OA-2025" } });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("issues no PATCH at all when the value was never changed", async () => {
+    const { onSave, onClose } = renderOverlay({
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
+    });
+    await flush();
+
+    await act(async () => {
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
+    await flush();
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("cancels on Escape without saving", async () => {
-    const { onSave, onClose } = renderOverlay({ target: { row: { id: "1", oaCode: "OA-2024" }, field: textField } });
+    const { onSave, onClose } = renderOverlay({
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
+    });
     await flush();
 
-    const overlay = container.querySelector(".cell-edit-overlay") as HTMLElement;
     await act(async () => {
-      overlay.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      type(overlayInput(), "OA-2025");
+    });
+    await act(async () => {
+      overlayEl()!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     });
 
     expect(onSave).not.toHaveBeenCalled();
@@ -139,31 +190,34 @@ describe("CellEditOverlay", () => {
   it("shows the ApiError message inline and does not close on a failed save (e.g. 409 duplicate identifier)", async () => {
     const onSave = vi.fn().mockRejectedValue(new ApiError(409, "Identifiant déjà utilisé"));
     const { onSaved, onClose } = renderOverlay({
-      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField },
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
       onSave,
     });
     await flush();
 
-    const saveButton = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Enregistrer")!;
+    const input = overlayInput();
     await act(async () => {
-      saveButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      type(input, "OA-2025");
+    });
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     });
     await flush();
 
-    expect(container.textContent).toContain("Identifiant déjà utilisé");
+    expect(overlayEl()!.textContent).toContain("Identifiant déjà utilisé");
     expect(onSaved).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
 
   it("re-seeds the draft when the target changes without unmounting (single shared overlay instance)", async () => {
-    renderOverlay({ target: { row: { id: "1", oaCode: "A" }, field: textField } });
+    renderOverlay({ target: { row: { id: "1", oaCode: "A" }, field: textField, anchor: ANCHOR } });
     await flush();
-    expect((container.querySelector("input") as HTMLInputElement).value).toBe("A");
+    expect(overlayInput().value).toBe("A");
 
     act(() => {
       root.render(
         <CellEditOverlay
-          target={{ row: { id: "2", oaCode: "B" }, field: textField }}
+          target={{ row: { id: "2", oaCode: "B" }, field: textField, anchor: ANCHOR }}
           onSave={vi.fn().mockResolvedValue(undefined)}
           onSaved={vi.fn()}
           onClose={vi.fn()}
@@ -171,6 +225,6 @@ describe("CellEditOverlay", () => {
       );
     });
     await flush();
-    expect((container.querySelector("input") as HTMLInputElement).value).toBe("B");
+    expect(overlayInput().value).toBe("B");
   });
 });

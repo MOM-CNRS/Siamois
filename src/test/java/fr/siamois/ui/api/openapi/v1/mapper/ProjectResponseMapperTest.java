@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -132,6 +133,22 @@ class ProjectResponseMapperTest {
         ProjectResource r = projectResponseMapper.toResource(row, "fr");
 
         assertThat(r.getMainLocation().getName()).isEqualTo("Commune A");
+    }
+
+    @Test
+    void toResource_exposesValidationStatus() {
+        dto.setValidated(ValidationStatus.VALIDATED);
+
+        ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
+
+        assertThat(r.getValidated()).isEqualTo(ValidationStatus.VALIDATED);
+    }
+
+    @Test
+    void toResource_validationStatusDefaultsToIncomplete() {
+        ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
+
+        assertThat(r.getValidated()).isEqualTo(ValidationStatus.INCOMPLETE);
     }
 
     @Test

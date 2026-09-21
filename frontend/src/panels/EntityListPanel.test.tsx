@@ -219,6 +219,54 @@ describe("EntityListPanel", () => {
     expect(row.className).toContain("overview-open");
   });
 
+  it("renders the identifier cell as a navigation chip preceded by the column's leading content", async () => {
+    const leadingConfig: EntityTypeConfig<FakeRow, FakeRow> = {
+      ...fakeConfig,
+      key: "fake-leading-entity",
+      list: {
+        ...fakeConfig.list,
+        columns: [
+          {
+            key: "name",
+            header: "Name",
+            identifier: true,
+            leading: () => <i className="test-badge" />,
+            render: (row) => row.name,
+          },
+        ],
+      },
+      routes: { list: "/fake-leading", detail: (id) => `/fake-leading/${id}` },
+    };
+    registerEntityType(leadingConfig);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityListPanel entityType="fake-leading-entity" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const cell = container.querySelector(".entity-list-panel-identifier-cell")!;
+    expect(cell.querySelector(".test-badge")).toBeTruthy();
+    const chip = cell.querySelector(".entity-nav-chip")!;
+    expect(chip.querySelector(".bi-question")).toBeTruthy();
+    expect(chip.textContent).toContain("Row A");
+    // The badge is outside the clickable chip — only the chip opens the entity.
+    expect(chip.querySelector(".test-badge")).toBeFalsy();
+  });
+
+  it("wraps every column header so it stays on one line, keeping the full label as a tooltip", async () => {
+    renderPanel();
+    await flush();
+
+    const header = container.querySelector(".entity-list-panel-column-header") as HTMLElement;
+    expect(header).toBeTruthy();
+    expect(header.getAttribute("title")).toBe("Name");
+  });
+
   it("renders the header icon, plural label and a count chip (actionUnitListPanelHeader.xhtml)", async () => {
     renderPanel();
     await flush();
@@ -384,14 +432,13 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     await flush();
 
     expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ fields: undefined }));
-    // The gear button itself still shows — fakeConfig's "name" column is `filterable`, and the
-    // gear now serves both the column toggler (schema-only) and the filter enable/disable toggle
-    // (any filterable column, schema or not). Its absence is covered by a config with neither,
-    // below.
-    expect(container.querySelector(".entity-list-panel-gear-button")).toBeTruthy();
+    // The gear is the column show/hide control and nothing else now, so a config with no schema
+    // has no gear at all — even though its "name" column is filterable (filtering lives in the
+    // table header's chip bar, not behind the gear).
+    expect(container.querySelector(".entity-list-panel-gear-button")).toBeFalsy();
   });
 
-  it("shows no gear button for a config with neither a schema nor a filterable column", async () => {
+  it("shows no gear button for a config with no schema", async () => {
     const bareListMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeRow>>>();
     bareListMock.mockResolvedValue({ data: [], totalCount: 0, limit: 10, offset: 0 });
     registerEntityType({
@@ -432,40 +479,81 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
 
     // PrimeReact's OverlayPanel portals into document.body by default, not into `container`.
     expect(document.body.querySelector(".entity-list-panel-column-toggler")).toBeTruthy();
+    // The gear offers column visibility and nothing else — no filter enable/disable switch.
+    expect(document.body.querySelector(".entity-list-panel-filter-toggle")).toBeFalsy();
+  });
+
+  it("puts the gear before the search box in the toolbar", async () => {
+    // fakeSchemaConfig isn't searchable; a schema-bearing, searchable config is what this checks.
+    const bothListMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeFormRow>>>();
+    bothListMock.mockResolvedValue({ data: [], totalCount: 0, limit: 10, offset: 0 });
+    registerEntityType({
+      key: "fake-gear-order-entity",
+      labels: { singular: "Geared", plural: "Geareds" },
+      icon: "bi bi-question",
+      api: { list: bothListMock, get: vi.fn() },
+      list: {
+        columns: [{ key: "name", header: "Name", render: (row: FakeFormRow) => row.name }],
+        schema: { load: schemaLoadMock },
+        searchable: true,
+      },
+      detail: { tabs: [] },
+      routes: { list: "/fake-gear-order", detail: (id) => `/fake-gear-order/${id}` },
+    });
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityListPanel entityType="fake-gear-order-entity" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+    await flush();
+
+    const start = container.querySelector(".entity-list-panel-toolbar .p-toolbar-group-start")!;
+    const gear = start.querySelector(".entity-list-panel-gear-button")!;
+    const search = start.querySelector("input")!;
+    expect(gear.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
-describe("EntityListPanel with a filterable pinned column", () => {
-  it("shows the gear button for filters even without a schema, hides the filter row until enabled", async () => {
+describe("EntityListPanel filter chips (table header)", () => {
+  it("shows an \"Ajouter un filtre\" chip and no filter inputs until one is added", async () => {
     renderPanel();
     await flush();
 
-    const gearButton = container.querySelector(".entity-list-panel-gear-button") as HTMLElement;
-    expect(gearButton).toBeTruthy();
+    const bar = container.querySelector(".entity-list-panel-filter-chips")!;
+    expect(bar).toBeTruthy();
+    expect(bar.textContent).toContain("Ajouter un filtre");
+    // No enable/disable switch anywhere, and no standalone filter row.
     expect(container.querySelector(".entity-list-panel-filters")).toBeFalsy();
+    expect(bar.querySelector(".filter-chip-body")).toBeFalsy();
   });
 
-  it("shows a contains filter for the pinned column once enabled, and applies it to the list query", async () => {
+  it("adds a chip for the picked column and applies its value to the list query", async () => {
     renderPanel();
     await flush();
     listMock.mockClear();
 
-    const gearButton = container.querySelector(".entity-list-panel-gear-button") as HTMLElement;
+    const addChip = container.querySelector(".filter-chip-add") as HTMLElement;
     await act(async () => {
-      gearButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      addChip.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
 
-    const toggleCheckbox = document.body.querySelector(
-      ".entity-list-panel-filter-toggle input[type='checkbox']",
-    ) as HTMLInputElement;
-    expect(toggleCheckbox).toBeTruthy();
+    // Both overlays portal into document.body.
+    const pickerItem = Array.from(document.body.querySelectorAll(".filter-picker-item")).find(
+      (b) => b.textContent === "Name",
+    ) as HTMLElement;
+    expect(pickerItem).toBeTruthy();
     await act(async () => {
-      toggleCheckbox.click();
+      pickerItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
 
-    const filterInput = container.querySelector(".entity-list-panel-filters input") as HTMLInputElement;
+    const filterInput = document.body.querySelector(".entity-list-panel-filter-editor input") as HTMLInputElement;
     expect(filterInput).toBeTruthy();
 
     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
@@ -482,6 +570,45 @@ describe("EntityListPanel with a filterable pinned column", () => {
     expect(listMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ filters: { name: { op: "contains", v: "abc" } } }),
     );
+    // The chip now carries the applied value, so the active filter is readable without opening it.
+    const chip = container.querySelector(".filter-chip-body")!;
+    expect(chip.textContent).toContain("Name");
+    expect(chip.textContent).toContain("abc");
+  });
+
+  it("drops the filter from the query when its chip is removed", async () => {
+    renderPanel();
+    await flush();
+
+    const addChip = container.querySelector(".filter-chip-add") as HTMLElement;
+    await act(async () => {
+      addChip.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    const pickerItem = document.body.querySelector(".filter-picker-item") as HTMLElement;
+    await act(async () => {
+      pickerItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    const filterInput = document.body.querySelector(".entity-list-panel-filter-editor input") as HTMLInputElement;
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      nativeSetter.call(filterInput, "abc");
+      filterInput.dispatchEvent(new Event("input", { bubbles: true }));
+      filterInput.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    await flush();
+    listMock.mockClear();
+
+    const remove = container.querySelector(".filter-chip-remove") as HTMLElement;
+    await act(async () => {
+      remove.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ filters: undefined }));
+    expect(container.querySelector(".filter-chip-body")).toBeFalsy();
   });
 });
 
@@ -588,10 +715,11 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
-    const saveButton = Array.from(document.body.querySelectorAll("button")).find((b) => b.textContent === "Enregistrer")!;
+    // No Save button: the edit commits on Enter (or on focus leaving the editor).
+    expect(Array.from(document.body.querySelectorAll("button")).some((b) => b.textContent === "Enregistrer")).toBe(false);
     schemaListMock.mockClear();
     await act(async () => {
-      saveButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     });
     await flush();
     await flush();
