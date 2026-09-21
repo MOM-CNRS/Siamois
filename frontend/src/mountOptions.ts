@@ -16,6 +16,10 @@ export interface PanelActions {
   // gate than `create` above (which is the main panel titlebar's, tied to creationUnitKind and
   // never rendered at all for a list panel in JSF).
   listCreate?: () => void;
+  // Keeps FlowBean's parentOrOverview in sync with a client-side-opened overview (plan §8 phase
+  // 5) — fire-and-forget, not awaited by the caller. entityType is accepted for a future
+  // multi-entity bridge; today the remoteCommand behind this is action-unit-specific.
+  setOverview?: (entityType: string, id: string | number) => void;
 }
 
 // The overview pane's own titlebar (panelContent.xhtml) has two extra buttons the main panel's
@@ -46,6 +50,10 @@ export interface PanelToolbarSlot {
 }
 
 export interface MountOptions {
+  // Identifies which server-side panel bean this mount belongs to (AbstractPanel.panelIndex) —
+  // only needed to filter the "siamois-set-overview-done" DOM event a page with several mounted
+  // panels (flow.xhtml's tab stack) would otherwise dispatch for every mount at once.
+  panelIndex?: string;
   panelKind: PanelKind;
   entityType: string;
   entityId?: string | number;

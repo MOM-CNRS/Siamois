@@ -33,8 +33,10 @@ import fr.siamois.infrastructure.database.repositories.permissions.PersonProfile
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitFilterSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
@@ -762,6 +764,40 @@ public class ActionUnitService implements ArkEntityService {
             Long organizationId,
             String search,
             Pageable pageable) {
+        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable, null);
+    }
+
+    /**
+     * @param recordingUnitCountOrder when non-null, order by the number of attached recording units
+     *                                instead of by {@code pageable}'s own sort — {@code recordingUnitCount}
+     *                                is not a JPA-mapped path, so it is carried by a Specification
+     *                                ({@link ActionUnitSpec#orderByRecordingUnitCount(Sort.Direction)})
+     *                                and the caller must have stripped it from {@code pageable}.
+     */
+    @Transactional(readOnly = true)
+    public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            Pageable pageable,
+            Sort.Direction recordingUnitCountOrder) {
+        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable,
+                recordingUnitCountOrder, ProjectListFilter.EMPTY);
+    }
+
+    /**
+     * @param filter per-column filters (plan §3 phase 3) — {@link ProjectListFilter#EMPTY} for none.
+     */
+    @Transactional(readOnly = true)
+    public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            Pageable pageable,
+            Sort.Direction recordingUnitCountOrder,
+            ProjectListFilter filter) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
@@ -772,10 +808,17 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
                 .and(ActionUnitSpec.visibleToPerson(personId))
                 .and(ActionUnitSpec.projectSearch(search));
+        if (recordingUnitCountOrder != null) {
+            spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
+        }
+        if (filter != null && !filter.isEmpty()) {
+            spec = spec.and(ActionUnitFilterSpec.fromFilter(filter));
+        }
 
         Page<ActionUnit> page = actionUnitRepository.findAll(spec, pageable);
 
         List<Long> ids = page.getContent().stream().map(ActionUnit::getId).toList();
+        warmFormCollections(ids);
         Map<Long, Long> ruByProject = ids.isEmpty()
                 ? Map.of()
                 : countingMap(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(ids));
@@ -791,6 +834,22 @@ public class ActionUnitService implements ArkEntityService {
                 .toList();
 
         return new PageImpl<>(mapped, pageable, page.getTotalElements());
+    }
+
+    /**
+     * Initialise en trois requêtes bornées les collections que {@code ActionUnitMapper} mappe pour chaque
+     * ligne ({@code periods}, {@code subjects}, {@code spatialContext}) : sans cela, mapper une page de 25
+     * projets déclenche 75 requêtes supplémentaires. Les entités de la page étant déjà gérées par le même
+     * contexte de persistance, le résultat de ces requêtes est ignoré — seul l'effet d'initialisation
+     * compte.
+     */
+    private void warmFormCollections(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return;
+        }
+        actionUnitRepository.findWithPeriodsByIdIn(ids);
+        actionUnitRepository.findWithSubjectsByIdIn(ids);
+        actionUnitRepository.findWithSpatialContextByIdIn(ids);
     }
 
     /**

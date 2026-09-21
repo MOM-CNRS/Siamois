@@ -1597,7 +1597,6 @@ class ActionUnitServiceTest {
         verify(recordingUnitRepository).countRecordingUnitsGroupedByActionUnitIds(List.of(1L, 2L));
         verify(actionUnitRepository).countChildActionUnitsByParentIds(List.of(1L, 2L));
     }
-
     // ------------------------------------------------------------------
     // findAccessibleProjectByKey
     // ------------------------------------------------------------------
@@ -2314,6 +2313,43 @@ class ActionUnitServiceTest {
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).recordingUnitCount()).isEqualTo(4L);
         assertThat(result.getContent().get(0).childActionUnitCount()).isZero();
+    }
+
+    /**
+     * Vérifie le câblage plutôt que la construction du prédicat (déjà couvert par
+     * {@code ActionUnitFilterSpecTest}) : avec un filtre non vide, la {@code Specification} passée
+     * au repository interroge effectivement {@code root.get("name")} quand on l'évalue — preuve que
+     * {@code ActionUnitFilterSpec.fromFilter} a bien été AND-é dans la requête, pas juste construit
+     * et ignoré.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    void findAccessibleProjects_withFilter_addsFilterPredicateToTheSpecification() {
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter filter =
+                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.parse(
+                        new org.springframework.util.LinkedMultiValueMap<>(java.util.Map.of("f.name", List.of("foss"))));
+
+        actionUnitService.findAccessibleProjects(1L, Set.of(10L), null, null, PageRequest.of(0, 20), null, filter);
+
+        org.mockito.ArgumentCaptor<Specification<ActionUnit>> specCaptor = org.mockito.ArgumentCaptor.forClass(Specification.class);
+        verify(actionUnitRepository).findAll(specCaptor.capture(), any(Pageable.class));
+
+        // Deep stubs on all three: toPredicate() here evaluates the FULL composed Specification
+        // (institutionIdIn + visibleToPerson + projectSearch + the filter), not just the filter's
+        // own predicate, so every unstubbed root.get(...)/cb.xxx(...) needs to chain to something
+        // non-null rather than NPE.
+        jakarta.persistence.criteria.Root<ActionUnit> root =
+                mock(jakarta.persistence.criteria.Root.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
+        jakarta.persistence.criteria.CriteriaQuery<?> query =
+                mock(jakarta.persistence.criteria.CriteriaQuery.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
+        jakarta.persistence.criteria.CriteriaBuilder cb =
+                mock(jakarta.persistence.criteria.CriteriaBuilder.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
+        specCaptor.getValue().toPredicate(root, query, cb);
+
+        verify(root, atLeastOnce()).get("name");
     }
 
     // ------------------------------------------------------------------

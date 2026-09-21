@@ -23,6 +23,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
+import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import org.junit.jupiter.api.BeforeEach;
@@ -221,6 +222,264 @@ class ProjectApiServiceMutationTest {
         assertThat(au.getName()).isEqualTo("Updated");
     }
 
+    // ------------------------------------------------------------------
+    // patchProject — answers (plan §3 phase 4b)
+    // ------------------------------------------------------------------
+
+    @Test
+    void patchProject_answers_writesAScalarTextField() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-109", new AnswerInput("OA-2024-01", null)); // OA_CODE_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getOaCode()).isEqualTo("OA-2024-01");
+    }
+
+    @Test
+    void patchProject_answers_appliedAfterFlatFieldsAndCanOverrideThem() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.setName("FromFlatField");
+        patch.getAnswers().put("-102", new AnswerInput("FromAnswers", null)); // NAME_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getName()).isEqualTo("FromAnswers");
+    }
+
+    @Test
+    void patchProject_answers_writesADecimalField() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-128", new AnswerInput(0.42, null)); // OPENING_RATE_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getOpeningRate()).isEqualTo(0.42);
+    }
+
+    @Test
+    void patchProject_answers_clearsAScalarFieldOnNullValue() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        au.setOaCode("OLD");
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-109", new AnswerInput(null, null));
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getOaCode()).isNull();
+    }
+
+    @Test
+    void patchProject_answers_resolvesAndWritesASelectOneConcept() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        Concept statusConcept = new Concept();
+        statusConcept.setId(12L);
+        ConceptDTO statusDto = new ConceptDTO();
+        statusDto.setId(12L);
+        when(conceptService.findById(12L)).thenReturn(Optional.of(statusConcept));
+        when(conceptMapper.convert(statusConcept)).thenReturn(statusDto);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-118", new AnswerInput(12, null)); // STATUS_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getStatus()).isEqualTo(statusDto);
+    }
+
+    @Test
+    void patchProject_answers_unknownStatusConcept_throws404() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(conceptService.findById(999L)).thenReturn(Optional.empty());
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-118", new AnswerInput(999, null));
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
+    void patchProject_answers_resolvesAndWritesASelectManyConceptList() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        // Concept.equals() also compares externalId+vocabulary, not id — give c1/c2 distinct
+        // externalIds too, or Mockito's default equals-based argument matching treats
+        // conceptMapper.convert(c1)/(c2) as the same stub and the later one wins for both calls.
+        Concept c1 = new Concept();
+        c1.setId(1L);
+        c1.setExternalId("1");
+        Concept c2 = new Concept();
+        c2.setId(2L);
+        c2.setExternalId("2");
+        // ConceptDTO.equals() compares externalId+vocabulary, not id (see the class itself) — two
+        // DTOs with the same (null) externalId collapse into one another in a Set, so give each a
+        // distinct externalId here purely to keep them distinguishable for this assertion.
+        ConceptDTO d1 = new ConceptDTO();
+        d1.setId(1L);
+        d1.setExternalId("1");
+        ConceptDTO d2 = new ConceptDTO();
+        d2.setId(2L);
+        d2.setExternalId("2");
+        when(conceptService.findById(1L)).thenReturn(Optional.of(c1));
+        when(conceptService.findById(2L)).thenReturn(Optional.of(c2));
+        when(conceptMapper.convert(c1)).thenReturn(d1);
+        when(conceptMapper.convert(c2)).thenReturn(d2);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-115", new AnswerInput(null, List.of(1, 2))); // PERIODS_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getPeriods()).containsExactlyInAnyOrder(d1, d2);
+    }
+
+    /**
+     * "values: null" veut dire "ne pas toucher" pour un champ à sélection multiple — pas "vider",
+     * contrairement à "value: null" pour un champ scalaire. Même convention que
+     * RecordingUnitPatchRequest.answers.
+     */
+    @Test
+    void patchProject_answers_nullValuesOnASelectManyField_leavesItUntouched() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        ConceptDTO existing = new ConceptDTO();
+        existing.setId(9L);
+        au.setPeriods(new java.util.LinkedHashSet<>(List.of(existing)));
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-115", new AnswerInput(null, null));
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getPeriods()).containsExactly(existing);
+    }
+
+    @Test
+    void patchProject_answers_resolvesAndWritesASelectOneSpatialUnit() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        SpatialUnitDTO place = new SpatialUnitDTO();
+        place.setId(42L);
+        place.setName("Lyon");
+        when(spatialUnitService.findById(42L)).thenReturn(place);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-108", new AnswerInput(42, null)); // MAIN_LOCATION_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getMainLocation()).isNotNull();
+        assertThat(au.getMainLocation().getId()).isEqualTo(42L);
+    }
+
+    @Test
+    void patchProject_answers_typeField_overwritesTheLocalUsedForSave() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        Concept typeConcept = new Concept();
+        typeConcept.setId(5L);
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(5L);
+        when(conceptService.findById(5L)).thenReturn(Optional.of(typeConcept));
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-101", new AnswerInput(5, null)); // ACTION_UNIT_TYPE_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        // save(userInfo, dto, type) must receive the answers-updated type, not the stale one read
+        // before applyAnswerPatch ran.
+        verify(actionUnitService).save(any(), same(au), eq(typeDto));
+        assertThat(au.getType()).isEqualTo(typeDto);
+    }
+
+    @Test
+    void patchProject_answers_unknownFieldId_throws400() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-999999", new AnswerInput("x", null));
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
     @Test
     void deleteProject_withRecordingUnits_throws409() {
         ActionUnitDTO au = projectWithInstitution();
@@ -366,19 +625,107 @@ class ProjectApiServiceMutationTest {
     @Test
     void pageAccessibleProjects_forwardsOrgSearchSortAndPage() {
         Page<AccessibleProjectForApi> expected = new PageImpl<>(List.of());
-        when(actionUnitService.findAccessibleProjects(eq(1L), eq(SCOPE), eq(10L), eq("fouille"), any(Pageable.class)))
+        when(actionUnitService.findAccessibleProjects(
+                eq(1L), eq(SCOPE), eq(10L), eq("fouille"), any(Pageable.class), isNull(), any()))
                 .thenReturn(expected);
 
         Page<AccessibleProjectForApi> result = service.pageAccessibleProjects(
-                caller, 10L, "fouille", 20, 10, List.of("name:desc"));
+                caller, 10L, "fouille", 20, 10, "name:desc");
 
         assertThat(result).isSameAs(expected);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(actionUnitService).findAccessibleProjects(eq(1L), eq(SCOPE), eq(10L), eq("fouille"), pageableCaptor.capture());
+        verify(actionUnitService).findAccessibleProjects(
+                eq(1L), eq(SCOPE), eq(10L), eq("fouille"), pageableCaptor.capture(), isNull(), any());
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(2);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
         assertThat(pageableCaptor.getValue().getSort().getOrderFor("name").getDirection())
                 .isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    void pageAccessibleProjects_appendsStableIdTiebreaker() {
+        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageAccessibleProjects(caller, null, null, 0, 10, "name:desc");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(actionUnitService).findAccessibleProjects(
+                any(), any(), any(), any(), pageableCaptor.capture(), isNull(), any());
+        Sort sort = pageableCaptor.getValue().getSort();
+        assertThat(sort.getOrderFor("name").getDirection()).isEqualTo(Sort.Direction.DESC);
+        assertThat(sort.getOrderFor("id").getDirection()).isEqualTo(Sort.Direction.ASC);
+    }
+
+    @Test
+    void pageAccessibleProjects_defaultsToNameAscWhenSortIsBlank() {
+        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageAccessibleProjects(caller, null, null, 0, 10, null);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(actionUnitService).findAccessibleProjects(
+                any(), any(), any(), any(), pageableCaptor.capture(), isNull(), any());
+        assertThat(pageableCaptor.getValue().getSort().getOrderFor("name").getDirection())
+                .isEqualTo(Sort.Direction.ASC);
+    }
+
+    @Test
+    void pageAccessibleProjects_rejectsUnknownSortField() {
+        assertThatThrownBy(() -> service.pageAccessibleProjects(caller, null, null, 0, 10, "bogus:asc"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+        verifyNoInteractions(actionUnitService);
+    }
+
+    @Test
+    void pageAccessibleProjects_forwardsTheFilterToTheSevenArgOverload() {
+        fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter filter =
+                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.parse(
+                        new org.springframework.util.LinkedMultiValueMap<>(java.util.Map.of("f.name", List.of("foss"))));
+        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), eq(filter)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageAccessibleProjects(caller, null, null, 0, 10, "name:asc", filter);
+
+        verify(actionUnitService).findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), eq(filter));
+    }
+
+    @Test
+    void pageAccessibleProjects_sixArgOverload_forwardsAnEmptyFilter() {
+        when(actionUnitService.findAccessibleProjects(
+                any(), any(), any(), any(), any(Pageable.class), isNull(),
+                eq(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageAccessibleProjects(caller, null, null, 0, 10, "name:asc");
+
+        verify(actionUnitService).findAccessibleProjects(
+                any(), any(), any(), any(), any(Pageable.class), isNull(),
+                eq(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY));
+    }
+
+    /**
+     * {@code recordingUnitCount} n'est pas un chemin JPA : il doit sortir du {@code Pageable} (sinon
+     * Hibernate échoue sur une propriété inconnue) et repartir comme direction vers le service, qui
+     * l'applique via {@code ActionUnitSpec#orderByRecordingUnitCount}.
+     */
+    @Test
+    void pageAccessibleProjects_carriesRecordingUnitCountSortOutsideThePageable() {
+        when(actionUnitService.findAccessibleProjects(
+                any(), any(), any(), any(), any(Pageable.class), eq(Sort.Direction.DESC), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageAccessibleProjects(caller, null, null, 0, 10, "recordingUnitCount:desc");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(actionUnitService).findAccessibleProjects(
+                any(), any(), any(), any(), pageableCaptor.capture(), eq(Sort.Direction.DESC), any());
+        Sort sort = pageableCaptor.getValue().getSort();
+        assertThat(sort.getOrderFor("recordingUnitCount")).isNull();
+        assertThat(sort.getOrderFor("id")).isNotNull();
     }
 
     @Test

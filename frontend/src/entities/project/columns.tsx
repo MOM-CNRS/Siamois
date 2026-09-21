@@ -1,55 +1,41 @@
 import type { ColumnDef } from "../types";
 import type { ProjectSummary } from "./types";
 
-// Scoped to what ProjectResource actually returns over the REST API — NOT the full column set
-// ActionUnitTableDefinitionFactory shows in JSF (status, oaCode, openingRate, periods, subjects,
-// scientificManager, ...). Those are ActionUnitForm fields with no equivalent on ProjectResource
-// today (the API was never asked to expose them for a list view) — bringing them into this list
-// would need new fields on ProjectResource, which is real backend work, not a frontend config
-// choice, and out of scope for this phase. Sortable only on the columns the API's own
-// ALLOWED_PROJECT_SORT_FIELDS accepts (name, identifier, fullIdentifier, creationTime) — see
-// ProjectApiService.parseProjectSort.
-function formatDate(value?: string | null): string {
-  if (!value) return "";
-  return value.slice(0, 10);
-}
-
+// Pinned, hand-written columns only — the identifier chip (also the navigation link), the name
+// (ActionUnitTableDefinitionFactory's own leading FormFieldColumn, kept hand-written rather than
+// catalog-driven because the table's own nameField (id -151) is a locally-built duplicate of the
+// fiche catalog's NAME_FIELD (id -102), not the same CustomField instance), and the recording-unit
+// relation count. Every other JSF list column (status, oaCode, mainLocation, openingRate, periods,
+// subjects, scientificManager, and the ~20 more available via the column toggler) is now dynamic,
+// driven by ActionUnitTableColumnDefaults through EntityTypeConfig.list.schema — see config.tsx.
+//
+// Note this is a parity CORRECTION, not just an addition: the previous 7-column list showed `type`,
+// `beginDate` and `endDate`, none of which ActionUnitTableDefinitionFactory ever put in the JSF
+// list. Those three are dropped here; `mainLocation` moves from a hand-written column to a dynamic
+// one (it's already default-visible in ActionUnitTableColumnDefaults).
 export const projectColumns: ColumnDef<ProjectSummary>[] = [
   {
     key: "fullIdentifier",
     header: "Identifiant",
     sortable: true,
+    filterable: true,
+    identifier: true,
     render: (row) => row.fullIdentifier || row.identifier,
   },
   {
     key: "name",
     header: "Nom",
     sortable: true,
+    filterable: true,
     render: (row) => row.name,
   },
   {
-    key: "type",
-    header: "Type",
-    render: (row) => row.type?.resolvedLabel ?? "",
-  },
-  {
-    key: "beginDate",
-    header: "Début",
-    render: (row) => formatDate(row.beginDate),
-  },
-  {
-    key: "endDate",
-    header: "Fin",
-    render: (row) => formatDate(row.endDate),
-  },
-  {
-    key: "mainLocation",
-    header: "Localisation",
-    render: (row) => row.mainLocation?.name ?? "",
-  },
-  {
-    key: "recordingUnits",
+    // ProjectApiService.ALLOWED_PROJECT_SORT_FIELDS accepts "recordingUnitCount" as a synthetic
+    // sort key (ActionUnitSpec.orderByRecordingUnitCount) — using it as the column key makes
+    // DataTable's onSort send the right field even though the cell itself renders _counts directly.
+    key: "recordingUnitCount",
     header: "UE",
+    sortable: true,
     render: (row) => row._counts?.recordingUnits ?? 0,
   },
 ];

@@ -62,21 +62,61 @@
                           oncomplete="PF('newUnitDiag').show();"
                           process="@this"/>
 
+        <!--
+        Bridge for a client-side-opened overview (plan §8 phase 5): React can open the overview
+        pane optimistically, before this bean's own parentOrOverview is set, so this command must
+        exist from page load — unlike every reactAction_overview_* command below, which mirrors
+        JSF's own rendered="#{parentOrOverview != null}" gating and is therefore only registered
+        once an overview already exists server-side. Takes the target entity id as a plain
+        remoteCommand param (reactAction_setOverview_N({id: ...})), read via the request map —
+        see addActionUnitToOverviewFromRequest.
+        -->
+        <!--
+        oncomplete fires a plain DOM event React listens for (App.tsx) to know when the bean is
+        back in sync, since this plain remoteCommand call gives the caller no promise to await —
+        that's what lets the overview toolbar re-enable itself instead of staying disabled forever
+        or guessing with a timeout (plan §8 phase 5's "disable while a setOverview call is in
+        flight" caveat).
+        -->
+        <p:remoteCommand name="reactAction_setOverview_${panelModel.panelIndex}"
+                          action="#{flowBean.addActionUnitToOverviewFromRequest(panelModel)}"
+                          process="@this"
+                          update="@none"
+                          oncomplete="window.dispatchEvent(new CustomEvent('siamois-set-overview-done', {detail: {panelIndex: '${panelModel.panelIndex}'}}));"/>
+
+        <!--
+        These three have no permission condition of their own in the legacy markup — only the
+        parentOrOverview != null gate — so they're always rendered too, closing the same
+        client-opened-overview gap: React would otherwise find them permanently undefined (plan
+        §8 phase 5's actionFn eager-lookup caveat). refresh uses the null-safe refreshOverview()
+        wrapper instead of parentOrOverview.refresh() directly, since parentOrOverview can still
+        be null in the narrow window before the setOverview call above resolves — the frontend
+        disables these while that call is in flight, but this stays defensive either way.
+        fullscreen and closeOverview are left calling parentOrOverview directly, matching the
+        legacy behaviour they mirror; the same in-flight disable covers them.
+        -->
+        <p:remoteCommand name="reactAction_overview_closeOverview_${panelModel.panelIndex}"
+                          action="#{panelModel.closeOverview()}"
+                          process="@this"
+                          update="@none"/>
+        <p:remoteCommand name="reactAction_overview_fullscreen_${panelModel.panelIndex}"
+                          action="#{flowBean.fullScreen(panelModel.parentOrOverview)}"
+                          ajax="false"/>
+        <p:remoteCommand name="reactAction_overview_refresh_${panelModel.panelIndex}"
+                          action="#{panelModel.refreshOverview()}"
+                          process="@this"
+                          update="@none"/>
+
+        <!--
+        These three keep real permission conditions, ANDed with the parentOrOverview != null
+        gate exactly as in legacy markup — for a client-opened overview they stay unavailable
+        until a full page reload (documented plan fallback), since evaluating the permission
+        client-side isn't available.
+        -->
         <h:panelGroup rendered="#{panelModel.parentOrOverview != null}">
-            <p:remoteCommand name="reactAction_overview_closeOverview_${panelModel.panelIndex}"
-                              action="#{panelModel.closeOverview()}"
-                              process="@this"
-                              update="@none"/>
-            <p:remoteCommand name="reactAction_overview_fullscreen_${panelModel.panelIndex}"
-                              action="#{flowBean.fullScreen(panelModel.parentOrOverview)}"
-                              ajax="false"/>
             <p:remoteCommand name="reactAction_overview_duplicate_${panelModel.panelIndex}"
                               rendered="#{panelModel.parentOrOverview.canDuplicate() and flowBean.isWriteMode}"
                               action="#{panelModel.parentOrOverview.duplicate()}"
-                              process="@this"
-                              update="@none"/>
-            <p:remoteCommand name="reactAction_overview_refresh_${panelModel.panelIndex}"
-                              action="#{panelModel.parentOrOverview.refresh()}"
                               process="@this"
                               update="@none"/>
             <p:remoteCommand name="reactAction_overview_create_${panelModel.panelIndex}"

@@ -49,6 +49,17 @@ export function EntityDetailPanel({ entityType, entityId, toolbar }: EntityDetai
 
   const helpers = { refetch: () => void refetch() };
 
+  // A toolbar built server-side (MountOptions) has no entity data to derive chrome from at that
+  // point — it's the initial mount's own entity. Once we have the fetched entity, prefer chrome
+  // freshly derived from it via config.detail.chrome when the entity type registers one: this is
+  // what makes a client-opened overview's toolbar (plan §8 phase 5, EntityListPanel's
+  // onOpenOverview — no server round-trip to build a toolbar from) possible at all, and it also
+  // keeps title/bookmark state current after an in-place edit for the originally-seeded overview.
+  const resolvedToolbar: PanelToolbarSlot | undefined = toolbar && {
+    ...toolbar,
+    chrome: config.detail.chrome?.(data) ?? toolbar.chrome,
+  };
+
   return (
     <Panel
       className="entity-detail-panel"
@@ -61,7 +72,7 @@ export function EntityDetailPanel({ entityType, entityId, toolbar }: EntityDetai
               {config.detail.header?.(data, helpers)}
             </>
           }
-          toolbar={toolbar}
+          toolbar={resolvedToolbar}
         />
       }
     >

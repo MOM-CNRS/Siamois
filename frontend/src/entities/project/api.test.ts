@@ -25,6 +25,7 @@ describe("listProjects", () => {
       search: "fouille",
       sort: "name:asc",
       organizationId: 100,
+      fields: "-118,-109",
     });
 
     expect(mockedApiFetch).toHaveBeenCalledTimes(1);
@@ -35,6 +36,7 @@ describe("listProjects", () => {
     expect(path).toContain("search=fouille");
     expect(path).toContain("sort=name%3Aasc");
     expect(path).toContain("organizationId=100");
+    expect(path).toContain("fields=-118%2C-109");
 
     expect(result).toEqual({
       data: [{ resourceType: "projects", id: "1", name: "A", fullIdentifier: "A-1", identifier: "A-1" }],
@@ -53,6 +55,39 @@ describe("listProjects", () => {
     expect(path).not.toContain("search=");
     expect(path).not.toContain("sort=");
     expect(path).not.toContain("organizationId=");
+    expect(path).not.toContain("fields=");
+  });
+});
+
+describe("listProjects filters", () => {
+  it("encodes a contains filter as a bare f.<key>", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+    await listProjects({ offset: 0, limit: 20, filters: { name: { op: "contains", v: "foss" } } });
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("f.name=foss");
+  });
+
+  it("encodes an in filter as repeated f.<key> params", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+    await listProjects({ offset: 0, limit: 20, filters: { status: { op: "in", v: ["12", "44"] } } });
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("f.status=12");
+    expect(path).toContain("f.status=44");
+  });
+
+  it("encodes a range filter as f.<key>.from / f.<key>.to", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+    await listProjects({ offset: 0, limit: 20, filters: { openingRate: { op: "range", from: "10", to: "40" } } });
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("f.openingRate.from=10");
+    expect(path).toContain("f.openingRate.to=40");
+  });
+
+  it("omits f.* params entirely when filters is absent", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+    await listProjects({ offset: 0, limit: 20 });
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).not.toContain("f.");
   });
 });
 
@@ -65,6 +100,17 @@ describe("getProject", () => {
 
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5");
     expect(result).toEqual(project);
+  });
+
+  it("forwards an answers map as-is (the click-to-edit overlay's write path)", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await patchProject(5, { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5", {
+      method: "PATCH",
+      body: { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } },
+    });
   });
 });
 
@@ -80,5 +126,16 @@ describe("patchProject", () => {
       body: { name: "Renamed" },
     });
     expect(result).toEqual(project);
+  });
+
+  it("forwards an answers map as-is (the click-to-edit overlay's write path)", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await patchProject(5, { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5", {
+      method: "PATCH",
+      body: { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } },
+    });
   });
 });

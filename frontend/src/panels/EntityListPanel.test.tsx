@@ -3,6 +3,9 @@ import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
+import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderers";
+
+registerDefaultFieldRenderers();
 import type { EntityTypeConfig, PagedResult } from "../entities/types";
 import { EntityListPanel } from "./EntityListPanel";
 
@@ -32,7 +35,9 @@ const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
     get: vi.fn(),
   },
   list: {
-    columns: [{ key: "name", header: "Name", render: (row) => row.name, sortable: true }],
+    columns: [
+      { key: "name", header: "Name", render: (row) => row.name, sortable: true, filterable: true, identifier: true },
+    ],
     defaultSort: "name:asc",
     searchable: true,
   },
@@ -45,12 +50,23 @@ registerEntityType(fakeConfig);
 let container: HTMLDivElement;
 let root: Root;
 
-function renderPanel(onNavigate?: (entityType: string, id: string | number) => void, onCreate?: () => void) {
+function renderPanel(
+  onNavigate?: (entityType: string, id: string | number) => void,
+  onCreate?: () => void,
+  onOpenOverview?: (entityType: string, id: string | number) => void,
+  overviewEntityId?: string | number,
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   act(() => {
     root.render(
       <QueryClientProvider client={queryClient}>
-        <EntityListPanel entityType="fake-entity" onNavigate={onNavigate} onCreate={onCreate} />
+        <EntityListPanel
+          entityType="fake-entity"
+          onNavigate={onNavigate}
+          onCreate={onCreate}
+          onOpenOverview={onOpenOverview}
+          overviewEntityId={overviewEntityId}
+        />
       </QueryClientProvider>,
     );
   });
@@ -61,6 +77,13 @@ async function flush() {
     for (let i = 0; i < 5; i++) {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
+  });
+}
+
+// Search is debounced (EntityListPanel's SEARCH_DEBOUNCE_MS); flush() alone never waits that long.
+async function flushDebounce() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 350));
   });
 }
 
@@ -85,7 +108,7 @@ describe("EntityListPanel", () => {
     await flush();
 
     expect(listMock).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 0, limit: 20, sort: "name:asc", search: undefined }),
+      expect.objectContaining({ offset: 0, limit: 10, sort: "name:asc", search: undefined }),
     );
     expect(container.textContent).toContain("Row A");
   });
@@ -102,14 +125,79 @@ describe("EntityListPanel", () => {
       nativeSetter.call(input, "abc");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
+    // The query itself doesn't fire until the debounce settles — a bare flush() would still see
+    // the previous, un-searched call.
+    await flushDebounce();
     await flush();
 
     expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 0, search: "abc" }));
   });
 
-  it("calls onNavigate with the row's entity type and id on row click", async () => {
+  it("does not fire a new query on every keystroke while still typing (debounced search)", async () => {
+    renderPanel();
+    await flush();
+    listMock.mockClear();
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      nativeSetter.call(input, "a");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    await act(async () => {
+      nativeSetter.call(input, "ab");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // Still well within the debounce window from the second keystroke.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    expect(listMock).not.toHaveBeenCalled();
+
+    await flushDebounce();
+    await flush();
+    expect(listMock).toHaveBeenCalledTimes(1);
+    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ search: "ab" }));
+  });
+
+  it("calls onNavigate with the row's entity type and id when the identifier cell is clicked and no onOpenOverview is supplied", async () => {
     const onNavigate = vi.fn();
     renderPanel(onNavigate);
+    await flush();
+
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
+    expect(identifierCell).toBeTruthy();
+
+    await act(async () => {
+      identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onNavigate).toHaveBeenCalledWith("fake-entity", "1");
+  });
+
+  it("prefers onOpenOverview over onNavigate when the identifier cell is clicked (plan §8 phase 5)", async () => {
+    const onNavigate = vi.fn();
+    const onOpenOverview = vi.fn();
+    renderPanel(onNavigate, undefined, onOpenOverview);
+    await flush();
+
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
+    await act(async () => {
+      identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1");
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("does not navigate or open the overview when a non-identifier part of the row is clicked", async () => {
+    const onNavigate = vi.fn();
+    const onOpenOverview = vi.fn();
+    renderPanel(onNavigate, undefined, onOpenOverview);
     await flush();
 
     const row = container.querySelector("tbody tr") as HTMLElement;
@@ -119,7 +207,16 @@ describe("EntityListPanel", () => {
       row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(onNavigate).toHaveBeenCalledWith("fake-entity", "1");
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(onOpenOverview).not.toHaveBeenCalled();
+  });
+
+  it("highlights the row matching overviewEntityId with the overview-open class", async () => {
+    renderPanel(undefined, undefined, undefined, "1");
+    await flush();
+
+    const row = container.querySelector("tbody tr") as HTMLElement;
+    expect(row.className).toContain("overview-open");
   });
 
   it("renders the header icon, plural label and a count chip (actionUnitListPanelHeader.xhtml)", async () => {
@@ -168,6 +265,32 @@ describe("EntityListPanel", () => {
     expect(header.querySelector(".bi-arrow-clockwise")).toBeTruthy();
   });
 
+  it("shows a selected/total chip and updates it when a row is selected", async () => {
+    renderPanel();
+    await flush();
+
+    const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
+    expect(chips).toContain("0/1");
+
+    const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(checkbox).toBeTruthy();
+    await act(async () => {
+      checkbox.click();
+    });
+    await flush();
+
+    const chipsAfter = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
+    expect(chipsAfter).toContain("1/1");
+  });
+
+  it("defaults to 10 rows per page with 10/25/50 as the paginator options (parity with defaultPageSize)", async () => {
+    renderPanel();
+    await flush();
+
+    const dropdown = container.querySelector(".p-paginator .p-dropdown");
+    expect(dropdown).toBeTruthy();
+  });
+
   it("shows an unsupported message for an unregistered entity type", async () => {
     renderPanel.bind(null);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -181,5 +304,300 @@ describe("EntityListPanel", () => {
     await flush();
 
     expect(container.textContent).toContain("does-not-exist");
+  });
+});
+
+// A second, schema-bearing fake entity type — kept in its own describe block so the mechanism
+// (dynamic columns from config.list.schema, the column toggler, the `fields=` param) is tested
+// independently of the plain-config suite above.
+interface FakeFormRow {
+  id: string;
+  name: string;
+  answers?: Record<string, unknown>;
+  _permissions?: { canEdit: boolean };
+}
+
+const schemaListMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeFormRow>>>();
+const schemaLoadMock = vi.fn();
+const patchAnswersMock = vi.fn();
+
+const fakeSchemaConfig: EntityTypeConfig<FakeFormRow, FakeFormRow> = {
+  key: "fake-schema-entity",
+  labels: { singular: "FakeS", plural: "FakeSs" },
+  icon: "bi bi-question",
+  api: {
+    list: schemaListMock,
+    get: vi.fn(),
+    patchAnswers: patchAnswersMock,
+  },
+  list: {
+    columns: [{ key: "name", header: "Name", render: (row) => row.name, sortable: true }],
+    schema: { load: schemaLoadMock },
+    defaultSort: "name:asc",
+    searchable: false,
+  },
+  detail: { tabs: [] },
+  routes: { list: "/fake-schema", detail: (id) => `/fake-schema/${id}` },
+};
+
+registerEntityType(fakeSchemaConfig);
+
+describe("EntityListPanel with a field catalog (config.list.schema)", () => {
+  beforeEach(() => {
+    schemaListMock.mockReset();
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    schemaLoadMock.mockReset();
+    schemaLoadMock.mockResolvedValue({
+      fields: { "-118": { id: "-118", resourceType: "fields", label: "Statut", answerType: "TEXT", isSystemField: false } },
+      columns: [{ fieldId: "-118", visible: true, order: 0 }],
+    });
+  });
+
+  function renderSchemaPanel() {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityListPanel entityType="fake-schema-entity" />
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  it("requests only the catalog's default-visible field ids and renders the dynamic column", async () => {
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    expect(schemaListMock).toHaveBeenLastCalledWith(expect.objectContaining({ fields: "-118" }));
+    expect(container.textContent).toContain("Statut");
+    expect(container.textContent).toContain("En cours");
+  });
+
+  it("does not request a fields param for a config without a schema", async () => {
+    renderPanel();
+    await flush();
+
+    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ fields: undefined }));
+    // The gear button itself still shows — fakeConfig's "name" column is `filterable`, and the
+    // gear now serves both the column toggler (schema-only) and the filter enable/disable toggle
+    // (any filterable column, schema or not). Its absence is covered by a config with neither,
+    // below.
+    expect(container.querySelector(".entity-list-panel-gear-button")).toBeTruthy();
+  });
+
+  it("shows no gear button for a config with neither a schema nor a filterable column", async () => {
+    const bareListMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeRow>>>();
+    bareListMock.mockResolvedValue({ data: [], totalCount: 0, limit: 10, offset: 0 });
+    registerEntityType({
+      key: "fake-bare-entity",
+      labels: { singular: "Bare", plural: "Bares" },
+      icon: "bi bi-question",
+      api: { list: bareListMock, get: vi.fn() },
+      list: { columns: [{ key: "name", header: "Name", render: (row) => row.name }], searchable: false },
+      detail: { tabs: [] },
+      routes: { list: "/fake-bare", detail: (id) => `/fake-bare/${id}` },
+    });
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityListPanel entityType="fake-bare-entity" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.querySelector(".entity-list-panel-gear-button")).toBeFalsy();
+  });
+
+  it("shows the gear button and a column toggler for a config with a schema", async () => {
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    const gearButton = container.querySelector(".entity-list-panel-gear-button") as HTMLElement;
+    expect(gearButton).toBeTruthy();
+
+    await act(async () => {
+      gearButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    // PrimeReact's OverlayPanel portals into document.body by default, not into `container`.
+    expect(document.body.querySelector(".entity-list-panel-column-toggler")).toBeTruthy();
+  });
+});
+
+describe("EntityListPanel with a filterable pinned column", () => {
+  it("shows the gear button for filters even without a schema, hides the filter row until enabled", async () => {
+    renderPanel();
+    await flush();
+
+    const gearButton = container.querySelector(".entity-list-panel-gear-button") as HTMLElement;
+    expect(gearButton).toBeTruthy();
+    expect(container.querySelector(".entity-list-panel-filters")).toBeFalsy();
+  });
+
+  it("shows a contains filter for the pinned column once enabled, and applies it to the list query", async () => {
+    renderPanel();
+    await flush();
+    listMock.mockClear();
+
+    const gearButton = container.querySelector(".entity-list-panel-gear-button") as HTMLElement;
+    await act(async () => {
+      gearButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    const toggleCheckbox = document.body.querySelector(
+      ".entity-list-panel-filter-toggle input[type='checkbox']",
+    ) as HTMLInputElement;
+    expect(toggleCheckbox).toBeTruthy();
+    await act(async () => {
+      toggleCheckbox.click();
+    });
+    await flush();
+
+    const filterInput = container.querySelector(".entity-list-panel-filters input") as HTMLInputElement;
+    expect(filterInput).toBeTruthy();
+
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      nativeSetter.call(filterInput, "abc");
+      filterInput.dispatchEvent(new Event("input", { bubbles: true }));
+      // ContainsFilter commits on blur or Enter — Enter is the reliable one to dispatch here,
+      // since native "blur" doesn't bubble and jsdom won't deliver it the way a real focus change
+      // would.
+      filterInput.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    await flush();
+
+    expect(listMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filters: { name: { op: "contains", v: "abc" } } }),
+    );
+  });
+});
+
+describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
+  beforeEach(() => {
+    schemaListMock.mockReset();
+    schemaLoadMock.mockReset();
+    patchAnswersMock.mockReset();
+    schemaLoadMock.mockResolvedValue({
+      fields: { "-118": { id: "-118", resourceType: "fields", label: "Statut", answerType: "TEXT", isSystemField: false } },
+      columns: [{ fieldId: "-118", visible: true, order: 0 }],
+    });
+    patchAnswersMock.mockResolvedValue({});
+  });
+
+  function renderSchemaPanel() {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityListPanel entityType="fake-schema-entity" />
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  it("opens the edit overlay on a dynamic cell click when the row's _permissions.canEdit is true", async () => {
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: true } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    const onNavigate = vi.fn();
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    const cell = container.querySelector(".entity-list-panel-editable-cell") as HTMLElement;
+    expect(cell).toBeTruthy();
+    await act(async () => {
+      cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    // PrimeReact's OverlayPanel portals into document.body.
+    expect(document.body.querySelector(".cell-edit-overlay")).toBeTruthy();
+    // Clicking the editable cell must NOT also trigger row-click navigation (the "collision" the
+    // plan calls out) — nothing here wires onNavigate for this fake config, but the absence of a
+    // navigation call is exactly the point.
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("does not wrap the cell as editable when _permissions.canEdit is false", async () => {
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: false } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    expect(container.querySelector(".entity-list-panel-editable-cell")).toBeFalsy();
+    expect(container.textContent).toContain("En cours");
+  });
+
+  it("does not wrap the cell as editable when _permissions is absent", async () => {
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    expect(container.querySelector(".entity-list-panel-editable-cell")).toBeFalsy();
+  });
+
+  it("saves through config.api.patchAnswers and refetches the list", async () => {
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: true } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    const cell = container.querySelector(".entity-list-panel-editable-cell") as HTMLElement;
+    await act(async () => {
+      cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    const input = document.body.querySelector(".cell-edit-overlay input") as HTMLInputElement;
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      nativeSetter.call(input, "Terminé");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const saveButton = Array.from(document.body.querySelectorAll("button")).find((b) => b.textContent === "Enregistrer")!;
+    schemaListMock.mockClear();
+    await act(async () => {
+      saveButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    await flush();
+
+    expect(patchAnswersMock).toHaveBeenCalledWith("1", { "-118": { value: "Terminé" } });
+    // Cache invalidation triggers a refetch of the list.
+    expect(schemaListMock).toHaveBeenCalled();
   });
 });

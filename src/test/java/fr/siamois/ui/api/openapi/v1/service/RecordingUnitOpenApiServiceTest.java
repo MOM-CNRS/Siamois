@@ -57,6 +57,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectOneFieldAnswer;
@@ -66,6 +67,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectTypeListResponse;
+import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
@@ -485,6 +487,42 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(response.getDefaultType().getFieldConfigs().get(0).field()).isEqualTo("301");
         assertThat(response.getDefaultType().getFieldConfigs().get(0).active()).isTrue();
         assertThat(response.getDefaultType().getFieldConfigs().get(0).institutionLocked()).isTrue();
+    }
+
+    /**
+     * Régression : les défauts de colonnes de la liste des projets doivent venir de la même source que
+     * la table JSF ({@code ActionUnitTableColumnDefaults}) — status/oaCode/mainLocation/openingRate/
+     * periods/subjects/scientificManager visibles par défaut, le reste disponible mais masqué.
+     */
+    @Test
+    void buildProjectTypes_exposesTableColumnDefaultsFromTheSharedSource() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        when(institutionService.findById(10L)).thenReturn(inst);
+
+        CustomFieldText textField = new CustomFieldText();
+        textField.setId(301L);
+        textField.setLabel("Libellé projet");
+        textField.setIsSystemField(true);
+        FormUiDto formUiDto = formUiDtoWithOneField(textField);
+        when(conversionService.convert(ActionUnit.DETAILS_FORM, FormUiDto.class)).thenReturn(formUiDto);
+
+        ProjectTypeListResponse response = service.buildProjectTypes(10L, personDto, "fr");
+
+        List<ProjectTableColumnResource> tableColumns = response.getDefaultType().getTableColumns();
+        assertThat(tableColumns).hasSize(ActionUnitTableColumnDefaults.columns().size());
+        assertThat(tableColumns)
+                .filteredOn(ProjectTableColumnResource::visible)
+                .extracting(ProjectTableColumnResource::columnId)
+                .containsExactlyInAnyOrder("status", "oaCode", "mainLocation", "openingRate",
+                        "periods", "subjects", "scientificManager");
+        assertThat(tableColumns)
+                .extracting(ProjectTableColumnResource::columnId)
+                .doesNotHaveDuplicates();
+        // L'ordre suit celui de la source unique — permet au front de rendre les colonnes dans le
+        // même ordre que la table JSF sans dupliquer la liste.
+        assertThat(tableColumns.get(0).order()).isZero();
+        assertThat(tableColumns.get(tableColumns.size() - 1).order()).isEqualTo(tableColumns.size() - 1);
     }
 
     @Test

@@ -9,6 +9,10 @@ export interface FieldRendererProps {
   readOnly: boolean;
   required: boolean;
   onChange: (value: unknown) => void;
+  // Needed only by renderers backed by an org-scoped async option source (SELECT_ONE_FROM_FIELD_CODE,
+  // SELECT_MULTIPLE_FROM_FIELD_CODE, SELECT_ONE_SPATIAL_UNIT) to build their loader
+  // (fields/optionSources.ts). Renderers that don't need one ignore it.
+  organizationId?: number;
 }
 
 export type FieldRenderer = (props: FieldRendererProps) => ReactNode;

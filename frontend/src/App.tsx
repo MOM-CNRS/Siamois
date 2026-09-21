@@ -19,18 +19,47 @@ interface NavigationState {
   entityId?: string | number;
 }
 
+// What's open in the right-hand overview pane right now (plan §8 phase 5) — starts from the
+// mount options (a page load/F5 always has an authoritative server-rendered overview, if any),
+// but from openOverview onward this is owned entirely client-side, same as `view` above.
+interface OverviewState {
+  entityType: string;
+  entityId: string | number;
+}
+
+// Base64url, no padding — exactly Java's Base64.getUrlEncoder().withoutPadding(), which is what
+// FlowBean.redirectToFocus/showSideview and FocusViewBean's own decode already use for the
+// `/focus/<main>?s=<overview>` URL scheme (template.js's showSideview builds the same URL for
+// JSF's own row click). Entity resourceUris here are always plain ASCII ("action-unit/123"), so
+// no unicode handling is needed beyond what encodeURIComponent/unescape already give us.
+function base64url(value: string): string {
+  return btoa(unescape(encodeURIComponent(value)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
 // Routes to the one generic panel matching panelKind — no per-entity branching here either,
 // that all lives inside the three panels themselves via the registry (plan §3).
 function PanelContent({
   view,
   organizationId,
   onNavigate,
+  onOpenOverview,
+  overview,
   onCreate,
   toolbar,
 }: {
   view: NavigationState;
   organizationId?: number;
   onNavigate: (entityType: string, id?: string | number) => void;
+  // Only meaningful for a "list" view — opens the entity in the overview pane instead of
+  // navigating the main pane away from the list (plan §8 phase 5).
+  onOpenOverview?: (entityType: string, id: string | number) => void;
+  // So a "list" view can highlight the row matching the currently-open overview (plan §8 phase
+  // 5's rowClassName) — only when it's the same entity type as this list, and only while an
+  // overview is actually open.
+  overview?: OverviewState | null;
   onCreate?: () => void;
   // Passed straight into whichever panel is actually showing — each panel (Home/List/Detail) now
   // renders this itself, as part of its own PrimeReact <Panel> header, rather than PanelContent
@@ -54,6 +83,8 @@ function PanelContent({
           entityType={view.entityType}
           organizationId={organizationId}
           onNavigate={onNavigate}
+          onOpenOverview={onOpenOverview}
+          overviewEntityId={overview?.entityType === view.entityType ? overview.entityId : undefined}
           onCreate={onCreate}
           toolbar={toolbar}
         />
@@ -116,6 +147,21 @@ export function App({ options }: { options: MountOptions }) {
   });
   const [navigatedAway, setNavigatedAway] = useState(false);
 
+  // Seeded from MountOptions (a page load/F5 always reflects FlowBean's own parentOrOverview),
+  // but owned client-side from here on — see openOverview/closeOverview below. Deliberately not
+  // `options.overviewEntityId ?? ""`: a null overview must render no overview pane at all, not
+  // EntityDetailPanel with an empty id (that fallback was the bug this state replaces).
+  const [overview, setOverview] = useState<OverviewState | null>(
+    options.overviewEntityType != null && options.overviewEntityId != null
+      ? { entityType: options.overviewEntityType, entityId: options.overviewEntityId }
+      : null,
+  );
+  // True between a setOverview bridge call and its ajax completion — see the
+  // "siamois-set-overview-done" listener below. Guards against a fast double-click on the
+  // overview toolbar acting on the previous entity while the bean is still catching up (plan §8
+  // phase 5's own caveat about the remoteCommand being async).
+  const [overviewBusy, setOverviewBusy] = useState(false);
+
   const navigate = useCallback((entityType: string, id?: string | number) => {
     const config = getEntityType(entityType);
     if (!config) {
@@ -130,6 +176,55 @@ export function App({ options }: { options: MountOptions }) {
     setView({ panelKind: id != null ? "detail" : "list", entityType, entityId: id });
   }, []);
 
+  // Opens (or retargets) the overview pane without touching the main pane (plan §8 phase 5) —
+  // the list-row-click replacement for a full `navigate`. Optimistic: React renders the new
+  // overview immediately, and the setOverview remoteCommand (fire-and-forget, no promise to
+  // await) brings FlowBean's own parentOrOverview back in sync in the background, which is what
+  // keeps F5 and the three still-gated overview actions (duplicate/create/settings) correct.
+  const openOverview = useCallback(
+    (entityType: string, id: string | number) => {
+      setOverview({ entityType, entityId: id });
+      // Only actually goes "in flight" when there's a bridge call to wait on — for an entity
+      // type the bridge doesn't cover (setOverview absent from MountOptions.actions), there is no
+      // completion event to ever clear this, so it must not be set in the first place.
+      if (options.actions?.setOverview) {
+        setOverviewBusy(true);
+        options.actions.setOverview(entityType, id);
+      }
+
+      const config = getEntityType(entityType);
+      if (config && options.main.resourceUri) {
+        const newUrl = `${apiUrl(`/focus/${base64url(options.main.resourceUri)}`)}?s=${base64url(config.routes.detail(id))}`;
+        window.history.pushState(null, "", newUrl);
+      }
+    },
+    [options],
+  );
+
+  const closeOverview = useCallback(() => {
+    setOverview(null);
+    options.overviewActions?.closeOverview?.();
+    if (options.main.resourceUri) {
+      window.history.pushState(null, "", apiUrl(`/focus/${base64url(options.main.resourceUri)}`));
+    }
+  }, [options]);
+
+  // The setOverview remoteCommand's oncomplete dispatches this plain DOM event (reactPanelActions.xhtml)
+  // since a p:remoteCommand call gives the caller no promise to await — this is what lets the
+  // overview toolbar re-enable itself precisely when the bean is back in sync, rather than never
+  // or after a guessed timeout. Filtered by panelIndex for pages that mount several panel
+  // instances at once (flow.xhtml's tab stack); focus.xhtml only ever has one.
+  useEffect(() => {
+    function onSetOverviewDone(e: Event) {
+      const detail = (e as CustomEvent<{ panelIndex?: string }>).detail;
+      if (options.panelIndex == null || detail?.panelIndex === options.panelIndex) {
+        setOverviewBusy(false);
+      }
+    }
+    window.addEventListener("siamois-set-overview-done", onSetOverviewDone);
+    return () => window.removeEventListener("siamois-set-overview-done", onSetOverviewDone);
+  }, [options.panelIndex]);
+
   // Browser back/forward after a client-side navigation: there's no cheap way to reconstruct
   // `view` from an arbitrary URL generically (that's a route-matching concern this app
   // deliberately doesn't have, per the plan's "no router library"), so this falls back to a real
@@ -142,45 +237,85 @@ export function App({ options }: { options: MountOptions }) {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const hasOverview = options.overviewEntityType != null;
+  const hasOverview = overview != null;
 
   const mainToolbar: PanelToolbarSlot | undefined = navigatedAway
     ? undefined
     : { chrome: options.main, organizationId: options.organizationId, actions: options.actions };
 
+  // chrome here is only ever what EntityDetailPanel falls back to before config.detail.chrome
+  // has data to derive from (Project registers one; see config.tsx) — for the overview seeded by
+  // MountOptions, options.overview already has the real thing. A placeholder is enough for a
+  // client-opened overview because EntityDetailPanel doesn't render a header at all until its own
+  // query resolves, at which point config.detail.chrome (when the entity type has one) replaces it.
+  const overviewToolbar: PanelToolbarSlot | undefined = overview
+    ? {
+        chrome: options.overview ?? { resourceUri: "", title: "", bookmarked: false },
+        organizationId: options.overviewOrganizationId ?? options.organizationId,
+        // Omitted (not just disabled) while a setOverview call is in flight — PanelToolbar only
+        // ever checks whether an action callback is present, so this is what "unavailable" means
+        // for it (plan §8 phase 5's in-flight caveat). closeOverview is App's own wrapper, not
+        // the raw bridged function directly — it also clears the React overview state and the
+        // URL, neither of which the bridged closeOverview (server bean + legacy hideSideview JS
+        // only) knows about. reactAction_overview_closeOverview is always-rendered server-side
+        // now (see reactPanelActions.xhtml), so options.overviewActions?.closeOverview is only
+        // ever missing for an entity type React doesn't bridge overview actions for at all.
+        actions: overviewBusy
+          ? undefined
+          : options.overviewActions && { ...options.overviewActions, closeOverview },
+      }
+    : undefined;
+
   const content = hasOverview ? (
-    <Splitter style={{ height: "100%" }}>
-      <SplitterPanel className="panel-splitter-panel-l" size={60}>
+    // PrimeReact's Splitter sets each SplitterPanel's flex-basis via an inline style, but the
+    // `display: flex` its own layout depends on only ever comes from a runtime-injected
+    // `@layer primereact` <style> tag — which this app's CSS load order/layer precedence doesn't
+    // reliably win against, so without an explicit override here both panels silently fall back
+    // to normal block stacking (the overview rendering underneath/inside the main pane instead of
+    // beside it). Forcing the same rule inline is robust regardless of that injection's behavior.
+    <Splitter style={{ height: "100%", display: "flex", flexWrap: "nowrap" }}>
+      <SplitterPanel
+        className="panel-splitter-panel-l"
+        size={60}
+        // Mirrors the legacy panel-docked box's colored top border (focus.xhtml) — scoped to just
+        // this pane now that the outer JSF wrapper no longer carries it (that wrapper spans both
+        // panes once an overview is open, so putting it there framed the whole splitter instead of
+        // the main panel alone). The overview pane needs no equivalent override: .sideview already
+        // has its own border-top.
+        style={{ display: "flex", flexDirection: "column", minWidth: 0, borderTop: "3px solid var(--main-color)" }}
+      >
         <PanelContent
           view={view}
           organizationId={options.organizationId}
           onNavigate={navigate}
+          onOpenOverview={openOverview}
+          overview={overview}
           onCreate={navigatedAway ? undefined : options.actions?.listCreate}
           toolbar={mainToolbar}
         />
       </SplitterPanel>
-      <SplitterPanel className="panel-splitter-panel-r sideview" size={40}>
-        {options.overviewEntityType && (
-          <EntityDetailPanel
-            entityType={options.overviewEntityType}
-            entityId={options.overviewEntityId ?? ""}
-            toolbar={
-              options.overview && {
-                chrome: options.overview,
-                organizationId: options.overviewOrganizationId,
-                actions: options.overviewActions,
-              }
-            }
-          />
+      <SplitterPanel
+        className="panel-splitter-panel-r sideview"
+        size={40}
+        style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
+      >
+        {overview && (
+          <EntityDetailPanel entityType={overview.entityType} entityId={overview.entityId} toolbar={overviewToolbar} />
         )}
       </SplitterPanel>
     </Splitter>
   ) : (
-    <div className="panel-splitter-panel-l">
+    // Same colored top border as the splitter's left pane above — the no-overview case is just
+    // the single-pane equivalent of "the main panel," so it gets the same chrome.
+    <div
+      className="panel-splitter-panel-l"
+      style={{ height: "100%", display: "flex", flexDirection: "column", borderTop: "3px solid var(--main-color)" }}
+    >
       <PanelContent
         view={view}
         organizationId={options.organizationId}
         onNavigate={navigate}
+        onOpenOverview={openOverview}
         onCreate={navigatedAway ? undefined : options.actions?.listCreate}
         toolbar={mainToolbar}
       />

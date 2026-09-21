@@ -6,6 +6,7 @@ import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
@@ -14,6 +15,7 @@ import fr.siamois.ui.api.openapi.v1.response.project.ProjectResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.ProjectListProjectionService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,6 +29,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -44,6 +47,7 @@ public class ProjectControllerApi {
     private final ProjectResponseMapper projectResponseMapper;
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final DocumentWriteOpenApiService documentWriteOpenApiService;
+    private final ProjectListProjectionService projectListProjectionService;
 
     @GetMapping
     @Operation(summary = "La liste des projets")
@@ -59,14 +63,26 @@ public class ProjectControllerApi {
             @RequestParam(required = false) Long organizationId,
             @Parameter(description = "Recherche par identifiant, peu-être utilisé pour l'autocompletion.")
             @RequestParam(required = false) String search,
-            @Parameter(description = "Champ de tri : id, name, identifier, creationTime ; direction asc ou desc (ex. name:asc, id:desc).")
-            @RequestParam(name = "name:asc", required = false) List<String> sort,
+            @Parameter(description = "Champ de tri \"champ:direction\" : id, name, identifier, fullIdentifier, "
+                    + "beginDate, endDate, creationTime, recordingUnitCount ; direction asc ou desc "
+                    + "(ex. name:asc, recordingUnitCount:desc). 400 si le champ est inconnu.")
+            @RequestParam(defaultValue = "name:asc") String sort,
+            @Parameter(description = "Projection des champs de formulaire dans answers : \"all\", \"default\" "
+                    + "(colonnes visibles par défaut de la liste), ou une liste d'ids de champs séparés par "
+                    + "des virgules. Absent : pas de clé answers, la liste reste au coût d'avant.")
+            @RequestParam(required = false) String fields,
+            @Parameter(hidden = true)
+            @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
+        // f.<key>[.from|.to] — see ProjectListFilter for the full contract. Parsed from the raw
+        // query params (not a dedicated @RequestParam per key) since the filterable-column set is
+        // a whitelist, not a fixed handful of named parameters.
+        ProjectListFilter filter = ProjectListFilter.parse(queryParams);
         Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
-                caller, organizationId, search, offset, limit, sort);
+                caller, organizationId, search, offset, limit, sort, filter);
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
@@ -75,6 +91,9 @@ public class ProjectControllerApi {
         Map<Long, ProjectResourcePermissions> permissionsByActionUnitId =
                 projectApiService.permissionsFor(caller, rows.getContent());
         Set<String> bookmarkedUris = projectApiService.bookmarkedResourceUris(caller, rows.getContent(), lang);
+        // Libellés de concepts et projection answers : un seul lot pour la page, jamais par ligne.
+        ProjectListProjectionService.ProjectListProjection projection =
+                projectListProjectionService.build(rows.getContent(), fields, lang);
 
         List<ProjectResource> resources = rows.getContent().stream()
                 .map(row -> {
@@ -82,7 +101,8 @@ public class ProjectControllerApi {
                     ProjectResourcePermissions permissions = permissionsByActionUnitId.getOrDefault(
                             id, ProjectResourcePermissions.of(false));
                     boolean bookmarked = bookmarkedUris.contains(ProjectApiService.actionUnitResourceUri(id));
-                    return projectResponseMapper.toResource(row, lang, permissions, bookmarked);
+                    return projectResponseMapper.toResource(row, lang, permissions, bookmarked,
+                            projection.resolvedLabels(), projection.answersFor(id));
                 })
                 .toList();
 

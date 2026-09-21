@@ -22,11 +22,21 @@
         return (name && typeof window[name] === "function") ? window[name] : undefined;
     }
 
+    // Unlike the other actions, this one takes an argument — the id of the entity to open in the
+    // overview (entityType is accepted for shape parity with the React side but unused server-side
+    // today: the remoteCommand this calls is action-unit-specific, see
+    // FlowBean.addActionUnitToOverviewFromRequest).
+    function setOverviewFn(name) {
+        var fn = actionFn(name);
+        return fn ? function (entityType, id) { return fn({ id: id }); } : undefined;
+    }
+
     function mountContainer(container) {
         var d = container.dataset;
         container.dataset.mounted = "true";
 
         var options = {
+            panelIndex: d.panelIndex,
             panelKind: d.panelKind,
             entityType: d.entityType,
             entityId: d.entityId || undefined,
@@ -51,7 +61,8 @@
                 refresh: actionFn(d.actionRefresh),
                 create: actionFn(d.actionCreate),
                 settings: actionFn(d.actionSettings),
-                listCreate: actionFn(d.actionListCreate)
+                listCreate: actionFn(d.actionListCreate),
+                setOverview: setOverviewFn(d.actionSetOverview)
             },
             overviewActions: {
                 closeOverview: actionFn(d.overviewActionCloseOverview),

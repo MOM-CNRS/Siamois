@@ -1,9 +1,10 @@
 import type { EntityTypeConfig } from "../types";
-import { getProject, listProjects } from "./api";
+import { getProject, listProjects, patchProject } from "./api";
 import { projectColumns } from "./columns";
 import { ProjectDetailHeader } from "./DetailHeader";
 import { ProjectFicheTab } from "./FicheTab";
 import { projectHomeWidgets } from "./homeWidgets";
+import { getProjectTypes } from "./projectTypes";
 import { PROJECT_ROUTES } from "./routes";
 import type { ProjectDetail, ProjectSummary } from "./types";
 
@@ -20,6 +21,7 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
   api: {
     list: listProjects,
     get: getProject,
+    patchAnswers: (id, answers) => patchProject(id, { answers }),
   },
   list: {
     // JSF's own free-text box for this list is present but disabled (ActionUnitListPanel relies
@@ -28,6 +30,19 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
     // fullIdentifier (ActionUnitSpec.projectSearch), so enabling it here is a deliberate
     // improvement the API allows, not a mismatch with JSF's current behavior.
     columns: projectColumns,
+    // Drives the dynamic columns, the column toggler and the `fields=` projection param — the
+    // catalog is organization-scoped (GET /api/v1/organizations/{id}/project-types), so it's
+    // reloaded whenever EntityListPanel's own organizationId changes, same as the list query.
+    schema: {
+      load: async ({ organizationId }) => {
+        if (organizationId == null) return { fields: {}, columns: [] };
+        const types = await getProjectTypes(organizationId);
+        return {
+          fields: types.fields,
+          columns: types.tableColumns,
+        };
+      },
+    },
     defaultSort: "name:asc",
     searchable: true,
   },
@@ -45,6 +60,15 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
     // (plan §7/§8, "toolbar is part of the panel header" — the header and the generic toolbar
     // share one titlebar, exactly like the real markup).
     header: (entity, helpers) => <ProjectDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    // Derives the overview toolbar's chrome client-side, for an overview opened by
+    // EntityListPanel's onOpenOverview (plan §8 phase 5) rather than seeded from MountOptions.
+    // resourceUri comes straight off the API (ActionUnitPanel.ressourceUri() server-side) — never
+    // hardcode the "/action-unit/" prefix here.
+    chrome: (entity) => ({
+      resourceUri: entity.resourceUri ?? "",
+      title: entity.fullIdentifier || entity.name,
+      bookmarked: entity.bookmarked ?? false,
+    }),
   },
   routes: PROJECT_ROUTES,
   home: {

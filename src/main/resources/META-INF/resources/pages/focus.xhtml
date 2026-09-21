@@ -335,9 +335,18 @@
                         </h:panelGroup>
                         </h:panelGroup>
 
+                        <!--
+                        No border-top here (unlike the legacy panel-docked wrapper above, kept as
+                        a "#{panelClass} panel-docked" reference only): this wrapper spans BOTH
+                        panes once React opens an overview (plan §8 phase 5), and the colored top
+                        border is chrome for the main panel specifically — a react-panel-mount.js
+                        panel — not a frame around the whole splitter. React applies it itself to
+                        just the left/main SplitterPanel (App.tsx); the overview pane already gets
+                        its own border-top for free from the existing .sideview class.
+                        -->
                         <h:panelGroup rendered="#{focusViewBean.mainPanel.isReactPanelEnabled() and (focusViewBean.mainPanel.parentOrOverview == null or focusViewBean.mainPanel.parentOrOverview.isReactPanelEnabled())}"
                                       styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
-                                      style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color); flex: 1; min-height: 0;"
+                                      style="border-radius: 0px; display: flex; flex-direction: column; flex: 1; min-height: 0;"
                                       id="react-panel-${focusViewBean.mainPanel.prefixPanelIndex}">
 
                             <ui:include src="/panel/reactPanelActions.xhtml">

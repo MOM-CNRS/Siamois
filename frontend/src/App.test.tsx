@@ -27,7 +27,7 @@ const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
     icon: "bi bi-question",
   api: { list: listMock, get: getMock },
   list: {
-    columns: [{ key: "name", header: "Name", render: (row) => row.name }],
+    columns: [{ key: "name", header: "Name", render: (row) => row.name, identifier: true }],
     searchable: false,
   },
   detail: { tabs: [{ key: "fiche", label: "Fiche", render: (entity) => <span>Detail of {entity.name}</span> }] },
@@ -39,6 +39,14 @@ const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
         render: () => (
           <button type="button" onClick={() => ctx.onNavigate?.("unregistered-type", "42")}>
             Go to unregistered
+          </button>
+        ),
+      },
+      {
+        key: "fake-home-widget-registered",
+        render: () => (
+          <button type="button" onClick={() => ctx.onNavigate?.("fake-app-entity", "1")}>
+            Go to detail
           </button>
         ),
       },
@@ -88,41 +96,63 @@ afterEach(() => {
 });
 
 describe("App client-side navigation", () => {
-  it("switches from list to detail on row click without a page navigation", async () => {
-    const originalHref = window.location.href;
+  // Row click opens the entity in the right-hand overview pane, matching JSF's own row-click
+  // target (plan §8 phase 5) — it no longer replaces the main pane. Full client-side navigation
+  // (`navigate`) still exists for other callers (Home widgets, an explicit "open full"); see the
+  // toolbar-hiding test below for that path.
+  it("opens the identifier's entity in the overview pane on click, without navigating the main pane away", async () => {
     act(() => {
       root.render(<App options={baseOptions()} />);
     });
     await flush();
 
-    const row = container.querySelector("tbody tr") as HTMLElement;
-    expect(row).toBeTruthy();
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
+    expect(identifierCell).toBeTruthy();
 
     await act(async () => {
-      row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
 
-    // Content actually switched to the detail panel...
+    // The list is still on screen — the main pane never navigated away...
+    expect(container.querySelector("tbody tr")).toBeTruthy();
+    // ...and the overview pane rendered the same entity's detail alongside it.
     expect(container.textContent).toContain("Detail of Row A");
-    // ...and the URL changed via history, not an actual browser navigation.
-    expect(window.location.pathname).toBe("/fake-app-entity/1");
-    expect(window.location.href).not.toBe(originalHref);
     expect(getMock).toHaveBeenCalledWith("1");
+    // URL reflects the overview via the `s` param, mirroring FlowBean.redirectToFocus/
+    // showSideview's own `/focus/<main>?s=<overview>` scheme.
+    expect(window.location.search).toContain("s=");
   });
 
-  it("hides the main toolbar entirely after navigating away (it was built for the original entity only)", async () => {
+  it("keeps the main toolbar visible once the overview opens, unlike a full navigate", async () => {
     act(() => {
       root.render(<App options={baseOptions()} />);
     });
     await flush();
 
     expect(container.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
+    await act(async () => {
+      identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(container.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+  });
+
+  it("hides the main toolbar entirely after a full client-side navigation (it was built for the original entity only)", async () => {
+    act(() => {
+      root.render(<App options={baseOptions({ panelKind: "home", entityType: "fake-app-entity" })} />);
+    });
+    await flush();
+
+    expect(container.querySelector(".bi-arrow-clockwise")).toBeTruthy();
     expect(container.querySelector(".bi-bookmark")).toBeTruthy();
 
-    const row = container.querySelector("tbody tr") as HTMLElement;
+    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Go to detail")!;
     await act(async () => {
-      row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
 
@@ -147,5 +177,31 @@ describe("App client-side navigation", () => {
 
     expect(window.location.href).toBe("/unregistered-type/42");
     Object.defineProperty(window, "location", { value: originalLocation, writable: true });
+  });
+
+  it("closes the overview, clears the s= URL param and calls the bridged closeOverview action", async () => {
+    const closeOverview = vi.fn();
+    act(() => {
+      root.render(<App options={baseOptions({ overviewActions: { closeOverview } })} />);
+    });
+    await flush();
+
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
+    await act(async () => {
+      identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    expect(window.location.search).toContain("s=");
+
+    const closeButton = container.querySelector(".bi-chevron-double-right") as HTMLElement;
+    expect(closeButton).toBeTruthy();
+    await act(async () => {
+      closeButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(closeOverview).toHaveBeenCalled();
+    expect(container.textContent).not.toContain("Detail of Row A");
+    expect(window.location.search).not.toContain("s=");
   });
 });

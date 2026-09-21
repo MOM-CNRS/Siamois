@@ -9,6 +9,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
@@ -61,7 +62,9 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.*;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectDefaultType;
+import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFieldConfigResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.type.FindDefaultType;
@@ -170,6 +173,7 @@ public class RecordingUnitOpenApiService {
         return switch (answerType) {
             case "TEXT" -> new TextFieldAnswer(answerType, field, raw instanceof String s ? s : null);
             case "INTEGER" -> new IntegerFieldAnswer(answerType, field, raw instanceof Integer i ? i : null);
+            case "DECIMAL" -> new DecimalFieldAnswer(answerType, field, raw instanceof Number n ? n.doubleValue() : null);
             case "DATETIME" -> new DateFieldAnswer(answerType, field, raw instanceof OffsetDateTime dt ? dt : null);
             case "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
                  "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_ACTION_CODE", "SELECT_ONE_RECORDING_UNIT",
@@ -455,8 +459,25 @@ public class RecordingUnitOpenApiService {
                 .map(fieldId -> new ProjectFieldConfigResource(fieldId, true, true))
                 .toList();
 
-        ProjectDefaultType defaultType = new ProjectDefaultType(form, fieldConfigs);
+        List<ProjectTableColumnResource> tableColumns = buildTableColumnDefaults();
+
+        ProjectDefaultType defaultType = new ProjectDefaultType(form, fieldConfigs, tableColumns);
         return new ProjectTypeListResponse(List.of(), defaultType, fields);
+    }
+
+    /**
+     * Défauts de colonnes de la liste des projets, depuis {@link ActionUnitTableColumnDefaults} — même
+     * source que la table JSF ({@code ActionUnitTableDefinitionFactory}), pour qu'aucune des deux ne
+     * puisse diverger silencieusement de l'autre.
+     */
+    private static List<ProjectTableColumnResource> buildTableColumnDefaults() {
+        List<ActionUnitTableColumnDefaults.ColumnDefault> defaults = ActionUnitTableColumnDefaults.columns();
+        List<ProjectTableColumnResource> out = new ArrayList<>(defaults.size());
+        for (int i = 0; i < defaults.size(); i++) {
+            ActionUnitTableColumnDefaults.ColumnDefault d = defaults.get(i);
+            out.add(new ProjectTableColumnResource(d.columnId(), d.fieldId(), d.visible(), i));
+        }
+        return out;
     }
 
     /**
@@ -1047,6 +1068,7 @@ public class RecordingUnitOpenApiService {
     private Object coerceAnswerValue(CustomField field, Object raw, RecordingUnitDTO ru) {
         if (raw == null) return null;
         if (field instanceof CustomFieldInteger) return ruCoerceInteger(raw);
+        if (field instanceof CustomFieldDecimal) return ruCoerceDecimal(raw);
         if (field instanceof CustomFieldText) return String.valueOf(raw);
         if (field instanceof CustomFieldDateTime) return ruCoerceDateTime(raw);
         if (field instanceof CustomFieldSelectOneFromFieldCode) return ruCoerceConcept(raw);
@@ -1197,6 +1219,11 @@ public class RecordingUnitOpenApiService {
     private static Object ruCoerceInteger(Object raw) {
         if (raw instanceof Number n) return n.intValue();
         return Integer.parseInt(String.valueOf(raw));
+    }
+
+    private static Object ruCoerceDecimal(Object raw) {
+        if (raw instanceof Number n) return n.doubleValue();
+        return Double.parseDouble(String.valueOf(raw));
     }
 
     private static Object ruCoerceDateTime(Object raw) {

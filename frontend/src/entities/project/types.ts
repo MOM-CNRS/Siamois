@@ -46,6 +46,23 @@ export interface ProjectResource {
   _counts?: ProjectCounts;
   _permissions?: ProjectPermissions;
   bookmarked?: boolean;
+  // JSF's own navigation/bookmark URI for this project ("/action-unit/{id}"), served by the API so
+  // the prefix isn't hardcoded client-side — ActionUnitPanel.ressourceUri() is the source of truth.
+  resourceUri?: string;
+  // Present only when the request asked for a projection (GET /api/v1/projects?fields=…). Keyed by
+  // field id, holding RAW values (no FieldAnswer envelope): scalar for TEXT/INTEGER/DECIMAL/DATETIME,
+  // ResourceRef for SELECT_ONE_*, ResourceRef[] for SELECT_MULTIPLE_*. Field metadata (label,
+  // answerType, binding) comes from the catalog at GET /api/v1/organizations/{id}/project-types,
+  // never from here. Read it through resolveValueBinding, not directly.
+  answers?: Record<string, unknown>;
+}
+
+// Mirrors fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef — the shape a SELECT_* answer takes
+// on the wire.
+export interface ResourceRef {
+  resourceId: string;
+  resourceType: string;
+  label?: string | null;
 }
 
 // Same resource both in the list and the detail response — distinct aliases kept for the

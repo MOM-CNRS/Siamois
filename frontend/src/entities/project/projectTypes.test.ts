@@ -19,6 +19,7 @@ describe("getProjectTypes", () => {
       _default: {
         form: { resourceType: "forms", layoutJson: "[]" },
         fieldConfigs: [{ field: "-102", active: true, institutionLocked: true }],
+        tableColumns: [{ columnId: "status", fieldId: "-118", visible: true, order: 0 }],
       },
       fields: {
         "-102": {
@@ -38,6 +39,7 @@ describe("getProjectTypes", () => {
     expect(result).toEqual({
       layoutJson: "[]",
       fieldConfigs: [{ field: "-102", active: true, institutionLocked: true }],
+      tableColumns: [{ columnId: "status", fieldId: "-118", visible: true, order: 0 }],
       fields: {
         "-102": {
           id: "-102",

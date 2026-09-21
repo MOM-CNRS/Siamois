@@ -1,5 +1,32 @@
 # React/PrimeReact migration of the main panel area — starting with Project
 
+> **Follow-up plan saved to the repo 2026-09-21** from the working plan at
+> `~/.claude/plans/i-was-migrating-my-eager-meadow.md` — "React project list — path to JSF
+> parity" (phases 0–5), the plan that picks up right where the status note below leaves off (list
+> feature parity: sort, dynamic columns/filters, click-to-edit, and the client-side overview
+> pane). Full text in **§10** at the bottom of this document. Branch: `feat/main-panel-react-migration`.
+>
+> **Status as of 2026-09-21 (§10 plan)**: all 6 phases (0–5) implemented and staged
+> (uncommitted, per project convention — never commit/push without being asked). Backend suite
+> 2510 passing, frontend suite 162 passing, `tsc --noEmit` clean.
+> - Phase 5 (client-side overview pane) needed two fixes beyond the plan's own text, found only
+>   by actually testing in a browser rather than trusting the test suite (jsdom doesn't lay out
+>   CSS, so neither bug was test-visible):
+>   1. PrimeReact's `Splitter` depends on a `display:flex` rule it injects at runtime inside a
+>      `@layer primereact { … }` block, which loses to this app's unlayered legacy CSS regardless
+>      of load order (an unlayered rule always beats a layered one at equal specificity) — so the
+>      two panes silently fell back to block stacking. Fixed with an explicit inline
+>      `display:flex` on `Splitter`/`SplitterPanel` in `App.tsx`, not relying on that injection.
+>   2. `focus.xhtml`'s outer React-panel wrapper carried `border-top: 3px solid var(--main-color)`
+>      around the **whole mount** (both panes together) — so opening the overview visually framed
+>      it together with the main panel in one bordered box. Moved that border off the wrapper and
+>      onto just the left/main `SplitterPanel` in `App.tsx`; the overview pane already gets its
+>      own border via the existing `.sideview` CSS class, no change needed there.
+> - Not yet done: an actual end-to-end run against the real Spring Boot app + DB (only verified
+>   via the Vite dev harness with a stubbed `fetch`, plus the two full automated test suites).
+>
+> ---
+>
 > **Saved to the repo 2026-09-21** from the working plan at
 > `~/.claude/plans/okey-bring-back-this-idempotent-torvalds.md`, so it survives a context clear.
 > Branch: `feat/main-panel-react-migration`.
@@ -276,3 +303,386 @@ Each future entity migration then becomes: write one `entities/<type>/config.tsx
 - **Home panel decomposition**: whether `homePanel.xhtml`'s card grid splits cleanly or Home stays JSF longer — decide while actually looking at `homePanel.xhtml`/`WelcomePanel` in phase 7. Not architecturally blocking given the widget-slot design. **Resolved (see status above)**: `homePanel.xhtml` is a title plus two sibling `p:panel`s, not one — `HomePanel`/`HomeWidgetDef` now model that with a `kind: "panel" | "card"` split.
 - **Deferred, confirmed not blocking Project**: concept fields configured purely via branch/collection on their own field id (no `fieldCode`) have no REST autocomplete path — `GET /api/v1/projects/{id}/concepts` is `fieldCode`-only and never reaches `FieldConfigurationService.fetchAutocomplete(CustomFieldConcept, input, actionUnitId, valueConceptId)`. Same gap flagged during the RU migration, still open. Every concept field on `ActionUnitForm` is `fieldCode`-based, so it doesn't block this phase. **Don't build it unless asked.** Proposed fix when needed: accept `fieldId` as an alternative selector, plus optional `valueConceptId`.
 - **Rule of thumb from this work**: when unsure what a REST endpoint's permission check *should* be, check the equivalent JSF bean/panel first — the REST layer is newer and less trustworthy on this front.
+
+---
+
+## 10. Follow-up plan: React project list — path to JSF parity (treetable excluded)
+
+> Saved verbatim from `~/.claude/plans/i-was-migrating-my-eager-meadow.md`, approved and executed
+> 2026-09-21. See the status note at the top of this document for completion state and the two
+> post-implementation fixes.
+
+### Context
+
+The JSF→React migration (`feat/main-panel-react-migration`) has landed Home, project list and project detail
+behind `AbstractPanel.isReactPanelEnabled()`. The React list (`frontend/src/panels/EntityListPanel.tsx`)
+today is a thin lazy `DataTable`: 7 hardcoded columns, free-text search, single-column sort, row click that
+*replaces* the main pane. The JSF list (`panel/actionUnitListPanel.xhtml` →
+`pages/shared/table/entityDataTable.xhtml`) gives users ~30 toggleable columns, per-column filters, a column
+toggler, checkbox selection with a count chip, click-to-edit cells, and a row click that opens the project in
+the **right-hand overview pane** while the list stays put.
+
+This plan closes that gap. The treetable view is explicitly out of scope; saved views (`UiViewService`) are
+deferred but the table state is designed so they bolt on later.
+
+Three exploration findings shape the plan:
+
+1. **All 33 `ActionUnitForm` fields are `isSystemField(true)`** with real properties on `ActionUnitDTO` — there
+   are *no* `CustomFieldAnswer` rows for projects. The `answers` map is therefore a reflective projection, not
+   a join. We still go generic (user decision): it is investment so RU/Find/Specimen lists become config-only
+   later, and it keeps the toggler/filters/edit overlay entity-agnostic.
+2. **JSF only actually filters on `name`, `fullIdentifier` and global search** (`ActionUnitLazyDataModel.prepareFilterDTO`);
+   the `filterable(true)` metadata on the other 28 columns is aspirational. Per-column filters are therefore a
+   feature expansion — scoped to the 9 default-visible columns.
+3. **`GET /api/v1/projects` sort is broken**: `ProjectControllerApi.java:63` declares
+   `@RequestParam(name = "name:asc", ...)`, so the query key is literally `name:asc` and `?sort=` never binds.
+   Column sorting has never worked; it only *looks* right because the default matches the frontend's default.
+
+---
+
+### Phase 0 — unblock sorting (backend, ship alone first)
+
+Nothing downstream is testable until sort binds.
+
+- `ui/api/openapi/v1/controller/project/ProjectControllerApi.java:63` — `@RequestParam(defaultValue = "name:asc") String sort`,
+  matching the sibling `ProjectSettingsControllerApi` / `ProjectRecordingUnitsControllerApi`. Ripple through
+  `ProjectApiService.pageAccessibleProjects(..., List<String>)` → `String`.
+- `ui/api/openapi/v1/service/ProjectApiService.java` — swap `parseProjectSort` onto the existing
+  `parseSortWithStableId(...)` (already used by RU/Place). Without the id tiebreaker every paging test in later
+  phases is flaky on duplicate names.
+- Same file — `parseSort` currently falls back silently on an unknown field. Make it **400**. Silent fallback is
+  exactly why the bug above went unnoticed.
+- Widen `ALLOWED_PROJECT_SORT_FIELDS` to the sortable column set. `recordingUnitCount` is the one special case:
+  `ActionUnitSpec.orderByRecordingUnitCount(direction)` already exists but carries its order on the
+  `Specification`, not the `Sort`, so `ActionUnitService.findAccessibleProjects` needs a branch.
+
+---
+
+### Phase 1 — `answers` on list rows
+
+#### Wire shape: raw values + root catalog, opt-in
+
+Do **not** put the `FieldAnswer` envelope on list rows — `toTypedAnswer` embeds a whole `FieldResource` per
+answer (33 fields × 25 rows = 825 copies of the metadata per page). The frontend already fetches the catalog
+from `GET /api/v1/organizations/{id}/project-types`.
+
+```
+GET /api/v1/projects?fields=default        # also: fields=all | fields=-151,-128
+{ "data": [ { ...ProjectResource..., "answers": {
+      "-128": 0.42,
+      "-389": {"id":"12","resourceType":"concepts","label":"En cours"},
+      "-356": [ {...ResourceRef}, {...} ] } } ], "meta": {...} }
+```
+
+Scalar for TEXT/INTEGER/DECIMAL/DATETIME, `ResourceRef` for `SELECT_ONE_*`, `ResourceRef[]` for `SELECT_MULTIPLE_*`.
+**Opt-in**: absent `fields` → no `answers` key, default list stays as cheap as today. Name it `fields`; do *not*
+reuse `includeOnlyFields` (`RecordingUnitsControllerApi.getById:109` accepts and discards it — a documented lie,
+worth its own cleanup task).
+
+Files:
+- `ui/api/openapi/v1/resource/project/ProjectResource.java` — add `Map<String, Object> answers` (`@JsonInclude(NON_NULL)`),
+  and `resourceUri` (one line off the existing `ProjectApiService.actionUnitResourceUri`, needed in phase 5).
+- **New** `ui/api/openapi/v1/service/ProjectAnswersProjector.java` (~120 l.) — `List<ActionUnitDTO>` + requested
+  field ids + prebuilt label map → `Map<Long, Map<String,Object>>`, reading via `CustomField.valueBinding`
+  reflection. Mirror of `FormService.getBindableFieldNames`/`initializeFieldIfNeeded`, batched and read-only.
+- `ui/api/openapi/v1/mapper/ProjectResponseMapper.java` — overload `toResource(..., answers)`; change
+  `toConceptFieldValue` to take a resolved-label map instead of calling `LabelService` per concept.
+
+#### Batching (the actual perf work)
+
+- **New** `domain/services/vocabulary/ConceptLabelBatchResolver.java` + two methods on
+  `infrastructure/database/repositories/vocabulary/label/ConceptLabelRepository`:
+  `findPrefLabelsByLangCodeAndConceptIdIn` / `findAllAltLabelsByLangCodeAndConceptIdIn`. Collect every concept id
+  on the page (type, status, system, fieldStatus, developmentNature, periods, subjects) → 2 queries. This also
+  speeds up today's list, where `LabelService.findLabelOf` is 1–2 uncached queries *per concept*.
+- Lazy `@ManyToMany` (`periods`, `subjects`, `spatialContext`): **do not** add a multi-collection `@EntityGraph`
+  to the `Pageable` query — Hibernate falls back to in-memory paging (HHH000104). Two-step in
+  `ActionUnitService.findAccessibleProjects:759`: page ids with the existing spec, then `findAllById` with the
+  graph, then reorder. Gate the graph on `fields` being requested.
+
+#### Fix the DECIMAL answer gap here
+
+Six columns (`zmin`, `zmax`, `openingRate`, `prescribedArea`, `excavatedArea`, `accessibleArea`) are
+`CustomFieldDecimal`, which is missing from `FieldAnswer`'s `@JsonSubTypes`. Reads fall through to
+`default -> TextFieldAnswer` and **writes are silently dropped** (`coerceAnswerValue` has no decimal branch) —
+a live data-loss bug on recording units today, independent of this migration.
+
+- **New** `resource/form/DecimalFieldAnswer.java`; add to `permits`, `@JsonSubTypes(names={"DECIMAL"})`, `@Schema(oneOf=)`.
+- `service/RecordingUnitOpenApiService.java` — `case "DECIMAL"` in `toTypedAnswer`; `CustomFieldDecimal` branch
+  in `coerceAnswerValue`.
+
+#### Frontend: resolve the envelope mismatch once
+
+`frontend/src/fields/types.ts` — `resolveValueBinding` currently reads a *raw* value from `entity.answers[id]`,
+but RU/Find detail responses carry the *envelope*. One helper reconciles raw list rows, enveloped detail
+responses and today's flat `ProjectResource` through a single path, with no changes in `FicheTab.tsx`:
+
+```ts
+function unwrapAnswer(v: unknown) {
+  if (v && typeof v === "object" && "answerType" in v) {
+    const a = v as { value?: unknown; values?: unknown };
+    return "values" in a ? a.values : a.value;
+  }
+  return v;
+}
+// read: answers[field.id] when defined → else (isSystemField ? entity[valueBinding] : undefined)
+```
+
+---
+
+### Phase 2 — dynamic columns, toggler, selection, table state
+
+#### Column set: schema-driven, defaults owned by the backend
+
+`EntityTypeConfig.list.columns` stays but narrows to *pinned, non-form* columns — the identifier chip and the
+recordingUnit relation count. Everything else comes from the catalog. In `frontend/src/entities/types.ts`:
+
+```ts
+export interface FieldCatalog {
+  fields: Record<string, FieldResource>;
+  columns: { fieldId: string; visible: boolean; order: number }[];
+}
+list: {
+  columns: ColumnDef<TSummary>[];                                   // pinned, hand-written
+  schema?: { load: (ctx: { organizationId?: number }) => Promise<FieldCatalog> };
+  defaultSort?: string;
+  searchable: boolean;
+}
+```
+
+**Default visibility lives in Java**, not a TS const that drifts. Extract the visible/hidden/order truth out of
+`ui/table/definitions/ActionUnitTableDefinitionFactory.applyTo` into a new `ActionUnitTableColumnDefaults`
+consumed by *both* the JSF factory and `RecordingUnitOpenApiService.buildProjectTypes`, exposed on
+`/organizations/{id}/project-types` under `_default.tableColumns`.
+
+Default-visible (mirrors the factory): identifier (pinned, non-toggleable), name, recordingUnit count, status,
+oaCode, mainLocation, openingRate, periods, subjects, scientificManager. The other 23 are toggleable-hidden.
+Only request `fields=` for currently-visible columns — that is what makes the toggler pay for itself.
+
+#### Files
+
+- `frontend/src/panels/EntityListPanel.tsx` — merge pinned `ColumnDef`s with catalog-derived ones.
+- **New** `frontend/src/fields/display.tsx` — `renderAnswerValue(field, value)` for read-only cells (scalars,
+  concept labels, comma-joined `ResourceRef[]`). Cheaper and clearer than reusing the form renderers for cells.
+- **New** `frontend/src/components/table/ColumnToggler.tsx` — PrimeReact `MultiSelect` inside the gear
+  `OverlayPanel`, mirroring `p:columnToggler` / `EntityTableViewModel.onToggle`.
+- `frontend/src/entities/project/columns.tsx` — trim to the two pinned columns.
+- `frontend/src/entities/project/projectTypes.ts` — surface `_default.tableColumns`.
+- Selection: `selectionMode="checkbox"` + a `selected/total` `Chip`, mirroring `selectedCountChip` (~2 h).
+  Note JSF's `handleSelectionChange()` is a no-op — this is decoration until a bulk action exists.
+- Paginator: `rowsPerPageOptions={[10,25,50]}`, **default 10** (React currently defaults to 20 — a silent
+  parity divergence).
+- Debounce the search box (~300 ms) — today every keystroke is a new query key.
+
+#### Table state as one serializable object (land before phase 3)
+
+**New** `frontend/src/panels/tableState.ts` + `useTableState.ts`:
+
+```ts
+export interface TableState {
+  v: 1;                                   // versioned from day one, or saved views become unmigratable
+  offset: number; limit: number;
+  sort?: string;
+  search?: string;
+  visibleColumns: string[];               // ordered
+  filters: Record<string, FilterValue>;   // {op:"contains",v} | {op:"in",v:string[]} | {op:"range",from?,to?}
+}
+toQueryParams(s): URLSearchParams         // owns the f.* encoding
+encodeTableState(s) / decodeTableState(s) // base64url, tolerant (null on bad v)
+```
+
+`ListParams` grows `filters` and `fields`; the query key becomes `["entity-list", entityType, state]`.
+Two payoffs beyond saved views: list URLs become shareable, and `popstate` can stop doing
+`window.location.reload()` (decode `?s=` → `setState`). Reconciliation on mount: `data-*` mount options win
+where present, `?s=` fills the rest. Saved views later = `POST /ui-views { state: TableState }`, zero component
+changes.
+
+---
+
+### Phase 3 — per-column filters (default-visible columns only)
+
+#### Contract
+
+Flat, repeatable, namespaced `f.` on `GET /api/v1/projects`:
+
+```
+f.status=12&f.status=44      # repeatable → OR within key, AND across keys
+f.name=foss                  # text, case-insensitive contains
+f.zmin.from=10&f.zmin.to=40  # numeric range
+f.beginDate.from=2024-01-01  # date range, ISO-8601
+```
+
+Bind with `@RequestParam MultiValueMap<String,String>`, parse in a **new**
+`ui/api/openapi/v1/request/project/ProjectListFilter.java` against a whitelist of `key → (entityPath, kind)`.
+**400 on unknown key or unparseable value** — do not repeat the sort param's silent fallback.
+
+#### JPA mapping
+
+**New** `infrastructure/database/repositories/specs/ActionUnitFilterSpec.java` (keep `ActionUnitSpec` as-is;
+it is already shared with the JSF path). Six generic builders keyed by kind + a whitelist table:
+
+| kind | phase-3 targets | spec |
+|---|---|---|
+| text contains | name, fullIdentifier, oaCode, scientificManager | `lower(col) like %v%` |
+| concept-one in | status | `root.get(p).get("id").in(ids)` |
+| concept-many in | periods, subjects | **EXISTS subquery** |
+| spatial-one in | mainLocation | `root.get(p).get("id").in(ids)` |
+| numeric range | openingRate | `between` / `ge` / `le` |
+| date range | beginDate, endDate | same |
+
+Use `EXISTS` subqueries for `@ManyToMany`, never `join` + `distinct` — `distinct` breaks the count query that
+`findAll(spec, pageable)` issues and silently inflates `totalCount`. Also respect
+`ProjectApiService.validatePagedListRequest`'s `offset % limit == 0` constraint when filters change page size.
+
+Realistic size: ~250 lines of Java + a spec test class. It is small *only because* every target is a real entity
+column. **Flag for the future:** when RU/Find want this UX over real `CustomFieldAnswer` rows, that is the hard
+version (per-answer-type value column, EXISTS on `custom_field_answer` joined to field id). The wire contract
+above is deliberately shaped so it can be swapped in behind the same `f.<key>` params with no client change.
+
+Note `scientificManager` is a `CustomFieldText`, not a person ref — no person autocomplete needed.
+
+#### Option sources
+
+`GET /api/v1/projects/{id}/concepts?fieldCode=` is project-scoped and wrong for a cross-project list filter.
+Add `GET /api/v1/organizations/{orgId}/concepts?fieldCode=&q=&limit=` delegating to the same service with
+institution scope (verify field-code config resolves per institution in `FormConfigService` first). Places
+already have the right shape (`/places/autocomplete?organizationId=`).
+
+Frontend: **new** `frontend/src/components/table/ColumnFilter.tsx` (dispatches on `field.answerType` →
+`MultiSelect` / `AutoComplete` / range inputs / `Calendar` range) and **new** `frontend/src/fields/optionSources.ts`
+(`answerType + fieldCode` → a `useQuery` fn). The gear overlay's filter enable/disable toggle lives in
+`EntityListPanel`.
+
+---
+
+### Phase 4 — click-to-edit overlay
+
+One shared `OverlayPanel` owned by `EntityListPanel`, anchored to the clicked cell and initialised from
+`(row, field)` — no pencil buttons, no per-cell inline widgets.
+
+- **New** `frontend/src/components/table/CellEditOverlay.tsx` — state `{ row, field, anchorEl } | null`,
+  `op.show(event, anchorEl)` on cell click. Contents: field label + the edit-mode renderer + Save/Cancel +
+  inline error. Escape/outside-click cancels, Enter saves scalars.
+- **Fix a collision first:** `EntityListPanel`'s `onRowClick` currently fires on *any* cell. Once cells are
+  editable, navigation must move onto the identifier column's body only — matching JSF, where only the
+  `CommandLinkColumn` navigates. Non-editable cells then do nothing.
+
+#### Renderers need an edit mode
+
+Today only TEXT/INTEGER/DECIMAL/DATETIME are registered (`frontend/src/fields/registerDefaultRenderers.ts`);
+every `SELECT_*` silently falls to the read-only `FallbackRenderer`. Add `SELECT_ONE_FROM_FIELD_CODE` (Dropdown,
+async concepts), `SELECT_MULTIPLE_FROM_FIELD_CODE` (MultiSelect), `SELECT_ONE_SPATIAL_UNIT` (AutoComplete on
+places). Defer `SELECT_MULTIPLE_SPATIAL_UNIT_TREE` (tree picker). Add `hasEditableFieldRenderer(answerType)`
+alongside the existing `hasFieldRenderer`.
+
+**This is the biggest frontend chunk and it is on the critical path twice** — it also retires `FicheTab`'s
+"Non disponible" / read-only stubs. Split it: **4a** = renderers + option sources (lands value in the fiche
+immediately), **4b** = the overlay.
+
+#### Write path
+
+- `ui/api/openapi/v1/request/project/ProjectPatchRequest.java` — add `Map<String, AnswerInput> answers`,
+  mirroring `RecordingUnitPatchRequest`.
+- `ProjectApiService.patchProject` (~l.302) — after `applyProjectPatch`, `applyAnswerPatch(dto, patch.getAnswers())`:
+  resolve fieldId → `CustomField` from `ActionUnit.DETAILS_FORM`, coerce, write via `valueBinding` reflection,
+  **400 on unknown field id**. Extract the private `ruCoerce*` helpers out of `RecordingUnitOpenApiService` into
+  a shared `AnswerCoercion` component. Document precedence: flat properties first, `answers` second (name,
+  identifier, beginDate, endDate are reachable both ways).
+- **Permissions:** gate on `row._permissions.canEdit`. The identifier is special — JSF's `handleLinkEdit` gates
+  on `ORGANIZATION_MANAGE_ACTIONS || PROJECT_MANAGE_SETTINGS`, which is *not* `hasActionUnitWritePermission`.
+  Add `canEditIdentifier` to `ProjectResourcePermissions` rather than shipping a UI that 403s on save. Surface
+  the `409 ActionUnitAlreadyExistsException` inline in the overlay (JSF's duplicate-identifier parity).
+- **Skip optimistic locking.** `ActionUnit` has no `syncRevision` (only `RecordingUnit` does); adding one is a
+  Liquibase migration touching every write path. Instead: PATCH returns the full resource → `setQueryData` to
+  patch the row in place, then invalidate `["entity-list", entityType]` (so sort/filter re-evaluate) and
+  `["entity-detail", "project", id]` (so an open overview refreshes).
+
+---
+
+### Phase 5 — client-side overview pane
+
+Row click on the identifier opens the project in the **right** splitter pane; the list stays. Recommended
+approach: **hybrid — optimistic client render + a new remoteCommand that keeps the bean in sync.**
+
+Pure client-side would lose three things: F5 correctness (the server panel stack has no overview, so the
+remount emits no `data-overview-*` and the pane vanishes), the overview toolbar's create/duplicate/settings
+actions (they dereference `panelModel.parentOrOverview`, which stays null), and the workspace-restore contract.
+The bridge is cheap, and `FlowBean` already has the exact entry point with the exact flag:
+`addActionUnitToOverview(id, targetPanel, tabIndex, updateMainPanel=false)` (`FlowBean.java:364`) — the same
+call JSF's own row-click makes, and `updateMainPanel=false` means the server re-render never touches the
+React-owned main pane.
+
+- `src/main/resources/META-INF/resources/panel/reactPanelActions.xhtml` — add
+  `reactAction_setOverview_${panelModel.panelIndex}`, id passed as a remoteCommand param,
+  `process="@this" update="@none"`.
+- `src/main/resources/META-INF/resources/resources/js/reactPanelBootstrap.js` — expose as `actions.setOverview(entityType, id)`.
+- `frontend/src/mountOptions.ts` — `PanelActions.setOverview?: (entityType, id) => void`.
+- `frontend/src/App.tsx` — `overview` becomes **state**, seeded from `options.overviewEntityType/Id` instead of
+  being permanently bound to it. `openOverview` sets state immediately, fires `setOverview` fire-and-forget,
+  pushes the `?s=<base64url>` URL. `closeOverview` clears state and calls the existing
+  `reactAction_overview_closeOverview`. Guard the current `entityId ?? ""` fallback so a null overview never
+  renders `EntityDetailPanel`.
+- `frontend/src/panels/EntityListPanel.tsx` — new `onOpenOverview` prop, called from the identifier cell
+  (`onNavigate` stays for home widgets / explicit "open full").
+- **Chrome derived client-side:** add `EntityTypeConfig.chrome?: (detail) => PanelChrome` returning
+  `{ resourceUri, title: fullIdentifier ?? name, bookmarked }`. `resourceUri` comes from the new
+  `ProjectResource.resourceUri` (phase 1) — do not hardcode `/action-unit/` in TypeScript. `bookmarked` is
+  already on the wire.
+- **Row highlight:** `rowClassName={(row) => row.id === overview?.entityId ? "overview-open" : ""}`, plus
+  `search-match` when `search` is non-empty. Skip `row-newly-duplicated` (meaningless until duplicate is
+  client-side).
+- **Caveat:** the remoteCommand is async. Disable the overview toolbar actions while a `setOverview` is in
+  flight, or a fast double-click acts on the previous entity.
+
+Because the bean stays in sync, the three bean-bound overview actions keep working unchanged — they resolve
+`parentOrOverview` server-side at invoke time.
+
+---
+
+### Sequencing
+
+| Phase | Content | Depends on | Size |
+|---|---|---|---|
+| 0 | sort param bug, stable id, 400-on-bad-sort, sortable set | — | 0.5 d, ship alone |
+| 1 | `answers` projection + `?fields=`, label batching, two-step graph, DECIMAL subtype, `unwrapAnswer` | 0 | 3–4 d |
+| 2 | backend column defaults, dynamic columns, toggler, selection, `tableState.ts`, paginator/debounce | 1 | 3–4 d |
+| 3 | `f.*` contract, `ActionUnitFilterSpec`, org-scoped concepts endpoint, filter UI | 0, 2 | 3–4 d |
+| 4a | SELECT_* edit renderers + option sources | 1, 2 | 2–3 d |
+| 4b | `CellEditOverlay`, `ProjectPatchRequest.answers`, `canEditIdentifier` | 4a | 2 d |
+| 5 | `setOverview` bridge, App overview state, chrome derivation, row classes | 2 | 2 d |
+
+Out of scope, tracked for later: treetable (`rootOnly` + the dangling `/projects/{id}/children` controller),
+saved views (`UiViewService` over REST), multi-sort, bulk actions on the selection, `row-newly-duplicated`.
+Export (CSV/XLS/PDF) does **not** exist in JSF — not a port target.
+
+---
+
+### Verification
+
+**Per phase, backend:** `mvn -q -Dtest=ProjectControllerApiTest,ProjectApiServiceTest test`. Phase 0 needs a new
+case asserting `?sort=name:desc` actually reverses (none exists today — that is how the bug survived). Phase 1
+needs a projection test plus a query-count assertion (`@DataJpaTest` + Hibernate statistics) proving a 25-row
+page with `fields=default` stays flat, not N+1. Phase 3 needs an `ActionUnitFilterSpec` test class, including a
+`totalCount` assertion on a `@ManyToMany` filter to catch the `distinct`-inflation trap.
+
+**Per phase, frontend:** `cd frontend && npm test` — extend `src/panels/EntityListPanel.test.tsx` (currently 8
+cases) for dynamic columns, toggler, filters, selection and the overlay; `src/fields/` tests for `unwrapAnswer`
+against all three shapes (raw, envelope, flat system field); `tableState.test.ts` round-trip on encode/decode.
+
+**End to end**, per phase, against a real app run:
+1. `mvn spring-boot:run`, log in, select an institution.
+2. Open `/action-unit` in focus mode (React branch — confirm via `ActionUnitListPanel.isReactPanelEnabled()`).
+3. Phase 0/1: click each sortable header, confirm the order actually changes and paging is stable across pages
+   with duplicate names. Check the network tab for `?sort=` and `?fields=`.
+4. Phase 2: toggle columns in the gear overlay, confirm the `fields=` param shrinks/grows with them; check
+   selection chip counts; confirm 10/25/50 rows-per-page.
+5. Phase 3: apply each filter kind, cross-check `totalCount` against the paginator and against the JSF list.
+6. Phase 4: click a cell, edit, save; confirm the row updates in place and the open overview refreshes; confirm
+   a duplicate identifier surfaces the 409 inline; confirm a user without `canEdit` gets no overlay.
+7. Phase 5: click an identifier — the project opens on the right, the list stays, the row gets `overview-open`.
+   Then F5 and confirm the overview survives (that is the whole point of the `setOverview` bridge); then use the
+   overview's create/duplicate/settings buttons and confirm they act on the *right* entity.
+8. Regression each time: open a **non-migrated** entity in the overview and confirm `focus.xhtml` still falls
+   back to the full legacy JSF panel.
+
+Deliver as staged-uncommitted changes on `feat/main-panel-react-migration`; no commits, no push.

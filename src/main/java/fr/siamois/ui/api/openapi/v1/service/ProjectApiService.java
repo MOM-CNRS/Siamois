@@ -6,6 +6,14 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
@@ -26,21 +34,30 @@ import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectHistoryAuthorResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectHistoryEntryResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.utils.AuthenticatedUserUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Method;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,8 +74,16 @@ public class ProjectApiService {
 
     public static final String CREATION_TIME = "creationTime";
     public static final String IDENTIFIER = "identifier";
+    /**
+     * Synthetic sort key : ce n'est pas un chemin JPA de {@code ActionUnit} mais le nombre d'unités
+     * d'enregistrement rattachées. Résolu via {@code ActionUnitSpec#orderByRecordingUnitCount}
+     * et retiré du {@code Pageable} avant d'atteindre le repository.
+     */
+    public static final String RECORDING_UNIT_COUNT = "recordingUnitCount";
+
     private static final Set<String> ALLOWED_PROJECT_SORT_FIELDS = Set.of(
-            "name", IDENTIFIER, "fullIdentifier", CREATION_TIME
+            "id", "name", IDENTIFIER, "fullIdentifier", "beginDate", "endDate",
+            CREATION_TIME, RECORDING_UNIT_COUNT
     );
 
     private static final Set<String> ALLOWED_RECORDING_UNIT_SORT_FIELDS = Set.of(
@@ -132,25 +157,54 @@ public class ProjectApiService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    /**
+     * Une page de projets accessibles. {@code sortParam} suit la forme {@code "champ:direction"} et doit
+     * appartenir à {@link #ALLOWED_PROJECT_SORT_FIELDS} — un champ inconnu est un 400, jamais un repli
+     * silencieux (un repli silencieux est exactement ce qui a masqué le binding cassé de {@code ?sort=}).
+     *
+     * <p>TODO: multi-tri ; un seul critère est supporté pour l'instant.</p>
+     */
     public Page<AccessibleProjectForApi> pageAccessibleProjects(
             ProjectApiCaller caller,
             Long organizationId,
             String search,
             int offset,
             int limit,
-            List<String> sortParams) {
+            String sortParam) {
+        return pageAccessibleProjects(caller, organizationId, search, offset, limit, sortParam, ProjectListFilter.EMPTY);
+    }
+
+    /**
+     * @param filter per-column filters (plan §3 phase 3, {@code f.<key>} query params) — already
+     *               parsed and validated by {@link ProjectListFilter#parse}; {@link ProjectListFilter#EMPTY}
+     *               for no filtering.
+     */
+    public Page<AccessibleProjectForApi> pageAccessibleProjects(
+            ProjectApiCaller caller,
+            Long organizationId,
+            String search,
+            int offset,
+            int limit,
+            String sortParam,
+            ProjectListFilter filter) {
         assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
-        // TODO: implement multi-sort; for now only the first element is used
-        String sortParam = (sortParams != null && !sortParams.isEmpty()) ? sortParams.get(0) : null;
-        Sort sort = parseProjectSort(sortParam);
         int pageNumber = offset / limit;
-        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+
+        // recordingUnitCount n'est pas un chemin JPA : il est porté par une Specification et doit être
+        // retiré du Pageable, sinon Hibernate échoue sur une propriété inconnue.
+        Sort.Direction countDirection = recordingUnitCountSortDirection(sortParam);
+        Pageable pageable = countDirection != null
+                ? PageRequest.of(pageNumber, limit, Sort.by(Sort.Direction.ASC, "id"))
+                : PageRequest.of(pageNumber, limit, parseProjectSort(sortParam));
+
         return actionUnitService.findAccessibleProjects(
                 caller.person().getId(),
                 caller.accessibleInstitutionIds(),
                 organizationId,
                 search,
-                pageable);
+                pageable,
+                countDirection,
+                filter);
     }
 
     public AccessibleProjectForApi requireAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
@@ -332,6 +386,11 @@ public class ProjectApiService {
         if (patch.isGeomPresent()) {
             dto.setGeom(patch.getGeom());
         }
+        applyAnswerPatch(dto, patch.getAnswers());
+        // applyAnswerPatch may have overwritten `type` (fieldId -101, valueBinding "type") via
+        // reflection — save(...) takes it as its own parameter (see save's own javadoc for why),
+        // so re-read it from the DTO rather than passing the now-possibly-stale local.
+        type = dto.getType();
         try {
             actionUnitService.save(userInfo, dto, type);
         } catch (ActionUnitAlreadyExistsException e) {
@@ -388,6 +447,160 @@ public class ProjectApiService {
         }
         if (patch.getEndDate() != null) {
             dto.setEndDate(patch.getEndDate());
+        }
+    }
+
+    /**
+     * Applique {@code ProjectPatchRequest.answers} à {@code dto}, après les champs plats
+     * ({@code applyProjectPatch}, {@code typeId}, {@code mainLocationId}, {@code spatialContextSpatialUnitIds})
+     * — voir la précédence documentée sur {@link ProjectPatchRequest#getAnswers()}.
+     *
+     * <p>Projet n'a pas de lignes {@code CustomFieldAnswer} (voir {@code ProjectAnswersProjector}) :
+     * comme en lecture, écrire une réponse est une écriture réflexive directe sur la propriété
+     * {@code ActionUnitDTO} que {@code valueBinding} désigne, pas un appel au moteur de formulaire.
+     * Champs pris en charge : TEXT, INTEGER, DECIMAL, DATETIME, SELECT_ONE_FROM_FIELD_CODE,
+     * SELECT_MULTIPLE_FROM_FIELD_CODE, SELECT_ONE_SPATIAL_UNIT — le sous-ensemble que
+     * {@code ActionUnit.DETAILS_FORM} utilise réellement (pas tout le zoo de {@code CustomField}
+     * que RecordingUnit doit couvrir).</p>
+     */
+    private void applyAnswerPatch(ActionUnitDTO dto, Map<String, AnswerInput> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, AnswerInput> entry : answers.entrySet()) {
+            String fieldId = entry.getKey();
+            CustomField field = ProjectAnswersProjector.fieldById(fieldId);
+            if (field == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de formulaire inconnu : " + fieldId);
+            }
+            AnswerInput input = entry.getValue();
+
+            if (field instanceof CustomFieldSelectMultipleFromFieldCode) {
+                // "values: null" veut dire "ne pas toucher" (même convention que
+                // RecordingUnitPatchRequest.answers) — contrairement à "value: null" pour un champ
+                // scalaire, qui veut dire "vider".
+                if (input == null || input.values() == null) {
+                    continue;
+                }
+                Set<ConceptDTO> concepts = input.values().stream()
+                        .map(this::coerceConceptId)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+                writeAnswerBinding(dto, field, concepts);
+                continue;
+            }
+
+            Object raw = input == null ? null : input.value();
+            Object coerced = raw == null ? null : coerceScalarAnswer(field, raw);
+            writeAnswerBinding(dto, field, coerced);
+        }
+    }
+
+    private Object coerceScalarAnswer(CustomField field, Object raw) {
+        if (field instanceof CustomFieldText) return String.valueOf(raw);
+        if (field instanceof CustomFieldInteger) return coerceIntegerAnswer(raw);
+        if (field instanceof CustomFieldDecimal) return coerceDecimalAnswer(raw);
+        if (field instanceof CustomFieldDateTime) return coerceDateTimeAnswer(raw);
+        if (field instanceof CustomFieldSelectOneFromFieldCode) return coerceConceptId(raw);
+        if (field instanceof CustomFieldSelectOneSpatialUnit) return coerceSpatialUnitId(raw);
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Ce champ n'est pas modifiable via l'API : " + field.getClass().getSimpleName());
+    }
+
+    private ConceptDTO coerceConceptId(Object raw) {
+        long conceptId = extractLongId(raw);
+        Concept concept = conceptService.findById(conceptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Concept introuvable : " + conceptId));
+        return conceptMapper.convert(concept);
+    }
+
+    private SpatialUnitSummaryDTO coerceSpatialUnitId(Object raw) {
+        long placeId = extractLongId(raw);
+        try {
+            return new SpatialUnitSummaryDTO(spatialUnitService.findById(placeId));
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lieu introuvable : " + placeId);
+        }
+    }
+
+    private static Integer coerceIntegerAnswer(Object raw) {
+        if (raw instanceof Number n) return n.intValue();
+        try {
+            return Integer.parseInt(String.valueOf(raw).trim());
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Entier attendu, reçu : " + raw);
+        }
+    }
+
+    private static Double coerceDecimalAnswer(Object raw) {
+        if (raw instanceof Number n) return n.doubleValue();
+        try {
+            return Double.parseDouble(String.valueOf(raw).trim());
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nombre décimal attendu, reçu : " + raw);
+        }
+    }
+
+    private static OffsetDateTime coerceDateTimeAnswer(Object raw) {
+        if (raw instanceof OffsetDateTime odt) return odt;
+        String value = String.valueOf(raw).trim();
+        try {
+            // Un champ de date envoie souvent juste "AAAA-MM-JJ" (fields/renderers.tsx's DateRenderer) ;
+            // OffsetDateTime.parse seul rejetterait ça, faute d'offset.
+            if (value.length() <= 10) {
+                return LocalDate.parse(value).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            }
+            return OffsetDateTime.parse(value);
+        } catch (DateTimeParseException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date invalide, reçu : " + raw);
+        }
+    }
+
+    private static long extractLongId(Object raw) {
+        if (raw instanceof Number n) {
+            return n.longValue();
+        }
+        if (raw instanceof String s) {
+            try {
+                return Long.parseLong(s.trim());
+            } catch (NumberFormatException ignored) {
+                // falls through to the error below
+            }
+        }
+        if (raw instanceof Map<?, ?> m) {
+            Object id = m.get("id");
+            if (id == null) id = m.get("resourceId");
+            if (id instanceof Number n) return n.longValue();
+            if (id instanceof String s) {
+                try {
+                    return Long.parseLong(s.trim());
+                } catch (NumberFormatException ignored) {
+                    // falls through to the error below
+                }
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu, reçu : " + raw);
+    }
+
+    /**
+     * Écrit {@code value} sur la propriété {@code ActionUnitDTO} que {@code field.getValueBinding()}
+     * désigne, par réflexion — miroir en écriture de la lecture faite par
+     * {@code ProjectAnswersProjector}.
+     */
+    private static void writeAnswerBinding(ActionUnitDTO dto, CustomField field, Object value) {
+        String binding = field.getValueBinding();
+        if (binding == null || binding.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ sans liaison : " + field.getId());
+        }
+        PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(ActionUnitDTO.class, binding);
+        Method setter = descriptor == null ? null : descriptor.getWriteMethod();
+        if (setter == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
+        }
+        try {
+            setter.invoke(dto, value);
+        } catch (ReflectiveOperationException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Valeur invalide pour " + field.getId() + " : " + e.getMessage());
         }
     }
 
@@ -633,8 +846,41 @@ public class ProjectApiService {
         return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
     }
 
+    /**
+     * Tri projet : défaut {@code name:asc}, tri secondaire stable {@code id:asc} (sinon la pagination
+     * n'est pas déterministe quand plusieurs projets portent le même nom), et <strong>400</strong> sur
+     * un champ hors {@link #ALLOWED_PROJECT_SORT_FIELDS}.
+     */
     private static Sort parseProjectSort(String sortParam) {
-        return parseSort(sortParam, ALLOWED_PROJECT_SORT_FIELDS, "name");
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Direction.ASC, "name").and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_PROJECT_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        Sort primary = Sort.by(sortDirection(parts), property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    /**
+     * {@code null} sauf si le tri demandé porte sur le champ synthétique {@code recordingUnitCount}.
+     * Valide le champ au passage (400 sur champ inconnu), comme {@link #parseProjectSort(String)}.
+     */
+    private static Sort.Direction recordingUnitCountSortDirection(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) return null;
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_PROJECT_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        return RECORDING_UNIT_COUNT.equals(property) ? sortDirection(parts) : null;
+    }
+
+    private static Sort.Direction sortDirection(String[] parts) {
+        return parts.length > 1 && "desc".equalsIgnoreCase(parts[1].trim())
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
     }
 
     private static Sort parseOrganizationSort(String sortParam) {

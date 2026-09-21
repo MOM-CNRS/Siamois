@@ -16,6 +16,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.models.actionunit.form.ActionUnitForm;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -36,8 +37,11 @@ import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.ProjectAnswersProjector;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.ProjectListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -63,6 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -110,6 +116,8 @@ class ProjectControllerApiTest {
     private BookmarkService bookmarkService;
     @Mock
     private HistoryAuditService historyAuditService;
+    @Mock
+    private ConceptLabelBatchResolver conceptLabelBatchResolver;
 
     private MockMvc mockMvc;
 
@@ -144,7 +152,8 @@ class ProjectControllerApiTest {
                 projectApiService,
                 projectResponseMapper,
                 recordingUnitResourceMapper,
-                documentWriteOpenApiService);
+                documentWriteOpenApiService,
+                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver));
 
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
@@ -238,14 +247,17 @@ class ProjectControllerApiTest {
                 eq(Set.of(100L)),
                 isNull(),
                 isNull(),
-                any(Pageable.class)))
+                any(Pageable.class),
+                isNull(),
+                any()))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();
         resource.setResourceType("projects");
         resource.setId("1");
         resource.setName("Fouille A");
-        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean(), any(), any()))
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects").param("offset", "0").param("limit", "20"))
                 .andExpect(status().isOk())
@@ -261,7 +273,9 @@ class ProjectControllerApiTest {
                 eq(Set.of(100L)),
                 isNull(),
                 isNull(),
-                any(Pageable.class));
+                any(Pageable.class),
+                isNull(),
+                any());
     }
 
     @Test
@@ -273,12 +287,14 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(1L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class)))
+        when(actionUnitService.findAccessibleProjects(
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any()))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();
         resource.setId("1");
-        when(projectResponseMapper.toResource(eq(row), eq("en"), any(), anyBoolean())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), eq("en"), any(), anyBoolean(), any(), any()))
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects")
                         .param("offset", "0")
@@ -286,7 +302,143 @@ class ProjectControllerApiTest {
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
                 .andExpect(status().isOk());
 
-        verify(projectResponseMapper).toResource(eq(row), eq("en"), any(), anyBoolean());
+        verify(projectResponseMapper).toResource(eq(row), eq("en"), any(), anyBoolean(), any(), any());
+    }
+
+    /**
+     * Régression : {@code sort} était déclaré {@code @RequestParam(name = "name:asc")}, donc la clé de
+     * query-string attendue était littéralement {@code name:asc} et {@code ?sort=} n'était jamais lu —
+     * le tri par colonne n'a jamais fonctionné, masqué par le fait que le défaut coïncidait avec celui
+     * du frontend. Aucun test ne couvrait ce paramètre.
+     */
+    @Test
+    void getAllProjects_bindsSortParamAndAppliesDirection() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(actionUnitService.findAccessibleProjects(
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/api/v1/projects")
+                        .param("offset", "0")
+                        .param("limit", "20")
+                        .param("sort", "fullIdentifier:desc"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(actionUnitService).findAccessibleProjects(
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), pageable.capture(), isNull(), any());
+        assertThat(pageable.getValue().getSort().getOrderFor("fullIdentifier").getDirection())
+                .isEqualTo(Sort.Direction.DESC);
+    }
+
+    /**
+     * {@code answers} est opt-in : sans {@code ?fields=}, la liste ne paie ni la projection ni le lot de
+     * libellés, et la réponse n'a pas la clé du tout (le mapper reçoit {@code null}).
+     */
+    @Test
+    void getAllProjects_withoutFieldsParam_projectsNoAnswers() throws Exception {
+        AccessibleProjectForApi row = stubOneProjectRow();
+
+        mockMvc.perform(get("/api/v1/projects").param("offset", "0").param("limit", "20"))
+                .andExpect(status().isOk());
+
+        verify(projectResponseMapper).toResource(eq(row), anyString(), any(), anyBoolean(), any(), isNull());
+    }
+
+    @Test
+    void getAllProjects_withFieldsDefault_projectsTheDefaultVisibleColumns() throws Exception {
+        AccessibleProjectForApi row = stubOneProjectRow();
+
+        mockMvc.perform(get("/api/v1/projects")
+                        .param("offset", "0")
+                        .param("limit", "20")
+                        .param("fields", "default"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<Map<String, Object>> answers = ArgumentCaptor.forClass(Map.class);
+        verify(projectResponseMapper).toResource(
+                eq(row), anyString(), any(), anyBoolean(), any(), answers.capture());
+        assertThat(answers.getValue()).isNotNull()
+                .containsKeys(String.valueOf(ActionUnitForm.STATUS_FIELD.getId()),
+                        String.valueOf(ActionUnitForm.OA_CODE_FIELD.getId()))
+                .doesNotContainKey(String.valueOf(ActionUnitForm.ZMIN_FIELD.getId()));
+    }
+
+    private AccessibleProjectForApi stubOneProjectRow() {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(1L);
+        au.setOaCode("OA-1");
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjects(
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
+
+        ProjectResource resource = new ProjectResource();
+        resource.setId("1");
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean(), any(), any()))
+                .thenReturn(resource);
+        return row;
+    }
+
+    /**
+     * Régression sur le contrat de {@link fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter} :
+     * les params {@code f.*} atteignent effectivement {@code pageAccessibleProjects}, la surface
+     * ({@code f.name}=contains, {@code f.status}=concept-one-in) et le 400 sur un filtre inconnu.
+     */
+    @Test
+    void getAllProjects_bindsFPrefixedFiltersOntoPageAccessibleProjects() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(actionUnitService.findAccessibleProjects(
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/api/v1/projects")
+                        .param("offset", "0")
+                        .param("limit", "20")
+                        .param("f.name", "foss")
+                        .param("f.status", "12"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter> filterCaptor =
+                ArgumentCaptor.forClass(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.class);
+        verify(actionUnitService).findAccessibleProjects(
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), filterCaptor.capture());
+        assertThat(filterCaptor.getValue().containsFilters()).containsEntry("name", "foss");
+        assertThat(filterCaptor.getValue().conceptOneInFilters()).containsEntry("status", List.of(12L));
+    }
+
+    @Test
+    void getAllProjects_unknownFilterKey_returns400() throws Exception {
+        login();
+
+        mockMvc.perform(get("/api/v1/projects")
+                        .param("offset", "0")
+                        .param("limit", "20")
+                        .param("f.zmin", "10"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(actionUnitService);
+    }
+
+    @Test
+    void getAllProjects_unknownSortField_returns400() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(get("/api/v1/projects")
+                        .param("offset", "0")
+                        .param("limit", "20")
+                        .param("sort", "bogus:asc"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -327,7 +479,8 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("5");
         resource.setName("Projet test");
-        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean()))
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/5"))
                 .andExpect(status().isOk())
@@ -359,7 +512,8 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("12");
         resource.setName("Par full id");
-        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean()))
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/{id}", "INST-PROJ-2025"))
                 .andExpect(status().isOk())
@@ -404,7 +558,8 @@ class ProjectControllerApiTest {
         ProjectResource resource = new ProjectResource();
         resource.setId("33");
         resource.setName("Chartres");
-        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean()))
+                .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/C309_01"))
                 .andExpect(status().isOk())

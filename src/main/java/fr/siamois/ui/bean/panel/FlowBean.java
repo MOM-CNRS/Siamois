@@ -379,6 +379,23 @@ public class FlowBean implements Serializable {
         }
     }
 
+    // Bridge for the React main panel's client-side-opened overview (plan §7.3/§8 phase 5,
+    // "setOverview"): the overview is rendered optimistically by React before the server knows
+    // about it, so unlike addActionUnitToOverview above (called from a JSF row click that already
+    // has the id in EL scope), this one reads it off the raw request — exactly like
+    // addRecordingUnitToOverviewFromStratiModule does for the same reason. updateMainPanel=false:
+    // the React-owned main pane must never be touched by this server round-trip.
+    public void addActionUnitToOverviewFromRequest(AbstractPanel targetPanel) {
+        String idParam = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestParameterMap()
+                .get("id");
+
+        if (idParam != null) {
+            addActionUnitToOverview(Long.parseLong(idParam), targetPanel, null, false);
+        }
+    }
+
     public void addSpecimenToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
         addSpecimenToOverview(id, targetPanel, tabIndex, true);
     }

@@ -36,6 +36,7 @@ import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.VocabularyOpenApiService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,6 +104,8 @@ class OrganizationControllerApiTest {
     private BookmarkService bookmarkService;
     @Mock
     private HistoryAuditService historyAuditService;
+    @Mock
+    private VocabularyOpenApiService vocabularyOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -144,7 +147,8 @@ class OrganizationControllerApiTest {
 
         OrganizationProjectsControllerApi projectsController = new OrganizationProjectsControllerApi(
                 projectApiService,
-                recordingUnitOpenApiService);
+                recordingUnitOpenApiService,
+                vocabularyOpenApiService);
 
         OrganizationRecordingUnitsControllerApi recordingUnitsController = new OrganizationRecordingUnitsControllerApi(
                 recordingUnitService,

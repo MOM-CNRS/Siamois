@@ -21,9 +21,14 @@ public class ProjectDefaultType {
     private FormResource form;
     @Schema(description = "Configuration des champs pour ce type, référence dans le catalogue fields")
     private List<ProjectFieldConfigResource> fieldConfigs;
+    @Schema(description = "Défauts d'affichage (visibilité, ordre) des colonnes de la liste des projets, "
+            + "hors colonnes structurelles (identifiant, nom, compteur d'unités d'enregistrement)")
+    private List<ProjectTableColumnResource> tableColumns;
 
-    public ProjectDefaultType(FormResource form, List<ProjectFieldConfigResource> fieldConfigs) {
+    public ProjectDefaultType(FormResource form, List<ProjectFieldConfigResource> fieldConfigs,
+                              List<ProjectTableColumnResource> tableColumns) {
         this.form = form;
         this.fieldConfigs = fieldConfigs;
+        this.tableColumns = tableColumns;
     }
 }

@@ -99,7 +99,7 @@ beforeEach(() => {
   mockedGetProjectTypes.mockReset();
   mockedGetProjectHistory.mockReset();
   mockedPatchProject.mockReset();
-  mockedGetProjectTypes.mockResolvedValue({ layoutJson: JSON.stringify(layout), fieldConfigs: [], fields });
+  mockedGetProjectTypes.mockResolvedValue({ layoutJson: JSON.stringify(layout), fieldConfigs: [], tableColumns: [], fields });
   mockedGetProjectHistory.mockResolvedValue([]);
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -126,9 +126,13 @@ describe("ProjectFicheTab", () => {
     // the header's own identifier control.
     expect(container.textContent).not.toContain("Identifiant");
 
-    // type is backed by ProjectResource but has no renderer yet (SELECT_* isn't built) — falls
-    // back to its resolvedLabel, read-only.
-    expect(container.textContent).toContain("Sondage");
+    // type now has a real renderer (SelectOneConceptRenderer) — it shows as a disabled
+    // AutoComplete input, so its value lives in the input's `value` attribute, not in
+    // container.textContent (unlike the old FallbackRenderer's plain <span>).
+    const typeInput = container.querySelector(".col-type input") as HTMLInputElement;
+    expect(typeInput).toBeTruthy();
+    expect(typeInput.value).toBe("Sondage");
+    expect(typeInput.disabled).toBe(true);
 
     // oaCode has no equivalent on ProjectResource at all.
     expect(container.textContent).toContain("Code OA");
