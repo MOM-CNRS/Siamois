@@ -344,26 +344,28 @@
                                 <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
                             </ui:include>
 
-                            <div id="react-main-panel-mount-${focusViewBean.mainPanel.panelIndex}"
-                                 class="react-main-panel-mount"
-                                 style="flex: 1; min-height: 0; display: flex; flex-direction: column;"
-                                 data-panel-kind="#{focusViewBean.mainPanel.reactPanelKind()}"
-                                 data-entity-type="#{focusViewBean.mainPanel.reactEntityType()}"
-                                 data-entity-id="#{focusViewBean.mainPanel.reactEntityId()}"
-                                 data-organization-id="#{focusViewBean.mainPanel.reactOrganizationId()}"
-                                 data-overview-entity-type="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.reactEntityType() : ''}"
-                                 data-overview-entity-id="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.reactEntityId() : ''}"
-                                 data-overview-organization-id="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.reactOrganizationId() : ''}"
-                                 data-base-path="#{request.contextPath}"
-                                 data-csrf-header="${_csrf.headerName}"
-                                 data-csrf-token="${_csrf.token}"
-                                 data-main-resource-uri="#{focusViewBean.mainPanel.ressourceUri()}"
-                                 data-main-title="#{focusViewBean.mainPanel.resolveTitleOrTitleCode()}"
-                                 data-main-bookmarked="#{focusViewBean.mainPanel.isBookmarked()}"
-                                 data-overview-resource-uri="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.ressourceUri() : ''}"
-                                 data-overview-title="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.resolveTitleOrTitleCode() : ''}"
-                                 data-overview-bookmarked="#{focusViewBean.mainPanel.parentOrOverview != null ? focusViewBean.mainPanel.parentOrOverview.isBookmarked() : false}"
-                            ></div>
+                            <!--
+                            Loaded here, ahead of the mount div/bootstrap script below, so this
+                            plain classic script (dist/main-panel.js has no top-level import/
+                            export) has already run and window.SiamoisMainPanel.mount is already
+                            the real implementation by the time the bootstrap script calls it —
+                            no reliance on the defensive queue for the normal case.
+                            -->
+                            <link rel="stylesheet" href="#{request.contextPath}/resources/react-main-panel/main-panel.css"/>
+                            <script src="#{request.contextPath}/resources/react-main-panel/main-panel.js"/>
+
+                            <ui:include src="/panel/reactPanelMount.xhtml">
+                                <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
+                            </ui:include>
+
+                            <!--
+                            Plain static resource (src/main/resources/META-INF/resources/resources/js/
+                            reactPanelBootstrap.js), not inlined here — keeps this template free of
+                            escaping concerns (raw JS like "&&" is invalid inline in XML-parsed XHTML)
+                            and reads everything from the mount div's data-* attributes above rather
+                            than EL-interpolating values into a JS string.
+                            -->
+                            <script src="#{request.contextPath}/resources/js/reactPanelBootstrap.js"/>
                         </h:panelGroup>
 
                         <p:blockUI block="panel-${focusViewBean.mainPanel.panelIndex}"

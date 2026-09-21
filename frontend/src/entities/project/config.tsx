@@ -1,6 +1,7 @@
 import type { EntityTypeConfig } from "../types";
 import { getProject, listProjects } from "./api";
 import { projectColumns } from "./columns";
+import { ProjectDetailHeader } from "./DetailHeader";
 import { ProjectFicheTab } from "./FicheTab";
 import { projectHomeWidgets } from "./homeWidgets";
 import { PROJECT_ROUTES } from "./routes";
@@ -14,6 +15,8 @@ import type { ProjectDetail, ProjectSummary } from "./types";
 export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail> = {
   key: "project",
   labels: { singular: "Projet", plural: "Projets" },
+  // Matches ActionUnitPanel/ActionUnitListPanel's own AbstractPanel.icon exactly.
+  icon: "bi bi-arrow-down-square",
   api: {
     list: listProjects,
     get: getProject,
@@ -38,6 +41,10 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         render: (entity, helpers) => <ProjectFicheTab entity={entity} onSaved={helpers.refetch} />,
       },
     ],
+    // actionUnitPanelHeader.xhtml's content, rendered inside EntityDetailPanel's own panel header
+    // (plan §7/§8, "toolbar is part of the panel header" — the header and the generic toolbar
+    // share one titlebar, exactly like the real markup).
+    header: (entity, helpers) => <ProjectDetailHeader entity={entity} onSaved={helpers.refetch} />,
   },
   routes: PROJECT_ROUTES,
   home: {

@@ -1,0 +1,48 @@
+<!-- reactPanelMount.xhtml -->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"-->
+
+    <!--
+    The mount div React attaches to (plan §7.2/§8 phase 8), shared between focus.xhtml (single
+    panel) and flow.xhtml (a tab-stack of several, each independently React-enabled) — factored
+    out so both templates build the exact same options from the exact same `panelModel`, rather
+    than keeping two copies of this data-attribute list in sync by hand.
+    Everything here is HTML-attribute-escaped by Facelets, never interpolated into a JS string —
+    resources/js/reactPanelBootstrap.js (a plain static file, no EL) reads it all back off
+    container.dataset.
+    -->
+    <div id="react-main-panel-mount-${panelModel.panelIndex}"
+         class="react-main-panel-mount"
+         style="flex: 1; min-height: 0; display: flex; flex-direction: column;"
+         data-panel-kind="#{panelModel.reactPanelKind()}"
+         data-entity-type="#{panelModel.reactEntityType()}"
+         data-entity-id="#{panelModel.reactEntityId()}"
+         data-organization-id="#{panelModel.reactOrganizationId()}"
+         data-overview-entity-type="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactEntityType() : ''}"
+         data-overview-entity-id="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactEntityId() : ''}"
+         data-overview-organization-id="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactOrganizationId() : ''}"
+         data-base-path="#{request.contextPath}"
+         data-csrf-header="${_csrf.headerName}"
+         data-csrf-token="${_csrf.token}"
+         data-main-resource-uri="#{panelModel.ressourceUri()}"
+         data-main-title="#{panelModel.resolveTitleOrTitleCode()}"
+         data-main-bookmarked="#{panelModel.isBookmarked()}"
+         data-overview-resource-uri="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.ressourceUri() : ''}"
+         data-overview-title="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.resolveTitleOrTitleCode() : ''}"
+         data-overview-bookmarked="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.isBookmarked() : false}"
+         data-action-duplicate="reactAction_duplicate_${panelModel.panelIndex}"
+         data-action-refresh="reactAction_refresh_${panelModel.panelIndex}"
+         data-action-create="reactAction_create_${panelModel.panelIndex}"
+         data-action-settings="reactAction_settings_${panelModel.panelIndex}"
+         data-action-list-create="reactAction_listCreate_${panelModel.panelIndex}"
+         data-overview-action-close-overview="reactAction_overview_closeOverview_${panelModel.panelIndex}"
+         data-overview-action-fullscreen="reactAction_overview_fullscreen_${panelModel.panelIndex}"
+         data-overview-action-duplicate="reactAction_overview_duplicate_${panelModel.panelIndex}"
+         data-overview-action-refresh="reactAction_overview_refresh_${panelModel.panelIndex}"
+         data-overview-action-create="reactAction_overview_create_${panelModel.panelIndex}"
+         data-overview-action-settings="reactAction_overview_settings_${panelModel.panelIndex}"
+    ></div>
+
+</ui:composition>

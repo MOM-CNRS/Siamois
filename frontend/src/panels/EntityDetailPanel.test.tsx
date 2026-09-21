@@ -24,6 +24,7 @@ const getMock = vi.fn<(id: string | number) => Promise<FakeEntity>>();
 const fakeConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
   key: "fake-detail-entity",
   labels: { singular: "Fake", plural: "Fakes" },
+    icon: "bi bi-question",
   api: { list: vi.fn(), get: getMock },
   list: { columns: [], searchable: false },
   detail: {
@@ -106,6 +107,47 @@ describe("EntityDetailPanel", () => {
     await flush();
 
     expect(getMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("renders its toolbar inside its own header, not as a separate strip (plan §7/§8 follow-up)", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel
+            entityType="fake-detail-entity"
+            entityId="1"
+            toolbar={{ chrome: { resourceUri: "/fake/1", title: "First", bookmarked: false }, actions: { refresh: () => {} } }}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const header = container.querySelector(".p-panel-header")!;
+    expect(header).toBeTruthy();
+    expect(header.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+  });
+
+  it("renders config.detail.header content inside its own panel header, alongside the toolbar", async () => {
+    const withHeaderConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+      ...fakeConfig,
+      key: "fake-detail-entity-with-header",
+      detail: { ...fakeConfig.detail, header: (entity) => <span data-testid="detail-header">Header of {entity.name}</span> },
+    };
+    registerEntityType(withHeaderConfig);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity-with-header" entityId="1" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const header = container.querySelector(".p-panel-header")!;
+    expect(header.textContent).toContain("Header of First");
   });
 
   it("shows an unsupported message for an unregistered entity type", async () => {

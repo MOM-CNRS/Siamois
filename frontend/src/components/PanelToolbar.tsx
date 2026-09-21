@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { Button } from "primereact/button";
 import { createBookmark, deleteBookmark } from "../api/bookmarks";
 import type { OverviewActions, PanelActions, PanelChrome } from "../mountOptions";
 
@@ -12,6 +13,11 @@ import type { OverviewActions, PanelActions, PanelChrome } from "../mountOptions
 // Bookmark is deliberately NOT one of the bridged `actions` (plan §7.3): JSF passes the initial
 // `bookmarked` flag once at mount and this component calls the REST bookmark endpoints directly
 // on toggle, rather than round-tripping through a remoteCommand.
+//
+// Buttons are PrimeReact's own <Button>, not plain <button> — "no custom theme" (plan §3) means
+// no new CSS, not "skip PrimeReact's components." sideview-topbar-button rides along via
+// className for a future theme pass; the stock lara-light-blue theme is what actually renders
+// today.
 export interface PanelToolbarProps {
   chrome: PanelChrome;
   organizationId?: number;
@@ -38,57 +44,72 @@ export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarPr
   return (
     <div className="panel-toolbar" style={{ display: "flex", gap: "0.5rem" }}>
       {overview?.closeOverview && (
-        <button
-          type="button"
+        <Button
+          icon="bi bi-chevron-double-right"
           className="sideview-topbar-button"
-          title="Fermer l'aperçu latéral"
+          text
+          rounded
+          tooltip="Fermer l'aperçu latéral"
           onClick={overview.closeOverview}
-        >
-          <i className="bi bi-chevron-double-right" />
-        </button>
+        />
       )}
       {overview?.fullscreen && (
-        <button
-          type="button"
+        <Button
+          icon="bi bi-arrows-angle-expand"
           className="sideview-topbar-button"
-          title="Ouvrir en mode focus"
+          text
+          rounded
+          tooltip="Ouvrir en mode focus"
           onClick={overview.fullscreen}
-        >
-          <i className="bi bi-arrows-angle-expand" />
-        </button>
+        />
       )}
-      <button
-        type="button"
+      <Button
+        icon={bookmarked ? "bi bi-bookmark-fill" : "bi bi-bookmark"}
         className="sideview-topbar-button"
+        text
+        rounded
         disabled={bookmarkMutation.isPending || organizationId == null}
         onClick={() => bookmarkMutation.mutate()}
-      >
-        <i className={bookmarked ? "ui-icon bi bi-bookmark-fill" : "ui-icon bi bi-bookmark"} />
-      </button>
+      />
       {actions?.create && (
-        <button type="button" className="sideview-topbar-button" title="Créer" onClick={actions.create}>
-          <i className="bi bi-plus-square" />
-        </button>
+        <Button
+          icon="bi bi-plus-square"
+          className="sideview-topbar-button"
+          text
+          rounded
+          tooltip="Créer"
+          onClick={actions.create}
+        />
       )}
       {actions?.duplicate && (
-        <button type="button" className="sideview-topbar-button" title="Dupliquer" onClick={actions.duplicate}>
-          <i className="bi bi-copy" />
-        </button>
+        <Button
+          icon="bi bi-copy"
+          className="sideview-topbar-button"
+          text
+          rounded
+          tooltip="Dupliquer"
+          onClick={actions.duplicate}
+        />
       )}
       {actions?.refresh && (
-        <button
-          type="button"
+        <Button
+          icon="bi bi-arrow-clockwise"
           className="sideview-topbar-button"
-          title="Rafraîchir"
+          text
+          rounded
+          tooltip="Rafraîchir"
           onClick={actions.refresh}
-        >
-          <i className="bi bi-arrow-clockwise" />
-        </button>
+        />
       )}
       {actions?.settings && (
-        <button type="button" className="sideview-topbar-button" title="Paramètres" onClick={actions.settings}>
-          <i className="bi bi-gear" />
-        </button>
+        <Button
+          icon="bi bi-gear"
+          className="sideview-topbar-button"
+          text
+          rounded
+          tooltip="Paramètres"
+          onClick={actions.settings}
+        />
       )}
     </div>
   );

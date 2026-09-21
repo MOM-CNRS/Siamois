@@ -78,7 +78,8 @@ describe("projectHomeWidgets", () => {
     const onNavigate = renderWidget(0);
     await flush();
 
-    const button = container.querySelector("button") as HTMLElement;
+    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Ouvrir le projet")!;
+    expect(button).toBeTruthy();
     await act(async () => {
       button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -86,14 +87,21 @@ describe("projectHomeWidgets", () => {
     expect(onNavigate).toHaveBeenCalledWith("project", "9");
   });
 
-  it("count-card widget shows the total and a link to the list, prefixed with the base path", async () => {
+  it("count-card widget shows the total and asks the router for the list (no page navigation)", async () => {
     mockedApiFetch.mockResolvedValue({ data: [], meta: { total: 12, limit: 5, offset: 0 } });
-    renderWidget(1);
+    const onNavigate = renderWidget(1);
     await flush();
 
     expect(container.textContent).toContain("12");
-    const link = container.querySelector("a") as HTMLAnchorElement;
-    expect(link.getAttribute("href")).toBe("/siamois/action-unit");
-    expect(link.textContent).toBe("Voir la liste");
+    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Voir la liste")!;
+    expect(button).toBeTruthy();
+
+    await act(async () => {
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    // No id → App's router treats this as "go to the list", the same client-side switch a list
+    // row's click already does — never a real page navigation.
+    expect(onNavigate).toHaveBeenCalledWith("project");
   });
 });

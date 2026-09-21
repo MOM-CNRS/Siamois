@@ -40,11 +40,12 @@ export interface DetailTabDef<TDetail> {
 }
 
 // Passed to an entity's home.widgets factory (plan §8 phase 7) — organizationId comes from
-// MountOptions, onNavigate from the same bridge EntityListPanel already uses, so a "recent
-// projects" widget's rows link to the real detail route the same way list rows do.
+// MountOptions, onNavigate from App's own client-side router (no `id` = navigate to that
+// entity's list, matching EntityListPanel's row-click signature otherwise) so a widget's links
+// switch panels in place instead of a full page navigation.
 export interface HomeWidgetContext {
   organizationId?: number;
-  onNavigate?: (entityType: string, id: string | number) => void;
+  onNavigate?: (entityType: string, id?: string | number) => void;
 }
 
 export interface HomeWidgetDef {
@@ -55,6 +56,10 @@ export interface HomeWidgetDef {
 export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   key: string;
   labels: { singular: string; plural: string };
+  // Bootstrap icon class matching this entity's AbstractPanel.icon (e.g. "bi bi-arrow-down-square"
+  // for Project) — used by EntityListPanel's header, mirroring panel/header/*ListPanelHeader.xhtml
+  // (icon + title + count chip), not something list rows/columns already carry.
+  icon: string;
   api: {
     list(params: ListParams): Promise<PagedResult<TSummary>>;
     get(id: string | number): Promise<TDetail>;
@@ -66,6 +71,11 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];
+    // Content for the panel's own header (icon/identifier/type/name/location chips), matching
+    // actionUnitPanelHeader.xhtml — rendered inside EntityDetailPanel's PrimeReact <Panel> header,
+    // alongside the toolbar (icons), NOT inside any one tab. Optional: a bare entity type with no
+    // header content just gets the toolbar alone.
+    header?: (entity: TDetail, helpers: DetailTabHelpers) => ReactNode;
   };
   routes: {
     list: string;

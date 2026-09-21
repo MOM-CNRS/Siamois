@@ -11,6 +11,11 @@ export interface PanelActions {
   refresh?: () => void;
   create?: () => void;
   settings?: () => void;
+  // Only meaningful when panelKind is "list" — bridged from that entity's OWN table toolbar
+  // create button (ActionUnitListPanel.configureTableColumns's toolbarCreateConfig), a different
+  // gate than `create` above (which is the main panel titlebar's, tied to creationUnitKind and
+  // never rendered at all for a list panel in JSF).
+  listCreate?: () => void;
 }
 
 // The overview pane's own titlebar (panelContent.xhtml) has two extra buttons the main panel's
@@ -29,6 +34,17 @@ export interface PanelChrome {
   bookmarked: boolean;
 }
 
+// Everything one panel's own header needs to render its toolbar (plan §7.3, revised: "the
+// toolbar is part of the panel header" — App.tsx no longer renders PanelToolbar as a strip above
+// the panel; HomePanel/EntityListPanel/EntityDetailPanel each take this and put it in their own
+// PrimeReact <Panel>'s `icons`, next to their own header content — matching the real markup's
+// single sideview-titlebar div that holds both the toolbar form and the displayHeader() include).
+export interface PanelToolbarSlot {
+  chrome: PanelChrome;
+  organizationId?: number;
+  actions?: PanelActions | OverviewActions;
+}
+
 export interface MountOptions {
   panelKind: PanelKind;
   entityType: string;
@@ -43,5 +59,4 @@ export interface MountOptions {
   actions?: PanelActions;
   overview?: PanelChrome;
   overviewActions?: OverviewActions;
-  onNavigate?: (entityType: string, id: string | number) => void;
 }

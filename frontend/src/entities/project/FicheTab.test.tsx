@@ -135,12 +135,6 @@ describe("ProjectFicheTab", () => {
     expect(container.textContent).toContain("Non disponible");
   });
 
-  it("shows the header identifier (fullIdentifier, falling back to identifier)", async () => {
-    renderFiche(project({ fullIdentifier: "", identifier: "FA" }));
-    await flush();
-    expect(container.textContent).toContain("FA");
-  });
-
   it("shows the most recent revision's date and author when history has entries", async () => {
     mockedGetProjectHistory.mockResolvedValue([
       { revisionNumber: 2, revisionDate: "2026-09-01T10:00:00Z", revisionType: "MOD", author: { id: 1, name: "Ada", lastname: "Lovelace" } },
@@ -179,32 +173,5 @@ describe("ProjectFicheTab", () => {
 
     expect(mockedPatchProject).toHaveBeenCalledWith("1", { name: "Renamed", beginDate: undefined, endDate: undefined });
     expect(onSaved).toHaveBeenCalled();
-  });
-
-  it("rejects a blank identifier without calling patchProject", async () => {
-    renderFiche(project());
-    await flush();
-
-    const pencil = container.querySelector(".project-fiche-tab-identifier button") as HTMLElement;
-    await act(async () => {
-      pencil.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    await flush();
-
-    const input = container.querySelector(".project-fiche-tab-identifier input") as HTMLInputElement;
-    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
-    await act(async () => {
-      nativeSetter.call(input, "   ");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    const checkButton = container.querySelector(".project-fiche-tab-identifier .pi-check")!.closest("button") as HTMLElement;
-    await act(async () => {
-      checkButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    await flush();
-
-    expect(mockedPatchProject).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("L'identifiant est obligatoire");
   });
 });

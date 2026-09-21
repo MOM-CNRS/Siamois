@@ -26,6 +26,7 @@ const listMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeRow>>>();
 const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
   key: "fake-entity",
   labels: { singular: "Fake", plural: "Fakes" },
+  icon: "bi bi-question",
   api: {
     list: listMock,
     get: vi.fn(),
@@ -44,12 +45,12 @@ registerEntityType(fakeConfig);
 let container: HTMLDivElement;
 let root: Root;
 
-function renderPanel(onNavigate?: (entityType: string, id: string | number) => void) {
+function renderPanel(onNavigate?: (entityType: string, id: string | number) => void, onCreate?: () => void) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   act(() => {
     root.render(
       <QueryClientProvider client={queryClient}>
-        <EntityListPanel entityType="fake-entity" onNavigate={onNavigate} />
+        <EntityListPanel entityType="fake-entity" onNavigate={onNavigate} onCreate={onCreate} />
       </QueryClientProvider>,
     );
   });
@@ -119,6 +120,52 @@ describe("EntityListPanel", () => {
     });
 
     expect(onNavigate).toHaveBeenCalledWith("fake-entity", "1");
+  });
+
+  it("renders the header icon, plural label and a count chip (actionUnitListPanelHeader.xhtml)", async () => {
+    renderPanel();
+    await flush();
+
+    const header = container.querySelector(".entity-list-panel-header")!;
+    expect(header.querySelector(".bi-question")).toBeTruthy();
+    expect(header.textContent).toContain("Fakes");
+    expect(header.textContent).toContain("1");
+  });
+
+  it("only renders the create button when onCreate is provided (list's own toolbar create button)", async () => {
+    renderPanel(undefined, undefined);
+    await flush();
+    expect(Array.from(container.querySelectorAll("button")).some((b) => b.textContent === "Créer")).toBe(false);
+
+    const onCreate = vi.fn();
+    renderPanel(undefined, onCreate);
+    await flush();
+    const createButton = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Créer")!;
+    expect(createButton).toBeTruthy();
+
+    await act(async () => {
+      createButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(onCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders its toolbar inside its own header, not as a separate strip (plan §7/§8 follow-up)", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityListPanel
+            entityType="fake-entity"
+            toolbar={{ chrome: { resourceUri: "/fake", title: "Fakes", bookmarked: false }, actions: { refresh: () => {} } }}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const header = container.querySelector(".p-panel-header")!;
+    expect(header).toBeTruthy();
+    expect(header.querySelector(".bi-arrow-clockwise")).toBeTruthy();
   });
 
   it("shows an unsupported message for an unregistered entity type", async () => {

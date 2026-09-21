@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "primereact/button";
-import { InputText } from "primereact/inputtext";
 import { Message } from "primereact/message";
+import { Panel } from "primereact/panel";
+import { Toolbar } from "primereact/toolbar";
 import { ApiError } from "../../api/client";
 import { getFieldRenderer, hasFieldRenderer } from "../../fields/registry";
 import { resolveValueBinding } from "../../fields/types";
@@ -75,10 +76,6 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
     if (!editing) setDraft(entity);
   }, [entity, editing]);
 
-  const [identifierEditing, setIdentifierEditing] = useState(false);
-  const [identifierDraft, setIdentifierDraft] = useState(entity.fullIdentifier || entity.identifier);
-  const [identifierError, setIdentifierError] = useState<string | null>(null);
-
   const saveMutation = useMutation({
     mutationFn: () =>
       patchProject(entity.id, {
@@ -92,18 +89,6 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
     },
   });
 
-  const identifierMutation = useMutation({
-    mutationFn: (identifier: string) => patchProject(entity.id, { identifier }),
-    onSuccess: () => {
-      setIdentifierEditing(false);
-      setIdentifierError(null);
-      onSaved();
-    },
-    onError: (err: unknown) => {
-      setIdentifierError(err instanceof ApiError ? err.message : "Échec de l'enregistrement");
-    },
-  });
-
   function startEditing() {
     setDraft(entity);
     setEditing(true);
@@ -114,50 +99,14 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
     setEditing(false);
   }
 
-  function saveIdentifier() {
-    const trimmed = identifierDraft.trim();
-    if (!trimmed) {
-      setIdentifierError("L'identifiant est obligatoire");
-      return;
-    }
-    identifierMutation.mutate(trimmed);
-  }
-
   const latestRevision = historyQuery.data?.[0];
 
   return (
     <div className="project-fiche-tab">
+      {/* The identifier chip + type/name/location chips moved to ProjectDetailHeader, rendered by
+          EntityDetailPanel's own panel header (entities/project/config.tsx's detail.header) —
+          they belong to the panel-level titlebar (actionUnitPanelHeader.xhtml), not to this tab. */}
       <div className="project-fiche-tab-header">
-        <div className="project-fiche-tab-identifier">
-          {identifierEditing ? (
-            <>
-              <InputText value={identifierDraft} onChange={(e) => setIdentifierDraft(e.target.value)} />
-              <Button icon="pi pi-check" onClick={saveIdentifier} loading={identifierMutation.isPending} />
-              <Button
-                icon="pi pi-times"
-                className="p-button-text"
-                onClick={() => {
-                  setIdentifierEditing(false);
-                  setIdentifierError(null);
-                  setIdentifierDraft(entity.fullIdentifier || entity.identifier);
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <span>{entity.fullIdentifier || entity.identifier}</span>
-              <Button icon="pi pi-pencil" className="p-button-text" onClick={() => setIdentifierEditing(true)} />
-            </>
-          )}
-        </div>
-        {identifierError && <Message severity="error" text={identifierError} />}
-        {latestRevision && (
-          <div className="project-fiche-tab-last-modified">
-            Dernière modification : {formatDateTime(latestRevision.revisionDate)}
-            {latestRevision.author &&
-              ` par ${[latestRevision.author.name, latestRevision.author.lastname].filter(Boolean).join(" ")}`}
-          </div>
-        )}
         <div className="project-fiche-tab-actions">
           {editing ? (
             <>
@@ -190,6 +139,33 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
           onEntityChange={setDraft}
         />
       )}
+
+      {/* singleUnitPanel.xhtml's own footer is a p:toolbar class="panel-footer" showing the
+          same created/modified summary — the history endpoint here only has one entry (the most
+          recent), unlike JSF's fuller lastUpdateDate()/lastUpdater()/allUpdaters() trio, so this
+          shows just that one line rather than fields with no data to fill them (plan §6 phase 6). */}
+      {latestRevision && (
+        <Toolbar
+          className="panel-footer"
+          start={
+            <small>
+              <i>
+                Dernière modification :{" "}
+                <span className="panel-history-colored-span">{formatDateTime(latestRevision.revisionDate)}</span>
+                {latestRevision.author && (
+                  <>
+                    {" "}
+                    par{" "}
+                    <span className="panel-history-colored-span">
+                      {[latestRevision.author.name, latestRevision.author.lastname].filter(Boolean).join(" ")}
+                    </span>
+                  </>
+                )}
+              </i>
+            </small>
+          }
+        />
+      )}
     </div>
   );
 }
@@ -211,9 +187,15 @@ function FormLayout({
 
   return (
     <>
+      {/* customForm.xhtml wraps each CustomFormPanelUiDto in a toggleable p:panel, not a
+          fieldset — sia-form-panel rides along via className for the future theme pass. */}
       {panels.map((panel, panelIndex) => (
-        <fieldset key={panelIndex} className={panel.className ?? undefined}>
-          <legend>{panelLabel(panel.name)}</legend>
+        <Panel
+          key={panelIndex}
+          header={panelLabel(panel.name)}
+          toggleable
+          className={`sia-form-panel ${panel.className ?? ""}`.trim()}
+        >
           {panel.rows.map((row, rowIndex) => (
             <div key={rowIndex} className="project-fiche-tab-row">
               {row.columns.map((col, colIndex) => (
@@ -228,7 +210,7 @@ function FormLayout({
               ))}
             </div>
           ))}
-        </fieldset>
+        </Panel>
       ))}
     </>
   );

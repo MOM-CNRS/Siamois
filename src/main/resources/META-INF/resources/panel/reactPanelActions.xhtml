@@ -1,0 +1,96 @@
+<!-- reactPanelActions.xhtml -->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:h="http://xmlns.jcp.org/jsf/html">
+
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"-->
+
+    <!--
+    Bridges the six toolbar actions React can't perform itself (plan §7.3/§8 phase 8) into plain
+    global JS functions via p:remoteCommand, exactly mirroring the `rendered` gating focus.xhtml's
+    own titlebar and panelContent.xhtml's overview titlebar already use for the same buttons — a
+    function simply doesn't exist when its legacy button wouldn't have rendered either, so the
+    React PanelToolbar's "only show a button when the callback exists" logic reproduces the same
+    permission gating without duplicating it client-side. Bookmark is deliberately not here: it
+    calls the REST bookmark endpoints directly (plan §7.3).
+
+    Function names are suffixed by panelIndex so multiple open panel instances (main + overview)
+    never collide; the mount div's data-action-* attributes (focus.xhtml) name these exact
+    functions for the bootstrap script to look up on `window`.
+    -->
+    <h:form id="reactPanelActionsForm-${panelModel.panelIndex}">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+        <p:remoteCommand name="reactAction_duplicate_${panelModel.panelIndex}"
+                          rendered="#{panelModel.canDuplicate() and flowBean.isWriteMode}"
+                          action="#{panelModel.duplicate()}"
+                          process="@this"
+                          update="@none"/>
+        <p:remoteCommand name="reactAction_refresh_${panelModel.panelIndex}"
+                          action="#{panelModel.refresh()}"
+                          process="@this"
+                          update="@none"/>
+        <p:remoteCommand name="reactAction_create_${panelModel.panelIndex}"
+                          rendered="#{panelModel.creationUnitKind != null and flowBean.isWriteMode}"
+                          action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.creationUnitKind, panelModel)}"
+                          update="newUnitForm"
+                          oncomplete="PF('newUnitDiag').show();"
+                          process="@this"/>
+        <p:remoteCommand name="reactAction_settings_${panelModel.panelIndex}"
+                          rendered="#{panelModel.canOpenInProjectSettings()}"
+                          action="#{navBean.redirectToActionUnitSettings(panelModel.unit)}"
+                          process="@this"
+                          update="@none"/>
+
+        <!--
+        The list's OWN table toolbar create button (pages/shared/table/tableToolbar.xhtml) —
+        a different gate than reactAction_create above (creationUnitKind, the main panel
+        titlebar's button, which JSF never renders at all for a list panel). Short-circuits on
+        reactPanelKind() first so tableModel is only ever dereferenced on an actual list panel.
+        updateOnCreate/tableClientId are left blank: there's no PrimeFaces table left to refresh
+        in place (React owns the list now) — creating a project here still opens the same dialog,
+        it just doesn't auto-refresh the list under it yet (use the panel's own refresh action).
+        -->
+        <p:remoteCommand name="reactAction_listCreate_${panelModel.panelIndex}"
+                          rendered="#{panelModel.reactPanelKind() == 'list'
+                                      and not empty panelModel.tableModel.toolbarCreateConfig
+                                      and flowBean.isWriteMode
+                                      and panelModel.tableModel.toolbarCreateConfig.createAllowedSupplier.asBoolean}"
+                          action="#{panelModel.tableModel.openCreateFromToolbar(genericNewUnitDialogBean, '', '')}"
+                          update="newUnitForm"
+                          oncomplete="PF('newUnitDiag').show();"
+                          process="@this"/>
+
+        <h:panelGroup rendered="#{panelModel.parentOrOverview != null}">
+            <p:remoteCommand name="reactAction_overview_closeOverview_${panelModel.panelIndex}"
+                              action="#{panelModel.closeOverview()}"
+                              process="@this"
+                              update="@none"/>
+            <p:remoteCommand name="reactAction_overview_fullscreen_${panelModel.panelIndex}"
+                              action="#{flowBean.fullScreen(panelModel.parentOrOverview)}"
+                              ajax="false"/>
+            <p:remoteCommand name="reactAction_overview_duplicate_${panelModel.panelIndex}"
+                              rendered="#{panelModel.parentOrOverview.canDuplicate() and flowBean.isWriteMode}"
+                              action="#{panelModel.parentOrOverview.duplicate()}"
+                              process="@this"
+                              update="@none"/>
+            <p:remoteCommand name="reactAction_overview_refresh_${panelModel.panelIndex}"
+                              action="#{panelModel.parentOrOverview.refresh()}"
+                              process="@this"
+                              update="@none"/>
+            <p:remoteCommand name="reactAction_overview_create_${panelModel.panelIndex}"
+                              rendered="#{panelModel.parentOrOverview.creationUnitKind != null and flowBean.isWriteMode}"
+                              action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.parentOrOverview.creationUnitKind, panelModel.parentOrOverview)}"
+                              update="newUnitForm"
+                              oncomplete="PF('newUnitDiag').show();"
+                              process="@this"/>
+            <p:remoteCommand name="reactAction_overview_settings_${panelModel.panelIndex}"
+                              rendered="#{panelModel.parentOrOverview.canOpenInProjectSettings()}"
+                              action="#{navBean.redirectToActionUnitSettings(panelModel.parentOrOverview.unit)}"
+                              process="@this"
+                              update="@none"/>
+        </h:panelGroup>
+    </h:form>
+
+</ui:composition>

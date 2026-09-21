@@ -39,8 +39,17 @@ function unmount(container: HTMLElement): void {
 
 declare global {
   interface Window {
-    SiamoisMainPanel: { mount: typeof mount; unmount: typeof unmount };
+    SiamoisMainPanel: { mount: typeof mount; unmount: typeof unmount; _queue?: [HTMLElement, MountOptions][] };
   }
 }
 
+// focus.xhtml's own inline bootstrap script (plan §7.2/§8 phase 8) runs synchronously, before
+// this module — an ES module script always loads/executes asynchronously relative to a classic
+// script — has had a chance to run. It installs a stub SiamoisMainPanel that just queues
+// mount() calls; drain that queue now that the real implementation exists, so no mount() call
+// made before this module was ready gets silently dropped.
+const queued = window.SiamoisMainPanel?._queue ?? [];
 window.SiamoisMainPanel = { mount, unmount };
+for (const [container, options] of queued) {
+  mount(container, options);
+}
