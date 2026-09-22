@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { InputNumber } from "primereact/inputnumber";
 import { Calendar } from "primereact/calendar";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import type { FieldRendererProps } from "./registry";
-import { optionSourceFor, type FilterOption } from "./optionSources";
+import { optionSourceFor, supportsEmptyQuery, type FilterOption } from "./optionSources";
 
 // Base renderers for the answerTypes that need no backend lookup — plain scalar inputs.
 // answerTypes that resolve against a vocabulary/entity (SELECT_ONE_FROM_FIELD_CODE,
@@ -123,10 +123,26 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   const loadOptions = organizationId != null ? optionSourceFor(field, organizationId) : null;
+  const autoCompleteRef = useRef<AutoComplete>(null);
 
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
     setSuggestions(await loadOptions(e.query));
+  }
+
+  // PrimeReact only searches once something is typed, so a freshly-focused picker is a blank box
+  // with no indication that there is anything to pick. Searching on focus with whatever the input
+  // currently holds ("" on open) gives the user the starting list immediately — for concepts that
+  // is the field's whole vocabulary, which is exactly what they would get by typing and deleting a
+  // character. Skipped for the answerTypes whose endpoint rejects an empty query (spatial units),
+  // where it would be a guaranteed-failing request.
+  function onFocus(e: React.FocusEvent<HTMLInputElement>) {
+    const query = e.target.value ?? "";
+    if (!query && !supportsEmptyQuery(field)) return;
+    // `search` is AutoComplete's own imperative entry point. The source must not be "input":
+    // that is the only one it refuses a blank query for. "dropdown" is the typed value that means
+    // "opened rather than typed into", which is exactly this case (there is no dropdown button).
+    autoCompleteRef.current?.search(e, query, "dropdown");
   }
 
   const selected = multiple
@@ -145,6 +161,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
 
   return (
     <AutoComplete
+      ref={autoCompleteRef}
       value={selected}
       suggestions={suggestions}
       completeMethod={search}
@@ -153,6 +170,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
       dropdown={false}
       disabled={readOnly}
       required={required}
+      onFocus={onFocus}
       onChange={(e) => commit(e.value as FilterOption[] | FilterOption | null)}
     />
   );

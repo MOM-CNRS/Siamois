@@ -14,7 +14,7 @@ import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import { FilterChipBar, type FilterSpec } from "../components/table/FilterChipBar";
 import { ColumnToggler, type ColumnTogglerOption } from "../components/table/ColumnToggler";
-import { renderAnswerValue } from "../fields/display";
+import { renderAnswerCell, renderAnswerValue } from "../fields/display";
 import { filterKindForAnswerType, optionSourceFor, type FilterKind, type FilterOption } from "../fields/optionSources";
 import { resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
@@ -152,7 +152,12 @@ export function EntityListPanel({
   function openCellEditor(e: SyntheticEvent, row: RowRecord, field: FieldResource) {
     e.stopPropagation();
     if (!canPatchAnswers || !canEditRow(row)) return;
-    setEditTarget({ row, field, anchor: (e.currentTarget as HTMLElement).getBoundingClientRect() });
+    // Anchored on the <td>, not on the clicked span: the span is only as wide as its text, so
+    // anchoring to it would open an editor narrower than the cell it replaces (and offset from it
+    // by the cell's padding).
+    const target = e.currentTarget as HTMLElement;
+    const cell = target.closest("td") ?? target;
+    setEditTarget({ row, field, anchor: cell.getBoundingClientRect() });
   }
 
   const dynamicColumns = useMemo<ColumnDef<RowRecord>[]>(() => {
@@ -169,27 +174,27 @@ export function EntityListPanel({
         return {
           key: field.id,
           header: field.label,
-          render: (row: RowRecord) => {
-            const display = renderAnswerValue(field, binding.read(row));
-            // Only rendered as a click target when the row's own _permissions.canEdit says so —
-            // gated server-side (ProjectApiService.patchProject's own permission check is the
-            // real enforcement; this just avoids offering a control that would 403).
-            if (!canPatchAnswers || !canEditRow(row)) return display;
-            return (
-              <span
-                className="entity-list-panel-editable-cell"
-                role="button"
-                tabIndex={0}
-                title={`Modifier « ${field.label} »`}
-                onClick={(e) => openCellEditor(e, row, field)}
-              >
-                {display || <span className="entity-list-panel-editable-cell-empty">—</span>}
-              </span>
-            );
-          },
+          // Renders the VALUE only. Whether that value is also a click target is the panel's
+          // business (see the Column body below), not the column's: the editable wrapper has to be
+          // the cell's own value slot — it eats the cell's padding to make the whole cell
+          // clickable — so it cannot be nested inside one.
+          render: (row: RowRecord) => renderAnswerCell(field, binding.read(row)),
         };
       })
       .filter((c): c is ColumnDef<RowRecord> => c != null);
+  }, [catalog, state.visibleColumns, canPatchAnswers]);
+
+  // Which columns are editable, and with which field — keyed by the ColumnDef key the body
+  // renderer below receives. Only catalog-driven columns can be: a pinned column has no
+  // FieldResource to build an AnswerInput from.
+  const editableFieldByColumn = useMemo<Map<string, FieldResource>>(() => {
+    if (!catalog || !canPatchAnswers) return new Map();
+    const byKey = new Map<string, FieldResource>();
+    for (const fieldId of state.visibleColumns) {
+      const field = catalog.fields[fieldId];
+      if (field) byKey.set(field.id, field);
+    }
+    return byKey;
   }, [catalog, state.visibleColumns, canPatchAnswers]);
 
   const togglerOptions = useMemo<ColumnTogglerOption[]>(() => {
@@ -275,6 +280,46 @@ export function EntityListPanel({
     setSelectedRows(e.value);
   }
 
+  // The cell's one value element. An editable column renders its value inside the click-to-edit
+  // box; everything else gets the plain value slot. The permission check is per ROW
+  // (_permissions.canEdit), and it is only a UI gate — ProjectApiService.patchProject is what
+  // actually enforces it; this just avoids offering a control that would 403.
+  function renderCellValue(col: ColumnDef<RowRecord>, row: RowRecord) {
+    if (col.identifier) {
+      return (
+        <span
+          className="entity-list-panel-identifier-link entity-nav-chip"
+          role="button"
+          tabIndex={0}
+          onClick={(e) => openIdentifier(e, row)}
+        >
+          <i className={config!.icon} aria-hidden="true" />
+          <span className="entity-nav-chip-label">{col.render(row)}</span>
+        </span>
+      );
+    }
+
+    const field = editableFieldByColumn.get(col.key);
+    if (!field || !canEditRow(row)) {
+      return <span className="entity-list-panel-cell-value">{col.render(row)}</span>;
+    }
+
+    const content = col.render(row);
+    return (
+      <span
+        className="entity-list-panel-editable-cell"
+        role="button"
+        tabIndex={0}
+        // The cell is one line and may be truncated, so the full text is always reachable as the
+        // native tooltip; an empty cell falls back to naming what clicking it would edit.
+        title={renderAnswerValue(field, resolveValueBinding(field).read(row)) || `Modifier « ${field.label} »`}
+        onClick={(e) => openCellEditor(e, row, field)}
+      >
+        {content || <span className="entity-list-panel-editable-cell-empty">—</span>}
+      </span>
+    );
+  }
+
   const rows = (data?.data ?? []) as RowRecord[];
   const allColumns: ColumnDef<RowRecord>[] = [...(config.list.columns as ColumnDef<RowRecord>[]), ...dynamicColumns];
 
@@ -345,6 +390,11 @@ export function EntityListPanel({
       {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}
       <DataTable
         value={rows}
+        // pages/shared/table/entityDataTable.xhtml is size="small" too — the React table had been
+        // left at the theme's default (1rem cell padding vs 0.5rem), which is a big part of why it
+        // read as much airier than the JSF one. entity-list-panel's own CSS tightens the vertical
+        // padding further on top of this.
+        size="small"
         // The table's own header, not a strip above it: the filter chips belong to the table, and
         // this is where JSF puts its filter affordance too (entityDataTable.xhtml's header facet).
         // Rendered only when there is at least one filterable column.
@@ -408,31 +458,18 @@ export function EntityListPanel({
             // CommandLinkColumn, the only cell in the real table that navigates/opens anything.
             // `leading` (the validation-status badge) renders in the same cell but outside the
             // clickable chip, exactly like JSF's merged statusIdActionsCol.
-            body={
-              col.identifier
-                ? (row: RowRecord) => (
-                    <span className="entity-list-panel-identifier-cell">
-                      {col.leading?.(row)}
-                      <span
-                        className="entity-list-panel-identifier-link entity-nav-chip"
-                        role="button"
-                        tabIndex={0}
-                        onClick={(e) => openIdentifier(e, row)}
-                      >
-                        <i className={config.icon} aria-hidden="true" />
-                        <span className="entity-nav-chip-label">{col.render(row)}</span>
-                      </span>
-                    </span>
-                  )
-                : col.leading
-                  ? (row: RowRecord) => (
-                      <span className="entity-list-panel-cell-with-leading">
-                        {col.leading?.(row)}
-                        {col.render(row)}
-                      </span>
-                    )
-                  : col.render
-            }
+            // Every cell goes through the same wrapper, so no cell is ever more than one line:
+            // .entity-list-panel-cell is the flex row (leading badge + value) and the value slot
+            // is the part that truncates with an ellipsis. Exactly one element fills that slot —
+            // the identifier chip, the editable box, or a plain value — never two nested, because
+            // the editable box has to reach out to the cell's padding edge and a clipping wrapper
+            // around it would cut that off.
+            body={(row: RowRecord) => (
+              <span className="entity-list-panel-cell">
+                {col.leading?.(row)}
+                {renderCellValue(col, row)}
+              </span>
+            )}
           />
         ))}
       </DataTable>

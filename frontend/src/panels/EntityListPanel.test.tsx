@@ -249,13 +249,20 @@ describe("EntityListPanel", () => {
     });
     await flush();
 
-    const cell = container.querySelector(".entity-list-panel-identifier-cell")!;
+    const cell = container.querySelector(".entity-list-panel-cell")!;
     expect(cell.querySelector(".test-badge")).toBeTruthy();
     const chip = cell.querySelector(".entity-nav-chip")!;
     expect(chip.querySelector(".bi-question")).toBeTruthy();
     expect(chip.textContent).toContain("Row A");
     // The badge is outside the clickable chip — only the chip opens the entity.
     expect(chip.querySelector(".test-badge")).toBeFalsy();
+  });
+
+  it("renders the table in PrimeReact's small size, like the JSF p:dataTable", async () => {
+    renderPanel();
+    await flush();
+
+    expect(container.querySelector(".p-datatable.p-datatable-sm")).toBeTruthy();
   });
 
   it("wraps every column header so it stays on one line, keeping the full label as a tooltip", async () => {
@@ -425,6 +432,49 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     expect(schemaListMock).toHaveBeenLastCalledWith(expect.objectContaining({ fields: "-118" }));
     expect(container.textContent).toContain("Statut");
     expect(container.textContent).toContain("En cours");
+  });
+
+  it("collapses a multi-valued dynamic cell to its first label plus a +N counter", async () => {
+    schemaLoadMock.mockResolvedValue({
+      fields: {
+        "-120": {
+          id: "-120",
+          resourceType: "fields",
+          label: "Périodes",
+          answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE",
+          isSystemField: false,
+        },
+      },
+      columns: [{ fieldId: "-120", visible: true, order: 0 }],
+    });
+    schemaListMock.mockResolvedValue({
+      data: [
+        {
+          id: "1",
+          name: "Row A",
+          answers: {
+            "-120": [
+              { resourceId: "1", resourceType: "concepts", label: "Néolithique" },
+              { resourceId: "2", resourceType: "concepts", label: "Âge du Fer" },
+            ],
+          },
+        },
+      ],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    const cell = container.querySelector(".cell-multi")!;
+    expect(cell).toBeTruthy();
+    expect(cell.querySelector(".cell-multi-first")!.textContent).toBe("Néolithique");
+    expect(cell.querySelector(".cell-multi-more")!.textContent).toBe("+1");
+    // The second label only exists as the counter's tooltip, not as visible text that would push
+    // the cell onto a second line.
+    expect(cell.querySelector(".cell-multi-more")!.getAttribute("title")).toBe("Néolithique, Âge du Fer");
   });
 
   it("does not request a fields param for a config without a schema", async () => {
@@ -634,6 +684,33 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
       );
     });
   }
+
+  it("anchors the editor on the whole cell, not on the clicked text span", async () => {
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: true } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    const cell = container.querySelector(".entity-list-panel-editable-cell") as HTMLElement;
+    const td = cell.closest("td") as HTMLElement;
+    // jsdom gives everything a zero rect, so the two have to be told apart explicitly.
+    cell.getBoundingClientRect = () => ({ top: 50, left: 60, width: 30, height: 16 }) as DOMRect;
+    td.getBoundingClientRect = () => ({ top: 44, left: 8, width: 240, height: 28 }) as DOMRect;
+
+    await act(async () => {
+      cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    const overlay = document.body.querySelector(".cell-edit-overlay") as HTMLElement;
+    expect(overlay.style.top).toBe("44px");
+    expect(overlay.style.left).toBe("8px");
+  });
 
   it("opens the edit overlay on a dynamic cell click when the row's _permissions.canEdit is true", async () => {
     schemaListMock.mockResolvedValue({

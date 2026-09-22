@@ -577,8 +577,41 @@ One shared editor owned by `EntityListPanel`, anchored to the clicked cell and i
 > change: immediately for `SELECT_*`/`DATETIME` (one interaction = one final value), and on Enter or on focus
 > leaving the editor for text/number (per-keystroke saving would be one PATCH + one refetch per character).
 > Escape still cancels; a failed save keeps the editor open with the server's message. An unchanged value
-> issues no PATCH. Editable cells get a hover/focus style and a pointer cursor so the affordance is visible
-> before clicking.
+> issues no PATCH. A **multi-valued** field is the one exception to "save then close": each pick is saved as
+> it happens but the editor stays open, since one pick is not the whole answer and closing would force a
+> reopen per value. The outside-click-commits handler must **ignore mousedowns inside
+> `[class*="p-connected-overlay"]`** — every PrimeReact popup (the autocomplete suggestion list, the date
+> picker) is portalled to `document.body`, so it is "outside" the editor by DOM containment while being part
+> of the edit; without that check, clicking a suggestion closes the editor before the click lands and
+> nothing is ever saved. Editable cells get a hover/focus style and a pointer cursor so the affordance is visible
+> before clicking. The editor **focuses its widget on open** (and selects the text, as JSF's own identifier
+> edit does), so a click leaves the user ready to type; that focus also triggers an autocomplete picker's
+> initial search, so the options are on screen before anything is typed. Note the two option endpoints
+> differ on a blank query: `/organizations/{id}/concepts` returns the whole vocabulary, while
+> `/places/autocomplete` answers **400** on an empty `q` — `optionSourceFor` short-circuits the latter
+> rather than firing a request that cannot succeed (`supportsEmptyQuery`).
+>
+> The hit area is the **whole cell**, not the value's text: the editable box eats the cell's own padding
+> (negative margins out to the `<td>`'s padding edge, the same padding added back inside), so the highlight
+> is its own background, painted under its own text. Do *not* go back to an inset, absolutely positioned
+> `::before` for this — a positioned pseudo-element paints with the positioned descendants, i.e. **after**
+> the element's inline content, so it hides the value. That also means the editable box must BE the cell's
+> value slot, never nested inside one (a clipping wrapper would cut off the negative margins), which is why
+> `EntityListPanel` — not the column's `render` — decides whether a cell is a click target. The editor is
+> anchored on that `<td>`'s rect for the same reason, and carries `p-fluid` so whatever widget the registry
+> hands it fills the cell width. The table itself runs
+> `size="small"`, matching `entityDataTable.xhtml`, with the vertical cell padding tightened further on top
+> of it (`--cell-pad-y`/`--cell-pad-x` in `frontend/src/styles/main-panel.css` are the single source of
+> truth, shared by the cells and the hit area).
+>
+> **No cell is ever multi-line.** Every cell body goes through one wrapper
+> (`.entity-list-panel-cell` + `.entity-list-panel-cell-value`) that truncates with an ellipsis, full text on
+> the native tooltip — a wrapped value would set the height of the whole row, every column included. A
+> multi-valued answer (`SELECT_MULTIPLE_*`) renders as **first label + `+N`** rather than a comma-joined
+> list, which would just be a long string cut mid-label and read as a truncated single value: see
+> `renderAnswerCell` in `frontend/src/fields/display.tsx` (`renderAnswerValue` stays the plain-text version,
+> used for the tooltip). The `+N` counter is `flex: none` so the truncation never eats it, and carries the
+> full list as its own tooltip.
 - **Fix a collision first:** `EntityListPanel`'s `onRowClick` currently fires on *any* cell. Once cells are
   editable, navigation must move onto the identifier column's body only — matching JSF, where only the
   `CommandLinkColumn` navigates. Non-editable cells then do nothing.

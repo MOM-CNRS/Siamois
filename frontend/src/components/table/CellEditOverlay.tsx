@@ -40,6 +40,11 @@ export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
   onClose: () => void;
 }
 
+// Matches p-connected-overlay-enter / -enter-active / -enter-done / -exit…: the CSSTransition
+// class names every PrimeReact connected popup (AutoComplete, Calendar, Dropdown, MultiSelect, …)
+// puts on its portalled root.
+const PRIMEREACT_POPUP_SELECTOR = '[class*="p-connected-overlay"]';
+
 function sameValue(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null && b == null) return true;
@@ -61,24 +66,32 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   // The value the cell held when the overlay opened — the baseline every "did it actually change?"
   // check compares against, so closing an untouched overlay issues no PATCH at all.
   const initialRef = useRef<unknown>(undefined);
-  // Set by Escape, and while a save is in flight, so the close paths below don't re-save.
-  const skipSaveRef = useRef(false);
+  // Escape only: the one path that must discard the edit instead of committing it.
+  const cancelledRef = useRef(false);
+  // Guards against two saves overlapping (e.g. a value change and an outside click landing on the
+  // same tick). Deliberately a ref, not the `saving` state: it has to be readable synchronously.
+  const savingRef = useRef(false);
 
-  useEffect(() => {
-    if (!target) return;
-    const binding = resolveValueBinding(target.field);
-    const current = binding.read(target.row);
+  // Seeded during render rather than in an effect (React's "adjust state when a prop changes"
+  // pattern): an effect would seed the draft only after the first commit, so the focus effect
+  // below would select an input that is still empty, and the value would land in it afterwards
+  // with the caret at the end.
+  const [seededTarget, setSeededTarget] = useState<CellEditTarget<TRow> | null>(null);
+  if (target !== seededTarget) {
+    const current = target ? resolveValueBinding(target.field).read(target.row) : undefined;
     initialRef.current = current;
-    skipSaveRef.current = false;
+    cancelledRef.current = false;
+    setSeededTarget(target);
     setDraft(current);
     setError(null);
-  }, [target]);
+  }
 
   const save = useCallback(
     async (value: unknown): Promise<boolean> => {
       if (!target || target.row.id == null) return false;
       if (sameValue(value, initialRef.current)) return true;
-      skipSaveRef.current = true;
+      if (savingRef.current) return false;
+      savingRef.current = true;
       setSaving(true);
       setError(null);
       try {
@@ -90,9 +103,9 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
         // Surfaces ProjectApiService's own message inline — in particular the 409 from a duplicate
         // identifier (ActionUnitAlreadyExistsException), matching JSF's handleLinkEdit validation.
         setError(e instanceof ApiError ? e.message : "La modification a échoué.");
-        skipSaveRef.current = false;
         return false;
       } finally {
+        savingRef.current = false;
         setSaving(false);
       }
     },
@@ -101,11 +114,33 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
 
   const saveAndClose = useCallback(
     async (value: unknown) => {
-      if (skipSaveRef.current) return;
+      if (cancelledRef.current) return;
       if (await save(value)) onClose();
     },
     [save, onClose],
   );
+
+  // The editor opens on a click, so the user's hands are already on the mouse and their intent is
+  // already "change this value" — landing them on a box they still have to click into is a wasted
+  // step. Focusing the widget's own control also starts an autocomplete picker's initial search
+  // (fields/renderers.tsx searches on focus), so the options are on screen before anything is
+  // typed. Text is selected so typing replaces the current value, matching what JSF's own
+  // identifier edit does (entityDataTable.xhtml: .trigger('focus').trigger('select')).
+  //
+  // Deliberately done by reaching into the DOM rather than by passing an `autoFocus` prop through
+  // FieldRendererProps: renderers are a registry any module can add to, and this way a renderer
+  // written later gets the behaviour without knowing about it.
+  useEffect(() => {
+    if (!target) return;
+    const control = boxRef.current?.querySelector<HTMLElement>("input, textarea, select");
+    if (!control) return;
+    control.focus();
+    if (control instanceof HTMLInputElement && control.type !== "checkbox" && control.type !== "radio") {
+      control.select();
+    } else if (control instanceof HTMLTextAreaElement) {
+      control.select();
+    }
+  }, [target]);
 
   // Focus leaving the overlay (a click elsewhere, Tab) is what "the edit is finished" means for a
   // text/number widget. Mousedown rather than click: a click on another cell would otherwise open
@@ -116,7 +151,15 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
     if (!target) return;
     function onPointerDown(e: globalThis.MouseEvent) {
       const box = boxRef.current;
-      if (!box || box.contains(e.target as Node)) return;
+      const clicked = e.target instanceof Element ? e.target : null;
+      if (!box || !clicked || box.contains(clicked)) return;
+      // A widget's own popup (the autocomplete suggestion list, the date picker) is portalled to
+      // document.body, so it is "outside" this box by DOM containment while being very much part
+      // of the edit in progress. Without this, picking a suggestion is an outside mousedown: the
+      // editor closes before the click reaches the item, and nothing is ever saved. Every
+      // PrimeReact popup shares the p-connected-overlay transition classes, so one check covers
+      // them all — including widgets from renderers added to the registry later.
+      if (clicked.closest(PRIMEREACT_POPUP_SELECTOR)) return;
       void saveAndClose(draftRef.current);
     }
     document.addEventListener("mousedown", onPointerDown, true);
@@ -131,16 +174,22 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   // One interaction produces one final value for these, so there is no "still typing" state to
   // wait through — save as soon as it changes, which is what the user asked for literally.
   const commitsImmediately = field.answerType.startsWith("SELECT_") || field.answerType === "DATETIME";
+  // ...except for a multi-valued field, where one pick is not the whole answer: each pick is saved
+  // as it happens, but the editor stays open so the next one doesn't need a reopen. It closes on
+  // the outside click / Escape like everything else.
+  const staysOpenAfterSave = field.answerType.startsWith("SELECT_MULTIPLE");
 
   function onValueChange(value: unknown) {
     setDraft(value);
-    if (commitsImmediately) void saveAndClose(value);
+    if (!commitsImmediately) return;
+    if (staysOpenAfterSave) void save(value);
+    else void saveAndClose(value);
   }
 
   function onKeyDown(e: ReactKeyboardEvent) {
     if (e.key === "Escape") {
       e.stopPropagation();
-      skipSaveRef.current = true;
+      cancelledRef.current = true;
       onClose();
     } else if (e.key === "Enter" && !commitsImmediately) {
       e.preventDefault();
@@ -151,7 +200,10 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   return createPortal(
     <div
       ref={boxRef}
-      className={`cell-edit-overlay${saving ? " cell-edit-overlay-saving" : ""}`}
+      // p-fluid is PrimeReact's own "inputs fill their container" class: it covers every widget,
+      // including ones a renderer added to the registry later would use, which a hand-written list
+      // of width rules per component would not.
+      className={`cell-edit-overlay p-fluid${saving ? " cell-edit-overlay-saving" : ""}`}
       style={{
         position: "fixed",
         top: `${anchor.top}px`,

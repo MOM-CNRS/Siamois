@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
 import { registerDefaultFieldRenderers } from "../../fields/registerDefaultRenderers";
+import { registerFieldRenderer } from "../../fields/registry";
 import { ApiError } from "../../api/client";
 import { CellEditOverlay, type CellEditTarget } from "./CellEditOverlay";
 import type { FieldResource } from "../../fields/types";
@@ -10,10 +11,42 @@ import type { FieldResource } from "../../fields/types";
 
 registerDefaultFieldRenderers();
 
+// Stand-ins for the two "commits immediately" shapes, so a value change can be triggered directly
+// instead of by driving PrimeReact's AutoComplete through a real suggestion click. They keep the
+// SELECT_ONE_/SELECT_MULTIPLE_ prefixes the overlay branches on.
+function picker(pickedValue: unknown) {
+  return function PickerRenderer({ onChange }: { onChange: (value: unknown) => void }) {
+    return (
+      <button type="button" className="test-pick" onClick={() => onChange(pickedValue)}>
+        pick
+      </button>
+    );
+  };
+}
+registerFieldRenderer("SELECT_ONE_TEST", picker("picked"));
+// A SELECT_MULTIPLE renderer's onChange carries the whole selection, not the one item picked.
+registerFieldRenderer("SELECT_MULTIPLE_TEST", picker(["picked"]));
+
 interface Row {
   id: string;
   oaCode?: string;
 }
+
+const singleSelectField: FieldResource = {
+  id: "-118",
+  resourceType: "fields",
+  label: "Statut",
+  answerType: "SELECT_ONE_TEST",
+  isSystemField: false,
+};
+
+const multiSelectField: FieldResource = {
+  id: "-120",
+  resourceType: "fields",
+  label: "Périodes",
+  answerType: "SELECT_MULTIPLE_TEST",
+  isSystemField: false,
+};
 
 const textField: FieldResource = {
   id: "-109",
@@ -117,6 +150,16 @@ describe("CellEditOverlay", () => {
     expect(style.left).toBe("40px");
   });
 
+  it("focuses the field and selects its text on open, so the user can type straight away", async () => {
+    renderOverlay({ target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR } });
+    await flush();
+
+    const input = overlayInput();
+    expect(document.activeElement).toBe(input);
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe("OA-2024".length);
+  });
+
   it("saves on Enter with the row id and an AnswerInput-shaped map keyed by field id, then closes", async () => {
     const { onSave, onSaved, onClose } = renderOverlay({
       target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
@@ -168,6 +211,65 @@ describe("CellEditOverlay", () => {
 
     expect(onSave).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not close on a mousedown inside a widget's own portalled popup", async () => {
+    // The AutoComplete suggestion list lives in document.body, not inside the editor: treating it
+    // as an outside click closed the editor before the click reached the item, so picking a
+    // suggestion saved nothing at all.
+    const { onSave, onClose } = renderOverlay({
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
+    });
+    await flush();
+
+    const popup = document.createElement("div");
+    popup.className = "p-autocomplete-panel p-component p-connected-overlay-enter-done";
+    const item = document.createElement("li");
+    popup.appendChild(item);
+    document.body.appendChild(popup);
+
+    await act(async () => {
+      item.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
+    await flush();
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onSave).not.toHaveBeenCalled();
+    popup.remove();
+  });
+
+  it("saves and closes as soon as a single-valued select changes — no Enter needed", async () => {
+    const { onSave, onClose } = renderOverlay({
+      target: { row: { id: "1" }, field: singleSelectField, anchor: ANCHOR },
+    });
+    await flush();
+
+    const pick = document.body.querySelector(".test-pick") as HTMLElement;
+    await act(async () => {
+      pick.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(onSave).toHaveBeenCalledWith("1", { "-118": { value: "picked" } });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves each pick of a multi-valued field but stays open for the next one", async () => {
+    const { onSave, onClose } = renderOverlay({
+      target: { row: { id: "1" }, field: multiSelectField, anchor: ANCHOR },
+    });
+    await flush();
+
+    const pick = document.body.querySelector(".test-pick") as HTMLElement;
+    await act(async () => {
+      pick.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    // One pick is not the whole answer — closing here would force a reopen per value.
+    expect(onSave).toHaveBeenCalledWith("1", { "-120": { values: ["picked"] } });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(overlayEl()).not.toBeNull();
   });
 
   it("cancels on Escape without saving", async () => {

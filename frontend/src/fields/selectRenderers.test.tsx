@@ -202,3 +202,68 @@ describe("SelectOneSpatialUnitRenderer", () => {
     expect(input.value).toBe("Lyon");
   });
 });
+
+describe("picker opening (search on focus)", () => {
+  async function flush() {
+    await act(async () => {
+      for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  it("runs an empty-query search as soon as a concept picker gets focus, and shows the options", async () => {
+    const loader = vi.fn().mockResolvedValue([
+      { id: "7", label: "En cours" },
+      { id: "8", label: "Terminé" },
+    ]);
+    mockedOptionSourceFor.mockReturnValue(loader);
+
+    act(() => {
+      root.render(
+        <SelectOneConceptRenderer
+          field={conceptField()}
+          value={null}
+          readOnly={false}
+          required={false}
+          onChange={() => {}}
+          organizationId={100}
+        />,
+      );
+    });
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    await act(async () => {
+      input.focus();
+    });
+    await flush();
+
+    expect(loader).toHaveBeenCalledWith("");
+    // PrimeReact's AutoComplete overlay portals into document.body.
+    expect(document.body.textContent).toContain("En cours");
+  });
+
+  it("does not search on focus for a spatial-unit picker, whose endpoint rejects a blank query", async () => {
+    const loader = vi.fn().mockResolvedValue([]);
+    mockedOptionSourceFor.mockReturnValue(loader);
+
+    act(() => {
+      root.render(
+        <SelectOneSpatialUnitRenderer
+          field={conceptField({ answerType: "SELECT_ONE_SPATIAL_UNIT", fieldCode: null })}
+          value={null}
+          readOnly={false}
+          required={false}
+          onChange={() => {}}
+          organizationId={100}
+        />,
+      );
+    });
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    await act(async () => {
+      input.focus();
+    });
+    await flush();
+
+    expect(loader).not.toHaveBeenCalled();
+  });
+});

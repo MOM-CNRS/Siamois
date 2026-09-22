@@ -142,15 +142,64 @@
   gap: 0.4rem;
 }
 
-/* --------------------------------------------- merged status + identifier cell */
+/* ------------------------------------------------------------- one-line cells */
 
-.entity-list-panel-identifier-cell,
-.entity-list-panel-cell-with-leading {
-  display: inline-flex;
+/*
+ * No cell is ever more than one line: a wrapped value makes that whole row taller, and in a dense
+ * table one long free-text answer would set the height for every column on the row. The value
+ * truncates with an ellipsis instead, with the full text on the native tooltip.
+ */
+.entity-list-panel-cell {
+  display: flex;
   align-items: center;
   gap: 0.4rem;
+  min-width: 0;
   white-space: nowrap;
 }
+
+.entity-list-panel-cell-value,
+.entity-list-panel-editable-cell {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * A multi-valued answer: first label + "+N". The counter must survive the truncation — it is the
+ * only thing telling the user there is more — so it is flex: none and only the first label
+ * shrinks.
+ */
+.cell-multi {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.cell-multi-first {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-multi-more {
+  flex: none;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--surface-200, #e9ecef);
+  color: var(--text-color-secondary, #6c757d);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  cursor: default;
+}
+
+/* --------------------------------------------- merged status + identifier cell */
+
 
 /* Same icon/colour vocabulary as /panel/header/validationButton.xhtml, minus the button: the JSF
    list renders that control disabled, so it is a badge here. */
@@ -194,17 +243,47 @@
   white-space: nowrap;
 }
 
+/* ----------------------------------------------------------------- density */
+
+/*
+ * On top of the table's own size="small" (0.5rem padding): the rows only ever hold one line of
+ * text, so most of that vertical padding is dead space. Horizontal padding is left alone — it is
+ * what keeps adjacent columns readable as separate columns.
+ *
+ * These two are the single source of truth for cell padding: the click-to-edit hit area below
+ * mirrors them so it lines up with the cell exactly.
+ */
+.entity-list-panel {
+  --cell-pad-y: 0.3rem;
+  --cell-pad-x: 0.5rem;
+}
+
+.entity-list-panel .p-datatable-thead > tr > th,
+.entity-list-panel .p-datatable-tbody > tr > td {
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+}
+
+
 /* ------------------------------------------------------------ click-to-edit cell */
 
+/*
+ * The hit area is the WHOLE cell, not just the text: a click anywhere in the column's width opens
+ * the editor, and the hover highlight covers the cell so it is obvious what is about to be edited.
+ *
+ * It gets there by eating the cell's own padding — negative margins out to the <td>'s padding
+ * edge, the same padding added back inside — so the highlight is this element's own background,
+ * painted underneath its own text. (The earlier version used an inset, absolutely positioned
+ * ::before; a positioned pseudo-element paints with the positioned descendants, i.e. AFTER the
+ * element's inline content, so it covered the value instead of sitting behind it.)
+ */
 .entity-list-panel-editable-cell {
-  display: inline-block;
-  min-width: 2rem;
-  max-width: 100%;
-  padding: 0.1rem 0.35rem;
-  margin: -0.1rem -0.35rem;
-  border-radius: 4px;
-  cursor: pointer;
+  /* The 1px border is part of the box, so the margin pulls back one extra pixel to keep the value
+     on exactly the same baseline and x-position as a non-editable cell's. */
+  margin: calc(-1 * var(--cell-pad-y) - 1px) calc(-1 * var(--cell-pad-x) - 1px);
+  padding: var(--cell-pad-y) var(--cell-pad-x);
   border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
 }
 
 .entity-list-panel-editable-cell:hover,
@@ -222,17 +301,10 @@
 .cell-edit-overlay {
   z-index: 1200;
   box-sizing: border-box;
-  padding: 0.15rem;
+  padding: 0;
   border-radius: 4px;
   background: var(--surface-0, #fff);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-}
-
-.cell-edit-overlay .p-inputtext,
-.cell-edit-overlay .p-inputnumber,
-.cell-edit-overlay .p-autocomplete,
-.cell-edit-overlay .p-calendar {
-  width: 100%;
 }
 
 .cell-edit-overlay-saving {

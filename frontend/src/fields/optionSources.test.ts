@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../api/client";
-import { fetchConceptOptions, fetchPlaceOptions, filterKindForAnswerType, optionSourceFor } from "./optionSources";
+import { fetchConceptOptions, fetchPlaceOptions, filterKindForAnswerType, optionSourceFor, supportsEmptyQuery } from "./optionSources";
 import type { FieldResource } from "./types";
 
 vi.mock("../api/client", () => ({ apiFetch: vi.fn() }));
@@ -101,8 +101,33 @@ describe("optionSourceFor", () => {
     expect(mockedApiFetch.mock.calls[0][0]).toContain("/places/autocomplete?");
   });
 
+  it("short-circuits an empty spatial-unit query instead of firing a request the API rejects", async () => {
+    const loader = optionSourceFor(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }), 100);
+    expect(await loader?.("")).toEqual([]);
+    expect(await loader?.("   ")).toEqual([]);
+    expect(await loader?.(undefined)).toEqual([]);
+    // PlaceSearchControllerApi#autocomplete answers 400 on a blank q — no call must be made.
+    expect(mockedApiFetch).not.toHaveBeenCalled();
+  });
+
+  it("lets an empty concept query through — the endpoint returns the whole vocabulary for it", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [] });
+    const loader = optionSourceFor(field({ fieldCode: "SIARU.STATUS" }), 100);
+    await loader?.("");
+    expect(mockedApiFetch).toHaveBeenCalledTimes(1);
+    expect(mockedApiFetch.mock.calls[0][0]).not.toContain("q=");
+  });
+
   it("returns null for an answerType with no option source (e.g. TEXT, DECIMAL)", () => {
     expect(optionSourceFor(field({ answerType: "TEXT" }), 100)).toBeNull();
     expect(optionSourceFor(field({ answerType: "DECIMAL" }), 100)).toBeNull();
+  });
+});
+
+describe("supportsEmptyQuery", () => {
+  it("is true for concept-backed fields and false for spatial units", () => {
+    expect(supportsEmptyQuery(field({ answerType: "SELECT_ONE_FROM_FIELD_CODE" }))).toBe(true);
+    expect(supportsEmptyQuery(field({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" }))).toBe(true);
+    expect(supportsEmptyQuery(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }))).toBe(false);
   });
 });
