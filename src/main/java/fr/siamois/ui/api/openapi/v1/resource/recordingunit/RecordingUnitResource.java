@@ -1,9 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
-import fr.siamois.ui.api.openapi.v1.resource.form.FieldAnswer;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,14 +31,29 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
     @Nullable
     private GeometryDTO geom;
 
-    @Schema(description = "Valeurs de tous les champs formulaire (système et custom), indexées par fieldId. "
-            + "Chaque entrée embarque sa définition (label, answerType, hint, etc.).")
-    private Map<String, FieldAnswer> answers;
+    // Two shapes share this one field, by endpoint: the detail (buildMobileDetail) sets it to
+    // Map<String, FieldAnswer> — each entry embeds its own field definition, since the detail is
+    // the one place a client can't have fetched a catalog first. The list
+    // (GET /api/v1/projects/{id}/recording-units?fields=…) sets it to raw values instead, exactly
+    // like ProjectResource.answers — the client already has the field catalog from
+    // GET /api/v1/projects/{id}/recording-unit-types, so shipping the definition again on every row
+    // would be pure overhead. fields/types.ts's unwrapAnswer already handles both on the client.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Valeurs des champs formulaire, indexées par fieldId. Sur le détail, chaque entrée "
+            + "embarque sa définition (enveloppe FieldAnswer) ; sur la liste, valeurs brutes comme "
+            + "ProjectResource.answers — le catalogue de champs est à récupérer séparément.")
+    private Map<String, Object> answers;
 
     @JsonProperty("_counts")
     private RecordingUnitResourceCounts count;
 
     @JsonProperty("_links")
     private RecordingUnitResourceLinks links;
+
+    @JsonProperty("_permissions")
+    @Schema(description = "Droits du caller sur cette unité d'enregistrement — seulement renseigné par la "
+            + "liste aujourd'hui (GET /api/v1/projects/{id}/recording-units), un booléen par page puisque "
+            + "toutes les lignes partagent le même projet.")
+    private ProjectResourcePermissions permissions;
 
 }

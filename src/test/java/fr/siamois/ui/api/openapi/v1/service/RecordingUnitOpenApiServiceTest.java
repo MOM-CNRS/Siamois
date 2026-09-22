@@ -2217,6 +2217,82 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
+    void buildProjectRecordingUnitTypeSettings_exposesTableColumnDefaultsFromTheSharedSource() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), isNull()))
+                .thenReturn(new FormUiDto());
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of());
+
+        ProjectRecordingUnitTypeListResponse response =
+                service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
+
+        List<fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource> tableColumns =
+                response.getDefaultType().getTableColumns();
+        assertThat(tableColumns).hasSize(fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults.columns().size());
+        assertThat(tableColumns)
+                .filteredOn(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::visible)
+                .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)
+                .containsExactlyInAnyOrder("isPartOf", "contains", "action", "type", "phases", "spatial", "author");
+        assertThat(tableColumns)
+                .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)
+                .doesNotHaveDuplicates();
+        assertThat(tableColumns.get(0).order()).isZero();
+        assertThat(tableColumns.get(tableColumns.size() - 1).order()).isEqualTo(tableColumns.size() - 1);
+    }
+
+    @Test
+    void buildProjectRecordingUnitTypeSettings_rootFieldsIsUnionOfDefaultAndPerTypeFields_typeOverrideWins() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        // A field present only on the default form.
+        CustomFieldText defaultOnlyField = new CustomFieldText();
+        defaultOnlyField.setId(45L);
+        defaultOnlyField.setLabel("Champ par défaut");
+        defaultOnlyField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), isNull()))
+                .thenReturn(formUiDtoWithOneField(defaultOnlyField));
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+
+        // The same field id, relabeled by the type's own effective form — the type's version must win
+        // at the root, and a field present ONLY on this type must still surface at the root.
+        CustomFieldText overriddenField = new CustomFieldText();
+        overriddenField.setId(45L);
+        overriddenField.setLabel("Champ par défaut (redéfini par le type)");
+        overriddenField.setIsSystemField(true);
+        CustomFieldText typeOnlyField = new CustomFieldText();
+        typeOnlyField.setId(46L);
+        typeOnlyField.setLabel("Champ propre au type");
+        typeOnlyField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(RecordingUnit.DETAILS_FORM, 5L, ConfigurableTable.UE, 42L))
+                .thenReturn(formUiDtoWithFields(overriddenField, typeOnlyField));
+
+        ProjectRecordingUnitTypeListResponse response =
+                service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
+
+        assertThat(response.getFields()).containsKey("45");
+        assertThat(response.getFields()).containsKey("46");
+        assertThat(response.getFields().get("45").label()).isEqualTo("Champ par défaut (redéfini par le type)");
+    }
+
+    @Test
     void buildProjectFindTypeSettings_projectWithoutOrganization_throws400() {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);

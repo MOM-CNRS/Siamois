@@ -22,13 +22,13 @@
         return (name && typeof window[name] === "function") ? window[name] : undefined;
     }
 
-    // Unlike the other actions, this one takes an argument — the id of the entity to open in the
-    // overview (entityType is accepted for shape parity with the React side but unused server-side
-    // today: the remoteCommand this calls is action-unit-specific, see
-    // FlowBean.addActionUnitToOverviewFromRequest).
+    // Unlike the other actions, this one takes arguments — the type and id of the entity to open
+    // in the overview. Both are sent to the server: FlowBean.addEntityToOverviewFromRequest
+    // dispatches on entityType to build the right overview panel (an action unit and a recording
+    // unit sharing the same numeric id are two different entities server-side).
     function setOverviewFn(name) {
         var fn = actionFn(name);
-        return fn ? function (entityType, id) { return fn({ id: id }); } : undefined;
+        return fn ? function (entityType, id) { return fn({ entityType: entityType, id: id }); } : undefined;
     }
 
     function mountContainer(container) {
@@ -44,6 +44,11 @@
             overviewEntityId: d.overviewEntityId || undefined,
             organizationId: d.organizationId ? Number(d.organizationId) : undefined,
             overviewOrganizationId: d.overviewOrganizationId ? Number(d.overviewOrganizationId) : undefined,
+            // FlowBean.isWriteMode — the topbar's global read/write switch (pages/shared/topbar.xhtml).
+            // No event bridge is needed for changes: that switch's p:ajax does update="flow", which
+            // replaces this very container, so React is remounted with the new value (the
+            // data-mounted guard below is what makes that a remount rather than a duplicate mount).
+            writeMode: d.writeMode === "true",
             basePath: d.basePath || "",
             csrf: { headerName: d.csrfHeader, token: d.csrfToken },
             main: {

@@ -8,6 +8,7 @@ import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderer
 registerDefaultFieldRenderers();
 import type { EntityTypeConfig, PagedResult } from "../entities/types";
 import { EntityListPanel } from "./EntityListPanel";
+import { WriteModeProvider } from "./writeMode";
 
 // Some PrimeReact internals (ripple, resize listeners) schedule state updates outside any act()
 // call this file makes; this flag is React 18's own escape hatch for that noise and doesn't
@@ -29,6 +30,7 @@ const listMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeRow>>>();
 const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
   key: "fake-entity",
   labels: { singular: "Fake", plural: "Fakes" },
+  collectionPath: "fake-entities",
   icon: "bi bi-question",
   api: {
     list: listMock,
@@ -60,6 +62,7 @@ function renderPanel(
   act(() => {
     root.render(
       <QueryClientProvider client={queryClient}>
+        <WriteModeProvider value={true}>
         <EntityListPanel
           entityType="fake-entity"
           onNavigate={onNavigate}
@@ -67,6 +70,7 @@ function renderPanel(
           onOpenOverview={onOpenOverview}
           overviewEntityId={overviewEntityId}
         />
+        </WriteModeProvider>
       </QueryClientProvider>,
     );
   });
@@ -108,7 +112,7 @@ describe("EntityListPanel", () => {
     await flush();
 
     expect(listMock).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 0, limit: 10, sort: "name:asc", search: undefined }),
+      expect.objectContaining({ offset: 0, limit: 20, sort: "name:asc", search: undefined }),
     );
     expect(container.textContent).toContain("Row A");
   });
@@ -243,7 +247,9 @@ describe("EntityListPanel", () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
+        <WriteModeProvider value={true}>
           <EntityListPanel entityType="fake-leading-entity" />
+          </WriteModeProvider>
         </QueryClientProvider>,
       );
     });
@@ -306,10 +312,12 @@ describe("EntityListPanel", () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
+        <WriteModeProvider value={true}>
           <EntityListPanel
             entityType="fake-entity"
             toolbar={{ chrome: { resourceUri: "/fake", title: "Fakes", bookmarked: false }, actions: { refresh: () => {} } }}
           />
+          </WriteModeProvider>
         </QueryClientProvider>,
       );
     });
@@ -338,7 +346,7 @@ describe("EntityListPanel", () => {
     expect(chipsAfter).toContain("1/1");
   });
 
-  it("defaults to 10 rows per page with 10/25/50 as the paginator options (parity with defaultPageSize)", async () => {
+  it("defaults to 20 rows per page with 20/50/100 as the paginator options", async () => {
     renderPanel();
     await flush();
 
@@ -352,7 +360,9 @@ describe("EntityListPanel", () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
+        <WriteModeProvider value={true}>
           <EntityListPanel entityType="does-not-exist" />
+          </WriteModeProvider>
         </QueryClientProvider>,
       );
     });
@@ -379,6 +389,7 @@ const patchAnswersMock = vi.fn();
 const fakeSchemaConfig: EntityTypeConfig<FakeFormRow, FakeFormRow> = {
   key: "fake-schema-entity",
   labels: { singular: "FakeS", plural: "FakeSs" },
+  collectionPath: "fake-schema-entities",
   icon: "bi bi-question",
   api: {
     list: schemaListMock,
@@ -418,7 +429,9 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
+        <WriteModeProvider value={true}>
           <EntityListPanel entityType="fake-schema-entity" />
+          </WriteModeProvider>
         </QueryClientProvider>,
       );
     });
@@ -494,6 +507,7 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     registerEntityType({
       key: "fake-bare-entity",
       labels: { singular: "Bare", plural: "Bares" },
+      collectionPath: "fake-bare-entities",
       icon: "bi bi-question",
       api: { list: bareListMock, get: vi.fn() },
       list: { columns: [{ key: "name", header: "Name", render: (row) => row.name }], searchable: false },
@@ -505,7 +519,9 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
+        <WriteModeProvider value={true}>
           <EntityListPanel entityType="fake-bare-entity" />
+          </WriteModeProvider>
         </QueryClientProvider>,
       );
     });
@@ -540,6 +556,7 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     registerEntityType({
       key: "fake-gear-order-entity",
       labels: { singular: "Geared", plural: "Geareds" },
+      collectionPath: "fake-gear-order-entities",
       icon: "bi bi-question",
       api: { list: bothListMock, get: vi.fn() },
       list: {
@@ -555,7 +572,9 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
+        <WriteModeProvider value={true}>
           <EntityListPanel entityType="fake-gear-order-entity" />
+          </WriteModeProvider>
         </QueryClientProvider>,
       );
     });
@@ -674,16 +693,37 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
     patchAnswersMock.mockResolvedValue({});
   });
 
-  function renderSchemaPanel() {
+  function renderSchemaPanel(writeMode = true) {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
+        <WriteModeProvider value={writeMode}>
           <EntityListPanel entityType="fake-schema-entity" />
+          </WriteModeProvider>
         </QueryClientProvider>,
       );
     });
   }
+
+  // entityDataTable.xhtml gates an editable cell on isRendered(col, "writeMode", item): the app's
+  // global read/write switch AND the row's own permission, the same two-part rule the fiche and the
+  // panel header follow.
+  it("offers no editable cell in read mode, even for a row the user may edit", async () => {
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: true } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    renderSchemaPanel(false);
+    await flush();
+    await flush();
+
+    expect(container.querySelector(".entity-list-panel-editable-cell")).toBeNull();
+    // The value is still shown — read mode removes the control, not the data.
+    expect(container.textContent).toContain("En cours");
+  });
 
   it("anchors the editor on the whole cell, not on the clicked text span", async () => {
     schemaListMock.mockResolvedValue({
@@ -804,5 +844,188 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
     expect(patchAnswersMock).toHaveBeenCalledWith("1", { "-118": { value: "Terminé" } });
     // Cache invalidation triggers a refetch of the list.
     expect(schemaListMock).toHaveBeenCalled();
+  });
+});
+
+describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
+  function renderFor(entityType: string) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel entityType={entityType} />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  function headerCells(): HTMLElement[] {
+    return Array.from(container.querySelectorAll(".p-datatable-thead > tr > th"));
+  }
+
+  it("makes the table body the scrolling box, so the header stays put", async () => {
+    listMock.mockResolvedValue({ data: [{ id: "1", name: "Row A" }], totalCount: 1, limit: 10, offset: 0 });
+    renderPanel();
+    await flush();
+
+    // scrollable is what turns the thead into a position:sticky header inside .p-datatable-wrapper
+    // — without it the page scrolls and the header leaves with it.
+    expect(container.querySelector(".p-datatable-scrollable")).toBeTruthy();
+    expect(container.querySelector(".p-datatable-wrapper")).toBeTruthy();
+  });
+
+  it("freezes the selection box and the identifier column", async () => {
+    listMock.mockResolvedValue({ data: [{ id: "1", name: "Row A" }], totalCount: 1, limit: 10, offset: 0 });
+    renderPanel();
+    await flush();
+
+    // fakeConfig: one column, `name`, marked identifier — so selection + name, and that is all.
+    const frozen = headerCells().filter((th) => th.classList.contains("p-frozen-column"));
+    expect(frozen).toHaveLength(2);
+    expect(frozen[0].classList.contains("p-selection-column")).toBe(true);
+    expect(frozen[1].textContent).toContain("Name");
+  });
+
+  it("freezes every column up to AND including the identifier, not just the identifier", async () => {
+    const mock = vi.fn<(params: unknown) => Promise<PagedResult<FakeRow>>>();
+    mock.mockResolvedValue({ data: [{ id: "1", name: "Row A" }], totalCount: 1, limit: 10, offset: 0 });
+    registerEntityType({
+      key: "fake-late-identifier-entity",
+      collectionPath: "fake-late-identifier-entities",
+      labels: { singular: "Late", plural: "Lates" },
+      icon: "bi bi-question",
+      api: { list: mock, get: vi.fn() },
+      list: {
+        columns: [
+          { key: "status", header: "Statut", render: () => "x" },
+          { key: "name", header: "Name", render: (row) => row.name, identifier: true },
+          { key: "after", header: "Après", render: () => "y" },
+        ],
+        searchable: false,
+      },
+      detail: { tabs: [] },
+      routes: { list: "/fake-late", detail: (id) => `/fake-late/${id}` },
+    });
+    renderFor("fake-late-identifier-entity");
+    await flush();
+
+    const frozenLabels = headerCells()
+      .filter((th) => th.classList.contains("p-frozen-column"))
+      .map((th) => th.textContent);
+    // selection + Statut + Name; "Après" scrolls away.
+    expect(frozenLabels).toHaveLength(3);
+    expect(frozenLabels[1]).toContain("Statut");
+    expect(frozenLabels[2]).toContain("Name");
+    expect(frozenLabels.some((l) => l?.includes("Après"))).toBe(false);
+  });
+
+  it("freezes nothing at all when the entity declares no identifier column", async () => {
+    const mock = vi.fn<(params: unknown) => Promise<PagedResult<FakeRow>>>();
+    mock.mockResolvedValue({ data: [{ id: "1", name: "Row A" }], totalCount: 1, limit: 10, offset: 0 });
+    registerEntityType({
+      key: "fake-no-identifier-entity",
+      collectionPath: "fake-no-identifier-entities",
+      labels: { singular: "NoId", plural: "NoIds" },
+      icon: "bi bi-question",
+      api: { list: mock, get: vi.fn() },
+      list: { columns: [{ key: "name", header: "Name", render: (row) => row.name }], searchable: false },
+      detail: { tabs: [] },
+      routes: { list: "/fake-noid", detail: (id) => `/fake-noid/${id}` },
+    });
+    renderFor("fake-no-identifier-entity");
+    await flush();
+
+    // Not even the selection box: freezing it alone would pin an empty 3rem strip for no reason.
+    expect(headerCells().filter((th) => th.classList.contains("p-frozen-column"))).toHaveLength(0);
+  });
+
+  it("freezes the identifier column only, leaving dynamic catalog columns scrollable", async () => {
+    schemaListMock.mockReset();
+    schemaLoadMock.mockReset();
+    schemaLoadMock.mockResolvedValue({
+      fields: { "-118": { id: "-118", resourceType: "fields", label: "Statut", answerType: "TEXT", isSystemField: false } },
+      columns: [{ fieldId: "-118", visible: true, order: 0 }],
+    });
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    // fakeSchemaConfig's `name` column is NOT marked identifier, so nothing is frozen here — the
+    // dynamic columns must never be swept into the frozen half by accident.
+    renderFor("fake-schema-entity");
+    await flush();
+    await flush();
+
+    const frozen = headerCells().filter((th) => th.classList.contains("p-frozen-column"));
+    expect(frozen).toHaveLength(0);
+    expect(headerCells().some((th) => th.textContent?.includes("Statut"))).toBe(true);
+  });
+});
+
+describe("EntityListPanel embedded mode (plan: generic related-list tab)", () => {
+  const embeddedListMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeRow>>>();
+
+  const embeddedConfig: EntityTypeConfig<FakeRow, FakeRow> = {
+    key: "fake-embedded-entity",
+    labels: { singular: "Embedded", plural: "Embeddeds" },
+    collectionPath: "fake-embedded-entities",
+    icon: "bi bi-question",
+    api: { list: embeddedListMock, get: vi.fn() },
+    list: {
+      columns: [{ key: "name", header: "Name", render: (row) => row.name, identifier: true }],
+      searchable: true,
+    },
+    detail: { tabs: [] },
+    routes: { list: "/fake-embedded", detail: (id) => `/fake-embedded/${id}` },
+  };
+  registerEntityType(embeddedConfig);
+
+  function renderEmbedded(scope?: { entityType: string; id: string | number }) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel entityType="fake-embedded-entity" embedded scope={scope} />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  beforeEach(() => {
+    embeddedListMock.mockReset();
+    embeddedListMock.mockResolvedValue({ data: [{ id: "1", name: "Row A" }], totalCount: 1, limit: 10, offset: 0 });
+  });
+
+  it("renders no <Panel>/PanelHeaderBar chrome — no plural label, no count chip", async () => {
+    renderEmbedded();
+    await flush();
+
+    expect(container.querySelector(".p-panel-header")).toBeNull();
+    expect(container.textContent).not.toContain("Embeddeds");
+    // The toolbar (search) and the table itself are still there.
+    expect(container.querySelector(".entity-list-panel-toolbar")).not.toBeNull();
+    expect(container.textContent).toContain("Row A");
+  });
+
+  it("passes the scope through to config.api.list", async () => {
+    renderEmbedded({ entityType: "project", id: 5 });
+    await flush();
+
+    expect(embeddedListMock).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: { entityType: "project", id: 5 } }),
+    );
+  });
+
+  it("omits scope from the params when not scoped", async () => {
+    renderEmbedded();
+    await flush();
+
+    expect(embeddedListMock).toHaveBeenCalledWith(expect.objectContaining({ scope: undefined }));
   });
 });

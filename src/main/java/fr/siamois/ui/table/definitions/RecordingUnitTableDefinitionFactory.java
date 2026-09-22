@@ -1,7 +1,5 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.ui.table.TableDefinition;
@@ -11,9 +9,9 @@ import fr.siamois.ui.table.column.RelationColumn;
 import fr.siamois.ui.table.column.TableColumnAction;
 import fr.siamois.ui.table.viewmodel.EntityTableViewModel;
 
-import static fr.siamois.ui.table.definitions.TableDefinitions.column;
-import static fr.siamois.ui.table.definitions.TableDefinitions.systemField;
-
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 /**
  * factory that "applies" a reusable column set + toolbar config onto an existing tableModel.
@@ -57,17 +55,6 @@ public final class RecordingUnitTableDefinitionFactory {
 
     private static void applyTo(TableDefinition definition) {
 
-        CustomField typeField = systemField(ConfigurableTable.UE, "type");
-        CustomField matrixColor = systemField(ConfigurableTable.UE, "matrixColor");
-        CustomField dateField = systemField(ConfigurableTable.UE, "openingDate");
-        CustomField authorField = systemField(ConfigurableTable.UE, "author");
-        CustomField contributorsField = systemField(ConfigurableTable.UE, "contributors");
-        CustomField actionField = systemField(ConfigurableTable.UE, "actionUnit");
-        CustomField spatialField = systemField(ConfigurableTable.UE, "spatialUnit");
-        CustomField isPartOfField = systemField(ConfigurableTable.UE, "parents");
-        CustomField containsField = systemField(ConfigurableTable.UE, "children");
-        CustomField phasesField = systemField(ConfigurableTable.UE, "phases");
-
         definition.setCommandLinkColumn(
                 CommandLinkColumn.builder()
                         .id("identifierCol")
@@ -95,70 +82,10 @@ public final class RecordingUnitTableDefinitionFactory {
                         .oncompleteJs(PF_BUI_CONTENT_HIDE_HANDLE_SCROLL_TO_TOP)
                         .build()
         );
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("isPartOf")
-                        .headerKey("common.field.parents")
-                        .field(isPartOfField)
-                        // Filtre : sélection multiple d'UE parentes ; tri : nombre de parents
-                        .sortable(true)
-                        .sortField(RecordingUnitSpec.PARENTS_COUNT_SORT)
-                        .filterable(true)
-                        .visible(true)
-                        .required(false)
-                        .build()
-        );
-
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("contains")
-                        .headerKey("common.field.children")
-                        .field(containsField)
-                        // Filtre : sélection multiple d'UE enfants ; tri : nombre d'enfants
-                        .sortable(true)
-                        .sortField(RecordingUnitSpec.CHILDREN_COUNT_SORT)
-                        .filterable(true)
-                        .visible(true)
-                        .required(false)
-                        .build()
-        );
-
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("action")
-                        .headerKey("recordingunit.field.actionUnit")
-                        .field(actionField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(true)
-                        .readOnly(true)
-                        .required(true)
-                        .build()
-        );
-
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("type")
-                        .headerKey("recordingunit.property.type")
-                        .field(typeField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(true)
-                        .required(true)
-                        .build()
-        );
-
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("phases")
-                        .headerKey("recordingunit.field.phases")
-                        .field(phasesField)
-                        .sortable(false)
-                        .filterable(false)
-                        .visible(true)
-                        .required(false)
-                        .build()
-        );
+        // isPartOf / contains / action / type / phases — RecordingUnitTableColumnDefaults' own
+        // order up to (not including) the relationships/specimen count columns below, which have
+        // no CustomField and so stay hand-built.
+        addDefaultColumns(definition, "isPartOf", "contains", "action", "type", "phases");
 
         definition.addColumn(
                 RelationColumn.builder()
@@ -215,120 +142,44 @@ public final class RecordingUnitTableDefinitionFactory {
                         .build()
         );
 
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("spatial")
-                        .headerKey("recordingunit.field.spatialUnit")
-                        .field(spatialField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(true)
-                        .readOnly(false)
-                        .required(false)
-                        .build()
-        );
+        // spatial through closingDate — RecordingUnitTableColumnDefaults' own order for the rest
+        // of the table, all field-catalog-backed columns.
+        addDefaultColumns(definition, "spatial", "matrixColor", "openingDate", "author", "contributors",
+                "geomorphologicalCycle", "geomorphologicalAgent", "normalizedInterpretation", "tpq", "taq",
+                "erosionShape", "erosionProfile", "erosionOrientation", "description", "comments",
+                "chronologicalPhase", "zInf", "zSup", "closingDate");
+    }
 
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("matrixColor")
-                        .headerKey("recordingunit.field.matrixColor")
-                        .field(matrixColor)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(false)
-                        .required(false)
-                        .build()
-        );
-
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("openingDate")
-                        .headerKey("recordingunit.field.openingDate")
-                        .field(dateField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(false)
-                        .required(false)
-                        .build()
-        );
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("author")
-                        .headerKey("recordingunit.field.author")
-                        .field(authorField)
-                        .sortable(true)
-                        .filterable(true)
-                        .visible(true)
-                        .required(true)
-                        .build()
-        );
-        definition.addColumn(
-                FormFieldColumn.builder()
-                        .id("contributors")
-                        .headerKey("recordingunit.field.contributors")
-                        .field(contributorsField)
-                        .sortable(false)
-                        .filterable(true)
-                        .visible(false)
-                        .required(false)
-                        .build()
-        );
-
-        // Nature, agent et interprétation : filtre par valeur (sélection de concepts) et tri
-        // alphabétique sur le libellé du concept — trier sur l'association elle-même ordonnerait
-        // par clé étrangère. Toggleables, masquées par défaut comme elles l'étaient.
-        definition.addColumn(
-                column(systemField(ConfigurableTable.UE, "geomorphologicalCycle"))
-                        .sortable(true)
-                        .sortField(RecordingUnitSpec.NATURE_LABEL_SORT)
-                        .filterable(true)
-                        .build()
-        );
-
-        definition.addColumn(
-                column(systemField(ConfigurableTable.UE, "geomorphologicalAgent"))
-                        .sortable(true)
-                        .sortField(RecordingUnitSpec.AGENT_LABEL_SORT)
-                        .filterable(true)
-                        .build()
-        );
-
-        definition.addColumn(
-                column(systemField(ConfigurableTable.UE, "normalizedInterpretation"))
-                        .sortable(true)
-                        .sortField(RecordingUnitSpec.INTERPRETATION_LABEL_SORT)
-                        .filterable(true)
-                        .build()
-        );
-
-        // TPQ / TAQ : tri par valeur (colonnes entières réellement mappées, aucune clé synthétique
-        // nécessaire) et filtre par intervalle.
-        definition.addColumn(
-                column(systemField(ConfigurableTable.UE, "tpq"))
-                        .sortable(true)
-                        .filterable(true)
-                        .build()
-        );
-
-        definition.addColumn(
-                column(systemField(ConfigurableTable.UE, "taq"))
-                        .sortable(true)
-                        .filterable(true)
-                        .build()
-        );
-
-        // Fields that exist on RecordingUnit.DETAILS_FORM but had no table column of their own yet:
-        // configurable/toggleable, hidden from the table by default so nobody's view changes.
-        TableDefinitions.addColumns(definition,
-                column(systemField(ConfigurableTable.UE, "erosionShape")).build(),
-                column(systemField(ConfigurableTable.UE, "erosionProfile")).build(),
-                column(systemField(ConfigurableTable.UE, "erosionOrientation")).build(),
-                column(systemField(ConfigurableTable.UE, "description")).build(),
-                column(systemField(ConfigurableTable.UE, "comments")).build(),
-                column(systemField(ConfigurableTable.UE, "chronologicalPhase")).build(),
-                column(systemField(ConfigurableTable.UE, "zInf")).build(),
-                column(systemField(ConfigurableTable.UE, "zSup")).build(),
-                column(systemField(ConfigurableTable.UE, "closingDate")).build()
-        );
+    /**
+     * Adds the given {@link RecordingUnitTableColumnDefaults} entries, by columnId, in the order
+     * requested — lets {@link #applyTo(TableDefinition)} interleave them around the hand-built
+     * relationships/specimen count columns while still reading every field-catalog column's shape
+     * (visible/sortable/filterable/sortField/required/readOnly) from the one shared source of
+     * truth the REST catalog endpoint also reads.
+     */
+    private static void addDefaultColumns(TableDefinition definition, String... columnIds) {
+        Map<String, RecordingUnitTableColumnDefaults.ColumnDefault> byId = RecordingUnitTableColumnDefaults.columns()
+                .stream()
+                .collect(Collectors.toMap(RecordingUnitTableColumnDefaults.ColumnDefault::columnId, c -> c));
+        for (String columnId : columnIds) {
+            RecordingUnitTableColumnDefaults.ColumnDefault c = byId.get(columnId);
+            if (c == null) {
+                throw new NoSuchElementException("No RecordingUnitTableColumnDefaults entry for '" + columnId + "'");
+            }
+            definition.addColumn(
+                    FormFieldColumn.builder()
+                            .id(c.columnId())
+                            .headerKey(c.headerKey())
+                            .field(c.field())
+                            .sortable(c.sortable())
+                            .sortField(c.sortField())
+                            .filterable(c.filterable())
+                            .visible(c.visible())
+                            .toggleable(true)
+                            .required(c.required())
+                            .readOnly(c.readOnly())
+                            .build()
+            );
+        }
     }
 }

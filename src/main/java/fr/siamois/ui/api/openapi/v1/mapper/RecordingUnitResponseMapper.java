@@ -40,7 +40,7 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
     @Mapping(target = "type", source = "type")
     @Mapping(target = "geom", ignore = true)
     @Mapping(target = "answers", expression = "java(java.util.Map.of())")
-    @Mapping(target = "count", expression = "java(new fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts(null, null, null, null))")
+    @Mapping(target = "count", expression = "java(new fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts(null, null, null, null, null))")
     @Mapping(target = "links", expression = "java(fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceLinks.of(dto.getFullIdentifier()))")
     public abstract RecordingUnitResource toResource(RecordingUnitSummaryDTO dto);
 
@@ -59,7 +59,8 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
                 dto.getChildrenCount() != null ? (long) dto.getChildrenCount() : null,
                 dto.getSpecimenCount(),
                 dto.getParentsCount() != null ? (long) dto.getParentsCount() : null,
-                null
+                null,
+                dto.getRelationshipCount()
         );
     }
 }

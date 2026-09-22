@@ -857,7 +857,7 @@ class RecordingUnitsControllerApiTest {
         ResolvedConceptResource type = new ResolvedConceptResource();
         type.setId("8");
         FormResource bundle = new FormResource("{\"layout\":[]}");
-        FieldResource field = new FieldResource("12", "fields", "Libellé", "TEXT", null, false, null, null);
+        FieldResource field = new FieldResource("12", "fields", "Libellé", "TEXT", null, false, null, null, null, null, null);
         Map<String, FieldResource> fields = Map.of("12", field);
         RecordingUnitCreateFormData payload = new RecordingUnitCreateFormData(type, bundle, fields);
         when(recordingUnitOpenApiService.buildRecordingUnitCreateForm("10", 8L, personDto, Set.of(10L), "fr"))

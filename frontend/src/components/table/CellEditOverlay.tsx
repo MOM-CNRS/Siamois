@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { commitsImmediately, sameValue, staysOpenAfterSave } from "../../fields/commit";
 import { getFieldRenderer } from "../../fields/registry";
 import { resolveValueBinding, toAnswerInput, type AnswerInputBody, type FieldResource } from "../../fields/types";
 import { ApiError } from "../../api/client";
@@ -44,12 +45,6 @@ export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
 // class names every PrimeReact connected popup (AutoComplete, Calendar, Dropdown, MultiSelect, …)
 // puts on its portalled root.
 const PRIMEREACT_POPUP_SELECTOR = '[class*="p-connected-overlay"]';
-
-function sameValue(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (a == null && b == null) return true;
-  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-}
 
 export function CellEditOverlay<TRow extends { id?: string | number }>({
   target,
@@ -171,18 +166,16 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   const { field, anchor } = target;
   const Renderer = getFieldRenderer(field.answerType);
 
-  // One interaction produces one final value for these, so there is no "still typing" state to
-  // wait through — save as soon as it changes, which is what the user asked for literally.
-  const commitsImmediately = field.answerType.startsWith("SELECT_") || field.answerType === "DATETIME";
-  // ...except for a multi-valued field, where one pick is not the whole answer: each pick is saved
-  // as it happens, but the editor stays open so the next one doesn't need a reopen. It closes on
-  // the outside click / Escape like everything else.
-  const staysOpenAfterSave = field.answerType.startsWith("SELECT_MULTIPLE");
+  // fields/commit.ts owns both rules, shared with the Project fiche's own autosave: save on change
+  // for a widget whose one interaction yields one final value, and for a multi-valued one keep the
+  // editor open afterwards so the next pick doesn't need a reopen.
+  const immediate = commitsImmediately(field);
+  const keepOpen = staysOpenAfterSave(field);
 
   function onValueChange(value: unknown) {
     setDraft(value);
-    if (!commitsImmediately) return;
-    if (staysOpenAfterSave) void save(value);
+    if (!immediate) return;
+    if (keepOpen) void save(value);
     else void saveAndClose(value);
   }
 
@@ -191,7 +184,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       e.stopPropagation();
       cancelledRef.current = true;
       onClose();
-    } else if (e.key === "Enter" && !commitsImmediately) {
+    } else if (e.key === "Enter" && !immediate) {
       e.preventDefault();
       void saveAndClose(draft);
     }

@@ -10,6 +10,15 @@ export interface FieldResource {
   isSystemField: boolean;
   valueBinding?: string | null;
   fieldCode?: string | null;
+  // TEXT only — CustomFieldText.isTextArea, which decides p:inputTextarea vs p:inputText in JSF
+  // (pages/shared/inplace/text.xhtml). Null/absent for every other answerType.
+  isTextArea?: boolean | null;
+  // CustomField.getIcon() — the icon on panelField.xhtml's label button. Every field currently
+  // answers "bi bi-question" unless its subclass overrides getIcon().
+  icon?: string | null;
+  // CustomField.getConceptUri() — the target of panelField.xhtml's "Documentation" menu item.
+  // Null when the field has no concept (or the concept has no vocabulary).
+  conceptUri?: string | null;
 }
 
 /**

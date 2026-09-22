@@ -24,6 +24,7 @@
          data-overview-entity-type="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactEntityType() : ''}"
          data-overview-entity-id="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactEntityId() : ''}"
          data-overview-organization-id="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactOrganizationId() : ''}"
+         data-write-mode="#{flowBean.isWriteMode}"
          data-base-path="#{request.contextPath}"
          data-csrf-header="${_csrf.headerName}"
          data-csrf-token="${_csrf.token}"

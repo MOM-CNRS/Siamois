@@ -67,9 +67,12 @@
         pane optimistically, before this bean's own parentOrOverview is set, so this command must
         exist from page load — unlike every reactAction_overview_* command below, which mirrors
         JSF's own rendered="#{parentOrOverview != null}" gating and is therefore only registered
-        once an overview already exists server-side. Takes the target entity id as a plain
-        remoteCommand param (reactAction_setOverview_N({id: ...})), read via the request map —
-        see addActionUnitToOverviewFromRequest.
+        once an overview already exists server-side. Takes the target entity type and id as plain
+        remoteCommand params (reactAction_setOverview_N({entityType: ..., id: ...})), read via the
+        request map — see FlowBean#addEntityToOverviewFromRequest, which dispatches on entityType
+        (a related-list tab, plan: generic related-list tab, can open ANY registered entity type in
+        the overview, not just this panel's own — a recording unit from a project's own UE tab,
+        for one).
         -->
         <!--
         oncomplete fires a plain DOM event React listens for (App.tsx) to know when the bean is
@@ -79,7 +82,7 @@
         flight" caveat).
         -->
         <p:remoteCommand name="reactAction_setOverview_${panelModel.panelIndex}"
-                          action="#{flowBean.addActionUnitToOverviewFromRequest(panelModel)}"
+                          action="#{flowBean.addEntityToOverviewFromRequest(panelModel)}"
                           process="@this"
                           update="@none"
                           oncomplete="window.dispatchEvent(new CustomEvent('siamois-set-overview-done', {detail: {panelIndex: '${panelModel.panelIndex}'}}));"/>

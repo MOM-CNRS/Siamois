@@ -6,6 +6,7 @@ function fakeConfig(key: string): EntityTypeConfig {
   return {
     key,
     labels: { singular: key, plural: key },
+    collectionPath: key,
     icon: "bi bi-question",
     api: { list: async () => ({ data: [], totalCount: 0, limit: 20, offset: 0 }), get: async () => ({}) },
     list: { columns: [], searchable: false },

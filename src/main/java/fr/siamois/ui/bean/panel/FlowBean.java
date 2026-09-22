@@ -385,14 +385,31 @@ public class FlowBean implements Serializable {
     // has the id in EL scope), this one reads it off the raw request — exactly like
     // addRecordingUnitToOverviewFromStratiModule does for the same reason. updateMainPanel=false:
     // the React-owned main pane must never be touched by this server round-trip.
-    public void addActionUnitToOverviewFromRequest(AbstractPanel targetPanel) {
-        String idParam = FacesContext.getCurrentInstance()
+    //
+    // Dispatches on `entityType` — the same registry key entities/<type>/config.tsx registers
+    // under (reactPanelBootstrap.js's setOverviewFn sends it straight off EntityListPanel's
+    // onOpenOverview call). Before this method existed, every entity type's setOverview call fell
+    // through to this method's own predecessor (action-unit-only), so opening e.g. a recording
+    // unit from a related-list tab put the WRONG entity (an action unit sharing that same id) into
+    // parentOrOverview server-side — invisible until F5 or an overview-toolbar action (duplicate/
+    // refresh/settings/fullscreen) acted on the wrong thing. An unrecognized/missing entityType is
+    // a no-op rather than a guess, matching the null-idParam case just below.
+    public void addEntityToOverviewFromRequest(AbstractPanel targetPanel) {
+        Map<String, String> params = FacesContext.getCurrentInstance()
                 .getExternalContext()
-                .getRequestParameterMap()
-                .get("id");
+                .getRequestParameterMap();
+        String idParam = params.get("id");
+        String entityType = params.get("entityType");
 
-        if (idParam != null) {
-            addActionUnitToOverview(Long.parseLong(idParam), targetPanel, null, false);
+        if (idParam == null || entityType == null) {
+            return;
+        }
+
+        Long id = Long.parseLong(idParam);
+        switch (entityType) {
+            case "project" -> addActionUnitToOverview(id, targetPanel, null, false);
+            case "recordingUnit" -> addRecordingUnitToOverview(id, targetPanel, null, false);
+            default -> log.warn("setOverview : entityType React inconnu côté serveur : {}", entityType);
         }
     }
 

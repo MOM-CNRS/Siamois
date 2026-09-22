@@ -24,6 +24,7 @@ const getMock = vi.fn();
 const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
   key: "fake-app-entity",
   labels: { singular: "Fake", plural: "Fakes" },
+  collectionPath: "fake-app-entities",
     icon: "bi bi-question",
   api: { list: listMock, get: getMock },
   list: {

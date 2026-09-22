@@ -14,6 +14,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -23,6 +24,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
@@ -40,6 +42,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -735,15 +738,52 @@ class ProjectApiServiceMutationTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         Page<RecordingUnitDTO> expected = new PageImpl<>(List.of());
-        when(recordingUnitService.findByActionUnitId(eq(7L), eq(10), eq(0), any(Sort.class))).thenReturn(expected);
+        when(recordingUnitService.findByActionUnitId(eq(7L), eq(10), eq(0), any(Sort.class), any(FilterDTO.class)))
+                .thenReturn(expected);
 
-        Page<RecordingUnitDTO> result = service.pageRecordingUnitsForProject(caller, "7", 0, 10, null);
+        Page<RecordingUnitDTO> result = service.pageRecordingUnitsForProject(
+                caller, "7", 0, 10, null, null, RecordingUnitListFilter.EMPTY);
 
         assertThat(result).isSameAs(expected);
         ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
-        verify(recordingUnitService).findByActionUnitId(eq(7L), eq(10), eq(0), sortCaptor.capture());
+        verify(recordingUnitService).findByActionUnitId(eq(7L), eq(10), eq(0), sortCaptor.capture(), any(FilterDTO.class));
         assertThat(sortCaptor.getValue().getOrderFor("creationTime").getDirection())
                 .isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    void pageRecordingUnitsForProject_buildsFilterDTOFromSearchAndFilter() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        Page<RecordingUnitDTO> expected = new PageImpl<>(List.of());
+        when(recordingUnitService.findByActionUnitId(eq(7L), eq(10), eq(0), any(Sort.class), any(FilterDTO.class)))
+                .thenReturn(expected);
+
+        RecordingUnitListFilter filter = RecordingUnitListFilter.parse(
+                new org.springframework.util.LinkedMultiValueMap<>(Map.of("f.type", List.of("12"))));
+
+        service.pageRecordingUnitsForProject(caller, "7", 0, 10, null, "UE1", filter);
+
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(recordingUnitService).findByActionUnitId(eq(7L), eq(10), eq(0), any(Sort.class), filterCaptor.capture());
+        FilterDTO dto = filterCaptor.getValue();
+        assertThat(dto.containsColumn("fullIdentifier")).isTrue();
+        assertThat(dto.valueOfAsString("fullIdentifier")).isEqualTo("UE1");
+        assertThat(dto.containsColumn("type")).isTrue();
+        assertThat(dto.valueAsIdListOf("type")).containsExactly(12L);
+    }
+
+    @Test
+    void pageRecordingUnitsForProject_requiresAccessibleProjectBeforeAnyPaging() {
+        when(actionUnitService.findAccessibleProjectByKey("404", SCOPE))
+                .thenThrow(new fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException("missing"));
+
+        assertThatThrownBy(() -> service.pageRecordingUnitsForProject(caller, "404", 0, 10, null, null, RecordingUnitListFilter.EMPTY))
+                .isInstanceOf(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class);
+
+        verifyNoInteractions(recordingUnitService);
     }
 
     @Test

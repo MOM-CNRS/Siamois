@@ -9,7 +9,7 @@ import { Chip } from "primereact/chip";
 import { Button } from "primereact/button";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { getEntityType } from "../entities/registry";
-import type { ColumnDef, FilterValue, ListParams } from "../entities/types";
+import type { ColumnDef, FilterValue, ListParams, ListScope } from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import { FilterChipBar, type FilterSpec } from "../components/table/FilterChipBar";
@@ -20,6 +20,7 @@ import { resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { DEFAULT_LIMIT } from "./tableState";
 import { useTableState } from "./useTableState";
+import { useWriteMode } from "./writeMode";
 
 export interface EntityListPanelProps {
   entityType: string;
@@ -44,12 +45,21 @@ export interface EntityListPanelProps {
   // Omitted once the panel has navigated away from the entity this toolbar was built for
   // (App.tsx), or for a render with nothing to bridge to (tests).
   toolbar?: PanelToolbarSlot;
+  // Scopes this list to one parent entity's own sub-collection (plan: generic related-list tab,
+  // e.g. "the recording units of project 5") rather than the entity type's global list. Threaded
+  // straight into ListParams.scope — see entities/listApi.ts for the URL it produces.
+  scope?: ListScope;
+  // Renders without the wrapping <Panel>/PanelHeaderBar (icon + plural label + count chip) — for
+  // use inside a DetailTabDef's own TabPanel, which already supplies a title and (via
+  // DetailTabDef.badge) a count. The toolbar (gear/search/create) and the DataTable are unchanged;
+  // only the panel-level chrome around them is dropped.
+  embedded?: boolean;
 }
 
-// pages/shared/table/entityDataTable.xhtml's own paginator: rows-per-page 10/25/50, default 10
-// (EntityTableViewModel.defaultPageSize). The React list used to default to 20 — a silent parity
-// divergence, corrected here.
-const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
+// Deliberate divergence from JSF's own entityDataTable.xhtml paginator (rows-per-page 10/25/50,
+// default 10 — EntityTableViewModel.defaultPageSize): the React list uses 20/50/100, default 20
+// (DEFAULT_LIMIT in tableState.ts).
+const ROWS_PER_PAGE_OPTIONS = [20, 50, 100];
 
 // tableToolbar.xhtml's globalFilter is debounced 500ms server-side; 300ms here errs toward
 // responsiveness since the request itself is already async. Either way: not one query per
@@ -74,6 +84,8 @@ export function EntityListPanel({
   overviewEntityId,
   onCreate,
   toolbar,
+  scope,
+  embedded,
 }: EntityListPanelProps) {
   const config = getEntityType(entityType);
   const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns } = useTableState({
@@ -96,11 +108,12 @@ export function EntityListPanel({
   // The one shared edit surface for every editable cell (plan phase 4b) — a single instance,
   // re-anchored (to the clicked cell's own rect) and re-seeded per click, not one per cell/column.
   const [editTarget, setEditTarget] = useState<CellEditTarget<RowRecord> | null>(null);
+  const writeMode = useWriteMode();
 
   const hasSchema = config?.list.schema != null;
   const { data: catalog } = useQuery({
-    queryKey: ["entity-list-schema", entityType, organizationId],
-    queryFn: () => config!.list.schema!.load({ organizationId }),
+    queryKey: ["entity-list-schema", entityType, organizationId, scope?.entityType, scope?.id],
+    queryFn: () => config!.list.schema!.load({ organizationId, scope }),
     enabled: hasSchema,
   });
 
@@ -129,6 +142,7 @@ export function EntityListPanel({
     organizationId,
     fields: fieldsParam,
     filters: Object.keys(state.filters).length > 0 ? state.filters : undefined,
+    scope,
   };
 
   const { data, isLoading, error } = useQuery({
@@ -139,7 +153,12 @@ export function EntityListPanel({
 
   const canPatchAnswers = config?.api.patchAnswers != null;
 
+  // entityDataTable.xhtml gates an editable cell on isRendered(col, "writeMode", item), which is
+  // the app's global read/write switch AND canUserEditRow(item) — the same two-part rule the
+  // fiche and the panel header follow. Only a UI gate: ProjectApiService.patchProject is what
+  // actually enforces it; this just avoids offering a control that would 403.
   function canEditRow(row: RowRecord): boolean {
+    if (!writeMode) return false;
     const permissions = (row as { _permissions?: { canEdit?: boolean } })._permissions;
     return permissions?.canEdit === true;
   }
@@ -323,27 +342,20 @@ export function EntityListPanel({
   const rows = (data?.data ?? []) as RowRecord[];
   const allColumns: ColumnDef<RowRecord>[] = [...(config.list.columns as ColumnDef<RowRecord>[]), ...dynamicColumns];
 
-  return (
-    // panel/header/actionUnitListPanelHeader.xhtml: icon + title + a count chip, plus the
-    // generic toolbar — one single PanelHeaderBar passed as this <Panel>'s `header` (plan §7/§8
-    // follow-up: "toolbar is part of the header", not PrimeReact's separate `icons` slot),
-    // matching the real markup's one sideview-titlebar div rather than a separate strip above
-    // this component.
-    <Panel
-      className="entity-list-panel"
-      header={
-        <PanelHeaderBar
-          title={
-            <div className="entity-list-panel-header" style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
-              <i className={config.icon} style={{ fontSize: "2rem", color: "var(--main-color)" }} />
-              <span style={{ paddingRight: "0.5em" }}>{config.labels.plural}</span>
-              <Chip label={String(data?.totalCount ?? 0)} style={{ background: "transparent", color: "var(--main-color)" }} />
-            </div>
-          }
-          toolbar={toolbar}
-        />
-      }
-    >
+  // Everything up to and including the identifier column stays put while the rest scrolls
+  // sideways — the identifier is how you tell one row from another, so losing it is what makes a
+  // wide table unreadable. Driven by ColumnDef.identifier, the flag that already marks that column
+  // (the one whose cell navigates), so no entity type has to restate which column this is.
+  // -1 (no entity declares an identifier column) freezes nothing, including the selection box.
+  const lastFrozenIndex = allColumns.findIndex((col) => col.identifier);
+
+  // The toolbar + table + edit overlay — identical whether or not the surrounding <Panel> chrome
+  // is rendered (see `embedded` below). Only the wrapper differs: a standalone list gets its own
+  // <Panel> header (icon/plural label/count chip), an embedded one (inside a DetailTabDef's own
+  // TabPanel) gets neither, since the tab already supplies a title and a count via
+  // DetailTabDef.badge.
+  const body = (
+    <>
       {(config.list.searchable || onCreate || hasSchema) && (
         // p:toolbar (pages/shared/table/tableToolbar.xhtml) → PrimeReact Toolbar, not a plain
         // div — its own generated classes are what render the chrome the stock theme actually
@@ -432,6 +444,13 @@ export function EntityListPanel({
         selectionMode="checkbox"
         selection={selectedRows}
         onSelectionChange={onSelectionChange}
+        // Sticky header + frozen columns both require this; it also moves the scrolling from the
+        // page onto the table's own body, which is the rule this shell is built on (the app is a
+        // fixed 100vh frame — every panel scrolls inside itself, the document never does).
+        // scrollHeight="flex" means "take the height my parent gives me"; the flex chain that
+        // actually gives it one is in main-panel.css.
+        scrollable
+        scrollHeight="flex"
       >
         {/* selectedCountChip (tableToolbar.xhtml): selected/total, in the selection column's own
             header, same position as the JSF table. handleSelectionChange() is a no-op in JSF —
@@ -439,12 +458,14 @@ export function EntityListPanel({
         <Column
           selectionMode="multiple"
           headerStyle={{ width: "3rem" }}
+          frozen={lastFrozenIndex >= 0}
           header={<Chip label={`${selectedRows.length}/${data?.totalCount ?? 0}`} />}
         />
-        {allColumns.map((col) => (
+        {allColumns.map((col, index) => (
           <Column
             key={col.key}
             field={col.key}
+            frozen={index <= lastFrozenIndex}
             // Header text is always one line, truncated with an ellipsis past the CSS max-width
             // (.entity-list-panel-column-header); the full label stays available as the title
             // tooltip. A wrapping header makes every row in the table taller for one long label.
@@ -484,6 +505,42 @@ export function EntityListPanel({
           onClose={() => setEditTarget(null)}
         />
       )}
+    </>
+  );
+
+  if (embedded) {
+    // No <Panel>/PanelHeaderBar — the flex chain that gives scrollHeight="flex" its bound
+    // otherwise comes from that <Panel>; reproduce it directly (styles/main-panel.css has the
+    // matching `.entity-list-panel.embedded` rule for the tab body wrapping this).
+    return (
+      <div className="entity-list-panel embedded" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    // panel/header/actionUnitListPanelHeader.xhtml: icon + title + a count chip, plus the
+    // generic toolbar — one single PanelHeaderBar passed as this <Panel>'s `header` (plan §7/§8
+    // follow-up: "toolbar is part of the header", not PrimeReact's separate `icons` slot),
+    // matching the real markup's one sideview-titlebar div rather than a separate strip above
+    // this component.
+    <Panel
+      className="entity-list-panel"
+      header={
+        <PanelHeaderBar
+          title={
+            <div className="entity-list-panel-header" style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
+              <i className={config.icon} style={{ fontSize: "2rem", color: "var(--main-color)" }} />
+              <span style={{ paddingRight: "0.5em" }}>{config.labels.plural}</span>
+              <Chip label={String(data?.totalCount ?? 0)} style={{ background: "transparent", color: "var(--main-color)" }} />
+            </div>
+          }
+          toolbar={toolbar}
+        />
+      }
+    >
+      {body}
     </Panel>
   );
 }

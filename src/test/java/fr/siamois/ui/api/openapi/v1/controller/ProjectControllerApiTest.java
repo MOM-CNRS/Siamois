@@ -40,6 +40,8 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectAnswersProjector;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitAnswersProjector;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -157,7 +159,8 @@ class ProjectControllerApiTest {
 
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
-                recordingUnitResourceMapper);
+                recordingUnitResourceMapper,
+                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver));
 
         ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
                 projectApiService,
@@ -479,7 +482,7 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("5");
         resource.setName("Projet test");
-        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean()))
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean(), any(), any()))
                 .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/5"))
@@ -489,6 +492,75 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.id").value("5"));
 
         verify(actionUnitService).findAccessibleProjectByKey("5", Set.of(100L));
+    }
+
+    /**
+     * {@code answers} est opt-in sur le détail comme sur la liste : sans {@code ?fields=}, la réponse n'a
+     * pas la clé du tout et ne paie ni la projection ni le lot de libellés.
+     */
+    @Test
+    void getProjectById_withoutFieldsParam_projectsNoAnswers() throws Exception {
+        AccessibleProjectForApi row = stubOneProjectById();
+
+        mockMvc.perform(get("/api/v1/projects/5"))
+                .andExpect(status().isOk());
+
+        verify(projectResponseMapper).toResource(eq(row), anyString(), any(), anyBoolean(), any(), isNull());
+    }
+
+    /**
+     * Ce que demande la fiche projet React : tout le catalogue, pas une sélection de colonnes — c'est ce
+     * qui lui permet d'afficher les 33 champs d'{@code ActionUnit.DETAILS_FORM} et pas seulement les sept
+     * propriétés plates de {@link ProjectResource}.
+     */
+    @Test
+    void getProjectById_withFieldsAll_projectsTheWholeCatalog() throws Exception {
+        AccessibleProjectForApi row = stubOneProjectById();
+
+        mockMvc.perform(get("/api/v1/projects/5").param("fields", "all"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<Map<String, Object>> answers = ArgumentCaptor.forClass(Map.class);
+        verify(projectResponseMapper).toResource(
+                eq(row), anyString(), any(), anyBoolean(), any(), answers.capture());
+        assertThat(answers.getValue()).isNotNull()
+                .containsKeys(String.valueOf(ActionUnitForm.OA_CODE_FIELD.getId()),
+                        String.valueOf(ActionUnitForm.STATUS_FIELD.getId()),
+                        // Hors des colonnes par défaut de la liste : présent uniquement avec "all".
+                        String.valueOf(ActionUnitForm.ZMIN_FIELD.getId()));
+    }
+
+    @Test
+    void getProjectById_withFieldsDefault_projectsOnlyTheDefaultVisibleColumns() throws Exception {
+        AccessibleProjectForApi row = stubOneProjectById();
+
+        mockMvc.perform(get("/api/v1/projects/5").param("fields", "default"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<Map<String, Object>> answers = ArgumentCaptor.forClass(Map.class);
+        verify(projectResponseMapper).toResource(
+                eq(row), anyString(), any(), anyBoolean(), any(), answers.capture());
+        assertThat(answers.getValue()).isNotNull()
+                .containsKey(String.valueOf(ActionUnitForm.OA_CODE_FIELD.getId()))
+                .doesNotContainKey(String.valueOf(ActionUnitForm.ZMIN_FIELD.getId()));
+    }
+
+    private AccessibleProjectForApi stubOneProjectById() {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setOaCode("OA-1");
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
+
+        ProjectResource resource = new ProjectResource();
+        resource.setId("5");
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean(), any(), any()))
+                .thenReturn(resource);
+        return row;
     }
 
     /**
@@ -512,7 +584,7 @@ class ProjectControllerApiTest {
         resource.setResourceType("projects");
         resource.setId("12");
         resource.setName("Par full id");
-        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean()))
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean(), any(), any()))
                 .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/{id}", "INST-PROJ-2025"))
@@ -535,12 +607,12 @@ class ProjectControllerApiTest {
 
         ProjectResource resource = new ProjectResource();
         resource.setId("3");
-        when(projectResponseMapper.toResource(eq(row), eq("de"), any(), anyBoolean())).thenReturn(resource);
+        when(projectResponseMapper.toResource(eq(row), eq("de"), any(), anyBoolean(), any(), any())).thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/3").header(HttpHeaders.ACCEPT_LANGUAGE, "de-DE"))
                 .andExpect(status().isOk());
 
-        verify(projectResponseMapper).toResource(eq(row), eq("de"), any(), anyBoolean());
+        verify(projectResponseMapper).toResource(eq(row), eq("de"), any(), anyBoolean(), any(), any());
     }
 
     @Test
@@ -558,7 +630,7 @@ class ProjectControllerApiTest {
         ProjectResource resource = new ProjectResource();
         resource.setId("33");
         resource.setName("Chartres");
-        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean()))
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean(), any(), any()))
                 .thenReturn(resource);
 
         mockMvc.perform(get("/api/v1/projects/C309_01"))
@@ -615,7 +687,7 @@ class ProjectControllerApiTest {
                 List.of(ruDto),
                 PageRequest.of(0, 10),
                 1L);
-        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class))).thenReturn(page);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), any(fr.siamois.dto.FilterDTO.class))).thenReturn(page);
 
         RecordingUnitResource ruRes = new RecordingUnitResource();
         ruRes.setIdentifier("42");
@@ -630,7 +702,7 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].fullIdentifier").value("INST-PROJ-UE42"));
 
-        verify(recordingUnitService).findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class));
+        verify(recordingUnitService).findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), any(fr.siamois.dto.FilterDTO.class));
     }
 
     @Test
@@ -645,7 +717,7 @@ class ProjectControllerApiTest {
         when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
 
         PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
-        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class))).thenReturn(page);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), any(fr.siamois.dto.FilterDTO.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/projects/5/recording-units")
                         .param("offset", "0")
@@ -661,7 +733,188 @@ class ProjectControllerApiTest {
                         }
                     }
                     return false;
-                }));
+                }), any(fr.siamois.dto.FilterDTO.class));
+    }
+
+    @Test
+    void getProjectRecordingUnits_unknownSortField_returns400() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units").param("sort", "nope:asc"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(recordingUnitService);
+    }
+
+    @Test
+    void getProjectRecordingUnits_synteticSortField_passedToService() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
+
+        PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), any(fr.siamois.dto.FilterDTO.class)))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units").param("sort", "parentsCount:desc"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitService).findByActionUnitId(eq(5L), eq(10), eq(0),
+                argThat((Sort s) -> s.getOrderFor("parentsCount") != null
+                        && s.getOrderFor("parentsCount").isDescending()),
+                any(fr.siamois.dto.FilterDTO.class));
+    }
+
+    @Test
+    void getProjectRecordingUnits_unknownFilterKey_returns400() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units").param("f.description", "x"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(recordingUnitService, actionUnitService);
+    }
+
+    @Test
+    void getProjectRecordingUnits_actionUnitFilter_returns400_pathAlreadyScopesToOneProject() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units").param("f.actionUnit", "9"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(recordingUnitService, actionUnitService);
+    }
+
+    @Test
+    void getProjectRecordingUnits_fPrefixedFilters_bindOntoRecordingUnitListFilter() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
+
+        PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), any(fr.siamois.dto.FilterDTO.class)))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units").param("f.type", "12"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<fr.siamois.dto.FilterDTO> filterCaptor = ArgumentCaptor.forClass(fr.siamois.dto.FilterDTO.class);
+        verify(recordingUnitService).findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), filterCaptor.capture());
+        assertThat(filterCaptor.getValue().containsColumn("type")).isTrue();
+        assertThat(filterCaptor.getValue().valueAsIdListOf("type")).containsExactly(12L);
+    }
+
+    @Test
+    void getProjectRecordingUnits_withoutFieldsParam_rowsHaveNoAnswersKey() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
+
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(42L);
+        ruDto.setFullIdentifier("INST-PROJ-UE42");
+        PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(ruDto), PageRequest.of(0, 10), 1L);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), any(fr.siamois.dto.FilterDTO.class)))
+                .thenReturn(page);
+
+        RecordingUnitResource ruRes = new RecordingUnitResource();
+        ruRes.setId("42");
+        ruRes.setFullIdentifier("INST-PROJ-UE42");
+        ruRes.setResourceType("recording-units");
+        when(recordingUnitResourceMapper.convert(ruDto)).thenReturn(ruRes);
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].answers").doesNotExist());
+    }
+
+    @Test
+    void getProjectRecordingUnits_permissionsPresent_reflectingCallerCanEdit() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
+        when(profilePermissionService.hasProjectPermission(any(), eq(5L), anyString(), anyString(), anyString()))
+                .thenReturn(true);
+
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(42L);
+        ruDto.setFullIdentifier("INST-PROJ-UE42");
+        PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(ruDto), PageRequest.of(0, 10), 1L);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), any(fr.siamois.dto.FilterDTO.class)))
+                .thenReturn(page);
+
+        RecordingUnitResource ruRes = new RecordingUnitResource();
+        ruRes.setId("42");
+        ruRes.setFullIdentifier("INST-PROJ-UE42");
+        ruRes.setResourceType("recording-units");
+        when(recordingUnitResourceMapper.convert(ruDto)).thenReturn(ruRes);
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]._permissions.canEdit").value(true));
+    }
+
+    @Test
+    void getProjectRecordingUnits_fieldsDefault_projectsExactlyTheDefaultVisibleFieldIds() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("5", Set.of(100L))).thenReturn(row);
+
+        RecordingUnitDTO ruDto = new RecordingUnitDTO();
+        ruDto.setId(42L);
+        ruDto.setFullIdentifier("INST-PROJ-UE42");
+        PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(ruDto), PageRequest.of(0, 10), 1L);
+        when(recordingUnitService.findByActionUnitId(eq(5L), eq(10), eq(0), any(Sort.class), any(fr.siamois.dto.FilterDTO.class)))
+                .thenReturn(page);
+
+        RecordingUnitResource ruRes = new RecordingUnitResource();
+        ruRes.setId("42");
+        ruRes.setFullIdentifier("INST-PROJ-UE42");
+        ruRes.setResourceType("recording-units");
+        when(recordingUnitResourceMapper.convert(ruDto)).thenReturn(ruRes);
+
+        Set<String> expectedIds = fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults.defaultVisibleFieldIds();
+        assertThat(expectedIds).isNotEmpty();
+
+        mockMvc.perform(get("/api/v1/projects/5/recording-units").param("fields", "default"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].answers", org.hamcrest.Matchers.aMapWithSize(expectedIds.size())));
     }
 
     @Test

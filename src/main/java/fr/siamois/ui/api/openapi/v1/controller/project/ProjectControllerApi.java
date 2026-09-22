@@ -124,13 +124,24 @@ public class ProjectControllerApi {
     })
     public ResponseEntity<ProjectResponse> getById(
             @PathVariable("id") String id,
+            @Parameter(description = "Projection des champs de formulaire dans answers : \"all\", \"default\" "
+                    + "ou une liste d'ids de champs séparés par des virgules. Absent : pas de clé answers. "
+                    + "La fiche projet demande \"all\" : contrairement à la liste, elle affiche tout le "
+                    + "formulaire, pas une sélection de colonnes.")
+            @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         AccessibleProjectForApi row = projectApiService.requireAccessibleProject(caller, id);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
         boolean bookmarked = projectApiService.isBookmarked(caller, row, lang);
-        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, bookmarked)));
+        // Même service par lot que la liste, sur une page d'une seule ligne : les libellés de concepts
+        // des champs projetés se résolvent en un lot, pas un appel par champ.
+        ProjectListProjectionService.ProjectListProjection projection =
+                projectListProjectionService.build(List.of(row), fields, lang);
+        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(
+                row, lang, permissions, bookmarked,
+                projection.resolvedLabels(), projection.answersFor(row.actionUnit().getId()))));
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)

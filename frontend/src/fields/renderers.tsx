@@ -15,7 +15,16 @@ import { optionSourceFor, supportsEmptyQuery, type FilterOption } from "./option
 // phase) and the rarer SELECT_* variants (person/action-unit/recording-unit/...), which have no
 // option source client yet — those fall through to FallbackRenderer, same as before.
 
-export function TextRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
+// One TEXT renderer, two shapes: CustomFieldText.isTextArea is what picks p:inputTextarea over
+// p:inputText in JSF (pages/shared/inplace/text.xhtml), and it now rides along on FieldResource,
+// so the branch belongs here rather than in a second registry entry that only the fiche knows to
+// ask for. The table's cell overlay gets the multi-line editor for `comments`/`scientificNotice`
+// for free as a result.
+export function TextRenderer(props: FieldRendererProps) {
+  return props.field.isTextArea ? <TextAreaRenderer {...props} /> : <SingleLineTextRenderer {...props} />;
+}
+
+export function SingleLineTextRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
   const stringValue = typeof value === "string" ? value : "";
   return (
     <InputText
@@ -149,13 +158,19 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     ? (Array.isArray(value) ? value.filter((v): v is ResourceRefLike | ResolvedResourceLike => isResourceRef(v) || isResolvedResource(v)).map(toOption) : [])
     : (isResourceRef(value) || isResolvedResource(value) ? toOption(value) : null);
 
+  // A spatial field's options are places, not concepts — emitting resourceType "concepts" for them
+  // produced a ResourceRef that lied about what it referenced. Nothing downstream reads it today
+  // (toAnswerInput only takes the id), but resolveValueBinding hands this same object straight back
+  // to the renderer on the next render, and display.tsx shows it verbatim.
+  const resourceType = field.answerType.includes("SPATIAL_UNIT") ? "spatial-units" : "concepts";
+
   function commit(next: FilterOption[] | FilterOption | null) {
     if (multiple) {
       const options = (next as FilterOption[] | null) ?? [];
-      onChange(options.map((o): ResourceRefLike => ({ resourceId: o.id, resourceType: "concepts", label: o.label })));
+      onChange(options.map((o): ResourceRefLike => ({ resourceId: o.id, resourceType, label: o.label })));
     } else {
       const option = next as FilterOption | null;
-      onChange(option ? { resourceId: option.id, resourceType: "concepts", label: option.label } : null);
+      onChange(option ? { resourceId: option.id, resourceType, label: option.label } : null);
     }
   }
 
@@ -186,6 +201,15 @@ export function SelectManyConceptRenderer(props: FieldRendererProps) {
 
 export function SelectOneSpatialUnitRenderer(props: FieldRendererProps) {
   return <ResourceRefRenderer {...props} multiple={false} />;
+}
+
+// SPATIAL_CONTEXT is a tree picker in JSF (siaInplace:spatialMultiple). The tree itself has no REST
+// equivalent, but the flat "pick several places" part does — the same /api/v1/places/autocomplete
+// source the single picker uses — so this is the multi-valued sibling, not a tree. Its value is
+// written through ProjectPatchRequest's flat spatialContextSpatialUnitIds, NOT through `answers`:
+// ProjectApiService.coerceScalarAnswer rejects CustomFieldSelectMultipleSpatialUnitTree outright.
+export function SelectManySpatialUnitRenderer(props: FieldRendererProps) {
+  return <ResourceRefRenderer {...props} multiple />;
 }
 
 export function FallbackRenderer({ field, value }: FieldRendererProps) {

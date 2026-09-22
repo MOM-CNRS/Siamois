@@ -258,6 +258,123 @@
   --cell-pad-x: 0.5rem;
 }
 
+
+/* ----------------------------------------- the table scrolls, the panel does not
+
+   The shell is a fixed 100vh frame with no document scroll, so the table's own body has to be the
+   scrolling box. PrimeReact's scrollHeight="flex" means "fill the height my parent gives me",
+   which only works if every ancestor between the panel and the table body passes a height down —
+   hence one unbroken flex chain, each link with min-height:0 so it may shrink below its content
+   (without it, a flex item's automatic minimum size is its content, the chain never shrinks, and
+   the table grows the panel instead of scrolling inside it).
+
+   The payoff is the sticky header and the frozen columns below: both are position:sticky against
+   this scroll container, and neither does anything while the page is what scrolls. */
+.entity-list-panel.p-panel,
+.entity-list-panel.p-panel > .p-toggleable-content,
+.entity-list-panel.p-panel > .p-toggleable-content > .p-panel-content,
+.entity-list-panel .p-datatable {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The detail panel's own chain, down to the TabView. EntityDetailPanel's root <Panel> was never
+   given this treatment before an embedded list needed it — its one tab (the fiche) is a plain
+   block that just grows with its content, so nothing here was missing height before; a DataTable
+   needs a real bounded height to scroll internally instead of stretching the whole page. Without
+   this, .p-panel-content sizes to its content's natural height (a flex item defaults to flex: 0 1
+   auto, i.e. "shrink-to-fit", not "fill available space") and every link below it inherits that
+   same auto height no matter what flex/min-height rules THEY declare — which is exactly the bug:
+   the table renders at full (100-row) height, the real scrollbars end up on whatever ancestor
+   further up the page actually has overflow (or the browser window itself), the horizontal one
+   only reachable after scrolling all the way down, and the sticky header has no scrolling
+   ancestor to stick against.
+   The breadcrumb (a sibling of the TabView inside .p-panel-content) is deliberately left out: it
+   keeps its natural height, only the TabView below it grows. */
+.entity-detail-panel.p-panel,
+.entity-detail-panel.p-panel > .p-toggleable-content,
+.entity-detail-panel.p-panel > .p-toggleable-content > .p-panel-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Same chain, continued into the TabView itself: nav header stays put (it's not targeted here),
+   the panels container and the active panel grow to fill what .p-panel-content now actually has
+   to give. An embedded list (EntityListPanel's `embedded` prop, rendered inside a DetailTabDef's
+   own TabPanel — e.g. a project's "Unités d'enregistrement" tab) has no <Panel>/.p-toggleable-
+   content of its own, so it picks the chain up from here. Scoped with :has() to the one active
+   TabPanel that actually holds an embedded list, so a tab with ordinary (non-list) content — the
+   fiche — keeps its own natural height/overflow:auto box rather than being forced into this flex
+   chain too. */
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.entity-detail-panel .p-tabview-panels,
+.entity-detail-panel .p-tabview-panel:has(> .entity-list-panel.embedded) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
+   are siblings of it, so they stay put. */
+.entity-list-panel .p-datatable-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Columns keep a usable width instead of being squeezed to fit, so a wide catalog overflows
+   sideways — which is the situation frozen columns exist for. Excludes the selection box, which
+   is pinned at 3rem, and the frozen identifier, sized just below. */
+.entity-list-panel .p-datatable-thead > tr > th:not(.p-selection-column):not(.p-frozen-column),
+.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.p-frozen-column) {
+  min-width: 9rem;
+}
+
+/* What PrimeReact already does for a frozen cell, verified rather than assumed: it injects
+   `.p-frozen-column { position: sticky; background: inherit; }` into the document at runtime (no
+   stylesheet here defines that class — not the lara theme, not primereact.min.css) and writes the
+   `left` offset inline per cell. So the sticky behaviour and the opaque background are free.
+
+   What it does NOT give, and what is below: the stacking order between the frozen columns and the
+   sticky header, a width floor, and a visible seam. */
+
+/* Frozen cells must sit above the columns sliding underneath them, and the header above both —
+   otherwise the frozen identifier paints over the header it is supposed to pass beneath. */
+.entity-list-panel .p-datatable-tbody > tr > td.p-frozen-column {
+  z-index: 1;
+}
+
+.entity-list-panel .p-datatable-thead > tr > th.p-frozen-column {
+  z-index: 2;
+}
+
+/* The identifier column is what the frozen area exists to keep on screen, so it gets a width floor
+   wide enough for a full identifier chip. No max-width: in the auto table layout PrimeReact uses
+   here a cell's max-width is advisory and would silently do nothing — long values are already
+   ellipsised by .entity-list-panel-cell-value instead.
+
+   The right-hand border makes the split between the fixed and scrolling halves visible, rather
+   than something the eye has to infer from motion. */
+.entity-list-panel .p-datatable-thead > tr > th.p-frozen-column:not(.p-selection-column),
+.entity-list-panel .p-datatable-tbody > tr > td.p-frozen-column:not(.p-selection-column) {
+  min-width: 11rem;
+  border-right: 1px solid var(--siamois-green-light-200, #c0dac0);
+  /* Belt and braces over PrimeReact's own `background: inherit`: a row this app paints itself (the
+     overview-open highlight, a search hit) must never leave its frozen cells transparent. */
+  background: inherit;
+  background-clip: padding-box;
+}
+
 .entity-list-panel .p-datatable-thead > tr > th,
 .entity-list-panel .p-datatable-tbody > tr > td {
   padding: var(--cell-pad-y) var(--cell-pad-x);
@@ -315,4 +432,206 @@
   margin-top: 0.25rem;
   color: var(--red-500, #d32f2f);
   font-size: 0.8rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Project fiche (entities/project/FicheTab.tsx)
+
+   The SIAMOIS theme already styles most of this, but keyed on PrimeFaces class names
+   (primefaces-themes/.../panels.scss, others/styles.scss): `.ui-panel.sia-form-panel`,
+   `.ellipsis-btn .ui-button-text`, `.siamois-panel .field-value-group`. PrimeReact emits `.p-*`
+   instead, so the rules below are the `.p-*` half of the same look — same class names on our side
+   (sia-form-panel, field-value-group, ellipsis-btn, required-btn, sia-modified-field,
+   header-toggle-container, panel-bc, panel-footer), so the theme keeps being the single place
+   the colours live.
+   --------------------------------------------------------------------------- */
+
+.p-panel.sia-form-panel .p-panel-content {
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  padding: 0.5rem 0;
+}
+
+.p-panel.sia-form-panel .p-panel-header {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--siamois-green-light-350);
+  color: var(--text-main);
+  padding: 0.5em;
+}
+
+/* customFormPanelContent.xhtml is a p:panelGrid layout="grid" of p:row/p:column, each column
+   carrying the layout's own "ui-g-12 ui-md-6 ui-lg-6"-style class and a 250px min-width. The
+   PrimeFaces grid classes don't exist here, so the row is a flex line and each column takes an
+   equal share of it — which is what those classes produce for the two- and three-column rows
+   ActionUnitDetailsForm actually builds. */
+.project-fiche-tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.project-fiche-tab-col {
+  flex: 1 1 250px;
+  min-width: 250px;
+}
+
+/* panelField.xhtml's own wrapper. `ui-fluid` is PrimeFaces'; `p-fluid` is PrimeReact's, and the
+   composite sets it on every field except the spatial tree picker — so the class is applied
+   conditionally in FormField and given the same meaning here. */
+.project-fiche-tab .field-value-group {
+  display: block;
+  width: auto;
+  margin-top: 0;
+}
+
+.project-fiche-tab .field-value-group.ui-fluid .p-inputtext,
+.project-fiche-tab .field-value-group.ui-fluid .p-inputnumber,
+.project-fiche-tab .field-value-group.ui-fluid .p-calendar,
+.project-fiche-tab .field-value-group.ui-fluid .p-autocomplete {
+  width: 100%;
+}
+
+.project-fiche-tab .header-toggle-container {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+}
+
+/* The label button.
+
+   This has to restate the WHOLE flat look, not just a tweak or two. The bundled PrimeReact theme
+   (lara-light-blue, imported by mount.ts) styles .p-button as a SOLID button — blue fill, white
+   text, 1rem, 700-weight label, 6px radius — and the SIAMOIS theme's own flat rules are written
+   against PrimeFaces class names (body .ui-button.ui-button-flat), which never match a PrimeReact
+   button. So nothing of the JSF look carries over on its own; it is reproduced here, matching the
+   compiled theme.css values (transparent ground, 3px radius, grey #6B7280 label at .875rem, faint
+   green wash on hover).
+
+   No !important and no specificity games needed: lara ships inside @layer primereact, and every
+   rule in this file is unlayered, so these win outright. */
+.project-fiche-tab .ellipsis-btn.p-button {
+  position: relative;
+  display: flex;
+  max-width: 180px;
+  width: fit-content;
+  /* var() fallbacks throughout: the SIAMOIS custom properties come from the JSF page's theme.css,
+     which is absent in the standalone Vite dev server and under vitest. */
+  color: var(--text-light, #6b7280);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  /* JSF puts .5rem 1rem on the inner .ui-button-text span; PrimeReact has no equivalent inner
+     padding, so the same box is produced on the button itself. */
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  /* A label is only a button when there is a thesaurus entry behind it — see FieldLabel. */
+  cursor: default;
+}
+
+.project-fiche-tab .ellipsis-btn.has-thesaurus-entry.p-button {
+  cursor: pointer;
+}
+
+/* .ui-button-flat.ui-state-hover: a 4%-alpha wash of the theme green, label colour unchanged.
+   Also cancels lara's blue focus ring, which would otherwise be the one blue thing left. */
+.project-fiche-tab .ellipsis-btn.p-button:enabled:hover,
+.project-fiche-tab .ellipsis-btn.p-button:hover {
+  background: rgba(102, 153, 102, 0.04);
+  border-color: transparent;
+  color: var(--text-light, #6b7280);
+}
+
+.project-fiche-tab .ellipsis-btn.p-button:focus,
+.project-fiche-tab .ellipsis-btn.p-button:focus-visible {
+  box-shadow: none;
+  outline: 1px solid var(--siamois-green-light-350, #a6cba6);
+  outline-offset: -1px;
+}
+
+.project-fiche-tab .ellipsis-btn .p-button-label {
+  display: inline-block;
+  max-width: 100%;
+  padding-right: 10px; /* room for the * below */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: normal; /* lara sets 700 */
+}
+
+/* The field's own type icon (CustomField.getIcon(), served as FieldResource.icon). Two kinds
+   arrive here and they behave differently: the "bi bi-*" ones are Bootstrap Icons font glyphs,
+   which inherit colour and font-size; "sia-icon-opentheso" (every vocabulary-backed field) is a
+   fixed 16x16 background-image with its grey baked into the SVG, so it ignores both. Sizing the
+   icon box explicitly keeps the two visually aligned in the same label row. */
+.project-fiche-tab .ellipsis-btn .p-button-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.project-fiche-tab .ellipsis-btn .p-button-icon.sia-icon-opentheso {
+  width: 16px;
+  height: 16px;
+}
+
+.project-fiche-tab .required-btn::after {
+  content: " *";
+  position: absolute;
+  right: 6px;
+}
+
+.project-fiche-tab .field-hint {
+  color: var(--text-light, #6b7280);
+}
+
+/* JSF marks a field the user has touched but not yet persisted with sia-modified-field; here the
+   whole draft is pending until Enregistrer, so the same class marks every dirty field. */
+.project-fiche-tab .sia-modified-field .p-inputtext,
+.project-fiche-tab .sia-modified-field .p-autocomplete-multiple-container {
+  border-color: var(--main-color);
+}
+
+/* A field is saving itself: JSF shows the panel-wide spinner (showSpinner/hideSpinner in
+   inplace/text.xhtml's p:ajax); here the field that is actually in flight dims instead, since the
+   rest of the form stays usable. */
+.project-fiche-tab .sia-field-saving {
+  opacity: 0.7;
+}
+
+.project-fiche-tab .field-value-error {
+  margin-top: 0.25rem;
+  color: var(--red-500, #d32f2f);
+  font-size: 0.8rem;
+}
+
+/* singleUnitPanel.xhtml's footer toolbar: one row of small italic history lines. */
+.project-fiche-tab-footer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1em;
+  align-items: center;
+}
+
+.project-fiche-tab .p-toolbar.panel-footer {
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--siamois-green-light-200);
+}
+
+/* p:breadCrumb's nav.panel-bc, above the tabs (EntityDetailPanel). */
+.entity-detail-panel .p-breadcrumb.panel-bc {
+  background: transparent;
+  border: none;
+  padding: 0.2em 0.5em;
+}
+
+.entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-text,
+.entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-icon {
+  font-size: 14px;
+  color: var(--text-light);
 }

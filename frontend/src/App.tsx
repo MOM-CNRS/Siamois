@@ -7,6 +7,7 @@ import { getAllEntityTypes, getEntityType } from "./entities/registry";
 import { EntityListPanel } from "./panels/EntityListPanel";
 import { EntityDetailPanel } from "./panels/EntityDetailPanel";
 import { HomePanel } from "./panels/HomePanel";
+import { WriteModeProvider } from "./panels/writeMode";
 
 const queryClient = new QueryClient();
 
@@ -93,7 +94,17 @@ function PanelContent({
       if (view.entityId == null) {
         return <div className="entity-detail-panel-error">Missing entityId for detail panel</div>;
       }
-      return <EntityDetailPanel entityType={view.entityType} entityId={view.entityId} toolbar={toolbar} />;
+      return (
+        <EntityDetailPanel
+          entityType={view.entityType}
+          entityId={view.entityId}
+          toolbar={toolbar}
+          onNavigate={onNavigate}
+          organizationId={organizationId}
+          onOpenOverview={onOpenOverview}
+          overviewEntityId={overview?.entityType === view.entityType ? overview.entityId : undefined}
+        />
+      );
   }
 }
 
@@ -322,5 +333,11 @@ export function App({ options }: { options: MountOptions }) {
     </div>
   );
 
-  return <QueryClientProvider client={queryClient}>{content}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      {/* FlowBean.isWriteMode, for every panel below — see panels/writeMode.tsx for why this is a
+          context and why it needs no change subscription. */}
+      <WriteModeProvider value={options.writeMode === true}>{content}</WriteModeProvider>
+    </QueryClientProvider>
+  );
 }

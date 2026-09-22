@@ -1,3 +1,4 @@
+import { relationTab } from "../../panels/relationTab";
 import type { EntityTypeConfig } from "../types";
 import { getProject, listProjects, patchProject } from "./api";
 import { projectColumns } from "./columns";
@@ -16,11 +17,16 @@ import type { ProjectDetail, ProjectSummary } from "./types";
 export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail> = {
   key: "project",
   labels: { singular: "Projet", plural: "Projets" },
+  collectionPath: "projects",
   // Matches ActionUnitPanel/ActionUnitListPanel's own AbstractPanel.icon exactly.
   icon: "bi bi-arrow-down-square",
   api: {
+    // fields=all so the detail response carries an `answers` map for the WHOLE field catalog, not
+    // just the seven properties ProjectResource exposes flat — that map is what lets the fiche
+    // render all 33 of ActionUnit.DETAILS_FORM's fields with real values (FicheTab.tsx). The list
+    // asks for a narrower projection instead, driven by its visible columns.
+    get: (id) => getProject(id, "all"),
     list: listProjects,
-    get: getProject,
     patchAnswers: (id, answers) => patchProject(id, { answers }),
   },
   list: {
@@ -55,6 +61,15 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         label: "Détails",
         render: (entity, helpers) => <ProjectFicheTab entity={entity} onSaved={helpers.refetch} />,
       },
+      // actionUnitTabView.xhtml's own order is détails, documents, UE, contenants, phases; only
+      // the fiche and this one are migrated so far, so UE comes right after détails for now.
+      relationTab<ProjectDetail>({
+        key: "recording-units",
+        label: "Unités d'enregistrement",
+        target: "recordingUnit",
+        scopeEntityType: "project",
+        badge: (entity) => entity._counts?.recordingUnits ?? 0,
+      }),
     ],
     // actionUnitPanelHeader.xhtml's content, rendered inside EntityDetailPanel's own panel header
     // (plan §7/§8, "toolbar is part of the panel header" — the header and the generic toolbar

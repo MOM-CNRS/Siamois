@@ -23,6 +23,20 @@ export type FilterValue =
   | { op: "in"; v: string[] }
   | { op: "range"; from?: string; to?: string };
 
+// Scopes a list to one parent entity's own sub-collection — "the recording units OF this
+// project", "the documents OF this recording unit" — rather than the entity type's global list.
+// `entityType` is the parent's registry key (so the URL builder can look up its own
+// `collectionPath`, e.g. "project" -> "projects"); `path` overrides the child segment when it
+// isn't the child entity's own `collectionPath` (e.g. an action-unit's finds live at
+// "/mobiliers", not "/finds"). Lives here, not in panels/tableState.ts, for the same reason
+// FilterValue does: both ListParams and TableState-adjacent code need it without panels/
+// becoming something entities/ depends on.
+export interface ListScope {
+  entityType: string;
+  id: string | number;
+  path?: string;
+}
+
 export interface ListParams {
   offset: number;
   limit: number;
@@ -36,6 +50,10 @@ export interface ListParams {
   // Per-column filters, keyed by the same key ProjectListFilter's f.<key> whitelist uses (a
   // column id for a catalog field, or a pinned ColumnDef's own key for name/fullIdentifier).
   filters?: Record<string, FilterValue>;
+  // When set, the list is fetched from the parent's own sub-collection rather than this entity
+  // type's global list endpoint (plan: generic "related list" tab, e.g. a project's recording
+  // units). See entities/listApi.ts for the URL this produces.
+  scope?: ListScope;
 }
 
 export interface ColumnDef<TSummary> {
@@ -80,16 +98,26 @@ export interface FieldCatalog {
   columns: FieldCatalogColumn[];
 }
 
-// Passed to a tab's render alongside the entity (plan §8 phase 6) — currently just `refetch`, so
-// a tab that mutates the entity (Project's fiche: field edits, identifier rename) can ask
-// EntityDetailPanel's own query to reload rather than each tab wiring its own cache invalidation.
+// Passed to a tab's render alongside the entity (plan §8 phase 6) — `refetch` so a tab that
+// mutates the entity (Project's fiche: field edits, identifier rename) can ask EntityDetailPanel's
+// own query to reload rather than each tab wiring its own cache invalidation. The rest
+// (organizationId/onNavigate/onOpenOverview/overviewEntityId) is what a related-list tab needs to
+// render an embedded EntityListPanel exactly as App.tsx's own top-level list does — plumbed
+// straight through from EntityDetailPanel's own props, not rebuilt per tab.
 export interface DetailTabHelpers {
   refetch: () => void;
+  organizationId?: number;
+  onNavigate?: (entityType: string, id?: string | number) => void;
+  onOpenOverview?: (entityType: string, id: string | number) => void;
+  overviewEntityId?: string | number;
 }
 
 export interface DetailTabDef<TDetail> {
   key: string;
   label: string;
+  // A count pastille on the tab header itself (actionUnitTabView.xhtml's
+  // panelModel.unit.recordingUnitCount badge) — optional, most tabs (the fiche) have none.
+  badge?: (entity: TDetail) => ReactNode;
   render: (entity: TDetail, helpers: DetailTabHelpers) => ReactNode;
 }
 
@@ -118,6 +146,11 @@ export interface HomeWidgetDef {
 export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   key: string;
   labels: { singular: string; plural: string };
+  // The REST collection segment for this entity ("projects", "recording-units") — used to build a
+  // scoped list URL generically (entities/listApi.ts: `/api/v1/{parent.collectionPath}/{id}/{path
+  // ?? child.collectionPath}`) without a per-relation lookup table. Every registered entity has
+  // one, whether or not anything scopes to it yet.
+  collectionPath: string;
   // Bootstrap icon class matching this entity's AbstractPanel.icon (e.g. "bi bi-arrow-down-square"
   // for Project) — used by EntityListPanel's header, mirroring panel/header/*ListPanelHeader.xhtml
   // (icon + title + count chip), not something list rows/columns already carry.
@@ -140,7 +173,11 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // Omitted entirely, EntityListPanel behaves exactly as it did before this existed — pinned
     // columns only, no toggler, no `fields=` param.
     schema?: {
-      load: (ctx: { organizationId?: number }) => Promise<FieldCatalog>;
+      // `scope` is threaded through from EntityListPanel's own `scope` prop when present (a
+      // catalog can be parent-scoped rather than organization-scoped — RecordingUnit's
+      // recording-unit-types catalog lives at GET /api/v1/projects/{id}/recording-unit-types, not
+      // under the organization).
+      load: (ctx: { organizationId?: number; scope?: ListScope }) => Promise<FieldCatalog>;
     };
     defaultSort?: string;
     searchable: boolean;

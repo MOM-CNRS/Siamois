@@ -27,6 +27,18 @@ public record FieldResource(
         @Nullable String valueBinding,
 
         @Schema(description = "Code de vocabulaire (ex. SIARU.CHRONO) pour les SELECT_*_FROM_FIELD_CODE")
-        @Nullable String fieldCode
+        @Nullable String fieldCode,
+
+        @Schema(description = "Vrai si un champ TEXT doit s'afficher sur plusieurs lignes "
+                + "(CustomFieldText.isTextArea) ; null pour les autres types de champ")
+        @Nullable Boolean isTextArea,
+
+        @Schema(description = "Classe d'icône affichée devant le libellé du champ dans la fiche "
+                + "(CustomField.getIcon)", example = "bi bi-question")
+        @Nullable String icon,
+
+        @Schema(description = "URI du concept du champ, cible du lien « Documentation » de la fiche "
+                + "(CustomField.getConceptUri)")
+        @Nullable String conceptUri
 ) {
 }

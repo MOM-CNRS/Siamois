@@ -118,6 +118,17 @@ describe("optionSourceFor", () => {
     expect(mockedApiFetch.mock.calls[0][0]).not.toContain("q=");
   });
 
+  it("returns the same place loader for the spatial-unit TREE field (SPATIAL_CONTEXT)", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [] });
+    const loader = optionSourceFor(field({ answerType: "SELECT_MULTIPLE_SPATIAL_UNIT_TREE" }), 100);
+    expect(loader).not.toBeNull();
+    await loader?.("lyo");
+    expect(mockedApiFetch.mock.calls[0][0]).toContain("/places/autocomplete?");
+    // Same 400-on-blank rule as the single picker.
+    expect(await loader?.("")).toEqual([]);
+    expect(mockedApiFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("returns null for an answerType with no option source (e.g. TEXT, DECIMAL)", () => {
     expect(optionSourceFor(field({ answerType: "TEXT" }), 100)).toBeNull();
     expect(optionSourceFor(field({ answerType: "DECIMAL" }), 100)).toBeNull();
@@ -129,5 +140,6 @@ describe("supportsEmptyQuery", () => {
     expect(supportsEmptyQuery(field({ answerType: "SELECT_ONE_FROM_FIELD_CODE" }))).toBe(true);
     expect(supportsEmptyQuery(field({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" }))).toBe(true);
     expect(supportsEmptyQuery(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }))).toBe(false);
+    expect(supportsEmptyQuery(field({ answerType: "SELECT_MULTIPLE_SPATIAL_UNIT_TREE" }))).toBe(false);
   });
 });

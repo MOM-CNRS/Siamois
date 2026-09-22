@@ -102,6 +102,22 @@ describe("getProject", () => {
     expect(result).toEqual(project);
   });
 
+  it("asks for the answers projection when given a fields spec (what the fiche needs)", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await getProject(5, "all");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5?fields=all");
+  });
+
+  it("encodes a comma-separated field list rather than sending it raw", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await getProject(5, "-102,42");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5?fields=-102%2C42");
+  });
+
   it("forwards an answers map as-is (the click-to-edit overlay's write path)", async () => {
     mockedApiFetch.mockResolvedValueOnce({ data: {} });
 

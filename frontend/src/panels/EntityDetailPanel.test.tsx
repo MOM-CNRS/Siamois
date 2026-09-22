@@ -24,7 +24,8 @@ const getMock = vi.fn<(id: string | number) => Promise<FakeEntity>>();
 const fakeConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
   key: "fake-detail-entity",
   labels: { singular: "Fake", plural: "Fakes" },
-    icon: "bi bi-question",
+  collectionPath: "fake-detail-entities",
+  icon: "bi bi-question",
   api: { list: vi.fn(), get: getMock },
   list: { columns: [], searchable: false },
   detail: {
@@ -162,5 +163,128 @@ describe("EntityDetailPanel", () => {
     await flush();
 
     expect(container.textContent).toContain("does-not-exist");
+  });
+});
+
+describe("EntityDetailPanel breadcrumb", () => {
+  async function renderPanel(onNavigate?: (entityType: string, id?: string | number) => void) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity" entityId="1" onNavigate={onNavigate} />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+    return container.querySelector(".p-breadcrumb.panel-bc") as HTMLElement;
+  }
+
+  it("renders singleUnitPanel.xhtml's two crumbs: the home icon and the entity's list", async () => {
+    const bc = await renderPanel();
+    expect(bc).toBeTruthy();
+    expect(bc.textContent).toContain("Tous les fakes");
+    // createHomeItem is a real redirect to the dashboard, not a React navigation.
+    const home = bc.querySelector("a[href]") as HTMLAnchorElement;
+    expect(home.getAttribute("href")).toContain("/focus/L3dlbGNvbWU=");
+  });
+
+  it("switches the pane to that entity's list when the list crumb is pressed", async () => {
+    const onNavigate = vi.fn();
+    const bc = await renderPanel(onNavigate);
+
+    const crumb = Array.from(bc.querySelectorAll(".p-menuitem-link")).find((el) =>
+      el.textContent?.includes("Tous les fakes"),
+    ) as HTMLElement;
+    await act(async () => {
+      crumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onNavigate).toHaveBeenCalledWith("fake-detail-entity");
+  });
+
+  it("still renders the crumbs without onNavigate (the overview pane does not pass one)", async () => {
+    const bc = await renderPanel(undefined);
+    expect(bc.textContent).toContain("Tous les fakes");
+  });
+});
+
+describe("EntityDetailPanel tab badge and helpers (plan: generic related-list tab)", () => {
+  it("renders a tab's badge count next to its label", async () => {
+    const withBadgeConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+      ...fakeConfig,
+      key: "fake-detail-entity-with-badge",
+      detail: {
+        tabs: [{ ...fakeConfig.detail.tabs[0], badge: () => 7 }],
+      },
+    };
+    registerEntityType(withBadgeConfig);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity-with-badge" entityId="1" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const tabHeader = container.querySelector(".p-tabview-nav");
+    expect(tabHeader?.textContent).toContain("Fiche");
+    expect(tabHeader?.textContent).toContain("7");
+  });
+
+  it("renders a plain label with no badge chip when the tab declares none", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity" entityId="1" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const tabHeader = container.querySelector(".p-tabview-nav")!;
+    expect(tabHeader.querySelector(".p-chip")).toBeNull();
+  });
+
+  it("forwards organizationId/onOpenOverview/overviewEntityId into DetailTabHelpers", async () => {
+    const onOpenOverview = vi.fn();
+    let seen: unknown;
+    const withHelpersConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+      ...fakeConfig,
+      key: "fake-detail-entity-with-helpers",
+      detail: {
+        tabs: [
+          {
+            key: "fiche",
+            label: "Fiche",
+            render: (_entity, helpers) => {
+              seen = helpers;
+              return <div />;
+            },
+          },
+        ],
+      },
+    };
+    registerEntityType(withHelpersConfig);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel
+            entityType="fake-detail-entity-with-helpers"
+            entityId="1"
+            organizationId={42}
+            onOpenOverview={onOpenOverview}
+            overviewEntityId="9"
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(seen).toMatchObject({ organizationId: 42, onOpenOverview, overviewEntityId: "9" });
   });
 });

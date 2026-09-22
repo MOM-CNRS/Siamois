@@ -22,4 +22,7 @@ public class RecordingUnitResourceCounts {
     @Schema(description = "Nombre documents")
     private Long documents;
 
+    @Schema(description = "Nombre de relations stratigraphiques")
+    private Long relationships;
+
 }

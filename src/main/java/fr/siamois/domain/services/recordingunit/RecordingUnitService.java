@@ -963,6 +963,31 @@ public class RecordingUnitService implements ArkEntityService {
         return pageAndEnrich(specs, pageable, false);
     }
 
+    /**
+     * Same as {@link #findByActionUnitId(Long, int, int, Sort)}, plus the REST list's own per-column
+     * filters (plan: parity with {@code GET /api/v1/projects}'s {@code f.*}).
+     *
+     * <p>Deliberately NOT {@link #searchRecordingUnit}: that method's {@code prepareSpecs} starts
+     * from {@code recordingUnitInInstitution} plus a root-only/ancestor-closure path meant for the
+     * JSF tree, and its 3-arg overload hardcodes {@code includeFullRelations=true} — five extra
+     * queries per page to hydrate {@code parents}/{@code children}/{@code phases} collections this
+     * list's own mapper throws away (it reads only the *Count fields {@link #hydrateCounts} already
+     * fills in). {@link RecordingUnitSortFilterService#userFilterSpecs} is the one piece actually
+     * needed: it turns a bare {@link FilterDTO} into a {@link Specification} with no institution or
+     * root-mode concern of its own — the project scope below stays a plain {@code .and()} outside
+     * of it, rather than going through {@code FilterDTO} as an {@code actionUnit} filter, which
+     * would let a client's own {@code f.actionUnit} collide with the path's scope.</p>
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findByActionUnitId(Long actionUnitId, int limit, int offset, Sort sort, FilterDTO filters) {
+        int pageNumber = offset / limit;
+        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+        Specification<RecordingUnit> specs = Specification
+                .where(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitId))
+                .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
+        return pageAndEnrich(specs, pageable, false);
+    }
+
 
     /**
      * Generates the identifier for a recording unit that has no parent.

@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { BreadCrumb } from "primereact/breadcrumb";
+import { Chip } from "primereact/chip";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
+import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import type { PanelToolbarSlot } from "../mountOptions";
@@ -11,6 +14,20 @@ export interface EntityDetailPanelProps {
   // Omitted for the overview pane render call that has no toolbar to show, or once the main
   // pane has navigated away from the entity this toolbar was built for (App.tsx).
   toolbar?: PanelToolbarSlot;
+  // Makes the breadcrumb's "Projets" crumb switch the pane to that entity's list, the same way
+  // EntityListPanel's own row click navigates. Omitted for the overview pane, whose breadcrumb JSF
+  // also renders without it being the thing that drives the main pane.
+  //
+  // This and the next three props are also forwarded into every tab's DetailTabHelpers (plan:
+  // generic related-list tab) so a tab rendering an embedded EntityListPanel (relationTab) gets
+  // exactly what App.tsx's own top-level list gets — no separate wiring per tab. All four are
+  // omitted for the overview pane: there is no overview-within-the-overview, so a related-list
+  // tab shown there simply has no onOpenOverview to call and falls back to onNavigate (itself
+  // absent too, same as today).
+  onNavigate?: (entityType: string, id?: string | number) => void;
+  organizationId?: number;
+  onOpenOverview?: (entityType: string, id: string | number) => void;
+  overviewEntityId?: string | number;
 }
 
 /**
@@ -25,7 +42,15 @@ export interface EntityDetailPanelProps {
  * helpers) (actionUnitPanelHeader.xhtml's identifier/type/name/location chips), with the
  * toolbar on the right — one node, not split across <Panel>'s header/icons props.
  */
-export function EntityDetailPanel({ entityType, entityId, toolbar }: EntityDetailPanelProps) {
+export function EntityDetailPanel({
+  entityType,
+  entityId,
+  toolbar,
+  onNavigate,
+  organizationId,
+  onOpenOverview,
+  overviewEntityId,
+}: EntityDetailPanelProps) {
   const config = getEntityType(entityType);
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -47,7 +72,7 @@ export function EntityDetailPanel({ entityType, entityId, toolbar }: EntityDetai
     return null;
   }
 
-  const helpers = { refetch: () => void refetch() };
+  const helpers = { refetch: () => void refetch(), organizationId, onNavigate, onOpenOverview, overviewEntityId };
 
   // A toolbar built server-side (MountOptions) has no entity data to derive chrome from at that
   // point — it's the initial mount's own entity. Once we have the fetched entity, prefer chrome
@@ -76,12 +101,52 @@ export function EntityDetailPanel({ entityType, entityId, toolbar }: EntityDetai
         />
       }
     >
-      <TabView>
-        {config.detail.tabs.map((tab) => (
-          <TabPanel key={tab.key} header={tab.label}>
-            {tab.render(data, helpers)}
-          </TabPanel>
-        ))}
+      {/* singleUnitPanel.xhtml's own p:breadCrumb, above the tabs and inside the panel body.
+          AbstractSingleEntityPanel.getAllParentBreadcrumbModels builds exactly two items for a
+          non-hierarchical entity like Project — the home item and the "root type" item — both of
+          which the registry already knows, so this needs no endpoint. An entity whose panel
+          overrides that method with real parents (Specimen, Phase, Container) will need its own
+          crumbs from config; it gets this two-item base until then. */}
+      <BreadCrumb
+        className="panel-bc"
+        // createHomeItem: icon only, no label, and a real redirect to the dashboard
+        // (FlowBean.redirectToDashboard → /focus/L3dlbGNvbWU=, the base64url of "/welcome"). Not
+        // routed through onNavigate: there is no "home" entity type for the registry to resolve,
+        // and the dashboard is a JSF page, not one of the three React panel kinds.
+        home={{ icon: "bi bi-house", url: apiUrl("/focus/L3dlbGNvbWU=") }}
+        model={[
+          {
+            // ActionUnitPanel.createRootTypeItem: "Tous les projets", linking to the entity's list.
+            label: `Tous les ${config.labels.plural.toLowerCase()}`,
+            icon: config.icon,
+            command: onNavigate ? () => onNavigate(entityType) : undefined,
+          },
+        ]}
+      />
+      <TabView className="entity-detail-panel-tabs">
+        {config.detail.tabs.map((tab) => {
+          const badge = tab.badge?.(data);
+          return (
+            <TabPanel
+              key={tab.key}
+              header={
+                badge == null ? (
+                  tab.label
+                ) : (
+                  // actionUnitTabView.xhtml's own count pastille next to the tab label
+                  // (panelModel.unit.recordingUnitCount) — a plain Chip, not PrimeReact's Badge,
+                  // matching the tab-header chips elsewhere in this app (PanelHeaderBar's own
+                  // count chip on the list panel).
+                  <span className="entity-detail-panel-tab-header">
+                    {tab.label} <Chip label={String(badge)} />
+                  </span>
+                )
+              }
+            >
+              {tab.render(data, helpers)}
+            </TabPanel>
+          );
+        })}
       </TabView>
     </Panel>
   );

@@ -9,6 +9,7 @@ import { configureCsrf } from "./auth/sessionAuth";
 import { registerDefaultFieldRenderers } from "./fields/registerDefaultRenderers";
 import { registerEntityType } from "./entities/registry";
 import { projectEntityConfig } from "./entities/project/config";
+import { recordingUnitEntityConfig } from "./entities/recordingUnit/config";
 import type { MountOptions } from "./mountOptions";
 import { App } from "./App";
 
@@ -16,6 +17,7 @@ registerDefaultFieldRenderers();
 // One registerEntityType call per entity module (plan §3/§8 phase 4) — the next entity to
 // migrate is a config-only addition here, nothing else in this file changes.
 registerEntityType(projectEntityConfig);
+registerEntityType(recordingUnitEntityConfig);
 
 // One generic mount function parameterized by panel kind + entity type (plan §3) — never one
 // mount function per entity. focus.xhtml calls this once isReactPanelEnabled() gates a panel

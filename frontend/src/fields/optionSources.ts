@@ -61,8 +61,10 @@ export async function fetchPlaceOptions(organizationId: number, q: string): Prom
  * whole vocabulary, paginated); spatial units cannot (see {@link fetchPlaceOptions}). Exposed so a
  * caller can tell "nothing matches" from "type something first".</p>
  */
+const SPATIAL_ANSWER_TYPES = new Set(["SELECT_ONE_SPATIAL_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT_TREE"]);
+
 export function supportsEmptyQuery(field: FieldResource): boolean {
-  return field.answerType !== "SELECT_ONE_SPATIAL_UNIT";
+  return !SPATIAL_ANSWER_TYPES.has(field.answerType);
 }
 
 /**
@@ -80,6 +82,7 @@ export function optionSourceFor(
     case "SELECT_MULTIPLE_FROM_FIELD_CODE":
       return field.fieldCode ? (q) => fetchConceptOptions(organizationId, field.fieldCode as string, q) : null;
     case "SELECT_ONE_SPATIAL_UNIT":
+    case "SELECT_MULTIPLE_SPATIAL_UNIT_TREE":
       // An empty query would be a 400 here, so it short-circuits to no options rather than firing
       // a request that cannot succeed — the picker simply stays empty until something is typed.
       return (q) => (q && q.trim() ? fetchPlaceOptions(organizationId, q) : Promise.resolve([]));

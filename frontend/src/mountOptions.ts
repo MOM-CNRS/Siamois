@@ -61,6 +61,12 @@ export interface MountOptions {
   overviewEntityId?: string | number;
   organizationId?: number;
   overviewOrganizationId?: number;
+  // FlowBean.isWriteMode — the topbar's global read/write switch. Everything editable in the app is
+  // gated on it in JSF (headerEditControls.xhtml, entityDataTable.xhtml's "writeMode" rendering
+  // rule, tableToolbar.xhtml), and React honours the same gate through WriteModeProvider.
+  // Defaults to false when the attribute is missing: showing a read-only UI to someone who may edit
+  // is a nuisance, offering edit controls to someone in read mode is a lie the API then rejects.
+  writeMode?: boolean;
   basePath: string;
   csrf: { headerName: string; token: string };
   main: PanelChrome;

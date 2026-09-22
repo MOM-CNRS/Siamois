@@ -63,6 +63,7 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.*;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectDefaultType;
 import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
+import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFieldConfigResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
@@ -165,7 +166,10 @@ public class RecordingUnitOpenApiService {
             return buildFieldsWithFallback(dto, fieldSource, locale);
         });
 
-        resource.setAnswers(fields);
+        // RecordingUnitResource.answers is Map<String, Object> (shared with the list's raw-value
+        // shape) — wrap rather than assign directly, since Map<String, FieldAnswer> isn't a
+        // Map<String, Object> under Java's invariant generics even though every value already is one.
+        resource.setAnswers(new LinkedHashMap<>(fields));
         return resource;
     }
 
@@ -310,7 +314,15 @@ public class RecordingUnitOpenApiService {
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.UE, concept.getId())))
                 .toList();
 
-        return new ProjectRecordingUnitTypeListResponse(types, defaultType);
+        // _default first, so a per-type override of a system field's label/hint (an effective-form
+        // customization scoped to that one type) wins over the type-independent default — same
+        // layering the effective-form resolver itself applies.
+        Map<String, FieldResource> unionFields = new LinkedHashMap<>(defaultType.getFields());
+        for (RecordingUnitType type : types) {
+            unionFields.putAll(type.getFields());
+        }
+
+        return new ProjectRecordingUnitTypeListResponse(types, defaultType, unionFields);
     }
 
     @Transactional
@@ -363,7 +375,24 @@ public class RecordingUnitOpenApiService {
             return buildFieldsMetadataOnly(fieldSource, locale);
         });
         defaultType.setFields(fields);
+        defaultType.setTableColumns(buildRecordingUnitTableColumnDefaults());
         return defaultType;
+    }
+
+    /**
+     * Défauts de colonnes de la liste des unités d'enregistrement, depuis
+     * {@link RecordingUnitTableColumnDefaults} — même source que la table JSF
+     * ({@link fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory}), pour qu'aucune
+     * des deux ne puisse diverger silencieusement de l'autre.
+     */
+    private static List<ProjectTableColumnResource> buildRecordingUnitTableColumnDefaults() {
+        List<RecordingUnitTableColumnDefaults.ColumnDefault> defaults = RecordingUnitTableColumnDefaults.columns();
+        List<ProjectTableColumnResource> out = new ArrayList<>(defaults.size());
+        for (int i = 0; i < defaults.size(); i++) {
+            RecordingUnitTableColumnDefaults.ColumnDefault d = defaults.get(i);
+            out.add(new ProjectTableColumnResource(d.columnId(), d.fieldId(), d.visible(), i));
+        }
+        return out;
     }
 
     private RecordingUnitType buildRecordingUnitType(Long projectId, Concept concept,
@@ -686,7 +715,10 @@ public class RecordingUnitOpenApiService {
                 hint,
                 field.getIsSystemField(),
                 field.getValueBinding(),
-                fieldCode);
+                fieldCode,
+                field instanceof CustomFieldText text ? text.getIsTextArea() : null,
+                field.getIcon(),
+                field.getConceptUri());
     }
 
     private ResolvedConceptResource toConceptResource(ConceptDTO concept, String lang) {

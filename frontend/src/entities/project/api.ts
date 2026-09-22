@@ -1,54 +1,25 @@
 import { apiFetch } from "../../api/client";
+import { fetchList } from "../listApi";
 import type { ListParams, PagedResult } from "../types";
-import { filtersToQueryParams } from "../../panels/tableState";
 import type { AnswerInputBody } from "../../fields/types";
 import type { ProjectDetail, ProjectSummary } from "./types";
-
-// Response envelopes match ProjectListResponse/ProjectResponse exactly (plan §5's existing,
-// unchanged GET /api/v1/projects / GET /api/v1/projects/{id}) — meta.total, not totalCount, is
-// the wire field name; PagedResult normalizes that for the generic panels.
-interface ListMetaResponse {
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-interface ProjectListResponseBody {
-  data: ProjectSummary[];
-  meta: ListMetaResponse;
-}
 
 interface ProjectResponseBody {
   data: ProjectDetail;
 }
 
 export async function listProjects(params: ListParams): Promise<PagedResult<ProjectSummary>> {
-  const query = new URLSearchParams();
-  query.set("offset", String(params.offset));
-  query.set("limit", String(params.limit));
-  if (params.search) query.set("search", params.search);
-  if (params.sort) query.set("sort", params.sort);
-  if (params.organizationId != null) query.set("organizationId", String(params.organizationId));
-  if (params.fields) query.set("fields", params.fields);
-  if (params.filters) {
-    // f.<key>[.from|.to] — ProjectListFilter's own contract; filtersToQueryParams is the one place
-    // that owns the encoding, shared with the base64url ?s= state (plan §f).
-    for (const [key, value] of filtersToQueryParams(params.filters).entries()) {
-      query.append(key, value);
-    }
-  }
-
-  const body = await apiFetch<ProjectListResponseBody>(`/api/v1/projects?${query.toString()}`);
-  return {
-    data: body.data,
-    totalCount: body.meta.total,
-    limit: body.meta.limit,
-    offset: body.meta.offset,
-  };
+  return fetchList<ProjectSummary>("projects", params);
 }
 
-export async function getProject(id: string | number): Promise<ProjectDetail> {
-  const body = await apiFetch<ProjectResponseBody>(`/api/v1/projects/${id}`);
+/**
+ * @param fields projection des champs de formulaire dans `answers` — "all", "default", ou une liste
+ *   d'ids séparés par des virgules. La fiche demande "all" : elle rend tout le layout, pas une
+ *   sélection de colonnes. Omis, la réponse n'a pas de clé `answers` et coûte ce qu'elle coûtait.
+ */
+export async function getProject(id: string | number, fields?: string): Promise<ProjectDetail> {
+  const query = fields ? `?fields=${encodeURIComponent(fields)}` : "";
+  const body = await apiFetch<ProjectResponseBody>(`/api/v1/projects/${id}${query}`);
   return body.data;
 }
 
@@ -62,8 +33,15 @@ export async function getProject(id: string | number): Promise<ProjectDetail> {
 export interface ProjectPatch {
   name?: string;
   identifier?: string;
+  // The flat alias for the project type (ProjectPatchRequest.typeId, @JsonAlias typeConceptId) —
+  // the header's category chip writes here rather than through `answers`, matching the server's
+  // own documented path for that field.
+  typeId?: string | null;
   beginDate?: string | null;
   endDate?: string | null;
+  // The one field the fiche cannot route through `answers`: ProjectApiService.coerceScalarAnswer
+  // throws 400 for CustomFieldSelectMultipleSpatialUnitTree, so SPATIAL_CONTEXT_FIELD writes here.
+  spatialContextSpatialUnitIds?: string[];
   answers?: Record<string, AnswerInputBody>;
 }
 

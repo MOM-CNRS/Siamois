@@ -7,6 +7,7 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -26,7 +27,9 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
@@ -36,6 +39,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
@@ -60,6 +64,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.lang.Long.parseLong;
 
@@ -86,9 +91,16 @@ public class ProjectApiService {
             CREATION_TIME, RECORDING_UNIT_COUNT
     );
 
-    private static final Set<String> ALLOWED_RECORDING_UNIT_SORT_FIELDS = Set.of(
-            CREATION_TIME, "id", IDENTIFIER, "fullIdentifier", "openingDate", "closingDate"
-    );
+    // Union of the real JPA paths and RecordingUnitSpec's own synthetic sort keys
+    // (specimenCount/relationshipCount/parentsCount/childrenCount, the *Label concept sorts,
+    // matrixColor/tpq/taq) — RecordingUnitTableColumnDefaults' extra sortable columns all need one
+    // of these. RecordingUnitSpec.allColumns() is the same list the JSF table's own filter engine
+    // (RecordingUnitSortFilterService) validates filter keys against, so this can't silently drift
+    // from what a f.<key> is actually allowed to be either.
+    private static final Set<String> ALLOWED_RECORDING_UNIT_SORT_FIELDS = Stream.concat(
+            Stream.of(CREATION_TIME, "id", IDENTIFIER, "fullIdentifier", "openingDate", "closingDate"),
+            RecordingUnitSpec.allColumns().stream()
+    ).collect(Collectors.toUnmodifiableSet());
 
     private static final Set<String> ALLOWED_ORGANIZATION_SORT_FIELDS = Set.of("id", "name", IDENTIFIER, "creationDate");
 
@@ -654,15 +666,44 @@ public class ProjectApiService {
         return new PageImpl<>(slice, pageable, total);
     }
 
+    /**
+     * @param filter per-column filters (parity with {@link #pageAccessibleProjects}'s own {@code
+     *               f.<key>} support) — already parsed and validated by
+     *               {@link RecordingUnitListFilter#parse}; {@link RecordingUnitListFilter#EMPTY}
+     *               for no filtering.
+     */
     public Page<RecordingUnitDTO> pageRecordingUnitsForProject(
             ProjectApiCaller caller,
             String projectIdOrKey,
             int offset,
             int limit,
-            String sortParam) {
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter) {
+        // Authorization first, same order pageAccessibleProjects/requireAccessibleProject follow
+        // everywhere else in this service — a caller with no access to the project must never learn
+        // anything about it, including whether its sort/filter params would otherwise be valid.
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
         Sort sort = parseRecordingUnitSort(sortParam);
-        return recordingUnitService.findByActionUnitId(row.actionUnit().getId(), limit, offset, sort);
+        FilterDTO filterDTO = filter.toFilterDTO(search);
+        return recordingUnitService.findByActionUnitId(row.actionUnit().getId(), limit, offset, sort, filterDTO);
+    }
+
+    /**
+     * Whether the caller can write recording units on this project — a single boolean for the
+     * whole {@link #pageRecordingUnitsForProject} page, since every row shares the same project
+     * (unlike {@link #permissionsFor}, which handles a project LIST that can span institutions).
+     * Mirrors {@link ProfilePermissionService#hasRecordingUnitWritePermission}'s own instance/
+     * organization/project triple, without needing a {@code RecordingUnitDTO} per row to get there.
+     */
+    public boolean canEditRecordingUnitsForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return profilePermissionService.hasProjectPermission(userInfo, row.actionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+                PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
+                PermissionConstants.PROJECT_EDIT_RECORDING_UNITS);
     }
 
     /**
@@ -887,8 +928,32 @@ public class ProjectApiService {
         return parseSort(sortParam, ALLOWED_ORGANIZATION_SORT_FIELDS, "name");
     }
 
+    /**
+     * Tri UE : défaut {@code creationTime:desc}, tri secondaire stable {@code id:asc} (sauf champ
+     * synthétique — voir la note ci-dessous), et <strong>400</strong> sur un champ hors
+     * {@link #ALLOWED_RECORDING_UNIT_SORT_FIELDS}, comme {@link #parseProjectSort(String)}. Une
+     * faute de frappe dans un des 10+ champs triables introduits par
+     * {@code RecordingUnitTableColumnDefaults} ne doit jamais retomber silencieusement sur le tri
+     * par défaut — c'est précisément ce repli silencieux qui avait masqué le bug de {@code ?sort=}
+     * que {@link #parseProjectSort(String)} corrige déjà pour le projet.
+     *
+     * <p>Note : sur un tri synthétique (un compteur ou un libellé de concept),
+     * {@code RecordingUnitSortFilterService.stripSyntheticSort} reconstruit un {@code PageRequest}
+     * sans aucun tri avant d'atteindre le repository — le départage stable par {@code id} posé ici
+     * est donc perdu dans ce cas précis (le tri primaire, lui, est bien appliqué en mémoire par
+     * {@code applySyntheticSort}). Comportement identique à celui de JSF ; non corrigé ici.</p>
+     */
     private static Sort parseRecordingUnitSort(String sortParam) {
-        return parseSortWithStableId(sortParam, ALLOWED_RECORDING_UNIT_SORT_FIELDS);
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Direction.DESC, CREATION_TIME).and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_RECORDING_UNIT_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        Sort primary = Sort.by(sortDirection(parts), property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
     }
 
     public static Sort parsePlaceSort(String sortParam) {

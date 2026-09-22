@@ -24,7 +24,9 @@ export interface TableState {
   filters: Record<string, FilterValue>;
 }
 
-export const DEFAULT_LIMIT = 10;
+// Page sizes are 20/50/100 (EntityListPanel.ROWS_PER_PAGE_OPTIONS) — 20 is the default, not JSF's
+// own 10 (EntityTableViewModel.defaultPageSize), a deliberate divergence.
+export const DEFAULT_LIMIT = 20;
 
 export function createTableState(overrides: Partial<TableState> = {}): TableState {
   return {
