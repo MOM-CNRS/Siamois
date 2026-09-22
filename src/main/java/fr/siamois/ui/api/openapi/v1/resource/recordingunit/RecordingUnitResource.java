@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -24,6 +25,11 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
     private String identifier;
     private String fullIdentifier;
     private String projectId;
+
+    @Schema(description = "Organisation propriétaire de l'unité (son institution de création) — ce que "
+            + "le fiche React résout son propre catalogue de concepts contre (GET /api/v1/organizations/"
+            + "{id}/concepts), faute d'un projectId suffisant côté client pour le dériver autrement.")
+    private OrganizationResourceIdentifier organization;
 
     private ResolvedConceptResource type;
 
@@ -51,9 +57,10 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
     private RecordingUnitResourceLinks links;
 
     @JsonProperty("_permissions")
-    @Schema(description = "Droits du caller sur cette unité d'enregistrement — seulement renseigné par la "
-            + "liste aujourd'hui (GET /api/v1/projects/{id}/recording-units), un booléen par page puisque "
-            + "toutes les lignes partagent le même projet.")
+    @Schema(description = "Droits du caller sur cette unité d'enregistrement. Sur la liste "
+            + "(GET /api/v1/projects/{id}/recording-units), un booléen par page puisque toutes les lignes "
+            + "partagent le même projet ; sur le détail (GET /api/v1/recording-units/{id}), calculé pour "
+            + "cette seule unité.")
     private ProjectResourcePermissions permissions;
 
 }

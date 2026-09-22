@@ -1731,6 +1731,84 @@ class ActionUnitServiceTest {
         verify(actionUnitRepository).findByIdentifierAndCreatedByInstitutionId("ID-SHORT", 200L);
 
     }
+
+    // ------------------------------------------------------------------
+    // findSiblingProject (fiche précédente/suivante)
+    // ------------------------------------------------------------------
+
+    @Test
+    void findSiblingProject_emptyInstitutions_returnsEmptyWithoutDb() {
+        Optional<ActionUnitDTO> result = actionUnitService.findSiblingProject(
+                1L, Set.of(), null, null, fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY,
+                "creationTime", Sort.Direction.ASC, NOW, 5L, true);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    /**
+     * The ordinary case: a cursored row exists past the current one, so no wrap-around fallback
+     * query is ever issued — {@code findAll} is called exactly once.
+     */
+    @Test
+    void findSiblingProject_forward_returnsCursoredNeighbourWithoutWrapAround() {
+        actionUnit2.setFullIdentifier("TEST-SIBLING-NEXT");
+        actionUnit2dto.setId(2L);
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit2)));
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+
+        Optional<ActionUnitDTO> result = actionUnitService.findSiblingProject(
+                1L, Set.of(10L), null, null, fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY,
+                "creationTime", Sort.Direction.ASC, NOW, 1L, true);
+
+        assertThat(result).contains(actionUnit2dto);
+        verify(actionUnitRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    /**
+     * No row past the current one: falls back to the same order without the cursor, which lands
+     * on the opposite end — {@code goToNext}/{@code goToPrevious}'s own JSF wrap-around, now
+     * re-derived on the accessible-projects spec instead of an institution-only one.
+     */
+    @Test
+    void findSiblingProject_noNeighbour_wrapsAroundToOppositeEnd() {
+        actionUnit1.setFullIdentifier("TEST-SIBLING-WRAP-FIRST");
+        actionUnit1dto.setId(1L);
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1)));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+
+        Optional<ActionUnitDTO> result = actionUnitService.findSiblingProject(
+                1L, Set.of(10L), null, null, fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY,
+                "creationTime", Sort.Direction.ASC, NOW, 9L, true);
+
+        assertThat(result).contains(actionUnit1dto);
+        verify(actionUnitRepository, times(2)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    /**
+     * The caller's accessible set has no OTHER project at all: both the cursored query and the
+     * wrap-around fallback only ever find {@code currentId} itself, so the sibling is dropped
+     * rather than looping back to the caller's own project (deliberately not JSF's own
+     * wrap-to-self behaviour — see {@code ActionUnitService#findSiblingProject} javadoc).
+     */
+    @Test
+    void findSiblingProject_onlyAccessibleProjectIsCurrentOne_returnsEmpty() {
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1)));
+
+        Optional<ActionUnitDTO> result = actionUnitService.findSiblingProject(
+                1L, Set.of(10L), null, null, fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY,
+                "creationTime", Sort.Direction.ASC, NOW, 1L, true);
+
+        assertThat(result).isEmpty();
+        verify(actionUnitMapper, never()).convert(any(ActionUnit.class));
+    }
+
+    // ------------------------------------------------------------------
     // findAllByActionManager
     // ------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 import { apiFetch } from "../../api/client";
 import { fetchList } from "../listApi";
-import type { ListParams, PagedResult } from "../types";
+import type { EntitySiblings, ListParams, PagedResult } from "../types";
 import type { AnswerInputBody } from "../../fields/types";
 import type { ProjectDetail, ProjectSummary } from "./types";
 
@@ -48,4 +48,33 @@ export interface ProjectPatch {
 export async function patchProject(id: string | number, patch: ProjectPatch): Promise<ProjectDetail> {
   const body = await apiFetch<ProjectResponseBody>(`/api/v1/projects/${id}`, { method: "PATCH", body: patch });
   return body.data;
+}
+
+interface ProjectSiblingResourceBody {
+  id: string;
+  label: string;
+  resourceUri: string;
+}
+
+interface ProjectSiblingsResponseBody {
+  data: { previous: ProjectSiblingResourceBody | null; next: ProjectSiblingResourceBody | null };
+}
+
+/**
+ * "Fiche précédente/suivante" — GET /api/v1/projects/{id}/siblings, no params beyond
+ * `organizationId` (defaults server-side to `creationTime:asc` on the caller's accessible
+ * projects, i.e. JSF parity; see ProjectApiService#findSiblings). `ctx.organizationId` is threaded
+ * through only because EntityTypeConfig.api.siblings's own signature carries it — omitted, the
+ * server falls back to every accessible institution rather than one organization.
+ */
+export async function getProjectSiblings(
+  id: string | number,
+  ctx: { organizationId?: number },
+): Promise<EntitySiblings> {
+  const query = ctx.organizationId != null ? `?organizationId=${ctx.organizationId}` : "";
+  const body = await apiFetch<ProjectSiblingsResponseBody>(`/api/v1/projects/${id}/siblings${query}`);
+  return {
+    previous: body.data.previous ?? undefined,
+    next: body.data.next ?? undefined,
+  };
 }

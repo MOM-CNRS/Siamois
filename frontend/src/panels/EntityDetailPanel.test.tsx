@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -286,5 +287,161 @@ describe("EntityDetailPanel tab badge and helpers (plan: generic related-list ta
     await flush();
 
     expect(seen).toMatchObject({ organizationId: 42, onOpenOverview, overviewEntityId: "9" });
+  });
+});
+
+describe("EntityDetailPanel sibling navigation (plan: fiche précédente/suivante)", () => {
+  const siblingsMock = vi.fn();
+
+  const withSiblingsConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+    ...fakeConfig,
+    key: "fake-detail-entity-with-siblings",
+    api: { ...fakeConfig.api, siblings: siblingsMock },
+  };
+  registerEntityType(withSiblingsConfig);
+
+  beforeEach(() => {
+    siblingsMock.mockReset();
+  });
+
+  it("renders no arrows when config.api.siblings is absent", async () => {
+    const onNavigateSibling = vi.fn();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity" entityId="1" onNavigateSibling={onNavigateSibling} />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.querySelector(".sideview-topbar-button")).toBeNull();
+    expect(siblingsMock).not.toHaveBeenCalled();
+  });
+
+  it("renders no arrows when onNavigateSibling is absent, even with config.api.siblings present", async () => {
+    siblingsMock.mockResolvedValue({ previous: undefined, next: undefined });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity-with-siblings" entityId="1" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.querySelector(".sideview-topbar-button")).toBeNull();
+  });
+
+  it("calls onNavigateSibling with the neighbour's id when an arrow is clicked", async () => {
+    siblingsMock.mockResolvedValue({
+      previous: { id: "0", label: "Zero", resourceUri: "/action-unit/0" },
+      next: { id: "2", label: "Two", resourceUri: "/action-unit/2" },
+    });
+    const onNavigateSibling = vi.fn();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel
+            entityType="fake-detail-entity-with-siblings"
+            entityId="1"
+            onNavigateSibling={onNavigateSibling}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(siblingsMock).toHaveBeenCalledWith("1", { organizationId: undefined });
+    const buttons = container.querySelectorAll(".sideview-topbar-button");
+    expect(buttons).toHaveLength(2);
+    await act(async () => {
+      buttons[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onNavigateSibling).toHaveBeenCalledWith("2");
+  });
+
+  it("disables an arrow whose neighbour is undefined and does not navigate on click", async () => {
+    siblingsMock.mockResolvedValue({ previous: undefined, next: { id: "2", label: "Two", resourceUri: "/action-unit/2" } });
+    const onNavigateSibling = vi.fn();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel
+            entityType="fake-detail-entity-with-siblings"
+            entityId="1"
+            onNavigateSibling={onNavigateSibling}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const buttons = container.querySelectorAll(".sideview-topbar-button");
+    expect(buttons[0].getAttribute("aria-disabled")).toBe("true");
+    await act(async () => {
+      buttons[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onNavigateSibling).not.toHaveBeenCalled();
+  });
+
+  it("preserves the active tab across a sibling jump (the TabView stays mounted, only entityId changes)", async () => {
+    const twoTabsConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+      ...withSiblingsConfig,
+      key: "fake-detail-entity-with-siblings-and-tabs",
+      detail: {
+        tabs: [
+          { key: "fiche", label: "Fiche", render: (entity) => <span>Fiche of {entity.name}</span> },
+          { key: "other", label: "Autre", render: (entity) => <span>Autre of {entity.name}</span> },
+        ],
+      },
+    };
+    registerEntityType(twoTabsConfig);
+    siblingsMock.mockResolvedValue({
+      previous: undefined,
+      next: { id: "2", label: "Two", resourceUri: "/action-unit/2" },
+    });
+    getMock.mockImplementation((id) => Promise.resolve({ id: String(id), name: `Entity ${id}` }));
+
+    function Harness() {
+      const [entityId, setEntityId] = useState<string | number>("1");
+      return (
+        <EntityDetailPanel
+          entityType="fake-detail-entity-with-siblings-and-tabs"
+          entityId={entityId}
+          onNavigateSibling={setEntityId}
+        />
+      );
+    }
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <Harness />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const tabs = container.querySelectorAll(".p-tabview-nav li");
+    await act(async () => {
+      (tabs[1].querySelector("a") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    expect(container.textContent).toContain("Autre of Entity 1");
+
+    const nextButton = container.querySelectorAll(".sideview-topbar-button")[1] as HTMLElement;
+    await act(async () => {
+      nextButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(container.textContent).toContain("Autre of Entity 2");
   });
 });

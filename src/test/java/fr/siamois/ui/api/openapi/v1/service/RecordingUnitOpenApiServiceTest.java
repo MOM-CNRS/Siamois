@@ -198,7 +198,47 @@ class RecordingUnitOpenApiServiceTest {
         RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
 
         assertThat(data.getId()).isEqualTo("1026");
+        // No institution to check a write right against — treated as not editable, same as the
+        // resolveMobileDetail's other early-out (institution==null skips the form entirely too).
+        assertThat(data.getPermissions().canEdit()).isFalse();
+        assertThat(data.getPermissions().canDelete()).isFalse();
         verifyNoInteractions(formService, conversionService, effectiveFormResolver, fieldConfigurationService, conceptMapper);
+    }
+
+    @Test
+    void buildMobileDetail_setsPermissionsFromWritePermissionCheck() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ruDto)))
+                .thenReturn(true);
+
+        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
+
+        assertThat(data.getPermissions().canEdit()).isTrue();
+        assertThat(data.getPermissions().canDelete()).isTrue();
+    }
+
+    @Test
+    void buildMobileDetail_deniesPermissionsWhenCallerHasNoWriteRight() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ruDto)))
+                .thenReturn(false);
+
+        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
+
+        assertThat(data.getPermissions().canEdit()).isFalse();
+        assertThat(data.getPermissions().canDelete()).isFalse();
     }
 
 

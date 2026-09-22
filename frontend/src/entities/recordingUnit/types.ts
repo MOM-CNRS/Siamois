@@ -2,7 +2,7 @@
 // /api/v1/projects/{id}/recording-units (list) and GET /api/v1/recording-units/{id} (detail) both
 // return this shape, like ProjectResource. Keep in sync with that class if it changes.
 
-import type { ResolvedConcept } from "../project/types";
+import type { OrganizationIdentifier, ResolvedConcept } from "../project/types";
 
 export interface RecordingUnitCounts {
   children?: number | null;
@@ -24,6 +24,11 @@ export interface RecordingUnitResource {
   identifier?: string | null;
   fullIdentifier: string;
   projectId?: string | null;
+  // The RU's owning institution — RecordingUnitResource carries this (unlike ProjectResource,
+  // which is what its own list/fiche is scoped by) specifically so the React fiche can resolve
+  // concept autocomplete (GET /api/v1/organizations/{id}/concepts) without a second round-trip
+  // to fetch the parent project just to read ITS organization.
+  organization?: OrganizationIdentifier | null;
   type?: ResolvedConcept | null;
   geom?: unknown;
   // List rows carry RAW values (RecordingUnitAnswersProjector) — same convention as

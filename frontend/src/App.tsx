@@ -103,6 +103,9 @@ function PanelContent({
           organizationId={organizationId}
           onOpenOverview={onOpenOverview}
           overviewEntityId={overview?.entityType === view.entityType ? overview.entityId : undefined}
+          // A sibling jump on the MAIN pane's own fiche is a same-pane navigation — the same
+          // `navigate` a list row click or the breadcrumb already use, just staying on "detail".
+          onNavigateSibling={(id) => onNavigate(view.entityType, id)}
         />
       );
   }
@@ -311,7 +314,31 @@ export function App({ options }: { options: MountOptions }) {
         style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
       >
         {overview && (
-          <EntityDetailPanel entityType={overview.entityType} entityId={overview.entityId} toolbar={overviewToolbar} />
+          <EntityDetailPanel
+            entityType={overview.entityType}
+            entityId={overview.entityId}
+            toolbar={overviewToolbar}
+            organizationId={options.overviewOrganizationId ?? options.organizationId}
+            // A click inside the overview pane's own fiche (e.g. a row in a relationTab, like a
+            // project's UE list) must retarget the OVERVIEW pane, not the main one — even though
+            // the click originates from within the overview itself. EntityListPanel's row click
+            // prefers onOpenOverview over onNavigate (plan §8 phase 5), so wiring this is what
+            // makes that click replace the overview's own entity instead of silently no-op'ing
+            // (no onOpenOverview/onNavigate was passed here before — the bug this fixes).
+            onOpenOverview={openOverview}
+            // Deliberately NOT overviewEntityId={overview.entityId}: a relationTab embedded here
+            // (e.g. a project's UE list) renders a DIFFERENT entity type than the overview's own
+            // (recordingUnit vs project), and EntityListPanel's row highlighting compares raw ids
+            // with no entityType guard — passing the overview's own id through would risk
+            // highlighting a row that merely shares that id by coincidence.
+            // A sibling jump on the OVERVIEW pane's own fiche retargets the overview in place —
+            // never `navigate`, which would move the MAIN pane instead (redirectToFocusOrOverview's
+            // own distinction: root panel navigates, non-root panel just retargets the overview).
+            onNavigateSibling={(id) => openOverview(overview.entityType, id)}
+            // Same reason the overview toolbar's own actions are withheld while a setOverview
+            // bridge call is in flight — a sibling jump fired mid-flight would race it.
+            siblingNavDisabled={overviewBusy}
+          />
         )}
       </SplitterPanel>
     </Splitter>

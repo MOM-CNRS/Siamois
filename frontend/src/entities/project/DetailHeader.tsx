@@ -22,10 +22,12 @@ import type { ProjectDetail } from "./types";
 // (_permissions.canEdit, the same permission canUserEditUnit() checks — bug #448). Out of write
 // mode both chips are plain read-only chips, as they are in JSF.
 //
-// Deliberately NOT built, for want of a REST equivalent rather than by oversight:
-// - prev/next (ActionUnitService.findNextByInstitution/findPreviousByInstitution, ordered by
-//   creation time within the institution): no endpoint, and it's institution/JSF-session shaped
-//   rather than something the list's own sort/filter state could derive client-side.
+// prev/next ("fiche précédente/suivante") is NOT rendered here — it's generic, portable to any
+// entity's fiche, so it's rendered by EntityDetailPanel itself (in its title, before
+// config.detail.header?.()) via config.api.siblings, not by this entity-specific header. See
+// EntityDetailPanel.tsx / entities/project/api.ts#getProjectSiblings.
+//
+// Deliberately NOT built here either, for want of a REST equivalent rather than by oversight:
 // - the "Modifications non enregistré" chip (panelModel.hasUnsavedModifications): the fiche's
 //   pending edits live in ProjectFicheTab's own draft, which this header cannot see and which
 //   already shows its own "N champs modifiés" counter next to Enregistrer.

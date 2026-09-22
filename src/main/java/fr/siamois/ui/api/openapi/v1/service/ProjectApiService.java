@@ -45,6 +45,8 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectHistoryAuthorResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectSiblingResource;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectSiblingsResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectHistoryEntryResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.utils.AuthenticatedUserUtils;
@@ -90,6 +92,16 @@ public class ProjectApiService {
             "id", "name", IDENTIFIER, "fullIdentifier", "beginDate", "endDate",
             CREATION_TIME, RECORDING_UNIT_COUNT
     );
+
+    /**
+     * Subset of {@link #ALLOWED_PROJECT_SORT_FIELDS} a sibling cursor can actually walk —
+     * {@code ActionUnitSpec.cursor}'s lexicographic tuple comparison silently drops a row once its
+     * sort field is {@code null} (Postgres sorts NULLs LAST on ASC; the comparison does not), and
+     * {@link #RECORDING_UNIT_COUNT} isn't a JPA path at all. {@code id}/{@code name}/
+     * {@code creationTime} are the three {@code ActionUnit} columns declared {@code nullable = false}
+     * — see {@code ActionUnit.name} and {@code TraceableEntity.creationTime}.
+     */
+    private static final Set<String> CURSORABLE_PROJECT_SORT_FIELDS = Set.of("id", "name", CREATION_TIME);
 
     // Union of the real JPA paths and RecordingUnitSpec's own synthetic sort keys
     // (specimenCount/relationshipCount/parentsCount/childrenCount, the *Label concept sorts,
@@ -226,6 +238,78 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Projet introuvable ou non accessible");
         }
         return row;
+    }
+
+    /**
+     * {@code GET /projects/{id}/siblings} — the previous/next project per
+     * {@code CURSORABLE_PROJECT_SORT_FIELDS}, on the SAME accessible-projects spec as the list
+     * itself ({@link ActionUnitService#findSiblingProject}), never JSF's institution-only
+     * {@code ActionUnitService.findNextByInstitution} (that would leak a project id the caller
+     * cannot actually open).
+     *
+     * @param sortParam "champ:direction", defaulting to {@code creationTime:asc} — the JSF-parity
+     *                  order — when absent. A caller wanting siblings to follow the list's own
+     *                  current sort/filter passes the same params the list request used.
+     */
+    public ProjectSiblingsResource findSiblings(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            Long organizationId,
+            String search,
+            String sortParam,
+            ProjectListFilter filter) {
+        AccessibleProjectForApi current = requireAccessibleProject(caller, projectIdOrKey);
+        ActionUnitDTO currentDto = current.actionUnit();
+
+        CursorSort sort = parseCursorableProjectSort(sortParam);
+        Comparable<?> currentValue = sortFieldValue(currentDto, sort.field());
+
+        Optional<ActionUnitDTO> previous = actionUnitService.findSiblingProject(
+                caller.person().getId(), caller.accessibleInstitutionIds(), organizationId, search, filter,
+                sort.field(), sort.direction(), currentValue, currentDto.getId(), false);
+        Optional<ActionUnitDTO> next = actionUnitService.findSiblingProject(
+                caller.person().getId(), caller.accessibleInstitutionIds(), organizationId, search, filter,
+                sort.field(), sort.direction(), currentValue, currentDto.getId(), true);
+
+        return new ProjectSiblingsResource(
+                previous.map(ProjectApiService::toSiblingResource).orElse(null),
+                next.map(ProjectApiService::toSiblingResource).orElse(null));
+    }
+
+    private static ProjectSiblingResource toSiblingResource(ActionUnitDTO dto) {
+        String label = (dto.getFullIdentifier() != null && !dto.getFullIdentifier().isBlank())
+                ? dto.getFullIdentifier() : dto.getName();
+        return new ProjectSiblingResource(String.valueOf(dto.getId()), label, actionUnitResourceUri(dto.getId()));
+    }
+
+    private record CursorSort(String field, Sort.Direction direction) {}
+
+    /**
+     * Parses {@code sort} exactly like {@link #parseProjectSort} but restricted to
+     * {@link #CURSORABLE_PROJECT_SORT_FIELDS} — a field outside that set (nullable, or the
+     * synthetic {@code recordingUnitCount}) is a <strong>400</strong>, never a silent fallback to
+     * the default order.
+     */
+    private static CursorSort parseCursorableProjectSort(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) {
+            return new CursorSort(CREATION_TIME, Sort.Direction.ASC);
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!CURSORABLE_PROJECT_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Champ de tri non utilisable pour la navigation précédent/suivant : " + property);
+        }
+        return new CursorSort(property, sortDirection(parts));
+    }
+
+    private static Comparable<?> sortFieldValue(ActionUnitDTO dto, String field) {
+        return switch (field) {
+            case "id" -> dto.getId();
+            case "name" -> dto.getName();
+            case CREATION_TIME -> dto.getCreationTime();
+            default -> throw new IllegalStateException("Unreachable: validated by parseCursorableProjectSort");
+        };
     }
 
     /**

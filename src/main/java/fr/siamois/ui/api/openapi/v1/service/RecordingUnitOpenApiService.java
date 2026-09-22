@@ -62,6 +62,7 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.*;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectDefaultType;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
 import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFieldConfigResource;
@@ -152,11 +153,19 @@ public class RecordingUnitOpenApiService {
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null) {
             resource.setAnswers(Map.of());
+            resource.setPermissions(ProjectResourcePermissions.of(false));
             return resource;
         }
 
         Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        // Unlike the list (permissionsFor, batched per page), the detail computes this directly —
+        // one row, same as ProjectControllerApi#getById. Was previously left unset entirely here
+        // (see the field's own javadoc, now stale) — the React fiche's useCanEdit only ever
+        // defaults an ABSENT block to "editable", so a viewer with no write right saw edit
+        // affordances that would then 403 on PATCH.
+        resource.setPermissions(ProjectResourcePermissions.of(
+                profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)));
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(

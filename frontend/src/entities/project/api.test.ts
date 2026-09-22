@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../../api/client";
-import { getProject, listProjects, patchProject } from "./api";
+import { getProject, getProjectSiblings, listProjects, patchProject } from "./api";
 
 vi.mock("../../api/client", () => ({
   apiFetch: vi.fn(),
@@ -153,5 +153,32 @@ describe("patchProject", () => {
       method: "PATCH",
       body: { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } },
     });
+  });
+});
+
+describe("getProjectSiblings", () => {
+  it("fetches /siblings with organizationId and unwraps null sides to undefined", async () => {
+    mockedApiFetch.mockResolvedValueOnce({
+      data: {
+        previous: { id: "4", label: "OA-4", resourceUri: "/action-unit/4" },
+        next: null,
+      },
+    });
+
+    const result = await getProjectSiblings(5, { organizationId: 100 });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/siblings?organizationId=100");
+    expect(result).toEqual({
+      previous: { id: "4", label: "OA-4", resourceUri: "/action-unit/4" },
+      next: undefined,
+    });
+  });
+
+  it("omits organizationId from the query string when absent", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { previous: null, next: null } });
+
+    await getProjectSiblings(5, {});
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/siblings");
   });
 });

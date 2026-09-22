@@ -15,8 +15,18 @@ describe("recordingUnitEntityConfig", () => {
     expect(catalog).toEqual({ fields: {}, columns: [] });
   });
 
-  it("has no detail tabs yet (fiche not migrated) and a patchAnswers write path for the list overlay", () => {
-    expect(recordingUnitEntityConfig.detail.tabs).toEqual([]);
+  it("registers a single fiche tab and a header, and a patchAnswers write path for the list overlay", () => {
+    expect(recordingUnitEntityConfig.detail.tabs).toHaveLength(1);
+    expect(recordingUnitEntityConfig.detail.tabs[0].key).toBe("fiche");
+    expect(recordingUnitEntityConfig.detail.header).toBeDefined();
     expect(recordingUnitEntityConfig.api.patchAnswers).toBeDefined();
+  });
+
+  // No config.api.siblings (no scoped /recording-units/{id}/siblings endpoint yet) and no
+  // config.detail.chrome (no resourceUri on RecordingUnitResource yet) — see config.tsx's own
+  // comment for why both are deliberately out of scope for now.
+  it("still has no siblings navigation or overview chrome", () => {
+    expect(recordingUnitEntityConfig.api.siblings).toBeUndefined();
+    expect(recordingUnitEntityConfig.detail.chrome).toBeUndefined();
   });
 });

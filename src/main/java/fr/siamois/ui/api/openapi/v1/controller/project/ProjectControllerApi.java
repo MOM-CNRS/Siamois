@@ -12,6 +12,7 @@ import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectSiblingsResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -142,6 +143,39 @@ public class ProjectControllerApi {
         return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(
                 row, lang, permissions, bookmarked,
                 projection.resolvedLabels(), projection.answersFor(row.actionUnit().getId()))));
+    }
+
+    @GetMapping("/{id}/siblings")
+    @Operation(summary = "Le projet précédent et le projet suivant dans l'ordre courant",
+            description = "Voisins du projet dans la même liste \"projets accessibles\" que "
+                    + "GET /projects (mêmes organizationId/search/f.*), jamais un ordre "
+                    + "institution-only : un voisin renvoyé ici est toujours ouvrable par "
+                    + "l'appelant via GET /projects/{id}. Boucle en fin de liste (le suivant du "
+                    + "dernier projet est le premier), sauf quand l'appelant n'a accès à aucun "
+                    + "AUTRE projet, auquel cas le champ correspondant est null plutôt que de "
+                    + "boucler sur lui-même.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Champ de tri inconnu ou non utilisable pour la navigation"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectSiblingsResponse> getSiblings(
+            @PathVariable("id") String id,
+            @RequestParam(required = false) Long organizationId,
+            @RequestParam(required = false) String search,
+            @Parameter(description = "Champ de tri \"champ:direction\" utilisé pour déterminer l'ordre : "
+                    + "id, name, creationTime uniquement (les autres champs de GET /projects ne "
+                    + "supportent pas la navigation curseur — voir la doc du endpoint). "
+                    + "Défaut : creationTime:asc.")
+            @RequestParam(required = false) String sort,
+            @Parameter(hidden = true)
+            @RequestParam MultiValueMap<String, String> queryParams) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        ProjectListFilter filter = ProjectListFilter.parse(queryParams);
+        return ResponseEntity.ok(new ProjectSiblingsResponse(
+                projectApiService.findSiblings(caller, id, organizationId, search, sort, filter)));
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)

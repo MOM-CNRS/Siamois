@@ -1,6 +1,6 @@
 import { relationTab } from "../../panels/relationTab";
 import type { EntityTypeConfig } from "../types";
-import { getProject, listProjects, patchProject } from "./api";
+import { getProject, getProjectSiblings, listProjects, patchProject } from "./api";
 import { projectColumns } from "./columns";
 import { ProjectDetailHeader } from "./DetailHeader";
 import { ProjectFicheTab } from "./FicheTab";
@@ -28,6 +28,7 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
     get: (id) => getProject(id, "all"),
     list: listProjects,
     patchAnswers: (id, answers) => patchProject(id, { answers }),
+    siblings: getProjectSiblings,
   },
   list: {
     // JSF's own free-text box for this list is present but disabled (ActionUnitListPanel relies

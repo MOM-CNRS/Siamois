@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BreadCrumb } from "primereact/breadcrumb";
 import { Chip } from "primereact/chip";
@@ -6,6 +7,7 @@ import { TabView, TabPanel } from "primereact/tabview";
 import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
+import { SiblingNav } from "../components/SiblingNav";
 import type { PanelToolbarSlot } from "../mountOptions";
 
 export interface EntityDetailPanelProps {
@@ -15,19 +17,31 @@ export interface EntityDetailPanelProps {
   // pane has navigated away from the entity this toolbar was built for (App.tsx).
   toolbar?: PanelToolbarSlot;
   // Makes the breadcrumb's "Projets" crumb switch the pane to that entity's list, the same way
-  // EntityListPanel's own row click navigates. Omitted for the overview pane, whose breadcrumb JSF
-  // also renders without it being the thing that drives the main pane.
+  // EntityListPanel's own row click navigates. Omitted for the overview pane's OWN breadcrumb
+  // (there is no "list" render inside the overview for that crumb to switch to — JSF's own
+  // breadcrumb there renders without driving anything either).
   //
   // This and the next three props are also forwarded into every tab's DetailTabHelpers (plan:
   // generic related-list tab) so a tab rendering an embedded EntityListPanel (relationTab) gets
-  // exactly what App.tsx's own top-level list gets — no separate wiring per tab. All four are
-  // omitted for the overview pane: there is no overview-within-the-overview, so a related-list
-  // tab shown there simply has no onOpenOverview to call and falls back to onNavigate (itself
-  // absent too, same as today).
+  // exactly what App.tsx's own top-level list gets — no separate wiring per tab. `onOpenOverview`
+  // and `overviewEntityId` ARE passed for the overview pane's own instance too (App.tsx): a
+  // relationTab rendered there (e.g. a project's own UE list, shown while that project is itself
+  // open in the overview) must still be able to retarget the overview on a row click, even though
+  // the click originates from within the overview.
   onNavigate?: (entityType: string, id?: string | number) => void;
   organizationId?: number;
   onOpenOverview?: (entityType: string, id: string | number) => void;
   overviewEntityId?: string | number;
+  // "Fiche précédente/suivante" (plan: prev/next navigation). Deliberately NOT `onNavigate`: that
+  // callback also drives the breadcrumb's "Tous les <plural>" crumb, which must switch the PANE
+  // this panel is in to a list — a sibling jump must instead stay a same-kind detail navigation
+  // (the main pane's own client-side nav for the main pane's fiche, App's openOverview for the
+  // overview pane's fiche). Omitted, or the entity type has no config.api.siblings: no arrows.
+  onNavigateSibling?: (id: string | number) => void;
+  // True while the pane's own navigation bridge call is in flight (App.tsx's overviewBusy for the
+  // overview pane) — both arrows render disabled rather than firing a jump the bean isn't ready
+  // to catch up with yet, same reason the overview toolbar's own actions are withheld then.
+  siblingNavDisabled?: boolean;
 }
 
 /**
@@ -50,13 +64,45 @@ export function EntityDetailPanel({
   organizationId,
   onOpenOverview,
   overviewEntityId,
+  onNavigateSibling,
+  siblingNavDisabled,
 }: EntityDetailPanelProps) {
   const config = getEntityType(entityType);
+
+  // Mirrors AbstractSingleEntityPanel.activeTabIndex — kept as this component's OWN state,
+  // deliberately not TabView's own uncontrolled internal index. A sibling jump changes `entityId`,
+  // which changes the detail query's key and makes this component render its "Loading…" early
+  // return for a tick; that early return doesn't mount a <TabView> at all, so an uncontrolled
+  // index would silently reset to 0 on the entity that follows the loading tick. This component
+  // itself never unmounts across that tick (same type, same position in the tree), so this state
+  // survives it — the fiche stays on whichever tab you were looking at, same as JSF's `?tab=N`.
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  // ...but ONLY within the same entity type: retargeting the overview to a DIFFERENT entity type
+  // (a relationTab row click — "recording units" inside a project's fiche — opening a recording
+  // unit in the overview in its place) can change how many tabs even exist, so an index carried
+  // over from the previous type could point past the new one's last tab and render nothing.
+  // "Adjust state during render" (React's own pattern for this, not a useEffect — that would
+  // commit the stale index for one paint before correcting it): comparing against the last seen
+  // entityType and resetting synchronously, within the same render, whenever it changes.
+  const [renderedForType, setRenderedForType] = useState(entityType);
+  if (entityType !== renderedForType) {
+    setRenderedForType(entityType);
+    setActiveTabIndex(0);
+  }
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["entity-detail", entityType, entityId],
     queryFn: () => config!.api.get(entityId),
     enabled: config != null,
+  });
+
+  // Separate from the detail query so a slow/failed siblings lookup never blocks the fiche itself
+  // from rendering — the arrows just stay disabled (SiblingNav treats `undefined` as "not ready
+  // yet") until this resolves. Only ever issued when the entity type registers `api.siblings`.
+  const { data: siblings } = useQuery({
+    queryKey: ["entity-siblings", entityType, entityId, organizationId],
+    queryFn: () => config!.api.siblings!(entityId, { organizationId }),
+    enabled: config?.api.siblings != null,
   });
 
   if (!config) {
@@ -94,6 +140,9 @@ export function EntityDetailPanel({
             <>
               <i className={config.icon} style={{ fontSize: "2rem", color: "var(--main-color)" }} />
               <span style={{ paddingRight: "0.5em" }}>{config.labels.singular}</span>
+              {config.api.siblings && onNavigateSibling && (
+                <SiblingNav siblings={siblings} onNavigate={onNavigateSibling} disabled={siblingNavDisabled} />
+              )}
               {config.detail.header?.(data, helpers)}
             </>
           }
@@ -123,7 +172,11 @@ export function EntityDetailPanel({
           },
         ]}
       />
-      <TabView className="entity-detail-panel-tabs">
+      <TabView
+        className="entity-detail-panel-tabs"
+        activeIndex={activeTabIndex}
+        onTabChange={(e) => setActiveTabIndex(e.index)}
+      >
         {config.detail.tabs.map((tab) => {
           const badge = tab.badge?.(data);
           return (

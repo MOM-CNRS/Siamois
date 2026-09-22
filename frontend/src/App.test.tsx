@@ -3,6 +3,7 @@ import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
 import { App } from "./App";
 import { registerEntityType } from "./entities/registry";
+import { relationTab } from "./panels/relationTab";
 import type { EntityTypeConfig } from "./entities/types";
 import type { MountOptions } from "./mountOptions";
 
@@ -56,6 +57,49 @@ const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
 };
 
 registerEntityType(fakeConfig);
+
+// A second entity type embedded in fake-app-entity's own detail via a relationTab (mirrors
+// Project's own "recording-units" tab, entities/project/config.tsx), used to exercise clicking a
+// row of it while its PARENT is itself open in the overview pane — a click inside the overview
+// must retarget the overview to this child, not silently no-op (App.tsx's overview-pane
+// EntityDetailPanel previously received no onOpenOverview/onNavigate at all).
+const childListMock = vi.fn();
+const childGetMock = vi.fn();
+
+const fakeChildConfig: EntityTypeConfig<FakeRow, FakeRow> = {
+  key: "fake-child-entity",
+  labels: { singular: "Child", plural: "Children" },
+  collectionPath: "fake-child-entities",
+  icon: "bi bi-question",
+  api: { list: childListMock, get: childGetMock },
+  list: {
+    columns: [{ key: "name", header: "Name", render: (row) => row.name, identifier: true }],
+    searchable: false,
+  },
+  detail: { tabs: [{ key: "fiche", label: "Fiche", render: (entity) => <span>Child detail of {entity.name}</span> }] },
+  routes: { list: "/fake-child-entity", detail: (id) => `/fake-child-entity/${id}` },
+};
+
+registerEntityType(fakeChildConfig);
+
+const fakeParentWithChildTabConfig: EntityTypeConfig<FakeRow, FakeRow> = {
+  ...fakeConfig,
+  key: "fake-parent-with-child-tab",
+  detail: {
+    tabs: [
+      { key: "fiche", label: "Fiche", render: (entity) => <span>Detail of {entity.name}</span> },
+      relationTab<FakeRow>({
+        key: "children",
+        label: "Children",
+        target: "fake-child-entity",
+        scopeEntityType: "fake-parent-with-child-tab",
+      }),
+    ],
+  },
+  routes: { list: "/fake-parent-with-child-tab", detail: (id) => `/fake-parent-with-child-tab/${id}` },
+};
+
+registerEntityType(fakeParentWithChildTabConfig);
 
 function baseOptions(overrides: Partial<MountOptions> = {}): MountOptions {
   return {
@@ -204,5 +248,62 @@ describe("App client-side navigation", () => {
     expect(closeOverview).toHaveBeenCalled();
     expect(container.textContent).not.toContain("Detail of Row A");
     expect(window.location.search).not.toContain("s=");
+  });
+
+  // The bug this covers: App's overview-pane EntityDetailPanel used to receive no
+  // onOpenOverview/onNavigate at all, so a row click inside a tab rendered THERE (a relationTab,
+  // e.g. a project's own UE list) silently did nothing — the click only worked from the main
+  // pane's own list. It must retarget the overview in place, even though the click originates
+  // from within the overview itself.
+  it("retargets the overview pane when a row is clicked inside a tab rendered in the overview itself", async () => {
+    childListMock.mockReset().mockResolvedValue({
+      data: [{ id: "9", name: "Child row" }],
+      totalCount: 1,
+      limit: 20,
+      offset: 0,
+    });
+    childGetMock.mockReset().mockResolvedValue({ id: "9", name: "Child row" });
+
+    act(() => {
+      root.render(
+        <App
+          options={baseOptions({
+            overviewEntityType: "fake-parent-with-child-tab",
+            overviewEntityId: "1",
+          })}
+        />,
+      );
+    });
+    await flush();
+    expect(container.textContent).toContain("Detail of Row A");
+
+    // Scoped to the overview pane — the main pane (still the plain fake-app-entity list) has its
+    // own ".entity-list-panel-identifier-link" too, and a bare container-wide query would find
+    // that one first.
+    const overviewPane = container.querySelector(".panel-splitter-panel-r") as HTMLElement;
+    expect(overviewPane).toBeTruthy();
+
+    const childrenTab = Array.from(overviewPane.querySelectorAll(".p-tabview-nav li a")).find((el) =>
+      el.textContent?.includes("Children"),
+    ) as HTMLElement;
+    expect(childrenTab).toBeTruthy();
+    await act(async () => {
+      childrenTab.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    const childIdentifierCell = overviewPane.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
+    expect(childIdentifierCell).toBeTruthy();
+    await act(async () => {
+      childIdentifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    await flush();
+
+    // The overview now shows the CHILD, not the parent that was there before — retargeted in
+    // place, never a navigation of the main pane (which is still the plain fake-app-entity list).
+    expect(childGetMock).toHaveBeenCalledWith("9");
+    expect(container.textContent).toContain("Child detail of Child row");
+    expect(container.querySelector("tbody tr")).toBeTruthy();
   });
 });

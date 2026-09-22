@@ -56,6 +56,23 @@ export interface ListParams {
   scope?: ListScope;
 }
 
+// One neighbour of an entity in its "fiche précédente/suivante" navigation — mirrors
+// AbstractSingleEntityPanel.goToPrevious/goToNext (plan: prev/next arrows on the React fiche
+// panel). `label` feeds the arrow's tooltip, `resourceUri` comes straight from the server (the
+// same rule as PanelChrome.resourceUri elsewhere in this file) — never reconstructed client-side.
+export interface EntitySibling {
+  id: string | number;
+  label: string;
+  resourceUri: string;
+}
+
+// Either side is undefined when the caller's accessible set has no OTHER entity at all —
+// deliberately not JSF's own wrap-to-self behaviour (a self-link is not a useful sibling).
+export interface EntitySiblings {
+  previous?: EntitySibling;
+  next?: EntitySibling;
+}
+
 export interface ColumnDef<TSummary> {
   key: string;
   header: string;
@@ -162,6 +179,10 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // optional: an entity with no schema (and therefore no dynamic, form-driven columns to edit)
     // has no need for it, and omitting it simply means the overlay never opens for that entity.
     patchAnswers?(id: string | number, answers: Record<string, AnswerInputBody>): Promise<TDetail>;
+    // The "fiche précédente/suivante" pair for this entity (plan: prev/next navigation). Optional:
+    // an entity type that doesn't declare it renders no arrows at all — EntityDetailPanel checks
+    // for its presence before even querying, matching how `patchAnswers` gates the edit overlay.
+    siblings?(id: string | number, ctx: { organizationId?: number }): Promise<EntitySiblings>;
   };
   list: {
     // Pinned, hand-written columns — structural ones with no field-catalog equivalent (an

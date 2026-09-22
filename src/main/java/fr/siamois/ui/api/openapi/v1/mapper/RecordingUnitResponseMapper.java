@@ -1,10 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
@@ -26,6 +28,7 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
     @Mapping(target = "resourceType", constant = "recording-units")
     @Mapping(target = "id", expression = "java(String.valueOf(dto.getId()))")
     @Mapping(target = "projectId", expression = "java(dto.getActionUnit() != null ? String.valueOf(dto.getActionUnit().getId()) : null)")
+    @Mapping(target = "organization", expression = "java(toOrganizationIdentifier(dto.getCreatedByInstitution()))")
     @Mapping(target = "type", source = "type")
     @Mapping(target = "geom", source = "geom")
     @Mapping(target = "answers", expression = "java(java.util.Map.of())")
@@ -36,6 +39,7 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
     @Mapping(target = "resourceType", constant = "recording-units")
     @Mapping(target = "id", expression = "java(String.valueOf(dto.getId()))")
     @Mapping(target = "projectId", ignore = true)
+    @Mapping(target = "organization", ignore = true)
     @Mapping(target = "syncRevision", ignore = true)
     @Mapping(target = "type", source = "type")
     @Mapping(target = "geom", ignore = true)
@@ -43,6 +47,14 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
     @Mapping(target = "count", expression = "java(new fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts(null, null, null, null, null))")
     @Mapping(target = "links", expression = "java(fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceLinks.of(dto.getFullIdentifier()))")
     public abstract RecordingUnitResource toResource(RecordingUnitSummaryDTO dto);
+
+    OrganizationResourceIdentifier toOrganizationIdentifier(InstitutionDTO institution) {
+        if (institution == null || institution.getId() == null) return null;
+        OrganizationResourceIdentifier org = new OrganizationResourceIdentifier();
+        org.setResourceType("organizations");
+        org.setId(String.valueOf(institution.getId()));
+        return org;
+    }
 
     ResolvedConceptResource toResolvedConcept(ConceptDTO concept) {
         if (concept == null) return null;

@@ -801,18 +801,9 @@ public class ActionUnitService implements ArkEntityService {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
-        Collection<Long> institutionScope = organizationId != null
-                ? List.of(organizationId)
-                : accessibleInstitutionIds;
-
-        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
-                .and(ActionUnitSpec.visibleToPerson(personId))
-                .and(ActionUnitSpec.projectSearch(search));
+        Specification<ActionUnit> spec = accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter);
         if (recordingUnitCountOrder != null) {
             spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
-        }
-        if (filter != null && !filter.isEmpty()) {
-            spec = spec.and(ActionUnitFilterSpec.fromFilter(filter));
         }
 
         Page<ActionUnit> page = actionUnitRepository.findAll(spec, pageable);
@@ -834,6 +825,93 @@ public class ActionUnitService implements ArkEntityService {
                 .toList();
 
         return new PageImpl<>(mapped, pageable, page.getTotalElements());
+    }
+
+    /**
+     * The base "accessible projects" filter — institution scope, display permission, free-text
+     * search, per-column filters — shared by {@link #findAccessibleProjects} (a page of it) and
+     * {@link #findSiblingProject} (one cursored row past/before a given one). Factored out so the
+     * sibling lookup can never drift from what the list itself considers visible: reusing
+     * {@code findNextByInstitution}-style institution-only filtering here would let a sibling leak
+     * past a person's actual permissions.
+     */
+    @NonNull
+    private Specification<ActionUnit> accessibleProjectsSpec(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            ProjectListFilter filter) {
+        Collection<Long> institutionScope = organizationId != null
+                ? List.of(organizationId)
+                : accessibleInstitutionIds;
+
+        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
+                .and(ActionUnitSpec.visibleToPerson(personId))
+                .and(ActionUnitSpec.projectSearch(search));
+        if (filter != null && !filter.isEmpty()) {
+            spec = spec.and(ActionUnitFilterSpec.fromFilter(filter));
+        }
+        return spec;
+    }
+
+    /**
+     * The project strictly {@code forward}/backward of {@code currentId} in the caller's own
+     * accessible list order (same spec as {@link #findAccessibleProjects}, plus a cursor on
+     * {@code sortField}/{@code currentValue}/{@code currentId} — see {@link ActionUnitSpec#cursor}).
+     * Wraps around to the opposite end when there is no such neighbour, matching
+     * {@code AbstractSingleEntityPanel.goToNext/goToPrevious}'s own JSF behaviour. Returns
+     * {@link Optional#empty()} when the caller's accessible set has no OTHER project at all
+     * (the wrapped-around candidate would just be {@code currentId} itself) — deliberately not
+     * JSF's own "loops back to itself" behaviour, since a self-link is not a useful sibling.
+     *
+     * @param sortField    a real, non-null JPA path — {@code recordingUnitCount} and other
+     *                     Specification-only synthetic sorts have no cursor and must be rejected
+     *                     by the caller before reaching here (see
+     *                     {@code ProjectApiService#requireCursorableProjectSort}).
+     * @param currentValue {@code currentId}'s own value of {@code sortField}, already read off the
+     *                     current entity by the caller.
+     */
+    @Transactional(readOnly = true)
+    public Optional<ActionUnitDTO> findSiblingProject(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            ProjectListFilter filter,
+            String sortField,
+            Sort.Direction sortDirection,
+            Comparable<?> currentValue,
+            Long currentId,
+            boolean forward) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Specification<ActionUnit> baseSpec =
+                accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter);
+
+        // Walking backwards reverses both the sort field's own direction and the id tie-break —
+        // ActionUnitSpec.cursor's own "forward" flag already accounts for the field, id here just
+        // has to match the direction cursor() compares it in.
+        Sort.Direction walkFieldDirection = forward ? sortDirection
+                : (sortDirection == Sort.Direction.ASC ? Sort.Direction.DESC : Sort.Direction.ASC);
+        Sort.Direction idDirection = forward ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable onePage = PageRequest.of(0, 1, Sort.by(walkFieldDirection, sortField).and(Sort.by(idDirection, "id")));
+
+        Specification<ActionUnit> cursored = baseSpec.and(
+                ActionUnitSpec.cursor(sortField, sortDirection, currentValue, currentId, forward));
+        List<ActionUnit> page = actionUnitRepository.findAll(cursored, onePage).getContent();
+
+        if (page.isEmpty()) {
+            // Wrap-around: same order, no cursor, first row of that order is the opposite end.
+            page = actionUnitRepository.findAll(baseSpec, onePage).getContent();
+        }
+
+        return page.stream()
+                .filter(au -> !au.getId().equals(currentId))
+                .findFirst()
+                .map(actionUnitMapper::convert);
     }
 
     /**
