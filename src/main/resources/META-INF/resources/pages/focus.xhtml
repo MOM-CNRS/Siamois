@@ -198,7 +198,7 @@
                         open but its entity type hasn't migrated, the WHOLE panel (main included)
                         falls back to legacy rendering rather than a hybrid render.
                         -->
-                        <h:panelGroup rendered="#{not (focusViewBean.mainPanel.isReactPanelEnabled() and (focusViewBean.mainPanel.parentOrOverview == null or focusViewBean.mainPanel.parentOrOverview.isReactPanelEnabled()))}">
+                        <h:panelGroup rendered="#{not focusViewBean.mainPanel.isReactPanelActive()}">
                         <h:panelGroup
                                 styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
                                 style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
@@ -344,7 +344,7 @@
                         just the left/main SplitterPanel (App.tsx); the overview pane already gets
                         its own border-top for free from the existing .sideview class.
                         -->
-                        <h:panelGroup rendered="#{focusViewBean.mainPanel.isReactPanelEnabled() and (focusViewBean.mainPanel.parentOrOverview == null or focusViewBean.mainPanel.parentOrOverview.isReactPanelEnabled())}"
+                        <h:panelGroup rendered="#{focusViewBean.mainPanel.isReactPanelActive()}"
                                       styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
                                       style="border-radius: 0px; display: flex; flex-direction: column; flex: 1; min-height: 0;"
                                       id="react-panel-${focusViewBean.mainPanel.prefixPanelIndex}">
@@ -377,7 +377,7 @@
                             <script src="#{request.contextPath}/resources/js/reactPanelBootstrap.js"/>
                         </h:panelGroup>
 
-                        <p:blockUI block="panel-${focusViewBean.mainPanel.panelIndex}"
+                        <p:blockUI block="#{focusViewBean.mainPanel.getPanelContainerId()}"
                                    widgetVar="buiPanel_${focusViewBean.mainPanel.panelIndex}">
                             <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
                         </p:blockUI>

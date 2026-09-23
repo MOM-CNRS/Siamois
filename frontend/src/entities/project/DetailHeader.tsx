@@ -28,9 +28,9 @@ import type { ProjectDetail } from "./types";
 // EntityDetailPanel.tsx / entities/project/api.ts#getProjectSiblings.
 //
 // Deliberately NOT built here either, for want of a REST equivalent rather than by oversight:
-// - the "Modifications non enregistré" chip (panelModel.hasUnsavedModifications): the fiche's
-//   pending edits live in ProjectFicheTab's own draft, which this header cannot see and which
-//   already shows its own "N champs modifiés" counter next to Enregistrer.
+// - the "Modifications non enregistré" chip (panelModel.hasUnsavedModifications): there is no
+//   pending-edit state to report — each field commits itself the moment its click-to-edit overlay
+//   closes, the same as the list's own table cells.
 export interface ProjectDetailHeaderProps {
   entity: ProjectDetail;
   onSaved: () => void;

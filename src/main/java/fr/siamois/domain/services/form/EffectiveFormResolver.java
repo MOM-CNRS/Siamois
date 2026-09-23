@@ -4,6 +4,7 @@ import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.ui.form.dto.ColumnWidth;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +45,13 @@ public class EffectiveFormResolver {
                 .collect(Collectors.toSet());
         FormUiDto base = CustomFormComposer.withoutFields(baseForm, inactive);
 
+        // ColumnWidth.STANDARD, not left unset: this column reaches the same
+        // FormUiDtoLayoutJson.serialize as ActionUnitDetailsForm/RecordingUnitDetailsForm's own
+        // columns (both now built with .width(...), not .className(...)), and the React side
+        // assumes every column carries a width — leaving this one without any caused
+        // toPrimeFlexClass(col.width) to crash on `undefined`.
         List<CustomColUiDto> additional = tableFieldConfigService.getActiveAdditionalFields(projectId, table, typeConceptId).stream()
-                .map(field -> new CustomColUiDto.Builder().field(field).build())
+                .map(field -> new CustomColUiDto.Builder().field(field).width(ColumnWidth.STANDARD).build())
                 .toList();
         return CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additional);
     }

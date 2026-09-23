@@ -3,12 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Message } from "primereact/message";
 import { Panel } from "primereact/panel";
 import { Toolbar } from "primereact/toolbar";
-import { AutosavingField, isEmptyValue } from "../../fields/AutosavingField";
+import { FieldEditCell } from "../../fields/FieldEditCell";
+import { FieldLabel, isEmptyValue } from "../../fields/FieldLabel";
 import { resolveValueBinding, toAnswerInput, type AnswerInputBody } from "../../fields/types";
 import type { FieldResource } from "../../fields/types";
 import { useCanEdit } from "../../panels/writeMode";
 import { getProjectHistory, type ProjectHistoryEntry } from "./history";
-import { parseLayout, panelLabel, type FormLayoutCol } from "./form";
+import { parseLayout, panelLabel, toPrimeFlexClass, type FormLayoutCol } from "./form";
 import { getProjectTypes } from "./projectTypes";
 import { patchProject, type ProjectPatch } from "./api";
 import type { ProjectDetail } from "./types";
@@ -28,11 +29,12 @@ import type { ProjectDetail } from "./types";
 //   permission canUserEditUnit() checks — see headerEditControls.xhtml and bug #448). In JSF the
 //   switch is literally what FlowBean.getInPlaceFieldMode() reads to hand every field "input" or
 //   "output"; here it arrives as WriteModeProvider (panels/writeMode.tsx).
-// - WHEN an edit is persisted is per field, with no Save button, matching both JSF's own
-//   autosaving inplace components (pages/shared/inplace/*: a debounced ajax on keyup/blur) and the
-//   list's cell editor. The commit boundaries are literally shared with that editor
-//   (fields/commit.ts): a picker or date saves the moment it changes, a text/number input saves on
-//   blur or Enter, and Escape reverts the field.
+// - HOW a field is edited is now identical to the list's own table cells (plan follow-up: "fiche
+//   fields edit on click, like the table"): a field is a plain value until clicked, and
+//   FieldEditCell then opens CellEditOverlay — the exact same component the list uses, not a
+//   fiche-specific reimplementation — on top of it. The commit boundaries are shared with that
+//   editor (fields/commit.ts): a picker or date saves the moment it changes, a text/number input
+//   saves on blur or Enter, and Escape reverts the field without saving.
 //
 // Still deliberately absent, all for want of a REST equivalent rather than by oversight:
 // - "Incertain" per-field toggle (panelField.xhtml's selectBooleanCheckbox → formContext
@@ -88,16 +90,26 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
     return set;
   }, [typesQuery.data]);
 
+  // CellEditOverlay always hands back an AnswerInput-shaped map, never the raw value — but for
+  // every answerType buildPatch's own toId/toAnswerInput round-trip is idempotent on an
+  // already-converted value (a scalar or an array of plain ids), so reading the one raw value back
+  // out of the map and handing it to buildPatch reuses that function unchanged, spatial-context
+  // special case included, rather than re-deriving the same branch here a second time.
+  //
+  // No onSaved() call here: CellEditOverlay calls its own onSaved prop itself once onSave resolves
+  // — this only builds the patch and lets the failure propagate for the overlay to show inline.
   const save = useCallback(
-    async (field: FieldResource, value: unknown) => {
-      await patchProject(entity.id, buildPatch({ [field.id]: value }, { [field.id]: field }));
-      onSaved();
+    (id: string | number, answers: Record<string, AnswerInputBody>) => {
+      if (!fields) return Promise.resolve();
+      const [fieldId, input] = Object.entries(answers)[0];
+      const rawValue = "values" in input ? input.values : input.value;
+      return patchProject(id, buildPatch({ [fieldId]: rawValue }, fields));
     },
-    [entity.id, onSaved],
+    [fields],
   );
 
   return (
-    <div className="project-fiche-tab">
+    <div className="project-fiche-tab sia-fiche-tab">
       {/* No edit/save toolbar: the app's own read/write switch decides, and each field persists
           itself. The identifier and category chips keep their explicit pencil/apply/cancel, in
           ProjectDetailHeader — that is what JSF does too (headerEditControls.xhtml). */}
@@ -117,7 +129,7 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
             className={`sia-form-panel ${panel.className ?? ""}`.trim()}
           >
             {panel.rows.map((row, rowIndex) => (
-              <div key={rowIndex} className="project-fiche-tab-row">
+              <div key={rowIndex} className="project-fiche-tab-row grid">
                 {row.columns.map((col, colIndex) => (
                   <FormField
                     key={colIndex}
@@ -128,6 +140,7 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
                     organizationId={organizationId}
                     inactiveFieldIds={inactiveFieldIds}
                     onSave={save}
+                    onSaved={onSaved}
                   />
                 ))}
               </div>
@@ -216,6 +229,7 @@ function FormField({
   organizationId,
   inactiveFieldIds,
   onSave,
+  onSaved,
 }: {
   col: FormLayoutCol;
   fields: Record<string, FieldResource>;
@@ -223,12 +237,13 @@ function FormField({
   canEdit: boolean;
   organizationId?: number;
   inactiveFieldIds: Set<string>;
-  onSave: (field: FieldResource, value: unknown) => Promise<void>;
+  onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
+  onSaved: () => void;
 }) {
-  // The identifier column is marked readOnly + "d-none" in the real layout (ActionUnitDetailsForm)
+  // The identifier column is marked readOnly + hidden in the real layout (ActionUnitDetailsForm)
   // because JSF edits it outside this grid, via the panel header's own affordance — same reason
   // ProjectDetailHeader's identifier control exists separately rather than as a form field here.
-  if (col.fieldId == null || col.className?.includes("d-none")) return null;
+  if (col.fieldId == null || col.hidden) return null;
 
   const fieldId = String(col.fieldId);
   const field = fields[fieldId];
@@ -238,23 +253,26 @@ function FormField({
   if (inactiveFieldIds.has(fieldId) && isEmptyValue(stored)) return null;
 
   return (
-    <div className={`project-fiche-tab-col ${col.className ?? ""}`.trim()}>
-      <AutosavingField
-        // Remounting on a value change from elsewhere (another panel, a header edit) is deliberate:
-        // it reseeds the baseline this field's "did it actually change?" check compares against.
-        key={JSON.stringify(stored ?? null)}
-        field={field}
-        stored={stored}
-        readOnly={!canEdit || col.isReadOnly}
-        required={col.isRequired}
-        organizationId={organizationId}
-        onSave={onSave}
-      />
+    <div className={`project-fiche-tab-col ${toPrimeFlexClass(col.width)}`} data-field-id={fieldId}>
+      <div className="field-value-group">
+        <FieldLabel field={field} required={col.isRequired} />
+        <FieldEditCell
+          key={JSON.stringify(stored ?? null)}
+          field={field}
+          row={entity}
+          stored={stored}
+          readOnly={!canEdit || col.isReadOnly}
+          required={col.isRequired}
+          organizationId={organizationId}
+          onSave={onSave}
+          onSaved={onSaved}
+        />
+      </div>
     </div>
   );
 }
 
-export { isEmptyValue } from "../../fields/AutosavingField";
+export { isEmptyValue } from "../../fields/FieldLabel";
 
 
 /**

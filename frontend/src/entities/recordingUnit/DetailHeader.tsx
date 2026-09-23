@@ -22,8 +22,9 @@ import type { RecordingUnitDetail } from "./types";
 //   via RecordingUnitPanel.persistIdentifierEdit): RecordingUnitPatchRequest has no flat alias
 //   for `fullIdentifier` at all (unlike ProjectPatchRequest.identifier) — the chip below is a
 //   plain read-only Chip, not a pencil-toggled control.
-// - the "Modifications non enregistré" chip (panelModel.hasUnsavedModifications): same reason as
-//   Project's own header — the fiche's pending edits live in each AutosavingField's own draft.
+// - the "Modifications non enregistré" chip (panelModel.hasUnsavedModifications): there is no
+//   pending-edit state to report — each field commits itself the moment its click-to-edit overlay
+//   closes, the same as the list's own table cells.
 export interface RecordingUnitDetailHeaderProps {
   entity: RecordingUnitDetail;
   onSaved: () => void;

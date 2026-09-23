@@ -435,15 +435,19 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Project fiche (entities/project/FicheTab.tsx)
+   Fiche field grid (entities/project/FicheTab.tsx, entities/recordingUnit/FicheTab.tsx)
+
+   .sia-fiche-tab is the one class both fiches' own root div carries (alongside their own
+   project-fiche-tab / recording-unit-fiche-tab, kept for anything entity-specific) — every rule
+   below is written against it, not against project-fiche-tab alone, so the RU fiche gets the same
+   label/field look as Project's rather than a second, silently-drifting copy of these rules.
 
    The SIAMOIS theme already styles most of this, but keyed on PrimeFaces class names
    (primefaces-themes/.../panels.scss, others/styles.scss): `.ui-panel.sia-form-panel`,
    `.ellipsis-btn .ui-button-text`, `.siamois-panel .field-value-group`. PrimeReact emits `.p-*`
    instead, so the rules below are the `.p-*` half of the same look — same class names on our side
-   (sia-form-panel, field-value-group, ellipsis-btn, required-btn, sia-modified-field,
-   header-toggle-container, panel-bc, panel-footer), so the theme keeps being the single place
-   the colours live.
+   (sia-form-panel, field-value-group, ellipsis-btn, required-btn, header-toggle-container,
+   panel-bc, panel-footer), so the theme keeps being the single place the colours live.
    --------------------------------------------------------------------------- */
 
 .p-panel.sia-form-panel .p-panel-content {
@@ -462,39 +466,80 @@
 }
 
 /* customFormPanelContent.xhtml is a p:panelGrid layout="grid" of p:row/p:column, each column
-   carrying the layout's own "ui-g-12 ui-md-6 ui-lg-6"-style class and a 250px min-width. The
-   PrimeFaces grid classes don't exist here, so the row is a flex line and each column takes an
-   equal share of it — which is what those classes produce for the two- and three-column rows
-   ActionUnitDetailsForm actually builds. */
+   carrying a "ui-g-12 ui-md-6 ui-lg-3"-style className computed server-side from the column's own
+   ColumnWidth (span/md/lg — see CustomColUiDto#getClassName()) — PrimeFaces' OWN 12-column grid,
+   not Bootstrap. The React side reads that SAME ColumnWidth object (entities/project/form.ts's
+   FormLayoutCol.width, over the wire as {span, md, lg}) and converts it via toPrimeFlexClass:
+   `.project-fiche-tab-row` adds PrimeFlex's own `.grid` class, `.project-fiche-tab-col` adds
+   `col-N` (PrimeFlex's, unprefixed — no breakpoint, always applies) plus `sia-md-col-N`/
+   `sia-lg-col-N` (OURS, below).
+
+   Those last two are not PrimeFlex's `md:col-N`/`lg:col-N`, on purpose: PrimeFlex's own
+   breakpoints are `@media`-gated, i.e. keyed to the BROWSER WINDOW's width. That is correct for
+   the main panel (which roughly IS the window) but wrong for the same fiche opened in the
+   overview pane — dragging the overview's own splitter narrower doesn't change the window at
+   all, so a window-width breakpoint never reacts, and the fiche stayed stuck at its widest
+   column count no matter how far the pane narrowed (found live: resize the window and it's
+   fine, resize the overview's splitter and columns overlap). The fix is a CSS Container Query
+   instead: `.sia-fiche-tab` establishes a container-query context on ITS OWN rendered width
+   (which does shrink with the pane, main or overview alike), and `@container` below reacts to
+   THAT, not the window. Same breakpoint pixel values as PrimeFlex's own (768/992) and the same
+   percentage math, just measured against the right box. */
 .project-fiche-tab-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
   margin-bottom: 0.75rem;
 }
 
 .project-fiche-tab-col {
-  flex: 1 1 250px;
-  min-width: 250px;
+  min-width: 0;
 }
 
-/* panelField.xhtml's own wrapper. `ui-fluid` is PrimeFaces'; `p-fluid` is PrimeReact's, and the
-   composite sets it on every field except the spatial tree picker — so the class is applied
-   conditionally in FormField and given the same meaning here. */
-.project-fiche-tab .field-value-group {
+.sia-fiche-tab {
+  /* Matches JSF's own .sia-form { max-width: 1200px } (primefaces-themes/.../others/styles.scss)
+     so the fiche doesn't stretch full-width on a large screen, same as before the React port. */
+  max-width: 1200px;
+  container-type: inline-size;
+}
+
+@container (min-width: 768px) {
+  .sia-fiche-tab .sia-md-col-1 { width: 8.3333%; }
+  .sia-fiche-tab .sia-md-col-2 { width: 16.6667%; }
+  .sia-fiche-tab .sia-md-col-3 { width: 25%; }
+  .sia-fiche-tab .sia-md-col-4 { width: 33.3333%; }
+  .sia-fiche-tab .sia-md-col-5 { width: 41.6667%; }
+  .sia-fiche-tab .sia-md-col-6 { width: 50%; }
+  .sia-fiche-tab .sia-md-col-7 { width: 58.3333%; }
+  .sia-fiche-tab .sia-md-col-8 { width: 66.6667%; }
+  .sia-fiche-tab .sia-md-col-9 { width: 75%; }
+  .sia-fiche-tab .sia-md-col-10 { width: 83.3333%; }
+  .sia-fiche-tab .sia-md-col-11 { width: 91.6667%; }
+  .sia-fiche-tab .sia-md-col-12 { width: 100%; }
+}
+
+@container (min-width: 992px) {
+  .sia-fiche-tab .sia-lg-col-1 { width: 8.3333%; }
+  .sia-fiche-tab .sia-lg-col-2 { width: 16.6667%; }
+  .sia-fiche-tab .sia-lg-col-3 { width: 25%; }
+  .sia-fiche-tab .sia-lg-col-4 { width: 33.3333%; }
+  .sia-fiche-tab .sia-lg-col-5 { width: 41.6667%; }
+  .sia-fiche-tab .sia-lg-col-6 { width: 50%; }
+  .sia-fiche-tab .sia-lg-col-7 { width: 58.3333%; }
+  .sia-fiche-tab .sia-lg-col-8 { width: 66.6667%; }
+  .sia-fiche-tab .sia-lg-col-9 { width: 75%; }
+  .sia-fiche-tab .sia-lg-col-10 { width: 83.3333%; }
+  .sia-fiche-tab .sia-lg-col-11 { width: 91.6667%; }
+  .sia-fiche-tab .sia-lg-col-12 { width: 100%; }
+}
+
+/* panelField.xhtml's own wrapper: the label above the value. No ui-fluid width rule here any
+   more — the field's own widget now lives inside CellEditOverlay, portalled to document.body, not
+   nested under this div, so it is the overlay's own p-fluid (CellEditOverlay.tsx) that fills it. */
+.sia-fiche-tab .field-value-group {
   display: block;
   width: auto;
   margin-top: 0;
 }
 
-.project-fiche-tab .field-value-group.ui-fluid .p-inputtext,
-.project-fiche-tab .field-value-group.ui-fluid .p-inputnumber,
-.project-fiche-tab .field-value-group.ui-fluid .p-calendar,
-.project-fiche-tab .field-value-group.ui-fluid .p-autocomplete {
-  width: 100%;
-}
-
-.project-fiche-tab .header-toggle-container {
+.sia-fiche-tab .header-toggle-container {
   display: flex;
   gap: 0.5em;
   align-items: center;
@@ -512,7 +557,7 @@
 
    No !important and no specificity games needed: lara ships inside @layer primereact, and every
    rule in this file is unlayered, so these win outright. */
-.project-fiche-tab .ellipsis-btn.p-button {
+.sia-fiche-tab .ellipsis-btn.p-button {
   position: relative;
   display: flex;
   max-width: 180px;
@@ -531,27 +576,27 @@
   cursor: default;
 }
 
-.project-fiche-tab .ellipsis-btn.has-thesaurus-entry.p-button {
+.sia-fiche-tab .ellipsis-btn.has-thesaurus-entry.p-button {
   cursor: pointer;
 }
 
 /* .ui-button-flat.ui-state-hover: a 4%-alpha wash of the theme green, label colour unchanged.
    Also cancels lara's blue focus ring, which would otherwise be the one blue thing left. */
-.project-fiche-tab .ellipsis-btn.p-button:enabled:hover,
-.project-fiche-tab .ellipsis-btn.p-button:hover {
+.sia-fiche-tab .ellipsis-btn.p-button:enabled:hover,
+.sia-fiche-tab .ellipsis-btn.p-button:hover {
   background: rgba(102, 153, 102, 0.04);
   border-color: transparent;
   color: var(--text-light, #6b7280);
 }
 
-.project-fiche-tab .ellipsis-btn.p-button:focus,
-.project-fiche-tab .ellipsis-btn.p-button:focus-visible {
+.sia-fiche-tab .ellipsis-btn.p-button:focus,
+.sia-fiche-tab .ellipsis-btn.p-button:focus-visible {
   box-shadow: none;
   outline: 1px solid var(--siamois-green-light-350, #a6cba6);
   outline-offset: -1px;
 }
 
-.project-fiche-tab .ellipsis-btn .p-button-label {
+.sia-fiche-tab .ellipsis-btn .p-button-label {
   display: inline-block;
   max-width: 100%;
   padding-right: 10px; /* room for the * below */
@@ -566,45 +611,55 @@
    which inherit colour and font-size; "sia-icon-opentheso" (every vocabulary-backed field) is a
    fixed 16x16 background-image with its grey baked into the SVG, so it ignores both. Sizing the
    icon box explicitly keeps the two visually aligned in the same label row. */
-.project-fiche-tab .ellipsis-btn .p-button-icon {
+.sia-fiche-tab .ellipsis-btn .p-button-icon {
   font-size: 1rem;
   line-height: 1;
   flex: 0 0 auto;
 }
 
-.project-fiche-tab .ellipsis-btn .p-button-icon.sia-icon-opentheso {
+.sia-fiche-tab .ellipsis-btn .p-button-icon.sia-icon-opentheso {
   width: 16px;
   height: 16px;
 }
 
-.project-fiche-tab .required-btn::after {
+.sia-fiche-tab .required-btn::after {
   content: " *";
   position: absolute;
   right: 6px;
 }
 
-.project-fiche-tab .field-hint {
+.sia-fiche-tab .field-hint {
   color: var(--text-light, #6b7280);
 }
 
-/* JSF marks a field the user has touched but not yet persisted with sia-modified-field; here the
-   whole draft is pending until Enregistrer, so the same class marks every dirty field. */
-.project-fiche-tab .sia-modified-field .p-inputtext,
-.project-fiche-tab .sia-modified-field .p-autocomplete-multiple-container {
-  border-color: var(--main-color);
+/* The value below a field's label — a plain display until clicked, then CellEditOverlay opens on
+   top of it. Deliberately the same hit-area trick as the table's own .entity-list-panel-editable-
+   cell (eating this element's own padding so the highlight sits behind the text, not the inset
+   ::before the earlier, always-open AutosavingField never needed): a fiche field is block-level
+   and can wrap to more than one line, so the padding here is only horizontal — a vertical one
+   would misalign the highlight with the text on a wrapped value. */
+.sia-fiche-tab .field-value-cell {
+  display: block;
+  min-height: 1.5em;
 }
 
-/* A field is saving itself: JSF shows the panel-wide spinner (showSpinner/hideSpinner in
-   inplace/text.xhtml's p:ajax); here the field that is actually in flight dims instead, since the
-   rest of the form stays usable. */
-.project-fiche-tab .sia-field-saving {
-  opacity: 0.7;
+.sia-fiche-tab .field-value-cell-editable {
+  margin: 0 -0.4rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
 }
 
-.project-fiche-tab .field-value-error {
-  margin-top: 0.25rem;
-  color: var(--red-500, #d32f2f);
-  font-size: 0.8rem;
+.sia-fiche-tab .field-value-cell-editable:hover,
+.sia-fiche-tab .field-value-cell-editable:focus-visible {
+  background: var(--surface-100, #f1f3f5);
+  border-color: var(--surface-300, #dee2e6);
+  outline: none;
+}
+
+.sia-fiche-tab .field-value-cell-empty {
+  color: var(--text-light, #6b7280);
 }
 
 /* singleUnitPanel.xhtml's footer toolbar: one row of small italic history lines. */
@@ -616,7 +671,7 @@
   align-items: center;
 }
 
-.project-fiche-tab .p-toolbar.panel-footer {
+.sia-fiche-tab .p-toolbar.panel-footer {
   background: transparent;
   border-radius: 0;
   border: none;

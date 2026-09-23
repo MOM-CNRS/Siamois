@@ -238,6 +238,31 @@ public abstract class AbstractPanel implements Serializable {
         return null;
     }
 
+    /**
+     * Whether the React block is the one focus.xhtml actually renders for this panel right now —
+     * a JSF overview next to a React main panel (or vice versa) isn't supported, so a React main
+     * panel with a still-JSF overview falls back to the JSF block too, on both sides together.
+     * focus.xhtml gates its two mutually-exclusive blocks (id="react-panel-..." vs id="panel-...")
+     * on exactly this condition; kept here once instead of repeated inline in the template so it
+     * can't drift between the two `rendered` attributes and {@link #getPanelContainerId()}.
+     */
+    public boolean isReactPanelActive() {
+        return isReactPanelEnabled() && (parentOrOverview == null || parentOrOverview.isReactPanelEnabled());
+    }
+
+    /**
+     * The id of whichever container focus.xhtml actually rendered for this panel's content —
+     * {@code p:blockUI}'s own {@code block=} attribute must resolve to a real element: pointing it
+     * at a hardcoded "panel-" prefix broke the moment the React block (a different id) took over,
+     * leaving blockUI's target permanently unresolved — every DOM mutation on the page then
+     * re-threw in PrimeFaces' own MutationObserver (core.js#registerMutationObserver: target.get(0)
+     * undefined, `.id` read off it), which is the "tas d'erreurs en redimensionnant" reported once
+     * the React panel shipped.
+     */
+    public String getPanelContainerId() {
+        return (isReactPanelActive() ? "react-panel-" : "panel-") + getPrefixPanelIndex();
+    }
+
     /** Registry key matching a frontend entities/&lt;type&gt;/config.tsx (e.g. "project"), or null for a panel with no single entity (Home). */
     public String reactEntityType() {
         return null;

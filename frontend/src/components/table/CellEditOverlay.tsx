@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { commitsImmediately, sameValue, staysOpenAfterSave } from "../../fields/commit";
+import { isEmptyValue } from "../../fields/FieldLabel";
 import { getFieldRenderer } from "../../fields/registry";
 import { resolveValueBinding, toAnswerInput, type AnswerInputBody, type FieldResource } from "../../fields/types";
 import { ApiError } from "../../api/client";
@@ -29,6 +30,11 @@ export interface CellEditTarget<TRow> {
   // The clicked cell's bounding rect, captured at click time (viewport coordinates — the overlay
   // is position: fixed).
   anchor: DOMRect;
+  // A layout-level property (FormLayoutCol.isRequired, not on FieldResource itself), so it travels
+  // with the target rather than the field — the fiche's own click-to-edit fields set it; a table
+  // column, which has no per-cell required flag today, leaves it unset (same as before this
+  // existed: no required guard at all).
+  required?: boolean;
 }
 
 export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
@@ -86,6 +92,13 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       if (!target || target.row.id == null) return false;
       if (sameValue(value, initialRef.current)) return true;
       if (savingRef.current) return false;
+      // p:outputLabel indicateRequired + required="#{col.required}" is what stops this in JSF, on
+      // the ajax submit that leaves the field. Clearing a required field has no valid target
+      // value, so it is refused here rather than sent for the server to reject.
+      if (target.required && isEmptyValue(value)) {
+        setError("Ce champ est obligatoire");
+        return false;
+      }
       savingRef.current = true;
       setSaving(true);
       setError(null);
@@ -209,7 +222,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
         field={field}
         value={draft}
         readOnly={saving}
-        required={false}
+        required={target.required ?? false}
         organizationId={organizationId}
         onChange={onValueChange}
       />

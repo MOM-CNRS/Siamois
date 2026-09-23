@@ -22,8 +22,11 @@ registerDefaultFieldRenderers();
 
 // Mirrors RecordingUnitDetailsForm.generalPanel() closely enough to exercise FicheTab's own
 // branches: an editable TEXT field (comments), the two hidden system columns
-// (ACTION_UNIT_FIELD/FULL_IDENTIFIER_FIELD, "d-none" — displayed via the panel header instead,
-// not this grid), and a required field (nature).
+// (ACTION_UNIT_FIELD/FULL_IDENTIFIER_FIELD — displayed via the panel header instead, not this
+// grid), and a required field (nature).
+const STANDARD = { span: 12, md: 6, lg: 3 };
+const FULL = { span: 12, md: 12, lg: 12 };
+
 const layoutJson = JSON.stringify([
   {
     className: null,
@@ -33,13 +36,13 @@ const layoutJson = JSON.stringify([
     rows: [
       {
         columns: [
-          { className: "d-none", isRequired: false, isReadOnly: true, fieldId: -301 },
-          { className: "d-none", isRequired: true, isReadOnly: true, fieldId: -303 },
-          { className: "col-nature", isRequired: true, isReadOnly: false, fieldId: -305 },
+          { width: STANDARD, hidden: true, isRequired: false, isReadOnly: true, fieldId: -301 },
+          { width: STANDARD, hidden: true, isRequired: true, isReadOnly: true, fieldId: -303 },
+          { width: STANDARD, isRequired: true, isReadOnly: false, fieldId: -305 },
         ],
       },
       {
-        columns: [{ className: "col-comments", isRequired: false, isReadOnly: false, fieldId: 200 }],
+        columns: [{ width: FULL, isRequired: false, isReadOnly: false, fieldId: 200 }],
       },
     ],
   },
@@ -92,15 +95,25 @@ async function flush() {
   });
 }
 
-// The "nature" field (SELECT_ONE_FROM_FIELD_CODE, listed before "comments" in the layout) is an
-// autocomplete that ALSO renders a plain .p-inputtext internally, so a bare
-// `container.querySelector(".p-inputtext")` would grab nature's input instead of the field this
-// test actually cares about — scope to the field-value-group carrying the "Commentaires" label.
-function commentsInput(): HTMLInputElement | null {
+// Every field is a plain value until clicked — FieldEditCell then opens CellEditOverlay (unchanged
+// from the one the list uses) on top of it, portalled to document.body.
+function commentsCell(): HTMLElement {
   const group = Array.from(container.querySelectorAll(".field-value-group")).find((el) =>
     el.textContent?.includes("Commentaires"),
   );
-  return group?.querySelector(".p-inputtext") as HTMLInputElement | null;
+  const cell = group?.querySelector(".field-value-cell");
+  if (!cell) throw new Error(`No "Commentaires" field-value-cell`);
+  return cell as HTMLElement;
+}
+
+function openComments() {
+  return act(async () => {
+    commentsCell().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
+
+function overlayInput(): HTMLInputElement | null {
+  return document.body.querySelector(".cell-edit-overlay input") as HTMLInputElement | null;
 }
 
 function render(entity: RecordingUnitDetail, onSaved = vi.fn(), writeMode = true) {
@@ -142,7 +155,7 @@ describe("RecordingUnitFicheTab", () => {
     expect(mockedGetEffectiveForm).toHaveBeenCalledWith("5", "9");
   });
 
-  it("renders both panels with their labels, and skips d-none columns", async () => {
+  it("renders both panels with their labels, and skips hidden columns", async () => {
     render(ru());
     await flush();
 
@@ -151,36 +164,42 @@ describe("RecordingUnitFicheTab", () => {
     // Hidden system columns never render as grid fields...
     expect(container.textContent).not.toContain("Unité");
     expect(container.textContent).not.toContain("Identifiant complet");
-    // ...but a real field does, with its stored value.
+    // ...but a real field does, with its stored value, as a plain value until clicked.
     expect(container.textContent).toContain("Commentaires");
-    expect(commentsInput()?.value).toBe("Une observation");
+    expect(commentsCell().textContent).toBe("Une observation");
+    expect(overlayInput()).toBeNull();
   });
 
   it("persists an edited field through patchRecordingUnitAnswers, keyed by the field id", async () => {
     render(ru());
     await flush();
 
-    const input = commentsInput()!;
+    await openComments();
+    const input = overlayInput()!;
     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
     await act(async () => {
       nativeSetter.call(input, "Nouvelle observation");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    // React implements onBlur on the bubbling `focusout`, not on the non-bubbling `blur` — only
-    // the former reaches the field-value-group wrapper's own handler.
+    // CellEditOverlay commits a text field when focus leaves it — a mousedown outside its own box,
+    // not React's bubbling blur/focusout.
     await act(async () => {
-      input.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
     });
     await flush();
 
     expect(mockedPatch).toHaveBeenCalledWith("42", { "200": { value: "Nouvelle observation" } });
   });
 
-  it("renders fields read-only outside write mode", async () => {
+  it("offers no click-to-edit affordance outside write mode", async () => {
     render(ru(), vi.fn(), false);
     await flush();
 
-    expect(commentsInput()?.disabled).toBe(true);
+    expect(commentsCell().classList.contains("field-value-cell-editable")).toBe(false);
+    await act(async () => {
+      commentsCell().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(overlayInput()).toBeNull();
   });
 
   it("shows a warning instead of loading a form when the RU has no project", async () => {

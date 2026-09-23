@@ -17,6 +17,15 @@ import type { ProjectDetail } from "./types";
 vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));
 vi.mock("./history", () => ({ getProjectHistory: vi.fn() }));
 vi.mock("./api", () => ({ patchProject: vi.fn() }));
+// Opening a concept field's overlay auto-focuses it (CellEditOverlay.tsx), and a concept
+// AutoComplete searches on focus (renderers.tsx) — a real optionSourceFor loader would then hit
+// the network, which this test environment has no session/CSRF configured for. Not this file's
+// concern (ResourceRefRenderer's own search has no error handling either way): stub the loader so
+// opening a concept field never depends on the network at all.
+vi.mock("../../fields/optionSources", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../fields/optionSources")>();
+  return { ...actual, optionSourceFor: () => async () => [] };
+});
 
 const mockedGetProjectTypes = vi.mocked(getProjectTypes);
 const mockedGetProjectHistory = vi.mocked(getProjectHistory);
@@ -26,9 +35,12 @@ registerDefaultFieldRenderers();
 
 // Mirrors the real ActionUnit.DETAILS_FORM shape (FormUiDtoLayoutJson.serialize) closely enough to
 // exercise every branch FicheTab/FormField take: an editable TEXT field (name), a hidden one
-// (identifier, "d-none" — edited via the panel header instead), a concept picker (type), a field
-// that exists ONLY in the `answers` projection (oaCode), a multi-line TEXT (comments), a required
-// one (status), a deactivated one (developer) and the spatial-context tree field.
+// (identifier — edited via the panel header instead), a concept picker (type), a field that exists
+// ONLY in the `answers` projection (oaCode), a multi-line TEXT (comments), a required one (status),
+// a deactivated one (developer) and the spatial-context tree field.
+const STANDARD = { span: 12, md: 6, lg: 3 };
+const FULL = { span: 12, md: 12, lg: 12 };
+
 const layout = [
   {
     className: null,
@@ -38,19 +50,19 @@ const layout = [
     rows: [
       {
         columns: [
-          { className: "col-name", isRequired: false, isReadOnly: false, fieldId: -102 },
-          { className: "d-none", isRequired: true, isReadOnly: true, fieldId: -103 },
-          { className: "col-type", isRequired: false, isReadOnly: false, fieldId: -101 },
-          { className: "col-oacode", isRequired: false, isReadOnly: false, fieldId: 42 },
+          { width: STANDARD, isRequired: false, isReadOnly: false, fieldId: -102 },
+          { width: STANDARD, hidden: true, isRequired: true, isReadOnly: true, fieldId: -103 },
+          { width: STANDARD, isRequired: false, isReadOnly: false, fieldId: -101 },
+          { width: STANDARD, isRequired: false, isReadOnly: false, fieldId: 42 },
         ],
       },
       {
         columns: [
-          { className: "col-comments", isRequired: false, isReadOnly: false, fieldId: 43 },
-          { className: "col-status", isRequired: true, isReadOnly: false, fieldId: 44 },
-          { className: "col-developer", isRequired: false, isReadOnly: false, fieldId: 45 },
-          { className: "col-spatial", isRequired: false, isReadOnly: false, fieldId: 46 },
-          { className: "col-locked", isRequired: false, isReadOnly: true, fieldId: 47 },
+          { width: FULL, isRequired: false, isReadOnly: false, fieldId: 43 },
+          { width: STANDARD, isRequired: true, isReadOnly: false, fieldId: 44 },
+          { width: STANDARD, isRequired: false, isReadOnly: false, fieldId: 45 },
+          { width: FULL, isRequired: false, isReadOnly: false, fieldId: 46 },
+          { width: STANDARD, isRequired: false, isReadOnly: true, fieldId: 47 },
         ],
       },
     ],
@@ -139,14 +151,39 @@ function renderFiche(entity: ProjectDetail, { writeMode = true, onSaved = vi.fn(
   return onSaved;
 }
 
-function input(selector: string): HTMLInputElement | HTMLTextAreaElement {
-  const el = container.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement;
-  if (!el) throw new Error(`No input matching "${selector}"`);
+// Every field is a plain value until clicked — FieldEditCell then opens CellEditOverlay
+// (unchanged, reused straight from the list) on top of it, portalled to document.body. So driving
+// a field means: click the cell of its column wrapper (found by the real fieldId, via the
+// data-field-id attribute FicheTab.tsx sets — not a synthetic per-test className, now that column
+// width is a structured object rather than a free-form class string) to open the (one,
+// shared-per-field) overlay, then drive the overlay the exact same way CellEditOverlay.test.tsx
+// does.
+function fieldCol(fieldId: number | string): HTMLElement {
+  const el = container.querySelector(`[data-field-id="${fieldId}"]`) as HTMLElement | null;
+  if (!el) throw new Error(`No column for field id "${fieldId}"`);
   return el;
 }
 
-function typeInto(selector: string, value: string) {
-  const el = input(selector);
+function openField(fieldId: number | string) {
+  const cell = fieldCol(fieldId).querySelector(".field-value-cell-editable") as HTMLElement | null;
+  if (!cell) throw new Error(`No editable cell for field id "${fieldId}"`);
+  return act(async () => {
+    cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
+
+function overlayEl(): HTMLElement | null {
+  return document.body.querySelector(".cell-edit-overlay");
+}
+
+function overlayInput(): HTMLInputElement | HTMLTextAreaElement {
+  const el = document.body.querySelector(".cell-edit-overlay input, .cell-edit-overlay textarea");
+  if (!el) throw new Error("No cell edit overlay is open");
+  return el as HTMLInputElement | HTMLTextAreaElement;
+}
+
+function typeInto(value: string) {
+  const el = overlayInput();
   const proto = el instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
   const nativeSetter = Object.getOwnPropertyDescriptor(proto, "value")!.set!;
   return act(async () => {
@@ -155,17 +192,18 @@ function typeInto(selector: string, value: string) {
   });
 }
 
-// React implements onBlur on the bubbling `focusout`, not on the non-bubbling `blur` — both fire
-// when focus really leaves a control, but only this one reaches the field-value-group wrapper.
-function blur(selector: string) {
+// CellEditOverlay commits a text/number field on focus leaving the overlay, which it detects via a
+// document-level mousedown outside its own box — not React's bubbling blur/focusout, which
+// AutosavingField used and CellEditOverlay does not.
+function clickOutsideOverlay() {
   return act(async () => {
-    input(selector).dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
   });
 }
 
-function pressKey(selector: string, key: string) {
+function pressKey(key: string) {
   return act(async () => {
-    input(selector).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    overlayInput().dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
   });
 }
 
@@ -189,33 +227,40 @@ afterEach(() => {
 });
 
 describe("ProjectFicheTab — layout", () => {
-  it("renders every layout field from the answers projection", async () => {
+  it("renders every layout field from the answers projection, as a plain value until clicked", async () => {
     renderFiche(project());
     await flush();
 
-    expect(input(".col-name input").value).toBe("Fouille A");
+    expect(fieldCol(-102).querySelector(".field-value-cell")?.textContent).toBe("Fouille A");
     // oaCode has no flat property on ProjectResource and is readable only through `answers`.
-    expect(input(".col-oacode input").value).toBe("OA-2024-17");
-    expect(input(".col-type input").value).toBe("Sondage");
-    expect(input(".col-status input").value).toBe("En cours");
+    expect(fieldCol(42).querySelector(".field-value-cell")?.textContent).toBe("OA-2024-17");
+    expect(fieldCol(-101).querySelector(".field-value-cell")?.textContent).toBe("Sondage");
+    expect(fieldCol(44).querySelector(".field-value-cell")?.textContent).toBe("En cours");
     expect(container.textContent).not.toContain("Non disponible");
+    // No widget on screen until a value is clicked — that's the whole point of click-to-edit.
+    expect(overlayEl()).toBeNull();
   });
 
-  it("hides the d-none identifier column, which the panel header edits instead", async () => {
+  it("hides the identifier column, which the panel header edits instead", async () => {
     renderFiche(project());
     await flush();
 
-    expect(container.querySelector(".d-none")).toBeNull();
+    expect(container.querySelector('[data-field-id="-103"]')).toBeNull();
     expect(container.textContent).not.toContain("Identifiant");
   });
 
-  it("renders a textarea for a field flagged isTextArea, and a plain input otherwise", async () => {
+  it("opens a textarea for a field flagged isTextArea, and a plain input otherwise", async () => {
     renderFiche(project());
     await flush();
 
-    expect(container.querySelector(".col-comments textarea")).toBeTruthy();
-    expect(container.querySelector(".col-oacode textarea")).toBeNull();
-    expect(container.querySelector(".col-oacode input")).toBeTruthy();
+    await openField(43);
+    expect(document.body.querySelector(".cell-edit-overlay textarea")).toBeTruthy();
+    expect(document.body.querySelector(".cell-edit-overlay input")).toBeNull();
+
+    await clickOutsideOverlay();
+    await openField(42);
+    expect(document.body.querySelector(".cell-edit-overlay textarea")).toBeNull();
+    expect(document.body.querySelector(".cell-edit-overlay input")).toBeTruthy();
   });
 
   it("hides a deactivated field with no value, but keeps one that still holds data", async () => {
@@ -232,9 +277,9 @@ describe("ProjectFicheTab — layout", () => {
     await flush();
 
     // developer (45) is deactivated AND empty → gone, like JSF's isColumnEnabled gate.
-    expect(container.querySelector(".col-developer")).toBeNull();
+    expect(container.querySelector('[data-field-id="45"]')).toBeNull();
     // oaCode (42) is deactivated but still has an answer → stays, same escape hatch as JSF.
-    expect(container.querySelector(".col-oacode")).toBeTruthy();
+    expect(container.querySelector('[data-field-id="42"]')).toBeTruthy();
   });
 
   it("renders each field's own type icon in its label (CustomField.getIcon)", async () => {
@@ -242,9 +287,9 @@ describe("ProjectFicheTab — layout", () => {
     await flush();
 
     // A Bootstrap Icons font glyph...
-    expect(container.querySelector(".col-oacode .ellipsis-btn .bi.bi-alphabet")).toBeTruthy();
+    expect(fieldCol(42).querySelector(".ellipsis-btn .bi.bi-alphabet")).toBeTruthy();
     // ...and a background-image class, which is what every vocabulary-backed field gets.
-    expect(container.querySelector(".col-type .ellipsis-btn .sia-icon-opentheso")).toBeTruthy();
+    expect(fieldCol(-101).querySelector(".ellipsis-btn .sia-icon-opentheso")).toBeTruthy();
   });
 
   it("renders no icon element for a field the catalog gives no icon", async () => {
@@ -252,7 +297,7 @@ describe("ProjectFicheTab — layout", () => {
     await flush();
 
     // `developer` (45) has no icon in this catalog — an empty icon span would show as a gap.
-    expect(container.querySelector(".col-developer .ellipsis-btn .p-button-icon")).toBeNull();
+    expect(fieldCol(45).querySelector(".ellipsis-btn .p-button-icon")).toBeNull();
   });
 });
 
@@ -351,59 +396,63 @@ describe("ProjectFicheTab — the app's read/write switch is the only edit gate"
     expect(labels).not.toContain("Annuler");
   });
 
-  it("disables every widget in read mode", async () => {
+  it("offers no click-to-edit affordance in read mode", async () => {
     renderFiche(project(), { writeMode: false });
     await flush();
 
-    expect(input(".col-name input").disabled).toBe(true);
-    expect(input(".col-oacode input").disabled).toBe(true);
-    expect(input(".col-status input").disabled).toBe(true);
+    expect(fieldCol(-102).querySelector(".field-value-cell-editable")).toBeNull();
+    expect(fieldCol(42).querySelector(".field-value-cell-editable")).toBeNull();
+    expect(fieldCol(44).querySelector(".field-value-cell-editable")).toBeNull();
   });
 
-  it("enables them in write mode, with no further click needed", async () => {
+  it("offers the click-to-edit affordance in write mode", async () => {
     renderFiche(project());
     await flush();
 
-    expect(input(".col-name input").disabled).toBe(false);
-    expect(input(".col-oacode input").disabled).toBe(false);
+    expect(fieldCol(-102).querySelector(".field-value-cell-editable")).not.toBeNull();
+    expect(fieldCol(42).querySelector(".field-value-cell-editable")).not.toBeNull();
   });
 
   it("stays read-only in write mode when the user has no edit right on this project", async () => {
     renderFiche(project({ _permissions: { canEdit: false, canDelete: false } }));
     await flush();
 
-    expect(input(".col-name input").disabled).toBe(true);
+    expect(fieldCol(-102).querySelector(".field-value-cell-editable")).toBeNull();
   });
 
-  it("keeps a column the layout marks readOnly disabled even in write mode", async () => {
+  it("keeps a column the layout marks readOnly non-editable even in write mode", async () => {
     renderFiche(project());
     await flush();
 
-    expect(input(".col-locked input").disabled).toBe(true);
+    expect(fieldCol(47).querySelector(".field-value-cell-editable")).toBeNull();
   });
 });
 
-describe("ProjectFicheTab — per-field autosave", () => {
-  it("saves a text field on blur, through the answers map keyed by field id", async () => {
+describe("ProjectFicheTab — per-field click-to-edit", () => {
+  it("saves a text field when focus leaves the overlay, through the answers map keyed by field id", async () => {
     const onSaved = renderFiche(project());
     await flush();
 
-    await typeInto(".col-oacode input", "OA-2025-01");
+    await openField(42);
+    await typeInto("OA-2025-01");
     expect(mockedPatchProject).not.toHaveBeenCalled(); // not per keystroke
 
-    await blur(".col-oacode input");
+    await clickOutsideOverlay();
     await flush();
 
     expect(mockedPatchProject).toHaveBeenCalledWith("1", { answers: { "42": { value: "OA-2025-01" } } });
     expect(onSaved).toHaveBeenCalled();
+    // The overlay closes once the save lands, back to the plain value.
+    expect(overlayEl()).toBeNull();
   });
 
   it("saves a text field on Enter too", async () => {
     renderFiche(project());
     await flush();
 
-    await typeInto(".col-name input", "Renamed");
-    await pressKey(".col-name input", "Enter");
+    await openField(-102);
+    await typeInto("Renamed");
+    await pressKey("Enter");
     await flush();
 
     expect(mockedPatchProject).toHaveBeenCalledWith("1", { answers: { "-102": { value: "Renamed" } } });
@@ -413,36 +462,37 @@ describe("ProjectFicheTab — per-field autosave", () => {
     renderFiche(project());
     await flush();
 
-    await typeInto(".col-oacode input", "OA-2025-01");
-    await blur(".col-oacode input");
+    await openField(42);
+    await typeInto("OA-2025-01");
+    await clickOutsideOverlay();
     await flush();
 
     expect(mockedPatchProject).toHaveBeenCalledTimes(1);
     expect(Object.keys(mockedPatchProject.mock.calls[0][1].answers!)).toEqual(["42"]);
   });
 
-  it("issues no PATCH at all when a field is blurred untouched", async () => {
+  it("issues no PATCH at all when a field is closed untouched", async () => {
     renderFiche(project());
     await flush();
 
-    await blur(".col-oacode input");
+    await openField(42);
+    await clickOutsideOverlay();
     await flush();
 
     expect(mockedPatchProject).not.toHaveBeenCalled();
   });
 
-  it("reverts the field on Escape and saves nothing", async () => {
+  it("discards the edit on Escape and saves nothing", async () => {
     renderFiche(project());
     await flush();
 
-    await typeInto(".col-oacode input", "typed but abandoned");
-    await pressKey(".col-oacode input", "Escape");
+    await openField(42);
+    await typeInto("typed but abandoned");
+    await pressKey("Escape");
     await flush();
 
-    expect(input(".col-oacode input").value).toBe("OA-2024-17");
-
-    await blur(".col-oacode input");
-    await flush();
+    expect(overlayEl()).toBeNull();
+    expect(fieldCol(42).querySelector(".field-value-cell")?.textContent).toBe("OA-2024-17");
     expect(mockedPatchProject).not.toHaveBeenCalled();
   });
 
@@ -450,12 +500,14 @@ describe("ProjectFicheTab — per-field autosave", () => {
     renderFiche(project());
     await flush();
 
-    await typeInto(".col-status input", "");
-    await blur(".col-status input");
+    await openField(44);
+    await typeInto("");
     await flush();
 
-    expect(container.querySelector(".col-status .field-value-error")?.textContent).toContain("obligatoire");
+    expect(overlayEl()!.textContent).toContain("obligatoire");
     expect(mockedPatchProject).not.toHaveBeenCalled();
+    // Kept open with the error, exactly like a failed save — not silently discarded.
+    expect(overlayEl()).not.toBeNull();
   });
 
   it("keeps the edit on screen with the server's own message when the save fails", async () => {
@@ -463,14 +515,13 @@ describe("ProjectFicheTab — per-field autosave", () => {
     renderFiche(project());
     await flush();
 
-    await typeInto(".col-oacode input", "OA-DUP");
-    await blur(".col-oacode input");
+    await openField(42);
+    await typeInto("OA-DUP");
+    await clickOutsideOverlay();
     await flush();
 
-    expect(container.querySelector(".col-oacode .field-value-error")?.textContent).toContain(
-      "Identifiant déjà utilisé",
-    );
-    expect(input(".col-oacode input").value).toBe("OA-DUP");
+    expect(overlayEl()!.textContent).toContain("Identifiant déjà utilisé");
+    expect(overlayInput().value).toBe("OA-DUP");
   });
 });
 

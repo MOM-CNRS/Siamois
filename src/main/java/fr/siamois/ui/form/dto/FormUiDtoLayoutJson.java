@@ -63,7 +63,27 @@ public final class FormUiDtoLayoutJson {
 
     private static Map<String, Object> serializeCol(CustomColUiDto col) {
         Map<String, Object> colMap = new HashMap<>();
-        colMap.put(CLASS_NAME_KEY, col.getClassName());
+        if (col.getWidth() != null) {
+            // The structured shape (React converts this to PrimeFlex's own col-N/md:col-N/lg:col-N
+            // itself — see entities/project/form.ts's toPrimeFlexClass) rather than the PrimeFaces
+            // class string CustomColUiDto#getClassName() computes from the same ColumnWidth for
+            // the JSF side.
+            Map<String, Object> width = new HashMap<>();
+            width.put("span", col.getWidth().span());
+            if (col.getWidth().md() != null) {
+                width.put("md", col.getWidth().md());
+            }
+            if (col.getWidth().lg() != null) {
+                width.put("lg", col.getWidth().lg());
+            }
+            colMap.put("width", width);
+            colMap.put("hidden", col.isHidden());
+        } else {
+            // Fallback for a column still built the old way (not exercised by
+            // ActionUnitDetailsForm/RecordingUnitDetailsForm today, but FormUiDtoLayoutJson makes
+            // no assumption that every caller has migrated).
+            colMap.put(CLASS_NAME_KEY, col.getClassName());
+        }
         colMap.put("isRequired", col.isRequired());
         colMap.put("isReadOnly", col.isReadOnly());
         if (col.getField() != null) {
