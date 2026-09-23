@@ -401,7 +401,7 @@ export function EntityListPanel({
       )}
       {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}
       <DataTable
-        value={rows}
+          value={rows}
         // pages/shared/table/entityDataTable.xhtml is size="small" too — the React table had been
         // left at the theme's default (1rem cell padding vs 0.5rem), which is a big part of why it
         // read as much airier than the JSF one. entity-list-panel's own CSS tightens the vertical
@@ -421,6 +421,7 @@ export function EntityListPanel({
           ) : undefined
         }
         lazy
+        reorderableColumns
         paginator
         first={state.offset}
         rows={state.limit}
