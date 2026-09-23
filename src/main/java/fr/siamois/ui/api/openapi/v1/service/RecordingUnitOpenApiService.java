@@ -639,7 +639,16 @@ public class RecordingUnitOpenApiService {
         Map<String, FieldAnswer> answers = OpenApiExecutionContext.callWithUserInfo(
                 userInfo, () -> buildSpecimenFieldsWithFallback(specimen, fieldSource, locale));
 
-        resource.setAnswers(answers);
+        // FindResource.answers is Map<String, Object> (shared with the list's raw-value shape,
+        // see its own javadoc) — the detail's FieldAnswer envelope values just widen here.
+        resource.setAnswers(new LinkedHashMap<>(answers));
+        // Same source of truth as SpecimenPanel.canUserEditUnit (JSF), not the RU write check —
+        // see the migration plan's "the JSF bean is the source of truth for permissions" rule.
+        boolean canEdit = profilePermissionService.hasSpecimenWritePermission(userInfo, specimen);
+        resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit));
+        if (specimen.getId() != null) {
+            resource.setResourceUri("/specimen/" + specimen.getId());
+        }
         return resource;
     }
 

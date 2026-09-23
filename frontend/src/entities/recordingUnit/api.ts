@@ -21,6 +21,21 @@ export async function getRecordingUnit(id: string | number): Promise<RecordingUn
   return body.data;
 }
 
+// Mirrors RecordingUnitCreateRequest's required pair (projectId/typeId — answers/geom both
+// optional and unused here, see CreateForm.tsx's own doc for why the overlay stays this small).
+export interface RecordingUnitCreateBody {
+  projectId: string;
+  typeId: string;
+}
+
+export async function createRecordingUnit(body: RecordingUnitCreateBody): Promise<RecordingUnitDetail> {
+  const response = await apiFetch<RecordingUnitResponseBody>("/api/v1/recording-units", {
+    method: "POST",
+    body: { projectId: body.projectId, typeId: body.typeId },
+  });
+  return response.data;
+}
+
 // Mirrors RecordingUnitPatchRequest.answers — the same by-field-id write path the list's
 // click-to-edit overlay (CellEditOverlay) and the fiche's autosaving fields use for Project.
 export async function patchRecordingUnitAnswers(

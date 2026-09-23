@@ -35,6 +35,9 @@ public class FindOpenApiMapper {
             ru.setId(String.valueOf(specimen.getRecordingUnit().getId()));
             r.setRecordingUnit(ru);
         }
+        if (specimen.getActionUnit() != null && specimen.getActionUnit().getId() != null) {
+            r.setProjectId(String.valueOf(specimen.getActionUnit().getId()));
+        }
         if (specimen.getCreatedByInstitution() != null && specimen.getCreatedByInstitution().getId() != null) {
             OrganizationResourceIdentifier org = new OrganizationResourceIdentifier();
             org.setResourceType("organizations");

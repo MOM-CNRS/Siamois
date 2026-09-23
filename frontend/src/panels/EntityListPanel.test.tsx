@@ -49,6 +49,25 @@ const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
 
 registerEntityType(fakeConfig);
 
+// A second, separate fake entity for the createForm overlay tests below — its own key so it
+// doesn't interfere with fakeConfig's own onCreate-bridge tests, exercising EntityListPanel's own
+// mechanism (an entity supplying list.createForm gets an overlay instead of the onCreate bridge),
+// not any real entity's form content.
+const fakeConfigWithCreateForm: EntityTypeConfig<FakeRow, FakeRow> = {
+  ...fakeConfig,
+  key: "fake-entity-with-create-form",
+  list: {
+    ...fakeConfig.list,
+    createForm: (ctx) => (
+      <button type="button" data-testid="fake-create-form-submit" onClick={() => ctx.onCreated("99")}>
+        Simuler création
+      </button>
+    ),
+  },
+};
+
+registerEntityType(fakeConfigWithCreateForm);
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -1027,5 +1046,84 @@ describe("EntityListPanel embedded mode (plan: generic related-list tab)", () =>
     await flush();
 
     expect(embeddedListMock).toHaveBeenCalledWith(expect.objectContaining({ scope: undefined }));
+  });
+});
+
+describe("EntityListPanel create overlay (config.list.createForm)", () => {
+  function renderWithCreateForm(onNavigate = vi.fn(), onOpenOverview = vi.fn()) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel
+              entityType="fake-entity-with-create-form"
+              organizationId={7}
+              onNavigate={onNavigate}
+              onOpenOverview={onOpenOverview}
+            />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+    return { onNavigate, onOpenOverview };
+  }
+
+  it("opens the entity's own createForm in an overlay instead of bridging to onCreate", async () => {
+    renderWithCreateForm();
+    await flush();
+
+    const createButton = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Créer")!;
+    expect(document.body.querySelector('[data-testid="fake-create-form-submit"]')).toBeNull();
+
+    await act(async () => {
+      createButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(document.body.querySelector('[data-testid="fake-create-form-submit"]')).toBeTruthy();
+  });
+
+  it("navigates to the newly created entity and closes the overlay once the form calls onCreated", async () => {
+    const { onNavigate } = renderWithCreateForm();
+    await flush();
+
+    const createButton = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Créer")!;
+    await act(async () => {
+      createButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="fake-create-form-submit"]')!.click();
+    });
+
+    expect(onNavigate).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
+  });
+
+  it("falls back to onOpenOverview when the caller has no onNavigate of its own", async () => {
+    const onOpenOverview = vi.fn();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel
+              entityType="fake-entity-with-create-form"
+              organizationId={7}
+              onOpenOverview={onOpenOverview}
+            />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const createButton = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Créer")!;
+    await act(async () => {
+      createButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="fake-create-form-submit"]')!.click();
+    });
+
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
   });
 });

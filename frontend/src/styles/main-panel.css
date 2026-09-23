@@ -690,3 +690,16 @@
   font-size: 14px;
   color: var(--text-light);
 }
+
+/* entities/project/CreateForm.tsx's own overlay-hosted form, and any future entity's — one label
+   per field, stacked above its input (EntityListPanel's own "Créer" button toggles the OverlayPanel
+   this lives inside). */
+.entity-list-panel-create-overlay .project-create-form-field,
+.entity-list-panel-create-overlay label.project-create-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  font-size: 0.85em;
+  color: var(--text-light);
+}
+

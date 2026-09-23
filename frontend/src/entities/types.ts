@@ -115,6 +115,24 @@ export interface FieldCatalog {
   columns: FieldCatalogColumn[];
 }
 
+// Passed to an entity's `list.createForm` factory — deliberately an overlay-hosted form (a
+// PrimeReact OverlayPanel anchored to the list's own "Créer" button), not a JSF-style modal
+// dialog: the user asked for the simpler, lighter affordance on the React side rather than
+// reproducing GenericNewUnitDialogBean's dialog. `onCreated` both closes the overlay (the caller,
+// EntityListPanel, owns that) and lets the form hand back the new entity's id; the form itself
+// decides what belongs in its own fields (deliberately fewer than the JSF dialog's — see
+// entities/project/CreateForm.tsx for what Project's own trims and why).
+export interface CreateFormContext {
+  organizationId?: number;
+  // EntityListPanel's own `scope` prop, threaded straight through (same object, not rebuilt) —
+  // a scoped create form (an RU or a Find created FROM a project's own relation tab) reads its
+  // parent id off `scope.id` rather than needing a separate prop of its own. Undefined for a
+  // top-level, unscoped list (Project's own).
+  scope?: ListScope;
+  onCreated: (id: string | number) => void;
+  onCancel: () => void;
+}
+
 // Passed to a tab's render alongside the entity (plan §8 phase 6) — `refetch` so a tab that
 // mutates the entity (Project's fiche: field edits, identifier rename) can ask EntityDetailPanel's
 // own query to reload rather than each tab wiring its own cache invalidation. The rest
@@ -202,6 +220,12 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     };
     defaultSort?: string;
     searchable: boolean;
+    // An overlay-hosted creation form for this entity's OWN list toolbar "Créer" button
+    // (deliberately an overlay, not a JSF-style modal dialog — see CreateFormContext's own
+    // rationale). Optional: an entity that doesn't supply this keeps EntityListPanel's older
+    // behavior exactly — the `onCreate` prop (bridged to the legacy JSF new-unit dialog) is used
+    // instead, unchanged, so migrating one entity's create flow to React never touches another's.
+    createForm?: (ctx: CreateFormContext) => ReactNode;
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];

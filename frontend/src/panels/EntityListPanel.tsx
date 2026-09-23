@@ -103,6 +103,7 @@ export function EntityListPanel({
 
   const [selectedRows, setSelectedRows] = useState<RowRecord[]>([]);
   const columnTogglerRef = useRef<OverlayPanel>(null);
+  const createOverlayRef = useRef<OverlayPanel>(null);
   const queryClient = useQueryClient();
 
   // The one shared edit surface for every editable cell (plan phase 4b) — a single instance,
@@ -356,7 +357,7 @@ export function EntityListPanel({
   // DetailTabDef.badge.
   const body = (
     <>
-      {(config.list.searchable || onCreate || hasSchema) && (
+      {(config.list.searchable || onCreate || config.list.createForm || hasSchema) && (
         // p:toolbar (pages/shared/table/tableToolbar.xhtml) → PrimeReact Toolbar, not a plain
         // div — its own generated classes are what render the chrome the stock theme actually
         // paints, the legacy class name alone doesn't. Gear (column show/hide only) then search on
@@ -396,7 +397,34 @@ export function EntityListPanel({
               )}
             </>
           }
-          end={onCreate && <Button label="Créer" icon="bi bi-plus-square" onClick={onCreate} />}
+          end={
+            config.list.createForm ? (
+              <>
+                <Button
+                  label="Créer"
+                  icon="bi bi-plus-square"
+                  onClick={(e) => createOverlayRef.current?.toggle(e)}
+                />
+                <OverlayPanel ref={createOverlayRef} className="entity-list-panel-create-overlay">
+                  {config.list.createForm({
+                    organizationId,
+                    scope,
+                    onCreated: (id) => {
+                      createOverlayRef.current?.hide();
+                      queryClient.invalidateQueries({ queryKey: ["entity-list", entityType] });
+                      // Go straight to the new entity's own fiche, the way JSF's creation dialog
+                      // does today — not just its overview — falling back to onOpenOverview only
+                      // for a caller with no full-navigate of its own (an embedded relation tab).
+                      (onNavigate ?? onOpenOverview)?.(entityType, id);
+                    },
+                    onCancel: () => createOverlayRef.current?.hide(),
+                  })}
+                </OverlayPanel>
+              </>
+            ) : (
+              onCreate && <Button label="Créer" icon="bi bi-plus-square" onClick={onCreate} />
+            )
+          }
         />
       )}
       {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}

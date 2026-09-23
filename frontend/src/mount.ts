@@ -13,6 +13,7 @@ import { registerDefaultFieldRenderers } from "./fields/registerDefaultRenderers
 import { registerEntityType } from "./entities/registry";
 import { projectEntityConfig } from "./entities/project/config";
 import { recordingUnitEntityConfig } from "./entities/recordingUnit/config";
+import { findEntityConfig } from "./entities/find/config";
 import type { MountOptions } from "./mountOptions";
 import { App } from "./App";
 
@@ -21,6 +22,7 @@ registerDefaultFieldRenderers();
 // migrate is a config-only addition here, nothing else in this file changes.
 registerEntityType(projectEntityConfig);
 registerEntityType(recordingUnitEntityConfig);
+registerEntityType(findEntityConfig);
 
 // One generic mount function parameterized by panel kind + entity type (plan §3) — never one
 // mount function per entity. focus.xhtml calls this once isReactPanelEnabled() gates a panel

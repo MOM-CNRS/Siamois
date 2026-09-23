@@ -12,6 +12,25 @@ export async function listProjects(params: ListParams): Promise<PagedResult<Proj
   return fetchList<ProjectSummary>("projects", params);
 }
 
+// Mirrors ProjectCreateRequest's required trio (organizationId/name/identifier/typeConceptId) —
+// dates and locations are deliberately not exposed here (CreateForm.tsx keeps the overlay to the
+// fields the user actually needs to get started; both are still editable afterward, from the
+// fiche, like every other field).
+export interface ProjectCreateBody {
+  organizationId: string;
+  name: string;
+  identifier: string;
+  typeId: string;
+}
+
+export async function createProject(body: ProjectCreateBody): Promise<ProjectDetail> {
+  const response = await apiFetch<ProjectResponseBody>("/api/v1/projects", {
+    method: "POST",
+    body: { organizationId: body.organizationId, name: body.name, identifier: body.identifier, typeConceptId: body.typeId },
+  });
+  return response.data;
+}
+
 /**
  * @param fields projection des champs de formulaire dans `answers` — "all", "default", ou une liste
  *   d'ids séparés par des virgules. La fiche demande "all" : elle rend tout le layout, pas une

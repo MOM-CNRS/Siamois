@@ -883,4 +883,93 @@ class ProjectApiServiceMutationTest {
         au.setCreatedByInstitution(institution);
         return au;
     }
+
+    @Test
+    void pageFindsForProject_delegatesWithDefaultSortAndNoSearch() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        Page<SpecimenDTO> expected = new PageImpl<>(List.of());
+        when(specimenService.searchSpecimenInActionUnit(eq(institution), eq(au), any(FilterDTO.class), any(Pageable.class)))
+                .thenReturn(expected);
+
+        Page<SpecimenDTO> result = service.pageFindsForProject(caller, "7", 0, 10, null, null);
+
+        assertThat(result).isSameAs(expected);
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(specimenService).searchSpecimenInActionUnit(eq(institution), eq(au), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().containsColumn("fullIdentifier")).isFalse();
+    }
+
+    @Test
+    void pageFindsForProject_buildsContainsFilterFromSearch() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(specimenService.searchSpecimenInActionUnit(eq(institution), eq(au), any(FilterDTO.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageFindsForProject(caller, "7", 0, 10, "fullIdentifier:desc", "M1");
+
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(specimenService).searchSpecimenInActionUnit(eq(institution), eq(au), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().containsColumn("fullIdentifier")).isTrue();
+        assertThat(filterCaptor.getValue().valueOfAsString("fullIdentifier")).isEqualTo("M1");
+    }
+
+    @Test
+    void pageFindsForProject_unknownSortField_throws400() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+
+        assertThatThrownBy(() -> service.pageFindsForProject(caller, "7", 0, 10, "unknownField:asc", null))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+
+        verifyNoInteractions(specimenService);
+    }
+
+    @Test
+    void pageFindsForProject_requiresAccessibleProjectBeforeAnyPaging() {
+        when(actionUnitService.findAccessibleProjectByKey("404", SCOPE))
+                .thenThrow(new fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException("missing"));
+
+        assertThatThrownBy(() -> service.pageFindsForProject(caller, "404", 0, 10, null, null))
+                .isInstanceOf(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class);
+
+        verifyNoInteractions(specimenService);
+    }
+
+    @Test
+    void canEditFindsForProject_delegatesToProfilePermissionServiceForTheProjectFindsTriple() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasProjectPermission(any(), eq(7L),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.INSTANCE_EDIT_FINDS),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.ORGANIZATION_EDIT_FINDS),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.PROJECT_EDIT_FINDS)))
+                .thenReturn(true);
+
+        boolean result = service.canEditFindsForProject(caller, "7", "fr");
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void countFindsForProject_delegatesToSpecimenServiceCountByActionContext() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 3L, 0L);
+        when(specimenService.countByActionContext(au)).thenReturn(5);
+
+        long result = service.countFindsForProject(row);
+
+        assertThat(result).isEqualTo(5L);
+    }
 }

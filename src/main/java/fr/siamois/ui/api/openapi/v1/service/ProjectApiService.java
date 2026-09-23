@@ -30,6 +30,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
@@ -780,6 +781,74 @@ public class ProjectApiService {
      * Mirrors {@link ProfilePermissionService#hasRecordingUnitWritePermission}'s own instance/
      * organization/project triple, without needing a {@code RecordingUnitDTO} per row to get there.
      */
+    /**
+     * Nombre de mobiliers du projet — un seul appel, pour {@code _counts.finds} sur le détail
+     * uniquement (jamais batché sur une page de liste, qui ne l'affiche pas).
+     */
+    public long countFindsForProject(AccessibleProjectForApi row) {
+        Integer count = specimenService.countByActionContext(row.actionUnit());
+        return count == null ? 0L : count;
+    }
+
+    private static final Set<String> ALLOWED_FIND_SORT_FIELDS =
+            Set.of(SpecimenSpec.FULL_IDENTIFIER_FILTER, "collectionDate", "id");
+
+    /**
+     * Same contract as {@link #parseRecordingUnitSort} — an unknown property is a 400, not a
+     * silent fallback (unlike {@link #parseSortWithStableId}, which several other list endpoints
+     * use and which is deliberately lenient; reusing it here would mask a client's own sort typo).
+     */
+    private static Sort parseFindSort(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Direction.ASC, SpecimenSpec.FULL_IDENTIFIER_FILTER).and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_FIND_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        Sort primary = Sort.by(sortDirection(parts), property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    /**
+     * Page de mobiliers d'un projet ({@code GET /api/v1/projects/{id}/mobiliers}) — pendant réduit
+     * de {@link #pageRecordingUnitsForProject} : recherche libre sur {@code fullIdentifier} et tri
+     * sur une petite liste blanche, sans le contrat {@code f.<clé>} par colonne (pas encore
+     * construit côté mobilier — voir le plan de migration React, lot Mobilier).
+     */
+    public Page<SpecimenDTO> pageFindsForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        Sort sort = parseFindSort(sortParam);
+        Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        FilterDTO filterDTO = new FilterDTO();
+        if (search != null && !search.isBlank()) {
+            filterDTO.add(SpecimenSpec.FULL_IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        return specimenService.searchSpecimenInActionUnit(institution, row.actionUnit(), filterDTO, pageable);
+    }
+
+    /**
+     * Whether the caller can write finds on this project — a single boolean for the whole
+     * {@link #pageFindsForProject} page, same pattern as {@link #canEditRecordingUnitsForProject}.
+     */
+    public boolean canEditFindsForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return profilePermissionService.hasProjectPermission(userInfo, row.actionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_FINDS,
+                PermissionConstants.ORGANIZATION_EDIT_FINDS,
+                PermissionConstants.PROJECT_EDIT_FINDS);
+    }
+
     public boolean canEditRecordingUnitsForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
         InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();

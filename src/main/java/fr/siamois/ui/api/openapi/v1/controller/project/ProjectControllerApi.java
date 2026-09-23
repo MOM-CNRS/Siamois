@@ -140,9 +140,14 @@ public class ProjectControllerApi {
         // des champs projetés se résolvent en un lot, pas un appel par champ.
         ProjectListProjectionService.ProjectListProjection projection =
                 projectListProjectionService.build(List.of(row), fields, lang);
-        return ResponseEntity.ok(new ProjectResponse(projectResponseMapper.toResource(
+        ProjectResource resource = projectResponseMapper.toResource(
                 row, lang, permissions, bookmarked,
-                projection.resolvedLabels(), projection.answersFor(row.actionUnit().getId()))));
+                projection.resolvedLabels(), projection.answersFor(row.actionUnit().getId()));
+        // Only the detail response pays for this extra count query — a list page never shows it.
+        if (resource.getCount() != null) {
+            resource.getCount().setFinds(projectApiService.countFindsForProject(row));
+        }
+        return ResponseEntity.ok(new ProjectResponse(resource));
     }
 
     @GetMapping("/{id}/siblings")

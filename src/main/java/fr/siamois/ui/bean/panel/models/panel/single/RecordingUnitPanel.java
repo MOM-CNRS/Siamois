@@ -634,4 +634,29 @@ public class RecordingUnitPanel extends AbstractSingleMultiHierarchicalEntityPan
         return "recording-unit";
     }
 
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
+    @Override
+    public String reactPanelKind() {
+        return "detail";
+    }
+
+    @Override
+    public String reactEntityType() {
+        return "recordingUnit";
+    }
+
+    @Override
+    public Long reactEntityId() {
+        return unit != null ? unit.getId() : null;
+    }
+
+    @Override
+    public Long reactOrganizationId() {
+        return unit != null && unit.getCreatedByInstitution() != null ? unit.getCreatedByInstitution().getId() : null;
+    }
+
 }

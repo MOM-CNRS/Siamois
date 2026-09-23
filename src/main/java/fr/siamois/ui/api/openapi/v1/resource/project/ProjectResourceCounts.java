@@ -16,4 +16,7 @@ public class ProjectResourceCounts {
     @Schema(description = "Nombre d'unités d'enregistrement")
     private Long recordingUnits;
 
+    @Schema(description = "Nombre de mobiliers")
+    private Long finds;
+
 }

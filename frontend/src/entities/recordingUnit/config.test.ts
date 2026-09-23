@@ -29,4 +29,8 @@ describe("recordingUnitEntityConfig", () => {
     expect(recordingUnitEntityConfig.api.siblings).toBeUndefined();
     expect(recordingUnitEntityConfig.detail.chrome).toBeUndefined();
   });
+
+  it("declares an overlay-hosted create form for the list toolbar's own Créer button", () => {
+    expect(recordingUnitEntityConfig.list.createForm).toBeDefined();
+  });
 });

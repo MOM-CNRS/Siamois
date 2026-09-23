@@ -2,6 +2,7 @@ import { relationTab } from "../../panels/relationTab";
 import type { EntityTypeConfig } from "../types";
 import { getProject, getProjectSiblings, listProjects, patchProject } from "./api";
 import { projectColumns } from "./columns";
+import { ProjectCreateForm } from "./CreateForm";
 import { ProjectDetailHeader } from "./DetailHeader";
 import { ProjectFicheTab } from "./FicheTab";
 import { projectHomeWidgets } from "./homeWidgets";
@@ -52,6 +53,9 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
     },
     defaultSort: "name:asc",
     searchable: true,
+    // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc for
+    // why it's a reduced field set compared to newUnitDialog.xhtml.
+    createForm: (ctx) => <ProjectCreateForm {...ctx} />,
   },
   detail: {
     // Fiche tab only, phase 1 (plan §2/§4) — relationship tabs (recording units, containers,
@@ -70,6 +74,19 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         target: "recordingUnit",
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.recordingUnits ?? 0,
+      }),
+      // Migration plan lot 1 ("Mobilier") — no JSF equivalent tab exists on the project fiche
+      // today (SpecimenLazyDataModel scoped to the action unit is built in
+      // ActionUnitPanel.init() but never wired to a tab there), so this is new functionality,
+      // not a migration. `path: "mobiliers"` because the REST segment
+      // (GET /api/v1/projects/{id}/mobiliers) differs from Find's own collectionPath ("finds").
+      relationTab<ProjectDetail>({
+        key: "finds",
+        label: "Mobilier",
+        target: "find",
+        scopeEntityType: "project",
+        path: "mobiliers",
+        badge: (entity) => entity._counts?.finds ?? 0,
       }),
     ],
     // actionUnitPanelHeader.xhtml's content, rendered inside EntityDetailPanel's own panel header

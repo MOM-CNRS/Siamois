@@ -24,6 +24,9 @@ export interface OrganizationIdentifier {
 export interface ProjectCounts {
   children: number;
   recordingUnits: number;
+  // Only present on the detail response (GET /api/v1/projects/{id}) — the list never computes
+  // it, see ProjectResponseMapper's own javadoc on the equivalent server-side field.
+  finds?: number | null;
 }
 
 export interface ProjectPermissions {

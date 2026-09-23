@@ -1,6 +1,7 @@
 import type { EntityTypeConfig } from "../types";
 import { getRecordingUnit, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
 import { recordingUnitColumns } from "./columns";
+import { RecordingUnitCreateForm } from "./CreateForm";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
 import { RecordingUnitFicheTab } from "./FicheTab";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
@@ -42,6 +43,8 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     },
     defaultSort: "creationTime:desc",
     searchable: true,
+    // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
+    createForm: (ctx) => <RecordingUnitCreateForm {...ctx} />,
   },
   detail: {
     tabs: [

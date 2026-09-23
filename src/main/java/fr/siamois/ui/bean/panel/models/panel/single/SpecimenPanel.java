@@ -420,5 +420,32 @@ public class SpecimenPanel extends AbstractSingleEntityPanel<SpecimenDTO>  imple
         return "specimen";
     }
 
+    // Same fix as RecordingUnitPanel/ActionUnitPanel (migration plan, lot 0): without these, an
+    // overview pane opened on a "find" row falls the WHOLE (React) project panel back to JSF —
+    // AbstractPanel.isReactPanelActive() requires the overview's own isReactPanelEnabled() too.
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
+    @Override
+    public String reactPanelKind() {
+        return "detail";
+    }
+
+    @Override
+    public String reactEntityType() {
+        return "find";
+    }
+
+    @Override
+    public Long reactEntityId() {
+        return unit != null ? unit.getId() : null;
+    }
+
+    @Override
+    public Long reactOrganizationId() {
+        return unit != null && unit.getCreatedByInstitution() != null ? unit.getCreatedByInstitution().getId() : null;
+    }
 
 }

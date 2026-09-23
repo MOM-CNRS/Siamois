@@ -119,7 +119,7 @@ public class FindOpenApiService {
             formService.updateJpaEntityFromResponse(response, shell);
             return specimenService.save(shell);
         });
-        return findOpenApiMapper.toResource(created);
+        return withPermissionsAndUri(findOpenApiMapper.toResource(created), userInfo, created);
     }
 
     @Transactional
@@ -162,7 +162,22 @@ public class FindOpenApiService {
             formService.updateJpaEntityFromResponse(response, dto);
             return specimenService.save(dto);
         });
-        return findOpenApiMapper.toResource(saved);
+        return withPermissionsAndUri(findOpenApiMapper.toResource(saved), userInfo, saved);
+    }
+
+    /**
+     * Same source of truth as {@code SpecimenPanel.canUserEditUnit} (JSF) — not the RU write
+     * check {@link #patchFind}/{@link #createFind} use to gate the mutation itself, which mirrors
+     * the parent recording unit's own permission (a mobilier's own write check on the specimen
+     * class is a stricter/different rule reserved for read-side {@code _permissions}).
+     */
+    private FindResource withPermissionsAndUri(FindResource resource, UserInfo userInfo, SpecimenDTO dto) {
+        boolean canEdit = profilePermissionService.hasSpecimenWritePermission(userInfo, dto);
+        resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit));
+        if (dto.getId() != null) {
+            resource.setResourceUri("/specimen/" + dto.getId());
+        }
+        return resource;
     }
 
     @Transactional

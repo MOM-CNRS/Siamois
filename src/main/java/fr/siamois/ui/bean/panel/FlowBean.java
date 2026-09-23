@@ -409,6 +409,7 @@ public class FlowBean implements Serializable {
         switch (entityType) {
             case "project" -> addActionUnitToOverview(id, targetPanel, null, false);
             case "recordingUnit" -> addRecordingUnitToOverview(id, targetPanel, null, false);
+            case "find" -> addSpecimenToOverview(id, targetPanel, null, false);
             default -> log.warn("setOverview : entityType React inconnu côté serveur : {}", entityType);
         }
     }
