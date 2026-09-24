@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Splitter, SplitterPanel } from "primereact/splitter";
-import type { MountOptions, PanelKind, PanelToolbarSlot } from "./mountOptions";
+import type { MountOptions, PanelActions, PanelChrome, PanelKind, PanelToolbarSlot } from "./mountOptions";
 import { apiUrl } from "./api/basePath";
 import { getAllEntityTypes, getEntityType } from "./entities/registry";
 import { EntityListPanel } from "./panels/EntityListPanel";
@@ -28,6 +28,26 @@ interface OverviewState {
   entityId: string | number;
 }
 
+// One level of focus mode: the overview entity was promoted to the main pane, and this is what
+// closeFocus restores. A stack of these, not a single slot — focusing again from within focus mode
+// just pushes another level, the same way JSF's own `back=` param nests (FlowBean.fullScreen encodes
+// the complete previous focus URL, which carries its own `back=`).
+interface FocusSnapshot {
+  view: NavigationState;
+  mainPath: string;
+  // The entity that was promoted — it goes back into the overview pane on closeFocus.
+  overview: OverviewState;
+  // Restored as-is, so the original server-built main toolbar comes back only if it was still
+  // valid when focus mode was entered.
+  navigatedAway: boolean;
+  // The `back=` of the state being left, so a nested closeFocus puts the right URL back.
+  backUrl?: string;
+}
+
+function sameEntity(a: OverviewState | null | undefined, b: OverviewState | null | undefined): boolean {
+  return a != null && b != null && a.entityType === b.entityType && String(a.entityId) === String(b.entityId);
+}
+
 // Base64url, no padding — exactly Java's Base64.getUrlEncoder().withoutPadding(), which is what
 // FlowBean.redirectToFocus/showSideview and FocusViewBean's own decode already use for the
 // `/focus/<main>?s=<overview>` URL scheme (template.js's showSideview builds the same URL for
@@ -45,9 +65,15 @@ function base64url(value: string): string {
 // an F5 replays, and a bare route either has no Spring controller at all or lands on a template
 // without the React branch; the main token must also be the main pane's CURRENT view, not the
 // one JSF originally mounted, or an F5 silently brings back the page the user already left.
-function focusUrl(mainPath: string, overviewPath?: string): string {
+// `backUrl` is focus mode's way back (FlowBean.redirectToFocus's own `back=` param, which
+// FocusViewBean decodes into AbstractPanel.goBackUrl) — an absolute, context-path-prefixed URL, same
+// as the ones this function returns, so a focus URL can nest inside another's `back=`.
+function focusUrl(mainPath: string, overviewPath?: string, backUrl?: string): string {
+  const params: string[] = [];
+  if (overviewPath) params.push(`s=${base64url(overviewPath)}`);
+  if (backUrl) params.push(`back=${base64url(backUrl)}`);
   const main = apiUrl(`/focus/${base64url(mainPath)}`);
-  return overviewPath ? `${main}?s=${base64url(overviewPath)}` : main;
+  return params.length ? `${main}?${params.join("&")}` : main;
 }
 
 function overviewPath(overview: OverviewState | null): string | undefined {
@@ -160,7 +186,7 @@ function PanelContent({
  *
  * One real constraint this runs into: the main toolbar (`options.main`/`options.actions`) is
  * built once, server-side, for the ONE entity focus.xhtml actually mounted — both the bridged
- * remoteCommand actions (duplicate/create/refresh/settings, bound to that specific panel bean)
+ * remoteCommand actions (duplicate/create/settings, bound to that specific panel bean)
  * and the bookmark state/resourceUri/title (read off that entity at mount time). Once `navigate`
  * moves the view to a different entity, none of that is valid for the new one anymore — there's
  * no server round-trip to refresh it from. Rather than show a toolbar acting on the wrong entity
@@ -175,6 +201,11 @@ export function App({ options }: { options: MountOptions }) {
     entityId: options.entityId,
   });
   const [navigatedAway, setNavigatedAway] = useState(false);
+  // Read by enterFocus to snapshot the state being left, without re-creating the callback.
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const navigatedAwayRef = useRef(navigatedAway);
+  navigatedAwayRef.current = navigatedAway;
 
   // Seeded from MountOptions (a page load/F5 always reflects FlowBean's own parentOrOverview),
   // but owned client-side from here on — see openOverview/closeOverview below. Deliberately not
@@ -197,6 +228,26 @@ export function App({ options }: { options: MountOptions }) {
   // stable for the panels that receive it.
   const mainPathRef = useRef<string>(options.main.resourceUri);
   const overviewRef = useRef<OverviewState | null>(overview);
+  // Focus mode (see FocusSnapshot): the client-side stack of previous states, plus the `back=` the
+  // address bar currently carries — seeded from the server's goBackUrl when the page itself was
+  // loaded in focus mode (an F5 loses the stack, so closeFocus then falls back to a real
+  // navigation to that URL, exactly like the legacy closeFocusLink).
+  const [focusStack, setFocusStackState] = useState<FocusSnapshot[]>([]);
+  const focusStackRef = useRef<FocusSnapshot[]>([]);
+  const backUrlRef = useRef<string | undefined>(options.goBackUrl);
+  const setFocusStack = useCallback((next: FocusSnapshot[]) => {
+    focusStackRef.current = next;
+    setFocusStackState(next);
+  }, []);
+  // What FlowBean's parentOrOverview is believed to hold right now. Only moves when a bridge call
+  // actually tells the bean (setOverview/closeOverview). In focus mode, it's what decides whether
+  // the bridged overview actions (bound to parentOrOverview) can act for the promoted main entity.
+  const [serverOverview, setServerOverviewState] = useState<OverviewState | null>(overview);
+  const serverOverviewRef = useRef<OverviewState | null>(overview);
+  const setServerOverview = useCallback((next: OverviewState | null) => {
+    serverOverviewRef.current = next;
+    setServerOverviewState(next);
+  }, []);
 
   const navigate = useCallback((entityType: string, id?: string | number) => {
     const config = getEntityType(entityType);
@@ -208,10 +259,14 @@ export function App({ options }: { options: MountOptions }) {
     }
     const path = id != null ? config.routes.detail(id) : config.routes.list;
     mainPathRef.current = path;
+    // Leaving the focused entity ends focus mode, same as a JSF navigation (a plain redirect, no
+    // `back=`) — there's no longer a promoted panel to put back.
+    backUrlRef.current = undefined;
+    setFocusStack([]);
     window.history.pushState(null, "", focusUrl(path, overviewPath(overviewRef.current)));
     setNavigatedAway(true);
     setView({ panelKind: id != null ? "detail" : "list", entityType, entityId: id });
-  }, []);
+  }, [setFocusStack]);
 
   // Opens (or retargets) the overview pane without touching the main pane (plan §8 phase 5) —
   // the list-row-click replacement for a full `navigate`. Optimistic: React renders the new
@@ -224,28 +279,91 @@ export function App({ options }: { options: MountOptions }) {
       // Only actually goes "in flight" when there's a bridge call to wait on — for an entity
       // type the bridge doesn't cover (setOverview absent from MountOptions.actions), there is no
       // completion event to ever clear this, so it must not be set in the first place.
+      const next = { entityType, entityId: id };
       if (options.actions?.setOverview) {
         setOverviewBusy(true);
         options.actions.setOverview(entityType, id);
+        setServerOverview(next);
       }
 
-      const next = { entityType, entityId: id };
       overviewRef.current = next;
       if (mainPathRef.current) {
-        window.history.pushState(null, "", focusUrl(mainPathRef.current, overviewPath(next)));
+        window.history.pushState(null, "", focusUrl(mainPathRef.current, overviewPath(next), backUrlRef.current));
       }
     },
-    [options],
+    [options, setServerOverview],
   );
 
   const closeOverview = useCallback(() => {
     setOverview(null);
     overviewRef.current = null;
-    options.overviewActions?.closeOverview?.();
-    if (mainPathRef.current) {
-      window.history.pushState(null, "", focusUrl(mainPathRef.current));
+    if (options.overviewActions?.closeOverview) {
+      options.overviewActions.closeOverview();
+      setServerOverview(null);
     }
-  }, [options]);
+    if (mainPathRef.current) {
+      window.history.pushState(null, "", focusUrl(mainPathRef.current, undefined, backUrlRef.current));
+    }
+  }, [options, setServerOverview]);
+
+  // Focus mode: the overview entity becomes the main pane, the current main is remembered on the
+  // stack. Purely client-side — FlowBean needs no call: it still holds "main = previous main,
+  // parentOrOverview = the promoted entity", which is exactly the state closeFocus returns to.
+  const enterFocus = useCallback(() => {
+    const promoted = overviewRef.current;
+    const path = overviewPath(promoted);
+    if (!promoted || !path) return;
+    const leavingUrl = focusUrl(mainPathRef.current, path, backUrlRef.current);
+    setFocusStack([
+      ...focusStackRef.current,
+      {
+        view: viewRef.current,
+        mainPath: mainPathRef.current,
+        overview: promoted,
+        navigatedAway: navigatedAwayRef.current,
+        backUrl: backUrlRef.current,
+      },
+    ]);
+    mainPathRef.current = path;
+    overviewRef.current = null;
+    backUrlRef.current = leavingUrl;
+    window.history.pushState(null, "", focusUrl(path, undefined, leavingUrl));
+    setOverview(null);
+    setNavigatedAway(true);
+    setView({ panelKind: "detail", entityType: promoted.entityType, entityId: promoted.entityId });
+  }, [setFocusStack]);
+
+  // Puts the promoted entity back in the overview and restores the previous main. With an empty
+  // stack (the page itself was loaded in focus mode), only a real navigation to goBackUrl can
+  // rebuild that previous state.
+  const closeFocus = useCallback(() => {
+    const stack = focusStackRef.current;
+    const snapshot = stack[stack.length - 1];
+    if (!snapshot) {
+      if (backUrlRef.current) window.location.href = backUrlRef.current;
+      return;
+    }
+    setFocusStack(stack.slice(0, -1));
+    mainPathRef.current = snapshot.mainPath;
+    overviewRef.current = snapshot.overview;
+    backUrlRef.current = snapshot.backUrl;
+    window.history.pushState(
+      null,
+      "",
+      focusUrl(snapshot.mainPath, overviewPath(snapshot.overview), snapshot.backUrl),
+    );
+    setView(snapshot.view);
+    setOverview(snapshot.overview);
+    setNavigatedAway(snapshot.navigatedAway);
+    // An overview opened/closed while in focus mode moved the bean's parentOrOverview away from
+    // the entity going back into the overview pane — put it back, or F5 and the overview's
+    // bridged actions would target the wrong entity.
+    if (options.actions?.setOverview && !sameEntity(serverOverviewRef.current, snapshot.overview)) {
+      setOverviewBusy(true);
+      options.actions.setOverview(snapshot.overview.entityType, snapshot.overview.entityId);
+      setServerOverview(snapshot.overview);
+    }
+  }, [options, setFocusStack, setServerOverview]);
 
   // The setOverview remoteCommand's oncomplete dispatches this plain DOM event (reactPanelActions.xhtml)
   // since a p:remoteCommand call gives the caller no promise to await — this is what lets the
@@ -277,9 +395,41 @@ export function App({ options }: { options: MountOptions }) {
 
   const hasOverview = overview != null;
 
-  const mainToolbar: PanelToolbarSlot | undefined = navigatedAway
-    ? undefined
-    : { chrome: options.main, organizationId: options.organizationId, actions: options.actions };
+  // options.overview is the chrome of the overview JSF mounted with — only valid for that entity.
+  // For anything else it's a placeholder until EntityDetailPanel derives the real one from
+  // config.detail.chrome once its data loads.
+  const overviewChromeFor = (entity: OverviewState): PanelChrome =>
+    options.overview &&
+    sameEntity(entity, options.overviewEntityType != null && options.overviewEntityId != null
+      ? { entityType: options.overviewEntityType, entityId: options.overviewEntityId }
+      : null)
+      ? options.overview
+      : { resourceUri: "", title: "", bookmarked: false };
+
+  const inFocus = focusStack.length > 0;
+  const mainToolbar: PanelToolbarSlot | undefined = inFocus
+    ? (() => {
+        const promoted: OverviewState = { entityType: view.entityType, entityId: view.entityId ?? "" };
+        // The bean's overview actions are bound to parentOrOverview, which is still the promoted
+        // entity — until an overview opened from within focus mode (or its close) moves it.
+        const bridged = !overviewBusy && sameEntity(serverOverview, promoted);
+        const oa = options.overviewActions;
+        const actions: PanelActions = bridged && oa
+          ? { duplicate: oa.duplicate, create: oa.create, settings: oa.settings, closeFocus }
+          : { closeFocus };
+        return {
+          chrome: overviewChromeFor(promoted),
+          organizationId: options.overviewOrganizationId ?? options.organizationId,
+          actions,
+        };
+      })()
+    : navigatedAway
+      ? undefined
+      : {
+          chrome: options.main,
+          organizationId: options.organizationId,
+          actions: options.goBackUrl ? { ...options.actions, closeFocus } : options.actions,
+        };
 
   // chrome here is only ever what EntityDetailPanel falls back to before config.detail.chrome
   // has data to derive from (Project registers one; see config.tsx) — for the overview seeded by
@@ -288,7 +438,7 @@ export function App({ options }: { options: MountOptions }) {
   // query resolves, at which point config.detail.chrome (when the entity type has one) replaces it.
   const overviewToolbar: PanelToolbarSlot | undefined = overview
     ? {
-        chrome: options.overview ?? { resourceUri: "", title: "", bookmarked: false },
+        chrome: overviewChromeFor(overview),
         organizationId: options.overviewOrganizationId ?? options.organizationId,
         // Omitted (not just disabled) while a setOverview call is in flight — PanelToolbar only
         // ever checks whether an action callback is present, so this is what "unavailable" means
@@ -298,9 +448,10 @@ export function App({ options }: { options: MountOptions }) {
         // only) knows about. reactAction_overview_closeOverview is always-rendered server-side
         // now (see reactPanelActions.xhtml), so options.overviewActions?.closeOverview is only
         // ever missing for an entity type React doesn't bridge overview actions for at all.
+        // fullscreen is App's own client-side focus swap (enterFocus), not a bridged call.
         actions: overviewBusy
           ? undefined
-          : options.overviewActions && { ...options.overviewActions, closeOverview },
+          : { ...options.overviewActions, closeOverview, fullscreen: enterFocus },
       }
     : undefined;
 
@@ -323,6 +474,10 @@ export function App({ options }: { options: MountOptions }) {
         style={{ display: "flex", flexDirection: "column", minWidth: 0, borderTop: "3px solid var(--main-color)" }}
       >
         <PanelContent
+          // Keyed on the entity shown: a focus swap/closeFocus between two entities of the same
+          // kind would otherwise reuse the instance and keep the previous one's local state
+          // (PanelToolbar's bookmarked flag, active tab).
+          key={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}
           view={view}
           organizationId={options.organizationId}
           onNavigate={navigate}
@@ -374,6 +529,7 @@ export function App({ options }: { options: MountOptions }) {
       style={{ height: "100%", display: "flex", flexDirection: "column", borderTop: "3px solid var(--main-color)" }}
     >
       <PanelContent
+        key={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}
         view={view}
         organizationId={options.organizationId}
         onNavigate={navigate}

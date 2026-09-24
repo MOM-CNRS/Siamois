@@ -56,14 +56,24 @@ function button(icon: string): HTMLElement {
 
 describe("PanelToolbar", () => {
   it("only renders action buttons that were actually provided", () => {
-    render({ resourceUri: "/action-unit/1", title: "Fouille A", bookmarked: false }, 7, { refresh: vi.fn() });
+    render({ resourceUri: "/action-unit/1", title: "Fouille A", bookmarked: false }, 7, { duplicate: vi.fn() });
 
-    expect(container.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+    expect(container.querySelector(".bi-copy")).toBeTruthy();
     expect(container.querySelector(".bi-plus-square")).toBeNull();
-    expect(container.querySelector(".bi-copy")).toBeNull();
     expect(container.querySelector(".bi-gear")).toBeNull();
     expect(container.querySelector(".bi-chevron-double-right")).toBeNull();
     expect(container.querySelector(".bi-arrows-angle-expand")).toBeNull();
+    expect(container.querySelector(".bi-arrows-angle-contract")).toBeNull();
+  });
+
+  it("renders the closeFocus button when provided and calls it", () => {
+    const closeFocus = vi.fn();
+    render({ resourceUri: "/action-unit/1", title: "Fouille A", bookmarked: false }, 7, { closeFocus });
+
+    act(() => {
+      button("bi-arrows-angle-contract").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(closeFocus).toHaveBeenCalledTimes(1);
   });
 
   it("renders closeOverview/fullscreen only for the overview toolbar", () => {
@@ -77,17 +87,17 @@ describe("PanelToolbar", () => {
   });
 
   it("calls the provided action callbacks", () => {
-    const refresh = vi.fn();
+    const duplicate = vi.fn();
     const closeOverview = vi.fn();
     render({ resourceUri: "/action-unit/1", title: "Fouille A", bookmarked: false }, 7, {
-      refresh,
+      duplicate,
       closeOverview,
     });
 
     act(() => {
-      button("bi-arrow-clockwise").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      button("bi-copy").dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(duplicate).toHaveBeenCalledTimes(1);
 
     act(() => {
       button("bi-chevron-double-right").dispatchEvent(new MouseEvent("click", { bubbles: true }));

@@ -27,11 +27,11 @@ describe("HomePanel", () => {
       <QueryClientProvider client={queryClient}>
         <HomePanel
           widgets={[{ key: "a", render: () => <span>Widget A</span> }]}
-          toolbar={{ chrome: { resourceUri: "/welcome", title: "Accueil", bookmarked: false }, actions: { refresh: () => {} } }}
+          toolbar={{ chrome: { resourceUri: "/welcome", title: "Accueil", bookmarked: false }, actions: { duplicate: () => {} } }}
         />
       </QueryClientProvider>,
     );
-    expect(html).toContain("bi-arrow-clockwise");
+    expect(html).toContain("bi-copy");
   });
 
   // homePanel.xhtml is two separate sibling p:panels ("Mes derniers projets"/myActionUnits and

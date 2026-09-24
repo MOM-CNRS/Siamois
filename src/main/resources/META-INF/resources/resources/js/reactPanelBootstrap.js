@@ -49,6 +49,8 @@
             // replaces this very container, so React is remounted with the new value (the
             // data-mounted guard below is what makes that a remount rather than a duplicate mount).
             writeMode: d.writeMode === "true",
+            // AbstractPanel.goBackUrl (the `back=` param): this page was loaded in focus mode.
+            goBackUrl: d.goBackUrl || undefined,
             basePath: d.basePath || "",
             csrf: { headerName: d.csrfHeader, token: d.csrfToken },
             main: {
@@ -63,7 +65,6 @@
             } : undefined,
             actions: {
                 duplicate: actionFn(d.actionDuplicate),
-                refresh: actionFn(d.actionRefresh),
                 create: actionFn(d.actionCreate),
                 settings: actionFn(d.actionSettings),
                 listCreate: actionFn(d.actionListCreate),
@@ -71,9 +72,7 @@
             },
             overviewActions: {
                 closeOverview: actionFn(d.overviewActionCloseOverview),
-                fullscreen: actionFn(d.overviewActionFullscreen),
                 duplicate: actionFn(d.overviewActionDuplicate),
-                refresh: actionFn(d.overviewActionRefresh),
                 create: actionFn(d.overviewActionCreate),
                 settings: actionFn(d.overviewActionSettings)
             }

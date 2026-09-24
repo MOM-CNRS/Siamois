@@ -5,10 +5,10 @@ import { createBookmark, deleteBookmark } from "../api/bookmarks";
 import type { OverviewActions, PanelActions, PanelChrome } from "../mountOptions";
 
 // Generic panel titlebar (plan §7.3/§8 phase 8) — one component for both the main panel's
-// titlebar (focus.xhtml) and the overview pane's own (panelContent.xhtml): same six actions
-// (bookmark/create/duplicate/refresh/settings, plus closeOverview/fullscreen for the overview
-// only), same "sideview-topbar-button" class names those templates already use. Nothing here is
-// Project-specific — chrome/actions/organizationId all come from MountOptions.
+// titlebar (focus.xhtml) and the overview pane's own (panelContent.xhtml): same actions
+// (bookmark/create/duplicate/settings, plus closeOverview/fullscreen for the overview
+// only, and closeFocus for the main panel in focus mode), same "sideview-topbar-button" class
+// names those templates already use. Nothing here is Project-specific — chrome/actions/organizationId all come from MountOptions.
 //
 // Bookmark is deliberately NOT one of the bridged `actions` (plan §7.3): JSF passes the initial
 // `bookmarked` flag once at mount and this component calls the REST bookmark endpoints directly
@@ -43,6 +43,16 @@ export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarPr
 
   return (
     <div className="panel-toolbar" style={{ display: "flex", gap: "0.5rem" }}>
+      {actions?.closeFocus && (
+        <Button
+          icon="bi bi-arrows-angle-contract"
+          className="sideview-topbar-button"
+          text
+          rounded
+          tooltip="Fermer le mode focus"
+          onClick={actions.closeFocus}
+        />
+      )}
       {overview?.closeOverview && (
         <Button
           icon="bi bi-chevron-double-right"
@@ -89,16 +99,6 @@ export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarPr
           rounded
           tooltip="Dupliquer"
           onClick={actions.duplicate}
-        />
-      )}
-      {actions?.refresh && (
-        <Button
-          icon="bi bi-arrow-clockwise"
-          className="sideview-topbar-button"
-          text
-          rounded
-          tooltip="Rafraîchir"
-          onClick={actions.refresh}
         />
       )}
       {actions?.settings && (

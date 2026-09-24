@@ -209,16 +209,6 @@ public abstract class AbstractPanel implements Serializable {
         }
     }
 
-    // Null-safe wrapper so the React main panel (plan §8 phase 5) can always render the overview
-    // refresh action, even before the client-opened overview's setOverview bridge call has
-    // resolved server-side — unlike the JSF button it mirrors, which only ever renders once
-    // parentOrOverview is already non-null.
-    public void refreshOverview() {
-        if (parentOrOverview != null) {
-            parentOrOverview.refresh();
-        }
-    }
-
     public void closeOverview() {
 
         parentOrOverview = null;

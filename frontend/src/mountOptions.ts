@@ -8,7 +8,6 @@ export type PanelKind = "home" | "list" | "detail";
 // never has to re-derive permission logic client-side.
 export interface PanelActions {
   duplicate?: () => void;
-  refresh?: () => void;
   create?: () => void;
   settings?: () => void;
   // Only meaningful when panelKind is "list" — bridged from that entity's OWN table toolbar
@@ -20,10 +19,15 @@ export interface PanelActions {
   // 5) — fire-and-forget, not awaited by the caller. entityType is accepted for a future
   // multi-entity bridge; today the remoteCommand behind this is action-unit-specific.
   setOverview?: (entityType: string, id: string | number) => void;
+  // Main panel titlebar only, and only in focus mode (an overview entity promoted to main):
+  // puts it back in the overview and restores the previous main — legacy focus.xhtml's
+  // closeFocusLink (bi-arrows-angle-contract). Provided by App itself, never bridged.
+  closeFocus?: () => void;
 }
 
 // The overview pane's own titlebar (panelContent.xhtml) has two extra buttons the main panel's
-// titlebar doesn't: closing the overview, and popping it into full focus mode.
+// titlebar doesn't: closing the overview, and popping it into full focus mode. `fullscreen` is App's
+// own client-side swap (overview becomes main), not a bridged remoteCommand.
 export interface OverviewActions extends PanelActions {
   closeOverview?: () => void;
   fullscreen?: () => void;
@@ -73,4 +77,8 @@ export interface MountOptions {
   actions?: PanelActions;
   overview?: PanelChrome;
   overviewActions?: OverviewActions;
+  // AbstractPanel.goBackUrl — set by FocusViewBean from the `back=` URL param, i.e. this page was
+  // loaded (or F5'd) in focus mode. The main toolbar's closeFocus then does a real navigation to it,
+  // since the client-side focus stack App keeps doesn't survive a reload.
+  goBackUrl?: string;
 }

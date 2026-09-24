@@ -119,7 +119,7 @@ describe("EntityDetailPanel", () => {
           <EntityDetailPanel
             entityType="fake-detail-entity"
             entityId="1"
-            toolbar={{ chrome: { resourceUri: "/fake/1", title: "First", bookmarked: false }, actions: { refresh: () => {} } }}
+            toolbar={{ chrome: { resourceUri: "/fake/1", title: "First", bookmarked: false }, actions: { duplicate: () => {} } }}
           />
         </QueryClientProvider>,
       );
@@ -128,7 +128,7 @@ describe("EntityDetailPanel", () => {
 
     const header = container.querySelector(".p-panel-header")!;
     expect(header).toBeTruthy();
-    expect(header.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+    expect(header.querySelector(".bi-copy")).toBeTruthy();
   });
 
   it("renders config.detail.header content inside its own panel header, alongside the toolbar", async () => {

@@ -335,7 +335,7 @@ describe("EntityListPanel", () => {
         <WriteModeProvider value={true}>
           <EntityListPanel
             entityType="fake-entity"
-            toolbar={{ chrome: { resourceUri: "/fake", title: "Fakes", bookmarked: false }, actions: { refresh: () => {} } }}
+            toolbar={{ chrome: { resourceUri: "/fake", title: "Fakes", bookmarked: false }, actions: { duplicate: () => {} } }}
           />
           </WriteModeProvider>
         </QueryClientProvider>,
@@ -345,7 +345,7 @@ describe("EntityListPanel", () => {
 
     const header = container.querySelector(".p-panel-header")!;
     expect(header).toBeTruthy();
-    expect(header.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+    expect(header.querySelector(".bi-copy")).toBeTruthy();
   });
 
   it("shows a selected/total chip and updates it when a row is selected", async () => {

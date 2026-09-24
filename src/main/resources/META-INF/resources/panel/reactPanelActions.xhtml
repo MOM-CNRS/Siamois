@@ -7,7 +7,7 @@
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"-->
 
     <!--
-    Bridges the six toolbar actions React can't perform itself (plan §7.3/§8 phase 8) into plain
+    Bridges the toolbar actions React can't perform itself (plan §7.3/§8 phase 8) into plain
     global JS functions via p:remoteCommand, exactly mirroring the `rendered` gating focus.xhtml's
     own titlebar and panelContent.xhtml's overview titlebar already use for the same buttons — a
     function simply doesn't exist when its legacy button wouldn't have rendered either, so the
@@ -25,10 +25,6 @@
         <p:remoteCommand name="reactAction_duplicate_${panelModel.jsPanelIndex}"
                           rendered="#{panelModel.canDuplicate() and flowBean.isWriteMode}"
                           action="#{panelModel.duplicate()}"
-                          process="@this"
-                          update="@none"/>
-        <p:remoteCommand name="reactAction_refresh_${panelModel.jsPanelIndex}"
-                          action="#{panelModel.refresh()}"
                           process="@this"
                           update="@none"/>
         <p:remoteCommand name="reactAction_create_${panelModel.jsPanelIndex}"
@@ -50,7 +46,7 @@
         reactPanelKind() first so tableModel is only ever dereferenced on an actual list panel.
         updateOnCreate/tableClientId are left blank: there's no PrimeFaces table left to refresh
         in place (React owns the list now) — creating a project here still opens the same dialog,
-        it just doesn't auto-refresh the list under it yet (use the panel's own refresh action).
+        it just doesn't auto-refresh the list under it yet.
         -->
         <p:remoteCommand name="reactAction_listCreate_${panelModel.jsPanelIndex}"
                           rendered="#{panelModel.reactPanelKind() == 'list'
@@ -88,25 +84,16 @@
                           oncomplete="window.dispatchEvent(new CustomEvent('siamois-set-overview-done', {detail: {panelIndex: '${panelModel.panelIndex}'}}));"/>
 
         <!--
-        These three have no permission condition of their own in the legacy markup — only the
-        parentOrOverview != null gate — so they're always rendered too, closing the same
-        client-opened-overview gap: React would otherwise find them permanently undefined (plan
-        §8 phase 5's actionFn eager-lookup caveat). refresh uses the null-safe refreshOverview()
-        wrapper instead of parentOrOverview.refresh() directly, since parentOrOverview can still
-        be null in the narrow window before the setOverview call above resolves — the frontend
-        disables these while that call is in flight, but this stays defensive either way.
-        fullscreen and closeOverview are left calling parentOrOverview directly, matching the
-        legacy behaviour they mirror; the same in-flight disable covers them.
+        closeOverview has no permission condition of its own in the legacy markup — only the
+        parentOrOverview != null gate — so it's always rendered too, closing the same
+        client-opened-overview gap: React would otherwise find it permanently undefined (plan
+        §8 phase 5's actionFn eager-lookup caveat). The frontend disables it while a setOverview
+        call is in flight. No refresh command: the React headers have no refresh action (React
+        Query owns data freshness). No fullscreen command: focus mode is a client-side
+        swap in React (App.tsx's enterFocus/closeFocus), which needs no bean call at all.
         -->
         <p:remoteCommand name="reactAction_overview_closeOverview_${panelModel.jsPanelIndex}"
                           action="#{panelModel.closeOverview()}"
-                          process="@this"
-                          update="@none"/>
-        <p:remoteCommand name="reactAction_overview_fullscreen_${panelModel.jsPanelIndex}"
-                          action="#{flowBean.fullScreen(panelModel.parentOrOverview)}"
-                          ajax="false"/>
-        <p:remoteCommand name="reactAction_overview_refresh_${panelModel.jsPanelIndex}"
-                          action="#{panelModel.refreshOverview()}"
                           process="@this"
                           update="@none"/>
 

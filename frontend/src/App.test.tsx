@@ -108,7 +108,7 @@ function baseOptions(overrides: Partial<MountOptions> = {}): MountOptions {
     basePath: "",
     csrf: { headerName: "X-CSRF", token: "t" },
     main: { resourceUri: "/fake-app-entity", title: "Fakes", bookmarked: false },
-    actions: { refresh: vi.fn(), duplicate: vi.fn(), create: vi.fn(), settings: vi.fn() },
+    actions: { duplicate: vi.fn(), create: vi.fn(), settings: vi.fn() },
     ...overrides,
   };
 }
@@ -179,7 +179,7 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    expect(container.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+    expect(container.querySelector(".bi-copy")).toBeTruthy();
 
     const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
     await act(async () => {
@@ -187,7 +187,7 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    expect(container.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+    expect(container.querySelector(".bi-copy")).toBeTruthy();
   });
 
   it("hides the main toolbar entirely after a full client-side navigation (it was built for the original entity only)", async () => {
@@ -196,7 +196,7 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    expect(container.querySelector(".bi-arrow-clockwise")).toBeTruthy();
+    expect(container.querySelector(".bi-copy")).toBeTruthy();
     expect(container.querySelector(".bi-bookmark")).toBeTruthy();
 
     const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Go to detail")!;
@@ -205,7 +205,7 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    expect(container.querySelector(".bi-arrow-clockwise")).toBeNull();
+    expect(container.querySelector(".bi-copy")).toBeNull();
     expect(container.querySelector(".bi-bookmark")).toBeNull();
   });
 
@@ -356,5 +356,165 @@ describe("App client-side navigation", () => {
     expect(childGetMock).toHaveBeenCalledWith("9");
     expect(container.textContent).toContain("Child detail of Child row");
     expect(container.querySelector("tbody tr")).toBeTruthy();
+  });
+});
+
+// Focus mode: the overview entity is promoted to the main pane (the overview's "Ouvrir en mode
+// focus" button) and closeFocus puts it back — both client-side, no bean call on the way in
+// (FlowBean still holds "main = previous main, parentOrOverview = promoted", i.e. the way back).
+describe("App focus mode", () => {
+  async function click(el: Element | null | undefined) {
+    expect(el).toBeTruthy();
+    await act(async () => {
+      el!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+  }
+
+  const mainPane = () => container.querySelector(".panel-splitter-panel-l") as HTMLElement;
+
+  it("promotes the overview entity to the main pane, with a back= URL and no bean call", async () => {
+    const setOverview = vi.fn();
+    const overviewDuplicate = vi.fn();
+    act(() => {
+      root.render(
+        <App
+          options={baseOptions({
+            overviewEntityType: "fake-app-entity",
+            overviewEntityId: "1",
+            actions: { duplicate: vi.fn(), setOverview },
+            overviewActions: { duplicate: overviewDuplicate, closeOverview: vi.fn() },
+          })}
+        />,
+      );
+    });
+    await flush();
+
+    await click(container.querySelector(".panel-splitter-panel-r .bi-arrows-angle-expand"));
+
+    expect(container.querySelector(".panel-splitter-panel-r")).toBeNull();
+    expect(container.querySelector("tbody tr")).toBeNull();
+    expect(mainPane().textContent).toContain("Detail of Row A");
+    expect(window.location.pathname).toBe(`/focus/${b64("/fake-app-entity/1")}`);
+    expect(window.location.search).toContain(
+      `back=${b64(`/focus/${b64("/fake-app-entity")}?s=${b64("/fake-app-entity/1")}`)}`,
+    );
+    expect(window.location.search).not.toContain("s=");
+    expect(setOverview).not.toHaveBeenCalled();
+
+    // The bean's overview actions are bound to parentOrOverview — the promoted entity — so they
+    // act for the new main.
+    await click(mainPane().querySelector(".bi-copy"));
+    expect(overviewDuplicate).toHaveBeenCalled();
+    expect(mainPane().querySelector(".bi-arrows-angle-contract")).toBeTruthy();
+  });
+
+  it("closeFocus restores the previous main, its toolbar and the overview", async () => {
+    const setOverview = vi.fn();
+    const mainDuplicate = vi.fn();
+    act(() => {
+      root.render(
+        <App
+          options={baseOptions({
+            overviewEntityType: "fake-app-entity",
+            overviewEntityId: "1",
+            actions: { duplicate: mainDuplicate, setOverview },
+            overviewActions: { closeOverview: vi.fn() },
+          })}
+        />,
+      );
+    });
+    await flush();
+
+    await click(container.querySelector(".panel-splitter-panel-r .bi-arrows-angle-expand"));
+    await click(mainPane().querySelector(".bi-arrows-angle-contract"));
+
+    expect(mainPane().querySelector("tbody tr")).toBeTruthy();
+    expect(container.querySelector(".panel-splitter-panel-r")?.textContent).toContain("Detail of Row A");
+    expect(window.location.pathname).toBe(`/focus/${b64("/fake-app-entity")}`);
+    expect(window.location.search).toBe(`?s=${b64("/fake-app-entity/1")}`);
+    // Bean never left that state — nothing to resync.
+    expect(setOverview).not.toHaveBeenCalled();
+    expect(mainPane().querySelector(".bi-arrows-angle-contract")).toBeNull();
+
+    await click(mainPane().querySelector(".bi-copy"));
+    expect(mainDuplicate).toHaveBeenCalled();
+  });
+
+  it("nests: focus, open an overview, focus again, then unwinds both levels and resyncs the bean", async () => {
+    childListMock.mockReset().mockResolvedValue({ data: [{ id: "9", name: "Child row" }], totalCount: 1, limit: 20, offset: 0 });
+    childGetMock.mockReset().mockResolvedValue({ id: "9", name: "Child row" });
+    const setOverview = vi.fn();
+    const overviewDuplicate = vi.fn();
+    act(() => {
+      root.render(
+        <App
+          options={baseOptions({
+            overviewEntityType: "fake-parent-with-child-tab",
+            overviewEntityId: "1",
+            actions: { setOverview },
+            overviewActions: { duplicate: overviewDuplicate, closeOverview: vi.fn() },
+          })}
+        />,
+      );
+    });
+    await flush();
+
+    await click(container.querySelector(".panel-splitter-panel-r .bi-arrows-angle-expand"));
+
+    // Open a child of the promoted entity in the overview, from the main pane's own relation tab.
+    const childrenTab = Array.from(mainPane().querySelectorAll(".p-tabview-nav li a")).find((el) =>
+      el.textContent?.includes("Children"),
+    );
+    await click(childrenTab);
+    await click(mainPane().querySelector(".entity-list-panel-identifier-link"));
+    await flush();
+    expect(setOverview).toHaveBeenLastCalledWith("fake-child-entity", "9");
+    act(() => {
+      window.dispatchEvent(new CustomEvent("siamois-set-overview-done", { detail: {} }));
+    });
+    // parentOrOverview is the child now — the bridged actions no longer act for the main entity.
+    expect(mainPane().querySelector(".bi-copy")).toBeNull();
+    // The back= still travels with the URL while the promoted entity stays on screen.
+    expect(window.location.search).toContain("back=");
+
+    await click(container.querySelector(".panel-splitter-panel-r .bi-arrows-angle-expand"));
+    expect(mainPane().textContent).toContain("Child detail of Child row");
+
+    await click(mainPane().querySelector(".bi-arrows-angle-contract"));
+    expect(mainPane().textContent).toContain("Detail of Row A");
+    expect(container.querySelector(".panel-splitter-panel-r")?.textContent).toContain("Child detail of Child row");
+
+    await click(mainPane().querySelector(".bi-arrows-angle-contract"));
+    expect(mainPane().querySelector("tbody tr")).toBeTruthy();
+    expect(container.querySelector(".panel-splitter-panel-r")?.textContent).toContain("Detail of Row A");
+    expect(window.location.search).toBe(`?s=${b64("/fake-parent-with-child-tab/1")}`);
+    // The bean was moved to the child while in focus mode — put back on the restored overview.
+    expect(setOverview).toHaveBeenLastCalledWith("fake-parent-with-child-tab", "1");
+  });
+
+  it("falls back to a real navigation to goBackUrl when the page itself was loaded in focus mode", async () => {
+    act(() => {
+      root.render(
+        <App
+          options={baseOptions({ panelKind: "detail", entityId: "1", goBackUrl: "/focus/previous?s=xyz" })}
+        />,
+      );
+    });
+    await flush();
+
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", { value: { href: "" }, writable: true });
+    await click(mainPane().querySelector(".bi-arrows-angle-contract"));
+    expect(window.location.href).toBe("/focus/previous?s=xyz");
+    Object.defineProperty(window, "location", { value: originalLocation, writable: true });
+  });
+
+  it("has no closeFocus button outside focus mode", async () => {
+    act(() => {
+      root.render(<App options={baseOptions()} />);
+    });
+    await flush();
+    expect(container.querySelector(".bi-arrows-angle-contract")).toBeNull();
   });
 });
