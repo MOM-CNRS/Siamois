@@ -51,8 +51,8 @@ export interface PanelToolbarSlot {
 
 export interface MountOptions {
   // Identifies which server-side panel bean this mount belongs to (AbstractPanel.panelIndex) —
-  // only needed to filter the "siamois-set-overview-done" DOM event a page with several mounted
-  // panels (flow.xhtml's tab stack) would otherwise dispatch for every mount at once.
+  // only needed to filter the "siamois-set-overview-done" DOM event should a page ever mount
+  // several panels at once.
   panelIndex?: string;
   panelKind: PanelKind;
   entityType: string;

@@ -200,7 +200,7 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
 
     private void goToRecordingUnitList() {
         try {
-            navBean.goToRecordingUnitList("FOCUS");
+            navBean.goToRecordingUnitList();
         } catch (java.io.IOException e) {
             throw new java.io.UncheckedIOException(e);
         }

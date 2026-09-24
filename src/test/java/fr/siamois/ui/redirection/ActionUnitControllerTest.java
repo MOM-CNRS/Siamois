@@ -13,12 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 /**
- * Project's root routes forward straight to /pages/focus.xhtml (plan §7/§8 phase 8), never
- * flow.xhtml — FocusViewBean.beforeInit() decodes the "main" token itself and builds the panel
- * via PanelFactory directly, the same mechanism FlowBean.redirectToDashboard()/
- * SettingsController.goToFocus() already use for Home and Settings. flow.xhtml's own tab-stack
- * rendering has no React branch and no equivalent of focus.xhtml's titlebar, so it must never be
- * the destination for an entity type that has migrated.
+ * Project's root routes forward straight to /pages/focus.xhtml (plan §7/§8 phase 8) —
+ * FocusViewBean.beforeInit() decodes the "main" token itself and builds the panel via
+ * PanelFactory directly, the same mechanism FlowBean.redirectToDashboard()/
+ * SettingsController.goToFocus() already use for Home and Settings.
  */
 @ExtendWith(MockitoExtension.class)
 class ActionUnitControllerTest {

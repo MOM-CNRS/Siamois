@@ -91,7 +91,7 @@
                         </p:column>
 
                         <f:facet name="emptyMessage">
-                            <p:commandLink update="flow" action="#{flowBean.addSpatialUnitListPanel()}"
+                            <p:commandLink action="#{navBean.goToSpatialUnitList()}"
                                            onstart="PF('newUnitDiag').hide();PF('buiContent').show();"
                                            process="@this"
                                            oncomplete="PF('buiContent').hide()"

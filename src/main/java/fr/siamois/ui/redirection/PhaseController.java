@@ -8,24 +8,24 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 @Scope(value = "session")
-public class SpecimenController {
+public class PhaseController {
 
     private final NavBean navBean;
 
-    public SpecimenController(NavBean navBean) {
+    public PhaseController(NavBean navBean) {
         this.navBean = navBean;
     }
 
-    @GetMapping("/specimen")
-    public String toSpecimenList() {
+    @GetMapping("/phase")
+    public String toPhaseList() {
         navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        return FocusForward.to("specimen");
+        return FocusForward.to("phase");
     }
 
-    @GetMapping("/specimen/{id}")
-    public String toSpecimen(@PathVariable Long id) {
+    @GetMapping("/phase/{id}")
+    public String toPhase(@PathVariable Long id) {
         navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        return FocusForward.to("specimen/" + id);
+        return FocusForward.to("phase/" + id);
     }
 
 }

@@ -158,7 +158,7 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
 
     private void goToActionUnitList() {
         try {
-            navBean.goToActionUnitList("FOCUS");
+            navBean.goToActionUnitList();
         } catch (java.io.IOException e) {
             throw new java.io.UncheckedIOException(e);
         }

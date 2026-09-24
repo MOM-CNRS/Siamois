@@ -13,10 +13,6 @@ export interface UseTableStateOptions {
 export function useTableState({ defaultSort }: UseTableStateOptions) {
   const [state, setState] = useState<TableState>(() => createTableState({ sort: defaultSort }));
 
-  const setPage = useCallback((offset: number, limit: number) => {
-    setState((s) => ({ ...s, offset, limit }));
-  }, []);
-
   const setSort = useCallback((sort: string | undefined) => {
     setState((s) => ({ ...s, sort }));
   }, []);
@@ -24,10 +20,10 @@ export function useTableState({ defaultSort }: UseTableStateOptions) {
   const setSearch = useCallback((search: string) => {
     setState((s) => {
       const next = search || undefined;
-      // Skip the update (and the offset reset it implies) when the debounced value settles back
-      // to what it already was — avoids an extra query firing on every keystroke's trailing edge.
+      // Skip the update when the debounced value settles back to what it already was — avoids an
+      // extra query firing on every keystroke's trailing edge.
       if (next === s.search) return s;
-      return { ...s, search: next, offset: 0 };
+      return { ...s, search: next };
     });
   }, []);
 
@@ -36,7 +32,7 @@ export function useTableState({ defaultSort }: UseTableStateOptions) {
   }, []);
 
   const setFilters = useCallback((filters: Record<string, FilterValue>) => {
-    setState((s) => ({ ...s, filters, offset: 0 }));
+    setState((s) => ({ ...s, filters }));
   }, []);
 
   // Seeds visibleColumns from the schema's own defaults, once — never overwrites a set the user
@@ -49,5 +45,5 @@ export function useTableState({ defaultSort }: UseTableStateOptions) {
     setState((s) => ({ ...s, visibleColumns: fieldIds }));
   }, []);
 
-  return { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns };
+  return { state, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns };
 }

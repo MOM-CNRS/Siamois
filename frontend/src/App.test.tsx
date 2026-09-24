@@ -113,6 +113,10 @@ function baseOptions(overrides: Partial<MountOptions> = {}): MountOptions {
   };
 }
 
+function b64(value: string): string {
+  return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -203,6 +207,53 @@ describe("App client-side navigation", () => {
 
     expect(container.querySelector(".bi-arrow-clockwise")).toBeNull();
     expect(container.querySelector(".bi-bookmark")).toBeNull();
+  });
+
+  // F5 replays the address bar, so every pushed URL must be the /focus/<main>[?s=<overview>] form
+  // FocusViewBean decodes — a bare entity route (/phase/5, /container/2) had no server route, and a
+  // stale main token brought back the page the user left.
+  it("pushes a /focus URL encoding the new main view after a client-side navigation", async () => {
+    act(() => {
+      root.render(<App options={baseOptions({ panelKind: "home", entityType: "fake-app-entity", main: { resourceUri: "/welcome", title: "Home", bookmarked: false } })} />);
+    });
+    await flush();
+
+    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Go to detail")!;
+    await act(async () => {
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(window.location.pathname).toBe(`/focus/${b64("/fake-app-entity/1")}`);
+    expect(window.location.search).toBe("");
+  });
+
+  it("encodes the CURRENT main view, not the originally mounted one, when an overview opens after navigating", async () => {
+    act(() => {
+      root.render(
+        <App options={baseOptions({ panelKind: "detail", entityId: "1", main: { resourceUri: "/fake-app-entity/1", title: "Row A", bookmarked: false } })} />,
+      );
+    });
+    await flush();
+
+    // Breadcrumb "Tous les fakes" -> client-side navigate to the list.
+    const crumb = Array.from(container.querySelectorAll(".p-breadcrumb.panel-bc .p-menuitem-link")).find((el) =>
+      el.textContent?.includes("Tous les"),
+    ) as HTMLElement;
+    await act(async () => {
+      crumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    expect(window.location.pathname).toBe(`/focus/${b64("/fake-app-entity")}`);
+
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
+    await act(async () => {
+      identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(window.location.pathname).toBe(`/focus/${b64("/fake-app-entity")}`);
+    expect(new URLSearchParams(window.location.search).get("s")).toBe(b64("/fake-app-entity/1"));
   });
 
   it("falls back to a real page navigation for an entity type that isn't registered", async () => {

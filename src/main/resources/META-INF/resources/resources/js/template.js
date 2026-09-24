@@ -121,15 +121,13 @@ function handleDesynchronization(needsReload) {
 function checkDesync() {
     const institutionId =
         document.getElementById("contextForm:currentInstitutionId")?.value;
-    const panelIds =
-        document.getElementById("contextForm:currentPanelIds")?.value;
 
-    if (!institutionId || !panelIds) {
+    if (!institutionId) {
         location.reload(true);
         return;
     }
 
-    fetch(APP_CTX + `/api/context/check?institutionId=${encodeURIComponent(institutionId)}&panelIds=${encodeURIComponent(panelIds)}`, {
+    fetch(APP_CTX + `/api/context/check?institutionId=${encodeURIComponent(institutionId)}`, {
         credentials: "same-origin"
     })
         .then(r => r.json())

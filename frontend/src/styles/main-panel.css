@@ -256,6 +256,10 @@
 .entity-list-panel {
   --cell-pad-y: 0.3rem;
   --cell-pad-x: 0.5rem;
+  /* The list virtual-scrolls and positions each row at index * this height, so it must be exact
+     for every row, loaded or placeholder. Mirrors ROW_HEIGHT_PX in EntityListPanel.tsx — change
+     both together. */
+  --entity-list-row-height: 38px;
 }
 
 
@@ -325,9 +329,21 @@
   min-height: 0;
 }
 
-/* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
-   are siblings of it, so they stay put. */
+/* The box the rows scroll in. The toolbar and the filter-chip header are siblings of it, so they
+   stay put. */
 .entity-list-panel .p-datatable-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* With virtual scrolling the scroller inside the wrapper is what actually scrolls. PrimeReact only
+   gives it `height: 100%` of the wrapper, which is a flex item without a definite height, so that
+   resolved to 0 — and a VirtualScroller that measures 0 never initializes, computes an empty
+   visible range, and renders no rows at all while the API has answered. Flexing it instead gives
+   it the wrapper's real height from its first render. */
+.entity-list-panel .p-datatable-wrapper > .p-virtualscroller {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -378,6 +394,39 @@
 .entity-list-panel .p-datatable-thead > tr > th,
 .entity-list-panel .p-datatable-tbody > tr > td {
   padding: var(--cell-pad-y) var(--cell-pad-x);
+}
+
+.entity-list-panel .p-datatable-tbody > tr {
+  height: var(--entity-list-row-height);
+}
+
+.entity-list-panel .p-datatable-tbody > tr > td {
+  box-sizing: border-box;
+  height: var(--entity-list-row-height);
+  max-height: var(--entity-list-row-height);
+}
+
+/* Mirrors the JSF panels' .panel-progressbar (primefaces-siamois-theme styles.scss): a thin,
+   always-present track, whose moving value only shows while more rows are loading. */
+.entity-list-panel-progressbar.p-progressbar {
+  flex: 0 0 3px;
+  height: 3px;
+  border-radius: 0;
+  background-color: var(--siamois-green-light-100, #e8f1e8);
+}
+
+.entity-list-panel-progressbar.p-progressbar .p-progressbar-value {
+  background-color: var(--main-color, #3d6b3d);
+  visibility: hidden;
+}
+
+.entity-list-panel-progressbar.p-progressbar.is-active .p-progressbar-value {
+  visibility: visible;
+}
+
+/* A row whose chunk is still loading: skeletons only, nothing to hover or click. */
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-placeholder-row {
+  pointer-events: none;
 }
 
 

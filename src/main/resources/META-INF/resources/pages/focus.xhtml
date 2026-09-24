@@ -327,7 +327,6 @@
                                 <p:ajax event="load" action="#{focusViewBean.mainPanel.loadData()}"
                                         update="panel-${focusViewBean.mainPanel.panelIndex}-container"/>
                                 <ui:include src="/panel/panelContent.xhtml" id="panel-body">
-                                    <ui:param name="mode" value="FOCUS"/>
                                     <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
                                     <ui:param name="panelIndex" value="#{focusViewBean.mainPanel.panelIndex}"/>
                                 </ui:include>

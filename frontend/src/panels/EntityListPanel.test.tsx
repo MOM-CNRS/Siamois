@@ -3,6 +3,7 @@ import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
+import { CHUNK_SIZE } from "./useVirtualList";
 import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderers";
 
 registerDefaultFieldRenderers();
@@ -126,12 +127,12 @@ afterEach(() => {
 });
 
 describe("EntityListPanel", () => {
-  it("calls config.api.list with the default sort and pagination on first render", async () => {
+  it("fetches the first chunk with the default sort on first render", async () => {
     renderPanel();
     await flush();
 
     expect(listMock).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 0, limit: 20, sort: "name:asc", search: undefined }),
+      expect.objectContaining({ offset: 0, limit: CHUNK_SIZE, sort: "name:asc", search: undefined }),
     );
     expect(container.textContent).toContain("Row A");
   });
@@ -365,12 +366,31 @@ describe("EntityListPanel", () => {
     expect(chipsAfter).toContain("1/1");
   });
 
-  it("defaults to 20 rows per page with 20/50/100 as the paginator options", async () => {
+  // The list virtual-scrolls over the whole result set instead of paging through it.
+  it("virtual-scrolls instead of paginating", async () => {
     renderPanel();
     await flush();
 
-    const dropdown = container.querySelector(".p-paginator .p-dropdown");
-    expect(dropdown).toBeTruthy();
+    expect(container.querySelector(".p-paginator")).toBeNull();
+    expect(container.querySelector(".p-virtualscroller")).toBeTruthy();
+  });
+
+  // Rows past the first chunk exist (so the scrollbar is to scale) but are only fetched once
+  // scrolled into view — until then they're placeholders (see useVirtualList.assembleRows).
+  it("counts the whole result set but fetches only the chunk in view", async () => {
+    listMock.mockResolvedValue({
+      data: Array.from({ length: CHUNK_SIZE }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` })),
+      totalCount: CHUNK_SIZE + 10,
+      limit: CHUNK_SIZE,
+      offset: 0,
+    });
+    renderPanel();
+    await flush();
+
+    // Only chunk 0 was requested: the (test-sized) viewport doesn't reach row 50.
+    expect(listMock).toHaveBeenCalledTimes(1);
+    const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
+    expect(chips).toContain(String(CHUNK_SIZE + 10));
   });
 
   it("shows an unsupported message for an unregistered entity type", async () => {
@@ -863,6 +883,58 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
     expect(patchAnswersMock).toHaveBeenCalledWith("1", { "-118": { value: "Terminé" } });
     // Cache invalidation triggers a refetch of the list.
     expect(schemaListMock).toHaveBeenCalled();
+  });
+
+  // Rows being (re)fetched in the background get a visible signal — the same thin progress bar the
+  // JSF panels use — without it replacing the rows already on screen.
+  it("animates the progress bar only while rows are being fetched in the background", async () => {
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: true } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    const bar = () => container.querySelector(".entity-list-panel-progressbar") as HTMLElement;
+    expect(bar()).toBeTruthy();
+    expect(bar().classList.contains("is-active")).toBe(false);
+
+    const cell = container.querySelector(".entity-list-panel-editable-cell") as HTMLElement;
+    await act(async () => {
+      cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    const input = document.body.querySelector(".cell-edit-overlay input") as HTMLInputElement;
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      nativeSetter.call(input, "Terminé");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // The refetch the save triggers hangs until released, so its in-flight state is observable.
+    let release!: () => void;
+    schemaListMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = () =>
+            resolve({ data: [{ id: "1", name: "Row A", answers: {}, _permissions: { canEdit: true } }], totalCount: 1, limit: 10, offset: 0 });
+        }),
+    );
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    await flush();
+
+    expect(bar().classList.contains("is-active")).toBe(true);
+    // The rows already loaded stay on screen meanwhile.
+    expect(container.textContent).toContain("Row A");
+
+    await act(async () => release());
+    await flush();
+    expect(bar().classList.contains("is-active")).toBe(false);
   });
 });
 

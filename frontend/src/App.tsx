@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Splitter, SplitterPanel } from "primereact/splitter";
 import type { MountOptions, PanelKind, PanelToolbarSlot } from "./mountOptions";
@@ -38,6 +38,21 @@ function base64url(value: string): string {
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
+}
+
+// Every URL this app pushes must be the canonical `/focus/<main>[?s=<overview>]` form that
+// FocusViewBean decodes for every entity type — not a bare entity route. The address bar is what
+// an F5 replays, and a bare route either has no Spring controller at all or lands on a template
+// without the React branch; the main token must also be the main pane's CURRENT view, not the
+// one JSF originally mounted, or an F5 silently brings back the page the user already left.
+function focusUrl(mainPath: string, overviewPath?: string): string {
+  const main = apiUrl(`/focus/${base64url(mainPath)}`);
+  return overviewPath ? `${main}?s=${base64url(overviewPath)}` : main;
+}
+
+function overviewPath(overview: OverviewState | null): string | undefined {
+  if (!overview) return undefined;
+  return getEntityType(overview.entityType)?.routes.detail(overview.entityId);
 }
 
 // Routes to the one generic panel matching panelKind — no per-entity branching here either,
@@ -176,6 +191,13 @@ export function App({ options }: { options: MountOptions }) {
   // phase 5's own caveat about the remoteCommand being async).
   const [overviewBusy, setOverviewBusy] = useState(false);
 
+  // What the address bar must encode (see focusUrl): the main pane's current route — seeded from
+  // the server's own resourceUri (keeps e.g. its ?tab=), then replaced on every `navigate` — and
+  // the currently open overview. Refs rather than state deps so `navigate` stays referentially
+  // stable for the panels that receive it.
+  const mainPathRef = useRef<string>(options.main.resourceUri);
+  const overviewRef = useRef<OverviewState | null>(overview);
+
   const navigate = useCallback((entityType: string, id?: string | number) => {
     const config = getEntityType(entityType);
     if (!config) {
@@ -185,7 +207,8 @@ export function App({ options }: { options: MountOptions }) {
       return;
     }
     const path = id != null ? config.routes.detail(id) : config.routes.list;
-    window.history.pushState(null, "", apiUrl(path));
+    mainPathRef.current = path;
+    window.history.pushState(null, "", focusUrl(path, overviewPath(overviewRef.current)));
     setNavigatedAway(true);
     setView({ panelKind: id != null ? "detail" : "list", entityType, entityId: id });
   }, []);
@@ -206,10 +229,10 @@ export function App({ options }: { options: MountOptions }) {
         options.actions.setOverview(entityType, id);
       }
 
-      const config = getEntityType(entityType);
-      if (config && options.main.resourceUri) {
-        const newUrl = `${apiUrl(`/focus/${base64url(options.main.resourceUri)}`)}?s=${base64url(config.routes.detail(id))}`;
-        window.history.pushState(null, "", newUrl);
+      const next = { entityType, entityId: id };
+      overviewRef.current = next;
+      if (mainPathRef.current) {
+        window.history.pushState(null, "", focusUrl(mainPathRef.current, overviewPath(next)));
       }
     },
     [options],
@@ -217,17 +240,18 @@ export function App({ options }: { options: MountOptions }) {
 
   const closeOverview = useCallback(() => {
     setOverview(null);
+    overviewRef.current = null;
     options.overviewActions?.closeOverview?.();
-    if (options.main.resourceUri) {
-      window.history.pushState(null, "", apiUrl(`/focus/${base64url(options.main.resourceUri)}`));
+    if (mainPathRef.current) {
+      window.history.pushState(null, "", focusUrl(mainPathRef.current));
     }
   }, [options]);
 
   // The setOverview remoteCommand's oncomplete dispatches this plain DOM event (reactPanelActions.xhtml)
   // since a p:remoteCommand call gives the caller no promise to await — this is what lets the
   // overview toolbar re-enable itself precisely when the bean is back in sync, rather than never
-  // or after a guessed timeout. Filtered by panelIndex for pages that mount several panel
-  // instances at once (flow.xhtml's tab stack); focus.xhtml only ever has one.
+  // or after a guessed timeout. Filtered by panelIndex in case a page ever mounts more than one
+  // panel instance; focus.xhtml only ever has one.
   useEffect(() => {
     function onSetOverviewDone(e: Event) {
       const detail = (e as CustomEvent<{ panelIndex?: string }>).detail;

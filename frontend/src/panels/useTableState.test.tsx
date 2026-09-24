@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
-import { DEFAULT_LIMIT } from "./tableState";
 import { useTableState } from "./useTableState";
 
 // No @testing-library/react in this project (see EntityListPanel.test.tsx's own createRoot/act
@@ -35,43 +34,29 @@ afterEach(() => {
 });
 
 describe("useTableState", () => {
-  it("initializes with the given default sort and DEFAULT_LIMIT", () => {
+  it("initializes with the given default sort", () => {
     renderHarness("name:asc");
     expect(latest.state).toEqual({
-      v: 1,
-      offset: 0,
-      limit: DEFAULT_LIMIT,
+      v: 2,
       sort: "name:asc",
       visibleColumns: [],
       filters: {},
     });
   });
 
-  it("setPage updates offset and limit together", () => {
+  it("setSearch normalizes an empty string to undefined", () => {
     renderHarness();
-    act(() => latest.setPage(20, 25));
-    expect(latest.state.offset).toBe(20);
-    expect(latest.state.limit).toBe(25);
-  });
-
-  it("setSearch resets offset to 0 and normalizes an empty string to undefined", () => {
-    renderHarness();
-    act(() => latest.setPage(20, 10));
     act(() => latest.setSearch("abc"));
     expect(latest.state.search).toBe("abc");
-    expect(latest.state.offset).toBe(0);
 
-    act(() => latest.setPage(20, 10));
     act(() => latest.setSearch(""));
     expect(latest.state.search).toBeUndefined();
   });
 
-  it("setFilters resets offset to 0", () => {
+  it("setFilters replaces the filters", () => {
     renderHarness();
-    act(() => latest.setPage(20, 10));
     act(() => latest.setFilters({ name: { op: "contains", v: "fos" } }));
     expect(latest.state.filters).toEqual({ name: { op: "contains", v: "fos" } });
-    expect(latest.state.offset).toBe(0);
   });
 
   it("seedVisibleColumns sets visibleColumns only the first time it's called", () => {

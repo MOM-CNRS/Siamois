@@ -141,4 +141,15 @@ class AbstractPanelTest {
 
         assertThat(panel.getPanelContainerId()).isEqualTo("panel-7");
     }
+
+    // p:remoteCommand names become global JS function assignments: a hyphen ("7-overview",
+    // "action-unit-list") made every bridged React action a syntax error, silently undefined.
+    @Test
+    void jsPanelIndex_replacesCharactersInvalidInAJsIdentifier() {
+        TestPanel panel = new TestPanel(true);
+        panel.setRoot(false);
+
+        assertThat(panel.getPanelIndex()).isEqualTo("7-overview");
+        assertThat(panel.getJsPanelIndex()).isEqualTo("7_overview");
+    }
 }

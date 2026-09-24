@@ -1,5 +1,4 @@
-// A list panel's whole client-side state as one serializable object (plan §f) — paging, sort,
-// search, which columns are visible, and (phase 3) per-column filters. Kept separate from
+// A list panel's whole client-side state as one serializable object (plan §f) — sort, search, which columns are visible, and (phase 3) per-column filters. Kept separate from
 // EntityListPanel's own React state management (useTableState.ts) so the shape can be
 // encoded/decoded independently of any hook: a saved view later becomes `POST /ui-views { state }`
 // with zero component changes, and a `?s=` URL param makes a list view shareable/restorable
@@ -13,9 +12,9 @@ export interface TableState {
   // Bumped whenever the shape changes — decodeTableState refuses anything else outright rather
   // than guessing, so a stale `?s=` or saved view degrades to "start over", never to a crash or a
   // silently wrong filter.
-  v: 1;
-  offset: number;
-  limit: number;
+  // v2: offset/limit dropped — the list virtual-scrolls, so there is no page to remember (a v1 view
+  // decodes to null and starts over, per the rule above).
+  v: 2;
   sort?: string;
   search?: string;
   // Ordered field ids — omitted entirely (`[]`) means "pinned columns only, no dynamic ones",
@@ -24,15 +23,9 @@ export interface TableState {
   filters: Record<string, FilterValue>;
 }
 
-// Page sizes are 20/50/100 (EntityListPanel.ROWS_PER_PAGE_OPTIONS) — 20 is the default, not JSF's
-// own 10 (EntityTableViewModel.defaultPageSize), a deliberate divergence.
-export const DEFAULT_LIMIT = 20;
-
 export function createTableState(overrides: Partial<TableState> = {}): TableState {
   return {
-    v: 1,
-    offset: 0,
-    limit: DEFAULT_LIMIT,
+    v: 2,
     visibleColumns: [],
     filters: {},
     ...overrides,
@@ -77,8 +70,7 @@ function isFilterValue(value: unknown): value is FilterValue {
 function isTableState(value: unknown): value is TableState {
   if (value == null || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-  if (v.v !== 1) return false;
-  if (typeof v.offset !== "number" || typeof v.limit !== "number") return false;
+  if (v.v !== 2) return false;
   if (!Array.isArray(v.visibleColumns) || !v.visibleColumns.every((c) => typeof c === "string")) return false;
   if (v.filters == null || typeof v.filters !== "object") return false;
   return Object.values(v.filters as Record<string, unknown>).every(isFilterValue);

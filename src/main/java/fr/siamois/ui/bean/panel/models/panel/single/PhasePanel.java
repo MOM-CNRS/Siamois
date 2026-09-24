@@ -216,9 +216,7 @@ public class PhasePanel extends AbstractSingleEntityPanel<PhaseDTO> implements S
 
     @Override
     protected DefaultMenuItem createRootTypeItem() {
-        String command = isRoot
-                ? "#{navBean.redirectToBookmarked('/phase')}"
-                : "#{flowBean.addPhaseListPanel()}";
+        String command = "#{navBean.redirectToBookmarked('/phase')}";
 
         return DefaultMenuItem.builder()
                 .value("Phases")

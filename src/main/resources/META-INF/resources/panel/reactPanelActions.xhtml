@@ -22,22 +22,22 @@
     <h:form id="reactPanelActionsForm-${panelModel.panelIndex}">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-        <p:remoteCommand name="reactAction_duplicate_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_duplicate_${panelModel.jsPanelIndex}"
                           rendered="#{panelModel.canDuplicate() and flowBean.isWriteMode}"
                           action="#{panelModel.duplicate()}"
                           process="@this"
                           update="@none"/>
-        <p:remoteCommand name="reactAction_refresh_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_refresh_${panelModel.jsPanelIndex}"
                           action="#{panelModel.refresh()}"
                           process="@this"
                           update="@none"/>
-        <p:remoteCommand name="reactAction_create_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_create_${panelModel.jsPanelIndex}"
                           rendered="#{panelModel.creationUnitKind != null and flowBean.isWriteMode}"
                           action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.creationUnitKind, panelModel)}"
                           update="newUnitForm"
                           oncomplete="PF('newUnitDiag').show();"
                           process="@this"/>
-        <p:remoteCommand name="reactAction_settings_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_settings_${panelModel.jsPanelIndex}"
                           rendered="#{panelModel.canOpenInProjectSettings()}"
                           action="#{navBean.redirectToActionUnitSettings(panelModel.unit)}"
                           process="@this"
@@ -52,7 +52,7 @@
         in place (React owns the list now) — creating a project here still opens the same dialog,
         it just doesn't auto-refresh the list under it yet (use the panel's own refresh action).
         -->
-        <p:remoteCommand name="reactAction_listCreate_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_listCreate_${panelModel.jsPanelIndex}"
                           rendered="#{panelModel.reactPanelKind() == 'list'
                                       and not empty panelModel.tableModel.toolbarCreateConfig
                                       and flowBean.isWriteMode
@@ -81,7 +81,7 @@
         or guessing with a timeout (plan §8 phase 5's "disable while a setOverview call is in
         flight" caveat).
         -->
-        <p:remoteCommand name="reactAction_setOverview_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_setOverview_${panelModel.jsPanelIndex}"
                           action="#{flowBean.addEntityToOverviewFromRequest(panelModel)}"
                           process="@this"
                           update="@none"
@@ -98,14 +98,14 @@
         fullscreen and closeOverview are left calling parentOrOverview directly, matching the
         legacy behaviour they mirror; the same in-flight disable covers them.
         -->
-        <p:remoteCommand name="reactAction_overview_closeOverview_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_overview_closeOverview_${panelModel.jsPanelIndex}"
                           action="#{panelModel.closeOverview()}"
                           process="@this"
                           update="@none"/>
-        <p:remoteCommand name="reactAction_overview_fullscreen_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_overview_fullscreen_${panelModel.jsPanelIndex}"
                           action="#{flowBean.fullScreen(panelModel.parentOrOverview)}"
                           ajax="false"/>
-        <p:remoteCommand name="reactAction_overview_refresh_${panelModel.panelIndex}"
+        <p:remoteCommand name="reactAction_overview_refresh_${panelModel.jsPanelIndex}"
                           action="#{panelModel.refreshOverview()}"
                           process="@this"
                           update="@none"/>
@@ -117,18 +117,18 @@
         client-side isn't available.
         -->
         <h:panelGroup rendered="#{panelModel.parentOrOverview != null}">
-            <p:remoteCommand name="reactAction_overview_duplicate_${panelModel.panelIndex}"
+            <p:remoteCommand name="reactAction_overview_duplicate_${panelModel.jsPanelIndex}"
                               rendered="#{panelModel.parentOrOverview.canDuplicate() and flowBean.isWriteMode}"
                               action="#{panelModel.parentOrOverview.duplicate()}"
                               process="@this"
                               update="@none"/>
-            <p:remoteCommand name="reactAction_overview_create_${panelModel.panelIndex}"
+            <p:remoteCommand name="reactAction_overview_create_${panelModel.jsPanelIndex}"
                               rendered="#{panelModel.parentOrOverview.creationUnitKind != null and flowBean.isWriteMode}"
                               action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.parentOrOverview.creationUnitKind, panelModel.parentOrOverview)}"
                               update="newUnitForm"
                               oncomplete="PF('newUnitDiag').show();"
                               process="@this"/>
-            <p:remoteCommand name="reactAction_overview_settings_${panelModel.panelIndex}"
+            <p:remoteCommand name="reactAction_overview_settings_${panelModel.jsPanelIndex}"
                               rendered="#{panelModel.parentOrOverview.canOpenInProjectSettings()}"
                               action="#{navBean.redirectToActionUnitSettings(panelModel.parentOrOverview.unit)}"
                               process="@this"

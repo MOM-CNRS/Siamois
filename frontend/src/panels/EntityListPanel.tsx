@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DataTable, type DataTableSelectionMultipleChangeEvent, type DataTableStateEvent } from "primereact/datatable";
+import type { VirtualScrollerLazyEvent } from "primereact/virtualscroller";
+import { Skeleton } from "primereact/skeleton";
+import { ProgressBar } from "primereact/progressbar";
 import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Panel } from "primereact/panel";
@@ -9,7 +12,7 @@ import { Chip } from "primereact/chip";
 import { Button } from "primereact/button";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { getEntityType } from "../entities/registry";
-import type { ColumnDef, FilterValue, ListParams, ListScope } from "../entities/types";
+import type { ColumnDef, FilterValue, ListParams, ListScope, PagedResult } from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import { FilterChipBar, type FilterSpec } from "../components/table/FilterChipBar";
@@ -18,8 +21,8 @@ import { renderAnswerCell, renderAnswerValue } from "../fields/display";
 import { filterKindForAnswerType, optionSourceFor, type FilterKind, type FilterOption } from "../fields/optionSources";
 import { resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
-import { DEFAULT_LIMIT } from "./tableState";
 import { useTableState } from "./useTableState";
+import { isPlaceholderRow, useVirtualList } from "./useVirtualList";
 import { useWriteMode } from "./writeMode";
 
 export interface EntityListPanelProps {
@@ -56,10 +59,13 @@ export interface EntityListPanelProps {
   embedded?: boolean;
 }
 
-// Deliberate divergence from JSF's own entityDataTable.xhtml paginator (rows-per-page 10/25/50,
-// default 10 — EntityTableViewModel.defaultPageSize): the React list uses 20/50/100, default 20
-// (DEFAULT_LIMIT in tableState.ts).
-const ROWS_PER_PAGE_OPTIONS = [20, 50, 100];
+// Deliberate divergence from JSF's own entityDataTable.xhtml paginator: the React list has no
+// pages, it virtual-scrolls over the whole result set, fetching aligned chunks as they come into
+// view (useVirtualList). The virtual scroller positions rows by index * ROW_HEIGHT_PX, so every row
+// must be exactly this tall — main-panel.css pins `.entity-list-panel .p-datatable-tbody > tr` to
+// the same value (--entity-list-row-height); change both together. Cells are already one line
+// each (see .entity-list-panel-cell), which is what makes a fixed height possible at all.
+const ROW_HEIGHT_PX = 38;
 
 // tableToolbar.xhtml's globalFilter is debounced 500ms server-side; 300ms here errs toward
 // responsiveness since the request itself is already async. Either way: not one query per
@@ -88,7 +94,7 @@ export function EntityListPanel({
   embedded,
 }: EntityListPanelProps) {
   const config = getEntityType(entityType);
-  const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns } = useTableState({
+  const { state, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns } = useTableState({
     defaultSort: config?.list.defaultSort,
   });
 
@@ -135,9 +141,7 @@ export function EntityListPanel({
   // resolution cost server-side) scales with what's visible, not with the whole catalog.
   const fieldsParam = state.visibleColumns.length > 0 ? state.visibleColumns.join(",") : undefined;
 
-  const params: ListParams = {
-    offset: state.offset,
-    limit: state.limit,
+  const params: Omit<ListParams, "offset" | "limit"> = {
     search: state.search,
     sort: state.sort,
     organizationId,
@@ -146,11 +150,27 @@ export function EntityListPanel({
     scope,
   };
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["entity-list", entityType, params],
-    queryFn: () => config!.api.list(params),
+  const {
+    rows: virtualRows,
+    totalCount,
+    isLoading,
+    isFetching,
+    error,
+    requestRange,
+    resultSetKey,
+  } = useVirtualList<RowRecord>({
+    entityType,
+    params,
+    fetch: (p) => config!.api.list(p) as Promise<PagedResult<RowRecord>>,
     enabled: config != null,
   });
+
+  // A new result set (search, sort, filter, columns) starts back at the top: the scroll position
+  // belonged to the previous one, and would otherwise land the user somewhere arbitrary in the new.
+  const tableRef = useRef<DataTable<RowRecord[]>>(null);
+  useEffect(() => {
+    tableRef.current?.getVirtualScroller()?.scrollToIndex(0);
+  }, [resultSetKey]);
 
   const canPatchAnswers = config?.api.patchAnswers != null;
 
@@ -277,8 +297,8 @@ export function EntityListPanel({
     return <div className="entity-list-panel-unsupported">Unknown entity type &quot;{entityType}&quot;</div>;
   }
 
-  function onPage(e: DataTableStateEvent) {
-    setPage(e.first ?? 0, e.rows ?? DEFAULT_LIMIT);
+  function onLazyLoad(e: VirtualScrollerLazyEvent) {
+    requestRange(Number(e.first), Number(e.last));
   }
 
   function onSortChange(e: DataTableStateEvent) {
@@ -363,7 +383,7 @@ export function EntityListPanel({
     );
   }
 
-  const rows = (data?.data ?? []) as RowRecord[];
+  const rows = virtualRows as RowRecord[];
   // A column that only makes sense across several parents (the row's project, on an
   // organization-wide list) is dropped inside a scoped relation tab, where it would repeat the
   // parent on every row.
@@ -465,6 +485,16 @@ export function EntityListPanel({
         />
       )}
       {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}
+      {/* Rows arriving: the placeholder skeletons show WHERE, this shows THAT something is
+          loading even when those rows are off screen or already filled in. Same convention as the
+          JSF panels' own p:progressBar (panelContent.xhtml's panel-progressbar): a 3px track that
+          is always there, so showing it never shifts the table, animated only while loading.
+          Not during the very first load — the table's own loading overlay covers that. */}
+      <ProgressBar
+        mode="indeterminate"
+        className={`panel-progressbar entity-list-panel-progressbar${isFetching && !isLoading ? " is-active" : ""}`}
+        aria-hidden={!(isFetching && !isLoading)}
+      />
       <DataTable
           value={rows}
         // pages/shared/table/entityDataTable.xhtml is size="small" too — the React table had been
@@ -485,15 +515,15 @@ export function EntityListPanel({
             />
           ) : undefined
         }
+        ref={tableRef}
         lazy
         reorderableColumns
-        paginator
-        first={state.offset}
-        rows={state.limit}
-        rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-        totalRecords={data?.totalCount ?? 0}
+        // `lazy` here only defers the loading to onLazyLoad; `value` is still the full-length
+        // array (placeholders where a chunk hasn't arrived — see useVirtualList), which is what
+        // keeps the scrollbar to scale. delay debounces a fast fling into one request per
+        // settled range instead of one per chunk flown past.
+        virtualScrollerOptions={{ lazy: true, onLazyLoad, itemSize: ROW_HEIGHT_PX, delay: 150 }}
         loading={isLoading}
-        onPage={onPage}
         onSort={onSortChange}
         sortMode="single"
         dataKey="id"
@@ -502,6 +532,7 @@ export function EntityListPanel({
         // method's search-hit class — the flat list has no tree-ancestor case to exclude, so
         // every currently-visible row already matched the server-side search (plan §8 phase 5).
         rowClassName={(row: RowRecord) => {
+          if (isPlaceholderRow(row)) return "entity-list-panel-placeholder-row";
           const classes: string[] = [];
           if (overviewEntityId != null && row.id === overviewEntityId) classes.push("overview-open");
           if (state.search) classes.push("search-match");
@@ -510,6 +541,7 @@ export function EntityListPanel({
         selectionMode="checkbox"
         selection={selectedRows}
         onSelectionChange={onSelectionChange}
+        isDataSelectable={(e) => !isPlaceholderRow(e.data)}
         // Sticky header + frozen columns both require this; it also moves the scrolling from the
         // page onto the table's own body, which is the rule this shell is built on (the app is a
         // fixed 100vh frame — every panel scrolls inside itself, the document never does).
@@ -525,7 +557,7 @@ export function EntityListPanel({
           selectionMode="multiple"
           headerStyle={{ width: "3rem" }}
           frozen={lastFrozenIndex >= 0}
-          header={<Chip label={`${selectedRows.length}/${data?.totalCount ?? 0}`} />}
+          header={<Chip label={`${selectedRows.length}/${totalCount}`} />}
         />
         {allColumns.map((col, index) => (
           <Column
@@ -551,12 +583,16 @@ export function EntityListPanel({
             // the identifier chip, the editable box, or a plain value — never two nested, because
             // the editable box has to reach out to the cell's padding edge and a clipping wrapper
             // around it would cut that off.
-            body={(row: RowRecord) => (
+            body={(row: RowRecord) =>
+              isPlaceholderRow(row) ? (
+                <Skeleton height="1rem" width={col.identifier ? "6rem" : "70%"} />
+              ) : (
               <span className="entity-list-panel-cell">
                 {col.leading?.(row)}
                 {renderCellValue(col, row)}
               </span>
-            )}
+              )
+            }
           />
         ))}
       </DataTable>
@@ -599,7 +635,7 @@ export function EntityListPanel({
             <div className="entity-list-panel-header" style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
               <i className={config.icon} style={{ fontSize: "2rem", color: "var(--main-color)" }} />
               <span style={{ paddingRight: "0.5em" }}>{config.labels.plural}</span>
-              <Chip label={String(data?.totalCount ?? 0)} style={{ background: "transparent", color: "var(--main-color)" }} />
+              <Chip label={String(totalCount)} style={{ background: "transparent", color: "var(--main-color)" }} />
             </div>
           }
           toolbar={toolbar}

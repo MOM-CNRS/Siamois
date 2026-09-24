@@ -216,12 +216,7 @@ public class ContainerPanel extends AbstractSingleEntityPanel<ContainerDTO> impl
 
     @Override
     protected DefaultMenuItem createRootTypeItem() {
-        String command;
-        if (isRoot) {
-            command = "#{navBean.redirectToBookmarked('/container')}";
-        } else {
-            command = "#{flowBean.addContainerListPanel()}";
-        }
+        String command = "#{navBean.redirectToBookmarked('/container')}";
 
         return DefaultMenuItem.builder()
                 .value("Containers")

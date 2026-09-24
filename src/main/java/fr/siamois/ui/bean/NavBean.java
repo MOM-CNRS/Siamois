@@ -35,7 +35,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
 
 
 /**
@@ -68,8 +67,6 @@ public class NavBean implements Serializable {
     private String urlToGoBack; // URL to go back from settings
 
     public static final String COMMON_BOOKMARK_SAVED = "common.bookmark.saved";
-    public static final String FLOW = "FLOW";
-    public static final String FOCUS = "FOCUS";
 
     private ApplicationMode applicationMode = ApplicationMode.SIAMOIS;
 
@@ -332,65 +329,29 @@ public class NavBean implements Serializable {
         SETTINGS
     }
 
-    public void goToActionUnitList(String mode) throws IOException {
-        if (Objects.equals(mode, FLOW)) {
-            flowBean.addActionUnitListPanel();
-            flowBean.redirectToDashboard();
-        }
-        if (Objects.equals(mode, FOCUS)) {
-            flowBean.redirectToFocus("/action-unit");
-        }
+    public void goToActionUnitList() throws IOException {
+        flowBean.redirectToFocus("/action-unit");
     }
 
-    public void goToContainerList(String mode) throws IOException {
-        if (Objects.equals(mode, FLOW)) {
-            flowBean.addContainerListPanel();
-            flowBean.redirectToDashboard();
-        }
-        if (Objects.equals(mode, FOCUS)) {
-            flowBean.redirectToFocus("/container");
-        }
+    public void goToContainerList() throws IOException {
+        flowBean.redirectToFocus("/container");
     }
 
-    public void goToPhaseList(String mode) throws IOException {
-        if (Objects.equals(mode, FLOW)) {
-            flowBean.addPhaseListPanel();
-            flowBean.redirectToDashboard();
-        }
-        if (Objects.equals(mode, FOCUS)) {
-            flowBean.redirectToFocus("/phase");
-        }
+    public void goToPhaseList() throws IOException {
+        flowBean.redirectToFocus("/phase");
     }
 
     @ExecutionTimeLogger
-    public void goToRecordingUnitList(String mode) throws IOException {
-        if (Objects.equals(mode, FLOW)) {
-            flowBean.addRecordingUnitListPanel();
-            flowBean.redirectToDashboard();
-        }
-        if (Objects.equals(mode, FOCUS)) {
-            flowBean.redirectToFocus("/recording-unit");
-        }
+    public void goToRecordingUnitList() throws IOException {
+        flowBean.redirectToFocus("/recording-unit");
     }
 
-    public void goToSpatialUnitList(String mode) throws IOException {
-        if (Objects.equals(mode, FLOW)) {
-            flowBean.addSpatialUnitListPanel();
-            flowBean.redirectToDashboard();
-        }
-        if (Objects.equals(mode, FOCUS)) {
-            flowBean.redirectToFocus("/spatial-unit");
-        }
+    public void goToSpatialUnitList() throws IOException {
+        flowBean.redirectToFocus("/spatial-unit");
     }
 
-    public void goToSpecimenList(String mode) throws IOException {
-        if (Objects.equals(mode, FLOW)) {
-            flowBean.addSpecimenListPanel();
-            flowBean.redirectToDashboard();
-        }
-        if (Objects.equals(mode, FOCUS)) {
-            flowBean.redirectToFocus("/specimen");
-        }
+    public void goToSpecimenList() throws IOException {
+        flowBean.redirectToFocus("/specimen");
     }
 
     public void redirectToBookmarked(String resource) {

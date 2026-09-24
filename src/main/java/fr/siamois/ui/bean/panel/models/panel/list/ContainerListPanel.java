@@ -173,7 +173,7 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
 
     private void goToActionUnitList() {
         try {
-            navBean.goToActionUnitList("FOCUS");
+            navBean.goToActionUnitList();
         } catch (java.io.IOException e) {
             throw new java.io.UncheckedIOException(e);
         }

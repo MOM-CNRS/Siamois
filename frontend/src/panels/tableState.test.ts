@@ -2,28 +2,23 @@ import { describe, expect, it } from "vitest";
 import {
   createTableState,
   decodeTableState,
-  DEFAULT_LIMIT,
   encodeTableState,
   filtersToQueryParams,
   type TableState,
 } from "./tableState";
 
 describe("createTableState", () => {
-  it("defaults offset/limit/visibleColumns/filters", () => {
+  it("defaults visibleColumns/filters", () => {
     expect(createTableState()).toEqual({
-      v: 1,
-      offset: 0,
-      limit: DEFAULT_LIMIT,
+      v: 2,
       visibleColumns: [],
       filters: {},
     });
   });
 
   it("accepts overrides", () => {
-    expect(createTableState({ sort: "name:asc", limit: 25 })).toEqual({
-      v: 1,
-      offset: 0,
-      limit: 25,
+    expect(createTableState({ sort: "name:asc" })).toEqual({
+      v: 2,
       sort: "name:asc",
       visibleColumns: [],
       filters: {},
@@ -33,9 +28,7 @@ describe("createTableState", () => {
 
 describe("encodeTableState / decodeTableState", () => {
   const state: TableState = {
-    v: 1,
-    offset: 20,
-    limit: 25,
+    v: 2,
     sort: "name:desc",
     search: "fouillé été", // non-ASCII, exercises the UTF-8 round trip
     visibleColumns: ["-118", "-109"],
@@ -110,5 +103,15 @@ describe("filtersToQueryParams", () => {
     const fromOnly = filtersToQueryParams({ zmin: { op: "range", from: "10" } });
     expect(fromOnly.get("f.zmin.from")).toBe("10");
     expect(fromOnly.has("f.zmin.to")).toBe(false);
+  });
+});
+
+describe("decodeTableState across versions", () => {
+  // v1 carried offset/limit (paginated list); the list now virtual-scrolls, so an old saved view or
+  // ?s= must start over rather than be half-applied.
+  it("rejects a v1 (paginated) state", () => {
+    const v1 = { v: 1, offset: 20, limit: 25, visibleColumns: [], filters: {} };
+    const encoded = btoa(JSON.stringify(v1)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    expect(decodeTableState(encoded)).toBeNull();
   });
 });
