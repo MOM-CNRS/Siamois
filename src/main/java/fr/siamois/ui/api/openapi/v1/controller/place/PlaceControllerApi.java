@@ -111,15 +111,25 @@ public class PlaceControllerApi {
         return ResponseEntity.noContent().build();
     }
 
-    @Hidden
-    @Operation(summary = "Un lieu via son identifiant")
+    @Operation(
+            summary = "Un lieu via son identifiant",
+            description = "Valeurs des champs formulaire (SpatialUnit.DETAILS_FORM, statique — pas de "
+                    + "catalogue de types par lieu), indexées par fieldId, plus le layout et le catalogue "
+                    + "de champs pour la fiche React."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Lieu introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<PlaceResponse> getById(@PathVariable Long id) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
+    public ResponseEntity<PlaceResponse> getById(
+            @PathVariable Long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return ResponseEntity.ok(new PlaceResponse(placeOpenApiService.getPlaceById(caller, id, lang)));
     }
 
     @Hidden

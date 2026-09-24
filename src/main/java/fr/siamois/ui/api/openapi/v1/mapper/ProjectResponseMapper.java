@@ -85,9 +85,9 @@ public class ProjectResponseMapper {
             r.setOrganization(org);
         }
 
-        // finds is left null here (list rows never show it) — set explicitly by the detail
-        // endpoint, which is the only caller that needs the extra query.
-        r.setCount(new ProjectResourceCounts(row.childActionUnitCount(), row.recordingUnitCount(), null));
+        // finds/phases/containers are left null here (list rows never show them) — set explicitly
+        // by the detail endpoint, which is the only caller that needs the extra queries.
+        r.setCount(new ProjectResourceCounts(row.childActionUnitCount(), row.recordingUnitCount(), null, null, null));
         if (r.getId() != null) {
             r.setLinks(ProjectResourceLinks.of(r.getId()));
         }

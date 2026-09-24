@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.resource.phase;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
+import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -30,6 +31,17 @@ public class PhaseResource {
 
     @Schema(description = "Identifiant du projet (unité d'action) auquel appartient cette phase")
     private String projectId;
+
+    // Organization-wide list only (GET /api/v1/<collection>?organizationId=…): the row's project,
+    // for the list's "Projet" column. Absent everywhere else (every row there shares one project).
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Projet de rattachement (liste d'organisation seulement)")
+    private fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef project;
+
+    @Schema(description = "Organisation propriétaire de la phase (son institution de création) — ce que "
+            + "la fiche React résout son propre catalogue de concepts contre "
+            + "(GET /api/v1/organizations/{id}/concepts), même convention que RecordingUnitResource.organization.")
+    private OrganizationResourceIdentifier organization;
 
     private ResolvedConceptResource type;
 

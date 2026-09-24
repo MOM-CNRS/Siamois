@@ -296,6 +296,13 @@ export function EntityListPanel({
     else onNavigate?.(entityType, row.id);
   }
 
+  // Same target preference as openIdentifier, for a column linking to another entity.
+  function openLinked(e: SyntheticEvent, targetType: string, id: string | number) {
+    e.stopPropagation();
+    if (onOpenOverview) onOpenOverview(targetType, id);
+    else onNavigate?.(targetType, id);
+  }
+
   function onSelectionChange(e: DataTableSelectionMultipleChangeEvent<RowRecord[]>) {
     setSelectedRows(e.value);
   }
@@ -314,6 +321,22 @@ export function EntityListPanel({
           onClick={(e) => openIdentifier(e, row)}
         >
           <i className={config!.icon} aria-hidden="true" />
+          <span className="entity-nav-chip-label">{col.render(row)}</span>
+        </span>
+      );
+    }
+
+    if (col.link) {
+      const target = col.link(row);
+      if (!target) return <span className="entity-list-panel-cell-value" />;
+      return (
+        <span
+          className="entity-list-panel-identifier-link entity-nav-chip"
+          role="button"
+          tabIndex={0}
+          onClick={(e) => openLinked(e, target.entityType, target.id)}
+        >
+          <i className={getEntityType(target.entityType)?.icon ?? "bi bi-link"} aria-hidden="true" />
           <span className="entity-nav-chip-label">{col.render(row)}</span>
         </span>
       );
@@ -341,7 +364,11 @@ export function EntityListPanel({
   }
 
   const rows = (data?.data ?? []) as RowRecord[];
-  const allColumns: ColumnDef<RowRecord>[] = [...(config.list.columns as ColumnDef<RowRecord>[]), ...dynamicColumns];
+  // A column that only makes sense across several parents (the row's project, on an
+  // organization-wide list) is dropped inside a scoped relation tab, where it would repeat the
+  // parent on every row.
+  const pinnedColumns = (config.list.columns as ColumnDef<RowRecord>[]).filter((c) => !(scope && c.unscopedOnly));
+  const allColumns: ColumnDef<RowRecord>[] = [...pinnedColumns, ...dynamicColumns];
 
   // Everything up to and including the identifier column stays put while the rest scrolls
   // sideways — the identifier is how you tell one row from another, so losing it is what makes a
@@ -398,7 +425,17 @@ export function EntityListPanel({
             </>
           }
           end={
-            config.list.createForm ? (
+            config.list.createForm && config.list.createRequiresScope && !scope ? (
+              // JSF's ToolbarCreateConfig "unavailable" state: the button stays visible but disabled,
+              // explaining where creation is possible instead.
+              <Button
+                label="Créer"
+                icon="bi bi-plus-square"
+                disabled
+                tooltip={config.list.createRequiresScope}
+                tooltipOptions={{ showOnDisabled: true, position: "left" }}
+              />
+            ) : config.list.createForm ? (
               <>
                 <Button
                   label="Créer"

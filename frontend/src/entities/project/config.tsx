@@ -6,6 +6,7 @@ import { ProjectCreateForm } from "./CreateForm";
 import { ProjectDetailHeader } from "./DetailHeader";
 import { ProjectFicheTab } from "./FicheTab";
 import { projectHomeWidgets } from "./homeWidgets";
+import { PlacesTab } from "./PlacesTab";
 import { getProjectTypes } from "./projectTypes";
 import { PROJECT_ROUTES } from "./routes";
 import type { ProjectDetail, ProjectSummary } from "./types";
@@ -75,6 +76,23 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.recordingUnits ?? 0,
       }),
+      // actionUnitTabView.xhtml's own order is détails, documents, UE, contenants, phases —
+      // reproduced here now that both are migrated (target order: détails, UE, contenants,
+      // phases, mobilier, lieux — see the migration plan).
+      relationTab<ProjectDetail>({
+        key: "containers",
+        label: "Contenants",
+        target: "container",
+        scopeEntityType: "project",
+        badge: (entity) => entity._counts?.containers ?? 0,
+      }),
+      relationTab<ProjectDetail>({
+        key: "phases",
+        label: "Phases",
+        target: "phase",
+        scopeEntityType: "project",
+        badge: (entity) => entity._counts?.phases ?? 0,
+      }),
       // Migration plan lot 1 ("Mobilier") — no JSF equivalent tab exists on the project fiche
       // today (SpecimenLazyDataModel scoped to the action unit is built in
       // ActionUnitPanel.init() but never wired to a tab there), so this is new functionality,
@@ -88,6 +106,16 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         path: "mobiliers",
         badge: (entity) => entity._counts?.finds ?? 0,
       }),
+      // Migration plan lot 4 ("Lieux") — deliberately NOT a relationTab: there is no
+      // GET /api/v1/projects/{id}/places, so this renders straight from the already-loaded
+      // ProjectDetail.spatialContext/mainLocation instead of its own list query — see
+      // PlacesTab.tsx's own doc.
+      {
+        key: "places",
+        label: "Lieux",
+        badge: (entity) => entity.spatialContext?.length ?? 0,
+        render: (entity, helpers) => <PlacesTab entity={entity} helpers={helpers} />,
+      },
     ],
     // actionUnitPanelHeader.xhtml's content, rendered inside EntityDetailPanel's own panel header
     // (plan §7/§8, "toolbar is part of the panel header" — the header and the generic toolbar

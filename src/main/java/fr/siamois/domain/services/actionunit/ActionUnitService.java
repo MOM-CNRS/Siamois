@@ -836,6 +836,18 @@ public class ActionUnitService implements ArkEntityService {
      * past a person's actual permissions.
      */
     @NonNull
+    /**
+     * Ids of the institution's projects on which the person holds a PROJECT-scoped profile — what a
+     * person without institution-wide access ({@code ProfilePermissionService#canViewInstitutionData})
+     * may see, same rule as {@link ActionUnitSpec#visibleToPerson}'s project branch.
+     */
+    @Transactional(readOnly = true)
+    public List<Long> findMemberProjectIds(Long personId, Long institutionId) {
+        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(List.of(institutionId)))
+                .and(ActionUnitSpec.hasProjectMembership(personId));
+        return actionUnitRepository.findAll(spec).stream().map(ActionUnit::getId).toList();
+    }
+
     private Specification<ActionUnit> accessibleProjectsSpec(
             Long personId,
             Set<Long> accessibleInstitutionIds,

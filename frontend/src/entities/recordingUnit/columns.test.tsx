@@ -28,9 +28,25 @@ describe("recordingUnitColumns", () => {
     const row: RecordingUnitSummary = { resourceType: "recording-units", id: "1", fullIdentifier: "INST-PROJ-UE1" };
 
     for (const col of recordingUnitColumns) {
-      if (col.key === "fullIdentifier") continue;
+      if (col.key === "fullIdentifier" || col.key === "project") continue;
       expect(col.render(row)).toBe(0);
     }
+  });
+
+  it("has a Projet column, shown only on the organization-wide list", () => {
+    const col = recordingUnitColumns.find((c) => c.key === "project")!;
+    const row: RecordingUnitSummary = {
+      resourceType: "recording-units",
+      id: "1",
+      fullIdentifier: "OA-7-US1",
+      project: { resourceId: "7", resourceType: "projects", label: "OA-7" },
+    };
+
+    expect(col.unscopedOnly).toBe(true);
+    expect(col.render(row)).toBe("OA-7");
+    expect(col.render({ resourceType: "recording-units", id: "2", fullIdentifier: "OA-7-US2" })).toBe("");
+    expect(col.link!(row)).toEqual({ entityType: "project", id: "7" });
+    expect(col.link!({ resourceType: "recording-units", id: "2", fullIdentifier: "OA-7-US2" })).toBeNull();
   });
 
   it("falls back to identifier when fullIdentifier is missing", () => {

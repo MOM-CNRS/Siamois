@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,13 @@ public class PhaseOpenApiMapper {
         r.setLabel(label);
         if (phase.getActionUnit() != null && phase.getActionUnit().getId() != null) {
             r.setProjectId(String.valueOf(phase.getActionUnit().getId()));
+        }
+        if (phase.getActionUnit() != null && phase.getActionUnit().getCreatedByInstitution() != null
+                && phase.getActionUnit().getCreatedByInstitution().getId() != null) {
+            OrganizationResourceIdentifier org = new OrganizationResourceIdentifier();
+            org.setResourceType("organizations");
+            org.setId(String.valueOf(phase.getActionUnit().getCreatedByInstitution().getId()));
+            r.setOrganization(org);
         }
         if (phase.getType() != null) {
             r.setType(projectResponseMapper.toConceptFieldValue(phase.getType(), lang, resolvedLabels));

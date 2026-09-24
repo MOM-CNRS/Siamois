@@ -6,6 +6,7 @@ import { RecordingUnitDetailHeader } from "./DetailHeader";
 import { RecordingUnitFicheTab } from "./FicheTab";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import { RECORDING_UNIT_ROUTES } from "./routes";
+import { recordingUnitHomeWidgets } from "./homeWidgets";
 import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
 
 // RecordingUnit's own EntityTypeConfig (plan: generic related-list tab) — registered so it can be
@@ -45,6 +46,9 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
     createForm: (ctx) => <RecordingUnitCreateForm {...ctx} />,
+    // JSF's own organization-wide list disables creation too (ToolbarCreateConfig
+    // createAllowedSupplier false): the form needs the project this list has no scope for.
+    createRequiresScope: "La création d'UE n'est disponible que depuis un projet.",
   },
   detail: {
     tabs: [
@@ -57,4 +61,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     header: (entity, helpers) => <RecordingUnitDetailHeader entity={entity} onSaved={helpers.refetch} />,
   },
   routes: RECORDING_UNIT_ROUTES,
+  home: {
+    widgets: recordingUnitHomeWidgets,
+  },
 };

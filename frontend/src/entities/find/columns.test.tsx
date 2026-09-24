@@ -27,4 +27,31 @@ describe("findColumns", () => {
       expect(col.render(row)).toBe("");
     }
   });
+
+  it("has a UE column linking to the find's recording unit, in scoped and unscoped lists alike", () => {
+    const col = findColumns.find((c) => c.key === "recordingUnit")!;
+    const row: FindSummary = {
+      resourceType: "finds",
+      id: "1",
+      fullIdentifier: "INST-PROJ-M1",
+      recordingUnit: { resourceType: "recording-units", id: "42", fullIdentifier: "INST-PROJ-US42" },
+    };
+
+    expect(col.unscopedOnly).toBeFalsy();
+    expect(col.render(row)).toBe("INST-PROJ-US42");
+    expect(col.link!(row)).toEqual({ entityType: "recordingUnit", id: "42" });
+    expect(col.link!({ resourceType: "finds", id: "2", fullIdentifier: "M2" })).toBeNull();
+  });
+
+  it("links the Projet column to the row's project", () => {
+    const col = findColumns.find((c) => c.key === "project")!;
+    const row: FindSummary = {
+      resourceType: "finds",
+      id: "1",
+      fullIdentifier: "M1",
+      project: { resourceId: "7", resourceType: "projects", label: "OA-7" },
+    };
+
+    expect(col.link!(row)).toEqual({ entityType: "project", id: "7" });
+  });
 });

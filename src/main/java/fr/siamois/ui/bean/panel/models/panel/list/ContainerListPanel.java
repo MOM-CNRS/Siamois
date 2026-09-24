@@ -204,10 +204,25 @@ public class ContainerListPanel extends AbstractListPanel<ContainerDTO> implemen
         }
     }
 
+    // Rendered by the React EntityListPanel (organization-wide list, GET /api/v1/<collection>?
+    // organizationId=…), same bridge as ActionUnitListPanel.
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
 
+    @Override
+    public String reactPanelKind() {
+        return "list";
+    }
 
+    @Override
+    public String reactEntityType() {
+        return "container";
+    }
 
-
-
-
+    @Override
+    public Long reactOrganizationId() {
+        return sessionSettingsBean.getSelectedInstitution().getId();
+    }
 }

@@ -208,8 +208,25 @@ public class SpatialUnitListPanel extends AbstractListPanel<SpatialUnitDTO>  imp
         return "spatial-unit";
     }
 
+    // Rendered by the React EntityListPanel (organization-wide list, GET /api/v1/<collection>?
+    // organizationId=…), same bridge as ActionUnitListPanel.
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
 
+    @Override
+    public String reactPanelKind() {
+        return "list";
+    }
 
+    @Override
+    public String reactEntityType() {
+        return "place";
+    }
 
-
+    @Override
+    public Long reactOrganizationId() {
+        return sessionSettingsBean.getSelectedInstitution().getId();
+    }
 }

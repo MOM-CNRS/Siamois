@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.mapper;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -30,9 +30,10 @@ public class FindOpenApiMapper {
             r.setType(projectResponseMapper.toConceptFieldValue(specimen.getType(), ""));
         }
         if (specimen.getRecordingUnit() != null && specimen.getRecordingUnit().getId() != null) {
-            RecordingUnitResourceIdentifier ru = new RecordingUnitResourceIdentifier();
+            RecordingUnitReference ru = new RecordingUnitReference();
             ru.setResourceType("recording-units");
             ru.setId(String.valueOf(specimen.getRecordingUnit().getId()));
+            ru.setFullIdentifier(specimen.getRecordingUnit().getFullIdentifier());
             r.setRecordingUnit(ru);
         }
         if (specimen.getActionUnit() != null && specimen.getActionUnit().getId() != null) {

@@ -57,4 +57,19 @@ describe("HomePanel", () => {
     expect(html).toContain("Card A");
     expect(html).toContain("Card B");
   });
+
+  // Widgets arrive in mount.ts's registration order; cards follow homePanel.xhtml's order instead.
+  it("sorts 'card'-kind widgets by `order`, cards without one last", () => {
+    const html = renderToStaticMarkup(
+      <HomePanel
+        widgets={[
+          { key: "none", kind: "card", render: () => <span>Card none</span> },
+          { key: "c", kind: "card", order: 30, render: () => <span>Card 30</span> },
+          { key: "a", kind: "card", order: 10, render: () => <span>Card 10</span> },
+        ]}
+      />,
+    );
+    expect(html.indexOf("Card 10")).toBeLessThan(html.indexOf("Card 30"));
+    expect(html.indexOf("Card 30")).toBeLessThan(html.indexOf("Card none"));
+  });
 });

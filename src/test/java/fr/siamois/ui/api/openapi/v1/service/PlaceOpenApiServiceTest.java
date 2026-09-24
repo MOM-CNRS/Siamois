@@ -4,20 +4,25 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
@@ -34,6 +39,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -61,6 +67,8 @@ class PlaceOpenApiServiceTest {
     private ProfilePermissionService profilePermissionService;
     @Mock
     private PlaceOpenApiMapper placeOpenApiMapper;
+    @Mock
+    private LangService langService;
 
     private PlaceOpenApiService service;
     private ProjectApiCaller caller;
@@ -76,7 +84,8 @@ class PlaceOpenApiServiceTest {
                 conceptService,
                 conceptMapper,
                 profilePermissionService,
-                placeOpenApiMapper);
+                placeOpenApiMapper,
+                langService);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -86,19 +95,17 @@ class PlaceOpenApiServiceTest {
     }
 
     @Test
-    void listByOrganization_success() {
+    void listByOrganization_success_setsPermissionsAndResourceUri() {
         when(institutionService.findById(10L)).thenReturn(institution);
 
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setId(5L);
         dto.setName("Cave A");
         dto.setCreatedByInstitution(institution);
-        Page<SpatialUnitDTO> page = new PageImpl<>(
-                List.of(dto),
-                PageRequest.of(0, 50),
-                1);
-        when(spatialUnitService.findByInstitutionId(eq(10L), eq(50), eq(0), any()))
-                .thenReturn(page);
+        Page<SpatialUnitDTO> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 50), 1);
+        when(spatialUnitService.searchSpatialUnits(eq(institution), any(), any())).thenReturn(page);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES)))
+                .thenReturn(true);
 
         PlaceResource resource = new PlaceResource();
         resource.setResourceType("places");
@@ -106,19 +113,42 @@ class PlaceOpenApiServiceTest {
         resource.setName("Cave A");
         when(placeOpenApiMapper.toResource(eq(dto), any())).thenReturn(resource);
 
-        PlaceListResponse response = service.listByOrganization(caller, 10L, 0, 50, "name:asc", "fr");
+        PlaceListResponse response = service.listByOrganization(caller, 10L, 0, 50, "name:asc", null, "fr");
 
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getName()).isEqualTo("Cave A");
+        assertThat(response.getData().get(0).getPermissions().canEdit()).isTrue();
+        assertThat(response.getData().get(0).getResourceUri()).isEqualTo("/spatial-unit/5");
         assertThat(response.getMeta().total()).isEqualTo(1L);
         verify(projectApiService).assertOrganizationInCallerScope(10L, SCOPE);
+    }
+
+    @Test
+    void listByOrganization_search_filtersOnName() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(spatialUnitService.searchSpatialUnits(eq(institution), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 50), 0));
+
+        service.listByOrganization(caller, 10L, 0, 50, "name:asc", "cave", "fr");
+
+        ArgumentCaptor<FilterDTO> filter = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(spatialUnitService).searchSpatialUnits(eq(institution), filter.capture(), any());
+        assertThat(filter.getValue().valueOfAsString(SpatialUnitSpec.NAME_FILTER)).isEqualTo("cave");
+    }
+
+    @Test
+    void listByOrganization_missingOrganizationId_throws400() {
+        assertThatThrownBy(() -> service.listByOrganization(caller, null, 0, 50, "name:asc", null, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
     }
 
     @Test
     void listByOrganization_unknownOrg_throws404() {
         when(institutionService.findById(10L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.listByOrganization(caller, 10L, 0, 50, "name:asc", "fr"))
+        assertThatThrownBy(() -> service.listByOrganization(caller, 10L, 0, 50, "name:asc", null, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.NOT_FOUND.value()));
@@ -613,5 +643,108 @@ class PlaceOpenApiServiceTest {
         service.deletePlace(caller, 5L, "fr");
 
         verify(spatialUnitService).deleteIfUnused(5L);
+    }
+
+    // --- getPlaceById ---
+
+    @Test
+    void getPlaceById_success_setsAnswersFormBundleAndUri() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setName("Cave A");
+        existing.setCode("L-5");
+        existing.setPlaceNumber(3);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+
+        PlaceResource mapped = new PlaceResource();
+        mapped.setResourceType("places");
+        mapped.setId("5");
+        mapped.setName("Cave A");
+        when(placeOpenApiMapper.toResource(existing, "fr")).thenReturn(mapped);
+        when(langService.localeForApiLang("fr")).thenReturn(Locale.FRENCH);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES)))
+                .thenReturn(false);
+
+        PlaceResource result = service.getPlaceById(caller, 5L, "fr");
+
+        assertThat(result.getFormBundle()).isNotNull();
+        assertThat(result.getFields()).isNotEmpty();
+        assertThat(result.getAnswers())
+                .containsEntry(String.valueOf(SpatialUnit.NAME_FIELD.getId()), "Cave A")
+                .containsEntry(String.valueOf(SpatialUnit.CODE_FIELD.getId()), "L-5")
+                .containsEntry(String.valueOf(SpatialUnit.PLACE_NUMBER_FIELD.getId()), 3);
+        assertThat(result.getResourceUri()).isEqualTo("/spatial-unit/5");
+        assertThat(result.getPermissions().canEdit()).isFalse();
+    }
+
+    @Test
+    void getPlaceById_includesTypeAnswerFromResolvedType() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        ConceptDTO category = new ConceptDTO();
+        category.setId(42L);
+        existing.setCategory(category);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+
+        PlaceResource mapped = new PlaceResource();
+        mapped.setResourceType("places");
+        mapped.setId("5");
+        ResolvedConceptResource typeRef = new ResolvedConceptResource();
+        typeRef.setResourceType("concepts");
+        typeRef.setId("42");
+        typeRef.setResolvedLabel("Grotte");
+        mapped.setType(typeRef);
+        when(placeOpenApiMapper.toResource(existing, "fr")).thenReturn(mapped);
+        when(langService.localeForApiLang("fr")).thenReturn(Locale.FRENCH);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES)))
+                .thenReturn(true);
+
+        PlaceResource result = service.getPlaceById(caller, 5L, "fr");
+
+        assertThat(result.getAnswers().get(String.valueOf(SpatialUnit.SPATIAL_UNIT_TYPE_FIELD.getId())))
+                .isInstanceOf(fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef.class);
+        assertThat(result.getPermissions().canEdit()).isTrue();
+    }
+
+    @Test
+    void getPlaceById_notFound_throws404() {
+        when(spatialUnitService.findById(99L))
+                .thenThrow(new SpatialUnitNotFoundException("missing"));
+
+        assertThatThrownBy(() -> service.getPlaceById(caller, 99L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.NOT_FOUND.value()));
+    }
+
+    @Test
+    void getPlaceById_outsideCallerScope_throws() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        InstitutionDTO otherInstitution = new InstitutionDTO();
+        otherInstitution.setId(999L);
+        existing.setCreatedByInstitution(otherInstitution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Organisation hors périmètre"))
+                .when(projectApiService).assertOrganizationInCallerScope(999L, SCOPE);
+
+        assertThatThrownBy(() -> service.getPlaceById(caller, 5L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.FORBIDDEN.value()));
+    }
+
+    @Test
+    void getPlaceById_withoutOrganization_throws400() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+
+        assertThatThrownBy(() -> service.getPlaceById(caller, 5L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
     }
 }

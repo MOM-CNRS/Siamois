@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.controller.place.PlaceControllerApi;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -148,9 +149,43 @@ class PlaceControllerApiTest {
     }
 
     @Test
-    void getById_notImplemented_returns501() throws Exception {
+    void getById_returns200() throws Exception {
+        when(projectApiService.requireCaller()).thenReturn(
+                new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        PlaceResource resource = new PlaceResource();
+        resource.setResourceType("places");
+        resource.setId("5");
+        resource.setName("Cave A");
+        when(placeOpenApiService.getPlaceById(any(), eq(5L), eq("fr"))).thenReturn(resource);
+
+        mockMvc.perform(get("/api/v1/places/5")
+                        .header("Accept-Language", "fr"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value("5"))
+                .andExpect(jsonPath("$.data.name").value("Cave A"));
+
+        verify(placeOpenApiService).getPlaceById(any(), eq(5L), eq("fr"));
+    }
+
+    @Test
+    void getById_withoutAuth_returns401() throws Exception {
+        when(projectApiService.requireCaller()).thenThrow(
+                new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Authentification requise"));
+
         mockMvc.perform(get("/api/v1/places/5"))
-                .andExpect(status().isNotImplemented());
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getById_notFound_returns404() throws Exception {
+        when(projectApiService.requireCaller()).thenReturn(
+                new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        when(placeOpenApiService.getPlaceById(any(), eq(99L), eq("fr")))
+                .thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Lieu introuvable"));
+
+        mockMvc.perform(get("/api/v1/places/99")
+                        .header("Accept-Language", "fr"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

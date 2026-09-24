@@ -1,19 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { Panel } from "primereact/panel";
-import { Card } from "primereact/card";
-import { Chip } from "primereact/chip";
-import { Button } from "primereact/button";
+import { ClickableCard } from "../../components/home/ClickableCard";
+import { EntityCountCard } from "../../components/home/EntityCountCard";
+import { useOrganizationCounts } from "../organizationCounts";
 import type { HomeWidgetContext, HomeWidgetDef } from "../types";
 import { listProjects } from "./api";
 
 // Home's two Project widgets (plan §4/§8 phase 7), each mirroring one real JSF piece with its
 // PrimeReact counterpart rather than a from-scratch design:
 // - RecentProjectsWidget mirrors panel/homePanel.xhtml's "myActionUnits" p:panel (a toggleable
-//   panel of p:card tiles, one per project: icon+name, icon+location, icon+recording-unit-count,
-//   a centered action button) → PrimeReact Panel + Card + Button, same structure.
-// - ProjectCountCardWidget mirrors pages/shared/card/welcomeCard.xhtml (a p:card with an
-//   icon+label+p:chip row, a description, and a centered footer button) → PrimeReact
-//   Card + Chip + Button.
+//   panel of p:card tiles, one per project: icon+name, icon+location, icon+recording-unit-count).
+// - ProjectCountCardWidget mirrors pages/shared/card/welcomeCard.xhtml (icon+label+chip row and a
+//   description).
+// Deliberate change from JSF: no button on either card — the whole card is the link
+// (ClickableCard), a user request.
 // "No custom theme" (plan §3) means no new CSS/--siamois-* mapping, not "invent a different
 // design" — these use the same component choices JSF made, just PrimeReact's version of them.
 // Legacy JSF class names (sia-welcome-card, action-unit-btn, ...) still ride along via
@@ -27,8 +27,8 @@ import { listProjects } from "./api";
 //   substitute, not a silent stand-in for "mine".
 // - The welcomeCard's "créer" button is declared in JSF but never actually wired to a link
 //   (ActionUnitController has no standalone "new project" route) — omitted rather than pointing
-//   at a route that doesn't exist; project creation goes through the list panel's own toolbar
-//   dialog (plan §8 phase 8's actions.create bridge).
+//   at a route that doesn't exist; project creation goes through the list panel's own "Créer"
+//   overlay (entities/project/CreateForm.tsx).
 const RECENT_LIMIT = 5;
 
 function useRecentProjects(organizationId?: number) {
@@ -49,7 +49,12 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
       {projects.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
           {projects.map((project) => (
-            <Card key={project.id} style={{ background: "var(--siamois-green-light-50)" }}>
+            <ClickableCard
+              key={project.id}
+              ariaLabel={project.name}
+              onOpen={() => onNavigate?.("project", project.id)}
+              style={{ background: "var(--siamois-green-light-50)" }}
+            >
               <div style={{ display: "flex", gap: "1em" }}>
                 <i className="bi bi-arrow-down-square" style={{ color: "var(--context-main-color)" }} />
                 <span>{project.name}</span>
@@ -62,19 +67,7 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
                 <i className="bi bi-pencil-square" style={{ color: "var(--ground-main-color)" }} />
                 <span>{project._counts?.recordingUnits ?? 0} enregistrements</span>
               </div>
-              <Button
-                label="Ouvrir le projet"
-                onClick={() => onNavigate?.("project", project.id)}
-                style={{
-                  marginTop: "1em",
-                  marginBottom: "1em",
-                  display: "block",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  width: "fit-content",
-                }}
-              />
-            </Card>
+            </ClickableCard>
           ))}
         </div>
       )}
@@ -83,25 +76,19 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
 }
 
 function ProjectCountCardWidget({ organizationId, onNavigate }: HomeWidgetContext) {
-  const { data, isLoading } = useRecentProjects(organizationId);
+  const { data } = useOrganizationCounts(organizationId);
 
   return (
-    <Card className="sia-welcome-card sia-action-unit">
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <i className="bi bi-arrow-down-square" />
-        <span>Projets</span>
-        <Chip label={isLoading ? "…" : String(data?.totalCount ?? 0)} className="action-unit-count-chip-alt" />
-      </div>
-      <div>
-        <small>Interventions, opérations, fouilles, etc.</small>
-      </div>
-      <div style={{ display: "flex", justifyContent: "center", marginTop: "1em" }}>
-        {/* No id → the list, same convention EntityListPanel's row click already uses (App's
-            client-side router, not a page navigation — that's the whole point of this
-            migration: no JSF round-trip just to switch panels). */}
-        <Button label="Voir la liste" className="action-unit-btn" onClick={() => onNavigate?.("project")} />
-      </div>
-    </Card>
+    <EntityCountCard
+      icon="bi bi-arrow-down-square"
+      label="Projets"
+      description="Interventions, opérations, fouilles, etc."
+      count={data?.projects}
+      className="sia-welcome-card sia-action-unit"
+      chipClassName="action-unit-count-chip-alt"
+      // No id → App's client-side router switches to the React list, no page load.
+      onOpen={() => onNavigate?.("project")}
+    />
   );
 }
 
@@ -111,8 +98,7 @@ export function projectHomeWidgets(ctx: HomeWidgetContext): HomeWidgetDef[] {
     // note above), self-wrapped in its own <Panel> already.
     { key: "project-recent", render: () => <RecentProjectsWidget {...ctx} /> },
     // A tile for the shared "Accéder aux bases de données" panel/grid (dbAccessPanelGrid) —
-    // HomePanel groups every "card"-kind widget from every entity into that one panel, never
-    // gives this its own top-level panel.
-    { key: "project-count", kind: "card", render: () => <ProjectCountCardWidget {...ctx} /> },
+    // HomePanel groups every "card"-kind widget from every entity into that one panel.
+    { key: "project-count", kind: "card", order: 10, render: () => <ProjectCountCardWidget {...ctx} /> },
   ];
 }

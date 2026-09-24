@@ -187,4 +187,26 @@ public class PhaseListPanel extends AbstractListPanel<PhaseDTO> implements Seria
             return phaseListPanel;
         }
     }
+
+    // Rendered by the React EntityListPanel (organization-wide list, GET /api/v1/<collection>?
+    // organizationId=…), same bridge as ActionUnitListPanel.
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
+    @Override
+    public String reactPanelKind() {
+        return "list";
+    }
+
+    @Override
+    public String reactEntityType() {
+        return "phase";
+    }
+
+    @Override
+    public Long reactOrganizationId() {
+        return sessionSettingsBean.getSelectedInstitution().getId();
+    }
 }

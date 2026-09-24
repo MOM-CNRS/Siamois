@@ -1,3 +1,4 @@
+import { projectColumn } from "../projectColumn";
 import type { ColumnDef } from "../types";
 import type { RecordingUnitSummary } from "./types";
 
@@ -15,6 +16,7 @@ export const recordingUnitColumns: ColumnDef<RecordingUnitSummary>[] = [
     identifier: true,
     render: (row) => row.fullIdentifier || row.identifier || "",
   },
+  projectColumn<RecordingUnitSummary>(),
   {
     // RecordingUnitTableColumnDefaults' own "isPartOf"/"contains" columns are field-catalog-backed
     // (SELECT_MULTIPLE_RECORDING_UNIT) for JSF's chip picker, but RecordingUnitAnswersProjector

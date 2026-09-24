@@ -7,7 +7,7 @@ import fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitReference;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,13 +23,19 @@ public class FindResource extends FindResourceIdentifier {
     private String fullIdentifier;
     protected OffsetDateTime collectionDate;
     private ResolvedConceptResource type;
-    private RecordingUnitResourceIdentifier recordingUnit;
+    private RecordingUnitReference recordingUnit;
     private OrganizationResourceIdentifier organization;
 
     @Schema(description = "Identifiant du projet (unité d'action) auquel appartient ce mobilier — ce que "
             + "la fiche React résout son propre catalogue de types contre (GET /api/v1/projects/{id}/"
             + "find-types), même convention que RecordingUnitResource.projectId.")
     private String projectId;
+
+    // Organization-wide list only (GET /api/v1/<collection>?organizationId=…): the row's project,
+    // for the list's "Projet" column. Absent everywhere else (every row there shares one project).
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Projet de rattachement (liste d'organisation seulement)")
+    private fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef project;
 
     @Schema(description = "Localisation de découverte du mobilier")
     @Nullable

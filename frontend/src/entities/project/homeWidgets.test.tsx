@@ -70,7 +70,7 @@ describe("projectHomeWidgets", () => {
     expect(container.textContent).toContain("Aucun projet");
   });
 
-  it("recent-projects widget navigates to the project on click", async () => {
+  it("recent-projects card is itself the link — no button, clicking the card opens the project", async () => {
     mockedApiFetch.mockResolvedValue({
       data: [{ resourceType: "projects", id: "9", name: "Fouille A", fullIdentifier: "FA-1", identifier: "FA-1" }],
       meta: { total: 1, limit: 5, offset: 0 },
@@ -78,30 +78,41 @@ describe("projectHomeWidgets", () => {
     const onNavigate = renderWidget(0);
     await flush();
 
-    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Ouvrir le projet")!;
-    expect(button).toBeTruthy();
+    // The Panel's own collapse toggle is a button; the card itself must not contain one.
+    const card = container.querySelector('[role="link"]')!;
+    expect(card.querySelector("button")).toBeNull();
+    expect(container.textContent).not.toContain("Ouvrir le projet");
     await act(async () => {
-      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      card.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(onNavigate).toHaveBeenCalledWith("project", "9");
   });
 
-  it("count-card widget shows the total and asks the router for the list (no page navigation)", async () => {
-    mockedApiFetch.mockResolvedValue({ data: [], meta: { total: 12, limit: 5, offset: 0 } });
+  it("count card reads counts.projects from the organization counts endpoint", async () => {
+    mockedApiFetch.mockResolvedValue({ data: { projects: 12, places: 0, recordingUnits: 0, finds: 0, phases: 0, containers: 0 } });
+    renderWidget(1);
+    await flush();
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/organizations/7/counts");
+    expect(container.textContent).toContain("12");
+  });
+
+  it("count card has no button and asks the router for the React list on click (no page navigation)", async () => {
+    mockedApiFetch.mockResolvedValue({ data: { projects: 12, places: 0, recordingUnits: 0, finds: 0, phases: 0, containers: 0 } });
     const onNavigate = renderWidget(1);
     await flush();
 
-    expect(container.textContent).toContain("12");
-    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Voir la liste")!;
-    expect(button).toBeTruthy();
-
+    expect(container.querySelector("button")).toBeNull();
     await act(async () => {
-      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      container.querySelector('[role="link"]')!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    // No id → App's router treats this as "go to the list", the same client-side switch a list
-    // row's click already does — never a real page navigation.
     expect(onNavigate).toHaveBeenCalledWith("project");
+  });
+
+  it("declares the count card first in homePanel.xhtml's order", () => {
+    const card = projectHomeWidgets({ organizationId: 7 }).find((w) => w.kind === "card")!;
+    expect(card.order).toBe(10);
   });
 });

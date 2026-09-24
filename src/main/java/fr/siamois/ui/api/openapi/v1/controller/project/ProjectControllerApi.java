@@ -143,9 +143,11 @@ public class ProjectControllerApi {
         ProjectResource resource = projectResponseMapper.toResource(
                 row, lang, permissions, bookmarked,
                 projection.resolvedLabels(), projection.answersFor(row.actionUnit().getId()));
-        // Only the detail response pays for this extra count query — a list page never shows it.
+        // Only the detail response pays for these extra count queries — a list page never shows them.
         if (resource.getCount() != null) {
             resource.getCount().setFinds(projectApiService.countFindsForProject(row));
+            resource.getCount().setPhases(projectApiService.countPhasesForProject(row));
+            resource.getCount().setContainers(projectApiService.countContainersForProject(row));
         }
         return ResponseEntity.ok(new ProjectResponse(resource));
     }

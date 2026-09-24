@@ -94,6 +94,13 @@ export interface ColumnDef<TSummary> {
   // than a `validated` flag: any column may want a leading badge, and only the entity's own
   // columns.tsx knows where that badge's data lives on its rows.
   leading?: (row: TSummary) => ReactNode;
+  // Only shown on the unscoped (organization-wide) list — e.g. the row's project, which a
+  // project-scoped relation tab would just repeat on every row.
+  unscopedOnly?: boolean;
+  // Makes the cell a navigation chip to ANOTHER entity (e.g. the row's project): EntityListPanel
+  // renders it like the identifier chip, with the target type's own icon, and opens that entity's
+  // overview on click. Null for a row with nothing to link to (plain empty cell).
+  link?: (row: TSummary) => { entityType: string; id: string | number } | null;
 }
 
 // One entry in a list's field catalog — visibility/order default plus the field metadata needed to
@@ -176,6 +183,9 @@ export interface HomeWidgetDef {
   // placed together inside the one shared "Accéder aux bases de données" panel/grid, mirroring
   // dbAccessPanelGrid — never each in a separate top-level panel.
   kind?: "panel" | "card";
+  // Position among the "card" widgets — widgets otherwise arrive in mount.ts's registration
+  // order, not homePanel.xhtml's. Lower first; absent sorts last.
+  order?: number;
 }
 
 export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
@@ -226,6 +236,10 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // behavior exactly — the `onCreate` prop (bridged to the legacy JSF new-unit dialog) is used
     // instead, unchanged, so migrating one entity's create flow to React never touches another's.
     createForm?: (ctx: CreateFormContext) => ReactNode;
+    // When set, `createForm` needs a parent scope (a project): on the unscoped list the "Créer"
+    // button is shown disabled with this message instead — JSF's own
+    // ToolbarCreateConfig.unavailableMessageKeySupplier for the same lists.
+    createRequiresScope?: string;
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];

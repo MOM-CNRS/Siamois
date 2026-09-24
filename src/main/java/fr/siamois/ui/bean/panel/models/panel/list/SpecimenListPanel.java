@@ -211,8 +211,25 @@ public class SpecimenListPanel extends AbstractListPanel<SpecimenDTO>  implement
         return "specimen";
     }
 
+    // Rendered by the React EntityListPanel (organization-wide list, GET /api/v1/<collection>?
+    // organizationId=…), same bridge as ActionUnitListPanel.
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
 
+    @Override
+    public String reactPanelKind() {
+        return "list";
+    }
 
+    @Override
+    public String reactEntityType() {
+        return "find";
+    }
 
-
+    @Override
+    public Long reactOrganizationId() {
+        return sessionSettingsBean.getSelectedInstitution().getId();
+    }
 }

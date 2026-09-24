@@ -259,4 +259,26 @@ public class RecordingUnitListPanel extends AbstractListPanel<RecordingUnitDTO> 
     public String getPanelTypeClass() {
         return "recording-unit";
     }
+
+    // Rendered by the React EntityListPanel (organization-wide list, GET /api/v1/<collection>?
+    // organizationId=…), same bridge as ActionUnitListPanel.
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
+    @Override
+    public String reactPanelKind() {
+        return "list";
+    }
+
+    @Override
+    public String reactEntityType() {
+        return "recordingUnit";
+    }
+
+    @Override
+    public Long reactOrganizationId() {
+        return sessionSettingsBean.getSelectedInstitution().getId();
+    }
 }

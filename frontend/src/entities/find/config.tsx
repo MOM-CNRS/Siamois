@@ -5,6 +5,7 @@ import { FindCreateForm } from "./CreateForm";
 import { FindDetailHeader } from "./DetailHeader";
 import { FindFicheTab } from "./FicheTab";
 import { FIND_ROUTES } from "./routes";
+import { findHomeWidgets } from "./homeWidgets";
 import type { FindDetail, FindSummary } from "./types";
 
 // Find's own EntityTypeConfig (migration plan, lot 1 "Mobilier") — registered so it can be looked
@@ -33,6 +34,9 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc for
     // why it needs its own recording-unit picker on top of the usual type/category one.
     createForm: (ctx) => <FindCreateForm {...ctx} />,
+    // JSF's own organization-wide list disables creation too (ToolbarCreateConfig
+    // createAllowedSupplier false): the form needs the project this list has no scope for.
+    createRequiresScope: "La création de mobilier n'est disponible que depuis un projet.",
   },
   detail: {
     tabs: [
@@ -45,4 +49,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     header: (entity, helpers) => <FindDetailHeader entity={entity} onSaved={helpers.refetch} />,
   },
   routes: FIND_ROUTES,
+  home: {
+    widgets: findHomeWidgets,
+  },
 };

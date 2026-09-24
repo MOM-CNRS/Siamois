@@ -1127,3 +1127,176 @@ describe("EntityListPanel create overlay (config.list.createForm)", () => {
     expect(onOpenOverview).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
   });
 });
+
+// Organization-wide lists (unscoped) vs a project's own relation tab (scoped): a parent column
+// only on the former, and a create form that needs the parent disabled on it.
+const fakeScopedCreateConfig: EntityTypeConfig<FakeRow & { parent?: string }, FakeRow> = {
+  ...(fakeConfig as EntityTypeConfig<FakeRow & { parent?: string }, FakeRow>),
+  key: "fake-entity-needing-scope",
+  list: {
+    columns: [
+      { key: "name", header: "Name", render: (row) => row.name, identifier: true },
+      { key: "parent", header: "Parent column", render: (row) => row.parent ?? "", unscopedOnly: true },
+    ],
+    searchable: false,
+    createForm: () => <span data-testid="scoped-create-form">form</span>,
+    createRequiresScope: "Disponible seulement depuis un projet.",
+  },
+};
+
+registerEntityType(fakeScopedCreateConfig);
+
+describe("EntityListPanel scope-dependent columns and creation", () => {
+  function renderScoped(scope?: { entityType: string; id: string | number }) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel entityType="fake-entity-needing-scope" organizationId={7} scope={scope} />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  function createButton(): HTMLButtonElement {
+    return Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Créer") as HTMLButtonElement;
+  }
+
+  beforeEach(() => {
+    listMock.mockReset();
+    listMock.mockResolvedValue({ data: [{ id: "1", name: "Row" }], totalCount: 1, limit: 10, offset: 0 });
+  });
+
+  it("shows an unscopedOnly column on the organization-wide list", async () => {
+    renderScoped();
+    await flush();
+
+    expect(container.textContent).toContain("Parent column");
+  });
+
+  it("drops an unscopedOnly column inside a scoped relation tab", async () => {
+    renderScoped({ entityType: "project", id: 5 });
+    await flush();
+
+    expect(container.textContent).not.toContain("Parent column");
+  });
+
+  it("disables Créer on the unscoped list when the create form needs a scope", async () => {
+    renderScoped();
+    await flush();
+
+    expect(createButton().disabled).toBe(true);
+    await act(async () => {
+      createButton().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(document.body.querySelector('[data-testid="scoped-create-form"]')).toBeNull();
+  });
+
+  it("keeps Créer active inside a scope", async () => {
+    renderScoped({ entityType: "project", id: 5 });
+    await flush();
+
+    expect(createButton().disabled).toBe(false);
+    await act(async () => {
+      createButton().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(document.body.querySelector('[data-testid="scoped-create-form"]')).toBeTruthy();
+  });
+});
+
+// A column linking to another entity (the organization-wide lists' "Projet" column).
+const fakeLinkConfig: EntityTypeConfig<FakeRow & { parentId?: string }, FakeRow> = {
+  ...(fakeConfig as EntityTypeConfig<FakeRow & { parentId?: string }, FakeRow>),
+  key: "fake-entity-with-link",
+  list: {
+    columns: [
+      { key: "name", header: "Name", render: (row) => row.name, identifier: true },
+      {
+        key: "parent",
+        header: "Parent",
+        render: (row) => `Parent ${row.parentId}`,
+        link: (row) => (row.parentId ? { entityType: "fake-entity", id: row.parentId } : null),
+      },
+    ],
+    searchable: false,
+  },
+};
+
+registerEntityType(fakeLinkConfig);
+
+describe("EntityListPanel linked columns", () => {
+  function renderLinked(onOpenOverview?: (t: string, id: string | number) => void, onNavigate?: (t: string, id?: string | number) => void) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel entityType="fake-entity-with-link" organizationId={7} onOpenOverview={onOpenOverview} onNavigate={onNavigate} />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  function linkChip(): HTMLElement | undefined {
+    return Array.from(container.querySelectorAll<HTMLElement>(".entity-nav-chip")).find((el) =>
+      el.textContent?.includes("Parent 5"),
+    );
+  }
+
+  beforeEach(() => {
+    listMock.mockReset();
+    listMock.mockResolvedValue({
+      data: [
+        { id: "1", name: "Linked", parentId: "5" } as FakeRow,
+        { id: "2", name: "Unlinked" },
+      ],
+      totalCount: 2,
+      limit: 10,
+      offset: 0,
+    });
+  });
+
+  it("renders the linked cell as a chip with the target type's own icon", async () => {
+    renderLinked(vi.fn());
+    await flush();
+
+    expect(linkChip()).toBeTruthy();
+    expect(linkChip()!.querySelector("i")!.className).toBe("bi bi-question");
+  });
+
+  it("opens the linked entity's overview, not the row's own", async () => {
+    const onOpenOverview = vi.fn();
+    renderLinked(onOpenOverview);
+    await flush();
+
+    await act(async () => {
+      linkChip()!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onOpenOverview).toHaveBeenCalledTimes(1);
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "5");
+  });
+
+  it("falls back to onNavigate when there is no overview pane", async () => {
+    const onNavigate = vi.fn();
+    renderLinked(undefined, onNavigate);
+    await flush();
+
+    await act(async () => {
+      linkChip()!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onNavigate).toHaveBeenCalledWith("fake-entity", "5");
+  });
+
+  it("renders no chip for a row with nothing to link to", async () => {
+    renderLinked(vi.fn());
+    await flush();
+
+    const chips = Array.from(container.querySelectorAll(".entity-nav-chip")).map((el) => el.textContent);
+    expect(chips).not.toContain("Parent undefined");
+  });
+});

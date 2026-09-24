@@ -33,4 +33,9 @@ describe("recordingUnitEntityConfig", () => {
   it("declares an overlay-hosted create form for the list toolbar's own Créer button", () => {
     expect(recordingUnitEntityConfig.list.createForm).toBeDefined();
   });
+
+  // JSF's organization-wide list disables creation for this type (it needs a project).
+  it("disables creation on the unscoped list with an explanation", () => {
+    expect(recordingUnitEntityConfig.list.createRequiresScope).toMatch(/que depuis un projet/);
+  });
 });

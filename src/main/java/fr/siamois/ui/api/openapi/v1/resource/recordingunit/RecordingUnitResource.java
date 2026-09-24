@@ -26,6 +26,12 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
     private String fullIdentifier;
     private String projectId;
 
+    // Organization-wide list only (GET /api/v1/<collection>?organizationId=…): the row's project,
+    // for the list's "Projet" column. Absent everywhere else (every row there shares one project).
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Projet de rattachement (liste d'organisation seulement)")
+    private fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef project;
+
     @Schema(description = "Organisation propriétaire de l'unité (son institution de création) — ce que "
             + "le fiche React résout son propre catalogue de concepts contre (GET /api/v1/organizations/"
             + "{id}/concepts), faute d'un projectId suffisant côté client pour le dériver autrement.")

@@ -2,7 +2,7 @@
 // /api/v1/projects/{id}/mobiliers (list) and GET /api/v1/finds/{id} (detail) both return this
 // shape, like RecordingUnitResource. Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept } from "../project/types";
+import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../project/types";
 
 export interface FindPermissions {
   canEdit: boolean;
@@ -12,6 +12,8 @@ export interface FindPermissions {
 export interface RecordingUnitRef {
   resourceType: string;
   id: string;
+  // RecordingUnitReference.fullIdentifier — the label of the find's UE column.
+  fullIdentifier?: string | null;
 }
 
 export interface FindResource {
@@ -20,6 +22,8 @@ export interface FindResource {
   fullIdentifier: string;
   collectionDate?: string | null;
   projectId?: string | null;
+  // Organization-wide list only — see ProjectRef.
+  project?: ProjectRef | null;
   type?: ResolvedConcept | null;
   recordingUnit?: RecordingUnitRef | null;
   organization?: OrganizationIdentifier | null;

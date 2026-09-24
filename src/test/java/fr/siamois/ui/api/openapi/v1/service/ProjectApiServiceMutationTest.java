@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsExc
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -27,7 +28,6 @@ import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
-import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,6 +85,8 @@ class ProjectApiServiceMutationTest {
     @Mock
     private PhaseService phaseService;
     @Mock
+    private ContainerService containerService;
+    @Mock
     private BookmarkService bookmarkService;
     @Mock
     private HistoryAuditService historyAuditService;
@@ -110,7 +112,7 @@ class ProjectApiServiceMutationTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService,
+                recordingUnitOpenApiService, phaseService, containerService,
                 bookmarkService, historyAuditService);
 
         personDto = new PersonDTO();
@@ -524,35 +526,183 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
-    void listPhasesForAccessibleProject_mapsPhaseServiceResults() {
+    void pagePhasesForProject_delegatesWithDefaultSortAndScopesToTheProjectsActionUnit() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        Page<PhaseDTO> expected = new PageImpl<>(List.of());
+        when(phaseService.searchPhases(eq(institution), any(FilterDTO.class), any(Pageable.class))).thenReturn(expected);
+
+        Page<PhaseDTO> result = service.pagePhasesForProject(caller, "7", 0, 10, null, null);
+
+        assertThat(result).isSameAs(expected);
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(phaseService).searchPhases(eq(institution), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().containsColumn("actionUnit")).isTrue();
+        assertThat(filterCaptor.getValue().valueAsIdListOf("actionUnit")).containsExactly(7L);
+        assertThat(filterCaptor.getValue().containsColumn("identifier")).isFalse();
+    }
+
+    @Test
+    void pagePhasesForProject_buildsContainsFilterFromSearch() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(phaseService.searchPhases(eq(institution), any(FilterDTO.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pagePhasesForProject(caller, "7", 0, 10, "identifier:desc", "P1");
+
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(phaseService).searchPhases(eq(institution), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().containsColumn("identifier")).isTrue();
+        assertThat(filterCaptor.getValue().valueOfAsString("identifier")).isEqualTo("P1");
+    }
+
+    @Test
+    void pagePhasesForProject_unknownSortField_throws400() {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
 
-        PhaseDTO withTitle = new PhaseDTO();
-        withTitle.setId(1L);
-        withTitle.setIdentifier("P1");
-        withTitle.setTitle("Phase titre");
+        assertThatThrownBy(() -> service.pagePhasesForProject(caller, "7", 0, 10, "unknownField:asc", null))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
 
-        PhaseDTO blankTitle = new PhaseDTO();
-        blankTitle.setId(2L);
-        blankTitle.setIdentifier("P2");
-        blankTitle.setTitle("  ");
+        verifyNoInteractions(phaseService);
+    }
 
-        PhaseDTO nullId = new PhaseDTO();
-        nullId.setIdentifier("P3");
-        nullId.setTitle("Sans id");
+    @Test
+    void pagePhasesForProject_requiresAccessibleProjectBeforeAnyPaging() {
+        when(actionUnitService.findAccessibleProjectByKey("404", SCOPE))
+                .thenThrow(new fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException("missing"));
 
-        when(phaseService.findAllByActionUnitId(7L)).thenReturn(List.of(withTitle, blankTitle, nullId));
+        assertThatThrownBy(() -> service.pagePhasesForProject(caller, "404", 0, 10, null, null))
+                .isInstanceOf(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class);
 
-        List<PhaseResource> result = service.listPhasesForAccessibleProject(caller, "7");
+        verifyNoInteractions(phaseService);
+    }
 
-        assertThat(result).hasSize(3);
-        assertThat(result.get(0).getId()).isEqualTo("1");
-        assertThat(result.get(0).getLabel()).isEqualTo("Phase titre");
-        assertThat(result.get(1).getLabel()).isEqualTo("P2");
-        assertThat(result.get(2).getId()).isNull();
+    @Test
+    void canEditPhasesForProject_delegatesToProfilePermissionServiceForTheProjectPhasesTriple() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasProjectPermission(any(), eq(7L),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.INSTANCE_EDIT_PHASES),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.ORGANIZATION_EDIT_PHASES),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.PROJECT_EDIT_PHASES)))
+                .thenReturn(true);
+
+        boolean result = service.canEditPhasesForProject(caller, "7", "fr");
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void countPhasesForProject_delegatesToPhaseServiceCountByActionContext() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 3L);
+        when(phaseService.countByActionContext(au)).thenReturn(4);
+
+        long result = service.countPhasesForProject(row);
+
+        assertThat(result).isEqualTo(4L);
+    }
+
+    @Test
+    void pageContainersForProject_delegatesWithDefaultSortAndScopesToTheProjectsActionUnit() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        Page<ContainerDTO> expected = new PageImpl<>(List.of());
+        when(containerService.searchContainers(eq(institution), any(FilterDTO.class), any(Pageable.class))).thenReturn(expected);
+
+        Page<ContainerDTO> result = service.pageContainersForProject(caller, "7", 0, 10, null, null);
+
+        assertThat(result).isSameAs(expected);
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(containerService).searchContainers(eq(institution), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().containsColumn("actionUnit")).isTrue();
+        assertThat(filterCaptor.getValue().valueAsIdListOf("actionUnit")).containsExactly(7L);
+        assertThat(filterCaptor.getValue().containsColumn("identifier")).isFalse();
+    }
+
+    @Test
+    void pageContainersForProject_buildsContainsFilterFromSearch() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(containerService.searchContainers(eq(institution), any(FilterDTO.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageContainersForProject(caller, "7", 0, 10, "identifier:desc", "C1");
+
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(containerService).searchContainers(eq(institution), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().containsColumn("identifier")).isTrue();
+        assertThat(filterCaptor.getValue().valueOfAsString("identifier")).isEqualTo("C1");
+    }
+
+    @Test
+    void pageContainersForProject_unknownSortField_throws400() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+
+        assertThatThrownBy(() -> service.pageContainersForProject(caller, "7", 0, 10, "unknownField:asc", null))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+
+        verifyNoInteractions(containerService);
+    }
+
+    @Test
+    void pageContainersForProject_requiresAccessibleProjectBeforeAnyPaging() {
+        when(actionUnitService.findAccessibleProjectByKey("404", SCOPE))
+                .thenThrow(new fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException("missing"));
+
+        assertThatThrownBy(() -> service.pageContainersForProject(caller, "404", 0, 10, null, null))
+                .isInstanceOf(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class);
+
+        verifyNoInteractions(containerService);
+    }
+
+    @Test
+    void canEditContainersForProject_delegatesToProfilePermissionServiceForTheProjectContainersTriple() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasProjectPermission(any(), eq(7L),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.INSTANCE_EDIT_CONTAINERS),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.ORGANIZATION_EDIT_CONTAINERS),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.PROJECT_EDIT_CONTAINERS)))
+                .thenReturn(true);
+
+        boolean result = service.canEditContainersForProject(caller, "7", "fr");
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void countContainersForProject_delegatesToContainerServiceCountByActionContext() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 3L);
+        when(containerService.countByActionContext(au)).thenReturn(6);
+
+        long result = service.countContainersForProject(row);
+
+        assertThat(result).isEqualTo(6L);
     }
 
     @Test

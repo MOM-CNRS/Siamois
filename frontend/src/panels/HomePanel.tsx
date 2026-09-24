@@ -27,7 +27,9 @@ export function HomePanel({ widgets, toolbar }: HomePanelProps) {
   // wraps itself) and render standalone, one after another; "card"-kind widgets are tiles for
   // the one shared database-access panel/grid and never get a top-level panel of their own.
   const panelWidgets = widgets.filter((w) => (w.kind ?? "panel") === "panel");
-  const cardWidgets = widgets.filter((w) => w.kind === "card");
+  const cardWidgets = widgets
+    .filter((w) => w.kind === "card")
+    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
 
   return (
     <div className="home-panel">

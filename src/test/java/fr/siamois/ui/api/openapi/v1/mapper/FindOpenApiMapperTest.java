@@ -41,6 +41,7 @@ class FindOpenApiMapperTest {
 
         RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
         ru.setId(42L);
+        ru.setFullIdentifier("INST-UE-42");
 
         InstitutionDTO org = new InstitutionDTO();
         org.setId(100L);
@@ -62,6 +63,7 @@ class FindOpenApiMapperTest {
         assertThat(r.getType()).isSameAs(typeResource);
         assertThat(r.getRecordingUnit().getId()).isEqualTo("42");
         assertThat(r.getRecordingUnit().getResourceType()).isEqualTo("recording-units");
+        assertThat(r.getRecordingUnit().getFullIdentifier()).isEqualTo("INST-UE-42");
         assertThat(r.getOrganization().getId()).isEqualTo("100");
         assertThat(r.getGeom()).isNull();
     }

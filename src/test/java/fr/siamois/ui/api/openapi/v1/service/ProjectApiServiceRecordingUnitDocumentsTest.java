@@ -4,6 +4,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -66,6 +67,8 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
     @Mock
     private PhaseService phaseService;
     @Mock
+    private ContainerService containerService;
+    @Mock
     private BookmarkService bookmarkService;
     @Mock
     private HistoryAuditService historyAuditService;
@@ -93,7 +96,7 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService,
+                recordingUnitOpenApiService, phaseService, containerService,
                 bookmarkService, historyAuditService);
     }
 

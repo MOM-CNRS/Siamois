@@ -410,6 +410,9 @@ public class FlowBean implements Serializable {
             case "project" -> addActionUnitToOverview(id, targetPanel, null, false);
             case "recordingUnit" -> addRecordingUnitToOverview(id, targetPanel, null, false);
             case "find" -> addSpecimenToOverview(id, targetPanel, null, false);
+            case "phase" -> addPhaseToOverview(id, targetPanel, null, false);
+            case "container" -> addContainerToOverview(id, targetPanel, null, false);
+            case "place" -> addSpatialUnitToOverview(id, targetPanel, null, false);
             default -> log.warn("setOverview : entityType React inconnu côté serveur : {}", entityType);
         }
     }

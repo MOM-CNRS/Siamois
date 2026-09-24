@@ -495,4 +495,32 @@ public class SpatialUnitPanel extends AbstractSingleMultiHierarchicalEntityPanel
         return "spatial-unit";
     }
 
+    // Same overview-React-panel fallback bug as RecordingUnitPanel/SpecimenPanel/PhasePanel/
+    // ContainerPanel (plan Lot 0): without these overrides, an overview opened on a "place" row
+    // falls the WHOLE (React) project panel back to JSF.
+    @Override
+    public boolean isReactPanelEnabled() {
+        return true;
+    }
+
+    @Override
+    public String reactPanelKind() {
+        return "detail";
+    }
+
+    @Override
+    public String reactEntityType() {
+        return "place";
+    }
+
+    @Override
+    public Long reactEntityId() {
+        return unit != null ? unit.getId() : null;
+    }
+
+    @Override
+    public Long reactOrganizationId() {
+        return unit != null && unit.getCreatedByInstitution() != null ? unit.getCreatedByInstitution().getId() : null;
+    }
+
 }

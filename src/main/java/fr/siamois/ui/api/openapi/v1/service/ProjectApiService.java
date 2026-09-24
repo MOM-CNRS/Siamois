@@ -18,6 +18,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -30,6 +31,8 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
+import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -44,7 +47,6 @@ import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilte
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
-import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectHistoryAuthorResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectSiblingResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectSiblingsResource;
@@ -133,6 +135,7 @@ public class ProjectApiService {
     private final ConceptMapper conceptMapper;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
     private final PhaseService phaseService;
+    private final ContainerService containerService;
     private final BookmarkService bookmarkService;
     private final HistoryAuditService historyAuditService;
 
@@ -790,6 +793,80 @@ public class ProjectApiService {
         return count == null ? 0L : count;
     }
 
+    /**
+     * Nombre de phases du projet — même pattern que {@link #countFindsForProject}, détail
+     * uniquement.
+     */
+    public long countPhasesForProject(AccessibleProjectForApi row) {
+        return phaseService.countByActionContext(row.actionUnit());
+    }
+
+    /**
+     * Nombre de contenants du projet — même pattern que {@link #countPhasesForProject}, détail
+     * uniquement.
+     */
+    public long countContainersForProject(AccessibleProjectForApi row) {
+        return containerService.countByActionContext(row.actionUnit());
+    }
+    // See countPhasesForProject just above for the same pattern.
+
+    private static final Set<String> ALLOWED_CONTAINER_SORT_FIELDS =
+            Set.of(ContainerSpec.IDENTIFIER_FILTER, "id");
+
+    /**
+     * Same contract as {@link #parsePhaseSort} — an unknown property is a 400.
+     */
+    static Sort parseContainerSort(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Direction.ASC, ContainerSpec.IDENTIFIER_FILTER).and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_CONTAINER_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        Sort primary = Sort.by(sortDirection(parts), property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    /**
+     * Page de contenants d'un projet ({@code GET /api/v1/projects/{id}/containers}) — pendant
+     * réduit de {@link #pagePhasesForProject} : recherche libre sur {@code identifier} et tri sur
+     * une petite liste blanche, sans le contrat {@code f.<clé>} par colonne.
+     */
+    public Page<ContainerDTO> pageContainersForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        Sort sort = parseContainerSort(sortParam);
+        Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        FilterDTO filterDTO = new FilterDTO();
+        filterDTO.add(ContainerSpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
+        if (search != null && !search.isBlank()) {
+            filterDTO.add(ContainerSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        return containerService.searchContainers(institution, filterDTO, pageable);
+    }
+
+    /**
+     * Whether the caller can write containers on this project — a single boolean for the whole
+     * {@link #pageContainersForProject} page, same pattern as {@link #canEditPhasesForProject}.
+     */
+    public boolean canEditContainersForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return profilePermissionService.hasProjectPermission(userInfo, row.actionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
+                PermissionConstants.PROJECT_EDIT_CONTAINERS);
+    }
+
     private static final Set<String> ALLOWED_FIND_SORT_FIELDS =
             Set.of(SpecimenSpec.FULL_IDENTIFIER_FILTER, "collectionDate", "id");
 
@@ -798,7 +875,7 @@ public class ProjectApiService {
      * silent fallback (unlike {@link #parseSortWithStableId}, which several other list endpoints
      * use and which is deliberately lenient; reusing it here would mask a client's own sort typo).
      */
-    private static Sort parseFindSort(String sortParam) {
+    static Sort parseFindSort(String sortParam) {
         if (sortParam == null || sortParam.isBlank()) {
             return Sort.by(Sort.Direction.ASC, SpecimenSpec.FULL_IDENTIFIER_FILTER).and(Sort.by(Sort.Direction.ASC, "id"));
         }
@@ -895,22 +972,62 @@ public class ProjectApiService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<PhaseResource> listPhasesForAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
+    private static final Set<String> ALLOWED_PHASE_SORT_FIELDS =
+            Set.of(PhaseSpec.IDENTIFIER_FILTER, "orderNumber", "title", "id");
+
+    /**
+     * Same contract as {@link #parseFindSort} — an unknown property is a 400.
+     */
+    static Sort parsePhaseSort(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Direction.ASC, "orderNumber").and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_PHASE_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        Sort primary = Sort.by(sortDirection(parts), property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    /**
+     * Page de phases d'un projet ({@code GET /api/v1/projects/{id}/phases}) — pendant réduit de
+     * {@link #pageFindsForProject} : recherche libre sur {@code identifier} et tri sur une petite
+     * liste blanche, sans le contrat {@code f.<clé>} par colonne (voir le plan de migration React,
+     * lot Phases).
+     */
+    public Page<PhaseDTO> pagePhasesForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
-        return phaseService.findAllByActionUnitId(row.actionUnit().getId()).stream()
-                .map(phase -> {
-                    PhaseResource resource = new PhaseResource();
-                    resource.setId(phase.getId() != null ? String.valueOf(phase.getId()) : null);
-                    resource.setIdentifier(phase.getIdentifier());
-                    resource.setTitle(phase.getTitle());
-                    String label = phase.getTitle() != null && !phase.getTitle().isBlank()
-                            ? phase.getTitle()
-                            : phase.getIdentifier();
-                    resource.setLabel(label);
-                    return resource;
-                })
-                .toList();
+        Sort sort = parsePhaseSort(sortParam);
+        Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        FilterDTO filterDTO = new FilterDTO();
+        filterDTO.add(PhaseSpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
+        if (search != null && !search.isBlank()) {
+            filterDTO.add(PhaseSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        return phaseService.searchPhases(institution, filterDTO, pageable);
+    }
+
+    /**
+     * Whether the caller can write phases on this project — a single boolean for the whole
+     * {@link #pagePhasesForProject} page, same pattern as {@link #canEditFindsForProject}.
+     */
+    public boolean canEditPhasesForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return profilePermissionService.hasProjectPermission(userInfo, row.actionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_PHASES,
+                PermissionConstants.ORGANIZATION_EDIT_PHASES,
+                PermissionConstants.PROJECT_EDIT_PHASES);
     }
 
     /**
@@ -1096,7 +1213,7 @@ public class ProjectApiService {
      * est donc perdu dans ce cas précis (le tri primaire, lui, est bien appliqué en mémoire par
      * {@code applySyntheticSort}). Comportement identique à celui de JSF ; non corrigé ici.</p>
      */
-    private static Sort parseRecordingUnitSort(String sortParam) {
+    static Sort parseRecordingUnitSort(String sortParam) {
         if (sortParam == null || sortParam.isBlank()) {
             return Sort.by(Sort.Direction.DESC, CREATION_TIME).and(Sort.by(Sort.Direction.ASC, "id"));
         }

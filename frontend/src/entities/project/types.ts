@@ -27,6 +27,8 @@ export interface ProjectCounts {
   // Only present on the detail response (GET /api/v1/projects/{id}) — the list never computes
   // it, see ProjectResponseMapper's own javadoc on the equivalent server-side field.
   finds?: number | null;
+  phases?: number | null;
+  containers?: number | null;
 }
 
 export interface ProjectPermissions {
@@ -79,3 +81,11 @@ export interface ResourceRef {
 // summary/detail shapes isn't awkward to compare this config against.
 export type ProjectSummary = ProjectResource;
 export type ProjectDetail = ProjectResource;
+
+// A row's project on an organization-wide list (ResourceRef server side, set by
+// OrganizationListsControllerApi only) — absent on project-scoped lists and on details.
+export interface ProjectRef {
+  resourceId: string;
+  resourceType: string;
+  label?: string | null;
+}

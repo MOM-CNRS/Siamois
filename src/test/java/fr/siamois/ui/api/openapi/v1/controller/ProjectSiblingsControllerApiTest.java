@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -107,6 +108,8 @@ class ProjectSiblingsControllerApiTest {
     @Mock
     private PhaseService phaseService;
     @Mock
+    private ContainerService containerService;
+    @Mock
     private DocumentWriteOpenApiService documentWriteOpenApiService;
     @Mock
     private BookmarkService bookmarkService;
@@ -142,6 +145,7 @@ class ProjectSiblingsControllerApiTest {
                 conceptMapper,
                 recordingUnitOpenApiService,
                 phaseService,
+                containerService,
                 bookmarkService,
                 historyAuditService);
         ProjectControllerApi controller = new ProjectControllerApi(

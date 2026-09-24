@@ -703,3 +703,25 @@
   color: var(--text-light);
 }
 
+
+/* Home cards: the whole card is the link (components/home/ClickableCard.tsx), no inner button. */
+.sia-clickable-card {
+  cursor: pointer;
+  border-radius: var(--border-radius, 6px);
+  height: 100%;
+}
+
+.sia-clickable-card > .p-card {
+  height: 100%;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.sia-clickable-card:hover > .p-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.sia-clickable-card:focus-visible {
+  outline: 2px solid var(--primary-color, #3b82f6);
+  outline-offset: 2px;
+}

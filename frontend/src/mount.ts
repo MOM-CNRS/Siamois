@@ -14,6 +14,9 @@ import { registerEntityType } from "./entities/registry";
 import { projectEntityConfig } from "./entities/project/config";
 import { recordingUnitEntityConfig } from "./entities/recordingUnit/config";
 import { findEntityConfig } from "./entities/find/config";
+import { phaseEntityConfig } from "./entities/phase/config";
+import { containerEntityConfig } from "./entities/container/config";
+import { placeEntityConfig } from "./entities/place/config";
 import type { MountOptions } from "./mountOptions";
 import { App } from "./App";
 
@@ -23,6 +26,9 @@ registerDefaultFieldRenderers();
 registerEntityType(projectEntityConfig);
 registerEntityType(recordingUnitEntityConfig);
 registerEntityType(findEntityConfig);
+registerEntityType(phaseEntityConfig);
+registerEntityType(containerEntityConfig);
+registerEntityType(placeEntityConfig);
 
 // One generic mount function parameterized by panel kind + entity type (plan §3) — never one
 // mount function per entity. focus.xhtml calls this once isReactPanelEnabled() gates a panel
