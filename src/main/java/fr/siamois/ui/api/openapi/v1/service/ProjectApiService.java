@@ -1092,6 +1092,25 @@ public class ProjectApiService {
             int limit,
             String sortParam,
             String acceptLanguage) {
+        return pageFindsOfRecordingUnit(caller, recordingUnitKey, offset, limit, sortParam, null, acceptLanguage).page();
+    }
+
+    /**
+     * One page of a recording unit's finds, plus the recording unit itself — what the caller needs to
+     * compute the page's {@code _permissions} (its project) and bookmarks (its institution).
+     */
+    public record RecordingUnitFindsPage(Page<FindResource> page, RecordingUnitDTO recordingUnit) {
+    }
+
+    /** Same as {@link #pageFindsForAccessibleRecordingUnit}, plus a {@code search} on fullIdentifier. */
+    public RecordingUnitFindsPage pageFindsOfRecordingUnit(
+            ProjectApiCaller caller,
+            String recordingUnitKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            String acceptLanguage) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         requireRecordingUnitViewPermission(caller, ru);
@@ -1105,13 +1124,54 @@ public class ProjectApiService {
         Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institution.getId(),
                 ru.getId(),
-                null,
+                search != null && !search.isBlank() ? search : null,
                 null,
                 null,
                 lang,
                 sortParam,
                 pageable);
-        return page.map(findOpenApiMapper::toResource);
+        return new RecordingUnitFindsPage(page.map(findOpenApiMapper::toResource), ru);
+    }
+
+    /** One page of recording units scoped to something other than a project, and the project they belong to. */
+    public record ScopedRecordingUnitPage(Page<RecordingUnitDTO> page, Long projectId) {
+    }
+
+    /**
+     * Direct children of an accessible recording unit ({@code GET /recording-units/{id}/children}),
+     * same search/sort/{@code f.*} contract as {@link #pageRecordingUnitsForProject}.
+     */
+    public ScopedRecordingUnitPage pageRecordingUnitChildren(
+            ProjectApiCaller caller,
+            String recordingUnitKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter) {
+        RecordingUnitDTO parent = recordingUnitService.findAccessibleRecordingUnitByKey(
+                recordingUnitKey, caller.accessibleInstitutionIds(), null);
+        requireRecordingUnitViewPermission(caller, parent);
+        Sort sort = parseRecordingUnitSort(sortParam);
+        Page<RecordingUnitDTO> page = recordingUnitService.findChildrenOf(
+                parent.getId(), limit, offset, sort, filter.toFilterDTO(search));
+        return new ScopedRecordingUnitPage(page, parent.getActionUnit() != null ? parent.getActionUnit().getId() : null);
+    }
+
+    /**
+     * Recording units of a phase ({@code GET /phases/{id}/recording-units}). The caller must have
+     * checked access to the phase itself (PhaseOpenApiService#requireAccessible) — its project is
+     * this page's scope.
+     */
+    public Page<RecordingUnitDTO> pageRecordingUnitsForPhase(
+            long phaseId,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter) {
+        Sort sort = parseRecordingUnitSort(sortParam);
+        return recordingUnitService.findByPhaseId(phaseId, limit, offset, sort, filter.toFilterDTO(search));
     }
 
     /**

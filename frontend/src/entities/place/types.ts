@@ -42,6 +42,8 @@ export interface PlaceResource {
   _permissions?: PlacePermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // Detail only — the fiche's tab badges (PlaceOpenApiService#getPlaceById).
+  _counts?: { children?: number | null; projects?: number | null; recordingUnits?: number | null };
 }
 
 // Same resource both in the list and the detail response, like Find/RecordingUnit/Phase/

@@ -14,9 +14,8 @@ describe("placeEntityConfig", () => {
     expect(placeEntityConfig.collectionPath).toBe("places");
   });
 
-  it("registers a single fiche tab and a header, and a patchAnswers write path", () => {
-    expect(placeEntityConfig.detail.tabs).toHaveLength(1);
-    expect(placeEntityConfig.detail.tabs[0].key).toBe("fiche");
+  it("registers the fiche, contained-places and projects tabs, a header, and a patchAnswers write path", () => {
+    expect(placeEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "children", "projects"]);
     expect(placeEntityConfig.detail.header).toBeDefined();
     expect(placeEntityConfig.api.patchAnswers).toBeDefined();
   });

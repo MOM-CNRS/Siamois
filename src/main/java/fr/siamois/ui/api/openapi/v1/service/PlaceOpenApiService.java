@@ -31,6 +31,8 @@ import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResourceCounts;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
@@ -98,6 +100,35 @@ public class PlaceOpenApiService {
         Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnits(
                 institution, filter, PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort));
 
+        return toListResponse(caller, institution, page, lang, limit, offset);
+    }
+
+    /**
+     * Direct child places of an accessible place ({@code GET /places/{id}/children}, the place
+     * fiche's "Lieux" tab) — same contract and row enrichment as {@link #listByOrganization}.
+     */
+    @Transactional(readOnly = true)
+    public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
+                                          String sortParam, String search, String lang) {
+        SpatialUnitDTO parent = requireAccessiblePlace(caller, placeId);
+        InstitutionDTO institution = parent.getCreatedByInstitution();
+        Sort sort = ProjectApiService.parsePlaceSort(sortParam);
+        FilterDTO filter = new FilterDTO();
+        if (search != null && !search.isBlank()) {
+            filter.add(SpatialUnitSpec.NAME_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnitsInSpatialUnit(
+                institution, parent, filter, PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort));
+        return toListResponse(caller, institution, page, lang, limit, offset);
+    }
+
+    /** The access check every place-scoped endpoint starts with (404 / 403 when out of scope). */
+    public SpatialUnitDTO requireAccessible(ProjectApiCaller caller, long placeId) {
+        return requireAccessiblePlace(caller, placeId);
+    }
+
+    private PlaceListResponse toListResponse(ProjectApiCaller caller, InstitutionDTO institution,
+                                             Page<SpatialUnitDTO> page, String lang, int limit, int offset) {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(
                 profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES));
@@ -153,6 +184,12 @@ public class PlaceOpenApiService {
             resource.setResourceUri("/spatial-unit/" + dto.getId());
         }
         resourceBookmarkService.markBookmarked(caller.person(), institution, resource, lang);
+        // Detail only: the fiche's tab badges, counted with the very queries the tabs themselves
+        // page with (GET /places/{id}/children and /projects) so a badge never disagrees with its tab.
+        long children = spatialUnitService.countSearchResultsInSpatialUnit(institution, dto, new FilterDTO());
+        long projects = projectApiService.pageAccessibleProjects(caller, institution.getId(), null, 0, 1, null,
+                ProjectListFilter.EMPTY.withSpatialContext(dto.getId())).getTotalElements();
+        resource.setCount(new PlaceResourceCounts(children, projects, null));
         return resource;
     }
 

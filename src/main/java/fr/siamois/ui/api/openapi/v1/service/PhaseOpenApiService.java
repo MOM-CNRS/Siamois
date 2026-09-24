@@ -271,6 +271,14 @@ public class PhaseOpenApiService {
         }
     }
 
+    /**
+     * The access check every phase-scoped endpoint starts with (404 when out of scope) — public for
+     * the endpoints that page something else under a phase (its recording units).
+     */
+    public PhaseDTO requireAccessible(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {
+        return requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
+    }
+
     /** Previous/next phase in the same project ({@code GET /api/v1/phases/{id}/siblings}). */
     @Transactional(readOnly = true)
     public SiblingsResource findSiblings(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {

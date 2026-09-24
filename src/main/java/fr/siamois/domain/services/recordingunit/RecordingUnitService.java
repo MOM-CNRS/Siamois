@@ -517,6 +517,12 @@ public class RecordingUnitService implements ArkEntityService {
         if (counts != null && counts.contains("specimen") && dto.getId() != null) {
             dto.setSpecimenCount(recordingUnitRepository.countSpecimensByRecordingUnitId(dto.getId()));
         }
+        if (counts != null && counts.contains("children") && dto.getId() != null) {
+            long children = recordingUnitRepository.countChildrenByIds(List.of(dto.getId())).stream()
+                    .mapToLong(row -> ((Number) row[1]).longValue())
+                    .sum();
+            dto.setChildrenCount((int) children);
+        }
         return new AccessibleRecordingUnit(entity, dto);
     }
 
@@ -986,6 +992,27 @@ public class RecordingUnitService implements ArkEntityService {
                 .where(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitId))
                 .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
         return pageAndEnrich(specs, pageable, false);
+    }
+
+    /**
+     * Direct children of a recording unit, with the same per-column filters/sort/enrichment as
+     * {@link #findByActionUnitId(Long, int, int, Sort, FilterDTO)} (the fiche's "UE" tab).
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findChildrenOf(Long parentId, int limit, int offset, Sort sort, FilterDTO filters) {
+        Specification<RecordingUnit> specs = Specification
+                .where(RecordingUnitSpec.hasParent(parentId))
+                .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
+        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+    }
+
+    /** Recording units of a phase, same contract as {@link #findChildrenOf} (the phase fiche's "UE" tab). */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findByPhaseId(Long phaseId, int limit, int offset, Sort sort, FilterDTO filters) {
+        Specification<RecordingUnit> specs = Specification
+                .where(RecordingUnitSpec.inPhase(phaseId))
+                .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
+        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
     }
 
 

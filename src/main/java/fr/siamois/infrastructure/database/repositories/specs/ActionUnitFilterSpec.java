@@ -1,7 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Root;
@@ -76,7 +75,8 @@ public final class ActionUnitFilterSpec {
     }
 
     /**
-     * EXISTS a matching row in the {@code @ManyToMany} collection — {@code periods}, {@code subjects}.
+     * EXISTS a matching row in the {@code @ManyToMany} collection — {@code periods}, {@code subjects}
+     * (concepts), and {@code spatialContext} (places): only the target's {@code id} is read.
      */
     @NonNull
     static Specification<ActionUnit> conceptManyIn(@NonNull String property, @NonNull Collection<Long> ids) {
@@ -84,7 +84,7 @@ public final class ActionUnitFilterSpec {
             if (ids.isEmpty()) return cb.conjunction();
             Subquery<Long> subquery = query.subquery(Long.class);
             Root<ActionUnit> subRoot = subquery.from(ActionUnit.class);
-            Join<ActionUnit, Concept> concept = subRoot.join(property);
+            Join<ActionUnit, Object> concept = subRoot.join(property);
             subquery.select(cb.literal(1L)).where(
                     cb.equal(subRoot.get("id"), root.get("id")),
                     concept.get("id").in(ids));

@@ -270,4 +270,32 @@ public class RecordingUnitSpec {
         };
     }
 
+    /**
+     * Direct children of {@code parentId} (recording_unit_hierarchy). An {@code IN} subquery, not a
+     * join: {@link #isChildOf}'s join needs {@code distinct}, which Postgres rejects together with the
+     * list's synthetic sorts (counts, concept labels) — this stays compatible with every sort.
+     */
+    @NonNull
+    public static Specification<RecordingUnit> hasParent(long parentId) {
+        return (root, query, cb) -> {
+            Subquery<Long> children = query.subquery(Long.class);
+            Root<RecordingUnit> parent = children.from(RecordingUnit.class);
+            Join<RecordingUnit, RecordingUnit> child = parent.join(CHILDREN_FILTER);
+            children.select(child.get("id")).where(cb.equal(parent.get("id"), parentId));
+            return root.get("id").in(children);
+        };
+    }
+
+    /** Recording units attached to phase {@code phaseId} (recording_unit_phase), same subquery form as {@link #hasParent}. */
+    @NonNull
+    public static Specification<RecordingUnit> inPhase(long phaseId) {
+        return (root, query, cb) -> {
+            Subquery<Long> members = query.subquery(Long.class);
+            Root<RecordingUnit> ru = members.from(RecordingUnit.class);
+            Join<Object, Object> phase = ru.join("phases");
+            members.select(ru.get("id")).where(cb.equal(phase.get("id"), phaseId));
+            return root.get("id").in(members);
+        };
+    }
+
 }

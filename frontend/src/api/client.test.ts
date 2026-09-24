@@ -57,3 +57,22 @@ describe("apiFetch success handling", () => {
     await expect(apiFetch("/api/v1/projects/5")).resolves.toEqual({ ok: true });
   });
 });
+
+// The JSF session cookie must never ride along on /api/v1 calls: the API chain used to rotate the
+// JSF session id on each of them, and parallel calls raced the new cookies until the user was
+// logged out (see WebSecurityConfig#apiV1SecurityFilterChain).
+describe("apiFetch credentials", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  it("sends the bearer token but never the session cookie", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }));
+
+    await apiFetch("/api/v1/recording-units/94");
+
+    const init = vi.mocked(fetch).mock.calls[0][1]!;
+    expect(init.credentials).toBe("omit");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer test-token");
+  });
+});

@@ -26,6 +26,7 @@ import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -39,6 +40,8 @@ class PlaceControllerApiTest {
     private ProjectApiService projectApiService;
     @Mock
     private PlaceOpenApiService placeOpenApiService;
+    @Mock
+    private fr.siamois.ui.api.openapi.v1.service.ProjectListAssembler projectListAssembler;
 
     private MockMvc mockMvc;
     private PersonDTO personDto;
@@ -48,7 +51,7 @@ class PlaceControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        PlaceControllerApi controller = new PlaceControllerApi(projectApiService, placeOpenApiService);
+        PlaceControllerApi controller = new PlaceControllerApi(projectApiService, placeOpenApiService, projectListAssembler);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
@@ -202,5 +205,39 @@ class PlaceControllerApiTest {
                         .param("offset", "0")
                         .param("limit", "10"))
                 .andExpect(status().isNotImplemented());
+    }
+
+    @Test
+    void getChildren_delegatesToTheService() throws Exception {
+        org.mockito.Mockito.when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr")))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse(
+                        List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/places/5/children")
+                        .param("search", "cave"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Total-Count", "0"));
+    }
+
+    @Test
+    void getProjects_forcesTheSpatialContextFilter_onThePlacesOrganization() throws Exception {
+        fr.siamois.dto.entity.SpatialUnitDTO place = new fr.siamois.dto.entity.SpatialUnitDTO();
+        place.setId(5L);
+        fr.siamois.dto.entity.InstitutionDTO institution = new fr.siamois.dto.entity.InstitutionDTO();
+        institution.setId(10L);
+        place.setCreatedByInstitution(institution);
+        org.mockito.Mockito.when(placeOpenApiService.requireAccessible(any(), eq(5L))).thenReturn(place);
+        org.springframework.data.domain.Page<fr.siamois.dto.api.AccessibleProjectForApi> rows = org.springframework.data.domain.Page.empty();
+        org.mockito.Mockito.when(projectApiService.pageAccessibleProjects(any(), eq(10L), isNull(), eq(0), eq(20), eq("name:asc"),
+                org.mockito.ArgumentMatchers.argThat(filter ->
+                        List.of(5L).equals(filter.conceptManyInFilters().get("spatialContext")))))
+                .thenReturn(rows);
+        org.mockito.Mockito.when(projectListAssembler.assemble(any(), eq(rows), isNull(), eq("fr"), eq(20), eq(0)))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse(
+                        List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 20, 0L)));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/places/5/projects"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.meta.total").value(0));
     }
 }

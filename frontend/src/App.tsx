@@ -9,6 +9,7 @@ import { EntityDetailPanel } from "./panels/EntityDetailPanel";
 import { HomePanel } from "./panels/HomePanel";
 import { WriteModeProvider } from "./panels/writeMode";
 import { BridgeProvider } from "./panels/bridge";
+import { paneTransitionName, withPanelTransition } from "./panels/panelTransition";
 
 const queryClient = new QueryClient();
 
@@ -260,7 +261,13 @@ export function App({ options }: { options: MountOptions }) {
   const openOverview = useCallback(
     (entityType: string, id: string | number) => {
       const next = { entityType, entityId: id };
-      setOverview(next);
+      // Only the opening animates: retargeting an already open overview (a row click, the
+      // prev/next arrows) just swaps its content, where a slide would be noise.
+      if (overviewRef.current == null) {
+        withPanelTransition("overview-open", () => setOverview(next));
+      } else {
+        setOverview(next);
+      }
       if (options.bridge?.setOverview) {
         options.bridge.setOverview(entityType, id);
         serverOverviewRef.current = next;
@@ -275,7 +282,7 @@ export function App({ options }: { options: MountOptions }) {
   );
 
   const closeOverview = useCallback(() => {
-    setOverview(null);
+    withPanelTransition("overview-close", () => setOverview(null));
     overviewRef.current = null;
     if (options.bridge?.closeOverview) {
       options.bridge.closeOverview();
@@ -308,9 +315,11 @@ export function App({ options }: { options: MountOptions }) {
     overviewRef.current = null;
     backUrlRef.current = leavingUrl;
     window.history.pushState(null, "", focusUrl(path, undefined, leavingUrl));
-    setOverview(null);
-    setNavigatedAway(true);
-    setView({ panelKind: "detail", entityType: promoted.entityType, entityId: promoted.entityId });
+    withPanelTransition("focus-enter", () => {
+      setOverview(null);
+      setNavigatedAway(true);
+      setView({ panelKind: "detail", entityType: promoted.entityType, entityId: promoted.entityId });
+    });
   }, [setFocusStack]);
 
   // Puts the promoted entity back in the overview and restores the previous main. With an empty
@@ -332,9 +341,11 @@ export function App({ options }: { options: MountOptions }) {
       "",
       focusUrl(snapshot.mainPath, overviewPath(snapshot.overview), snapshot.backUrl),
     );
-    setView(snapshot.view);
-    setOverview(snapshot.overview);
-    setNavigatedAway(snapshot.navigatedAway);
+    withPanelTransition("focus-exit", () => {
+      setView(snapshot.view);
+      setOverview(snapshot.overview);
+      setNavigatedAway(snapshot.navigatedAway);
+    });
     // An overview opened/closed while in focus mode moved the bean's parentOrOverview away from
     // the entity going back into the overview pane — put it back, for F5 and the history.
     if (options.bridge?.setOverview && !sameEntity(serverOverviewRef.current, snapshot.overview)) {
@@ -396,6 +407,14 @@ export function App({ options }: { options: MountOptions }) {
       }
     : undefined;
 
+  // Named per shown entity (see paneTransitionName). The overview gets a suffix only in the odd
+  // case both panes show the very same entity — names must be unique on the page.
+  const mainPaneName = paneTransitionName(view.panelKind, view.entityType, view.entityId);
+  const overviewPaneName = overview
+    ? paneTransitionName("detail", overview.entityType, overview.entityId)
+    : undefined;
+  const overviewPaneStyleName = overviewPaneName === mainPaneName ? `${overviewPaneName}-overview` : overviewPaneName;
+
   const content = hasOverview ? (
     // PrimeReact's Splitter sets each SplitterPanel's flex-basis via an inline style, but the
     // `display: flex` its own layout depends on only ever comes from a runtime-injected
@@ -412,7 +431,13 @@ export function App({ options }: { options: MountOptions }) {
         // panes once an overview is open, so putting it there framed the whole splitter instead of
         // the main panel alone). The overview pane needs no equivalent override: .sideview already
         // has its own border-top.
-        style={{ display: "flex", flexDirection: "column", minWidth: 0, borderTop: "3px solid var(--main-color)" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          borderTop: "3px solid var(--main-color)",
+          viewTransitionName: mainPaneName,
+        }}
       >
         <PanelContent
           // Keyed on the entity shown: a focus swap/closeFocus between two entities of the same
@@ -430,7 +455,7 @@ export function App({ options }: { options: MountOptions }) {
       <SplitterPanel
         className="panel-splitter-panel-r sideview"
         size={40}
-        style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
+        style={{ display: "flex", flexDirection: "column", minWidth: 0, viewTransitionName: overviewPaneStyleName }}
       >
         {overview && (
           <EntityDetailPanel
@@ -463,7 +488,13 @@ export function App({ options }: { options: MountOptions }) {
     // the single-pane equivalent of "the main panel," so it gets the same chrome.
     <div
       className="panel-splitter-panel-l"
-      style={{ height: "100%", display: "flex", flexDirection: "column", borderTop: "3px solid var(--main-color)" }}
+      style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        borderTop: "3px solid var(--main-color)",
+        viewTransitionName: mainPaneName,
+      }}
     >
       <PanelContent
         key={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}

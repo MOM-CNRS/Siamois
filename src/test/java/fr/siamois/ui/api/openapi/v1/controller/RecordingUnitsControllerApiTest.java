@@ -110,6 +110,8 @@ class RecordingUnitsControllerApiTest {
     private BookmarkService bookmarkService;
     @Mock
     private HistoryAuditService historyAuditService;
+    @Mock
+    private fr.siamois.ui.api.openapi.v1.service.RecordingUnitListAssembler recordingUnitListAssembler;
 
     private MockMvc mockMvc;
 
@@ -148,8 +150,10 @@ class RecordingUnitsControllerApiTest {
                 recordingUnitOpenApiService);
         RecordingUnitChildrenControllerApi childrenController = new RecordingUnitChildrenControllerApi(
                 projectApiService,
-                recordingUnitOpenApiService);
-        RecordingUnitFindsControllerApi findsController = new RecordingUnitFindsControllerApi(projectApiService);
+                recordingUnitOpenApiService,
+                recordingUnitListAssembler);
+        RecordingUnitFindsControllerApi findsController = new RecordingUnitFindsControllerApi(
+                projectApiService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService.class));
         RecordingUnitDocumentsControllerApi documentsController = new RecordingUnitDocumentsControllerApi(
                 projectApiService, documentWriteOpenApiService);
         RecordingUnitParentsControllerApi parentsController = new RecordingUnitParentsControllerApi(
@@ -493,80 +497,61 @@ class RecordingUnitsControllerApiTest {
         verify(recordingUnitService).findAccessibleRecordingUnitByKey("k", Set.of(10L, 20L), null);
     }
 
-    @Test
-    void getChildren_returns200_withEmptyList() throws Exception {
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren("5", Set.of(10L)))
-                .thenReturn(List.of());
-
-        mockMvc.perform(get("/api/v1/recording-units/5/children"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(0));
-
-        verify(recordingUnitOpenApiService).buildRecordingUnitChildren("5", Set.of(10L));
+    // GET /children now follows the scoped-list contract (pagination, sort, search, f.*): access
+    // check on the parent, RecordingUnitService#findChildrenOf, then the shared
+    // RecordingUnitListAssembler (projection, _permissions, bookmarks — covered by its own users).
+    private RecordingUnitDTO accessibleParent(String key, Set<Long> scope) {
+        RecordingUnitDTO parent = new RecordingUnitDTO();
+        parent.setId(5L);
+        parent.setCreatedByInstitution(institutionDto);
+        fr.siamois.dto.entity.ActionUnitSummaryDTO project = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        project.setId(6L);
+        parent.setActionUnit(project);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq(key), eq(scope), isNull())).thenReturn(parent);
+        return parent;
     }
 
     @Test
-    void getChildren_returns200_withChildrenInPayload() throws Exception {
+    void getChildren_pagesTheParentsChildren_andAssemblesThemForItsProject() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
+        accessibleParent("5", Set.of(10L));
+        PageImpl<RecordingUnitDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 200), 0L);
+        when(recordingUnitService.findChildrenOf(eq(5L), eq(200), eq(0), any(), any())).thenReturn(page);
         RecordingUnitResource child = new RecordingUnitResource();
         child.setId("100");
-        child.setFullIdentifier("INST-A-UE-C");
         child.setResourceType("recording-units");
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren("5", Set.of(10L)))
-                .thenReturn(List.of(child));
+        when(recordingUnitListAssembler.assemble(any(), eq(page), eq(6L), isNull(), eq("fr"), eq(200), eq(0)))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse(
+                        List.of(child), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(1L, 200, 0L)));
 
+        // No params: the default limit (200, the max) keeps a parameterless call returning every child.
         mockMvc.perform(get("/api/v1/recording-units/5/children"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value("100"))
-                .andExpect(jsonPath("$.data[0].fullIdentifier").value("INST-A-UE-C"));
-
-        verify(recordingUnitOpenApiService).buildRecordingUnitChildren("5", Set.of(10L));
+                .andExpect(jsonPath("$.meta.total").value(1));
     }
 
     @Test
-    void getChildren_returns200_withSeveralChildren() throws Exception {
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        RecordingUnitResource first = new RecordingUnitResource();
-        first.setId("10");
-        first.setResourceType("recording-units");
-        RecordingUnitResource second = new RecordingUnitResource();
-        second.setId("20");
-        second.setResourceType("recording-units");
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren("1", Set.of(10L)))
-                .thenReturn(List.of(first, second));
-
-        mockMvc.perform(get("/api/v1/recording-units/1/children"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].id").value("10"))
-                .andExpect(jsonPath("$.data[1].id").value("20"));
-
-        verify(recordingUnitOpenApiService).buildRecordingUnitChildren("1", Set.of(10L));
-    }
-
-    @Test
-    void getChildren_withSeveralInstitutions_passesFullScopeToService() throws Exception {
+    void getChildren_withSeveralInstitutions_passesFullScopeToTheAccessCheck() throws Exception {
         InstitutionDTO inst20 = new InstitutionDTO();
         inst20.setId(20L);
         when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto))
-                .thenReturn(Set.of(institutionDto, inst20));
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto, inst20));
+        accessibleParent("ru-key", Set.of(10L, 20L));
+        when(recordingUnitService.findChildrenOf(eq(5L), anyInt(), anyInt(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L));
 
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren("ru-key", Set.of(10L, 20L)))
-                .thenReturn(List.of());
-
-        mockMvc.perform(get("/api/v1/recording-units/ru-key/children"))
+        mockMvc.perform(get("/api/v1/recording-units/ru-key/children").param("limit", "10"))
                 .andExpect(status().isOk());
 
-        verify(recordingUnitOpenApiService).buildRecordingUnitChildren("ru-key", Set.of(10L, 20L));
+        verify(recordingUnitService).findAccessibleRecordingUnitByKey("ru-key", Set.of(10L, 20L), null);
+    }
+
+    @Test
+    void getChildren_invalidPagination_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/recording-units/5/children").param("limit", "500"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -576,14 +561,14 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(get("/api/v1/recording-units/5/children"))
                 .andExpect(status().isUnauthorized());
 
-        verifyNoInteractions(recordingUnitOpenApiService);
+        verifyNoInteractions(recordingUnitListAssembler);
     }
 
     @Test
     void getChildren_whenRecordingUnitNotFound_returns404() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(recordingUnitOpenApiService.buildRecordingUnitChildren(any(), any()))
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("404-key"), any(), isNull()))
                 .thenThrow(new RecordingUnitNotFoundException("missing"));
 
         mockMvc.perform(get("/api/v1/recording-units/404-key/children"))

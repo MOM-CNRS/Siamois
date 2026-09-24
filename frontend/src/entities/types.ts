@@ -35,6 +35,10 @@ export interface ListScope {
   entityType: string;
   id: string | number;
   path?: string;
+  // The project the listed entities belong to, when the scope itself isn't that project (a
+  // recording unit's children, a phase's recording units): what a project-scoped column catalog or
+  // create form needs. Read it through scopeProjectId() (entities/scope.ts), never `id` directly.
+  projectId?: string | number;
 }
 
 export interface ListParams {

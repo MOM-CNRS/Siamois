@@ -77,6 +77,9 @@ class PlaceOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        // The place detail counts its projects for the fiche's tab badge.
+        lenient().when(projectApiService.pageAccessibleProjects(any(), any(), any(), anyInt(), anyInt(), any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
         service = new PlaceOpenApiService(
                 projectApiService,
                 institutionService,
@@ -676,6 +679,31 @@ class PlaceOpenApiServiceTest {
                 .containsEntry(String.valueOf(SpatialUnit.PLACE_NUMBER_FIELD.getId()), 3);
         assertThat(result.getResourceUri()).isEqualTo("/spatial-unit/5");
         assertThat(result.getPermissions().canEdit()).isFalse();
+        assertThat(result.getCount().getChildren()).isZero();
+        assertThat(result.getCount().getProjects()).isZero();
+    }
+
+    @Test
+    void getPlaceById_countsChildrenAndProjectsWithTheTabsOwnQueries() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setName("Cave A");
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        PlaceResource mapped = new PlaceResource();
+        mapped.setId("5");
+        when(placeOpenApiMapper.toResource(existing, "fr")).thenReturn(mapped);
+        when(langService.localeForApiLang("fr")).thenReturn(Locale.FRENCH);
+        when(spatialUnitService.countSearchResultsInSpatialUnit(eq(institution), eq(existing), any())).thenReturn(4);
+        when(projectApiService.pageAccessibleProjects(eq(caller), eq(institution.getId()), isNull(), eq(0), eq(1), isNull(),
+                argThat(filter -> filter.conceptManyInFilters().get("spatialContext").equals(java.util.List.of(5L)))))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of(),
+                        org.springframework.data.domain.PageRequest.of(0, 1), 7L));
+
+        PlaceResource result = service.getPlaceById(caller, 5L, "fr");
+
+        assertThat(result.getCount().getChildren()).isEqualTo(4L);
+        assertThat(result.getCount().getProjects()).isEqualTo(7L);
     }
 
     @Test

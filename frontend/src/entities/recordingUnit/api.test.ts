@@ -61,7 +61,8 @@ describe("getRecordingUnit", () => {
 
     const result = await getRecordingUnit(42);
 
-    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42");
+    // counts: the fiche's tab badges (contained RUs, finds).
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42?counts=specimen,children");
     expect(result).toEqual(ru);
   });
 });

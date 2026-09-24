@@ -1,4 +1,5 @@
 import type { EntityTypeConfig } from "../types";
+import { relationTab } from "../../panels/relationTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { getPlace, listPlaces, patchPlaceAnswers } from "./api";
@@ -41,6 +42,26 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         label: "Détails",
         render: (entity, helpers) => <PlaceFicheTab entity={entity} onSaved={helpers.refetch} />,
       },
+      // JSF's hierarchy tab, reduced to the places this one contains.
+      relationTab<PlaceDetail>({
+        key: "children",
+        label: "Lieux",
+        target: "place",
+        scopeEntityType: "place",
+        path: "children",
+        creatable: false,
+        badge: (entity) => entity._counts?.children ?? 0,
+      }),
+      // JSF's ActionTab: the projects whose spatial context contains this place.
+      relationTab<PlaceDetail>({
+        key: "projects",
+        label: "Projets",
+        target: "project",
+        scopeEntityType: "place",
+        path: "projects",
+        creatable: false,
+        badge: (entity) => entity._counts?.projects ?? 0,
+      }),
     ],
     header: (entity, helpers) => <PlaceDetailHeader entity={entity} onSaved={helpers.refetch} />,
     chrome: (entity) => bookmarkChrome(entity, entity.name),

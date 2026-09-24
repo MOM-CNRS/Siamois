@@ -24,6 +24,11 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
   // collectionPath (e.g. an action-unit's finds live at "/mobiliers", not "/finds").
   path?: string;
   badge?: (entity: TDetail) => number | string | undefined;
+  // The parent's project, when the parent isn't itself the project (see ListScope.projectId).
+  projectId?: (entity: TDetail) => string | number | null | undefined;
+  // false hides the list's "Créer": a plain create there wouldn't be linked to the parent (a new
+  // RU in a "contained RUs" tab would not be a child), so it'd never show up in the tab.
+  creatable?: boolean;
 }): DetailTabDef<TDetail> {
   return {
     key: spec.key,
@@ -33,7 +38,8 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
       <EntityListPanel
         embedded
         entityType={spec.target}
-        scope={{ entityType: spec.scopeEntityType, id: entity.id, path: spec.path }}
+        scope={{ entityType: spec.scopeEntityType, id: entity.id, path: spec.path, projectId: spec.projectId?.(entity) ?? undefined }}
+        creatable={spec.creatable}
         organizationId={helpers.organizationId}
         onNavigate={helpers.onNavigate}
         onOpenOverview={helpers.onOpenOverview}

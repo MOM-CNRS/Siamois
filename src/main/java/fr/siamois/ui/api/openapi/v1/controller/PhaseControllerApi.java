@@ -1,5 +1,13 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListAssembler;
+import org.springframework.data.domain.Page;
+import org.springframework.util.MultiValueMap;
+
 import fr.siamois.ui.api.openapi.v1.response.SiblingsResponse;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
@@ -30,6 +38,42 @@ public class PhaseControllerApi {
 
     private final ProjectApiService projectApiService;
     private final PhaseOpenApiService phaseOpenApiService;
+    private final RecordingUnitListAssembler recordingUnitListAssembler;
+
+    @GetMapping("/{id}/recording-units")
+    @Operation(summary = "Unités d'enregistrement d'une phase",
+            description = "UE rattachées à la phase (recording_unit_phase), avec le même contrat que "
+                    + "GET /api/v1/projects/{id}/recording-units : pagination (offset, limit), tri (sort), "
+                    + "recherche sur fullIdentifier (search), filtres f.<clé> (RecordingUnitListFilter), "
+                    + "projection fields.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de pagination, tri ou filtre invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Phase introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<RecordingUnitListResponse> getRecordingUnits(
+            @PathVariable("id") long id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "creationTime:desc") String sort,
+            @RequestParam(required = false) String fields,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        PhaseDTO phase = phaseOpenApiService.requireAccessible(id, caller.person(), caller.accessibleInstitutionIds());
+        Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForPhase(
+                phase.getId(), offset, limit, sort, search, RecordingUnitListFilter.parse(queryParams));
+        RecordingUnitListResponse body = recordingUnitListAssembler.assemble(
+                caller, page, phase.getActionUnit().getId(), fields, lang, limit, offset);
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(page.getTotalElements()))
+                .body(body);
+    }
 
     @GetMapping("/{id}/siblings")
     @Operation(summary = "Phase précédente et suivante",

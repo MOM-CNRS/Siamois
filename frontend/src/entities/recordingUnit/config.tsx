@@ -1,6 +1,8 @@
 import type { EntityTypeConfig } from "../types";
+import { relationTab } from "../../panels/relationTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { scopeProjectId } from "../scope";
 import { duplicateRecordingUnit, getRecordingUnit, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
 import { recordingUnitColumns } from "./columns";
 import { RecordingUnitCreateForm } from "./CreateForm";
@@ -39,8 +41,9 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     // relationTab/entities/types.ts's ListParams.scope.
     schema: {
       load: async ({ scope }) => {
-        if (scope == null) return { fields: {}, columns: [] };
-        const types = await getRecordingUnitTypes(scope.id);
+        const projectId = scopeProjectId(scope);
+        if (projectId == null) return { fields: {}, columns: [] };
+        const types = await getRecordingUnitTypes(projectId);
         return { fields: types.fields, columns: types.tableColumns };
       },
     },
@@ -59,6 +62,28 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         label: "Détails",
         render: (entity, helpers) => <RecordingUnitFicheTab entity={entity} onSaved={helpers.refetch} />,
       },
+      // JSF's hierarchy tab, reduced to what the recording unit contains (its direct children).
+      relationTab<RecordingUnitDetail>({
+        key: "children",
+        label: "Unités d'enregistrement",
+        target: "recordingUnit",
+        scopeEntityType: "recordingUnit",
+        path: "children",
+        projectId: (entity) => entity.projectId,
+        creatable: false,
+        badge: (entity) => entity._counts?.children ?? 0,
+      }),
+      // JSF's SpecimenTab. REST segment "mobiliers", not Find's own collectionPath.
+      relationTab<RecordingUnitDetail>({
+        key: "finds",
+        label: "Mobilier",
+        target: "find",
+        scopeEntityType: "recordingUnit",
+        path: "mobiliers",
+        projectId: (entity) => entity.projectId,
+        creatable: false,
+        badge: (entity) => entity._counts?.finds ?? 0,
+      }),
     ],
     header: (entity, helpers) => <RecordingUnitDetailHeader entity={entity} onSaved={helpers.refetch} />,
     chrome: (entity) => bookmarkChrome(entity, entity.fullIdentifier),

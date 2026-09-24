@@ -1,4 +1,5 @@
 import type { EntityTypeConfig } from "../types";
+import { relationTab } from "../../panels/relationTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { getPhase, listPhases, patchPhaseAnswers } from "./api";
@@ -45,6 +46,15 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
         label: "Détails",
         render: (entity, helpers) => <PhaseFicheTab entity={entity} onSaved={helpers.refetch} />,
       },
+      relationTab<PhaseDetail>({
+        key: "recording-units",
+        label: "Unités d'enregistrement",
+        target: "recordingUnit",
+        scopeEntityType: "phase",
+        path: "recording-units",
+        projectId: (entity) => entity.projectId,
+        creatable: false,
+      }),
     ],
     header: (entity, helpers) => <PhaseDetailHeader entity={entity} onSaved={helpers.refetch} />,
     chrome: (entity) => bookmarkChrome(entity, entity.identifier ?? entity.label),

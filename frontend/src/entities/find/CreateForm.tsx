@@ -11,6 +11,7 @@ import { listRecordingUnits } from "../recordingUnit/api";
 import type { RecordingUnitSummary } from "../recordingUnit/types";
 import { createFind } from "./api";
 import { getFindEffectiveForm } from "./findTypes";
+import { scopeProjectId } from "../scope";
 
 // The "Mobilier" relation tab's own "Créer" overlay (migration plan follow-up — see
 // entities/project/CreateForm.tsx for the overlay-not-dialog rationale). Unlike Project's and
@@ -36,7 +37,7 @@ interface ConceptPick {
 }
 
 export function FindCreateForm({ organizationId, scope, onCreated, onCancel }: CreateFormContext) {
-  const projectId = scope?.entityType === "project" ? String(scope.id) : undefined;
+  const projectId = scopeProjectId(scope);
   const [recordingUnit, setRecordingUnit] = useState<RecordingUnitSummary | null>(null);
   const [ruQuery, setRuQuery] = useState("");
   const [ruSuggestions, setRuSuggestions] = useState<RecordingUnitSummary[]>([]);

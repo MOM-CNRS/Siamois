@@ -32,6 +32,14 @@ public record ProjectListFilter(
 
     public record NumericRange(Double from, Double to) {}
 
+    /** This filter, restricted to projects whose spatial context contains {@code placeId}. */
+    public ProjectListFilter withSpatialContext(long placeId) {
+        Map<String, List<Long>> manyIn = new LinkedHashMap<>(conceptManyInFilters);
+        manyIn.put("spatialContext", List.of(placeId));
+        return new ProjectListFilter(containsFilters, conceptOneInFilters, Map.copyOf(manyIn),
+                spatialOneInFilters, numericRangeFilters);
+    }
+
     public boolean isEmpty() {
         return containsFilters.isEmpty() && conceptOneInFilters.isEmpty() && conceptManyInFilters.isEmpty()
                 && spatialOneInFilters.isEmpty() && numericRangeFilters.isEmpty();
@@ -62,6 +70,10 @@ public record ProjectListFilter(
             Map.entry("periods", Kind.CONCEPT_MANY_IN),
             Map.entry("subjects", Kind.CONCEPT_MANY_IN),
             Map.entry("mainLocation", Kind.SPATIAL_ONE_IN),
+            // ActionUnit.spatialContext is a @ManyToMany of places: same EXISTS-on-collection filter as
+            // periods/subjects (ActionUnitFilterSpec#conceptManyIn isn't concept-specific at runtime).
+            // Also what GET /places/{id}/projects forces (withSpatialContext).
+            Map.entry("spatialContext", Kind.CONCEPT_MANY_IN),
             Map.entry("openingRate", Kind.NUMERIC_RANGE)
     );
 

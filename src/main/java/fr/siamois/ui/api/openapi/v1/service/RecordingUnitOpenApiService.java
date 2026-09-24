@@ -922,16 +922,6 @@ public class RecordingUnitOpenApiService {
         return null;
     }
 
-    @Transactional(readOnly = true)
-    public List<RecordingUnitResource> buildRecordingUnitChildren(String recordingUnitKey,
-                                                                Set<Long> accessibleInstitutionIds) {
-        List<RecordingUnitSummaryDTO> children =
-                recordingUnitService.findChildrenForAccessibleRecordingUnit(recordingUnitKey, accessibleInstitutionIds);
-        return children.stream()
-                .map(recordingUnitResponseMapper::toResource)
-                .toList();
-    }
-
     @Transactional
     public void addExistingChild(String recordingUnitKey,
                                                        long relatedRecordingUnitId,

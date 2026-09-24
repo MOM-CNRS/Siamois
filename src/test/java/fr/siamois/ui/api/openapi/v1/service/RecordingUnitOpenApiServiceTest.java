@@ -311,26 +311,6 @@ class RecordingUnitOpenApiServiceTest {
 
 
     @Test
-    void buildRecordingUnitChildren_wrapsListFromRecordingUnitService() {
-        RecordingUnitSummaryDTO child = new RecordingUnitSummaryDTO();
-        child.setId(301L);
-        when(recordingUnitService.findChildrenForAccessibleRecordingUnit("5", SCOPE)).thenReturn(List.of(child));
-
-        service.buildRecordingUnitChildren("5", SCOPE);
-
-        verify(recordingUnitService).findChildrenForAccessibleRecordingUnit("5", SCOPE);
-    }
-
-    @Test
-    void buildRecordingUnitChildren_emptyListFromService() {
-        when(recordingUnitService.findChildrenForAccessibleRecordingUnit("9", SCOPE)).thenReturn(List.of());
-
-        service.buildRecordingUnitChildren("9", SCOPE);
-
-        verify(recordingUnitService).findChildrenForAccessibleRecordingUnit("9", SCOPE);
-    }
-
-    @Test
     void addExistingChild_linksUnitsAndReturnsRelations() {
         RecordingUnit parentEntity = new RecordingUnit();
         parentEntity.setId(5L);

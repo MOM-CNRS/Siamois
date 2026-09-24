@@ -8,6 +8,7 @@ import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
 import { createRecordingUnit } from "./api";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
+import { scopeProjectId } from "../scope";
 
 // The "Unités d'enregistrement" relation tab's own "Créer" overlay (migration plan follow-up —
 // see entities/project/CreateForm.tsx's own doc for the overlay-not-dialog rationale, and
@@ -26,7 +27,7 @@ interface ConceptPick {
 }
 
 export function RecordingUnitCreateForm({ organizationId, scope, onCreated, onCancel }: CreateFormContext) {
-  const projectId = scope?.entityType === "project" ? String(scope.id) : undefined;
+  const projectId = scopeProjectId(scope);
   const [type, setType] = useState<ConceptPick | null>(null);
   const [error, setError] = useState<string | null>(null);
 

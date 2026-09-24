@@ -1,5 +1,15 @@
 package fr.siamois.ui.api.openapi.v1.controller.place;
 
+import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
+import fr.siamois.ui.api.openapi.v1.service.ProjectListAssembler;
+import io.swagger.v3.oas.annotations.Parameter;
+import org.springframework.data.domain.Page;
+import org.springframework.util.MultiValueMap;
+
 import fr.siamois.ui.api.openapi.v1.response.SiblingsResponse;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
@@ -33,6 +43,7 @@ public class PlaceControllerApi {
 
     private final ProjectApiService projectApiService;
     private final PlaceOpenApiService placeOpenApiService;
+    private final ProjectListAssembler projectListAssembler;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
@@ -111,6 +122,65 @@ public class PlaceControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         placeOpenApiService.deletePlace(caller, id, lang);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/children")
+    @Operation(summary = "Lieux contenus dans un lieu",
+            description = "Lieux enfants directs (hiérarchie des lieux), même contrat que GET /api/v1/places : "
+                    + "pagination, tri (name, id, code, creationTime), recherche sur name.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Pagination ou tri invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Lieu introuvable ou hors périmètre")
+    })
+    public ResponseEntity<PlaceListResponse> getChildren(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "name:asc") String sort,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        PlaceListResponse body = placeOpenApiService.listChildren(caller, id, offset, limit, sort, search, lang);
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(body.getMeta().total()))
+                .body(body);
+    }
+
+    @GetMapping("/{id}/projects")
+    @Operation(summary = "Projets d'un lieu",
+            description = "Projets accessibles dont le contexte spatial contient ce lieu — même contrat et même "
+                    + "réponse que GET /api/v1/projects (pagination, tri, search, filtres f.<clé>, fields), "
+                    + "avec f.spatialContext imposé à ce lieu.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de pagination, tri ou filtre invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Lieu introuvable ou hors périmètre")
+    })
+    public ResponseEntity<ProjectListResponse> getProjects(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "name:asc") String sort,
+            @RequestParam(required = false) String fields,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        SpatialUnitDTO place = placeOpenApiService.requireAccessible(caller, id);
+        ProjectListFilter filter = ProjectListFilter.parse(queryParams).withSpatialContext(place.getId());
+        Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
+                caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort, filter);
+        ProjectListResponse body = projectListAssembler.assemble(caller, rows, fields, lang, limit, offset);
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(rows.getTotalElements()))
+                .body(body);
     }
 
     @GetMapping("/{id}/siblings")

@@ -44,6 +44,8 @@ class PhaseControllerApiTest {
     private ProjectApiService projectApiService;
     @Mock
     private PhaseOpenApiService phaseOpenApiService;
+    @Mock
+    private fr.siamois.ui.api.openapi.v1.service.RecordingUnitListAssembler recordingUnitListAssembler;
 
     private MockMvc mockMvc;
 
@@ -54,7 +56,7 @@ class PhaseControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        PhaseControllerApi controller = new PhaseControllerApi(projectApiService, phaseOpenApiService);
+        PhaseControllerApi controller = new PhaseControllerApi(projectApiService, phaseOpenApiService, recordingUnitListAssembler);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
@@ -160,5 +162,33 @@ class PhaseControllerApiTest {
                         .content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value("3"));
+    }
+
+    @Test
+    void getRecordingUnits_checksPhaseAccess_thenPagesItsRecordingUnitsForItsProject() throws Exception {
+        fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller caller =
+                new fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller(personDto, java.util.Set.of(10L), java.util.List.of());
+        org.mockito.Mockito.when(projectApiService.requireCaller()).thenReturn(caller);
+        fr.siamois.dto.entity.PhaseDTO phase = new fr.siamois.dto.entity.PhaseDTO();
+        phase.setId(3L);
+        fr.siamois.dto.entity.ActionUnitSummaryDTO project = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        project.setId(6L);
+        phase.setActionUnit(project);
+        org.mockito.Mockito.when(phaseOpenApiService.requireAccessible(3L, personDto, java.util.Set.of(10L))).thenReturn(phase);
+        org.springframework.data.domain.Page<fr.siamois.dto.entity.RecordingUnitDTO> page = org.springframework.data.domain.Page.empty();
+        org.mockito.Mockito.when(projectApiService.pageRecordingUnitsForPhase(
+                org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(10),
+                org.mockito.ArgumentMatchers.eq("creationTime:desc"), org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.any())).thenReturn(page);
+        org.mockito.Mockito.when(recordingUnitListAssembler.assemble(caller, page, 6L, null, "fr", 10, 0))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse(
+                        java.util.List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/phases/3/recording-units")
+                        .param("limit", "10"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.meta.total").value(0));
+
+        org.mockito.Mockito.verify(recordingUnitListAssembler).assemble(caller, page, 6L, null, "fr", 10, 0);
     }
 }

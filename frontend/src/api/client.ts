@@ -27,6 +27,11 @@ async function doFetch<T>(path: string, options: RequestOptions, allowRetry: boo
   const { body, headers, ...rest } = options;
 
   const response = await fetch(apiUrl(path), {
+    // The bearer token is the only credential /api/v1 accepts; never send the JSF session cookie
+    // along. Sending it let the API's security chain rotate the JSF session id on every call, and
+    // parallel calls raced the new cookies until the user got logged out (WebSecurityConfig's
+    // apiV1SecurityFilterChain has the server-side half of that fix).
+    credentials: "omit",
     ...rest,
     headers: {
       Authorization: `Bearer ${token}`,

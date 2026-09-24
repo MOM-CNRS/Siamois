@@ -19,9 +19,8 @@ describe("recordingUnitEntityConfig", () => {
     expect(catalog).toEqual({ fields: {}, columns: [] });
   });
 
-  it("registers a single fiche tab and a header, and a patchAnswers write path for the list overlay", () => {
-    expect(recordingUnitEntityConfig.detail.tabs).toHaveLength(1);
-    expect(recordingUnitEntityConfig.detail.tabs[0].key).toBe("fiche");
+  it("registers the fiche, contained-RU and finds tabs, a header, and a patchAnswers write path", () => {
+    expect(recordingUnitEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "children", "finds"]);
     expect(recordingUnitEntityConfig.detail.header).toBeDefined();
     expect(recordingUnitEntityConfig.api.patchAnswers).toBeDefined();
   });

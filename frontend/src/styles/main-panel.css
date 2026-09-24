@@ -774,3 +774,59 @@
   outline: 2px solid var(--primary-color, #3b82f6);
   outline-offset: 2px;
 }
+
+/* ---- Pane transitions (panels/panelTransition.ts) --------------------------------------------
+   Each pane carries a view-transition-name derived from the entity it shows, so:
+   - a pane present before AND after (same entity) morphs between its two boxes: the main pane
+     shrinking when the overview opens, or the overview's fiche growing to full width on focus;
+   - a pane only present after (the overview opening) / only before (the overview closing, the old
+     main on focus) is an ":only-child" image — animated below by which transition is running
+     (html[data-panel-transition]). */
+::view-transition-group(*) {
+  animation-duration: 220ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Everything outside the panes (topbar, sidebar, splitter gutter) doesn't move: no page-wide
+   cross-fade on top of the pane animations. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+@keyframes pane-slide-in-right {
+  from { transform: translateX(40%); opacity: 0; }
+}
+@keyframes pane-slide-out-right {
+  to { transform: translateX(40%); opacity: 0; }
+}
+@keyframes pane-fade-out {
+  to { opacity: 0; }
+}
+@keyframes pane-fade-in {
+  from { opacity: 0; }
+}
+
+/* Overview opening / leaving focus: the pane that appears is the overview (or the restored main):
+   it slides in from the right when opening, fades in when coming back from focus. */
+html[data-panel-transition="overview-open"]::view-transition-new(*):only-child {
+  animation: pane-slide-in-right 220ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+html[data-panel-transition="overview-close"]::view-transition-old(*):only-child {
+  animation: pane-slide-out-right 180ms cubic-bezier(0.3, 0, 1, 1) both;
+}
+/* Entering focus: the old main steps back while the overview's fiche grows over it. */
+html[data-panel-transition="focus-enter"]::view-transition-old(*):only-child {
+  animation: pane-fade-out 160ms ease-out both;
+}
+html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
+  animation: pane-fade-in 220ms ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

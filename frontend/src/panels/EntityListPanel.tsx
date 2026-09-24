@@ -57,6 +57,8 @@ export interface EntityListPanelProps {
   // DetailTabDef.badge) a count. The toolbar (gear/search/create) and the DataTable are unchanged;
   // only the panel-level chrome around them is dropped.
   embedded?: boolean;
+  // false: no "Créer" at all (a relation tab whose plain create wouldn't be linked to its parent).
+  creatable?: boolean;
 }
 
 // Deliberate divergence from JSF's own entityDataTable.xhtml paginator: the React list has no
@@ -92,6 +94,7 @@ export function EntityListPanel({
   toolbar,
   scope,
   embedded,
+  creatable,
 }: EntityListPanelProps) {
   const config = getEntityType(entityType);
   const { state, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns } = useTableState({
@@ -445,7 +448,7 @@ export function EntityListPanel({
             </>
           }
           end={
-            config.list.createForm && config.list.createRequiresScope && !scope ? (
+            creatable === false ? null : config.list.createForm && config.list.createRequiresScope && !scope ? (
               // JSF's ToolbarCreateConfig "unavailable" state: the button stays visible but disabled,
               // explaining where creation is possible instead.
               <Button

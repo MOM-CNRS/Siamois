@@ -14,9 +14,8 @@ describe("phaseEntityConfig", () => {
     expect(phaseEntityConfig.collectionPath).toBe("phases");
   });
 
-  it("registers a single fiche tab and a header, and a patchAnswers write path for the list overlay", () => {
-    expect(phaseEntityConfig.detail.tabs).toHaveLength(1);
-    expect(phaseEntityConfig.detail.tabs[0].key).toBe("fiche");
+  it("registers the fiche and recording-units tabs, a header, and a patchAnswers write path", () => {
+    expect(phaseEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "recording-units"]);
     expect(phaseEntityConfig.detail.header).toBeDefined();
     expect(phaseEntityConfig.api.patchAnswers).toBeDefined();
   });

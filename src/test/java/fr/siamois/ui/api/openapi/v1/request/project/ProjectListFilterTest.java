@@ -132,4 +132,18 @@ class ProjectListFilterTest {
     void empty_hasNoFilters() {
         assertThat(ProjectListFilter.EMPTY.isEmpty()).isTrue();
     }
+
+    @org.junit.jupiter.api.Test
+    void spatialContext_isAManyInFilter_andWithSpatialContextForcesItKeepingTheRest() {
+        org.springframework.util.LinkedMultiValueMap<String, String> params = new org.springframework.util.LinkedMultiValueMap<>();
+        params.add("f.spatialContext", "3");
+        params.add("f.name", "fouille");
+
+        ProjectListFilter parsed = ProjectListFilter.parse(params);
+        org.assertj.core.api.Assertions.assertThat(parsed.conceptManyInFilters()).containsEntry("spatialContext", java.util.List.of(3L));
+
+        ProjectListFilter forced = parsed.withSpatialContext(5L);
+        org.assertj.core.api.Assertions.assertThat(forced.conceptManyInFilters()).containsEntry("spatialContext", java.util.List.of(5L));
+        org.assertj.core.api.Assertions.assertThat(forced.containsFilters()).containsEntry("name", "fouille");
+    }
 }

@@ -124,3 +124,55 @@ describe("relationTab", () => {
     expect(tab.badge?.({ id: "other" })).toBeUndefined();
   });
 });
+
+describe("relationTab project context and create", () => {
+  const creatableChild: EntityTypeConfig<FakeChildRow, FakeChildRow> = {
+    ...childConfig,
+    key: "fake-creatable-child",
+    list: { ...childConfig.list, createForm: () => <div>form</div> },
+  };
+  registerEntityType(creatableChild);
+
+  function renderTab(creatable?: boolean) {
+    const tab = relationTab<FakeParent & { projectId: string }>({
+      key: "children",
+      label: "Children",
+      target: "fake-creatable-child",
+      scopeEntityType: "fake-parent-entity",
+      path: "children",
+      projectId: (entity) => entity.projectId,
+      creatable,
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            {tab.render({ id: 5, projectId: "6" }, { refetch: () => {}, organizationId: 42 })}
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  it("passes the parent's project along in the scope (scopeProjectId reads it)", async () => {
+    renderTab();
+    await flush();
+
+    expect(childListMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: { entityType: "fake-parent-entity", id: 5, path: "children", projectId: "6" },
+      }),
+    );
+  });
+
+  it("hides the list's Créer when creatable is false, keeps it otherwise", async () => {
+    renderTab(false);
+    await flush();
+    expect(Array.from(container.querySelectorAll("button")).some((b) => b.textContent === "Créer")).toBe(false);
+
+    renderTab(true);
+    await flush();
+    expect(Array.from(container.querySelectorAll("button")).some((b) => b.textContent === "Créer")).toBe(true);
+  });
+});

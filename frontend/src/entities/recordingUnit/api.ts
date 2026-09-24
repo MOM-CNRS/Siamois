@@ -17,7 +17,8 @@ export async function listRecordingUnits(params: ListParams): Promise<PagedResul
 }
 
 export async function getRecordingUnit(id: string | number): Promise<RecordingUnitDetail> {
-  const body = await apiFetch<RecordingUnitResponseBody>(`/api/v1/recording-units/${id}`);
+  // counts: the fiche's tab badges (contained RUs, finds) — not computed unless asked.
+  const body = await apiFetch<RecordingUnitResponseBody>(`/api/v1/recording-units/${id}?counts=specimen,children`);
   return body.data;
 }
 
