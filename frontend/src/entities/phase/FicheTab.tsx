@@ -131,6 +131,7 @@ function PhaseFormField({
       <div className="field-value-group">
         <FieldLabel field={field} required={col.isRequired} />
         <FieldEditCell
+          entityType="phase"
           key={JSON.stringify(stored ?? null)}
           field={field}
           row={entity}

@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.place;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
@@ -44,6 +46,7 @@ public class PlaceControllerApi {
     private final ProjectApiService projectApiService;
     private final PlaceOpenApiService placeOpenApiService;
     private final ProjectListAssembler projectListAssembler;
+    private final FieldQueryService fieldQueryService;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
@@ -200,7 +203,8 @@ public class PlaceControllerApi {
         SpatialUnitDTO place = placeOpenApiService.requireAccessible(caller, id);
         ProjectListFilter filter = ProjectListFilter.parse(queryParams).withSpatialContext(place.getId());
         Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
-                caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort, filter);
+                caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort, filter,
+                fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage));
         ProjectListResponse body = projectListAssembler.assemble(caller, rows, fields, lang, limit, offset);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(rows.getTotalElements()))

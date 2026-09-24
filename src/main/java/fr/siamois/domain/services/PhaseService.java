@@ -1,5 +1,9 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import java.util.Map;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
@@ -38,12 +42,14 @@ import java.util.Objects;
 public class PhaseService {
 
     private final PhaseRepository phaseRepository;
+    private final CustomFieldAnswerService customFieldAnswerService;
     private final PhaseMapper phaseMapper;
     private final EntityIdentifierGenerator identifierGenerator;
     private final ProfilePermissionService profilePermissionService;
 
     private Specification<Phase> userFilterSpecs(FilterDTO filters) {
-        Specification<Phase> specs = Specification.where(null);
+        // The list's per-field sort/filters (FieldQuery), then the named ones.
+        Specification<Phase> specs = filters.getFieldQuery().specificationFor(Phase.class);
 
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo nameFilter = filters.filterOf(PhaseSpec.IDENTIFIER_FILTER);
@@ -86,6 +92,21 @@ public class PhaseService {
         return phaseRepository.findByIdentifierAndActionUnitId(phase.getIdentifier(), phase.getActionUnit().getId())
                 .filter(existing -> !Objects.equals(existing.getId(), phase.getId()))
                 .isPresent();
+    }
+
+    /**
+     * Saves the phase, then its additional (non-system) field answers — the
+     * counterpart of {@code RecordingUnitService.save(RecordingUnitDTO, Map)}.
+     *
+     * @param dto                    the entity to save
+     * @param additionalFieldAnswers answers to the type's additional fields, keyed by field
+     * @return the saved entity
+     */
+    @Transactional
+    public PhaseDTO save(PhaseDTO dto, Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers) {
+        PhaseDTO saved = save(dto);
+        customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
+        return saved;
     }
 
     public PhaseDTO save(PhaseDTO dto) {

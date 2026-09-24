@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -23,6 +24,7 @@ public class ContainerListProjectionService {
 
     private final ContainerAnswersProjector containerAnswersProjector;
     private final ConceptLabelBatchResolver conceptLabelBatchResolver;
+    private final AdditionalAnswersListProjector additionalAnswersListProjector;
 
     public record ContainerListProjection(Map<Long, String> resolvedLabels,
                                            Map<Long, Map<String, Object>> answersByContainerId) {
@@ -50,7 +52,9 @@ public class ContainerListProjectionService {
         }
         Map<Long, String> labels = conceptLabelBatchResolver.resolveLabels(concepts, lang);
 
-        return new ContainerListProjection(labels, containerAnswersProjector.project(rows, fieldIds, labels));
+        List<Long> rowIds = rows.stream().filter(java.util.Objects::nonNull).map(ContainerDTO::getId).filter(java.util.Objects::nonNull).toList();
+        return new ContainerListProjection(labels, additionalAnswersListProjector.merge(containerAnswersProjector.project(rows, fieldIds, labels),
+                CustomFieldAnswerService.ListOwner.CONTAINER, rowIds, fieldsParam, fieldIds, lang));
     }
 
     public ContainerListProjection buildOne(ContainerDTO row, String lang) {

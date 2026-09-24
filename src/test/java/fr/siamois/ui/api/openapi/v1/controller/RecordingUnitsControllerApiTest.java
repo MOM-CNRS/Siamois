@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
@@ -151,9 +152,9 @@ class RecordingUnitsControllerApiTest {
         RecordingUnitChildrenControllerApi childrenController = new RecordingUnitChildrenControllerApi(
                 projectApiService,
                 recordingUnitOpenApiService,
-                recordingUnitListAssembler);
+                recordingUnitListAssembler, ListQueryStubs.none());
         RecordingUnitFindsControllerApi findsController = new RecordingUnitFindsControllerApi(
-                projectApiService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService.class));
+                projectApiService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService.class), ListQueryStubs.none());
         RecordingUnitDocumentsControllerApi documentsController = new RecordingUnitDocumentsControllerApi(
                 projectApiService, documentWriteOpenApiService);
         RecordingUnitParentsControllerApi parentsController = new RecordingUnitParentsControllerApi(

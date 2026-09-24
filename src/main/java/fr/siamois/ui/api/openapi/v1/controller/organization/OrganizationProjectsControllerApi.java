@@ -84,8 +84,15 @@ public class OrganizationProjectsControllerApi {
     })
     public ResponseEntity<ProjectConceptsResponse> getConcepts(
             @PathVariable("id") long id,
-            @Parameter(description = "Code du champ (ex: SIARU.TYPE, SIAS.CATEGORY).", required = true)
-            @RequestParam String fieldCode,
+            @Parameter(description = "Code du champ (ex: SIARU.TYPE, SIAS.CATEGORY). Obligatoire sauf si fieldId est donné.")
+            @RequestParam(required = false) String fieldCode,
+            @Parameter(description = "Identifiant d'un champ de vocabulaire (alternative à fieldCode) : ses propres "
+                    + "restrictions branche/collection, puis le thésaurus du projet, puis son fieldCode.")
+            @RequestParam(required = false) Long fieldId,
+            @Parameter(description = "Avec fieldId : projet de l'entité éditée (thésaurus du projet).")
+            @RequestParam(required = false) Long projectId,
+            @Parameter(description = "Avec fieldId : concept de type de l'entité éditée.")
+            @RequestParam(required = false) Long valueConceptId,
             @Parameter(description = "Texte de recherche — active le mode suggestion si présent.")
             @RequestParam(required = false) String q,
             @Parameter(description = "Nombre de résultats (ignoré en mode suggestion).")
@@ -94,16 +101,17 @@ public class OrganizationProjectsControllerApi {
             @RequestParam(defaultValue = "0") int offset,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
-        if (fieldCode == null || fieldCode.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le paramètre fieldCode est obligatoire");
+        if (fieldId == null && (fieldCode == null || fieldCode.isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le paramètre fieldCode (ou fieldId) est obligatoire");
         }
 
         ProjectApiCaller caller = projectApiService.requireCaller();
         projectApiService.assertOrganizationInCallerScope(id, caller.accessibleInstitutionIds());
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
-        List<ConceptAutocompleteDTO> all = vocabularyOpenApiService.getConceptsForOrganization(
-                id, fieldCode, q, lang, caller.person());
+        List<ConceptAutocompleteDTO> all = fieldId != null
+                ? vocabularyOpenApiService.getConceptsForField(id, fieldId, projectId, valueConceptId, q, lang, caller.person())
+                : vocabularyOpenApiService.getConceptsForOrganization(id, fieldCode, q, lang, caller.person());
 
         boolean isSuggestMode = q != null;
         List<ResolvedConceptResource> page = (isSuggestMode ? all : paginate(all, offset, limit))

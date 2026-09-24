@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitHierarchyLinkRequest;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
@@ -35,6 +37,7 @@ public class RecordingUnitChildrenControllerApi {
     private final ProjectApiService projectApiService;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
     private final RecordingUnitListAssembler recordingUnitListAssembler;
+    private final FieldQueryService fieldQueryService;
     
 
     @GetMapping("/{id}/children")
@@ -71,7 +74,8 @@ public class RecordingUnitChildrenControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectApiService.ScopedRecordingUnitPage scoped = projectApiService.pageRecordingUnitChildren(
-                caller, id, offset, limit, sort, search, RecordingUnitListFilter.parse(queryParams));
+                caller, id, offset, limit, sort, search, RecordingUnitListFilter.parse(queryParams),
+                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage));
         RecordingUnitListResponse body = recordingUnitListAssembler.assemble(
                 caller, scoped.page(), scoped.projectId(), fields, lang, limit, offset);
         return ResponseEntity.ok()

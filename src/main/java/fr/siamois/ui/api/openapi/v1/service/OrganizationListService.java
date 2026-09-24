@@ -8,6 +8,7 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
@@ -106,10 +107,18 @@ public class OrganizationListService {
     public Page<RecordingUnitDTO> pageRecordingUnits(ProjectApiCaller caller, InstitutionDTO institution,
                                                      int offset, int limit, String sortParam, String search,
                                                      RecordingUnitListFilter columnFilter) {
-        Pageable pageable = pageable(offset, limit, ProjectApiService.parseRecordingUnitSort(sortParam));
+        return pageRecordingUnits(caller, institution, offset, limit, sortParam, search, columnFilter, FieldQuery.NONE);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> pageRecordingUnits(ProjectApiCaller caller, InstitutionDTO institution,
+                                                     int offset, int limit, String sortParam, String search,
+                                                     RecordingUnitListFilter columnFilter, FieldQuery fieldQuery) {
+        Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort));
         // f.<key> columns are honoured here like on the project-scoped RU list (same parser), since
         // the React identifier column is filterable on both.
         FilterDTO filter = columnFilter.toFilterDTO(search);
+        filter.setFieldQuery(fieldQuery);
         if (!restrictToVisibleProjects(caller, institution, filter, RecordingUnitSpec.ACTION_UNIT_FILTER)) {
             return Page.empty(pageable);
         }
@@ -118,9 +127,16 @@ public class OrganizationListService {
 
     @Transactional(readOnly = true)
     public Page<SpecimenDTO> pageFinds(ProjectApiCaller caller, InstitutionDTO institution,
-                                       int offset, int limit, String sortParam, String search) {
-        Pageable pageable = pageable(offset, limit, ProjectApiService.parseFindSort(sortParam));
+                                 int offset, int limit, String sortParam, String search) {
+        return pageFinds(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SpecimenDTO> pageFinds(ProjectApiCaller caller, InstitutionDTO institution,
+                                 int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
+        Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseFindSort));
         FilterDTO filter = new FilterDTO();
+        filter.setFieldQuery(fieldQuery);
         if (search != null && !search.isBlank()) {
             filter.add(SpecimenSpec.FULL_IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }
@@ -132,9 +148,16 @@ public class OrganizationListService {
 
     @Transactional(readOnly = true)
     public Page<PhaseDTO> pagePhases(ProjectApiCaller caller, InstitutionDTO institution,
-                                     int offset, int limit, String sortParam, String search) {
-        Pageable pageable = pageable(offset, limit, ProjectApiService.parsePhaseSort(sortParam));
+                                 int offset, int limit, String sortParam, String search) {
+        return pagePhases(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PhaseDTO> pagePhases(ProjectApiCaller caller, InstitutionDTO institution,
+                                 int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
+        Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePhaseSort));
         FilterDTO filter = new FilterDTO();
+        filter.setFieldQuery(fieldQuery);
         if (search != null && !search.isBlank()) {
             filter.add(PhaseSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }
@@ -146,9 +169,16 @@ public class OrganizationListService {
 
     @Transactional(readOnly = true)
     public Page<ContainerDTO> pageContainers(ProjectApiCaller caller, InstitutionDTO institution,
-                                             int offset, int limit, String sortParam, String search) {
-        Pageable pageable = pageable(offset, limit, ProjectApiService.parseContainerSort(sortParam));
+                                 int offset, int limit, String sortParam, String search) {
+        return pageContainers(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ContainerDTO> pageContainers(ProjectApiCaller caller, InstitutionDTO institution,
+                                 int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
+        Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseContainerSort));
         FilterDTO filter = new FilterDTO();
+        filter.setFieldQuery(fieldQuery);
         if (search != null && !search.isBlank()) {
             filter.add(ContainerSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }

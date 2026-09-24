@@ -1,5 +1,8 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -56,6 +59,7 @@ import static fr.siamois.domain.models.ValidationStatus.*;
 public class SpecimenService implements ArkEntityService {
 
     private final SpecimenRepository specimenRepository;
+    private final CustomFieldAnswerService customFieldAnswerService;
     private final SpecimenMapper specimenMapper;
     private final InstitutionMapper institutionMapper;
     private final SpecimenSummaryMapper specimenSummaryMapper;
@@ -205,6 +209,21 @@ public class SpecimenService implements ArkEntityService {
         }
         return specimenRepository.findByActionUnitIdAndFullIdentifier(actionUnitId, specimen.getFullIdentifier()).stream()
                 .anyMatch(existing -> !Objects.equals(existing.getId(), specimen.getId()));
+    }
+
+    /**
+     * Saves the specimen, then its additional (non-system) field answers — the
+     * counterpart of {@code RecordingUnitService.save(RecordingUnitDTO, Map)}.
+     *
+     * @param dto                    the entity to save
+     * @param additionalFieldAnswers answers to the type's additional fields, keyed by field
+     * @return the saved entity
+     */
+    @Transactional
+    public SpecimenDTO save(SpecimenDTO dto, Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers) {
+        SpecimenDTO saved = save(dto);
+        customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
+        return saved;
     }
 
     /**
@@ -796,7 +815,8 @@ public class SpecimenService implements ArkEntityService {
     }
 
     public static Specification<Specimen> userFilterSpecs(@NonNull FilterDTO filters) {
-        Specification<Specimen> specification = Specification.where(null);
+        // The list's per-field sort/filters (FieldQuery), then the named ones.
+        Specification<Specimen> specification = filters.getFieldQuery().specificationFor(Specimen.class);
 
         if (filters.containsColumn(SpecimenSpec.ACTION_UNIT_FILTER)) {
             specification = specification.and(SpecimenSpec.isInActionUnit(filters.valueAsIdListOf(SpecimenSpec.ACTION_UNIT_FILTER)));

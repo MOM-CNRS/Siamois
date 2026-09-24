@@ -43,10 +43,11 @@ export async function patchPlaceAnswers(
       case String(PLACE_NUMBER_FIELD_ID):
         body.placeNumber = value;
         break;
-      // CODE_FIELD (-203) is read-only in SpatialUnit.DETAILS_FORM (server-generated), so it
-      // never reaches this function — FieldEditCell doesn't open an editor for a read-only field.
+      // CODE_FIELD (-203) is read-only in SpatialUnit.DETAILS_FORM (server-generated) and the
+      // address has no editor, so neither should reach this: fail loudly rather than report a
+      // save that silently wrote nothing.
       default:
-        break;
+        throw new Error(`Champ ${fieldId} non modifiable sur un lieu`);
     }
   }
   const response = await apiFetch<PlaceResponseBody>(`/api/v1/places/${id}`, {

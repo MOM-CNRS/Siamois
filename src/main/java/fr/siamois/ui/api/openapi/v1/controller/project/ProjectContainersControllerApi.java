@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
+import fr.siamois.domain.models.container.Container;
+import org.springframework.util.MultiValueMap;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
@@ -39,6 +42,7 @@ public class ProjectContainersControllerApi {
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FieldQueryService fieldQueryService;
 
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des contenants d'un projet",
@@ -61,11 +65,17 @@ public class ProjectContainersControllerApi {
             @RequestParam(required = false) String search,
             @Parameter(description = "Tri, ex. identifier:asc ou id:desc")
             @RequestParam(defaultValue = "identifier:asc") String sort,
+            @io.swagger.v3.oas.annotations.Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @io.swagger.v3.oas.annotations.Parameter(description = "Projection des champs de formulaire dans answers : "
+                    + "\"all\" ou une liste d'ids de champs séparés par des virgules (champs additionnels compris). "
+                    + "Absent : pas de clé answers.")
+            @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
-        Page<ContainerDTO> page = projectApiService.pageContainersForProject(caller, id, offset, limit, sort, search);
+        Page<ContainerDTO> page = projectApiService.pageContainersForProject(caller, id, offset, limit, sort, search,
+                fieldQueryService.parse(Container.class, queryParams, sort, acceptLanguage));
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
@@ -73,11 +83,12 @@ public class ProjectContainersControllerApi {
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit);
 
         ContainerListProjectionService.ContainerListProjection projection =
-                containerListProjectionService.build(page.getContent(), null, lang);
+                containerListProjectionService.build(page.getContent(), fields, lang);
 
         List<ContainerResource> resources = page.getContent().stream()
                 .map(dto -> {
                     ContainerResource resource = containerOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
+                    if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
                     resource.setPermissions(permissions);
                     return resource;
                 })

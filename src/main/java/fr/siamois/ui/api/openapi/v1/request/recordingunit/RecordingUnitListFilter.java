@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.ui.api.openapi.v1.request.list.FieldListQuery;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
@@ -99,6 +100,9 @@ public record RecordingUnitListFilter(
                 baseKey = afterPrefix.substring(0, afterPrefix.length() - ".to".length());
                 rangeBound = "to";
             }
+
+            // f.<fieldId>: a field-keyed filter, FieldListQuery's.
+            if (FieldListQuery.isFieldKey(baseKey)) continue;
 
             Kind kind = FILTERABLE_FIELDS.get(baseKey);
             if (kind == null) {

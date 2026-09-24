@@ -80,18 +80,20 @@ class FormConfigAnswerServiceTest {
     // ========== Recording unit ==========
 
     @Test
-    void createOrGetFormConfigAnswer_shouldReturnTheAnswerTheUserAlreadyHasOnARecordingUnit() {
+    void createOrGetFormConfigAnswer_shouldReturnTheAnswerItAlreadyHasOnARecordingUnit() {
         RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
         RecordingUnit recordingUnit = new RecordingUnit();
         givenCurrentPerson();
         when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit))
+        when(formConfigAnswerRepository.findByFormConfigAndRecordingUnit(formConfig, recordingUnit))
                 .thenReturn(Optional.of(stored));
+        when(formConfigAnswerRepository.save(stored)).thenReturn(stored);
 
         FormConfigAnswer answer = service.createOrGetFormConfigAnswer(formConfig, recordingUnitDTO);
 
         assertThat(answer).isSameAs(stored);
-        verify(formConfigAnswerRepository, never()).save(any());
+        // Shared by every user: reused as is, only its last author is refreshed.
+        assertThat(stored.getPerson()).isSameAs(person);
     }
 
     @Test
@@ -100,7 +102,7 @@ class FormConfigAnswerServiceTest {
         RecordingUnit recordingUnit = new RecordingUnit();
         givenCurrentPerson();
         when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit))
+        when(formConfigAnswerRepository.findByFormConfigAndRecordingUnit(formConfig, recordingUnit))
                 .thenReturn(Optional.empty());
         when(formConfigAnswerRepository.save(any(FormConfigAnswer.class))).thenReturn(stored);
 
@@ -120,9 +122,8 @@ class FormConfigAnswerServiceTest {
     void findFormConfigAnswer_shouldReturnTheExistingAnswer() {
         RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
         RecordingUnit recordingUnit = new RecordingUnit();
-        givenCurrentPerson();
         when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit))
+        when(formConfigAnswerRepository.findByFormConfigAndRecordingUnit(formConfig, recordingUnit))
                 .thenReturn(Optional.of(stored));
 
         Optional<FormConfigAnswer> answer = service.findFormConfigAnswer(formConfig, recordingUnitDTO);
@@ -135,9 +136,8 @@ class FormConfigAnswerServiceTest {
     void findFormConfigAnswer_shouldNotCreateAnAnswerWhenNoneExists() {
         RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
         RecordingUnit recordingUnit = new RecordingUnit();
-        givenCurrentPerson();
         when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit))
+        when(formConfigAnswerRepository.findByFormConfigAndRecordingUnit(formConfig, recordingUnit))
                 .thenReturn(Optional.empty());
 
         Optional<FormConfigAnswer> answer = service.findFormConfigAnswer(formConfig, recordingUnitDTO);
@@ -149,18 +149,20 @@ class FormConfigAnswerServiceTest {
     // ========== Specimen ==========
 
     @Test
-    void createOrGetFormConfigAnswer_shouldReturnTheAnswerTheUserAlreadyHasOnASpecimen() {
+    void createOrGetFormConfigAnswer_shouldReturnTheAnswerItAlreadyHasOnASpecimen() {
         SpecimenDTO specimenDTO = new SpecimenDTO();
         Specimen specimen = new Specimen();
         givenCurrentPerson();
         when(specimenMapper.invertConvert(specimenDTO)).thenReturn(specimen);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndSpecimen(formConfig, person, specimen))
+        when(formConfigAnswerRepository.findByFormConfigAndSpecimen(formConfig, specimen))
                 .thenReturn(Optional.of(stored));
+        when(formConfigAnswerRepository.save(stored)).thenReturn(stored);
 
         FormConfigAnswer answer = service.createOrGetFormConfigAnswer(formConfig, specimenDTO);
 
         assertThat(answer).isSameAs(stored);
-        verify(formConfigAnswerRepository, never()).save(any());
+        // Shared by every user: reused as is, only its last author is refreshed.
+        assertThat(stored.getPerson()).isSameAs(person);
     }
 
     @Test
@@ -169,7 +171,7 @@ class FormConfigAnswerServiceTest {
         Specimen specimen = new Specimen();
         givenCurrentPerson();
         when(specimenMapper.invertConvert(specimenDTO)).thenReturn(specimen);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndSpecimen(formConfig, person, specimen))
+        when(formConfigAnswerRepository.findByFormConfigAndSpecimen(formConfig, specimen))
                 .thenReturn(Optional.empty());
         when(formConfigAnswerRepository.save(any(FormConfigAnswer.class))).thenReturn(stored);
 
@@ -186,18 +188,20 @@ class FormConfigAnswerServiceTest {
     // ========== Phase ==========
 
     @Test
-    void createOrGetFormConfigAnswer_shouldReturnTheAnswerTheUserAlreadyHasOnAPhase() {
+    void createOrGetFormConfigAnswer_shouldReturnTheAnswerItAlreadyHasOnAPhase() {
         PhaseDTO phaseDTO = new PhaseDTO();
         Phase phase = new Phase();
         givenCurrentPerson();
         when(phaseMapper.invertConvert(phaseDTO)).thenReturn(phase);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndPhase(formConfig, person, phase))
+        when(formConfigAnswerRepository.findByFormConfigAndPhase(formConfig, phase))
                 .thenReturn(Optional.of(stored));
+        when(formConfigAnswerRepository.save(stored)).thenReturn(stored);
 
         FormConfigAnswer answer = service.createOrGetFormConfigAnswer(formConfig, phaseDTO);
 
         assertThat(answer).isSameAs(stored);
-        verify(formConfigAnswerRepository, never()).save(any());
+        // Shared by every user: reused as is, only its last author is refreshed.
+        assertThat(stored.getPerson()).isSameAs(person);
     }
 
     @Test
@@ -206,7 +210,7 @@ class FormConfigAnswerServiceTest {
         Phase phase = new Phase();
         givenCurrentPerson();
         when(phaseMapper.invertConvert(phaseDTO)).thenReturn(phase);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndPhase(formConfig, person, phase))
+        when(formConfigAnswerRepository.findByFormConfigAndPhase(formConfig, phase))
                 .thenReturn(Optional.empty());
         when(formConfigAnswerRepository.save(any(FormConfigAnswer.class))).thenReturn(stored);
 
@@ -223,18 +227,20 @@ class FormConfigAnswerServiceTest {
     // ========== Container ==========
 
     @Test
-    void createOrGetFormConfigAnswer_shouldReturnTheAnswerTheUserAlreadyHasOnAContainer() {
+    void createOrGetFormConfigAnswer_shouldReturnTheAnswerItAlreadyHasOnAContainer() {
         ContainerDTO containerDTO = new ContainerDTO();
         Container container = new Container();
         givenCurrentPerson();
         when(containerMapper.invertConvert(containerDTO)).thenReturn(container);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndContainer(formConfig, person, container))
+        when(formConfigAnswerRepository.findByFormConfigAndContainer(formConfig, container))
                 .thenReturn(Optional.of(stored));
+        when(formConfigAnswerRepository.save(stored)).thenReturn(stored);
 
         FormConfigAnswer answer = service.createOrGetFormConfigAnswer(formConfig, containerDTO);
 
         assertThat(answer).isSameAs(stored);
-        verify(formConfigAnswerRepository, never()).save(any());
+        // Shared by every user: reused as is, only its last author is refreshed.
+        assertThat(stored.getPerson()).isSameAs(person);
     }
 
     @Test
@@ -243,7 +249,7 @@ class FormConfigAnswerServiceTest {
         Container container = new Container();
         givenCurrentPerson();
         when(containerMapper.invertConvert(containerDTO)).thenReturn(container);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndContainer(formConfig, person, container))
+        when(formConfigAnswerRepository.findByFormConfigAndContainer(formConfig, container))
                 .thenReturn(Optional.empty());
         when(formConfigAnswerRepository.save(any(FormConfigAnswer.class))).thenReturn(stored);
 
@@ -257,10 +263,10 @@ class FormConfigAnswerServiceTest {
         assertThatItHasASingleOwner(created);
     }
 
-    // ========== The answer belongs to the user bound to the thread ==========
+    // ========== The last author is the user bound to the thread ==========
 
     @Test
-    void createOrGetFormConfigAnswer_shouldAnswerAsTheUserBoundToTheThread() {
+    void createOrGetFormConfigAnswer_shouldRecordTheUserBoundToTheThreadAsAuthor() {
         PersonDTO otherUserDTO = new PersonDTO();
         otherUserDTO.setId(50L);
         Person otherPerson = new Person();
@@ -273,7 +279,7 @@ class FormConfigAnswerServiceTest {
         RecordingUnit recordingUnit = new RecordingUnit();
         when(personMapper.invertConvert(otherUserDTO)).thenReturn(otherPerson);
         when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
-        when(formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, otherPerson, recordingUnit))
+        when(formConfigAnswerRepository.findByFormConfigAndRecordingUnit(formConfig, recordingUnit))
                 .thenReturn(Optional.empty());
         when(formConfigAnswerRepository.save(any(FormConfigAnswer.class))).thenReturn(stored);
 

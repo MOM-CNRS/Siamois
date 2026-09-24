@@ -17,7 +17,7 @@ public class ContainerSaveStrategy implements EntityFormContextSaveStrategy<Cont
         LangBean langBean = context.getLangBean();
 
         try {
-            service.save(unit);
+            service.save(unit, context.getAdditionalFieldAnswers());
         } catch (Exception e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getIdentifier());
             return false;

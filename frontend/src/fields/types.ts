@@ -19,6 +19,25 @@ export interface FieldResource {
   // CustomField.getConceptUri() — the target of panelField.xhtml's "Documentation" menu item.
   // Null when the field has no concept (or the concept has no vocabulary).
   conceptUri?: string | null;
+  // Entry constraints (FieldResource.Constraints): numeric bounds for INTEGER/DECIMAL/MEASUREMENT,
+  // showTime for DATETIME, the unit symbol for MEASUREMENT. Null when the field has none.
+  constraints?: FieldConstraints | null;
+  // What a list accepts on this field's column (FieldResource.Query): sort=<id>:asc|desc and
+  // f.<id>… Null/absent when the column can be neither sorted nor filtered.
+  query?: FieldQueryCapability | null;
+}
+
+export interface FieldQueryCapability {
+  sortable: boolean;
+  // contains → f.<id>=text; range / date-range → f.<id>.from / .to; in → f.<id>=<id> (repeatable).
+  filterOp?: "contains" | "range" | "date-range" | "in" | null;
+}
+
+export interface FieldConstraints {
+  min?: number | null;
+  max?: number | null;
+  showTime?: boolean | null;
+  unit?: string | null;
 }
 
 /**

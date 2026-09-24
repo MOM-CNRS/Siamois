@@ -24,11 +24,25 @@ describe("registerDefaultFieldRenderers", () => {
     expect(hasFieldRenderer(answerType)).toBe(true);
   });
 
-  it("leaves the answerTypes with no option-source client unregistered, so they stay read-only", () => {
-    // RecordingUnit's form reaches for these; none has an autocomplete endpoint client yet, and
-    // ProjectApiService.coerceScalarAnswer would reject a write to them anyway.
-    expect(hasFieldRenderer("SELECT_ONE_PERSON")).toBe(false);
-    expect(hasFieldRenderer("SELECT_MULTIPLE_RECORDING_UNIT")).toBe(false);
+  it.each([
+    "SELECT_ONE_PERSON",
+    "SELECT_MULTIPLE_PERSON",
+    "SELECT_ONE_ACTION_UNIT",
+    "SELECT_ONE_RECORDING_UNIT",
+    "SELECT_MULTIPLE_RECORDING_UNIT",
+    "SELECT_MULTIPLE_SPECIMEN",
+    "SELECT_MULTIPLE_PHASE",
+    "SELECT_MULTIPLE_CONTAINER",
+    "SELECT_ONE",
+    "SELECT_MULTIPLE",
+    "MEASUREMENT",
+  ])("registers the reference/measurement editor for %s", (answerType) => {
+    expect(hasFieldRenderer(answerType)).toBe(true);
+  });
+
+  it("leaves action codes and addresses read-only", () => {
+    expect(hasFieldRenderer("SELECT_ONE_ACTION_CODE")).toBe(false);
+    expect(hasFieldRenderer("SELECT_ADDRESS")).toBe(false);
   });
 
   it("is idempotent — a second call does not re-register or throw", () => {

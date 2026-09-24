@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.dto.entity.PersonDTO;
@@ -51,7 +52,7 @@ class PlaceControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        PlaceControllerApi controller = new PlaceControllerApi(projectApiService, placeOpenApiService, projectListAssembler);
+        PlaceControllerApi controller = new PlaceControllerApi(projectApiService, placeOpenApiService, projectListAssembler, ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
@@ -230,7 +231,7 @@ class PlaceControllerApiTest {
         org.springframework.data.domain.Page<fr.siamois.dto.api.AccessibleProjectForApi> rows = org.springframework.data.domain.Page.empty();
         org.mockito.Mockito.when(projectApiService.pageAccessibleProjects(any(), eq(10L), isNull(), eq(0), eq(20), eq("name:asc"),
                 org.mockito.ArgumentMatchers.argThat(filter ->
-                        List.of(5L).equals(filter.conceptManyInFilters().get("spatialContext")))))
+                        List.of(5L).equals(filter.conceptManyInFilters().get("spatialContext"))), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(rows);
         org.mockito.Mockito.when(projectListAssembler.assemble(any(), eq(rows), isNull(), eq("fr"), eq(20), eq(0)))
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse(

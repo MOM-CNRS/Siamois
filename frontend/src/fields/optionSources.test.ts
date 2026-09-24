@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../api/client";
-import { fetchConceptOptions, fetchPlaceOptions, filterKindForAnswerType, optionSourceFor, supportsEmptyQuery } from "./optionSources";
+import {
+  fetchConceptOptions,
+  fetchPlaceOptions,
+  filterKindForAnswerType,
+  optionSourceFor,
+  referenceTargetOf,
+  supportsEmptyQuery,
+} from "./optionSources";
 import type { FieldResource } from "./types";
 
 vi.mock("../api/client", () => ({ apiFetch: vi.fn() }));
@@ -141,5 +148,66 @@ describe("supportsEmptyQuery", () => {
     expect(supportsEmptyQuery(field({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" }))).toBe(true);
     expect(supportsEmptyQuery(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }))).toBe(false);
     expect(supportsEmptyQuery(field({ answerType: "SELECT_MULTIPLE_SPATIAL_UNIT_TREE" }))).toBe(false);
+  });
+});
+
+describe("optionSourceFor — reference fields", () => {
+  it("searches the organization's members for a person field, labelled by full name", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [{ id: "3", username: "jdoe", name: "Jane", lastname: "Doe" }] });
+
+    const options = await optionSourceFor(field({ answerType: "SELECT_MULTIPLE_PERSON" }), 100)!("doe");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/users?organizationId=100&limit=20&search=doe");
+    expect(options).toEqual([{ id: "3", label: "Jane Doe" }]);
+  });
+
+  it("searches the edited entity's project for a phase field", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [{ id: 8, identifier: "P1", title: "Phase 1" }] });
+
+    const options = await optionSourceFor(field({ answerType: "SELECT_MULTIPLE_PHASE" }), 100, "5")!("ph");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/phases?offset=0&limit=20&search=ph");
+    expect(options).toEqual([{ id: "8", label: "Phase 1" }]);
+  });
+
+  it("falls back to the organization-wide list without a project (finds live at /mobiliers under a project, /finds at the top)", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [{ id: 2, fullIdentifier: "M-2" }] });
+
+    await optionSourceFor(field({ answerType: "SELECT_MULTIPLE_SPECIMEN" }), 100)!();
+    expect(mockedApiFetch).toHaveBeenLastCalledWith("/api/v1/finds?offset=0&limit=20&organizationId=100");
+
+    await optionSourceFor(field({ answerType: "SELECT_MULTIPLE_SPECIMEN" }), 100, "5")!();
+    expect(mockedApiFetch).toHaveBeenLastCalledWith("/api/v1/projects/5/mobiliers?offset=0&limit=20");
+  });
+
+  it("asks a legacy vocabulary field's own suggestions by field id, in the project", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [{ id: "11", resolvedLabel: "Argile" }] });
+
+    const options = await optionSourceFor(field({ id: "42", answerType: "SELECT_ONE", fieldCode: null }), 100, "5")!("ar");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/organizations/100/concepts?fieldId=42&projectId=5&q=ar");
+    expect(options).toEqual([{ id: "11", label: "Argile" }]);
+  });
+
+  it("has no source for the read-only kinds", () => {
+    expect(optionSourceFor(field({ answerType: "SELECT_ONE_ACTION_CODE" }), 100)).toBeNull();
+    expect(optionSourceFor(field({ answerType: "SELECT_ADDRESS" }), 100)).toBeNull();
+  });
+});
+
+describe("referenceTargetOf", () => {
+  it.each([
+    ["SELECT_ONE_SPATIAL_UNIT", "spatial-units", "place"],
+    ["SELECT_MULTIPLE_RECORDING_UNIT", "recording-units", "recordingUnit"],
+    ["SELECT_MULTIPLE_SPECIMEN", "finds", "find"],
+    ["SELECT_MULTIPLE_CONTAINER", "containers", "container"],
+    ["SELECT_MULTIPLE_PHASE", "phases", "phase"],
+    ["SELECT_ONE_PERSON", "persons", undefined],
+    ["SELECT_ONE_ACTION_UNIT", "action-units", undefined],
+    ["SELECT_ONE_FROM_FIELD_CODE", "concepts", undefined],
+  ])("%s references %s, created as %s", (answerType, resourceType, createEntityType) => {
+    expect(referenceTargetOf(field({ answerType }))).toEqual(
+      createEntityType ? { resourceType, createEntityType } : { resourceType },
+    );
   });
 });

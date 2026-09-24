@@ -21,7 +21,7 @@ import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "phase")
+@Table(name = "phase", indexes = @Index(name = "idx_phase_action_unit", columnList = "fk_action_unit_id"))
 @Audited
 @NoArgsConstructor
 public class Phase extends TraceableEntity {

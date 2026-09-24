@@ -1,5 +1,23 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.mapper.SpecimenSummaryMapper;
+import fr.siamois.mapper.SpatialUnitSummaryMapper;
+import fr.siamois.mapper.RecordingUnitSummaryMapper;
+import fr.siamois.mapper.ContainerMapper;
+import fr.siamois.mapper.ActionUnitSummaryMapper;
+import fr.siamois.mapper.ActionCodeMapper;
+import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
+import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.infrastructure.database.repositories.ContainerRepository;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import org.springframework.test.util.ReflectionTestUtils;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -153,6 +171,19 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private ValidationOpenApiService validationOpenApiService;
 
+    @Mock
+    private CustomFieldAnswerService customFieldAnswerService;
+    @Mock
+    private PersonRepository personRepository;
+    @Mock
+    private ActionUnitRepository actionUnitRepository;
+    @Mock
+    private ActionUnitSummaryMapper actionUnitSummaryMapper;
+    @Mock
+    private SpatialUnitRepository spatialUnitRepository;
+    @Mock
+    private SpatialUnitSummaryMapper spatialUnitSummaryMapper;
+
     @InjectMocks
     private RecordingUnitOpenApiService service;
 
@@ -163,6 +194,19 @@ class RecordingUnitOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        // The real coercion, over this test's own mocks: the PATCH tests below exercise it end to end.
+        ReflectionTestUtils.setField(service, "fieldAnswerPatchService", new FieldAnswerPatchService(formService,
+                conceptRepository, conceptMapper, personRepository, personMapper, actionUnitRepository,
+                actionUnitSummaryMapper, mock(ActionCodeRepository.class), mock(ActionCodeMapper.class),
+                spatialUnitRepository, spatialUnitSummaryMapper, mock(RecordingUnitRepository.class),
+                mock(RecordingUnitSummaryMapper.class), phaseRepository, phaseMapper,
+                mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class),
+                mock(SpecimenSummaryMapper.class), unitDefinitionMapper));
+        ReflectionTestUtils.setField(service, "fieldAnswerWireService", new FieldAnswerWireService(formService, labelService));
+        // Catalogs are decorated with each field's list capability; not what these tests are about.
+        FieldQueryService fieldQueryService = mock(FieldQueryService.class);
+        lenient().when(fieldQueryService.withQuery(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
+        ReflectionTestUtils.setField(service, "fieldQueryService", fieldQueryService);
         FormConfig identifierConfig = new FormConfig();
         identifierConfig.setIdentifierFormat("{NUM_UE}");
         identifierConfig.setMinCode(0);
@@ -1040,7 +1084,8 @@ class RecordingUnitOpenApiServiceTest {
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(new FormUiDto());
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(Map.of());
-        when(formService.initOrReuseResponse(isNull(), any(RecordingUnitDTO.class), any(FieldSource.class), eq(true)))
+        // not reached without answers: applying an empty answer map is a no-op
+        lenient().when(formService.initOrReuseResponse(isNull(), any(RecordingUnitDTO.class), any(FieldSource.class), eq(true)))
                 .thenReturn(responseVm);
 
         RecordingUnitDTO saved = new RecordingUnitDTO();
@@ -1086,7 +1131,8 @@ class RecordingUnitOpenApiServiceTest {
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(new FormUiDto());
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(Map.of());
-        when(formService.initOrReuseResponse(isNull(), any(), any(), eq(true))).thenReturn(responseVm);
+        // not reached without answers: applying an empty answer map is a no-op
+        lenient().when(formService.initOrReuseResponse(isNull(), any(), any(), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(any(RecordingUnitDTO.class)))
                 .thenThrow(new FailedRecordingUnitSaveException("fail"));
 
@@ -1140,7 +1186,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(same(answerVm))).thenReturn("patched");
 
@@ -1151,7 +1197,7 @@ class RecordingUnitOpenApiServiceTest {
 
         assertThat(data.getId()).isEqualTo("1026");
         verify(formService).applyTypedValueToAnswer(same(answerVm), eq("patched"));
-        verify(recordingUnitService).save(ruDto);
+        verify(recordingUnitService).save(same(ruDto), anyMap());
     }
 
     @Test
@@ -1210,7 +1256,7 @@ class RecordingUnitOpenApiServiceTest {
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(conceptRepository.findById(99L)).thenReturn(Optional.of(concept));
         when(conceptMapper.convert(concept)).thenReturn(conceptDto);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -1272,7 +1318,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
         when(formService.initOrReuseResponse(isNull(), any(), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(any(RecordingUnitDTO.class)))
+        when(recordingUnitService.save(any(RecordingUnitDTO.class), anyMap()))
                 .thenThrow(new FailedRecordingUnitSaveException("err"));
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
@@ -1312,9 +1358,9 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(personService.findById(4L)).thenReturn(person);
+        when(personRepository.findById(Long.valueOf(4L))).thenReturn(Optional.ofNullable(person));
         when(personMapper.convert(person)).thenReturn(personResult);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -1351,9 +1397,9 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(personService.findById(6L)).thenReturn(person);
+        when(personRepository.findById(Long.valueOf(6L))).thenReturn(Optional.ofNullable(person));
         when(personMapper.convert(person)).thenReturn(personResult);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -1416,7 +1462,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(personService.findById(999L)).thenReturn(null);
+        when(personRepository.findById(Long.valueOf(999L))).thenReturn(Optional.ofNullable(null));
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
         request.setAnswers(Map.of("35", new AnswerInput(999, null)));
@@ -1450,7 +1496,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(auField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(actionUnitService.findById(998L)).thenReturn(null);
+        when(actionUnitRepository.findById(998L)).thenReturn(Optional.empty());
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
         request.setAnswers(Map.of("36", new AnswerInput(998, null)));
@@ -1486,7 +1532,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(intField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -1522,7 +1568,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(dateField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -1554,7 +1600,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -1585,7 +1631,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
@@ -1698,7 +1744,8 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(actionUnitAnswer.value().label()).isEqualTo("Op1");
 
         SelectOneFieldAnswer actionCodeAnswer = (SelectOneFieldAnswer) data.getAnswers().get("42");
-        assertThat(actionCodeAnswer.value().resourceId()).isEqualTo("502");
+        // An action code's key is its code (ActionCode's own @Id), which is also what a PATCH takes back.
+        assertThat(actionCodeAnswer.value().resourceId()).isEqualTo("C1");
         assertThat(actionCodeAnswer.value().resourceType()).isEqualTo("action-codes");
         assertThat(actionCodeAnswer.value().label()).isEqualTo("C1");
 
@@ -1819,6 +1866,7 @@ class RecordingUnitOpenApiServiceTest {
 
         ActionCodeDTO actionCodeItem = new ActionCodeDTO();
         actionCodeItem.setId(606L);
+        actionCodeItem.setCode("C606");
 
         when(formService.readAnswerValueForApi(same(personsVm))).thenReturn(
                 List.of(p1, p2, conceptItem, spatialItem, recordingUnitItem, actionCodeItem, "unsupported"));
@@ -1835,7 +1883,7 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(answer.values().get(2).label()).isEqualTo("stub-label");
         assertThat(answer.values().get(3).resourceType()).isEqualTo("spatial-units");
         assertThat(answer.values().get(4).resourceType()).isEqualTo("recording-units");
-        assertThat(answer.values().get(5).resourceId()).isEqualTo("606");
+        assertThat(answer.values().get(5).resourceId()).isEqualTo("C606");
         assertThat(answer.values().get(1).resourceId()).isEqualTo("602");
     }
 
@@ -2703,8 +2751,11 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(auField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(actionUnitService.findById(9L)).thenReturn(relatedAu);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        ActionUnit relatedAuEntity = new ActionUnit();
+        relatedAuEntity.setId(9L);
+        when(actionUnitRepository.findById(9L)).thenReturn(Optional.of(relatedAuEntity));
+        when(actionUnitSummaryMapper.convert(relatedAuEntity)).thenReturn(new ActionUnitSummaryDTO(relatedAu));
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -2741,8 +2792,11 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(suField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(spatialUnitService.findById(77L)).thenReturn(spatialUnit);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        SpatialUnit spatialUnitEntity = new SpatialUnit();
+        spatialUnitEntity.setId(77L);
+        when(spatialUnitRepository.findById(77L)).thenReturn(Optional.of(spatialUnitEntity));
+        when(spatialUnitSummaryMapper.convert(spatialUnitEntity)).thenReturn(new SpatialUnitSummaryDTO(spatialUnit));
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -2776,7 +2830,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(suField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(spatialUnitService.findById(404L)).thenThrow(new RuntimeException("not found"));
+        when(spatialUnitRepository.findById(404L)).thenReturn(Optional.empty());
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
         request.setAnswers(Map.of("33", new AnswerInput(404, null)));
@@ -2814,7 +2868,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(measurementField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -2850,7 +2904,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(measurementField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 
@@ -2929,7 +2983,7 @@ class RecordingUnitOpenApiServiceTest {
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(phaseRepository.findById(11L)).thenReturn(Optional.of(phase));
         when(phaseMapper.convert(phase)).thenReturn(phaseDto);
-        when(recordingUnitService.save(ruDto)).thenReturn(ruDto);
+        when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
 

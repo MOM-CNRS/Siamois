@@ -1,28 +1,14 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.config.FormConfig;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
-import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
-import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
-import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.phase.Phase;
@@ -37,7 +23,6 @@ import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
@@ -46,13 +31,8 @@ import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ConceptMapper;
-import fr.siamois.mapper.PersonMapper;
-import fr.siamois.mapper.PhaseMapper;
-import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
@@ -93,7 +73,6 @@ import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
-import jakarta.persistence.DiscriminatorValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionService;
@@ -121,6 +100,10 @@ public class RecordingUnitOpenApiService {
     private final RecordingUnitResponseMapper recordingUnitResponseMapper;
     private final ConversionService conversionService;
     private final EffectiveFormResolver effectiveFormResolver;
+    private final FieldAnswerPatchService fieldAnswerPatchService;
+    private final FieldAnswerWireService fieldAnswerWireService;
+    private final FieldQueryService fieldQueryService;
+    private final CustomFieldAnswerService customFieldAnswerService;
     private final ConceptMapper conceptMapper;
     private final InstitutionService institutionService;
     private final ConceptRepository conceptRepository;
@@ -128,14 +111,9 @@ public class RecordingUnitOpenApiService {
     private final LangService langService;
     private final ActionUnitService actionUnitService;
     private final ProfilePermissionService profilePermissionService;
-    private final PersonService personService;
     private final SpatialUnitService spatialUnitService;
-    private final PersonMapper personMapper;
     private final FindOpenApiMapper findOpenApiMapper;
     private final LabelService labelService;
-    private final UnitDefinitionMapper unitDefinitionMapper;
-    private final PhaseRepository phaseRepository;
-    private final PhaseMapper phaseMapper;
     private final TableFieldConfigService tableFieldConfigService;
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
@@ -194,125 +172,6 @@ public class RecordingUnitOpenApiService {
         // Map<String, Object> under Java's invariant generics even though every value already is one.
         resource.setAnswers(new LinkedHashMap<>(fields));
         return resource;
-    }
-
-    private FieldAnswer toTypedAnswer(String answerType, FieldResource field, Object raw, String lang) {
-        return switch (answerType) {
-            case "TEXT" -> new TextFieldAnswer(answerType, field, raw instanceof String s ? s : null);
-            case "INTEGER" -> new IntegerFieldAnswer(answerType, field, raw instanceof Integer i ? i : null);
-            case "DECIMAL" -> new DecimalFieldAnswer(answerType, field, raw instanceof Number n ? n.doubleValue() : null);
-            case "DATETIME" -> new DateFieldAnswer(answerType, field, raw instanceof OffsetDateTime dt ? dt : null);
-            case "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
-                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_ACTION_CODE", "SELECT_ONE_RECORDING_UNIT",
-                 "SELECT_ADDRESS", "SELECT_ONE" ->
-                    new SelectOneFieldAnswer(answerType, field, toResourceRef(answerType, raw, lang));
-            case "SELECT_MULTIPLE_PERSON", "SELECT_MULTIPLE_FROM_FIELD_CODE",
-                 "SELECT_MULTIPLE_RECORDING_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT_TREE",
-                 "SELECT_MULTIPLE_SPECIMEN", "SELECT_MULTIPLE_CONTAINER",
-                 "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE" ->
-                    new SelectManyFieldAnswer(answerType, field, toResourceRefList(answerType, raw, lang));
-            case "MEASUREMENT" -> new MeasurementFieldAnswer(answerType, field, toMeasurementRef(raw));
-            default -> new TextFieldAnswer(answerType, field, raw != null ? raw.toString() : null);
-        };
-    }
-
-    private ResourceRef toResourceRef(String answerType, Object raw, String lang) {
-        if (raw == null) return null;
-        return switch (answerType) {
-            case "SELECT_ONE_FROM_FIELD_CODE" -> conceptResourceRef(raw, lang);
-            case "SELECT_ONE_PERSON" -> {
-                if (raw instanceof PersonDTO p)
-                    yield new ResourceRef(String.valueOf(p.getId()), "persons", p.displayName());
-                yield null;
-            }
-            case "SELECT_ONE_ACTION_UNIT" -> {
-                if (raw instanceof ActionUnitDTO a)
-                    yield new ResourceRef(String.valueOf(a.getId()), "action-units", a.getName());
-                yield null;
-            }
-            case "SELECT_ONE_SPATIAL_UNIT" -> {
-                if (raw instanceof SpatialUnitSummaryDTO s)
-                    yield new ResourceRef(String.valueOf(s.getId()), "spatial-units", s.getName());
-                yield null;
-            }
-            case "SELECT_ONE_ACTION_CODE" -> {
-                if (raw instanceof ActionCodeDTO ac)
-                    yield new ResourceRef(String.valueOf(ac.getId()), "action-codes", ac.getCode());
-                yield null;
-            }
-            case "SELECT_ONE_RECORDING_UNIT" -> {
-                if (raw instanceof RecordingUnitSummaryDTO r)
-                    yield new ResourceRef(String.valueOf(r.getId()), "recording-units", r.getFullIdentifier());
-                yield null;
-            }
-            default -> null;
-        };
-    }
-
-    private ResourceRef conceptResourceRef(Object raw, String lang) {
-        ConceptDTO concept = null;
-        String preferredLabel = null;
-        if (raw instanceof ConceptDTO c) {
-            concept = c;
-        } else if (raw instanceof ConceptAutocompleteDTO ac) {
-            concept = ac.concept();
-            if (ac.getConceptLabelToDisplay() != null) {
-                preferredLabel = ac.getConceptLabelToDisplay().getLabel();
-            }
-            if ((preferredLabel == null || preferredLabel.isBlank()) && ac.getOriginalPrefLabel() != null) {
-                preferredLabel = ac.getOriginalPrefLabel();
-            }
-        }
-        if (concept == null) {
-            return null;
-        }
-        String label = preferredLabel;
-        if (label == null || label.isBlank()) {
-            try {
-                label = labelService.findLabelOf(concept, lang).getLabel();
-            } catch (RuntimeException ignored) {
-                label = null;
-            }
-        }
-        if (label == null || label.isBlank()) {
-            label = concept.getExternalId();
-        }
-        return new ResourceRef(String.valueOf(concept.getId()), CONCEPTS, label);
-    }
-
-    private List<ResourceRef> toResourceRefList(String answerType, Object raw, String lang) {
-        if (raw == null) return null;
-        Collection<?> col = raw instanceof Collection<?> c ? c : List.of(raw);
-        return col.stream()
-                .map(item -> toResourceRefFromItem(answerType, item, lang))
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private ResourceRef toResourceRefFromItem(String answerType, Object item, String lang) {
-        if (item instanceof PersonDTO p)
-            return new ResourceRef(String.valueOf(p.getId()), "persons", p.displayName());
-        if (item instanceof ConceptDTO || item instanceof ConceptAutocompleteDTO)
-            return conceptResourceRef(item, lang);
-        if (item instanceof PhaseDTO p) {
-            String label = p.getTitle() != null && !p.getTitle().isBlank() ? p.getTitle() : p.getIdentifier();
-            return new ResourceRef(String.valueOf(p.getId()), "phases", label);
-        }
-        if (item instanceof SpatialUnitSummaryDTO s)
-            return new ResourceRef(String.valueOf(s.getId()), "spatial-units", s.getName());
-        if (item instanceof RecordingUnitSummaryDTO r)
-            return new ResourceRef(String.valueOf(r.getId()), "recording-units", r.getFullIdentifier());
-        if (item instanceof AbstractEntityDTO e)
-            return new ResourceRef(String.valueOf(e.getId()), answerType.toLowerCase(), null);
-        return null;
-    }
-
-    private MeasurementRef toMeasurementRef(Object raw) {
-        if (raw instanceof MeasurementAnswerDTO m) {
-            String symbol = m.getUnit() != null ? m.getUnit().getSymbol() : null;
-            return new MeasurementRef(m.getNumericValue(), symbol, m.getNormalizedValue(), m.getComment());
-        }
-        return null;
     }
 
     @Transactional
@@ -395,7 +254,7 @@ public class RecordingUnitOpenApiService {
                     RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class);
         });
         defaultType.setFields(fields);
         defaultType.setTableColumns(buildRecordingUnitTableColumnDefaults());
@@ -432,7 +291,7 @@ public class RecordingUnitOpenApiService {
                     RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class);
         });
         type.setFields(fields);
         return type;
@@ -450,7 +309,7 @@ public class RecordingUnitOpenApiService {
                     Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class);
         });
         defaultType.setFields(fields);
         return defaultType;
@@ -470,7 +329,7 @@ public class RecordingUnitOpenApiService {
                     Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class);
         });
         type.setFields(fields);
         return type;
@@ -518,7 +377,7 @@ public class RecordingUnitOpenApiService {
                     Phase.DETAILS_FORM, projectId, ConfigurableTable.PHASE, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
         });
         defaultType.setFields(fields);
         return defaultType;
@@ -538,7 +397,7 @@ public class RecordingUnitOpenApiService {
                     Phase.DETAILS_FORM, projectId, ConfigurableTable.PHASE, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
         });
         type.setFields(fields);
         return type;
@@ -585,7 +444,7 @@ public class RecordingUnitOpenApiService {
                     Container.DETAILS_FORM, projectId, ConfigurableTable.CONTENANT, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildFieldsMetadataOnly(fieldSource, locale, Container.class);
         });
         defaultType.setFields(fields);
         return defaultType;
@@ -605,7 +464,7 @@ public class RecordingUnitOpenApiService {
                     Container.DETAILS_FORM, projectId, ConfigurableTable.CONTENANT, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale);
+            return buildFieldsMetadataOnly(fieldSource, locale, Container.class);
         });
         type.setFields(fields);
         return type;
@@ -640,7 +499,7 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale));
+                userInfo, () -> buildFieldsMetadataOnly(fieldSource, locale, ActionUnit.class));
 
         List<ProjectFieldConfigResource> fieldConfigs = fields.keySet().stream()
                 .map(fieldId -> new ProjectFieldConfigResource(fieldId, true, true))
@@ -685,10 +544,7 @@ public class RecordingUnitOpenApiService {
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
             FormUiDto systemForm = ActionUnit.NEW_UNIT_FORM;
             FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
-            mergeFieldAnswers(shell, response, fieldSource, fieldAnswers, lang);
-            formService.updateJpaEntityFromResponse(response, shell);
+            fieldAnswerPatchService.applyLenient(shell, formUiDto, fieldAnswers, null);
         });
     }
 
@@ -764,6 +620,13 @@ public class RecordingUnitOpenApiService {
      * Mobilier existant : champs avec leurs valeurs ({@link Specimen#DETAILS_FORM}, comme le panel web).
      */
     @Transactional(readOnly = true)
+    private Long specimenProjectId(SpecimenDTO specimen) {
+        if (specimen.getActionUnit() != null) return specimen.getActionUnit().getId();
+        if (specimen.getRecordingUnit() == null || specimen.getRecordingUnit().getId() == null) return null;
+        RecordingUnitDTO unit = recordingUnitService.findById(specimen.getRecordingUnit().getId());
+        return unit != null && unit.getActionUnit() != null ? unit.getActionUnit().getId() : null;
+    }
+
     public FindResource buildFindMobilierForm(String idOrKey,
                                               PersonDTO personDto,
                                               Set<Long> accessibleInstitutionIds,
@@ -779,14 +642,19 @@ public class RecordingUnitOpenApiService {
             return resource;
         }
 
-        FormUiDto systemForm = Specimen.DETAILS_FORM;
-        FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
-        FieldSource fieldSource = new PanelFieldSource(formUiDto);
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
 
-        Map<String, FieldAnswer> answers = OpenApiExecutionContext.callWithUserInfo(
-                userInfo, () -> buildSpecimenFieldsWithFallback(specimen, fieldSource, locale));
+        Map<String, FieldAnswer> answers = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            // The effective form, as the find-types catalog lays it out and the PATCH writes it:
+            // without the category's additional fields their answers would never be read back.
+            Long projectId = specimenProjectId(specimen);
+            FormUiDto formUiDto = projectId != null
+                    ? effectiveFormResolver.resolveEffectiveForm(Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER,
+                            specimen.getCategory() != null ? specimen.getCategory().getId() : null)
+                    : conversionService.convert(Specimen.DETAILS_FORM, FormUiDto.class);
+            return buildSpecimenFieldsWithFallback(specimen, new PanelFieldSource(formUiDto), locale);
+        });
 
         // FindResource.answers is Map<String, Object> (shared with the list's raw-value shape,
         // see its own javadoc) — the detail's FieldAnswer envelope values just widen here.
@@ -842,7 +710,7 @@ public class RecordingUnitOpenApiService {
             CustomField field = e.getKey();
             FieldResource fieldResource = toFieldResource(field, locale);
             out.put(String.valueOf(field.getId()),
-                    toTypedAnswer(answerTypeDiscriminator(field), fieldResource,
+                    fieldAnswerWireService.toTypedAnswer(FieldAnswerWireService.answerTypeOf(field), fieldResource,
                             formService.readAnswerValueForApi(e.getValue()), lang));
         }
         return out;
@@ -855,41 +723,29 @@ public class RecordingUnitOpenApiService {
             if (field == null || field.getId() == null) continue;
             FieldResource fieldResource = toFieldResource(field, locale);
             out.put(String.valueOf(field.getId()),
-                    toTypedAnswer(answerTypeDiscriminator(field), fieldResource, null, lang));
+                    fieldAnswerWireService.toTypedAnswer(FieldAnswerWireService.answerTypeOf(field), fieldResource, null, lang));
         }
         return out;
     }
 
-    private Map<String, FieldResource> buildFieldsMetadataOnly(FieldSource fieldSource, Locale locale) {
+    /**
+     * A form's field catalog, each entry saying how a list of {@code entityType} can sort and filter
+     * its column ({@link FieldQueryService#capabilityOf}).
+     */
+    private Map<String, FieldResource> buildFieldsMetadataOnly(FieldSource fieldSource, Locale locale, Class<?> entityType) {
         Map<String, FieldResource> fields = new LinkedHashMap<>();
         for (CustomField field : fieldSource.getAllFields()) {
             if (field == null || field.getId() == null) continue;
-            fields.put(String.valueOf(field.getId()), toFieldResource(field, locale));
+            fields.put(String.valueOf(field.getId()),
+                    fieldQueryService.withQuery(toFieldResource(field, locale), entityType, field));
         }
         return fields;
     }
 
     private FieldResource toFieldResource(CustomField field, Locale locale) {
-        String label = langService.resolveMessage(field.getLabel(), locale);
-        String hint = langService.resolveMessage(field.getHint(), locale);
-        String fieldCode = null;
-        if (field instanceof CustomFieldSelectOneFromFieldCode one) {
-            fieldCode = one.getFieldCode();
-        } else if (field instanceof CustomFieldSelectMultipleFromFieldCode multi) {
-            fieldCode = multi.getFieldCode();
-        }
-        return new FieldResource(
-                String.valueOf(field.getId()),
-                "fields",
-                label,
-                answerTypeDiscriminator(field),
-                hint,
-                field.getIsSystemField(),
-                field.getValueBinding(),
-                fieldCode,
-                field instanceof CustomFieldText text ? text.getIsTextArea() : null,
-                field.getIcon(),
-                field.getConceptUri());
+        return FieldAnswerWireService.fieldResourceOf(field,
+                langService.resolveMessage(field.getLabel(), locale),
+                langService.resolveMessage(field.getHint(), locale));
     }
 
     private ResolvedConceptResource toConceptResource(ConceptDTO concept, String lang) {
@@ -899,33 +755,6 @@ public class RecordingUnitOpenApiService {
         r.setExternalUrl(concept.getExternalId());
         r.setResolvedLabel(labelService.findLabelOf(concept, lang).getLabel());
         return r;
-    }
-
-    private static String answerTypeDiscriminator(CustomField field) {
-        DiscriminatorValue dv = field.getClass().getAnnotation(DiscriminatorValue.class);
-        return dv != null ? dv.value() : field.getClass().getSimpleName();
-    }
-
-    /**
-     * Les clés {@link CustomField} du layout et celles de la réponse persistée peuvent être des instances différentes ;
-     * on aligne sur {@link CustomField#getId()}.
-     */
-    private static CustomFieldAnswerViewModel findViewModelForField(Map<CustomField, CustomFieldAnswerViewModel> answers,
-                                                                    CustomField field) {
-        CustomFieldAnswerViewModel direct = answers.get(field);
-        if (direct != null) {
-            return direct;
-        }
-        if (field == null || field.getId() == null) {
-            return null;
-        }
-        for (Map.Entry<CustomField, CustomFieldAnswerViewModel> en : answers.entrySet()) {
-            CustomField k = en.getKey();
-            if (k != null && field.getId().equals(k.getId())) {
-                return en.getValue();
-            }
-        }
-        return null;
     }
 
     @Transactional
@@ -1055,11 +884,12 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     RecordingUnit.DETAILS_FORM, au.getId(), ConfigurableTable.UE, typeDto.getId());
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, shell, fieldSource, true);
-            mergeFieldAnswers(shell, response, fieldSource, request.getFieldAnswers(), lang);
-            formService.updateJpaEntityFromResponse(response, shell);
-            return saveWithGeneratedIdentifier(shell);
+            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
+                    fieldAnswerPatchService.applyLenient(shell, formUiDto, request.getFieldAnswers(), au.getId());
+            RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell);
+            // Additional answers hang off the unit's id, so only once it exists.
+            customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalAnswers);
+            return saved;
         });
 
         // JSF's "nouvel enfant / nouveau parent" row actions: linked in the same transaction, so a
@@ -1200,18 +1030,17 @@ public class RecordingUnitOpenApiService {
             if (request.isGeomPresent()) {
                 dto.setGeom(request.getGeom());
             }
+            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers = Map.of();
             if (!answers.isEmpty()) {
                 FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                         RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
                         dto.getType() != null ? dto.getType().getId() : null);
-                FieldSource fieldSource = new PanelFieldSource(formUiDto);
-                CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-                mergeFieldAnswers(dto, response, fieldSource, answers, lang);
-                formService.updateJpaEntityFromResponse(response, dto);
+                // Lenient: the mobile client's legacy payloads may carry fields this form lacks.
+                additionalAnswers = fieldAnswerPatchService.applyLenient(dto, formUiDto, answers, projectId);
             }
 
             try {
-                recordingUnitService.save(dto);
+                recordingUnitService.save(dto, additionalAnswers);
             } catch (FailedRecordingUnitSaveException e) {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
             }
@@ -1255,305 +1084,6 @@ public class RecordingUnitOpenApiService {
         s.setBeginDate(au.getBeginDate());
         s.setEndDate(au.getEndDate());
         return s;
-    }
-
-    private void mergeFieldAnswers(RecordingUnitDTO bindTarget,
-                                   CustomFormResponseViewModel response,
-                                   FieldSource fieldSource,
-                                   Map<String, Object> fieldAnswers,
-                                   String lang) {
-        mergeFieldAnswersInternal(response, fieldSource, fieldAnswers, bindTarget);
-    }
-
-    private void mergeFieldAnswers(ActionUnitDTO bindTarget,
-                                   CustomFormResponseViewModel response,
-                                   FieldSource fieldSource,
-                                   Map<String, Object> fieldAnswers,
-                                   String lang) {
-        mergeFieldAnswersInternal(response, fieldSource, fieldAnswers, null);
-    }
-
-    private void mergeFieldAnswersInternal(CustomFormResponseViewModel response,
-                                           FieldSource fieldSource,
-                                           Map<String, Object> fieldAnswers,
-                                           RecordingUnitDTO recordingUnitForCoercion) {
-        if (fieldAnswers == null || fieldAnswers.isEmpty() || response.getAnswers() == null) {
-            return;
-        }
-        for (Map.Entry<String, Object> e : fieldAnswers.entrySet()) {
-            mergeOneFieldAnswerInternal(response, fieldSource, e.getKey(), e.getValue(), recordingUnitForCoercion);
-        }
-    }
-
-    private void mergeOneFieldAnswerInternal(CustomFormResponseViewModel response,
-                                              FieldSource fieldSource,
-                                              String key,
-                                              Object value,
-                                              RecordingUnitDTO recordingUnitForCoercion) {
-        Long fieldId;
-        try {
-            fieldId = Long.parseLong(key);
-        } catch (NumberFormatException ex) {
-            log.debug("Clé de champ ignorée (non numérique): {}", key);
-            return;
-        }
-        CustomField field = fieldSource.findFieldById(fieldId);
-        if (field == null) {
-            log.debug("Champ id={} absent du formulaire effectif", fieldId);
-            return;
-        }
-        CustomFieldAnswerViewModel vm = findViewModelForField(response.getAnswers(), field);
-        if (vm == null) {
-            return;
-        }
-        Object typed;
-        try {
-            typed = coerceAnswerValue(field, value, recordingUnitForCoercion);
-        } catch (ResponseStatusException rex) {
-            throw rex;
-        } catch (RuntimeException ex) {
-            log.warn("Valeur ignorée pour champ id={} ({}): {}", fieldId, field.getClass().getSimpleName(), ex.toString());
-            return;
-        }
-        if (typed == null && value != null) {
-            log.debug("Valeur non convertible pour champ id={} type {}", fieldId, field.getClass().getSimpleName());
-            return;
-        }
-        formService.applyTypedValueToAnswer(vm, typed);
-    }
-
-    private Object coerceAnswerValue(CustomField field, Object raw, RecordingUnitDTO ru) {
-        if (raw == null) return null;
-        if (field instanceof CustomFieldInteger) return ruCoerceInteger(raw);
-        if (field instanceof CustomFieldDecimal) return ruCoerceDecimal(raw);
-        if (field instanceof CustomFieldText) return String.valueOf(raw);
-        if (field instanceof CustomFieldDateTime) return ruCoerceDateTime(raw);
-        if (field instanceof CustomFieldSelectOneFromFieldCode) return ruCoerceConcept(raw);
-        if (field instanceof CustomFieldSelectOnePerson) return ruCoercePerson(raw);
-        if (field instanceof CustomFieldSelectOneActionUnit) return ruCoerceActionUnit(raw);
-        if (field instanceof CustomFieldSelectOneSpatialUnit) return ruCoerceSpatialUnit(raw);
-        if (field instanceof CustomFieldSelectMultiplePerson) return ruCoercePersonList(raw);
-        if (field instanceof CustomFieldSelectMultipleFromFieldCode) return ruCoerceConceptList(raw);
-        if (field instanceof CustomFieldMeasurement measurementField) {
-            return ruCoerceMeasurement(raw, measurementField);
-        }
-        if (field instanceof CustomFieldSelectMultipleSpatialUnitTree) {
-            return ruCoerceSpatialUnitList(raw);
-        }
-        if (field instanceof CustomFieldSelectMultiplePhase) {
-            return ruCoercePhaseList(raw, ru);
-        }
-        if (field instanceof CustomFieldSelectMultipleRecordingUnit) {
-            return ruCoerceRecordingUnitList(raw);
-        }
-        log.debug("Type de champ non pris en charge pour l'API v1: {}", field.getClass().getSimpleName());
-        return null;
-    }
-
-    private List<PersonDTO> ruCoercePersonList(Object raw) {
-        Collection<?> items = raw instanceof Collection<?> c ? c : List.of(raw);
-        List<PersonDTO> out = new ArrayList<>();
-        for (Object item : items) {
-            out.add((PersonDTO) ruCoercePerson(item));
-        }
-        return out;
-    }
-
-    private List<ConceptDTO> ruCoerceConceptList(Object raw) {
-        Collection<?> items = raw instanceof Collection<?> c ? c : List.of(raw);
-        List<ConceptDTO> out = new ArrayList<>();
-        for (Object item : items) {
-            out.add((ConceptDTO) ruCoerceConcept(item));
-        }
-        return out;
-    }
-
-    private Set<SpatialUnitSummaryDTO> ruCoerceSpatialUnitList(Object raw) {
-        Collection<?> items = raw instanceof Collection<?> c ? c : List.of(raw);
-        Set<SpatialUnitSummaryDTO> out = new LinkedHashSet<>();
-        for (Object item : items) {
-            out.add((SpatialUnitSummaryDTO) ruCoerceSpatialUnit(item));
-        }
-        return out;
-    }
-
-    private Set<RecordingUnitSummaryDTO> ruCoerceRecordingUnitList(Object raw) {
-        Collection<?> items = raw instanceof Collection<?> c ? c : List.of(raw);
-        Set<RecordingUnitSummaryDTO> out = new LinkedHashSet<>();
-        for (Object item : items) {
-            long id = requireLongId(item, "unité d'enregistrement");
-            RecordingUnitSummaryDTO summary = new RecordingUnitSummaryDTO();
-            summary.setId(id);
-            if (item instanceof Map<?, ?> map) {
-                Object label = map.get("fullIdentifier");
-                if (label == null) label = map.get("label");
-                if (label != null) summary.setFullIdentifier(String.valueOf(label));
-            }
-            out.add(summary);
-        }
-        return out;
-    }
-
-    private Set<PhaseDTO> ruCoercePhaseList(Object raw, RecordingUnitDTO ru) {
-        Collection<?> items = raw instanceof Collection<?> c ? c : List.of(raw);
-        Set<PhaseDTO> out = new LinkedHashSet<>();
-        Long actionUnitId = ru != null && ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
-        for (Object item : items) {
-            long id = requireLongId(item, "phase");
-            Phase phase = phaseRepository.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phase introuvable: " + id));
-            if (actionUnitId != null && phase.getActionUnit() != null
-                    && !Objects.equals(phase.getActionUnit().getId(), actionUnitId)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phase hors projet: " + id);
-            }
-            out.add(phaseMapper.convert(phase));
-        }
-        return out;
-    }
-
-    private MeasurementAnswerDTO ruCoerceMeasurement(Object raw, CustomFieldMeasurement field) {
-        MeasurementAnswerDTO dto = raw instanceof MeasurementAnswerDTO existing
-                ? existing
-                : buildMeasurementFromRaw(raw);
-        return applyMeasurementFieldUnit(dto, field);
-    }
-
-    private MeasurementAnswerDTO buildMeasurementFromRaw(Object raw) {
-        MeasurementAnswerDTO dto = new MeasurementAnswerDTO();
-        if (raw instanceof Number n) {
-            dto.setNumericValue(n.doubleValue());
-            return dto;
-        }
-        if (raw instanceof Map<?, ?> map) {
-            applyMeasurementMap(dto, map);
-            return dto;
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Mesure invalide : objet { numericValue, unit?, comment? } attendu");
-    }
-
-    private static void applyMeasurementMap(MeasurementAnswerDTO dto, Map<?, ?> map) {
-        applyMeasurementNumericValue(dto, map.get("numericValue"));
-        Object comment = map.get("comment");
-        if (comment == null) {
-            return;
-        }
-        String c = String.valueOf(comment).trim();
-        if (!c.isEmpty()) {
-            dto.setComment(c);
-        }
-    }
-
-    private static void applyMeasurementNumericValue(MeasurementAnswerDTO dto, Object numeric) {
-        if (numeric instanceof Number n) {
-            dto.setNumericValue(n.doubleValue());
-            return;
-        }
-        if (numeric != null && !String.valueOf(numeric).isBlank()) {
-            dto.setNumericValue(Double.parseDouble(String.valueOf(numeric).trim().replace(',', '.')));
-        }
-    }
-
-    /**
-     * L'unité effective vient du champ formulaire (zInf, zSup, …). Le client mobile
-     * n'envoie souvent que le symbole et parfois id=0, ce qui provoquerait un INSERT
-     * incomplet sur unit_definition.
-     */
-    private MeasurementAnswerDTO applyMeasurementFieldUnit(MeasurementAnswerDTO dto,
-                                                          CustomFieldMeasurement field) {
-        if (field.getUnit() != null) {
-            dto.setUnit(unitDefinitionMapper.convert(field.getUnit()));
-            return dto;
-        }
-
-        UnitDefinitionDTO unit = dto.getUnit();
-        if (unit != null && (unit.getId() == null || unit.getId() <= 0)) {
-            unit.setId(null);
-        }
-        return dto;
-    }
-
-    private static Object ruCoerceInteger(Object raw) {
-        if (raw instanceof Number n) return n.intValue();
-        return Integer.parseInt(String.valueOf(raw));
-    }
-
-    private static Object ruCoerceDecimal(Object raw) {
-        if (raw instanceof Number n) return n.doubleValue();
-        return Double.parseDouble(String.valueOf(raw));
-    }
-
-    private static Object ruCoerceDateTime(Object raw) {
-        if (raw instanceof OffsetDateTime odt) return odt;
-        if (raw instanceof String s) return OffsetDateTime.parse(s);
-        throw new IllegalArgumentException("Format datetime attendu (chaîne ISO-8601 ou OffsetDateTime)");
-    }
-
-    private Object ruCoerceConcept(Object raw) {
-        long conceptId = requireLongId(raw, "concept");
-        Concept c = conceptRepository.findById(conceptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Concept introuvable: " + conceptId));
-        return conceptMapper.convert(c);
-    }
-
-    private Object ruCoercePerson(Object raw) {
-        long personId = requireLongId(raw, "personne");
-        Person p = personService.findById(personId);
-        if (p == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Personne introuvable: " + personId);
-        }
-        return personMapper.convert(p);
-    }
-
-    private Object ruCoerceActionUnit(Object raw) {
-        long actionId = requireLongId(raw, "unité d'action");
-        ActionUnitDTO au = actionUnitService.findById(actionId);
-        if (au == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet introuvable: " + actionId);
-        }
-        return actionUnitSummaryFromFull(au);
-    }
-
-    private Object ruCoerceSpatialUnit(Object raw) {
-        long suId = requireLongId(raw, "unité spatiale");
-        try {
-            return new SpatialUnitSummaryDTO(spatialUnitService.findById(suId));
-        } catch (RuntimeException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité spatiale introuvable: " + suId);
-        }
-    }
-
-    private static long requireLongId(Object raw, String label) {
-        Long id = extractLongId(raw);
-        if (id == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu pour " + label);
-        }
-        return id;
-    }
-
-    private static Long extractLongId(Object raw) {
-        if (raw instanceof Number n) {
-            return n.longValue();
-        }
-        if (raw instanceof Map<?, ?> m) {
-            Object id = m.get("id");
-            if (id == null) {
-                id = m.get("resourceId");
-            }
-            if (id == null) {
-                id = m.get("conceptId");
-            }
-            if (id instanceof Number n) {
-                return n.longValue();
-            }
-            if (id instanceof String s && !s.isBlank()) {
-                return Long.parseLong(s);
-            }
-        }
-        if (raw instanceof String s && !s.isBlank()) {
-            return Long.parseLong(s);
-        }
-        return null;
     }
 
     /**

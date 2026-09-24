@@ -4,16 +4,26 @@ import { InputTextarea } from "primereact/inputtextarea";
 import { InputNumber } from "primereact/inputnumber";
 import { Calendar } from "primereact/calendar";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
+import { Button } from "primereact/button";
+import { CreateEntityDialog } from "../components/CreateEntityDialog";
+import { getEntityType } from "../entities/registry";
+import type { CreatePrefill } from "../entities/types";
 import type { FieldRendererProps } from "./registry";
-import { optionSourceFor, supportsEmptyQuery, type FilterOption } from "./optionSources";
+import type { FieldEditContext } from "./editContext";
+import {
+  entityRowLabel,
+  optionSourceFor,
+  referenceTargetOf,
+  supportsEmptyQuery,
+  type FilterOption,
+  type ReferenceTarget,
+} from "./optionSources";
 
-// Base renderers for the answerTypes that need no backend lookup — plain scalar inputs.
-// answerTypes that resolve against a vocabulary/entity (SELECT_ONE_FROM_FIELD_CODE,
-// SELECT_MULTIPLE_FROM_FIELD_CODE, SELECT_ONE_SPATIAL_UNIT) are implemented further down, backed
-// by fields/optionSources.ts's async loaders (org-scoped concepts / places autocomplete). Still
-// deliberately unimplemented: SELECT_MULTIPLE_SPATIAL_UNIT_TREE (a tree picker, out of scope this
-// phase) and the rarer SELECT_* variants (person/action-unit/recording-unit/...), which have no
-// option source client yet — those fall through to FallbackRenderer, same as before.
+// Base renderers for the answerTypes that need no backend lookup — plain scalar inputs — then one
+// generic reference picker (ResourceRefRenderer) for every answerType that points at a concept,
+// person, project, place, recording unit, find, phase or container, backed by
+// fields/optionSources.ts's async loaders. Still read-only (FallbackRenderer): action codes and
+// addresses (the latter waits for the GéoPlateforme lookup).
 
 // One TEXT renderer, two shapes: CustomFieldText.isTextArea is what picks p:inputTextarea over
 // p:inputText in JSF (pages/shared/inplace/text.xhtml), and it now rides along on FieldResource,
@@ -49,26 +59,30 @@ export function TextAreaRenderer({ value, readOnly, required, onChange }: FieldR
   );
 }
 
-export function IntegerRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
+export function IntegerRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
   const numberValue = typeof value === "number" ? value : null;
   return (
     <InputNumber
       value={numberValue}
       disabled={readOnly}
       required={required}
+      min={field.constraints?.min ?? undefined}
+      max={field.constraints?.max ?? undefined}
       useGrouping={false}
       onValueChange={(e) => onChange(e.value ?? null)}
     />
   );
 }
 
-export function DecimalRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
+export function DecimalRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
   const numberValue = typeof value === "number" ? value : null;
   return (
     <InputNumber
       value={numberValue}
       disabled={readOnly}
       required={required}
+      min={field.constraints?.min ?? undefined}
+      max={field.constraints?.max ?? undefined}
       mode="decimal"
       maxFractionDigits={6}
       useGrouping={false}
@@ -124,15 +138,18 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
   return { id: value.id, label: value.resolvedLabel ?? value.name ?? value.id };
 }
 
-// Shared by the three SELECT_* renderers below: an async, search-as-you-type single/multi picker
-// over fields/optionSources.ts's loader. One component rather than three near-identical ones,
-// since the only real difference between "pick a concept", "pick several concepts" and "pick a
-// spatial unit" is the loader and whether `multiple` is set — the value shape (ResourceRef /
-// ResourceRef[]) and the AutoComplete wiring are otherwise the same.
-function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, multiple }: FieldRendererProps & { multiple: boolean }) {
+// The one reference picker: an async, search-as-you-type single/multi AutoComplete over
+// fields/optionSources.ts's loader for the field's answerType. What differs between "pick a
+// concept", "pick persons" or "pick phases" is only the loader, the ResourceRef's resourceType and
+// whether a « Nouveau » footer can create the target — all derived from the field
+// (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
+function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
-  const loadOptions = organizationId != null ? optionSourceFor(field, organizationId) : null;
+  const [creating, setCreating] = useState(false);
+  const orgId = organizationId ?? context?.organizationId;
+  const loadOptions = orgId != null ? optionSourceFor(field, orgId, context?.projectId) : null;
   const autoCompleteRef = useRef<AutoComplete>(null);
+  const target = referenceTargetOf(field);
 
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
@@ -158,58 +175,171 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     ? (Array.isArray(value) ? value.filter((v): v is ResourceRefLike | ResolvedResourceLike => isResourceRef(v) || isResolvedResource(v)).map(toOption) : [])
     : (isResourceRef(value) || isResolvedResource(value) ? toOption(value) : null);
 
-  // A spatial field's options are places, not concepts — emitting resourceType "concepts" for them
-  // produced a ResourceRef that lied about what it referenced. Nothing downstream reads it today
-  // (toAnswerInput only takes the id), but resolveValueBinding hands this same object straight back
-  // to the renderer on the next render, and display.tsx shows it verbatim.
-  const resourceType = field.answerType.includes("SPATIAL_UNIT") ? "spatial-units" : "concepts";
+  const toRef = (o: FilterOption): ResourceRefLike => ({ resourceId: o.id, resourceType: target.resourceType, label: o.label });
 
   function commit(next: FilterOption[] | FilterOption | null) {
     if (multiple) {
-      const options = (next as FilterOption[] | null) ?? [];
-      onChange(options.map((o): ResourceRefLike => ({ resourceId: o.id, resourceType, label: o.label })));
+      onChange(((next as FilterOption[] | null) ?? []).map(toRef));
     } else {
       const option = next as FilterOption | null;
-      onChange(option ? { resourceId: option.id, resourceType, label: option.label } : null);
+      onChange(option ? toRef(option) : null);
     }
   }
 
+  // « Nouveau » creates the target in the edited entity's project and picks it straight away — it
+  // is added to a multi-valued answer, it replaces a single one.
+  const createConfig = !readOnly ? creatableConfig(target, context) : undefined;
+  async function onCreated(id: string | number) {
+    setCreating(false);
+    let label = String(id);
+    try {
+      label = entityRowLabel(await createConfig!.api.get(id));
+    } catch {
+      // The entity exists; only its label could not be read back. The id stands in for it until
+      // the edit reloads the row.
+    }
+    const created: FilterOption = { id: String(id), label };
+    if (multiple) commit([...(selected as FilterOption[]).filter((o) => o.id !== created.id), created]);
+    else commit(created);
+  }
+
+  const footer = createConfig
+    ? (_: unknown, hide: () => void) => (
+        <div className="resource-ref-create-footer">
+          <Button
+            type="button"
+            text
+            size="small"
+            icon="bi bi-plus-lg"
+            label={`Nouveau : ${createConfig.labels.singular.toLowerCase()}`}
+            onClick={() => {
+              hide();
+              setCreating(true);
+            }}
+          />
+        </div>
+      )
+    : undefined;
+
   return (
-    <AutoComplete
-      ref={autoCompleteRef}
-      value={selected}
-      suggestions={suggestions}
-      completeMethod={search}
-      field="label"
-      multiple={multiple}
-      dropdown={false}
-      disabled={readOnly}
-      required={required}
-      onFocus={onFocus}
-      onChange={(e) => commit(e.value as FilterOption[] | FilterOption | null)}
-    />
+    <>
+      <AutoComplete
+        ref={autoCompleteRef}
+        value={selected}
+        suggestions={suggestions}
+        completeMethod={search}
+        field="label"
+        multiple={multiple}
+        dropdown={false}
+        disabled={readOnly}
+        required={required}
+        onFocus={onFocus}
+        // With a footer, the panel must open even on no match: that is exactly when « Nouveau »
+        // is wanted.
+        showEmptyMessage={footer != null}
+        emptyMessage="Aucun résultat"
+        panelFooterTemplate={footer}
+        onChange={(e) => commit(e.value as FilterOption[] | FilterOption | null)}
+      />
+      {createConfig && (
+        // The dialog is portalled out of the edit overlay's DOM box but not out of its React tree:
+        // keys typed in it would bubble to the overlay's own Escape/Enter handling (cancelling the
+        // whole edit) without this boundary.
+        <div onKeyDown={(e) => e.stopPropagation()} style={{ display: "contents" }}>
+          <CreateEntityDialog
+            entityType={target.createEntityType!}
+            visible={creating}
+            organizationId={orgId}
+            scope={context?.projectId ? { entityType: "project", id: context.projectId } : undefined}
+            prefill={createPrefill(target, context)}
+            onCreated={(id) => void onCreated(id)}
+            onHide={() => setCreating(false)}
+          />
+        </div>
+      )}
+    </>
   );
 }
 
-export function SelectOneConceptRenderer(props: FieldRendererProps) {
+// The entity config a « Nouveau » creates, or undefined when the field offers none: its target is
+// not created from a field, or it is created inside a project and the edited entity has none.
+function creatableConfig(target: ReferenceTarget, context: FieldEditContext | undefined) {
+  if (!target.createEntityType) return undefined;
+  const config = getEntityType(target.createEntityType);
+  if (!config?.list.createForm) return undefined;
+  const projectBound = target.createEntityType !== "place";
+  if (projectBound && !context?.projectId) return undefined;
+  return config;
+}
+
+// A find created from a recording unit's field is created ON that recording unit — what JSF's
+// "new find" row action does too. Nothing else has a link implied by the field it comes from.
+function createPrefill(target: ReferenceTarget, context: FieldEditContext | undefined): CreatePrefill | undefined {
+  if (target.createEntityType === "find" && context?.entityType === "recordingUnit" && context.entityId != null) {
+    return { recordingUnit: { id: context.entityId, label: context.entityLabel ?? String(context.entityId) } };
+  }
+  return undefined;
+}
+
+export function SelectOneRefRenderer(props: FieldRendererProps) {
   return <ResourceRefRenderer {...props} multiple={false} />;
 }
 
-export function SelectManyConceptRenderer(props: FieldRendererProps) {
+export function SelectManyRefRenderer(props: FieldRendererProps) {
   return <ResourceRefRenderer {...props} multiple />;
 }
 
-export function SelectOneSpatialUnitRenderer(props: FieldRendererProps) {
-  return <ResourceRefRenderer {...props} multiple={false} />;
+// Kept under their historical names: tests and callers reference them.
+export const SelectOneConceptRenderer = SelectOneRefRenderer;
+export const SelectManyConceptRenderer = SelectManyRefRenderer;
+export const SelectOneSpatialUnitRenderer = SelectOneRefRenderer;
+// SPATIAL_CONTEXT is a tree picker in JSF (siaInplace:spatialMultiple); here it is the flat "pick
+// several places" sibling over the same /api/v1/places/autocomplete source.
+export const SelectManySpatialUnitRenderer = SelectManyRefRenderer;
+
+interface MeasurementValue {
+  numericValue?: number | null;
+  symbol?: string | null;
+  normalizedValue?: number | null;
+  comment?: string | null;
 }
 
-// SPATIAL_CONTEXT is a tree picker in JSF (siaInplace:spatialMultiple). The tree itself has no REST
-// equivalent, but the flat "pick several places" part does — the same /api/v1/places/autocomplete
-// source the single picker uses — so this is the multi-valued sibling, not a tree. Its value is
-// written through ProjectPatchRequest's flat spatialContextSpatialUnitIds, NOT through `answers`:
-// ProjectApiService.coerceScalarAnswer rejects CustomFieldSelectMultipleSpatialUnitTree outright.
-export function SelectManySpatialUnitRenderer(props: FieldRendererProps) {
-  return <ResourceRefRenderer {...props} multiple />;
+// MEASUREMENT: a number in the field's own unit (the server always applies that unit — the client
+// never picks one) plus an optional comment. Emits the MeasurementRef shape the PATCH accepts
+// ({ numericValue, comment }), or null once both are empty.
+export function MeasurementRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+  const current = (value != null && typeof value === "object" ? value : {}) as MeasurementValue;
+  const unit = field.constraints?.unit ?? current.symbol ?? null;
+
+  function emit(next: MeasurementValue) {
+    const empty = next.numericValue == null && !next.comment;
+    onChange(empty ? null : { numericValue: next.numericValue ?? null, symbol: unit, comment: next.comment || null });
+  }
+
+  return (
+    <div className="measurement-renderer">
+      <div className="p-inputgroup">
+        <InputNumber
+          value={current.numericValue ?? null}
+          disabled={readOnly}
+          required={required}
+          mode="decimal"
+          maxFractionDigits={6}
+          useGrouping={false}
+          min={field.constraints?.min ?? undefined}
+          max={field.constraints?.max ?? undefined}
+          onValueChange={(e) => emit({ ...current, numericValue: e.value ?? null })}
+        />
+        {unit && <span className="p-inputgroup-addon">{unit}</span>}
+      </div>
+      <InputText
+        value={current.comment ?? ""}
+        disabled={readOnly}
+        placeholder="Commentaire"
+        onChange={(e) => emit({ ...current, comment: e.target.value })}
+      />
+    </div>
+  );
 }
 
 export function FallbackRenderer({ field, value }: FieldRendererProps) {

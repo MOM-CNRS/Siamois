@@ -76,7 +76,8 @@ public class RecordingUnitSortFilterService {
     }
 
     static Specification<RecordingUnit> userFilterSpecs(@NonNull FilterDTO filters) {
-        Specification<RecordingUnit> specification = Specification.where(null);
+        // The list's per-field sort/filters (FieldQuery), then the named ones.
+        Specification<RecordingUnit> specification = filters.getFieldQuery().specificationFor(RecordingUnit.class);
 
         for (FilterBinding binding : USER_FILTERS) {
             if (filters.containsColumn(binding.column())) {

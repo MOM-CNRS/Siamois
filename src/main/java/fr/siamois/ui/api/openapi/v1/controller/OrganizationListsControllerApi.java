@@ -1,5 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -75,6 +80,7 @@ public class OrganizationListsControllerApi {
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FieldQueryService fieldQueryService;
 
     @GetMapping("/api/v1/recording-units")
     @Tag(name = "Unité d'enregistrement")
@@ -104,7 +110,8 @@ public class OrganizationListsControllerApi {
 
         // f.<key>[.from|.to] — same contract as GET /api/v1/projects/{id}/recording-units.
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
-        Page<RecordingUnitDTO> page = organizationListService.pageRecordingUnits(caller, institution, offset, limit, sort, search, filter);
+        Page<RecordingUnitDTO> page = organizationListService.pageRecordingUnits(caller, institution, offset, limit, sort, search, filter,
+                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage));
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, RecordingUnitDTO::getActionUnit, lang, EditPermissions.RECORDING_UNITS);
         RecordingUnitListProjectionService.RecordingUnitListProjection projection =
                 recordingUnitListProjectionService.build(page.getContent(), null, lang);
@@ -140,13 +147,15 @@ public class OrganizationListsControllerApi {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "fullIdentifier:asc") String sort,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         InstitutionDTO institution = organizationListService.requireListOrganization(caller, organizationId);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
-        Page<SpecimenDTO> page = organizationListService.pageFinds(caller, institution, offset, limit, sort, search);
+        Page<SpecimenDTO> page = organizationListService.pageFinds(caller, institution, offset, limit, sort, search,
+                fieldQueryService.parse(Specimen.class, queryParams, sort, acceptLanguage));
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, SpecimenDTO::getActionUnit, lang, EditPermissions.FINDS);
 
         List<FindResource> resources = page.getContent().stream()
@@ -182,13 +191,15 @@ public class OrganizationListsControllerApi {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "orderNumber:asc") String sort,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         InstitutionDTO institution = organizationListService.requireListOrganization(caller, organizationId);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
-        Page<PhaseDTO> page = organizationListService.pagePhases(caller, institution, offset, limit, sort, search);
+        Page<PhaseDTO> page = organizationListService.pagePhases(caller, institution, offset, limit, sort, search,
+                fieldQueryService.parse(Phase.class, queryParams, sort, acceptLanguage));
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, PhaseDTO::getActionUnit, lang, EditPermissions.PHASES);
         PhaseListProjectionService.PhaseListProjection projection = phaseListProjectionService.build(page.getContent(), null, lang);
 
@@ -222,13 +233,15 @@ public class OrganizationListsControllerApi {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "identifier:asc") String sort,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         InstitutionDTO institution = organizationListService.requireListOrganization(caller, organizationId);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
-        Page<ContainerDTO> page = organizationListService.pageContainers(caller, institution, offset, limit, sort, search);
+        Page<ContainerDTO> page = organizationListService.pageContainers(caller, institution, offset, limit, sort, search,
+                fieldQueryService.parse(Container.class, queryParams, sort, acceptLanguage));
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, ContainerDTO::getActionUnit, lang, EditPermissions.CONTAINERS);
         ContainerListProjectionService.ContainerListProjection projection =
                 containerListProjectionService.build(page.getContent(), null, lang);

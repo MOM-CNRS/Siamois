@@ -17,7 +17,7 @@ public class PhaseSaveStrategy implements EntityFormContextSaveStrategy<PhaseDTO
         LangBean langBean = context.getLangBean();
 
         try {
-            service.save(unit);
+            service.save(unit, context.getAdditionalFieldAnswers());
         } catch (Exception e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit.getIdentifier());
             return false;

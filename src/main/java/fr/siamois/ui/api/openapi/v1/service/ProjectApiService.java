@@ -29,6 +29,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
@@ -217,8 +218,25 @@ public class ProjectApiService {
             int limit,
             String sortParam,
             ProjectListFilter filter) {
+        return pageAccessibleProjects(caller, organizationId, search, offset, limit, sortParam, filter, FieldQuery.NONE);
+    }
+
+    /** @param fieldQuery the sort/filters on form fields (by field id) — {@link FieldQuery#NONE} for none */
+    public Page<AccessibleProjectForApi> pageAccessibleProjects(
+            ProjectApiCaller caller,
+            Long organizationId,
+            String search,
+            int offset,
+            int limit,
+            String sortParam,
+            ProjectListFilter filter,
+            FieldQuery fieldQuery) {
         assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
         int pageNumber = offset / limit;
+        if (fieldQuery.ordered()) {
+            return actionUnitService.findAccessibleProjects(caller.person().getId(), caller.accessibleInstitutionIds(),
+                    organizationId, search, PageRequest.of(pageNumber, limit), null, filter, fieldQuery);
+        }
 
         // recordingUnitCount n'est pas un chemin JPA : il est porté par une Specification et doit être
         // retiré du Pageable, sinon Hibernate échoue sur une propriété inconnue.
@@ -234,7 +252,8 @@ public class ProjectApiService {
                 search,
                 pageable,
                 countDirection,
-                filter);
+                filter,
+                fieldQuery);
     }
 
     /**
@@ -837,12 +856,26 @@ public class ProjectApiService {
             String sortParam,
             String search,
             RecordingUnitListFilter filter) {
+        return pageRecordingUnitsForProject(caller, projectIdOrKey, offset, limit, sortParam, search, filter, FieldQuery.NONE);
+    }
+
+    /** @param fieldQuery the sort/filters on form fields (by field id) — {@link FieldQuery#NONE} for none */
+    public Page<RecordingUnitDTO> pageRecordingUnitsForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter,
+            FieldQuery fieldQuery) {
         // Authorization first, same order pageAccessibleProjects/requireAccessibleProject follow
         // everywhere else in this service — a caller with no access to the project must never learn
         // anything about it, including whether its sort/filter params would otherwise be valid.
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
-        Sort sort = parseRecordingUnitSort(sortParam);
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort);
         FilterDTO filterDTO = filter.toFilterDTO(search);
+        filterDTO.setFieldQuery(fieldQuery);
         return recordingUnitService.findByActionUnitId(row.actionUnit().getId(), limit, offset, sort, filterDTO);
     }
 
@@ -910,10 +943,22 @@ public class ProjectApiService {
             int limit,
             String sortParam,
             String search) {
+        return pageContainersForProject(caller, projectIdOrKey, offset, limit, sortParam, search, FieldQuery.NONE);
+    }
+
+    public Page<ContainerDTO> pageContainersForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            FieldQuery fieldQuery) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
-        Sort sort = parseContainerSort(sortParam);
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseContainerSort);
         Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
         FilterDTO filterDTO = new FilterDTO();
+        filterDTO.setFieldQuery(fieldQuery);
         filterDTO.add(ContainerSpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
         if (search != null && !search.isBlank()) {
             filterDTO.add(ContainerSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
@@ -970,10 +1015,22 @@ public class ProjectApiService {
             int limit,
             String sortParam,
             String search) {
+        return pageFindsForProject(caller, projectIdOrKey, offset, limit, sortParam, search, FieldQuery.NONE);
+    }
+
+    public Page<SpecimenDTO> pageFindsForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            FieldQuery fieldQuery) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
-        Sort sort = parseFindSort(sortParam);
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseFindSort);
         Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
         FilterDTO filterDTO = new FilterDTO();
+        filterDTO.setFieldQuery(fieldQuery);
         if (search != null && !search.isBlank()) {
             filterDTO.add(SpecimenSpec.FULL_IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }
@@ -1073,10 +1130,22 @@ public class ProjectApiService {
             int limit,
             String sortParam,
             String search) {
+        return pagePhasesForProject(caller, projectIdOrKey, offset, limit, sortParam, search, FieldQuery.NONE);
+    }
+
+    public Page<PhaseDTO> pagePhasesForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            FieldQuery fieldQuery) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
-        Sort sort = parsePhaseSort(sortParam);
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parsePhaseSort);
         Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
         FilterDTO filterDTO = new FilterDTO();
+        filterDTO.setFieldQuery(fieldQuery);
         filterDTO.add(PhaseSpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
         if (search != null && !search.isBlank()) {
             filterDTO.add(PhaseSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
@@ -1176,6 +1245,19 @@ public class ProjectApiService {
             String sortParam,
             String search,
             String acceptLanguage) {
+        return pageFindsOfRecordingUnit(caller, recordingUnitKey, offset, limit, sortParam, search, acceptLanguage, FieldQuery.NONE);
+    }
+
+    /** Same, with sort/filters on form fields — which the specification-based search serves. */
+    public RecordingUnitFindsPage pageFindsOfRecordingUnit(
+            ProjectApiCaller caller,
+            String recordingUnitKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            String acceptLanguage,
+            FieldQuery fieldQuery) {
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         requireRecordingUnitViewPermission(caller, ru);
@@ -1185,6 +1267,17 @@ public class ProjectApiService {
         }
         String lang = primaryAcceptLanguage(acceptLanguage);
         int pageNumber = offset / limit;
+        if (fieldQuery != FieldQuery.NONE) {
+            FilterDTO filterDTO = new FilterDTO();
+            filterDTO.setFieldQuery(fieldQuery);
+            if (search != null && !search.isBlank()) {
+                filterDTO.add(SpecimenSpec.FULL_IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+            }
+            Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseFindSort);
+            Page<SpecimenDTO> page = specimenService.searchSpecimenInRecordingUnit(
+                    institution, ru, filterDTO, PageRequest.of(pageNumber, limit, sort));
+            return new RecordingUnitFindsPage(page.map(findOpenApiMapper::toResource), ru);
+        }
         Pageable pageable = PageRequest.of(pageNumber, limit);
         Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
                 institution.getId(),
@@ -1214,12 +1307,26 @@ public class ProjectApiService {
             String sortParam,
             String search,
             RecordingUnitListFilter filter) {
+        return pageRecordingUnitChildren(caller, recordingUnitKey, offset, limit, sortParam, search, filter, FieldQuery.NONE);
+    }
+
+    public ScopedRecordingUnitPage pageRecordingUnitChildren(
+            ProjectApiCaller caller,
+            String recordingUnitKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter,
+            FieldQuery fieldQuery) {
         RecordingUnitDTO parent = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         requireRecordingUnitViewPermission(caller, parent);
-        Sort sort = parseRecordingUnitSort(sortParam);
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort);
+        FilterDTO filterDTO = filter.toFilterDTO(search);
+        filterDTO.setFieldQuery(fieldQuery);
         Page<RecordingUnitDTO> page = recordingUnitService.findChildrenOf(
-                parent.getId(), limit, offset, sort, filter.toFilterDTO(search));
+                parent.getId(), limit, offset, sort, filterDTO);
         return new ScopedRecordingUnitPage(page, parent.getActionUnit() != null ? parent.getActionUnit().getId() : null);
     }
 
@@ -1235,8 +1342,29 @@ public class ProjectApiService {
             String sortParam,
             String search,
             RecordingUnitListFilter filter) {
-        Sort sort = parseRecordingUnitSort(sortParam);
-        return recordingUnitService.findByPhaseId(phaseId, limit, offset, sort, filter.toFilterDTO(search));
+        return pageRecordingUnitsForPhase(phaseId, offset, limit, sortParam, search, filter, FieldQuery.NONE);
+    }
+
+    public Page<RecordingUnitDTO> pageRecordingUnitsForPhase(
+            long phaseId,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter,
+            FieldQuery fieldQuery) {
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort);
+        FilterDTO filterDTO = filter.toFilterDTO(search);
+        filterDTO.setFieldQuery(fieldQuery);
+        return recordingUnitService.findByPhaseId(phaseId, limit, offset, sort, filterDTO);
+    }
+
+    /**
+     * The sort for a list's pageable: none when the field query orders (its specification carries
+     * the order, which a pageable sort would override), the named-key parse otherwise.
+     */
+    static Sort sortOr(FieldQuery fieldQuery, String sortParam, java.util.function.Function<String, Sort> named) {
+        return fieldQuery.ordered() ? Sort.unsorted() : named.apply(sortParam);
     }
 
     /**

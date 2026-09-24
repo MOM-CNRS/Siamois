@@ -1,5 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
@@ -61,6 +68,15 @@ class PhaseOpenApiServiceTest {
     @Mock
     private PhaseListProjectionService phaseListProjectionService;
 
+    @Mock
+    private FieldAnswerPatchService fieldAnswerPatchService;
+    @Mock
+    private EffectiveFormResolver effectiveFormResolver;
+    @Mock
+    private FieldAnswerWireService fieldAnswerWireService;
+    @Mock
+    private fr.siamois.domain.services.form.CustomFieldAnswerService customFieldAnswerService;
+
     private PhaseOpenApiService service;
 
     private PersonDTO personDto;
@@ -72,8 +88,10 @@ class PhaseOpenApiServiceTest {
     @BeforeEach
     void setUp() {
         service = new PhaseOpenApiService(phaseService, actionUnitService, conceptService, conceptMapper,
-                profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService));
+                profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
+                fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
 
+        lenient().when(fieldAnswerWireService.additionalAnswers(any(), any())).thenReturn(Map.of());
         personDto = new PersonDTO();
         personDto.setId(1L);
         institution = new InstitutionDTO();
@@ -300,59 +318,28 @@ class PhaseOpenApiServiceTest {
         verify(validationStatusService, never()).setStatus(any(), anyLong(), any(), any());
     }
 
+
     @Test
-    void patchPhase_unknownFieldId_throws400() {
+    void patchPhase_appliesAnswersOnTheTypesEffectiveFormAndSavesTheAdditionalOnes() {
         PhaseDTO phase = phaseOn(projectWithInstitution());
+        ConceptDTO type = new ConceptDTO();
+        type.setId(40L);
+        phase.setType(type);
         when(phaseService.findById(5L)).thenReturn(phase);
         when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
         when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
                 .thenReturn(true);
+        FormUiDto effectiveForm = new FormUiDto();
+        when(effectiveFormResolver.resolveEffectiveForm(fr.siamois.domain.models.phase.Phase.DETAILS_FORM, 7L,
+                ConfigurableTable.PHASE, 40L)).thenReturn(effectiveForm);
+        Map<CustomField, CustomFieldAnswerViewModel> additional = Map.of(new CustomFieldText(), new CustomFieldAnswerTextViewModel());
+        Map<String, AnswerInput> answers = Map.of("-503", new AnswerInput("Nouveau titre", null));
+        when(fieldAnswerPatchService.apply(phase, effectiveForm, answers, 7L)).thenReturn(additional);
 
         PhasePatchRequest req = new PhasePatchRequest();
-        req.setAnswers(Map.of("999999", new AnswerInput("x", null)));
-
-        assertThatThrownBy(() -> service.patchPhase(5L, req, personDto, Set.of(10L), "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-    }
-
-    @Test
-    void patchPhase_withTitleAnswer_writesTitleAndSaves() {
-        PhaseDTO phase = phaseOn(projectWithInstitution());
-        when(phaseService.findById(5L)).thenReturn(phase);
-        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
-                .thenReturn(true);
-        when(phaseService.save(any(PhaseDTO.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        // -503 is PhaseForm.titleField's own hardcoded id.
-        PhasePatchRequest req = new PhasePatchRequest();
-        req.setAnswers(Map.of("-503", new AnswerInput("Nouveau titre", null)));
-
+        req.setAnswers(answers);
         service.patchPhase(5L, req, personDto, Set.of(10L), "fr");
 
-        ArgumentCaptor<PhaseDTO> captor = ArgumentCaptor.forClass(PhaseDTO.class);
-        verify(phaseService).save(captor.capture());
-        assertThat(captor.getValue().getTitle()).isEqualTo("Nouveau titre");
-    }
-
-    @Test
-    void patchPhase_withOrderNumberAnswer_coercesInteger() {
-        PhaseDTO phase = phaseOn(projectWithInstitution());
-        when(phaseService.findById(5L)).thenReturn(phase);
-        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
-                .thenReturn(true);
-        when(phaseService.save(any(PhaseDTO.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        // -505 is PhaseForm.orderNumberField's own hardcoded id.
-        PhasePatchRequest req = new PhasePatchRequest();
-        req.setAnswers(Map.of("-505", new AnswerInput("3", null)));
-
-        service.patchPhase(5L, req, personDto, Set.of(10L), "fr");
-
-        ArgumentCaptor<PhaseDTO> captor = ArgumentCaptor.forClass(PhaseDTO.class);
-        verify(phaseService).save(captor.capture());
-        assertThat(captor.getValue().getOrderNumber()).isEqualTo(3);
+        verify(phaseService).save(phase, additional);
     }
 }

@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
@@ -49,6 +51,7 @@ public class ProjectControllerApi {
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final DocumentWriteOpenApiService documentWriteOpenApiService;
     private final ProjectListProjectionService projectListProjectionService;
+    private final FieldQueryService fieldQueryService;
 
     @GetMapping
     @Operation(summary = "La liste des projets")
@@ -91,7 +94,8 @@ public class ProjectControllerApi {
                     ProjectApiService.CreatableKind.parse(canCreate));
         }
         Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
-                caller, organizationId, search, offset, limit, sort, filter);
+                caller, organizationId, search, offset, limit, sort, filter,
+                fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage));
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 

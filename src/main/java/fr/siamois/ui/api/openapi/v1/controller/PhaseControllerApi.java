@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
@@ -39,6 +41,7 @@ public class PhaseControllerApi {
     private final ProjectApiService projectApiService;
     private final PhaseOpenApiService phaseOpenApiService;
     private final RecordingUnitListAssembler recordingUnitListAssembler;
+    private final FieldQueryService fieldQueryService;
 
     @GetMapping("/{id}/recording-units")
     @Operation(summary = "Unités d'enregistrement d'une phase",
@@ -67,7 +70,8 @@ public class PhaseControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         PhaseDTO phase = phaseOpenApiService.requireAccessible(id, caller.person(), caller.accessibleInstitutionIds());
         Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForPhase(
-                phase.getId(), offset, limit, sort, search, RecordingUnitListFilter.parse(queryParams));
+                phase.getId(), offset, limit, sort, search, RecordingUnitListFilter.parse(queryParams),
+                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage));
         RecordingUnitListResponse body = recordingUnitListAssembler.assemble(
                 caller, page, phase.getActionUnit().getId(), fields, lang, limit, offset);
         return ResponseEntity.ok()

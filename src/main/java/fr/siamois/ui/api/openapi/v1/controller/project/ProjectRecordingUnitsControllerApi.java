@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
+import fr.siamois.dto.FieldQuery;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
@@ -36,6 +39,7 @@ public class ProjectRecordingUnitsControllerApi {
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final RecordingUnitListProjectionService recordingUnitListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FieldQueryService fieldQueryService;
 
 
     @GetMapping
@@ -79,6 +83,7 @@ public class ProjectRecordingUnitsControllerApi {
         // f.<key>[.from|.to] — see RecordingUnitListFilter for the full contract. Parsed from the
         // raw query params, same as ProjectListFilter on the project list.
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
+        FieldQuery fieldQuery = fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage);
         Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForProject(
                 caller, id, offset, limit, sort, search, filter);
 

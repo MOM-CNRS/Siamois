@@ -10,11 +10,15 @@ import java.util.Objects;
 @Entity
 public abstract class CustomFieldAnswerSelectConcept extends CustomFieldAnswer {
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "custom_field_answer_concept_answers",
             joinColumns = {@JoinColumn(name = "fk_custom_field_id", referencedColumnName = "fk_custom_field_id"),
                           @JoinColumn(name = "fk_form_config_answer_id", referencedColumnName = "fk_form_config_answer_id")},
-            inverseJoinColumns = @JoinColumn(name = "fk_concept_id"))
+            inverseJoinColumns = @JoinColumn(name = "fk_concept_id"),
+            indexes = {
+                    @Index(name = "idx_cfa_concept_answer", columnList = "fk_form_config_answer_id, fk_custom_field_id"),
+                    @Index(name = "idx_cfa_concept_target", columnList = "fk_concept_id")
+            })
     protected List<Concept> concepts;
 
     @Override

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -154,12 +155,12 @@ class ProjectSiblingsControllerApiTest {
                 projectResponseMapper,
                 recordingUnitResourceMapper,
                 documentWriteOpenApiService,
-                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver));
+                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver), ListQueryStubs.none());
 
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
                 recordingUnitResourceMapper,
-                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver), org.mockito.Mockito.mock(ResourceBookmarkService.class));
+                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.noAdditionalAnswers()), org.mockito.Mockito.mock(ResourceBookmarkService.class), ListQueryStubs.none());
 
         ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
                 projectApiService,

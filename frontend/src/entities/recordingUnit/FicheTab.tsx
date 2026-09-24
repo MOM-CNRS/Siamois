@@ -142,6 +142,7 @@ function RecordingUnitFormField({
       <div className="field-value-group">
         <FieldLabel field={field} required={col.isRequired} />
         <FieldEditCell
+          entityType="recordingUnit"
           key={JSON.stringify(stored ?? null)}
           field={field}
           row={entity}

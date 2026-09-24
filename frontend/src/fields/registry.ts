@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { FieldEditContext } from "./editContext";
 import type { FieldResource } from "./types";
 
 // The "answerType → component" pattern validated on the RU branch's fieldRegistry.tsx (plan
@@ -13,6 +14,9 @@ export interface FieldRendererProps {
   // SELECT_MULTIPLE_FROM_FIELD_CODE, SELECT_ONE_SPATIAL_UNIT) to build their loader
   // (fields/optionSources.ts). Renderers that don't need one ignore it.
   organizationId?: number;
+  // Where the field is edited (project, edited entity) — what the project-scoped relation pickers
+  // and their « Nouveau » footer need. Absent outside an edit surface (tests, filters).
+  context?: FieldEditContext;
 }
 
 export type FieldRenderer = (props: FieldRendererProps) => ReactNode;

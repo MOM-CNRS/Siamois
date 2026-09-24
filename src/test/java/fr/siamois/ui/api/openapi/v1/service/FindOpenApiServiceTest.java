@@ -1,5 +1,17 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
+import fr.siamois.infrastructure.database.repositories.ContainerRepository;
+import fr.siamois.infrastructure.database.repositories.PhaseRepository;
+import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.mapper.*;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
@@ -76,13 +88,21 @@ class FindOpenApiServiceTest {
     @Mock
     private ProfilePermissionService profilePermissionService;
     @Mock
-    private PersonService personService;
+    private PersonRepository personRepository;
     @Mock
     private PersonMapper personMapper;
     @Mock
-    private ActionUnitService actionUnitService;
+    private ActionUnitRepository actionUnitRepository;
     @Mock
-    private SpatialUnitService spatialUnitService;
+    private ActionUnitSummaryMapper actionUnitSummaryMapper;
+    @Mock
+    private SpatialUnitRepository spatialUnitRepository;
+    @Mock
+    private SpatialUnitSummaryMapper spatialUnitSummaryMapper;
+    @Mock
+    private EffectiveFormResolver effectiveFormResolver;
+
+    private FieldAnswerPatchService fieldAnswerPatchService;
     @Mock
     private FindOpenApiMapper findOpenApiMapper;
 
@@ -96,19 +116,25 @@ class FindOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        fieldAnswerPatchService = new FieldAnswerPatchService(formService, conceptRepository, conceptMapper,
+                personRepository, personMapper, actionUnitRepository, actionUnitSummaryMapper,
+                mock(ActionCodeRepository.class), mock(ActionCodeMapper.class),
+                spatialUnitRepository, spatialUnitSummaryMapper,
+                mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
+                mock(PhaseRepository.class), mock(PhaseMapper.class),
+                mock(ContainerRepository.class), mock(ContainerMapper.class),
+                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class),
+                mock(UnitDefinitionMapper.class));
         service = new FindOpenApiService(
                 specimenService,
                 recordingUnitService,
-                formService,
                 conceptRepository,
                 conceptMapper,
                 conversionService,
                 profilePermissionService,
-                personService,
-                personMapper,
-                actionUnitService,
-                spatialUnitService,
-                findOpenApiMapper, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                findOpenApiMapper, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class),
+                org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
+                fieldAnswerPatchService, effectiveFormResolver);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -214,7 +240,7 @@ class FindOpenApiServiceTest {
         responseVm.setAnswers(new HashMap<>());
 
         when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
-        when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
+        lenient().when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
 
         SpecimenDTO saved = new SpecimenDTO();
         saved.setId(99L);
@@ -224,7 +250,8 @@ class FindOpenApiServiceTest {
 
         assertThat(result).isSameAs(findResource);
         verify(conversionService).convert(Specimen.NEW_UNIT_FORM, FormUiDto.class);
-        verify(formService).updateJpaEntityFromResponse(same(responseVm), any(SpecimenDTO.class));
+        // No answers: nothing to apply, the form response is not even built.
+        verify(formService, never()).updateJpaEntityFromResponse(any(), any());
         verify(specimenService).save(any(SpecimenDTO.class));
     }
 
@@ -276,7 +303,7 @@ class FindOpenApiServiceTest {
         responseVm.setAnswers(new HashMap<>());
 
         when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
-        when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
+        lenient().when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
@@ -284,7 +311,8 @@ class FindOpenApiServiceTest {
 
         service.createFind(request, personDto, SCOPE, LANG);
 
-        verify(formService).updateJpaEntityFromResponse(same(responseVm), any(SpecimenDTO.class));
+        // No answers: nothing to apply, the form response is not even built.
+        verify(formService, never()).updateJpaEntityFromResponse(any(), any());
     }
 
     @Test
@@ -354,7 +382,7 @@ class FindOpenApiServiceTest {
 
         Person personEntity = new Person();
         personEntity.setId(8L);
-        when(personService.findById(8L)).thenReturn(personEntity);
+        when(personRepository.findById(Long.valueOf(8L))).thenReturn(Optional.of(personEntity));
         PersonDTO personAnswer = new PersonDTO();
         personAnswer.setId(8L);
         when(personMapper.convert(personEntity)).thenReturn(personAnswer);
@@ -367,12 +395,18 @@ class FindOpenApiServiceTest {
         au.setType(typeDto);
         au.setBeginDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
         au.setEndDate(OffsetDateTime.parse("2024-12-31T00:00:00Z"));
-        when(actionUnitService.findById(20L)).thenReturn(au);
+        fr.siamois.domain.models.actionunit.ActionUnit auEntity = new fr.siamois.domain.models.actionunit.ActionUnit();
+        auEntity.setId(20L);
+        when(actionUnitRepository.findById(20L)).thenReturn(Optional.of(auEntity));
+        when(actionUnitSummaryMapper.convert(auEntity)).thenReturn(new ActionUnitSummaryDTO(au));
 
         SpatialUnitDTO su = new SpatialUnitDTO();
         su.setId(30L);
         su.setName("Zone A");
-        when(spatialUnitService.findById(30L)).thenReturn(su);
+        fr.siamois.domain.models.spatialunit.SpatialUnit suEntity = new fr.siamois.domain.models.spatialunit.SpatialUnit();
+        suEntity.setId(30L);
+        when(spatialUnitRepository.findById(30L)).thenReturn(Optional.of(suEntity));
+        when(spatialUnitSummaryMapper.convert(suEntity)).thenReturn(new SpatialUnitSummaryDTO(su));
 
         OffsetDateTime odt = OffsetDateTime.parse("2025-06-01T10:15:30Z");
         FindCreateRequest request = createRequest("UE-1", "3");
@@ -528,7 +562,7 @@ class FindOpenApiServiceTest {
 
         when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(personService.findById(99L)).thenReturn(null);
+        when(personRepository.findById(Long.valueOf(99L))).thenReturn(Optional.empty());
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("5", new AnswerInput(99L, null)));
@@ -551,7 +585,7 @@ class FindOpenApiServiceTest {
 
         when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(actionUnitService.findById(77L)).thenReturn(null);
+        when(actionUnitRepository.findById(77L)).thenReturn(Optional.empty());
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("6", new AnswerInput(77L, null)));
@@ -574,7 +608,7 @@ class FindOpenApiServiceTest {
 
         when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(spatialUnitService.findById(55L)).thenThrow(new RuntimeException("missing"));
+        when(spatialUnitRepository.findById(55L)).thenReturn(Optional.empty());
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("7", new AnswerInput(55L, null)));
@@ -721,9 +755,9 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(textField);
         CustomFormResponseViewModel responseVm = responseWith(textField, new CustomFieldAnswerTextViewModel());
 
-        when(conversionService.convert(Specimen.DETAILS_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(eq(Specimen.DETAILS_FORM), any(), eq(ConfigurableTable.MOBILIER), any())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), same(specimen), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(same(specimen))).thenReturn(specimen);
+        when(specimenService.save(same(specimen), anyMap())).thenReturn(specimen);
 
         FindPatchRequest request = new FindPatchRequest();
         request.setFieldAnswers(Map.of("2", new AnswerInput("updated", null)));
@@ -731,8 +765,8 @@ class FindOpenApiServiceTest {
         FindResource result = service.patchFind(7L, request, personDto, SCOPE, LANG);
 
         assertThat(result).isSameAs(findResource);
-        verify(conversionService).convert(Specimen.DETAILS_FORM, FormUiDto.class);
-        verify(specimenService).save(specimen);
+        verify(effectiveFormResolver).resolveEffectiveForm(eq(Specimen.DETAILS_FORM), any(), eq(ConfigurableTable.MOBILIER), any());
+        verify(specimenService).save(same(specimen), anyMap());
     }
 
     @Test
@@ -745,9 +779,9 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(textField);
         CustomFormResponseViewModel responseVm = responseWith(textField, new CustomFieldAnswerTextViewModel());
 
-        when(conversionService.convert(Specimen.DETAILS_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(eq(Specimen.DETAILS_FORM), any(), eq(ConfigurableTable.MOBILIER), any())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), same(specimen), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(same(specimen))).thenReturn(specimen);
+        when(specimenService.save(same(specimen), anyMap())).thenReturn(specimen);
 
         FindPatchRequest request = new FindPatchRequest();
         request.setFieldAnswers(Map.of("2", new AnswerInput("updated", null)));
@@ -757,7 +791,7 @@ class FindOpenApiServiceTest {
         assertThat(result).isSameAs(findResource);
         verify(formService).applyTypedValueToAnswer(any(), eq("updated"));
         verify(formService).updateJpaEntityFromResponse(same(responseVm), same(specimen));
-        verify(specimenService).save(specimen);
+        verify(specimenService).save(same(specimen), anyMap());
     }
 
     @Test

@@ -23,7 +23,7 @@ import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "container")
+@Table(name = "container", indexes = @Index(name = "idx_container_action_unit", columnList = "fk_action_unit_id"))
 @Audited
 @NoArgsConstructor
 public class Container extends TraceableEntity {

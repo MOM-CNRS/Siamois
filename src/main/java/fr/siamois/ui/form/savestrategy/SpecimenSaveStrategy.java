@@ -19,7 +19,7 @@ public class SpecimenSaveStrategy implements EntityFormContextSaveStrategy<Speci
         LangBean langBean = context.getLangBean();
 
         try {
-            service.save(unit);
+            service.save(unit, context.getAdditionalFieldAnswers());
         } catch (FailedActionUnitSaveException e) {
             MessageUtils.displayErrorMessage(langBean, "common.entity.recordingUnits.updateFailed", unit);
             return false;

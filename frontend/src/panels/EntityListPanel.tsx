@@ -21,7 +21,8 @@ import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEd
 import { FilterChipBar, type FilterSpec } from "../components/table/FilterChipBar";
 import { ColumnToggler, type ColumnTogglerOption } from "../components/table/ColumnToggler";
 import { renderAnswerCell, renderAnswerValue } from "../fields/display";
-import { filterKindForAnswerType, optionSourceFor, type FilterKind, type FilterOption } from "../fields/optionSources";
+import { filterKindForField, optionSourceFor, type FilterKind, type FilterOption } from "../fields/optionSources";
+import { hasFieldRenderer } from "../fields/registry";
 import { resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { useTableState } from "./useTableState";
@@ -245,6 +246,9 @@ export function EntityListPanel({
         return {
           key: field.id,
           header: field.label,
+          // The server says which columns it can order (FieldResource.query): sort=<fieldId>:asc,
+          // a multi-valued column by its number of values.
+          sortable: field.query?.sortable === true,
           // Renders the VALUE only. Whether that value is also a click target is the panel's
           // business (see the Column body below), not the column's: the editable wrapper has to be
           // the cell's own value slot — it eats the cell's padding to make the whole cell
@@ -263,7 +267,9 @@ export function EntityListPanel({
     const byKey = new Map<string, FieldResource>();
     for (const fieldId of state.visibleColumns) {
       const field = catalog.fields[fieldId];
-      if (field) byKey.set(field.id, field);
+      // A field with no editor (action code, address) would open an empty overlay: it stays a
+      // plain cell.
+      if (field && hasFieldRenderer(field.answerType)) byKey.set(field.id, field);
     }
     return byKey;
   }, [catalog, state.visibleColumns, canPatchAnswers]);
@@ -298,13 +304,15 @@ export function EntityListPanel({
       .flatMap((c) => {
         const field = catalog.fields[c.fieldId];
         if (!field) return [];
-        const kind = filterKindForAnswerType(field.answerType);
+        // f.<fieldId>, whatever the field (system or additional): FieldQueryService resolves it.
+        const kind = filterKindForField(field);
         if (!kind) return [];
-        const loadOptions = organizationId != null ? (optionSourceFor(field, organizationId) ?? undefined) : undefined;
-        return [{ key: c.columnId, label: field.label, kind, loadOptions } satisfies FilterSpec];
+        const loadOptions =
+          organizationId != null ? (optionSourceFor(field, organizationId, scopeProjectId(scope)) ?? undefined) : undefined;
+        return [{ key: field.id, label: field.label, kind, loadOptions } satisfies FilterSpec];
       });
     return [...pinned, ...dynamic];
-  }, [config, catalog, state.visibleColumns, organizationId]);
+  }, [config, catalog, state.visibleColumns, organizationId, scope]);
 
   function onFilterChange(key: string, value: FilterValue | undefined, options?: FilterOption[]) {
     const next = { ...state.filters };
@@ -716,6 +724,7 @@ export function EntityListPanel({
         <CellEditOverlay
           target={editTarget}
           organizationId={organizationId}
+          entityType={entityType}
           onSave={(id, answers) => config.api.patchAnswers!(id, answers)}
           onSaved={onCellEditSaved}
           onClose={() => setEditTarget(null)}

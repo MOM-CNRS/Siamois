@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
+import fr.siamois.domain.models.specimen.Specimen;
+import org.springframework.util.MultiValueMap;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
@@ -30,6 +33,7 @@ public class RecordingUnitFindsControllerApi {
 
     private final ProjectApiService projectApiService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FieldQueryService fieldQueryService;
 
     @GetMapping("/{id}/mobiliers")
     @Operation(
@@ -60,6 +64,7 @@ public class RecordingUnitFindsControllerApi {
             @RequestParam(defaultValue = "creationTime:desc") String sort,
             @Parameter(description = "Recherche libre, sur fullIdentifier")
             @RequestParam(required = false) String search,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @Parameter(description = "Langue pour le classement des libellés de type (requête SQL).")
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
@@ -67,7 +72,8 @@ public class RecordingUnitFindsControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectApiService.RecordingUnitFindsPage result = projectApiService.pageFindsOfRecordingUnit(
-                caller, id, offset, limit, sort, search, acceptLanguage);
+                caller, id, offset, limit, sort, search, acceptLanguage,
+                fieldQueryService.parse(Specimen.class, queryParams, sort, acceptLanguage));
         Page<FindResource> page = result.page();
         RecordingUnitDTO ru = result.recordingUnit();
 

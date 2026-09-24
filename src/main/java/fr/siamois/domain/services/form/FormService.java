@@ -105,6 +105,15 @@ public class FormService {
         if (jpaEntity instanceof RecordingUnitDTO recordingUnit) {
             return customFieldAnswerService.loadAdditionalFieldAnswers(recordingUnit);
         }
+        if (jpaEntity instanceof SpecimenDTO specimen) {
+            return customFieldAnswerService.loadAdditionalFieldAnswers(specimen);
+        }
+        if (jpaEntity instanceof PhaseDTO phase) {
+            return customFieldAnswerService.loadAdditionalFieldAnswers(phase);
+        }
+        if (jpaEntity instanceof ContainerDTO container) {
+            return customFieldAnswerService.loadAdditionalFieldAnswers(container);
+        }
 
         return Map.of();
     }
@@ -248,6 +257,16 @@ public class FormService {
         }
     }
 
+    /**
+     * Sets a system field's bound property to null — the "cleared" counterpart of
+     * {@link #updateJpaEntityFromResponse}, which never writes a null (an untouched answer and a
+     * cleared one look the same to it). For callers that know the field was explicitly cleared.
+     */
+    public void clearSystemField(Object jpaEntity, CustomField field) {
+        if (field == null || !Boolean.TRUE.equals(field.getIsSystemField())) return;
+        setFieldValue(jpaEntity, field.getValueBinding(), null);
+    }
+
     private static boolean isBindableSystemField(CustomField field,
                                                  CustomFieldAnswerViewModel answer,
                                                  List<String> bindableFields) {
@@ -301,6 +320,8 @@ public class FormService {
                     Map.entry(CustomFieldAnswerSelectOneActionCodeViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerIntegerViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerDecimalViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectOneAddressViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
@@ -473,6 +494,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectOneSpatialUnitViewModel.class, this::handleSpatialUnit);
         handlers.put(CustomFieldAnswerSelectOneActionCodeViewModel.class, this::handleActionCode);
         handlers.put(CustomFieldAnswerIntegerViewModel.class, this::handleInteger);
+        handlers.put(CustomFieldAnswerDecimalViewModel.class, this::handleDecimal);
         handlers.put(CustomFieldAnswerSelectOneAddressViewModel.class, this::handleAddress);
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
         handlers.put(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class, this::handleRecordingUnitSet);
@@ -572,6 +594,12 @@ public class FormService {
     private void handleActionCode(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel actionCodeAnswer) {
             actionCodeAnswer.setValue((ActionCodeDTO) value);
+        }
+    }
+
+    private void handleDecimal(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerDecimalViewModel decimalAnswer) {
+            decimalAnswer.setValue(value instanceof Number n ? n.doubleValue() : null);
         }
     }
 

@@ -1,6 +1,7 @@
 import { useState, type SyntheticEvent } from "react";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import { renderAnswerCell, renderAnswerValue } from "./display";
+import { hasFieldRenderer } from "./registry";
 import type { AnswerInputBody, FieldResource } from "./types";
 
 /**
@@ -23,6 +24,8 @@ export interface FieldEditCellProps<TRow extends { id?: string | number }> {
   readOnly: boolean;
   required?: boolean;
   organizationId?: number;
+  // Registry key of the entity the fiche shows (see CellEditOverlayProps.entityType).
+  entityType?: string;
   onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
   onSaved: () => void;
 }
@@ -31,13 +34,16 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   field,
   row,
   stored,
-  readOnly,
+  readOnly: readOnlyProp,
   required,
   organizationId,
+  entityType,
   onSave,
   onSaved,
 }: FieldEditCellProps<TRow>) {
   const [editTarget, setEditTarget] = useState<CellEditTarget<TRow> | null>(null);
+  // A field with no editor (action code, address) is shown, never offered for editing.
+  const readOnly = readOnlyProp || !hasFieldRenderer(field.answerType);
 
   function open(e: SyntheticEvent) {
     if (readOnly) return;
@@ -67,6 +73,7 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
       <CellEditOverlay
         target={editTarget}
         organizationId={organizationId}
+        entityType={entityType}
         onSave={onSave}
         onSaved={onSaved}
         onClose={() => setEditTarget(null)}

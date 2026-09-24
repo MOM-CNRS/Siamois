@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -23,6 +24,7 @@ public class RecordingUnitListProjectionService {
 
     private final RecordingUnitAnswersProjector recordingUnitAnswersProjector;
     private final ConceptLabelBatchResolver conceptLabelBatchResolver;
+    private final AdditionalAnswersListProjector additionalAnswersListProjector;
 
     public record RecordingUnitListProjection(Map<Long, String> resolvedLabels,
                                                Map<Long, Map<String, Object>> answersByRecordingUnitId) {
@@ -57,6 +59,8 @@ public class RecordingUnitListProjectionService {
         }
         Map<Long, String> labels = conceptLabelBatchResolver.resolveLabels(concepts, lang);
 
-        return new RecordingUnitListProjection(labels, recordingUnitAnswersProjector.project(rows, fieldIds, labels));
+        List<Long> rowIds = rows.stream().filter(java.util.Objects::nonNull).map(RecordingUnitDTO::getId).filter(java.util.Objects::nonNull).toList();
+        return new RecordingUnitListProjection(labels, additionalAnswersListProjector.merge(recordingUnitAnswersProjector.project(rows, fieldIds, labels),
+                CustomFieldAnswerService.ListOwner.RECORDING_UNIT, rowIds, fieldsParam, fieldIds, lang));
     }
 }

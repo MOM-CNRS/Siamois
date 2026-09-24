@@ -21,6 +21,7 @@ import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
@@ -785,10 +786,29 @@ public class ActionUnitService implements ArkEntityService {
             Pageable pageable,
             Sort.Direction recordingUnitCountOrder,
             ProjectListFilter filter) {
+        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable,
+                recordingUnitCountOrder, filter, FieldQuery.NONE);
+    }
+
+    /**
+     * @param fieldQuery sort/filters on form fields (by field id), ANDed onto the rest; when it
+     *                   orders, {@code pageable} must be unsorted
+     */
+    @Transactional(readOnly = true)
+    public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            Pageable pageable,
+            Sort.Direction recordingUnitCountOrder,
+            ProjectListFilter filter,
+            FieldQuery fieldQuery) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
-        Specification<ActionUnit> spec = accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter);
+        Specification<ActionUnit> spec = accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter)
+                .and(fieldQuery.specificationFor(ActionUnit.class));
         if (recordingUnitCountOrder != null) {
             spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
         }

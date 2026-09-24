@@ -1,5 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -56,15 +63,20 @@ class ContainerOpenApiServiceTest {
     @Mock
     private ConceptMapper conceptMapper;
     @Mock
-    private SpatialUnitService spatialUnitService;
-    @Mock
-    private UnitDefinitionMapper unitDefinitionMapper;
-    @Mock
     private ProfilePermissionService profilePermissionService;
     @Mock
     private ContainerOpenApiMapper containerOpenApiMapper;
     @Mock
     private ContainerListProjectionService containerListProjectionService;
+
+    @Mock
+    private FieldAnswerPatchService fieldAnswerPatchService;
+    @Mock
+    private EffectiveFormResolver effectiveFormResolver;
+    @Mock
+    private FieldAnswerWireService fieldAnswerWireService;
+    @Mock
+    private fr.siamois.domain.services.form.CustomFieldAnswerService customFieldAnswerService;
 
     private ContainerOpenApiService service;
 
@@ -74,9 +86,11 @@ class ContainerOpenApiServiceTest {
     @BeforeEach
     void setUp() {
         service = new ContainerOpenApiService(containerService, actionUnitService, conceptService, conceptMapper,
-                spatialUnitService, unitDefinitionMapper, profilePermissionService, containerOpenApiMapper,
-                containerListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                profilePermissionService, containerOpenApiMapper,
+                containerListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
+                fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
 
+        lenient().when(fieldAnswerWireService.additionalAnswers(any(), any())).thenReturn(Map.of());
         personDto = new PersonDTO();
         personDto.setId(1L);
         institution = new InstitutionDTO();
@@ -256,81 +270,25 @@ class ContainerOpenApiServiceTest {
         verify(containerService, never()).save(any());
     }
 
+
     @Test
-    void patchContainer_unknownFieldId_throws400() {
+    void patchContainer_appliesAnswersOnTheTypesEffectiveFormAndSavesTheAdditionalOnes() {
         ContainerDTO container = containerOn(projectWithInstitution());
         when(containerService.findById(5L)).thenReturn(container);
         when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
         when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
                 .thenReturn(true);
+        FormUiDto effectiveForm = new FormUiDto();
+        when(effectiveFormResolver.resolveEffectiveForm(fr.siamois.domain.models.container.Container.DETAILS_FORM, 7L,
+                ConfigurableTable.CONTENANT, null)).thenReturn(effectiveForm);
+        Map<CustomField, CustomFieldAnswerViewModel> additional = Map.of(new CustomFieldText(), new CustomFieldAnswerTextViewModel());
+        Map<String, AnswerInput> answers = Map.of("-608", new AnswerInput(12.5, null));
+        when(fieldAnswerPatchService.apply(container, effectiveForm, answers, 7L)).thenReturn(additional);
 
         ContainerPatchRequest req = new ContainerPatchRequest();
-        req.setAnswers(Map.of("999999", new AnswerInput("x", null)));
-
-        assertThatThrownBy(() -> service.patchContainer(5L, req, personDto, Set.of(10L), "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-    }
-
-    @Test
-    void patchContainer_withSpatialUnitAnswer_resolvesAndWritesSpatialUnit() {
-        ContainerDTO container = containerOn(projectWithInstitution());
-        when(containerService.findById(5L)).thenReturn(container);
-        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
-                .thenReturn(true);
-        when(containerService.save(any(ContainerDTO.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        SpatialUnitDTO spatialUnit = new SpatialUnitDTO();
-        spatialUnit.setId(33L);
-        spatialUnit.setName("Zone A");
-        when(spatialUnitService.findById(33L)).thenReturn(spatialUnit);
-
-        // -603 is ContainerForm.spatialUnitField's own hardcoded id.
-        ContainerPatchRequest req = new ContainerPatchRequest();
-        req.setAnswers(Map.of("-603", new AnswerInput("33", null)));
-
+        req.setAnswers(answers);
         service.patchContainer(5L, req, personDto, Set.of(10L), "fr");
 
-        ArgumentCaptor<ContainerDTO> captor = ArgumentCaptor.forClass(ContainerDTO.class);
-        verify(containerService).save(captor.capture());
-        assertThat(captor.getValue().getSpatialUnit().getId()).isEqualTo(33L);
-    }
-
-    @Test
-    void patchContainer_withUnknownSpatialUnit_throws404() {
-        ContainerDTO container = containerOn(projectWithInstitution());
-        when(containerService.findById(5L)).thenReturn(container);
-        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
-                .thenReturn(true);
-        when(spatialUnitService.findById(33L)).thenThrow(new RuntimeException("not found"));
-
-        ContainerPatchRequest req = new ContainerPatchRequest();
-        req.setAnswers(Map.of("-603", new AnswerInput("33", null)));
-
-        assertThatThrownBy(() -> service.patchContainer(5L, req, personDto, Set.of(10L), "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
-    }
-
-    @Test
-    void patchContainer_withWeightAnswer_coercesMeasurementFromNumber() {
-        ContainerDTO container = containerOn(projectWithInstitution());
-        when(containerService.findById(5L)).thenReturn(container);
-        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
-                .thenReturn(true);
-        when(containerService.save(any(ContainerDTO.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        // -608 is ContainerForm.weightField's own hardcoded id.
-        ContainerPatchRequest req = new ContainerPatchRequest();
-        req.setAnswers(Map.of("-608", new AnswerInput(12.5, null)));
-
-        service.patchContainer(5L, req, personDto, Set.of(10L), "fr");
-
-        ArgumentCaptor<ContainerDTO> captor = ArgumentCaptor.forClass(ContainerDTO.class);
-        verify(containerService).save(captor.capture());
-        assertThat(captor.getValue().getWeight().getNumericValue()).isEqualTo(12.5);
+        verify(containerService).save(container, additional);
     }
 }

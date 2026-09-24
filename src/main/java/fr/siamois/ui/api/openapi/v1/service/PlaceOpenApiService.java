@@ -6,9 +6,6 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -40,7 +37,6 @@ import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
-import jakarta.persistence.DiscriminatorValue;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -229,23 +225,9 @@ public class PlaceOpenApiService {
     }
 
     private FieldResource toPlaceFieldResource(CustomField field, Locale locale) {
-        String label = langService.resolveMessage(field.getLabel(), locale);
-        String hint = langService.resolveMessage(field.getHint(), locale);
-        String fieldCode = field instanceof CustomFieldSelectOneFromFieldCode one ? one.getFieldCode() : null;
-        DiscriminatorValue dv = field.getClass().getAnnotation(DiscriminatorValue.class);
-        String answerType = dv != null ? dv.value() : field.getClass().getSimpleName();
-        return new FieldResource(
-                String.valueOf(field.getId()),
-                "fields",
-                label,
-                answerType,
-                hint,
-                field.getIsSystemField(),
-                field.getValueBinding(),
-                fieldCode,
-                field instanceof CustomFieldText text ? text.getIsTextArea() : null,
-                field.getIcon(),
-                field.getConceptUri());
+        return FieldAnswerWireService.fieldResourceOf(field,
+                langService.resolveMessage(field.getLabel(), locale),
+                langService.resolveMessage(field.getHint(), locale));
     }
 
     @Transactional

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -83,7 +84,7 @@ class OrganizationListsControllerApiTest {
         OrganizationListsControllerApi controller = new OrganizationListsControllerApi(
                 projectApiService, organizationListService, placeOpenApiService,
                 recordingUnitResponseMapper, recordingUnitListProjectionService, findOpenApiMapper,
-                phaseOpenApiMapper, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService, org.mockito.Mockito.mock(ResourceBookmarkService.class));
+                phaseOpenApiMapper, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService, org.mockito.Mockito.mock(ResourceBookmarkService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper().registerModule(new JavaTimeModule())))
@@ -117,7 +118,7 @@ class OrganizationListsControllerApiTest {
         RecordingUnitDTO readOnly = new RecordingUnitDTO();
         readOnly.setId(2L);
         readOnly.setActionUnit(readOnlyProject);
-        when(organizationListService.pageRecordingUnits(eq(caller), eq(institution), eq(0), eq(10), eq("creationTime:desc"), eq("US"), any()))
+        when(organizationListService.pageRecordingUnits(eq(caller), eq(institution), eq(0), eq(10), eq("creationTime:desc"), eq("US"), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of(editable, readOnly), PageRequest.of(0, 10), 2));
         permissions(OrganizationListService.EditPermissions.RECORDING_UNITS);
         when(recordingUnitListProjectionService.build(any(), isNull(), any()))
@@ -144,7 +145,7 @@ class OrganizationListsControllerApiTest {
         SpecimenDTO find = new SpecimenDTO();
         find.setId(3L);
         find.setActionUnit(editableProject);
-        when(organizationListService.pageFinds(caller, institution, 0, 10, "fullIdentifier:asc", null))
+        when(organizationListService.pageFinds(caller, institution, 0, 10, "fullIdentifier:asc", null, fr.siamois.dto.FieldQuery.NONE))
                 .thenReturn(new PageImpl<>(List.of(find), PageRequest.of(0, 10), 1));
         permissions(OrganizationListService.EditPermissions.FINDS);
         when(findOpenApiMapper.toResource(find)).thenReturn(new FindResource());
@@ -161,7 +162,7 @@ class OrganizationListsControllerApiTest {
         authenticated();
         PhaseDTO phase = new PhaseDTO();
         phase.setId(4L);
-        when(organizationListService.pagePhases(caller, institution, 0, 10, "orderNumber:asc", null))
+        when(organizationListService.pagePhases(caller, institution, 0, 10, "orderNumber:asc", null, fr.siamois.dto.FieldQuery.NONE))
                 .thenReturn(new PageImpl<>(List.of(phase), PageRequest.of(0, 10), 1));
         permissions(OrganizationListService.EditPermissions.PHASES);
         when(phaseListProjectionService.build(any(), isNull(), any()))
@@ -180,7 +181,7 @@ class OrganizationListsControllerApiTest {
         ContainerDTO box = new ContainerDTO();
         box.setId(5L);
         box.setActionUnit(readOnlyProject);
-        when(organizationListService.pageContainers(caller, institution, 0, 10, "identifier:asc", null))
+        when(organizationListService.pageContainers(caller, institution, 0, 10, "identifier:asc", null, fr.siamois.dto.FieldQuery.NONE))
                 .thenReturn(new PageImpl<>(List.of(box), PageRequest.of(0, 10), 1));
         permissions(OrganizationListService.EditPermissions.CONTAINERS);
         when(containerListProjectionService.build(any(), isNull(), any()))

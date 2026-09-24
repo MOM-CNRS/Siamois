@@ -101,15 +101,10 @@ describe("patchPlaceAnswers", () => {
     });
   });
 
-  it("ignores an unmapped field id (e.g. the address field, deliberately unsupported)", async () => {
-    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+  it("refuses an unmapped field id (e.g. the address field, read-only for now) instead of reporting a save that did not happen", async () => {
+    await expect(patchPlaceAnswers(5, { "-204": { value: { city: "Paris" } } })).rejects.toThrow("-204");
 
-    await patchPlaceAnswers(5, { "-204": { value: { city: "Paris" } } });
-
-    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/places/5", {
-      method: "PATCH",
-      body: {},
-    });
+    expect(mockedApiFetch).not.toHaveBeenCalled();
   });
 
   it("unwraps the data envelope from the response", async () => {

@@ -779,7 +779,7 @@ class ProjectApiServiceMutationTest {
     void pageAccessibleProjects_forwardsOrgSearchSortAndPage() {
         Page<AccessibleProjectForApi> expected = new PageImpl<>(List.of());
         when(actionUnitService.findAccessibleProjects(
-                eq(1L), eq(SCOPE), eq(10L), eq("fouille"), any(Pageable.class), isNull(), any()))
+                eq(1L), eq(SCOPE), eq(10L), eq("fouille"), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(expected);
 
         Page<AccessibleProjectForApi> result = service.pageAccessibleProjects(
@@ -788,7 +788,7 @@ class ProjectApiServiceMutationTest {
         assertThat(result).isSameAs(expected);
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(actionUnitService).findAccessibleProjects(
-                eq(1L), eq(SCOPE), eq(10L), eq("fouille"), pageableCaptor.capture(), isNull(), any());
+                eq(1L), eq(SCOPE), eq(10L), eq("fouille"), pageableCaptor.capture(), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(2);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
         assertThat(pageableCaptor.getValue().getSort().getOrderFor("name").getDirection())
@@ -797,14 +797,14 @@ class ProjectApiServiceMutationTest {
 
     @Test
     void pageAccessibleProjects_appendsStableIdTiebreaker() {
-        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), any()))
+        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         service.pageAccessibleProjects(caller, null, null, 0, 10, "name:desc");
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(actionUnitService).findAccessibleProjects(
-                any(), any(), any(), any(), pageableCaptor.capture(), isNull(), any());
+                any(), any(), any(), any(), pageableCaptor.capture(), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
         Sort sort = pageableCaptor.getValue().getSort();
         assertThat(sort.getOrderFor("name").getDirection()).isEqualTo(Sort.Direction.DESC);
         assertThat(sort.getOrderFor("id").getDirection()).isEqualTo(Sort.Direction.ASC);
@@ -812,14 +812,14 @@ class ProjectApiServiceMutationTest {
 
     @Test
     void pageAccessibleProjects_defaultsToNameAscWhenSortIsBlank() {
-        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), any()))
+        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         service.pageAccessibleProjects(caller, null, null, 0, 10, null);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(actionUnitService).findAccessibleProjects(
-                any(), any(), any(), any(), pageableCaptor.capture(), isNull(), any());
+                any(), any(), any(), any(), pageableCaptor.capture(), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
         assertThat(pageableCaptor.getValue().getSort().getOrderFor("name").getDirection())
                 .isEqualTo(Sort.Direction.ASC);
     }
@@ -838,26 +838,26 @@ class ProjectApiServiceMutationTest {
         fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter filter =
                 fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.parse(
                         new org.springframework.util.LinkedMultiValueMap<>(java.util.Map.of("f.name", List.of("foss"))));
-        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), eq(filter)))
+        when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), eq(filter), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         service.pageAccessibleProjects(caller, null, null, 0, 10, "name:asc", filter);
 
-        verify(actionUnitService).findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), eq(filter));
+        verify(actionUnitService).findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), eq(filter), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
     }
 
     @Test
     void pageAccessibleProjects_sixArgOverload_forwardsAnEmptyFilter() {
         when(actionUnitService.findAccessibleProjects(
                 any(), any(), any(), any(), any(Pageable.class), isNull(),
-                eq(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY)))
+                eq(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         service.pageAccessibleProjects(caller, null, null, 0, 10, "name:asc");
 
         verify(actionUnitService).findAccessibleProjects(
                 any(), any(), any(), any(), any(Pageable.class), isNull(),
-                eq(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY));
+                eq(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
     }
 
     /**
@@ -868,14 +868,14 @@ class ProjectApiServiceMutationTest {
     @Test
     void pageAccessibleProjects_carriesRecordingUnitCountSortOutsideThePageable() {
         when(actionUnitService.findAccessibleProjects(
-                any(), any(), any(), any(), any(Pageable.class), eq(Sort.Direction.DESC), any()))
+                any(), any(), any(), any(), any(Pageable.class), eq(Sort.Direction.DESC), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         service.pageAccessibleProjects(caller, null, null, 0, 10, "recordingUnitCount:desc");
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(actionUnitService).findAccessibleProjects(
-                any(), any(), any(), any(), pageableCaptor.capture(), eq(Sort.Direction.DESC), any());
+                any(), any(), any(), any(), pageableCaptor.capture(), eq(Sort.Direction.DESC), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
         Sort sort = pageableCaptor.getValue().getSort();
         assertThat(sort.getOrderFor("recordingUnitCount")).isNull();
         assertThat(sort.getOrderFor("id")).isNotNull();

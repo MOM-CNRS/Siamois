@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { commitsImmediately, sameValue, staysOpenAfterSave } from "../../fields/commit";
+import { editContextOf } from "../../fields/editContext";
 import { isEmptyValue } from "../../fields/FieldLabel";
 import { getFieldRenderer } from "../../fields/registry";
 import { resolveValueBinding, toAnswerInput, type AnswerInputBody, type FieldResource } from "../../fields/types";
@@ -40,6 +41,9 @@ export interface CellEditTarget<TRow> {
 export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
   target: CellEditTarget<TRow> | null;
   organizationId?: number;
+  // Registry key of the edited rows' entity type — with the row, what tells a relation picker
+  // which project to search and what a « Nouveau » from it is linked to (fields/editContext.ts).
+  entityType?: string;
   onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
   // Called after a successful save so the caller can invalidate/refetch (the overlay itself
   // doesn't know about React Query).
@@ -50,11 +54,14 @@ export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
 // Matches p-connected-overlay-enter / -enter-active / -enter-done / -exit…: the CSSTransition
 // class names every PrimeReact connected popup (AutoComplete, Calendar, Dropdown, MultiSelect, …)
 // puts on its portalled root.
-const PRIMEREACT_POPUP_SELECTOR = '[class*="p-connected-overlay"]';
+// A reference picker's « Nouveau » opens a PrimeReact Dialog (its mask is portalled too): the
+// creation happens inside the edit, not after it.
+const PRIMEREACT_POPUP_SELECTOR = '[class*="p-connected-overlay"], .p-dialog-mask';
 
 export function CellEditOverlay<TRow extends { id?: string | number }>({
   target,
   organizationId,
+  entityType,
   onSave,
   onSaved,
   onClose,
@@ -224,6 +231,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
         readOnly={saving}
         required={target.required ?? false}
         organizationId={organizationId}
+        context={editContextOf(target.row, entityType, organizationId)}
         onChange={onValueChange}
       />
       {error && <div className="cell-edit-overlay-error">{error}</div>}

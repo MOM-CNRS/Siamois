@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
-import { SelectManyConceptRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRenderer } from "./renderers";
+import { SelectManyConceptRenderer, SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRenderer } from "./renderers";
+import { registerEntityType } from "../entities/registry";
+import type { FieldRendererProps } from "./registry";
 import type { FieldResource } from "./types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -127,7 +129,7 @@ describe("SelectOneConceptRenderer", () => {
         />,
       );
     });
-    expect(mockedOptionSourceFor).toHaveBeenCalledWith(conceptField(), 100);
+    expect(mockedOptionSourceFor).toHaveBeenCalledWith(conceptField(), 100, undefined);
   });
 
   it("builds no loader when organizationId is absent", async () => {
@@ -265,5 +267,60 @@ describe("picker opening (search on focus)", () => {
     await flush();
 
     expect(loader).not.toHaveBeenCalled();
+  });
+});
+
+describe("« Nouveau » footer", () => {
+  function phaseField(): FieldResource {
+    return { id: "12", resourceType: "fields", label: "Phases", answerType: "SELECT_MULTIPLE_PHASE", isSystemField: false };
+  }
+
+  registerEntityType({
+    key: "phase",
+    labels: { singular: "Phase", plural: "Phases" },
+    collectionPath: "phases",
+    icon: "bi bi-clock",
+    api: { list: vi.fn(), get: vi.fn() },
+    list: { columns: [], searchable: true, createForm: () => <div className="fake-phase-form" /> },
+    detail: { tabs: [] },
+    routes: { list: "/phases", detail: (id) => `/phases/${id}` },
+  });
+
+  async function openPicker(context?: FieldRendererProps["context"]) {
+    mockedOptionSourceFor.mockImplementation(() => async () => []);
+    act(() => {
+      root.render(
+        <SelectManyRefRenderer
+          field={phaseField()}
+          value={[]}
+          readOnly={false}
+          required={false}
+          onChange={() => {}}
+          organizationId={100}
+          context={context}
+        />,
+      );
+    });
+    await act(async () => {
+      container.querySelector("input")!.focus();
+      await new Promise((r) => setTimeout(r, 400));
+    });
+  }
+
+  function newButton(): HTMLElement | undefined {
+    return Array.from(document.body.querySelectorAll("button")).find((b) => b.textContent?.includes("Nouveau"));
+  }
+
+  it("offers to create the target in the edited entity's project, even when nothing matches", async () => {
+    await openPicker({ organizationId: 100, projectId: "5", entityType: "recordingUnit", entityId: 4 });
+
+    expect(mockedOptionSourceFor).toHaveBeenCalledWith(phaseField(), 100, "5");
+    expect(newButton()?.textContent).toContain("Nouveau : phase");
+  });
+
+  it("offers nothing when the edited entity has no project to create it in", async () => {
+    await openPicker({ organizationId: 100 });
+
+    expect(newButton()).toBeUndefined();
   });
 });

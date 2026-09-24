@@ -22,6 +22,11 @@ function formatOne(field: FieldResource, value: unknown): string {
   if (isResourceRef(value)) {
     return value.label ?? value.resourceId;
   }
+  if (field.answerType === "MEASUREMENT" && typeof value === "object") {
+    const m = value as { numericValue?: number | null; symbol?: string | null; comment?: string | null };
+    const measure = m.numericValue != null ? [m.numericValue, m.symbol].filter((p) => p != null && p !== "").join(" ") : "";
+    return [measure, m.comment].filter(Boolean).join(" — ");
+  }
   if (field.answerType === "DATETIME" && typeof value === "string") {
     return value.slice(0, 10);
   }

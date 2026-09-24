@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
+import fr.siamois.domain.models.phase.Phase;
+import org.springframework.util.MultiValueMap;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
@@ -40,6 +43,7 @@ public class ProjectPhasesControllerApi {
     private final PhaseOpenApiMapper phaseOpenApiMapper;
     private final PhaseListProjectionService phaseListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FieldQueryService fieldQueryService;
 
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des phases d'un projet",
@@ -63,11 +67,17 @@ public class ProjectPhasesControllerApi {
             @RequestParam(required = false) String search,
             @Parameter(description = "Tri, ex. identifier:asc ou orderNumber:desc")
             @RequestParam(defaultValue = "orderNumber:asc") String sort,
+            @io.swagger.v3.oas.annotations.Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @io.swagger.v3.oas.annotations.Parameter(description = "Projection des champs de formulaire dans answers : "
+                    + "\"all\" ou une liste d'ids de champs séparés par des virgules (champs additionnels compris). "
+                    + "Absent : pas de clé answers.")
+            @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
-        Page<PhaseDTO> page = projectApiService.pagePhasesForProject(caller, id, offset, limit, sort, search);
+        Page<PhaseDTO> page = projectApiService.pagePhasesForProject(caller, id, offset, limit, sort, search,
+                fieldQueryService.parse(Phase.class, queryParams, sort, acceptLanguage));
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
@@ -75,11 +85,12 @@ public class ProjectPhasesControllerApi {
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit);
 
         PhaseListProjectionService.PhaseListProjection projection =
-                phaseListProjectionService.build(page.getContent(), null, lang);
+                phaseListProjectionService.build(page.getContent(), fields, lang);
 
         List<PhaseResource> resources = page.getContent().stream()
                 .map(dto -> {
                     PhaseResource resource = phaseOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
+                    if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
                     resource.setPermissions(permissions);
                     return resource;
                 })

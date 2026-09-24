@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
+import fr.siamois.domain.models.specimen.Specimen;
+import org.springframework.util.MultiValueMap;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
@@ -38,6 +41,7 @@ public class ProjectFindsApi {
     private final ProjectApiService projectApiService;
     private final FindOpenApiMapper findOpenApiMapper;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FieldQueryService fieldQueryService;
 
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des mobiliers d'un projet",
@@ -60,11 +64,13 @@ public class ProjectFindsApi {
             @RequestParam(required = false) String search,
             @Parameter(description = "Tri, ex. fullIdentifier:asc ou collectionDate:desc")
             @RequestParam(defaultValue = "fullIdentifier:asc") String sort,
+            @io.swagger.v3.oas.annotations.Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
-        Page<SpecimenDTO> page = projectApiService.pageFindsForProject(caller, id, offset, limit, sort, search);
+        Page<SpecimenDTO> page = projectApiService.pageFindsForProject(caller, id, offset, limit, sort, search,
+                fieldQueryService.parse(Specimen.class, queryParams, sort, acceptLanguage));
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 

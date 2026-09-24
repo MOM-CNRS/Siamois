@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
@@ -56,7 +57,7 @@ class PhaseControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        PhaseControllerApi controller = new PhaseControllerApi(projectApiService, phaseOpenApiService, recordingUnitListAssembler);
+        PhaseControllerApi controller = new PhaseControllerApi(projectApiService, phaseOpenApiService, recordingUnitListAssembler, ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)
@@ -179,7 +180,7 @@ class PhaseControllerApiTest {
         org.mockito.Mockito.when(projectApiService.pageRecordingUnitsForPhase(
                 org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(10),
                 org.mockito.ArgumentMatchers.eq("creationTime:desc"), org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.any())).thenReturn(page);
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class))).thenReturn(page);
         org.mockito.Mockito.when(recordingUnitListAssembler.assemble(caller, page, 6L, null, "fr", 10, 0))
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse(
                         java.util.List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
