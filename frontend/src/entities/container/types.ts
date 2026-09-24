@@ -23,6 +23,7 @@ export interface ContainerResource {
   answers?: Record<string, unknown>;
   _permissions?: ContainerPermissions;
   resourceUri?: string | null;
+  bookmarked?: boolean;
 }
 
 // Same resource both in the list and the detail response, like Phase/Find/RecordingUnit.

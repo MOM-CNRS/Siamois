@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.find;
 
+import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
+
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,7 +20,7 @@ import java.util.Map;
 
 @Data
 @NoArgsConstructor
-public class FindResource extends FindResourceIdentifier {
+public class FindResource extends FindResourceIdentifier implements BookmarkableResource {
 
     private String fullIdentifier;
     protected OffsetDateTime collectionDate;
@@ -57,5 +59,8 @@ public class FindResource extends FindResourceIdentifier {
 
     @Schema(description = "URI de navigation/favori du mobilier", example = "/specimen/42")
     private String resourceUri;
+
+    @Schema(description = "Le mobilier est dans les favoris du caller")
+    private boolean bookmarked;
 
 }

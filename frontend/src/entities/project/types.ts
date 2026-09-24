@@ -34,6 +34,8 @@ export interface ProjectCounts {
 export interface ProjectPermissions {
   canEdit: boolean;
   canDelete: boolean;
+  // PROJECT_MANAGE_SETTINGS — omitted by the server when false.
+  canManageSettings?: boolean;
 }
 
 // Mirrors fr.siamois.domain.models.ValidationStatus — the merged "statut + identifiant" column's

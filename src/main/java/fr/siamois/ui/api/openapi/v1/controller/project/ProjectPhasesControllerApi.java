@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.response.phase.PhaseListResponse;
 import fr.siamois.ui.api.openapi.v1.service.PhaseListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,6 +39,7 @@ public class ProjectPhasesControllerApi {
     private final ProjectApiService projectApiService;
     private final PhaseOpenApiMapper phaseOpenApiMapper;
     private final PhaseListProjectionService phaseListProjectionService;
+    private final ResourceBookmarkService resourceBookmarkService;
 
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des phases d'un projet",
@@ -82,6 +84,10 @@ public class ProjectPhasesControllerApi {
                     return resource;
                 })
                 .toList();
+        // Every row shares this project, hence one institution — one bookmark query for the page.
+        if (!page.isEmpty()) {
+            resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getActionUnit().getCreatedByInstitution(), resources, lang);
+        }
 
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
         return ResponseEntity.ok()

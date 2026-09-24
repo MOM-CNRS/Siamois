@@ -34,6 +34,8 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
     @Mapping(target = "answers", expression = "java(java.util.Map.of())")
     @Mapping(target = "count", expression = "java(toResourceCounts(dto))")
     @Mapping(target = "links", expression = "java(fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceLinks.of(dto.getFullIdentifier()))")
+    @Mapping(target = "resourceUri", expression = "java(dto.getId() != null ? \"/recording-unit/\" + dto.getId() : null)")
+    @Mapping(target = "bookmarked", ignore = true)
     public abstract RecordingUnitResource convert(RecordingUnitDTO dto);
 
     @Mapping(target = "resourceType", constant = "recording-units")
@@ -46,6 +48,8 @@ public abstract class RecordingUnitResponseMapper implements Converter<Recording
     @Mapping(target = "answers", expression = "java(java.util.Map.of())")
     @Mapping(target = "count", expression = "java(new fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts(null, null, null, null, null))")
     @Mapping(target = "links", expression = "java(fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceLinks.of(dto.getFullIdentifier()))")
+    @Mapping(target = "resourceUri", expression = "java(dto.getId() != null ? \"/recording-unit/\" + dto.getId() : null)")
+    @Mapping(target = "bookmarked", ignore = true)
     public abstract RecordingUnitResource toResource(RecordingUnitSummaryDTO dto);
 
     OrganizationResourceIdentifier toOrganizationIdentifier(InstitutionDTO institution) {

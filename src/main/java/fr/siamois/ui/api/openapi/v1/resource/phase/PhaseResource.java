@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.phase;
 
+import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
@@ -12,7 +14,7 @@ import java.util.Map;
 
 @Data
 @Schema(description = "Phase chronologique d'un projet")
-public class PhaseResource {
+public class PhaseResource implements BookmarkableResource {
 
     @Schema(description = "Type de ressource", example = "phases")
     private String resourceType = "phases";
@@ -59,4 +61,7 @@ public class PhaseResource {
 
     @Schema(description = "URI de navigation/favori de la phase", example = "/phase/42")
     private String resourceUri;
+
+    @Schema(description = "La phase est dans les favoris du caller")
+    private boolean bookmarked;
 }

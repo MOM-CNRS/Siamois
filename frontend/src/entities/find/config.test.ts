@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { findEntityConfig } from "./config";
+import { apiFetch } from "../../api/client";
+
+vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
+const mockedApiFetch = vi.mocked(apiFetch);
 
 describe("findEntityConfig", () => {
   it("registers under the 'find' key that relationTab/project config reference", () => {
@@ -17,12 +21,9 @@ describe("findEntityConfig", () => {
     expect(findEntityConfig.api.patchAnswers).toBeDefined();
   });
 
-  // Reduced scope (migration plan lot 1): no list.schema (pinned columns only), no
-  // api.siblings, no detail.chrome — see config.tsx's own comment for why.
-  it("has no dynamic column schema, siblings navigation, or overview chrome yet", () => {
+  // Reduced scope (migration plan lot 1): no list.schema (pinned columns only).
+  it("has no dynamic column schema yet", () => {
     expect(findEntityConfig.list.schema).toBeUndefined();
-    expect(findEntityConfig.api.siblings).toBeUndefined();
-    expect(findEntityConfig.detail.chrome).toBeUndefined();
   });
 
   it("declares an overlay-hosted create form for the list toolbar's own Créer button", () => {
@@ -32,5 +33,18 @@ describe("findEntityConfig", () => {
   // JSF's organization-wide list disables creation for this type (it needs a project).
   it("disables creation on the unscoped list with an explanation", () => {
     expect(findEntityConfig.list.createRequiresScope).toMatch(/que depuis un projet/);
+  });
+
+  it("derives its bookmark chrome from the resource itself", () => {
+    const entity = { id: "7", fullIdentifier: "M-7", resourceUri: "/specimen/7", bookmarked: true } as unknown as Parameters<NonNullable<typeof findEntityConfig.detail.chrome>>[0];
+    expect(findEntityConfig.detail.chrome?.(entity)).toEqual({ resourceUri: "/specimen/7", title: "M-7", bookmarked: true });
+  });
+
+  // Previous/next through the generic GET /api/v1/{collection}/{id}/siblings.
+  it("navigates siblings through its own collection's siblings endpoint", async () => {
+    mockedApiFetch.mockResolvedValue({ data: { previous: { id: "1", label: "A", resourceUri: "URI1" }, next: null } });
+    const siblings = await findEntityConfig.api.siblings!("7", {});
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/finds/7/siblings");
+    expect(siblings).toEqual({ previous: { id: "1", label: "A", resourceUri: "URI1" }, next: undefined });
   });
 });

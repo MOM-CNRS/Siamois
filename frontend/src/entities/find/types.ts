@@ -34,6 +34,7 @@ export interface FindResource {
   answers?: Record<string, unknown>;
   _permissions?: FindPermissions;
   resourceUri?: string | null;
+  bookmarked?: boolean;
 }
 
 // Same resource both in the list and the detail response, like Project/RecordingUnit.

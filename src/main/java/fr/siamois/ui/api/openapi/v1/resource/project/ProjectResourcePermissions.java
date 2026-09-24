@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.resource.project;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -14,9 +15,18 @@ public record ProjectResourcePermissions(
         @Schema(description = "Le caller peut modifier ce projet")
         boolean canEdit,
         @Schema(description = "Le caller peut supprimer ce projet")
-        boolean canDelete
+        boolean canDelete,
+        // Projet seulement (PROJECT_MANAGE_SETTINGS, même règle que ActionUnitPanel.canOpenInProjectSettings) :
+        // omis du JSON quand faux, donc absent des autres types d'entité qui partagent ce bloc.
+        @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+        @Schema(description = "Le caller peut ouvrir les paramètres de ce projet")
+        boolean canManageSettings
 ) {
     public static ProjectResourcePermissions of(boolean canWrite) {
-        return new ProjectResourcePermissions(canWrite, canWrite);
+        return new ProjectResourcePermissions(canWrite, canWrite, false);
+    }
+
+    public ProjectResourcePermissions withManageSettings(boolean canManageSettings) {
+        return new ProjectResourcePermissions(canEdit, canDelete, canManageSettings);
     }
 }

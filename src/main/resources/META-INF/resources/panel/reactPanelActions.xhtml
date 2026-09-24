@@ -7,120 +7,46 @@
     <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"-->
 
     <!--
-    Bridges the toolbar actions React can't perform itself (plan §7.3/§8 phase 8) into plain
-    global JS functions via p:remoteCommand, exactly mirroring the `rendered` gating focus.xhtml's
-    own titlebar and panelContent.xhtml's overview titlebar already use for the same buttons — a
-    function simply doesn't exist when its legacy button wouldn't have rendered either, so the
-    React PanelToolbar's "only show a button when the callback exists" logic reproduces the same
-    permission gating without duplicating it client-side. Bookmark is deliberately not here: it
-    calls the REST bookmark endpoints directly (plan §7.3).
+    The few things React still needs the JSF session for, as plain global JS functions via
+    p:remoteCommand. None of them is bound to the entity JSF mounted with the page: each takes the
+    target as a remoteCommand param, so they keep working after React navigated client-side. Every
+    other toolbar action (bookmark, create, duplicate) is a REST call from React, gated on the
+    entity's own _permissions — which is what keeps the toolbar visible after a navigation.
 
-    Function names are suffixed by panelIndex so multiple open panel instances (main + overview)
-    never collide; the mount div's data-action-* attributes (focus.xhtml) name these exact
-    functions for the bootstrap script to look up on `window`.
+    Function names are suffixed by panelIndex so multiple open panel instances never collide; the
+    mount div's data-action-* attributes (reactPanelMount.xhtml) name these exact functions for the
+    bootstrap script to look up on `window`.
     -->
     <h:form id="reactPanelActionsForm-${panelModel.panelIndex}">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-        <p:remoteCommand name="reactAction_duplicate_${panelModel.jsPanelIndex}"
-                          rendered="#{panelModel.canDuplicate() and flowBean.isWriteMode}"
-                          action="#{panelModel.duplicate()}"
-                          process="@this"
-                          update="@none"/>
-        <p:remoteCommand name="reactAction_create_${panelModel.jsPanelIndex}"
-                          rendered="#{panelModel.creationUnitKind != null and flowBean.isWriteMode}"
-                          action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.creationUnitKind, panelModel)}"
-                          update="newUnitForm"
-                          oncomplete="PF('newUnitDiag').show();"
-                          process="@this"/>
-        <p:remoteCommand name="reactAction_settings_${panelModel.jsPanelIndex}"
-                          rendered="#{panelModel.canOpenInProjectSettings()}"
-                          action="#{navBean.redirectToActionUnitSettings(panelModel.unit)}"
+        <!--
+        Project settings: a server-side mode switch + redirect (NavBean#redirectToActionUnitSettings),
+        not something REST can do. Called as reactAction_openProjectSettings_N({projectId: ...});
+        React only shows the button when the project's _permissions.canManageSettings is true, and
+        the bean re-checks it anyway.
+        -->
+        <p:remoteCommand name="reactAction_openProjectSettings_${panelModel.jsPanelIndex}"
+                          action="#{navBean.redirectToActionUnitSettingsFromRequest()}"
                           process="@this"
                           update="@none"/>
 
         <!--
-        The list's OWN table toolbar create button (pages/shared/table/tableToolbar.xhtml) —
-        a different gate than reactAction_create above (creationUnitKind, the main panel
-        titlebar's button, which JSF never renders at all for a list panel). Short-circuits on
-        reactPanelKind() first so tableModel is only ever dereferenced on an actual list panel.
-        updateOnCreate/tableClientId are left blank: there's no PrimeFaces table left to refresh
-        in place (React owns the list now) — creating a project here still opens the same dialog,
-        it just doesn't auto-refresh the list under it yet.
-        -->
-        <p:remoteCommand name="reactAction_listCreate_${panelModel.jsPanelIndex}"
-                          rendered="#{panelModel.reactPanelKind() == 'list'
-                                      and not empty panelModel.tableModel.toolbarCreateConfig
-                                      and flowBean.isWriteMode
-                                      and panelModel.tableModel.toolbarCreateConfig.createAllowedSupplier.asBoolean}"
-                          action="#{panelModel.tableModel.openCreateFromToolbar(genericNewUnitDialogBean, '', '')}"
-                          update="newUnitForm"
-                          oncomplete="PF('newUnitDiag').show();"
-                          process="@this"/>
-
-        <!--
-        Bridge for a client-side-opened overview (plan §8 phase 5): React can open the overview
-        pane optimistically, before this bean's own parentOrOverview is set, so this command must
-        exist from page load — unlike every reactAction_overview_* command below, which mirrors
-        JSF's own rendered="#{parentOrOverview != null}" gating and is therefore only registered
-        once an overview already exists server-side. Takes the target entity type and id as plain
-        remoteCommand params (reactAction_setOverview_N({entityType: ..., id: ...})), read via the
-        request map — see FlowBean#addEntityToOverviewFromRequest, which dispatches on entityType
-        (a related-list tab, plan: generic related-list tab, can open ANY registered entity type in
-        the overview, not just this panel's own — a recording unit from a project's own UE tab,
-        for one).
-        -->
-        <!--
-        oncomplete fires a plain DOM event React listens for (App.tsx) to know when the bean is
-        back in sync, since this plain remoteCommand call gives the caller no promise to await —
-        that's what lets the overview toolbar re-enable itself instead of staying disabled forever
-        or guessing with a timeout (plan §8 phase 5's "disable while a setOverview call is in
-        flight" caveat).
+        Keeps FlowBean's parentOrOverview in sync with a client-side-opened overview (plan §8 phase
+        5), for F5 and the navigation history. Takes the target entity type and id as remoteCommand
+        params (reactAction_setOverview_N({entityType: ..., id: ...})) — see
+        FlowBean#addEntityToOverviewFromRequest. Fire-and-forget: nothing in React waits on it.
         -->
         <p:remoteCommand name="reactAction_setOverview_${panelModel.jsPanelIndex}"
                           action="#{flowBean.addEntityToOverviewFromRequest(panelModel)}"
                           process="@this"
-                          update="@none"
-                          oncomplete="window.dispatchEvent(new CustomEvent('siamois-set-overview-done', {detail: {panelIndex: '${panelModel.panelIndex}'}}));"/>
+                          update="@none"/>
 
-        <!--
-        closeOverview has no permission condition of its own in the legacy markup — only the
-        parentOrOverview != null gate — so it's always rendered too, closing the same
-        client-opened-overview gap: React would otherwise find it permanently undefined (plan
-        §8 phase 5's actionFn eager-lookup caveat). The frontend disables it while a setOverview
-        call is in flight. No refresh command: the React headers have no refresh action (React
-        Query owns data freshness). No fullscreen command: focus mode is a client-side
-        swap in React (App.tsx's enterFocus/closeFocus), which needs no bean call at all.
-        -->
+        <!-- Same sync as above, for closing the overview. -->
         <p:remoteCommand name="reactAction_overview_closeOverview_${panelModel.jsPanelIndex}"
                           action="#{panelModel.closeOverview()}"
                           process="@this"
                           update="@none"/>
-
-        <!--
-        These three keep real permission conditions, ANDed with the parentOrOverview != null
-        gate exactly as in legacy markup — for a client-opened overview they stay unavailable
-        until a full page reload (documented plan fallback), since evaluating the permission
-        client-side isn't available.
-        -->
-        <h:panelGroup rendered="#{panelModel.parentOrOverview != null}">
-            <p:remoteCommand name="reactAction_overview_duplicate_${panelModel.jsPanelIndex}"
-                              rendered="#{panelModel.parentOrOverview.canDuplicate() and flowBean.isWriteMode}"
-                              action="#{panelModel.parentOrOverview.duplicate()}"
-                              process="@this"
-                              update="@none"/>
-            <p:remoteCommand name="reactAction_overview_create_${panelModel.jsPanelIndex}"
-                              rendered="#{panelModel.parentOrOverview.creationUnitKind != null and flowBean.isWriteMode}"
-                              action="#{genericNewUnitDialogBean.openNewEntityDiag(panelModel.parentOrOverview.creationUnitKind, panelModel.parentOrOverview)}"
-                              update="newUnitForm"
-                              oncomplete="PF('newUnitDiag').show();"
-                              process="@this"/>
-            <p:remoteCommand name="reactAction_overview_settings_${panelModel.jsPanelIndex}"
-                              rendered="#{panelModel.parentOrOverview.canOpenInProjectSettings()}"
-                              action="#{navBean.redirectToActionUnitSettings(panelModel.parentOrOverview.unit)}"
-                              process="@this"
-                              update="@none"/>
-        </h:panelGroup>
     </h:form>
 
 </ui:composition>

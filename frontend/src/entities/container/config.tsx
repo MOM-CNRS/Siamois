@@ -1,4 +1,6 @@
 import type { EntityTypeConfig } from "../types";
+import { bookmarkChrome } from "../chrome";
+import { fetchSiblings } from "../siblingsApi";
 import { getContainer, listContainers, patchContainerAnswers } from "./api";
 import { containerColumns } from "./columns";
 import { ContainerCreateForm } from "./CreateForm";
@@ -13,8 +15,7 @@ import type { ContainerDetail, ContainerSummary } from "./types";
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
 // Reduced scope vs RecordingUnit's own config, same precedent set for Find/Phase: no
-// `list.schema` (pinned columns only) and no `api.siblings`/`detail.chrome` (no bookmark/
-// prev-next wiring for containers).
+// `list.schema` (pinned columns only).
 export const containerEntityConfig: EntityTypeConfig<ContainerSummary, ContainerDetail> = {
   key: "container",
   labels: { singular: "Contenant", plural: "Contenants" },
@@ -22,6 +23,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
   // Matches ContainerTableDefinitionFactory/ContainerPanel's own icon.
   icon: "bi bi-box-seam",
   api: {
+    siblings: (id) => fetchSiblings("containers", id),
     get: getContainer,
     list: listContainers,
     patchAnswers: (id, answers) => patchContainerAnswers(id, answers),
@@ -45,6 +47,9 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
       },
     ],
     header: (entity, helpers) => <ContainerDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    chrome: (entity) => bookmarkChrome(entity, entity.identifier),
+    // The titlebar's "Créer" makes a sibling in the same project.
+    createScope: (entity) => (entity.projectId ? { entityType: "project", id: entity.projectId } : undefined),
   },
   routes: CONTAINER_ROUTES,
   home: {

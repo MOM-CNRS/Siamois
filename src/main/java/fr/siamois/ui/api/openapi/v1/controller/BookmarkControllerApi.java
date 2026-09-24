@@ -81,6 +81,33 @@ public class BookmarkControllerApi {
         return ResponseEntity.noContent().build();
     }
 
+    /** Body of {@link #status}. */
+    public record BookmarkStatusResponse(boolean bookmarked) {
+    }
+
+    @GetMapping("/status")
+    @Operation(summary = "Savoir si une ressource est en favori",
+            description = "Pour les pages sans ressource REST qui porte déjà ce drapeau (listes, accueil) : "
+                    + "une entité, elle, l'expose directement dans son champ bookmarked. "
+                    + "organizationId doit être dans le périmètre JWT.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "resourceUri absent"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    })
+    public ResponseEntity<BookmarkStatusResponse> status(
+            @RequestParam String resourceUri,
+            @RequestParam Long organizationId,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        if (resourceUri == null || resourceUri.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resourceUri est obligatoire");
+        }
+        UserInfo userInfo = requireUserInfo(organizationId, acceptLanguage);
+        return ResponseEntity.ok(new BookmarkStatusResponse(
+                Boolean.TRUE.equals(bookmarkService.isRessourceBookmarkedByUser(userInfo, resourceUri))));
+    }
+
     private UserInfo requireUserInfo(Long organizationId, String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         InstitutionDTO institution = projectApiService.requireOrganization(organizationId, caller);

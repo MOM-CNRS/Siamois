@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Splitter, SplitterPanel } from "primereact/splitter";
-import type { MountOptions, PanelActions, PanelChrome, PanelKind, PanelToolbarSlot } from "./mountOptions";
+import type { MountOptions, PanelChrome, PanelKind, PanelToolbarSlot } from "./mountOptions";
 import { apiUrl } from "./api/basePath";
 import { getAllEntityTypes, getEntityType } from "./entities/registry";
 import { EntityListPanel } from "./panels/EntityListPanel";
 import { EntityDetailPanel } from "./panels/EntityDetailPanel";
 import { HomePanel } from "./panels/HomePanel";
 import { WriteModeProvider } from "./panels/writeMode";
+import { BridgeProvider } from "./panels/bridge";
 
 const queryClient = new QueryClient();
 
@@ -184,15 +185,11 @@ function PanelContent({
  * click inside the mounted tree (a list row, a Home widget link) calls `navigate` below, which
  * swaps `view` and updates the URL via history.pushState — no navigation, no remount, no JSF.
  *
- * One real constraint this runs into: the main toolbar (`options.main`/`options.actions`) is
- * built once, server-side, for the ONE entity focus.xhtml actually mounted — both the bridged
- * remoteCommand actions (duplicate/create/settings, bound to that specific panel bean)
- * and the bookmark state/resourceUri/title (read off that entity at mount time). Once `navigate`
- * moves the view to a different entity, none of that is valid for the new one anymore — there's
- * no server round-trip to refresh it from. Rather than show a toolbar acting on the wrong entity
- * (bridged actions silently no-op on the old one, bookmark toggling the wrong resourceUri), the
- * main toolbar is hidden entirely after the first client-side navigation. The overview pane's
- * own toolbar is unaffected — it never re-targets, since only the main pane navigates.
+ * Toolbars never depend on what JSF mounted: a detail panel builds its own actions (create,
+ * duplicate, settings) and bookmark chrome from its entity's REST data, and App only adds the
+ * pane-level ones (closeFocus, closeOverview, fullscreen). So both toolbars stay valid, and
+ * visible, whatever the panes navigate to. `options.main` is only the chrome of the view JSF
+ * mounted with, used until the main pane leaves it.
  */
 export function App({ options }: { options: MountOptions }) {
   const [view, setView] = useState<NavigationState>({
@@ -216,12 +213,6 @@ export function App({ options }: { options: MountOptions }) {
       ? { entityType: options.overviewEntityType, entityId: options.overviewEntityId }
       : null,
   );
-  // True between a setOverview bridge call and its ajax completion — see the
-  // "siamois-set-overview-done" listener below. Guards against a fast double-click on the
-  // overview toolbar acting on the previous entity while the bean is still catching up (plan §8
-  // phase 5's own caveat about the remoteCommand being async).
-  const [overviewBusy, setOverviewBusy] = useState(false);
-
   // What the address bar must encode (see focusUrl): the main pane's current route — seeded from
   // the server's own resourceUri (keeps e.g. its ?tab=), then replaced on every `navigate` — and
   // the currently open overview. Refs rather than state deps so `navigate` stays referentially
@@ -239,15 +230,9 @@ export function App({ options }: { options: MountOptions }) {
     focusStackRef.current = next;
     setFocusStackState(next);
   }, []);
-  // What FlowBean's parentOrOverview is believed to hold right now. Only moves when a bridge call
-  // actually tells the bean (setOverview/closeOverview). In focus mode, it's what decides whether
-  // the bridged overview actions (bound to parentOrOverview) can act for the promoted main entity.
-  const [serverOverview, setServerOverviewState] = useState<OverviewState | null>(overview);
+  // What FlowBean's parentOrOverview is believed to hold right now (only moves when a bridge call
+  // tells the bean), so closeFocus knows whether the bean needs resyncing.
   const serverOverviewRef = useRef<OverviewState | null>(overview);
-  const setServerOverview = useCallback((next: OverviewState | null) => {
-    serverOverviewRef.current = next;
-    setServerOverviewState(next);
-  }, []);
 
   const navigate = useCallback((entityType: string, id?: string | number) => {
     const config = getEntityType(entityType);
@@ -270,20 +255,15 @@ export function App({ options }: { options: MountOptions }) {
 
   // Opens (or retargets) the overview pane without touching the main pane (plan §8 phase 5) —
   // the list-row-click replacement for a full `navigate`. Optimistic: React renders the new
-  // overview immediately, and the setOverview remoteCommand (fire-and-forget, no promise to
-  // await) brings FlowBean's own parentOrOverview back in sync in the background, which is what
-  // keeps F5 and the three still-gated overview actions (duplicate/create/settings) correct.
+  // overview immediately, and the setOverview remoteCommand (fire-and-forget) brings FlowBean's
+  // own parentOrOverview back in sync in the background, for F5 and the navigation history.
   const openOverview = useCallback(
     (entityType: string, id: string | number) => {
-      setOverview({ entityType, entityId: id });
-      // Only actually goes "in flight" when there's a bridge call to wait on — for an entity
-      // type the bridge doesn't cover (setOverview absent from MountOptions.actions), there is no
-      // completion event to ever clear this, so it must not be set in the first place.
       const next = { entityType, entityId: id };
-      if (options.actions?.setOverview) {
-        setOverviewBusy(true);
-        options.actions.setOverview(entityType, id);
-        setServerOverview(next);
+      setOverview(next);
+      if (options.bridge?.setOverview) {
+        options.bridge.setOverview(entityType, id);
+        serverOverviewRef.current = next;
       }
 
       overviewRef.current = next;
@@ -291,20 +271,20 @@ export function App({ options }: { options: MountOptions }) {
         window.history.pushState(null, "", focusUrl(mainPathRef.current, overviewPath(next), backUrlRef.current));
       }
     },
-    [options, setServerOverview],
+    [options],
   );
 
   const closeOverview = useCallback(() => {
     setOverview(null);
     overviewRef.current = null;
-    if (options.overviewActions?.closeOverview) {
-      options.overviewActions.closeOverview();
-      setServerOverview(null);
+    if (options.bridge?.closeOverview) {
+      options.bridge.closeOverview();
+      serverOverviewRef.current = null;
     }
     if (mainPathRef.current) {
       window.history.pushState(null, "", focusUrl(mainPathRef.current, undefined, backUrlRef.current));
     }
-  }, [options, setServerOverview]);
+  }, [options]);
 
   // Focus mode: the overview entity becomes the main pane, the current main is remembered on the
   // stack. Purely client-side — FlowBean needs no call: it still holds "main = previous main,
@@ -356,30 +336,12 @@ export function App({ options }: { options: MountOptions }) {
     setOverview(snapshot.overview);
     setNavigatedAway(snapshot.navigatedAway);
     // An overview opened/closed while in focus mode moved the bean's parentOrOverview away from
-    // the entity going back into the overview pane — put it back, or F5 and the overview's
-    // bridged actions would target the wrong entity.
-    if (options.actions?.setOverview && !sameEntity(serverOverviewRef.current, snapshot.overview)) {
-      setOverviewBusy(true);
-      options.actions.setOverview(snapshot.overview.entityType, snapshot.overview.entityId);
-      setServerOverview(snapshot.overview);
+    // the entity going back into the overview pane — put it back, for F5 and the history.
+    if (options.bridge?.setOverview && !sameEntity(serverOverviewRef.current, snapshot.overview)) {
+      options.bridge.setOverview(snapshot.overview.entityType, snapshot.overview.entityId);
+      serverOverviewRef.current = snapshot.overview;
     }
-  }, [options, setFocusStack, setServerOverview]);
-
-  // The setOverview remoteCommand's oncomplete dispatches this plain DOM event (reactPanelActions.xhtml)
-  // since a p:remoteCommand call gives the caller no promise to await — this is what lets the
-  // overview toolbar re-enable itself precisely when the bean is back in sync, rather than never
-  // or after a guessed timeout. Filtered by panelIndex in case a page ever mounts more than one
-  // panel instance; focus.xhtml only ever has one.
-  useEffect(() => {
-    function onSetOverviewDone(e: Event) {
-      const detail = (e as CustomEvent<{ panelIndex?: string }>).detail;
-      if (options.panelIndex == null || detail?.panelIndex === options.panelIndex) {
-        setOverviewBusy(false);
-      }
-    }
-    window.addEventListener("siamois-set-overview-done", onSetOverviewDone);
-    return () => window.removeEventListener("siamois-set-overview-done", onSetOverviewDone);
-  }, [options.panelIndex]);
+  }, [options, setFocusStack]);
 
   // Browser back/forward after a client-side navigation: there's no cheap way to reconstruct
   // `view` from an arbitrary URL generically (that's a route-matching concern this app
@@ -406,52 +368,31 @@ export function App({ options }: { options: MountOptions }) {
       ? options.overview
       : { resourceUri: "", title: "", bookmarked: false };
 
-  const inFocus = focusStack.length > 0;
-  const mainToolbar: PanelToolbarSlot | undefined = inFocus
-    ? (() => {
-        const promoted: OverviewState = { entityType: view.entityType, entityId: view.entityId ?? "" };
-        // The bean's overview actions are bound to parentOrOverview, which is still the promoted
-        // entity — until an overview opened from within focus mode (or its close) moves it.
-        const bridged = !overviewBusy && sameEntity(serverOverview, promoted);
-        const oa = options.overviewActions;
-        const actions: PanelActions = bridged && oa
-          ? { duplicate: oa.duplicate, create: oa.create, settings: oa.settings, closeFocus }
-          : { closeFocus };
-        return {
-          chrome: overviewChromeFor(promoted),
-          organizationId: options.overviewOrganizationId ?? options.organizationId,
-          actions,
-        };
-      })()
-    : navigatedAway
-      ? undefined
-      : {
-          chrome: options.main,
-          organizationId: options.organizationId,
-          actions: options.goBackUrl ? { ...options.actions, closeFocus } : options.actions,
-        };
+  // The main pane's placeholder chrome (a detail panel replaces it with its entity's own): the
+  // server-built one while still on the view JSF mounted, otherwise derived from the registry —
+  // bookmark state unknown, which PanelToolbar then fetches itself.
+  const viewConfig = getEntityType(view.entityType);
+  const mainChrome: PanelChrome = !navigatedAway
+    ? options.main
+    : view.panelKind === "list" && viewConfig
+      ? { resourceUri: viewConfig.routes.list, title: viewConfig.labels.plural }
+      : { resourceUri: "", title: "" };
 
-  // chrome here is only ever what EntityDetailPanel falls back to before config.detail.chrome
-  // has data to derive from (Project registers one; see config.tsx) — for the overview seeded by
-  // MountOptions, options.overview already has the real thing. A placeholder is enough for a
-  // client-opened overview because EntityDetailPanel doesn't render a header at all until its own
-  // query resolves, at which point config.detail.chrome (when the entity type has one) replaces it.
+  const inFocus = focusStack.length > 0;
+  const mainToolbar: PanelToolbarSlot = {
+    chrome: mainChrome,
+    organizationId: inFocus ? (options.overviewOrganizationId ?? options.organizationId) : options.organizationId,
+    // Back out of focus mode: the client-side stack, or — page loaded in focus mode — goBackUrl.
+    actions: inFocus || (options.goBackUrl && !navigatedAway) ? { closeFocus } : undefined,
+  };
+
   const overviewToolbar: PanelToolbarSlot | undefined = overview
     ? {
         chrome: overviewChromeFor(overview),
         organizationId: options.overviewOrganizationId ?? options.organizationId,
-        // Omitted (not just disabled) while a setOverview call is in flight — PanelToolbar only
-        // ever checks whether an action callback is present, so this is what "unavailable" means
-        // for it (plan §8 phase 5's in-flight caveat). closeOverview is App's own wrapper, not
-        // the raw bridged function directly — it also clears the React overview state and the
-        // URL, neither of which the bridged closeOverview (server bean + legacy hideSideview JS
-        // only) knows about. reactAction_overview_closeOverview is always-rendered server-side
-        // now (see reactPanelActions.xhtml), so options.overviewActions?.closeOverview is only
-        // ever missing for an entity type React doesn't bridge overview actions for at all.
-        // fullscreen is App's own client-side focus swap (enterFocus), not a bridged call.
-        actions: overviewBusy
-          ? undefined
-          : { ...options.overviewActions, closeOverview, fullscreen: enterFocus },
+        // closeOverview is App's own wrapper (it also clears the React overview state and the
+        // URL); fullscreen is App's client-side focus swap (enterFocus).
+        actions: { closeOverview, fullscreen: enterFocus },
       }
     : undefined;
 
@@ -483,7 +424,6 @@ export function App({ options }: { options: MountOptions }) {
           onNavigate={navigate}
           onOpenOverview={openOverview}
           overview={overview}
-          onCreate={navigatedAway ? undefined : options.actions?.listCreate}
           toolbar={mainToolbar}
         />
       </SplitterPanel>
@@ -514,9 +454,6 @@ export function App({ options }: { options: MountOptions }) {
             // never `navigate`, which would move the MAIN pane instead (redirectToFocusOrOverview's
             // own distinction: root panel navigates, non-root panel just retargets the overview).
             onNavigateSibling={(id) => openOverview(overview.entityType, id)}
-            // Same reason the overview toolbar's own actions are withheld while a setOverview
-            // bridge call is in flight — a sibling jump fired mid-flight would race it.
-            siblingNavDisabled={overviewBusy}
           />
         )}
       </SplitterPanel>
@@ -534,7 +471,6 @@ export function App({ options }: { options: MountOptions }) {
         organizationId={options.organizationId}
         onNavigate={navigate}
         onOpenOverview={openOverview}
-        onCreate={navigatedAway ? undefined : options.actions?.listCreate}
         toolbar={mainToolbar}
       />
     </div>
@@ -544,7 +480,9 @@ export function App({ options }: { options: MountOptions }) {
     <QueryClientProvider client={queryClient}>
       {/* FlowBean.isWriteMode, for every panel below — see panels/writeMode.tsx for why this is a
           context and why it needs no change subscription. */}
-      <WriteModeProvider value={options.writeMode === true}>{content}</WriteModeProvider>
+      <WriteModeProvider value={options.writeMode === true}>
+        <BridgeProvider value={options.bridge}>{content}</BridgeProvider>
+      </WriteModeProvider>
     </QueryClientProvider>
   );
 }

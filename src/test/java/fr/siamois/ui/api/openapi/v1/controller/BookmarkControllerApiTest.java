@@ -46,7 +46,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -207,5 +209,31 @@ class BookmarkControllerApiTest {
                 .andExpect(status().isNoContent());
 
         verify(bookmarkService).deleteBookmark(any(UserInfo.class), eq("/action-unit/1"));
+    }
+
+    @Test
+    void status_returnsTheCallersBookmarkFlagForTheResource() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(bookmarkService.isRessourceBookmarkedByUser(any(UserInfo.class), eq("/action-unit"))).thenReturn(true);
+
+        mockMvc.perform(get("/api/v1/bookmarks/status")
+                        .param("resourceUri", "/action-unit")
+                        .param("organizationId", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bookmarked").value(true));
+    }
+
+    @Test
+    void status_organizationOutOfScope_returns403() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(get("/api/v1/bookmarks/status")
+                        .param("resourceUri", "/action-unit")
+                        .param("organizationId", "999"))
+                .andExpect(status().isForbidden());
     }
 }

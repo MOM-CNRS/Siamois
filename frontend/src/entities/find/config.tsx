@@ -1,4 +1,6 @@
 import type { EntityTypeConfig } from "../types";
+import { bookmarkChrome } from "../chrome";
+import { fetchSiblings } from "../siblingsApi";
 import { getFind, listFinds, patchFindAnswers } from "./api";
 import { findColumns } from "./columns";
 import { FindCreateForm } from "./CreateForm";
@@ -15,7 +17,7 @@ import type { FindDetail, FindSummary } from "./types";
 // Reduced scope vs RecordingUnit's own config (see the migration plan's lot 1 section): no
 // `list.schema` (pinned columns only, no dynamic column catalog/toggler yet — GET
 // /api/v1/projects/{id}/find-types is only consulted by the fiche, per-entity, not batched for a
-// list page) and no `api.siblings`/`detail.chrome` (no bookmark/prev-next wiring for mobiliers).
+// list page).
 export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   key: "find",
   labels: { singular: "Mobilier", plural: "Mobilier" },
@@ -23,6 +25,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   // Matches SpecimenTableDefinitionFactory/SpecimenPanel's own icon.
   icon: "bi bi-bucket",
   api: {
+    siblings: (id) => fetchSiblings("finds", id),
     get: getFind,
     list: listFinds,
     patchAnswers: (id, answers) => patchFindAnswers(id, answers),
@@ -47,6 +50,9 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
       },
     ],
     header: (entity, helpers) => <FindDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    chrome: (entity) => bookmarkChrome(entity, entity.fullIdentifier),
+    // The titlebar's "Créer" makes a sibling in the same project.
+    createScope: (entity) => (entity.projectId ? { entityType: "project", id: entity.projectId } : undefined),
   },
   routes: FIND_ROUTES,
   home: {

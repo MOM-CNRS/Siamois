@@ -69,7 +69,7 @@ class PhaseOpenApiServiceTest {
     @BeforeEach
     void setUp() {
         service = new PhaseOpenApiService(phaseService, actionUnitService, conceptService, conceptMapper,
-                profilePermissionService, phaseOpenApiMapper, phaseListProjectionService);
+                profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class));
 
         personDto = new PersonDTO();
         personDto.setId(1L);

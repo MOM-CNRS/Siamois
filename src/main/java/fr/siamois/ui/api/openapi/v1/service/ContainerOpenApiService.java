@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
+
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -61,6 +63,8 @@ public class ContainerOpenApiService {
     private final ProfilePermissionService profilePermissionService;
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
+    private final ResourceBookmarkService resourceBookmarkService;
+    private final EntitySiblingsService entitySiblingsService;
 
     @Transactional(readOnly = true)
     public ContainerResource getContainerById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
@@ -129,6 +133,7 @@ public class ContainerOpenApiService {
         ContainerResource resource = containerOpenApiMapper.toResource(container, lang, projection.resolvedLabels());
         resource.setAnswers(projection.answersFor(container.getId()));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit));
+        resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }
 
@@ -278,5 +283,13 @@ public class ContainerOpenApiService {
         } catch (NumberFormatException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu : " + value);
         }
+    }
+
+    /** Previous/next container in the same project ({@code GET /api/v1/containers/{id}/siblings}). */
+    @Transactional(readOnly = true)
+    public SiblingsResource findSiblings(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {
+        ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
+        return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.CONTAINER,
+                container.getActionUnit().getId(), container.getId());
     }
 }

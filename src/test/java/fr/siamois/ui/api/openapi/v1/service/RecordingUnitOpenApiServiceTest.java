@@ -144,6 +144,12 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private TableFieldConfigService tableFieldConfigService;
 
+    @Mock
+    private ResourceBookmarkService resourceBookmarkService;
+
+    @Mock
+    private EntitySiblingsService entitySiblingsService;
+
     @InjectMocks
     private RecordingUnitOpenApiService service;
 
@@ -908,6 +914,68 @@ class RecordingUnitOpenApiServiceTest {
 
         assertThat(data.getId()).isEqualTo("1026");
         verify(formService).applyTypedValueToAnswer(same(answerVm), eq(12));
+        verify(recordingUnitService, times(2)).save(any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void duplicateRecordingUnit_withoutWritePermission_throws403() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.duplicateRecordingUnit("1026", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(recordingUnitService, never()).save(any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void duplicateRecordingUnit_copiesWithoutParents_regeneratesIdentifier_andReturnsTheCopy() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+
+        RecordingUnitDTO source = new RecordingUnitDTO();
+        source.setId(1026L);
+        source.setCreatedByInstitution(inst);
+        source.setActionUnit(new ActionUnitSummaryDTO(au));
+        source.setDescription("Remblai");
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, source));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
+
+        RecordingUnitDTO saved = new RecordingUnitDTO();
+        saved.setId(3000L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(au));
+        ArgumentCaptor<RecordingUnitDTO> firstSave = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        when(recordingUnitService.save(firstSave.capture())).thenReturn(saved);
+        when(recordingUnitService.generateFullIdentifier(any(ActionUnitSummaryDTO.class), any())).thenReturn("RU-3000");
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(saved)).thenReturn(false);
+
+        // The copy's own detail, resolved the same way GET /recording-units/{id} does.
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("3000"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any()))
+                .thenReturn(formUiDtoWithOneField(mock(CustomFieldInteger.class)));
+
+        RecordingUnitResource data = service.duplicateRecordingUnit("1026", personDto, SCOPE, "fr");
+
+        assertThat(data).isSameAs(ruResource);
+        RecordingUnitDTO copy = firstSave.getAllValues().get(0);
+        assertThat(copy).isNotSameAs(source);
+        assertThat(copy.getId()).isNull();
+        assertThat(copy.getDescription()).isEqualTo("Remblai");
+        assertThat(copy.getParents()).isEmpty();
+        assertThat(copy.getAuthor()).isSameAs(personDto);
+        assertThat(copy.getCreatedBy()).isSameAs(personDto);
+        assertThat(saved.getFullIdentifier()).isEqualTo("RU-3000");
         verify(recordingUnitService, times(2)).save(any(RecordingUnitDTO.class));
     }
 

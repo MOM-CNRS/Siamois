@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
-import { createBookmark, deleteBookmark } from "../api/bookmarks";
-import type { OverviewActions, PanelActions, PanelChrome } from "../mountOptions";
+import { createBookmark, deleteBookmark, getBookmarkStatus } from "../api/bookmarks";
+import type { PanelActions, PanelChrome } from "../mountOptions";
 
 // Generic panel titlebar (plan §7.3/§8 phase 8) — one component for both the main panel's
 // titlebar (focus.xhtml) and the overview pane's own (panelContent.xhtml): same actions
@@ -21,12 +21,28 @@ import type { OverviewActions, PanelActions, PanelChrome } from "../mountOptions
 export interface PanelToolbarProps {
   chrome: PanelChrome;
   organizationId?: number;
-  actions?: PanelActions | OverviewActions;
+  actions?: PanelActions;
 }
 
 export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarProps) {
-  const [bookmarked, setBookmarked] = useState(chrome.bookmarked);
+  // chrome.bookmarked is unknown for a list/Home reached client-side — ask the server then.
+  const statusKnown = chrome.bookmarked !== undefined;
+  const { data: fetchedBookmarked } = useQuery({
+    queryKey: ["bookmark-status", chrome.resourceUri, organizationId],
+    queryFn: () => getBookmarkStatus(chrome.resourceUri, organizationId!),
+    enabled: !statusKnown && organizationId != null && chrome.resourceUri !== "",
+  });
+  const serverBookmarked = chrome.bookmarked ?? fetchedBookmarked ?? false;
+  const [bookmarked, setBookmarked] = useState(serverBookmarked);
+  // The chrome can change under a mounted toolbar — a placeholder replaced by the entity's own
+  // config.detail.chrome once its data loads, or another entity entirely — so the server's flag
+  // wins whenever it (or the target) changes. A local toggle leaves both deps untouched, so it
+  // isn't overwritten by the stale value still sitting in the query cache.
+  useEffect(() => {
+    setBookmarked(serverBookmarked);
+  }, [chrome.resourceUri, serverBookmarked]);
 
+  const queryClient = useQueryClient();
   const bookmarkMutation = useMutation({
     mutationFn: () => {
       if (organizationId == null) {
@@ -36,10 +52,17 @@ export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarPr
         ? deleteBookmark(chrome.resourceUri, organizationId)
         : createBookmark({ resourceUri: chrome.resourceUri, titleCode: chrome.title, organizationId });
     },
-    onSuccess: () => setBookmarked((current) => !current),
+    onSuccess: () => {
+      setBookmarked((current) => !current);
+      // Every cached copy of this flag is now stale: the entity's own `bookmarked` (detail and
+      // list rows) and a list/Home status lookup.
+      void queryClient.invalidateQueries({ queryKey: ["bookmark-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
+      void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
+    },
   });
 
-  const overview = actions as OverviewActions | undefined;
+  const overview = actions;
 
   return (
     <div className="panel-toolbar" style={{ display: "flex", gap: "0.5rem" }}>
@@ -78,7 +101,7 @@ export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarPr
         className="sideview-topbar-button"
         text
         rounded
-        disabled={bookmarkMutation.isPending || organizationId == null}
+        disabled={bookmarkMutation.isPending || organizationId == null || chrome.resourceUri === ""}
         onClick={() => bookmarkMutation.mutate()}
       />
       {actions?.create && (

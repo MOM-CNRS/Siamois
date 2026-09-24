@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
+
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
@@ -61,6 +63,8 @@ public class PlaceOpenApiService {
     private final ProfilePermissionService profilePermissionService;
     private final PlaceOpenApiMapper placeOpenApiMapper;
     private final LangService langService;
+    private final ResourceBookmarkService resourceBookmarkService;
+    private final EntitySiblingsService entitySiblingsService;
 
     /**
      * {@code GET /api/v1/places?organizationId=…} — the React counterpart of JSF's
@@ -109,6 +113,7 @@ public class PlaceOpenApiService {
                 })
                 .toList();
 
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
         return new PlaceListResponse(resources, meta);
     }
@@ -147,6 +152,7 @@ public class PlaceOpenApiService {
         if (dto.getId() != null) {
             resource.setResourceUri("/spatial-unit/" + dto.getId());
         }
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resource, lang);
         return resource;
     }
 
@@ -323,5 +329,13 @@ public class PlaceOpenApiService {
         if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, forbiddenMessage);
         }
+    }
+
+    /** Previous/next place in the same organization ({@code GET /api/v1/places/{id}/siblings}). */
+    @Transactional(readOnly = true)
+    public SiblingsResource findSiblings(ProjectApiCaller caller, long placeId) {
+        SpatialUnitDTO dto = requireAccessiblePlace(caller, placeId);
+        return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.PLACE,
+                dto.getCreatedByInstitution().getId(), dto.getId());
     }
 }

@@ -108,7 +108,7 @@ class FindOpenApiServiceTest {
                 personMapper,
                 actionUnitService,
                 spatialUnitService,
-                findOpenApiMapper);
+                findOpenApiMapper, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class));
 
         personDto = new PersonDTO();
         personDto.setId(1L);

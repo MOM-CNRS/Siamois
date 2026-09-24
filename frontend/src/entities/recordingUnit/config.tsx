@@ -1,5 +1,7 @@
 import type { EntityTypeConfig } from "../types";
-import { getRecordingUnit, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
+import { bookmarkChrome } from "../chrome";
+import { fetchSiblings } from "../siblingsApi";
+import { duplicateRecordingUnit, getRecordingUnit, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
 import { recordingUnitColumns } from "./columns";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
@@ -14,11 +16,9 @@ import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
 // detail.tabs/header now built (fiche + identifier/category header, mirroring Project's own —
-// see FicheTab.tsx/DetailHeader.tsx for what's deliberately still absent and why). Still NOT
-// built: `api.siblings` (no scoped `/recording-units/{id}/siblings` endpoint yet — RU's prev/next
-// would need to be scoped to its own action unit, not an institution the way Project's is) and
-// `detail.chrome` (no `resourceUri` on RecordingUnitResource yet to derive a bookmark target
-// from) — both out of scope for "the RU fiche renders instead of a blank overview panel".
+// see FicheTab.tsx/DetailHeader.tsx for what's deliberately still absent and why). Prev/next is
+// scoped to the RU's own project (GET /recording-units/{id}/siblings), not an organization the way
+// Project's is.
 export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, RecordingUnitDetail> = {
   key: "recordingUnit",
   labels: { singular: "Unité d'enregistrement", plural: "Unités d'enregistrement" },
@@ -26,9 +26,11 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
   // Matches RecordingUnitTableDefinitionFactory's own identifierCol iconClass.
   icon: "bi bi-pencil-square",
   api: {
+    siblings: (id) => fetchSiblings("recording-units", id),
     get: getRecordingUnit,
     list: listRecordingUnits,
     patchAnswers: (id, answers) => patchRecordingUnitAnswers(id, answers),
+    duplicate: duplicateRecordingUnit,
   },
   list: {
     columns: recordingUnitColumns,
@@ -59,6 +61,9 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
       },
     ],
     header: (entity, helpers) => <RecordingUnitDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    chrome: (entity) => bookmarkChrome(entity, entity.fullIdentifier),
+    // The titlebar's "Créer" makes a sibling in the same project.
+    createScope: (entity) => (entity.projectId ? { entityType: "project", id: entity.projectId } : undefined),
   },
   routes: RECORDING_UNIT_ROUTES,
   home: {

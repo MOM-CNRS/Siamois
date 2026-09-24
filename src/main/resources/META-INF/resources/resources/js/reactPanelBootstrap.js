@@ -31,6 +31,11 @@
         return fn ? function (entityType, id) { return fn({ entityType: entityType, id: id }); } : undefined;
     }
 
+    function openProjectSettingsFn(name) {
+        var fn = actionFn(name);
+        return fn ? function (projectId) { return fn({ projectId: projectId }); } : undefined;
+    }
+
     function mountContainer(container) {
         var d = container.dataset;
         container.dataset.mounted = "true";
@@ -63,18 +68,12 @@
                 title: d.overviewTitle,
                 bookmarked: d.overviewBookmarked === "true"
             } : undefined,
-            actions: {
-                duplicate: actionFn(d.actionDuplicate),
-                create: actionFn(d.actionCreate),
-                settings: actionFn(d.actionSettings),
-                listCreate: actionFn(d.actionListCreate),
-                setOverview: setOverviewFn(d.actionSetOverview)
-            },
-            overviewActions: {
+            // The only calls left into the JSF session (reactPanelActions.xhtml) — every toolbar
+            // action is built by React from the displayed entity's own REST data.
+            bridge: {
+                setOverview: setOverviewFn(d.actionSetOverview),
                 closeOverview: actionFn(d.overviewActionCloseOverview),
-                duplicate: actionFn(d.overviewActionDuplicate),
-                create: actionFn(d.overviewActionCreate),
-                settings: actionFn(d.overviewActionSettings)
+                openProjectSettings: openProjectSettingsFn(d.actionOpenProjectSettings)
             }
             // No onNavigate here: App.tsx owns navigation itself now (a client-side router, not
             // a page load per click) — that's the whole point of this migration.

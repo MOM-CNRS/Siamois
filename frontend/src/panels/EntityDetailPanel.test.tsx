@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
 import type { EntityTypeConfig } from "../entities/types";
 import { EntityDetailPanel } from "./EntityDetailPanel";
+import { WriteModeProvider } from "./writeMode";
+import { BridgeProvider } from "./bridge";
+import type { PanelBridge } from "../mountOptions";
 
 // Generic-component test (plan §8 phase 6), registered against a throwaway fake entity type —
 // entities/project/config.tsx and FicheTab.tsx already have their own coverage. This exercises
@@ -119,7 +122,7 @@ describe("EntityDetailPanel", () => {
           <EntityDetailPanel
             entityType="fake-detail-entity"
             entityId="1"
-            toolbar={{ chrome: { resourceUri: "/fake/1", title: "First", bookmarked: false }, actions: { duplicate: () => {} } }}
+            toolbar={{ chrome: { resourceUri: "/fake/1", title: "First", bookmarked: false }, actions: { closeFocus: () => {} } }}
           />
         </QueryClientProvider>,
       );
@@ -128,7 +131,7 @@ describe("EntityDetailPanel", () => {
 
     const header = container.querySelector(".p-panel-header")!;
     expect(header).toBeTruthy();
-    expect(header.querySelector(".bi-copy")).toBeTruthy();
+    expect(header.querySelector(".bi-arrows-angle-contract")).toBeTruthy();
   });
 
   it("renders config.detail.header content inside its own panel header, alongside the toolbar", async () => {
@@ -443,5 +446,126 @@ describe("EntityDetailPanel sibling navigation (plan: fiche précédente/suivant
     await flush();
 
     expect(container.textContent).toContain("Autre of Entity 2");
+  });
+});
+
+// JSF's titlebar create/duplicate/settings, now built by the panel itself from its entity's own
+// data (`_permissions`, the write mode) — so they are right for whichever entity is displayed.
+describe("EntityDetailPanel entity actions", () => {
+  interface ActionEntity {
+    id: string;
+    name: string;
+    _permissions?: { canEdit: boolean; canManageSettings?: boolean };
+  }
+  const actionGet = vi.fn<(id: string | number) => Promise<ActionEntity>>();
+  const duplicateMock = vi.fn<(id: string | number) => Promise<ActionEntity>>();
+  const actionConfig: EntityTypeConfig<ActionEntity, ActionEntity> = {
+    key: "fake-action-entity",
+    labels: { singular: "Action", plural: "Actions" },
+    collectionPath: "fake-action-entities",
+    icon: "bi bi-question",
+    api: { list: vi.fn(), get: actionGet, duplicate: duplicateMock },
+    list: {
+      columns: [],
+      searchable: false,
+      createForm: (ctx) => <div data-testid="create-form">scope {String(ctx.scope?.id)}</div>,
+    },
+    detail: {
+      tabs: [{ key: "fiche", label: "Fiche", render: (e) => <span>{e.name}</span> }],
+      createScope: () => ({ entityType: "project", id: "42" }),
+      settingsProjectId: (e) => (e._permissions?.canManageSettings ? e.id : undefined),
+    },
+    routes: { list: "/fake-action", detail: (id) => `/fake-action/${id}` },
+  };
+  registerEntityType(actionConfig);
+
+  function renderPanel(opts: { writeMode: boolean; bridge?: PanelBridge; onOpenOverview?: (t: string, id: string | number) => void }) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={opts.writeMode}>
+            <BridgeProvider value={opts.bridge}>
+              <EntityDetailPanel
+                entityType="fake-action-entity"
+                entityId="7"
+                onOpenOverview={opts.onOpenOverview}
+                toolbar={{ chrome: { resourceUri: "", title: "" } }}
+              />
+            </BridgeProvider>
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  beforeEach(() => {
+    actionGet.mockReset().mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: true } });
+    duplicateMock.mockReset().mockResolvedValue({ id: "8", name: "Seven (copie)" });
+  });
+
+  it("offers create and duplicate only in write mode with edit rights", async () => {
+    renderPanel({ writeMode: false });
+    await flush();
+    expect(container.querySelector(".bi-plus-square")).toBeNull();
+    expect(container.querySelector(".bi-copy")).toBeNull();
+
+    renderPanel({ writeMode: true });
+    await flush();
+    expect(container.querySelector(".bi-plus-square")).toBeTruthy();
+    expect(container.querySelector(".bi-copy")).toBeTruthy();
+
+    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: false } });
+    act(() => root.unmount());
+    root = createRoot(container);
+    renderPanel({ writeMode: true });
+    await flush();
+    expect(container.querySelector(".bi-plus-square")).toBeNull();
+    expect(container.querySelector(".bi-copy")).toBeNull();
+  });
+
+  it("duplicates through the API and opens the copy in the overview", async () => {
+    const onOpenOverview = vi.fn();
+    renderPanel({ writeMode: true, onOpenOverview });
+    await flush();
+
+    await act(async () => {
+      container.querySelector(".bi-copy")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(duplicateMock).toHaveBeenCalledWith("7");
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-action-entity", "8");
+  });
+
+  it("opens the create form in a dialog, scoped by config.detail.createScope", async () => {
+    renderPanel({ writeMode: true });
+    await flush();
+
+    await act(async () => {
+      container.querySelector(".bi-plus-square")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    const form = document.querySelector("[data-testid='create-form']");
+    expect(form?.textContent).toBe("scope 42");
+  });
+
+  it("shows settings only when allowed, and opens them through the bridge with the entity's id", async () => {
+    const openProjectSettings = vi.fn();
+    renderPanel({ writeMode: false, bridge: { openProjectSettings } });
+    await flush();
+    expect(container.querySelector(".bi-gear")).toBeNull();
+
+    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: false, canManageSettings: true } });
+    act(() => root.unmount());
+    root = createRoot(container);
+    renderPanel({ writeMode: false, bridge: { openProjectSettings } });
+    await flush();
+
+    await act(async () => {
+      container.querySelector(".bi-gear")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(openProjectSettings).toHaveBeenCalledWith("7");
   });
 });

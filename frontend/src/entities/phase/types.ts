@@ -26,6 +26,7 @@ export interface PhaseResource {
   answers?: Record<string, unknown>;
   _permissions?: PhasePermissions;
   resourceUri?: string | null;
+  bookmarked?: boolean;
 }
 
 // Same resource both in the list and the detail response, like Find/RecordingUnit.

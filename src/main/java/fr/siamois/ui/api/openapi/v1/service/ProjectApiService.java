@@ -324,7 +324,11 @@ public class ProjectApiService {
         ActionUnitDTO dto = row.actionUnit();
         boolean canWrite = profilePermissionService.hasActionUnitWritePermission(
                 caller.person(), dto.getCreatedByInstitution(), dto.getId());
-        return ProjectResourcePermissions.of(canWrite);
+        boolean canManageSettings = dto.getCreatedByInstitution() != null
+                && profilePermissionService.hasProjectPermission(
+                        new UserInfo(dto.getCreatedByInstitution(), caller.person(), null),
+                        dto.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
+        return ProjectResourcePermissions.of(canWrite).withManageSettings(canManageSettings);
     }
 
     /**

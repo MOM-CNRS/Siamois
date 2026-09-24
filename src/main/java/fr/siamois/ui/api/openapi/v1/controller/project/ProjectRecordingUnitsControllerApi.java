@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListProjectionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,6 +35,7 @@ public class ProjectRecordingUnitsControllerApi {
     private final ProjectApiService projectApiService;
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final RecordingUnitListProjectionService recordingUnitListProjectionService;
+    private final ResourceBookmarkService resourceBookmarkService;
 
 
     @GetMapping
@@ -99,6 +101,10 @@ public class ProjectRecordingUnitsControllerApi {
                     return resource;
                 })
                 .toList();
+        // Every row shares this project, hence one institution — one bookmark query for the page.
+        if (!page.isEmpty()) {
+            resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getCreatedByInstitution(), resources, lang);
+        }
 
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
         return ResponseEntity.ok()

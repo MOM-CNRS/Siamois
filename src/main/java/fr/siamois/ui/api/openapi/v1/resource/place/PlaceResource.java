@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.place;
 
+import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
@@ -16,7 +18,7 @@ import java.util.Map;
 
 @Data
 @NoArgsConstructor
-public class PlaceResource extends PlaceResourceIdentifier {
+public class PlaceResource extends PlaceResourceIdentifier implements BookmarkableResource {
 
     private String name;
 
@@ -53,6 +55,9 @@ public class PlaceResource extends PlaceResourceIdentifier {
 
     @Schema(description = "URI de navigation/favori du lieu", example = "/spatial-unit/42")
     private String resourceUri;
+
+    @Schema(description = "Le lieu est dans les favoris du caller")
+    private boolean bookmarked;
 
     @JsonProperty("_counts")
     private PlaceResourceCounts count;

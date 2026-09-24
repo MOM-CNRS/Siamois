@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
+
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.auth.Person;
@@ -73,6 +75,8 @@ public class FindOpenApiService {
     private final ActionUnitService actionUnitService;
     private final SpatialUnitService spatialUnitService;
     private final FindOpenApiMapper findOpenApiMapper;
+    private final ResourceBookmarkService resourceBookmarkService;
+    private final EntitySiblingsService entitySiblingsService;
 
     @Transactional
     public FindResource createFind(FindCreateRequest request,
@@ -177,6 +181,7 @@ public class FindOpenApiService {
         if (dto.getId() != null) {
             resource.setResourceUri("/specimen/" + dto.getId());
         }
+        resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }
 
@@ -380,5 +385,14 @@ public class FindOpenApiService {
             }
         }
         return null;
+    }
+
+    /** Previous/next mobilier in the same project ({@code GET /api/v1/finds/{id}/siblings}). */
+    @Transactional(readOnly = true)
+    public SiblingsResource findSiblings(long specimenId, Set<Long> accessibleInstitutionIds) {
+        SpecimenDTO dto = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
+        return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.FIND, projectId, dto.getId());
     }
 }

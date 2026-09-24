@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
+
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -135,6 +137,8 @@ public class RecordingUnitOpenApiService {
     private final PhaseRepository phaseRepository;
     private final PhaseMapper phaseMapper;
     private final TableFieldConfigService tableFieldConfigService;
+    private final ResourceBookmarkService resourceBookmarkService;
+    private final EntitySiblingsService entitySiblingsService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -173,6 +177,7 @@ public class RecordingUnitOpenApiService {
         // affordances that would then 403 on PATCH.
         resource.setPermissions(ProjectResourcePermissions.of(
                 profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)));
+        resourceBookmarkService.markBookmarked(userInfo, resource);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
@@ -1053,6 +1058,38 @@ public class RecordingUnitOpenApiService {
         return resolveMobileDetail(key, personDto, accessibleInstitutionIds, null, lang);
     }
 
+    /**
+     * Duplique une UE ({@code POST /api/v1/recording-units/{id}/duplicate}) — même copie que le
+     * bouton JSF ({@code RecordingUnitPanel.duplicate()}) : les champs de base via le constructeur
+     * de copie de {@link RecordingUnitDTO}, sans parents, auteur/créateur = l'appelant, identifiant
+     * régénéré. Même droit que l'édition de l'UE source.
+     */
+    @Transactional
+    public RecordingUnitResource duplicateRecordingUnit(String recordingUnitKey,
+                                                        PersonDTO personDto,
+                                                        Set<Long> accessibleInstitutionIds,
+                                                        String lang) {
+        RecordingUnitDTO source = recordingUnitService
+                .findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null)
+                .dto();
+        InstitutionDTO institution = source.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UE sans organisation");
+        }
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, source)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Duplication non autorisée");
+        }
+
+        RecordingUnitDTO copy = new RecordingUnitDTO(source);
+        copy.setParents(new HashSet<>());
+        copy.setAuthor(personDto);
+        copy.setCreatedBy(personDto);
+        RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> saveWithGeneratedIdentifier(copy));
+
+        return resolveMobileDetail(String.valueOf(created.getId()), personDto, accessibleInstitutionIds, null, lang);
+    }
+
     private RecordingUnitDTO initRecordingUnitShell(ConceptDTO typeDto, ActionUnitDTO au,
                                                      InstitutionDTO institution, PersonDTO personDto) {
         RecordingUnitDTO shell = new RecordingUnitDTO();
@@ -1489,5 +1526,21 @@ public class RecordingUnitOpenApiService {
             return Long.parseLong(s);
         }
         return null;
+    }
+
+    /**
+     * Previous/next recording unit in the same project ({@code GET /api/v1/recording-units/{id}/siblings}),
+     * after the same access check as the detail.
+     */
+    @Transactional(readOnly = true)
+    public SiblingsResource findSiblings(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {
+        RecordingUnitDTO dto = recordingUnitService
+                .findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null)
+                .dto();
+        if (!profilePermissionService.canViewRecordingUnit(personDto, dto)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
+        }
+        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
+        return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.RECORDING_UNIT, projectId, dto.getId());
     }
 }

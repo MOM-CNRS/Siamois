@@ -75,7 +75,7 @@ class ContainerOpenApiServiceTest {
     void setUp() {
         service = new ContainerOpenApiService(containerService, actionUnitService, conceptService, conceptMapper,
                 spatialUnitService, unitDefinitionMapper, profilePermissionService, containerOpenApiMapper,
-                containerListProjectionService);
+                containerListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class));
 
         personDto = new PersonDTO();
         personDto.setId(1L);

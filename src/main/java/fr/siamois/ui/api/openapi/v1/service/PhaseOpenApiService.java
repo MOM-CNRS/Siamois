@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
+
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -57,6 +59,8 @@ public class PhaseOpenApiService {
     private final ProfilePermissionService profilePermissionService;
     private final PhaseOpenApiMapper phaseOpenApiMapper;
     private final PhaseListProjectionService phaseListProjectionService;
+    private final ResourceBookmarkService resourceBookmarkService;
+    private final EntitySiblingsService entitySiblingsService;
 
     @Transactional(readOnly = true)
     public PhaseResource getPhaseById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
@@ -128,6 +132,7 @@ public class PhaseOpenApiService {
         PhaseResource resource = phaseOpenApiMapper.toResource(phase, lang, projection.resolvedLabels());
         resource.setAnswers(projection.answersFor(phase.getId()));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit));
+        resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }
 
@@ -264,5 +269,13 @@ public class PhaseOpenApiService {
         } catch (NumberFormatException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu : " + value);
         }
+    }
+
+    /** Previous/next phase in the same project ({@code GET /api/v1/phases/{id}/siblings}). */
+    @Transactional(readOnly = true)
+    public SiblingsResource findSiblings(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {
+        PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
+        return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.PHASE,
+                phase.getActionUnit().getId(), phase.getId());
     }
 }

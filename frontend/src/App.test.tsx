@@ -108,7 +108,6 @@ function baseOptions(overrides: Partial<MountOptions> = {}): MountOptions {
     basePath: "",
     csrf: { headerName: "X-CSRF", token: "t" },
     main: { resourceUri: "/fake-app-entity", title: "Fakes", bookmarked: false },
-    actions: { duplicate: vi.fn(), create: vi.fn(), settings: vi.fn() },
     ...overrides,
   };
 }
@@ -173,13 +172,13 @@ describe("App client-side navigation", () => {
     expect(window.location.search).toContain("s=");
   });
 
-  it("keeps the main toolbar visible once the overview opens, unlike a full navigate", async () => {
+  it("keeps the main toolbar visible once the overview opens", async () => {
     act(() => {
       root.render(<App options={baseOptions()} />);
     });
     await flush();
 
-    expect(container.querySelector(".bi-copy")).toBeTruthy();
+    expect(container.querySelector(".bi-bookmark")).toBeTruthy();
 
     const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
     await act(async () => {
@@ -187,16 +186,17 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    expect(container.querySelector(".bi-copy")).toBeTruthy();
+    expect(container.querySelector(".panel-splitter-panel-l .bi-bookmark")).toBeTruthy();
   });
 
-  it("hides the main toolbar entirely after a full client-side navigation (it was built for the original entity only)", async () => {
+  // The toolbar is built from the displayed entity itself, not from what JSF mounted — so it
+  // survives a client-side navigation instead of disappearing.
+  it("keeps the main toolbar after a client-side navigation, with the new entity's own chrome", async () => {
+    getMock.mockResolvedValue({ id: "1", name: "Row A" });
     act(() => {
       root.render(<App options={baseOptions({ panelKind: "home", entityType: "fake-app-entity" })} />);
     });
     await flush();
-
-    expect(container.querySelector(".bi-copy")).toBeTruthy();
     expect(container.querySelector(".bi-bookmark")).toBeTruthy();
 
     const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Go to detail")!;
@@ -205,8 +205,8 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    expect(container.querySelector(".bi-copy")).toBeNull();
-    expect(container.querySelector(".bi-bookmark")).toBeNull();
+    expect(container.textContent).toContain("Detail of Row A");
+    expect(container.querySelector(".bi-bookmark")).toBeTruthy();
   });
 
   // F5 replays the address bar, so every pushed URL must be the /focus/<main>[?s=<overview>] form
@@ -278,7 +278,7 @@ describe("App client-side navigation", () => {
   it("closes the overview, clears the s= URL param and calls the bridged closeOverview action", async () => {
     const closeOverview = vi.fn();
     act(() => {
-      root.render(<App options={baseOptions({ overviewActions: { closeOverview } })} />);
+      root.render(<App options={baseOptions({ bridge: { closeOverview } })} />);
     });
     await flush();
 
@@ -375,15 +375,13 @@ describe("App focus mode", () => {
 
   it("promotes the overview entity to the main pane, with a back= URL and no bean call", async () => {
     const setOverview = vi.fn();
-    const overviewDuplicate = vi.fn();
     act(() => {
       root.render(
         <App
           options={baseOptions({
             overviewEntityType: "fake-app-entity",
             overviewEntityId: "1",
-            actions: { duplicate: vi.fn(), setOverview },
-            overviewActions: { duplicate: overviewDuplicate, closeOverview: vi.fn() },
+            bridge: { setOverview, closeOverview: vi.fn() },
           })}
         />,
       );
@@ -402,24 +400,19 @@ describe("App focus mode", () => {
     expect(window.location.search).not.toContain("s=");
     expect(setOverview).not.toHaveBeenCalled();
 
-    // The bean's overview actions are bound to parentOrOverview — the promoted entity — so they
-    // act for the new main.
-    await click(mainPane().querySelector(".bi-copy"));
-    expect(overviewDuplicate).toHaveBeenCalled();
+    expect(mainPane().querySelector(".bi-bookmark")).toBeTruthy();
     expect(mainPane().querySelector(".bi-arrows-angle-contract")).toBeTruthy();
   });
 
   it("closeFocus restores the previous main, its toolbar and the overview", async () => {
     const setOverview = vi.fn();
-    const mainDuplicate = vi.fn();
     act(() => {
       root.render(
         <App
           options={baseOptions({
             overviewEntityType: "fake-app-entity",
             overviewEntityId: "1",
-            actions: { duplicate: mainDuplicate, setOverview },
-            overviewActions: { closeOverview: vi.fn() },
+            bridge: { setOverview, closeOverview: vi.fn() },
           })}
         />,
       );
@@ -436,24 +429,20 @@ describe("App focus mode", () => {
     // Bean never left that state — nothing to resync.
     expect(setOverview).not.toHaveBeenCalled();
     expect(mainPane().querySelector(".bi-arrows-angle-contract")).toBeNull();
-
-    await click(mainPane().querySelector(".bi-copy"));
-    expect(mainDuplicate).toHaveBeenCalled();
+    expect(mainPane().querySelector(".bi-bookmark")).toBeTruthy();
   });
 
   it("nests: focus, open an overview, focus again, then unwinds both levels and resyncs the bean", async () => {
     childListMock.mockReset().mockResolvedValue({ data: [{ id: "9", name: "Child row" }], totalCount: 1, limit: 20, offset: 0 });
     childGetMock.mockReset().mockResolvedValue({ id: "9", name: "Child row" });
     const setOverview = vi.fn();
-    const overviewDuplicate = vi.fn();
     act(() => {
       root.render(
         <App
           options={baseOptions({
             overviewEntityType: "fake-parent-with-child-tab",
             overviewEntityId: "1",
-            actions: { setOverview },
-            overviewActions: { duplicate: overviewDuplicate, closeOverview: vi.fn() },
+            bridge: { setOverview, closeOverview: vi.fn() },
           })}
         />,
       );
@@ -470,11 +459,6 @@ describe("App focus mode", () => {
     await click(mainPane().querySelector(".entity-list-panel-identifier-link"));
     await flush();
     expect(setOverview).toHaveBeenLastCalledWith("fake-child-entity", "9");
-    act(() => {
-      window.dispatchEvent(new CustomEvent("siamois-set-overview-done", { detail: {} }));
-    });
-    // parentOrOverview is the child now — the bridged actions no longer act for the main entity.
-    expect(mainPane().querySelector(".bi-copy")).toBeNull();
     // The back= still travels with the URL while the promoted entity stays on screen.
     expect(window.location.search).toContain("back=");
 

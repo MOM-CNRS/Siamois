@@ -21,6 +21,14 @@ export async function getRecordingUnit(id: string | number): Promise<RecordingUn
   return body.data;
 }
 
+// POST /api/v1/recording-units/{id}/duplicate — same copy as JSF's RecordingUnitPanel.duplicate().
+export async function duplicateRecordingUnit(id: string | number): Promise<RecordingUnitDetail> {
+  const response = await apiFetch<RecordingUnitResponseBody>(`/api/v1/recording-units/${id}/duplicate`, {
+    method: "POST",
+  });
+  return response.data;
+}
+
 // Mirrors RecordingUnitCreateRequest's required pair (projectId/typeId — answers/geom both
 // optional and unused here, see CreateForm.tsx's own doc for why the overlay stays this small).
 export interface RecordingUnitCreateBody {

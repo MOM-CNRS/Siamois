@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.place;
 
+import fr.siamois.ui.api.openapi.v1.response.SiblingsResponse;
+
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
@@ -109,6 +111,21 @@ public class PlaceControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         placeOpenApiService.deletePlace(caller, id, lang);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/siblings")
+    @Operation(summary = "Lieu précédent et suivant",
+            description = "Voisins dans la même organisation, par ordre de création. Boucle en fin de liste (le suivant du "
+                    + "dernier est le premier) ; null seulement s'il n'y a aucun autre élément.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<SiblingsResponse> getSiblings(@PathVariable Long id) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        return ResponseEntity.ok(new SiblingsResponse(placeOpenApiService.findSiblings(caller, id)));
     }
 
     @Operation(

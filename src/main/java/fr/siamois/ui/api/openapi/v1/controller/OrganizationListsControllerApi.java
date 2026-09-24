@@ -25,6 +25,7 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResp
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ContainerListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService;
+import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService.EditPermissions;
 import fr.siamois.ui.api.openapi.v1.service.PhaseListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
@@ -73,6 +74,7 @@ public class OrganizationListsControllerApi {
     private final PhaseListProjectionService phaseListProjectionService;
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
+    private final ResourceBookmarkService resourceBookmarkService;
 
     @GetMapping("/api/v1/recording-units")
     @Tag(name = "Unité d'enregistrement")
@@ -116,6 +118,7 @@ public class OrganizationListsControllerApi {
                     return resource;
                 })
                 .toList();
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
         return ok(new RecordingUnitListResponse(resources, meta(page, limit, offset)), page);
     }
 
@@ -157,6 +160,7 @@ public class OrganizationListsControllerApi {
                     return resource;
                 })
                 .toList();
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
         return ok(new FindListResponse(resources, meta(page, limit, offset)), page);
     }
 
@@ -196,6 +200,7 @@ public class OrganizationListsControllerApi {
                     return resource;
                 })
                 .toList();
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
         return ok(new PhaseListResponse(resources, meta(page, limit, offset)), page);
     }
 
@@ -236,6 +241,7 @@ public class OrganizationListsControllerApi {
                     return resource;
                 })
                 .toList();
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
         return ok(new ContainerListResponse(resources, meta(page, limit, offset)), page);
     }
 

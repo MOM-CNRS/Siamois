@@ -23,6 +23,9 @@ export interface RecordingUnitResource {
   syncRevision?: number | null;
   identifier?: string | null;
   fullIdentifier: string;
+  // Navigation/bookmark URI ("/recording-unit/42") and the caller's bookmark flag.
+  resourceUri?: string | null;
+  bookmarked?: boolean;
   projectId?: string | null;
   // Organization-wide list only — see ProjectRef.
   project?: ProjectRef | null;

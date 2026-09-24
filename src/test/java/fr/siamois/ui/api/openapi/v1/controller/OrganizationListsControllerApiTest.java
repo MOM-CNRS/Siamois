@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
@@ -82,7 +83,7 @@ class OrganizationListsControllerApiTest {
         OrganizationListsControllerApi controller = new OrganizationListsControllerApi(
                 projectApiService, organizationListService, placeOpenApiService,
                 recordingUnitResponseMapper, recordingUnitListProjectionService, findOpenApiMapper,
-                phaseOpenApiMapper, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService);
+                phaseOpenApiMapper, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService, org.mockito.Mockito.mock(ResourceBookmarkService.class));
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper().registerModule(new JavaTimeModule())))

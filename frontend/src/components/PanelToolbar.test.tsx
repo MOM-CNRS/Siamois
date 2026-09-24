@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { apiFetch } from "../api/client";
 import { PanelToolbar } from "./PanelToolbar";
-import type { OverviewActions, PanelChrome } from "../mountOptions";
+import type { PanelActions, PanelChrome } from "../mountOptions";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -25,7 +25,7 @@ async function flush() {
   });
 }
 
-function render(chrome: PanelChrome, organizationId?: number, actions?: OverviewActions) {
+function render(chrome: PanelChrome, organizationId?: number, actions?: PanelActions) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   act(() => {
     root.render(
@@ -64,6 +64,24 @@ describe("PanelToolbar", () => {
     expect(container.querySelector(".bi-chevron-double-right")).toBeNull();
     expect(container.querySelector(".bi-arrows-angle-expand")).toBeNull();
     expect(container.querySelector(".bi-arrows-angle-contract")).toBeNull();
+  });
+
+  it("follows the chrome's bookmarked flag when it changes under a mounted toolbar", () => {
+    render({ resourceUri: "", title: "", bookmarked: false }, 7);
+    expect(container.querySelector(".bi-bookmark-fill")).toBeNull();
+
+    // Placeholder chrome replaced by the entity's own once its data has loaded.
+    render({ resourceUri: "/recording-unit/3", title: "UE-3", bookmarked: true }, 7);
+    expect(container.querySelector(".bi-bookmark-fill")).toBeTruthy();
+  });
+
+  it("asks the server when the chrome doesn't know the bookmark state (a list reached client-side)", async () => {
+    mockedApiFetch.mockResolvedValue({ bookmarked: true });
+    render({ resourceUri: "/action-unit", title: "Projets" }, 7);
+    await flush();
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/bookmarks/status?resourceUri=%2Faction-unit&organizationId=7");
+    expect(container.querySelector(".bi-bookmark-fill")).toBeTruthy();
   });
 
   it("renders the closeFocus button when provided and calls it", () => {

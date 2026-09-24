@@ -32,15 +32,9 @@
          data-overview-resource-uri="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.ressourceUri() : ''}"
          data-overview-title="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.resolveTitleOrTitleCode() : ''}"
          data-overview-bookmarked="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.isBookmarked() : false}"
-         data-action-duplicate="reactAction_duplicate_${panelModel.jsPanelIndex}"
-         data-action-create="reactAction_create_${panelModel.jsPanelIndex}"
-         data-action-settings="reactAction_settings_${panelModel.jsPanelIndex}"
-         data-action-list-create="reactAction_listCreate_${panelModel.jsPanelIndex}"
+         data-action-open-project-settings="reactAction_openProjectSettings_${panelModel.jsPanelIndex}"
          data-action-set-overview="reactAction_setOverview_${panelModel.jsPanelIndex}"
          data-overview-action-close-overview="reactAction_overview_closeOverview_${panelModel.jsPanelIndex}"
-         data-overview-action-duplicate="reactAction_overview_duplicate_${panelModel.jsPanelIndex}"
-         data-overview-action-create="reactAction_overview_create_${panelModel.jsPanelIndex}"
-         data-overview-action-settings="reactAction_overview_settings_${panelModel.jsPanelIndex}"
     ></div>
 
 </ui:composition>

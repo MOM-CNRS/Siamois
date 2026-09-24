@@ -8,6 +8,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.converter.InstitutionConverter;
@@ -63,6 +64,7 @@ public class NavBean implements Serializable {
     private final transient ProjectDetailsBean projectDetailsBean;
     private final ApplicationMembersListBean applicationMembersListBean;
     private final transient ProfilePermissionService profilePermissionService;
+    private final transient ActionUnitService actionUnitService;
 
     private String urlToGoBack; // URL to go back from settings
 
@@ -82,7 +84,8 @@ public class NavBean implements Serializable {
                    InstitutionConverter converter,
                    InstitutionService institutionService,
                    RedirectBean redirectBean,
-                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean, ProjectDetailsBean projectDetailsBean, ApplicationMembersListBean applicationMembersListBean, ProfilePermissionService profilePermissionService) {
+                   InstitutionListSettingsBean institutionListSettingsBean, ProjectListBean projectListBean, BookmarkService bookmarkService, FlowBean flowBean, LangBean langBean, ProjectDetailsBean projectDetailsBean, ApplicationMembersListBean applicationMembersListBean, ProfilePermissionService profilePermissionService,
+                   ActionUnitService actionUnitService) {
         this.sessionSettingsBean = sessionSettingsBean;
         this.institutionChangeEventPublisher = institutionChangeEventPublisher;
         this.converter = converter;
@@ -96,6 +99,7 @@ public class NavBean implements Serializable {
         this.projectDetailsBean = projectDetailsBean;
         this.applicationMembersListBean = applicationMembersListBean;
         this.profilePermissionService = profilePermissionService;
+        this.actionUnitService = actionUnitService;
     }
 
     public boolean isAdministrationVisible() {
@@ -381,6 +385,21 @@ public class NavBean implements Serializable {
         FacesContext facesContext = FacesContext.getCurrentInstance();
         String contextPath = facesContext.getExternalContext().getRequestContextPath();
         facesContext.getExternalContext().redirect(contextPath + path);
+    }
+
+    /**
+     * React main panel's settings button (reactPanelActions.xhtml, reactAction_openProjectSettings):
+     * the project id travels as a remoteCommand param instead of being bound to the panel bean JSF
+     * mounted, so the button keeps working after React navigated to another project client-side.
+     * Same permission check as the JSF button (inside ProjectListBean#redirectToProject).
+     */
+    public void redirectToActionUnitSettingsFromRequest() throws IOException {
+        String idParam = FacesContext.getCurrentInstance().getExternalContext()
+                .getRequestParameterMap().get("projectId");
+        if (idParam == null || idParam.isBlank()) {
+            return;
+        }
+        redirectToActionUnitSettings(actionUnitService.findById(Long.parseLong(idParam)));
     }
 
     public void redirectToActionUnit(Long actionUnitId, @Nullable Integer tabIndex) throws IOException {

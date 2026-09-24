@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
+import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
@@ -17,7 +19,7 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
+public class RecordingUnitResource extends RecordingUnitResourceIdentifier implements BookmarkableResource {
 
     @Schema(description = "Révision de synchronisation (optimistic locking)")
     private Long syncRevision;
@@ -68,5 +70,11 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier {
             + "partagent le même projet ; sur le détail (GET /api/v1/recording-units/{id}), calculé pour "
             + "cette seule unité.")
     private ProjectResourcePermissions permissions;
+
+    @Schema(description = "URI de navigation/favori de l'unité d'enregistrement", example = "/recording-unit/42")
+    private String resourceUri;
+
+    @Schema(description = "L'unité d'enregistrement est dans les favoris du caller")
+    private boolean bookmarked;
 
 }

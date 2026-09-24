@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BreadCrumb } from "primereact/breadcrumb";
 import { Chip } from "primereact/chip";
 import { Panel } from "primereact/panel";
@@ -8,7 +8,10 @@ import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { SiblingNav } from "../components/SiblingNav";
-import type { PanelToolbarSlot } from "../mountOptions";
+import { CreateEntityDialog } from "../components/CreateEntityDialog";
+import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
+import { useBridge } from "./bridge";
+import { useCanEdit } from "./writeMode";
 
 export interface EntityDetailPanelProps {
   entityType: string;
@@ -105,6 +108,22 @@ export function EntityDetailPanel({
     enabled: config?.api.siblings != null,
   });
 
+  // The titlebar's entity actions (JSF: create/duplicate/settings) — computed from this entity's
+  // own data, so they are right for whichever entity is displayed, however it got here. Hooks
+  // stay above the early returns below.
+  const canEdit = useCanEdit(data as { _permissions?: { canEdit?: boolean } } | undefined);
+  const bridge = useBridge();
+  const queryClient = useQueryClient();
+  const [createOpen, setCreateOpen] = useState(false);
+  const duplicateMutation = useMutation({
+    mutationFn: () => config!.api.duplicate!(entityId),
+    onSuccess: (copy) => {
+      void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
+      // JSF opens the copy in the overview (FlowBean.addRecordingUnitToOverview).
+      (onOpenOverview ?? onNavigate)?.(entityType, copy.id);
+    },
+  });
+
   if (!config) {
     return <div className="entity-detail-panel-unsupported">Unknown entity type &quot;{entityType}&quot;</div>;
   }
@@ -126,9 +145,20 @@ export function EntityDetailPanel({
   // what makes a client-opened overview's toolbar (plan §8 phase 5, EntityListPanel's
   // onOpenOverview — no server round-trip to build a toolbar from) possible at all, and it also
   // keeps title/bookmark state current after an in-place edit for the originally-seeded overview.
+  const settingsProjectId = config.detail.settingsProjectId?.(data);
+  const entityActions: PanelActions = {
+    create: canEdit && config.list.createForm ? () => setCreateOpen(true) : undefined,
+    duplicate:
+      canEdit && config.api.duplicate && !duplicateMutation.isPending ? () => duplicateMutation.mutate() : undefined,
+    settings:
+      settingsProjectId != null && bridge.openProjectSettings
+        ? () => bridge.openProjectSettings!(settingsProjectId)
+        : undefined,
+  };
   const resolvedToolbar: PanelToolbarSlot | undefined = toolbar && {
     ...toolbar,
     chrome: config.detail.chrome?.(data) ?? toolbar.chrome,
+    actions: { ...toolbar.actions, ...entityActions },
   };
 
   return (
@@ -171,6 +201,20 @@ export function EntityDetailPanel({
             command: onNavigate ? () => onNavigate(entityType) : undefined,
           },
         ]}
+      />
+      <CreateEntityDialog
+        entityType={entityType}
+        visible={createOpen}
+        organizationId={organizationId}
+        scope={config.detail.createScope?.(data)}
+        onHide={() => setCreateOpen(false)}
+        onCreated={(id) => {
+          setCreateOpen(false);
+          void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
+          // Same destination as the list toolbar's create: the new entity's own fiche in the main
+          // pane, or — from the overview pane, which has no full-navigate — the overview itself.
+          (onNavigate ?? onOpenOverview)?.(entityType, id);
+        }}
       />
       <TabView
         className="entity-detail-panel-tabs"

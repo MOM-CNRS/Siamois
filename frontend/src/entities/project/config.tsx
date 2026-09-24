@@ -130,6 +130,7 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
       title: entity.fullIdentifier || entity.name,
       bookmarked: entity.bookmarked ?? false,
     }),
+    settingsProjectId: (entity) => (entity._permissions?.canManageSettings ? entity.id : undefined),
   },
   routes: PROJECT_ROUTES,
   home: {

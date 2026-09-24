@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.container;
 
+import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
@@ -12,7 +14,7 @@ import java.util.Map;
 
 @Data
 @Schema(description = "Contenant d'un projet")
-public class ContainerResource {
+public class ContainerResource implements BookmarkableResource {
 
     @Schema(description = "Type de ressource", example = "containers")
     private String resourceType = "containers";
@@ -51,4 +53,7 @@ public class ContainerResource {
 
     @Schema(description = "URI de navigation/favori du contenant", example = "/container/42")
     private String resourceUri;
+
+    @Schema(description = "Le contenant est dans les favoris du caller")
+    private boolean bookmarked;
 }

@@ -85,7 +85,7 @@ class PlaceOpenApiServiceTest {
                 conceptMapper,
                 profilePermissionService,
                 placeOpenApiMapper,
-                langService);
+                langService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class));
 
         personDto = new PersonDTO();
         personDto.setId(1L);

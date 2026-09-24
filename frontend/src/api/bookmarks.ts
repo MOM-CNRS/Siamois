@@ -18,3 +18,11 @@ export async function deleteBookmark(resourceUri: string, organizationId: number
   const query = new URLSearchParams({ resourceUri, organizationId: String(organizationId) });
   await apiFetch<void>(`/api/v1/bookmarks?${query.toString()}`, { method: "DELETE" });
 }
+
+// GET /api/v1/bookmarks/status — only for pages with no REST resource carrying `bookmarked`
+// themselves (a list or Home reached client-side); an entity exposes the flag directly.
+export async function getBookmarkStatus(resourceUri: string, organizationId: number): Promise<boolean> {
+  const query = new URLSearchParams({ resourceUri, organizationId: String(organizationId) });
+  const body = await apiFetch<{ bookmarked: boolean }>(`/api/v1/bookmarks/status?${query.toString()}`);
+  return body.bookmarked;
+}

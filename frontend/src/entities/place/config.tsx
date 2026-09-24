@@ -1,4 +1,6 @@
 import type { EntityTypeConfig } from "../types";
+import { bookmarkChrome } from "../chrome";
+import { fetchSiblings } from "../siblingsApi";
 import { getPlace, listPlaces, patchPlaceAnswers } from "./api";
 import { placeColumns } from "./columns";
 import { PlaceCreateForm } from "./CreateForm";
@@ -19,6 +21,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   // Matches SpatialUnitPanel's own icon ("bi bi-geo-alt").
   icon: "bi bi-geo-alt",
   api: {
+    siblings: (id) => fetchSiblings("places", id),
     get: getPlace,
     list: listPlaces,
     patchAnswers: (id, answers) => patchPlaceAnswers(id, answers),
@@ -40,6 +43,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
       },
     ],
     header: (entity, helpers) => <PlaceDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    chrome: (entity) => bookmarkChrome(entity, entity.name),
   },
   routes: PLACE_ROUTES,
   home: {

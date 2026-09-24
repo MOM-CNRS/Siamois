@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.response.container.ContainerListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ContainerListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,6 +38,7 @@ public class ProjectContainersControllerApi {
     private final ProjectApiService projectApiService;
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
+    private final ResourceBookmarkService resourceBookmarkService;
 
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des contenants d'un projet",
@@ -80,6 +82,10 @@ public class ProjectContainersControllerApi {
                     return resource;
                 })
                 .toList();
+        // Every row shares this project, hence one institution — one bookmark query for the page.
+        if (!page.isEmpty()) {
+            resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getActionUnit().getCreatedByInstitution(), resources, lang);
+        }
 
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
         return ResponseEntity.ok()

@@ -211,6 +211,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // an entity type that doesn't declare it renders no arrows at all — EntityDetailPanel checks
     // for its presence before even querying, matching how `patchAnswers` gates the edit overlay.
     siblings?(id: string | number, ctx: { organizationId?: number }): Promise<EntitySiblings>;
+    // The titlebar's "Dupliquer" (JSF's panelModel.canDuplicate() — recording units only today).
+    // Resolves to the copy, which the panel then opens in the overview like JSF does.
+    duplicate?(id: string | number): Promise<TDetail & { id: string | number }>;
   };
   list: {
     // Pinned, hand-written columns — structural ones with no field-catalog equivalent (an
@@ -253,6 +256,13 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // there is no server round-trip to build it from. Optional: an entity with no overview entry
     // point (nothing calls openOverview for it) doesn't need one.
     chrome?: (entity: TDetail) => PanelChrome;
+    // Where the titlebar's "Créer" creates a sibling of this entity (JSF's creationUnitKind button
+    // creates the same kind in the same project): the project scope its `list.createForm`
+    // expects. Omitted for a top-level kind (Project, Place) — the form then runs unscoped.
+    createScope?: (entity: TDetail) => ListScope | undefined;
+    // Project only: the id to open the settings page for, when the caller may
+    // (`_permissions.canManageSettings`); undefined hides the gear.
+    settingsProjectId?: (entity: TDetail) => string | number | undefined;
   };
   routes: {
     list: string;
