@@ -332,6 +332,13 @@ export function EntityListPanel({
     requestRange(Number(e.first), Number(e.last));
   }
 
+  // With onSort set, PrimeReact treats sorting as controlled: it reads sortField/sortOrder back from
+  // props to compute the next click (asc → desc) and to draw the header arrow. Without them it
+  // always sees "no current sort", so every click re-emits the same asc sort and nothing changes.
+  const sortSep = state.sort?.lastIndexOf(":") ?? -1;
+  const sortField = state.sort ? (sortSep >= 0 ? state.sort.slice(0, sortSep) : state.sort) : undefined;
+  const sortOrder = state.sort ? (sortSep >= 0 && state.sort.slice(sortSep + 1) === "desc" ? -1 : 1) : undefined;
+
   function onSortChange(e: DataTableStateEvent) {
     setSort(e.sortField ? `${e.sortField}:${e.sortOrder === 1 ? "asc" : "desc"}` : undefined);
   }
@@ -611,6 +618,8 @@ export function EntityListPanel({
         virtualScrollerOptions={{ lazy: true, onLazyLoad, itemSize: ROW_HEIGHT_PX, delay: 150 }}
         loading={isLoading}
         onSort={onSortChange}
+        sortField={sortField}
+        sortOrder={sortOrder}
         sortMode="single"
         dataKey="id"
         // "overview-open" mirrors EntityTableViewModel.getRowStyleClass's own row highlight for
