@@ -1,4 +1,4 @@
-import type { EntityTypeConfig } from "../types";
+import type { EntityRef, EntityTypeConfig, ListScope } from "../types";
 import { relationTab } from "../../panels/relationTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
@@ -12,6 +12,15 @@ import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import { RECORDING_UNIT_ROUTES } from "./routes";
 import { recordingUnitHomeWidgets } from "./homeWidgets";
 import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
+
+function recordingUnitRef(ru: RecordingUnitSummary): EntityRef {
+  return { id: ru.id, label: ru.fullIdentifier };
+}
+
+// A new UE or find created from this UE belongs to the same project.
+function projectScope(ru: RecordingUnitSummary): ListScope | undefined {
+  return ru.projectId ? { entityType: "project", id: ru.projectId } : undefined;
+}
 
 // RecordingUnit's own EntityTypeConfig (plan: generic related-list tab) — registered so it can be
 // looked up by key ("recordingUnit") both by the registry's generics-erasure boundary and by
@@ -51,9 +60,29 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
     createForm: (ctx) => <RecordingUnitCreateForm {...ctx} />,
-    // JSF's own organization-wide list disables creation too (ToolbarCreateConfig
-    // createAllowedSupplier false): the form needs the project this list has no scope for.
-    createRequiresScope: "La création d'UE n'est disponible que depuis un projet.",
+    // Created in a project: from the organization-wide list, the form picks it first.
+    createProjectKind: "recordingUnit",
+    // JSF's RecordingUnitTableViewModel row actions, after the generic bookmark/duplicate.
+    rowActions: [
+      {
+        key: "new-parent",
+        icon: "bi bi-node-plus-fill rotate-minus90",
+        tooltip: "Créer une UE parente",
+        run: (row, ctx) => ctx.openCreate("recordingUnit", { scope: projectScope(row), prefill: { child: recordingUnitRef(row) } }),
+      },
+      {
+        key: "new-child",
+        icon: "bi bi-node-plus-fill rotate-90",
+        tooltip: "Créer une UE enfant",
+        run: (row, ctx) => ctx.openCreate("recordingUnit", { scope: projectScope(row), prefill: { parent: recordingUnitRef(row) } }),
+      },
+      {
+        key: "new-find",
+        icon: "bi bi-bucket",
+        tooltip: "Créer un mobilier",
+        run: (row, ctx) => ctx.openCreate("find", { scope: projectScope(row), prefill: { recordingUnit: recordingUnitRef(row) } }),
+      },
+    ],
   },
   detail: {
     tabs: [
@@ -70,7 +99,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         scopeEntityType: "recordingUnit",
         path: "children",
         projectId: (entity) => entity.projectId,
-        creatable: false,
+        createPrefill: (entity) => ({ parent: recordingUnitRef(entity) }),
         badge: (entity) => entity._counts?.children ?? 0,
       }),
       // JSF's SpecimenTab. REST segment "mobiliers", not Find's own collectionPath.
@@ -81,7 +110,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         scopeEntityType: "recordingUnit",
         path: "mobiliers",
         projectId: (entity) => entity.projectId,
-        creatable: false,
+        createPrefill: (entity) => ({ recordingUnit: recordingUnitRef(entity) }),
         badge: (entity) => entity._counts?.finds ?? 0,
       }),
     ],

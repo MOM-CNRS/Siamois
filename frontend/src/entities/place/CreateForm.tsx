@@ -4,6 +4,7 @@ import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
 import { Message } from "primereact/message";
 import { ApiError } from "../../api/client";
+import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
@@ -34,13 +35,20 @@ interface ConceptPick {
   label?: string | null;
 }
 
-export function PlaceCreateForm({ organizationId, onCreated, onCancel }: CreateFormContext) {
+export function PlaceCreateForm({ organizationId, prefill, onCreated, onCancel }: CreateFormContext) {
   const [name, setName] = useState("");
   const [type, setType] = useState<ConceptPick | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: () => createPlace({ organizationId: organizationId as number, name: name.trim(), typeConceptId: type!.resourceId }),
+    mutationFn: () =>
+      createPlace({
+        organizationId: organizationId as number,
+        name: name.trim(),
+        typeConceptId: type!.resourceId,
+        parentPlaceId: prefill?.parent?.id,
+        childPlaceId: prefill?.child?.id,
+      }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
       setError(err instanceof ApiError ? err.message : "Échec de la création");
@@ -59,6 +67,9 @@ export function PlaceCreateForm({ organizationId, onCreated, onCancel }: CreateF
       }}
     >
       <h4 style={{ margin: 0 }}>Nouveau lieu</h4>
+
+      {prefill?.parent && <CreateLinkField label="Contenu dans" entityType="place" value={prefill.parent} />}
+      {prefill?.child && <CreateLinkField label="Contient" entityType="place" value={prefill.child} />}
 
       <label className="project-create-form-field">
         <span>Nom</span>

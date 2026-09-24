@@ -1,8 +1,8 @@
-import type { EntityTypeConfig } from "../types";
+import type { EntityRef, EntityTypeConfig } from "../types";
 import { relationTab } from "../../panels/relationTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
-import { getPlace, listPlaces, patchPlaceAnswers } from "./api";
+import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
 import { placeColumns } from "./columns";
 import { PlaceCreateForm } from "./CreateForm";
 import { PlaceDetailHeader } from "./DetailHeader";
@@ -15,6 +15,10 @@ import type { PlaceDetail, PlaceSummary } from "./types";
 // lot). Two list contexts: the organization-wide list (GET /api/v1/places?organizationId=…, JSF's
 // SpatialUnitListPanel) uses `list` below; the project fiche's "Lieux" tab does NOT — it is a
 // static table over ProjectDetail.spatialContext (entities/project/PlacesTab.tsx).
+function placeRef(place: PlaceSummary): EntityRef {
+  return { id: place.id, label: place.name ?? String(place.id) };
+}
+
 export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   key: "place",
   labels: { singular: "Lieu", plural: "Lieux" },
@@ -26,6 +30,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
     get: getPlace,
     list: listPlaces,
     patchAnswers: (id, answers) => patchPlaceAnswers(id, answers),
+    duplicate: duplicatePlace,
   },
   list: {
     columns: placeColumns,
@@ -34,6 +39,27 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
     // Places belong to the organization, not a project: the one organization-wide list whose
     // creation is allowed (see CreateForm.tsx).
     createForm: (ctx) => <PlaceCreateForm {...ctx} />,
+    // JSF's SpatialUnitTableViewModel row actions, after the generic bookmark/duplicate.
+    rowActions: [
+      {
+        key: "new-parent",
+        icon: "bi bi-node-plus-fill rotate-minus90",
+        tooltip: "Créer un lieu parent",
+        run: (row, ctx) => ctx.openCreate("place", { prefill: { child: placeRef(row) } }),
+      },
+      {
+        key: "new-child",
+        icon: "bi bi-node-plus-fill rotate-90",
+        tooltip: "Créer un lieu enfant",
+        run: (row, ctx) => ctx.openCreate("place", { prefill: { parent: placeRef(row) } }),
+      },
+      {
+        key: "new-project",
+        icon: "bi bi-arrow-down-square",
+        tooltip: "Créer un projet",
+        run: (row, ctx) => ctx.openCreate("project", { prefill: { spatialContext: placeRef(row) } }),
+      },
+    ],
   },
   detail: {
     tabs: [
@@ -49,7 +75,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         target: "place",
         scopeEntityType: "place",
         path: "children",
-        creatable: false,
+        createPrefill: (entity) => ({ parent: placeRef(entity) }),
         badge: (entity) => entity._counts?.children ?? 0,
       }),
       // JSF's ActionTab: the projects whose spatial context contains this place.
@@ -59,7 +85,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         target: "project",
         scopeEntityType: "place",
         path: "projects",
-        creatable: false,
+        createPrefill: (entity) => ({ spatialContext: placeRef(entity) }),
         badge: (entity) => entity._counts?.projects ?? 0,
       }),
     ],

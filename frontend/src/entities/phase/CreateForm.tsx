@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Message } from "primereact/message";
@@ -8,7 +8,7 @@ import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
 import { createPhase } from "./api";
 import { getPhaseEffectiveForm } from "./phaseTypes";
-import { scopeProjectId } from "../scope";
+import { useCreateProject } from "../../components/useCreateProject";
 
 // The "Phases" relation tab's own "Créer" overlay (migration plan follow-up, lot 2 — see
 // entities/project/CreateForm.tsx for the overlay-not-dialog rationale, and
@@ -22,8 +22,13 @@ interface ConceptPick {
 }
 
 export function PhaseCreateForm({ organizationId, scope, onCreated, onCancel }: CreateFormContext) {
-  const projectId = scopeProjectId(scope);
+  // The list's own project, or — on an organization-wide list — the one picked first in the form.
+  const { projectId, picker: projectPicker } = useCreateProject({ scope, organizationId, kind: "phase" });
   const [type, setType] = useState<ConceptPick | null>(null);
+  // Types are per project: a pick from the previous project's catalog no longer applies.
+  useEffect(() => {
+    setType(null);
+  }, [projectId]);
   const [error, setError] = useState<string | null>(null);
 
   const typesQuery = useQuery({
@@ -60,7 +65,8 @@ export function PhaseCreateForm({ organizationId, scope, onCreated, onCancel }: 
     >
       <h4 style={{ margin: 0 }}>Nouvelle phase</h4>
 
-      {projectId == null && <Message severity="warn" text="Projet inconnu : création impossible" />}
+      {projectPicker}
+      {projectId == null && !projectPicker && <Message severity="warn" text="Projet inconnu : création impossible" />}
 
       <label className="project-create-form-field">
         <span>Type</span>
@@ -74,7 +80,7 @@ export function PhaseCreateForm({ organizationId, scope, onCreated, onCancel }: 
             onChange={(v) => setType(v as ConceptPick | null)}
           />
         ) : (
-          <span>Chargement…</span>
+          <span className="create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
         )}
       </label>
 

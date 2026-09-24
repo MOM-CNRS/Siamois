@@ -6,6 +6,9 @@ import type { ReactNode } from "react";
 import type { AnswerInputBody, FieldResource } from "../fields/types";
 import type { PanelChrome } from "../mountOptions";
 
+// The kinds created inside a project — GET /api/v1/projects?canCreate=<kind>.
+export type CreatableKind = "recordingUnit" | "find" | "phase" | "container";
+
 export interface PagedResult<T> {
   data: T[];
   totalCount: number;
@@ -133,8 +136,28 @@ export interface FieldCatalog {
 // EntityListPanel, owns that) and lets the form hand back the new entity's id; the form itself
 // decides what belongs in its own fields (deliberately fewer than the JSF dialog's — see
 // entities/project/CreateForm.tsx for what Project's own trims and why).
+// Another entity a create form is pre-linked to — shown read-only in the form, sent as an id.
+export interface EntityRef {
+  id: string | number;
+  label: string;
+}
+
+// What a row action (or a relation tab's own "Créer") links the new entity to — JSF's
+// NewUnitContext trigger cell. Each form reads only the keys that make sense for its own type.
+export interface CreatePrefill {
+  // Recording unit / place: the new entity becomes a direct child of this one...
+  parent?: EntityRef;
+  // ...or its direct parent.
+  child?: EntityRef;
+  // Find: the recording unit it is created on (no UE picker then).
+  recordingUnit?: EntityRef;
+  // Project: the place it is attached to (spatial context).
+  spatialContext?: EntityRef;
+}
+
 export interface CreateFormContext {
   organizationId?: number;
+  prefill?: CreatePrefill;
   // EntityListPanel's own `scope` prop, threaded straight through (same object, not rebuilt) —
   // a scoped create form (an RU or a Find created FROM a project's own relation tab) reads its
   // parent id off `scope.id` rather than needing a separate prop of its own. Undefined for a
@@ -192,6 +215,22 @@ export interface HomeWidgetDef {
   order?: number;
 }
 
+// Handed to a row action's `run`: what it may do besides calling the API itself.
+export interface RowActionContext {
+  // Opens the create dialog for `entityType`, linked through `prefill`, in `scope`'s project.
+  openCreate: (entityType: string, options: { scope?: ListScope; prefill?: CreatePrefill }) => void;
+}
+
+// One icon button in a list row's actions column — JSF's *TableViewModel.getRowActions(). The
+// generic ones (bookmark, duplicate) are built by EntityListPanel itself; an entity declares only
+// its own (new child/parent, new find…). Shown only in write mode on a row the caller may edit.
+export interface RowActionDef<TSummary> {
+  key: string;
+  icon: string;
+  tooltip: string;
+  run: (row: TSummary, ctx: RowActionContext) => void;
+}
+
 export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   key: string;
   labels: { singular: string; plural: string };
@@ -217,7 +256,7 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     siblings?(id: string | number, ctx: { organizationId?: number }): Promise<EntitySiblings>;
     // The titlebar's "Dupliquer" (JSF's panelModel.canDuplicate() — recording units only today).
     // Resolves to the copy, which the panel then opens in the overview like JSF does.
-    duplicate?(id: string | number): Promise<TDetail & { id: string | number }>;
+    duplicate?(id: string | number): Promise<{ id: string | number }>;
   };
   list: {
     // Pinned, hand-written columns — structural ones with no field-catalog equivalent (an
@@ -243,10 +282,12 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // behavior exactly — the `onCreate` prop (bridged to the legacy JSF new-unit dialog) is used
     // instead, unchanged, so migrating one entity's create flow to React never touches another's.
     createForm?: (ctx: CreateFormContext) => ReactNode;
-    // When set, `createForm` needs a parent scope (a project): on the unscoped list the "Créer"
-    // button is shown disabled with this message instead — JSF's own
-    // ToolbarCreateConfig.unavailableMessageKeySupplier for the same lists.
-    createRequiresScope?: string;
+    // The entity is created in a project. On a list with no project of its own (organization-wide),
+    // `createForm` lets the user pick one among those where they may create this kind
+    // (useCreateProject), and the "Créer" button is disabled when there is none.
+    createProjectKind?: CreatableKind;
+    // Entity-specific row actions (see RowActionDef), after the generic bookmark/duplicate.
+    rowActions?: RowActionDef<TSummary>[];
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];

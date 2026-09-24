@@ -70,6 +70,9 @@ export interface PlaceCreateBody {
   organizationId: number;
   name: string;
   typeConceptId: string;
+  // The new place becomes a direct child of parentPlaceId / the direct parent of childPlaceId.
+  parentPlaceId?: string | number;
+  childPlaceId?: string | number;
 }
 
 interface PlaceCreatedResponseBody {
@@ -79,7 +82,19 @@ interface PlaceCreatedResponseBody {
 export async function createPlace(body: PlaceCreateBody): Promise<{ id: number }> {
   const response = await apiFetch<PlaceCreatedResponseBody>("/api/v1/places", {
     method: "POST",
-    body: { organizationId: body.organizationId, name: body.name, typeConceptId: Number(body.typeConceptId) },
+    body: {
+      organizationId: body.organizationId,
+      name: body.name,
+      typeConceptId: Number(body.typeConceptId),
+      parentPlaceId: body.parentPlaceId != null ? Number(body.parentPlaceId) : undefined,
+      childPlaceId: body.childPlaceId != null ? Number(body.childPlaceId) : undefined,
+    },
   });
+  return response.data;
+}
+
+// POST /api/v1/places/{id}/duplicate — same fields and parents, named "name (n)".
+export async function duplicatePlace(id: string | number): Promise<{ id: number }> {
+  const response = await apiFetch<PlaceCreatedResponseBody>(`/api/v1/places/${id}/duplicate`, { method: "POST" });
   return response.data;
 }

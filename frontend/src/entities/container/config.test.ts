@@ -31,9 +31,9 @@ describe("containerEntityConfig", () => {
     expect(containerEntityConfig.list.createForm).toBeDefined();
   });
 
-  // JSF's organization-wide list disables creation for this type (it needs a project).
-  it("disables creation on the unscoped list with an explanation", () => {
-    expect(containerEntityConfig.list.createRequiresScope).toMatch(/que depuis un projet/);
+  // Created in a project: from the organization-wide list, the create form picks it.
+  it("is created in a project picked by the form on the unscoped list", () => {
+    expect(containerEntityConfig.list.createProjectKind).toBe("container");
   });
 
   it("derives its bookmark chrome from the resource itself", () => {

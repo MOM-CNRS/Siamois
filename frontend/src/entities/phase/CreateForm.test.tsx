@@ -114,11 +114,13 @@ describe("PhaseCreateForm", () => {
     expect(onCreated).toHaveBeenCalledWith("77");
   });
 
-  it("shows a warning instead of loading the type catalog when there is no project scope", async () => {
+  it("asks for the project first (no type catalog yet) when the list has no project of its own", async () => {
     render(vi.fn(), vi.fn(), null);
     await flush();
 
-    expect(container.textContent).toContain("Projet inconnu");
+    expect(container.textContent).toContain("Projet");
+    expect(container.textContent).toContain("Choisissez d'abord un projet");
+    expect(container.textContent).not.toContain("Projet inconnu");
     expect(mockedGetPhaseEffectiveForm).not.toHaveBeenCalled();
   });
 

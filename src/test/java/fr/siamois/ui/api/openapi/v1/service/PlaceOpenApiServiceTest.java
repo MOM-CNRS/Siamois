@@ -16,6 +16,7 @@ import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.ConceptMapper;
@@ -774,5 +775,105 @@ class PlaceOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    private PlaceCreateRequest linkedCreateRequest() {
+        PlaceCreateRequest request = new PlaceCreateRequest();
+        request.setOrganizationId(10L);
+        request.setName("Cave");
+        request.setTypeConceptId(42L);
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+        Concept concept = new Concept();
+        when(conceptService.findById(42L)).thenReturn(Optional.of(concept));
+        when(conceptMapper.convert(concept)).thenReturn(new ConceptDTO());
+        return request;
+    }
+
+    private SpatialUnitDTO placeIn(long id, long institutionId, String name) {
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setId(id);
+        dto.setName(name);
+        InstitutionDTO owner = new InstitutionDTO();
+        owner.setId(institutionId);
+        dto.setCreatedByInstitution(owner);
+        return dto;
+    }
+
+    @Test
+    void createPlace_withParentPlace_createsItAsThatPlacesChild() throws SpatialUnitAlreadyExistsException {
+        PlaceCreateRequest request = linkedCreateRequest();
+        request.setParentPlaceId(8L);
+        when(spatialUnitService.findById(8L)).thenReturn(placeIn(8L, 10L, "Site"));
+        when(spatialUnitService.save(any(UserInfo.class), any(SpatialUnitDTO.class))).thenReturn(new SpatialUnitDTO());
+
+        service.createPlace(caller, request, "fr");
+
+        ArgumentCaptor<SpatialUnitDTO> captor = ArgumentCaptor.forClass(SpatialUnitDTO.class);
+        verify(spatialUnitService).save(any(UserInfo.class), captor.capture());
+        assertThat(captor.getValue().getParents()).extracting("id").containsExactly(8L);
+        assertThat(captor.getValue().getChildren()).isNull();
+    }
+
+    @Test
+    void createPlace_withChildPlace_createsItAsThatPlacesParent() throws SpatialUnitAlreadyExistsException {
+        PlaceCreateRequest request = linkedCreateRequest();
+        request.setChildPlaceId(9L);
+        when(spatialUnitService.findById(9L)).thenReturn(placeIn(9L, 10L, "Fosse"));
+        when(spatialUnitService.save(any(UserInfo.class), any(SpatialUnitDTO.class))).thenReturn(new SpatialUnitDTO());
+
+        service.createPlace(caller, request, "fr");
+
+        ArgumentCaptor<SpatialUnitDTO> captor = ArgumentCaptor.forClass(SpatialUnitDTO.class);
+        verify(spatialUnitService).save(any(UserInfo.class), captor.capture());
+        assertThat(captor.getValue().getChildren()).extracting("id").containsExactly(9L);
+    }
+
+    @Test
+    void createPlace_linkedToAPlaceOfAnotherOrganization_throws400() throws SpatialUnitAlreadyExistsException {
+        PlaceCreateRequest request = linkedCreateRequest();
+        request.setParentPlaceId(8L);
+        when(spatialUnitService.findById(8L)).thenReturn(placeIn(8L, 11L, "Ailleurs"));
+
+        assertThatThrownBy(() -> service.createPlace(caller, request, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(spatialUnitService, never()).save(any(), any());
+    }
+
+    @Test
+    void duplicatePlace_copiesFieldsAndParents_withTheFirstFreeNumberedName() throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO source = placeIn(5L, 10L, "Site");
+        SpatialUnitSummaryDTO parent = new SpatialUnitSummaryDTO(placeIn(1L, 10L, "Commune"));
+        source.setParents(new java.util.HashSet<>(Set.of(parent)));
+        source.setChildren(new java.util.HashSet<>(Set.of(new SpatialUnitSummaryDTO(placeIn(6L, 10L, "Enfant")))));
+        when(spatialUnitService.findById(5L)).thenReturn(source);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+        SpatialUnitDTO saved = placeIn(7L, 10L, "Site (2)");
+        java.util.List<String> triedNames = new java.util.ArrayList<>();
+        when(spatialUnitService.save(any(UserInfo.class), any(SpatialUnitDTO.class))).thenAnswer(inv -> {
+            SpatialUnitDTO dto = inv.getArgument(1);
+            triedNames.add(dto.getName());
+            assertThat(dto.getParents()).containsExactly(parent);
+            assertThat(dto.getChildren()).isNull();
+            if (triedNames.size() == 1) throw new SpatialUnitAlreadyExistsException("identifier", "taken");
+            return saved;
+        });
+
+        PlaceCreatedResponse.PlaceCreatedItem item = service.duplicatePlace(caller, 5L, "fr");
+
+        assertThat(item.getId()).isEqualTo(7L);
+        assertThat(triedNames).containsExactly("Site (1)", "Site (2)");
+    }
+
+    @Test
+    void duplicatePlace_withoutPlaceManagement_throws403() throws SpatialUnitAlreadyExistsException {
+        when(spatialUnitService.findById(5L)).thenReturn(placeIn(5L, 10L, "Site"));
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.duplicatePlace(caller, 5L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(spatialUnitService, never()).save(any(), any());
     }
 }

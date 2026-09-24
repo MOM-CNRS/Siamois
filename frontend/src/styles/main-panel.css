@@ -220,20 +220,28 @@
   color: var(--surface-400, #ced4da);
 }
 
-/* Mirrors the p:chip CommandLinkColumn renders (chipColor = --context-main-color, white text). */
-.entity-nav-chip {
+/* An entity's identifier/name chip: outlined in the entity's context color on a transparent
+   background (text and icon in that color too). */
+.entity-nav-chip,
+.p-chip.entity-nav-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.15rem 0.6rem;
+  padding: 0.1rem 0.6rem;
   border-radius: 999px;
-  background: var(--context-main-color, var(--main-color, #4d7c3a));
-  color: #fff;
+  border: 1px solid var(--context-main-color, var(--main-color, #4d7c3a));
+  background: transparent;
+  color: var(--context-main-color, var(--main-color, #4d7c3a));
   cursor: pointer;
 }
 
+.p-chip.entity-nav-chip .p-chip-text {
+  margin: 0;
+  color: inherit;
+}
+
 .entity-nav-chip:hover {
-  filter: brightness(1.1);
+  background: color-mix(in srgb, var(--context-main-color, var(--main-color, #4d7c3a)) 10%, transparent);
 }
 
 .entity-nav-chip-label {
@@ -744,7 +752,8 @@
    per field, stacked above its input (EntityListPanel's own "Créer" button toggles the OverlayPanel
    this lives inside). */
 .entity-list-panel-create-overlay .project-create-form-field,
-.entity-list-panel-create-overlay label.project-create-form-field {
+.entity-list-panel-create-overlay label.project-create-form-field,
+.create-entity-dialog .project-create-form-field {
   display: flex;
   flex-direction: column;
   gap: 0.25em;
@@ -829,4 +838,98 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   ::view-transition-new(*) {
     animation: none !important;
   }
+}
+
+/* A list row's action buttons (panels/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept
+   compact so the row stays at --entity-list-row-height, and dimmed until the row is hovered so a
+   long list doesn't read as a wall of icons. */
+.entity-list-panel .entity-list-panel-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-actions,
+.entity-list-panel .entity-list-panel-row-actions:focus-within {
+  opacity: 1;
+}
+
+.entity-list-panel .entity-list-panel-row-actions .p-button.p-button-sm {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  color: var(--main-color);
+}
+
+.entity-list-panel td.entity-list-panel-row-actions-cell {
+  width: 1%;
+}
+
+/* JSF's rotated "node-plus" icons (new parent / new child). */
+.bi.rotate-90::before {
+  transform: rotate(90deg);
+}
+
+.bi.rotate-minus90::before {
+  transform: rotate(-90deg);
+}
+
+/* A create form's pre-set link (components/CreateLinkField.tsx). */
+.create-link-field .create-link-field-value {
+  align-self: flex-start;
+  color: var(--text-color);
+}
+
+/* Selection column header: select-all box first, then the selected/total count (PrimeReact
+   renders the header title before the checkbox). */
+.entity-list-panel th.entity-list-panel-selection-header .p-column-header-content {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+/* The identifier cell's hover-only controls (EntityListPanel's renderCellValue): a checkbox before
+   the chip selects the row, a button after it opens the full fiche. Their room is always kept
+   (visibility, not display) so hovering never shifts the chip. */
+.entity-list-panel-identifier-selectable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.entity-list-panel-identifier-selectable .entity-list-panel-identifier-select,
+.entity-list-panel-identifier-selectable .entity-list-panel-identifier-select .p-checkbox-box {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.entity-list-panel-identifier-selectable .entity-list-panel-identifier-select,
+.entity-list-panel-identifier-selectable .p-button.entity-list-panel-identifier-open {
+  flex: 0 0 auto;
+  visibility: hidden;
+}
+
+/* A filled primary button (border + background in the entity's context color), sized to the chip. */
+.entity-list-panel-identifier-selectable .p-button.entity-list-panel-identifier-open {
+  width: 1.7rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--context-main-color, var(--main-color, #4d7c3a));
+  background: var(--context-main-color, var(--main-color, #4d7c3a));
+  color: #fff;
+}
+
+.entity-list-panel-identifier-selectable .p-button.entity-list-panel-identifier-open:hover {
+  filter: brightness(1.1);
+}
+
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-identifier-select,
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-identifier-open,
+.entity-list-panel-identifier-selectable:focus-within .entity-list-panel-identifier-select,
+.entity-list-panel-identifier-selectable:focus-within .entity-list-panel-identifier-open {
+  visibility: visible;
 }

@@ -802,7 +802,9 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()),
+                eq(PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS), eq(PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS),
+                eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(false);
 
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
         request.setProjectId("5");
@@ -822,7 +824,9 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()),
+                eq(PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS), eq(PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS),
+                eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
         when(conceptRepository.findById(99L)).thenReturn(Optional.empty());
 
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
@@ -834,8 +838,8 @@ class RecordingUnitOpenApiServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
 
-    @Test
-    void createRecordingUnit_success_persistsAndReturnsDetail() {
+    /** Stubs everything a successful creation in project 5 goes through; the saved UE is 3000. */
+    private CustomFieldAnswerIntegerViewModel stubSuccessfulCreation() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -843,7 +847,9 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()),
+                eq(PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS), eq(PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS),
+                eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
 
         Concept typeConcept = new Concept();
         typeConcept.setId(42L);
@@ -857,7 +863,9 @@ class RecordingUnitOpenApiServiceTest {
         su.setId(77L);
         when(spatialUnitService.getSpatialUnitOptionsFor(any(RecordingUnitDTO.class))).thenReturn(List.of(su));
 
-        CustomFieldInteger intField = mock(CustomFieldInteger.class);
+        // Lenient: its metadata is read when the created UE's detail is rendered, which a rejected
+        // creation never reaches.
+        CustomFieldInteger intField = mock(CustomFieldInteger.class, withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
         when(intField.getId()).thenReturn(8L);
         when(intField.getLabel()).thenReturn("n");
         when(intField.getHint()).thenReturn(null);
@@ -883,21 +891,67 @@ class RecordingUnitOpenApiServiceTest {
 
         ruDto.setCreatedByInstitution(inst);
         ruDto.setType(typeDto);
-        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("3000"), eq(SCOPE), isNull()))
+        // The detail read after the creation — not reached when the creation is rejected.
+        lenient().when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("3000"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(formService.readAnswerValueForApi(any())).thenReturn(null);
+        lenient().when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        lenient().when(formService.readAnswerValueForApi(any())).thenReturn(null);
+        return answerVm;
+    }
 
+    private RecordingUnitCreateRequest creationRequest() {
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
         request.setProjectId("5");
         request.setTypeId("42");
         request.setAnswers(Map.of("8", new AnswerInput(12, null)));
+        return request;
+    }
+
+    @Test
+    void createRecordingUnit_success_persistsAndReturnsDetail() {
+        CustomFieldAnswerIntegerViewModel answerVm = stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
 
         RecordingUnitResource data = service.createRecordingUnit(request, personDto, SCOPE, "fr");
 
         assertThat(data.getId()).isEqualTo("1026");
         verify(formService).applyTypedValueToAnswer(same(answerVm), eq(12));
         verify(recordingUnitService, times(2)).save(any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_withParent_linksTheNewUnitAsItsChild() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setParentRecordingUnitId(12L);
+
+        service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        verify(recordingUnitService).requireAccessibleRecordingUnitByPrimaryKey(12L, SCOPE);
+        verify(recordingUnitService).addHierarchyChild(12L, 3000L);
+    }
+
+    @Test
+    void createRecordingUnit_withChild_linksTheNewUnitAsItsParent() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setChildRecordingUnitId(13L);
+
+        service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        verify(recordingUnitService).addHierarchyChild(3000L, 13L);
+    }
+
+    @Test
+    void createRecordingUnit_rejectedLink_isAConflict_soTheCreationRollsBack() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setParentRecordingUnitId(12L);
+        doThrow(new IllegalStateException("cycle")).when(recordingUnitService).addHierarchyChild(12L, 3000L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
     }
 
     @Test
@@ -971,7 +1025,9 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()),
+                eq(PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS), eq(PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS),
+                eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
 
         Concept typeConcept = new Concept();
         typeConcept.setId(42L);
@@ -1018,7 +1074,9 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()), eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(au.getId()),
+                eq(PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS), eq(PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS),
+                eq(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))).thenReturn(true);
         Concept typeConcept = new Concept();
         typeConcept.setId(42L);
         ConceptDTO typeDto = new ConceptDTO();

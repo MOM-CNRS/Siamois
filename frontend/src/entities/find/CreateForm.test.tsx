@@ -144,11 +144,44 @@ describe("FindCreateForm", () => {
     expect(onCreated).toHaveBeenCalledWith("88");
   });
 
-  it("shows a warning instead of loading the category catalog when there is no project scope", async () => {
+  it("uses a prefilled recording unit instead of the picker (created from that UE)", async () => {
+    mockedCreateFind.mockResolvedValue({ resourceType: "finds", id: "89", fullIdentifier: "INST-PROJ-M2" } as never);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <FindCreateForm
+            organizationId={7}
+            scope={{ entityType: "project", id: 5 }}
+            prefill={{ recordingUnit: { id: "31", label: "INST-PROJ-UE31" } }}
+            onCreated={vi.fn()}
+            onCancel={vi.fn()}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.querySelector('[data-testid="pick-recording-unit"]')).toBeNull();
+    expect(container.textContent).toContain("INST-PROJ-UE31");
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-category"]')!.click();
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateFind).toHaveBeenCalledWith({ recordingUnitId: "31", typeId: "12" });
+  });
+
+  it("asks for the project first (no category catalog yet) when the list has no project of its own", async () => {
     render(vi.fn(), vi.fn(), null);
     await flush();
 
-    expect(container.textContent).toContain("Projet inconnu");
+    expect(container.textContent).toContain("Projet");
+    expect(container.textContent).toContain("Choisissez d'abord un projet");
+    expect(container.textContent).not.toContain("Projet inconnu");
     expect(mockedGetFindEffectiveForm).not.toHaveBeenCalled();
   });
 

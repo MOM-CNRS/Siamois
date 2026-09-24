@@ -4,6 +4,7 @@ import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
 import { Message } from "primereact/message";
 import { ApiError } from "../../api/client";
+import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
@@ -29,7 +30,7 @@ interface ConceptPick {
   label?: string | null;
 }
 
-export function ProjectCreateForm({ organizationId, onCreated, onCancel }: CreateFormContext) {
+export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel }: CreateFormContext) {
   const [name, setName] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [type, setType] = useState<ConceptPick | null>(null);
@@ -56,6 +57,7 @@ export function ProjectCreateForm({ organizationId, onCreated, onCancel }: Creat
         name: name.trim(),
         identifier: identifier.trim(),
         typeId: type!.resourceId,
+        spatialContextSpatialUnitIds: prefill?.spatialContext ? [String(prefill.spatialContext.id)] : undefined,
       }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
@@ -76,6 +78,8 @@ export function ProjectCreateForm({ organizationId, onCreated, onCancel }: Creat
       }}
     >
       <h4 style={{ margin: 0 }}>Nouveau projet</h4>
+
+      {prefill?.spatialContext && <CreateLinkField label="Lieu" entityType="place" value={prefill.spatialContext} />}
 
       <label className="project-create-form-field">
         <span>Nom</span>

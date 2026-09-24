@@ -12,6 +12,21 @@ import { createRecordingUnit } from "./api";
 
 vi.mock("./recordingUnitTypes", () => ({ getRecordingUnitTypes: vi.fn() }));
 vi.mock("./api", () => ({ createRecordingUnit: vi.fn() }));
+vi.mock("../project/api", () => ({ searchCreatableProjects: vi.fn() }));
+
+// The project picker (useCreateProject) — PrimeReact's AutoComplete reduced to a button picking
+// project 8, same stand-in as FindCreateForm's own recording-unit picker test.
+vi.mock("primereact/autocomplete", () => ({
+  AutoComplete: ({ onChange }: { onChange: (e: { value: unknown }) => void }) => (
+    <button
+      type="button"
+      data-testid="pick-project"
+      onClick={() => onChange({ value: { resourceType: "projects", id: "8", fullIdentifier: "INST-P8", name: "Fouille" } })}
+    >
+      Choisir un projet
+    </button>
+  ),
+}));
 
 // Same reduction as entities/project/CreateForm.test.tsx: the concept autocomplete is exercised
 // elsewhere, mocked here to a plain clickable stand-in so this stays a test of the form's own
@@ -117,11 +132,67 @@ describe("RecordingUnitCreateForm", () => {
     expect(onCreated).toHaveBeenCalledWith("77");
   });
 
-  it("shows a warning instead of loading the type catalog when there is no project scope", async () => {
+  it("links the new UE to a row action's parent, and shows that parent in the form", async () => {
+    mockedCreateRecordingUnit.mockResolvedValue({ resourceType: "recording-units", id: "78", fullIdentifier: "INST-PROJ-UE2" } as never);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <RecordingUnitCreateForm
+            organizationId={7}
+            scope={{ entityType: "project", id: 5 }}
+            prefill={{ parent: { id: "12", label: "INST-PROJ-UE12" } }}
+            onCreated={vi.fn()}
+            onCancel={vi.fn()}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.textContent).toContain("Contenue dans");
+    expect(container.textContent).toContain("INST-PROJ-UE12");
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateRecordingUnit).toHaveBeenCalledWith({ projectId: "5", typeId: "9", parentRecordingUnitId: "12", childRecordingUnitId: undefined });
+  });
+
+  it("creates in the project picked in the form when the list has no project of its own", async () => {
+    mockedCreateRecordingUnit.mockResolvedValue({ resourceType: "recording-units", id: "79", fullIdentifier: "INST-P8-UE1" } as never);
+    const { onCreated } = render(vi.fn(), vi.fn(), null);
+    await flush();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-project"]')!.click();
+    });
+    await flush();
+    expect(mockedGetRecordingUnitTypes).toHaveBeenCalledWith("8");
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateRecordingUnit).toHaveBeenCalledWith(expect.objectContaining({ projectId: "8", typeId: "9" }));
+    expect(onCreated).toHaveBeenCalledWith("79");
+  });
+
+  it("asks for the project first (no type catalog yet) when the list has no project of its own", async () => {
     render(vi.fn(), vi.fn(), null);
     await flush();
 
-    expect(container.textContent).toContain("Projet inconnu");
+    expect(container.textContent).toContain("Projet");
+    expect(container.textContent).toContain("Choisissez d'abord un projet");
+    expect(container.textContent).not.toContain("Projet inconnu");
     expect(mockedGetRecordingUnitTypes).not.toHaveBeenCalled();
   });
 

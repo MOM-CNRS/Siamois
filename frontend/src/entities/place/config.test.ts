@@ -25,7 +25,7 @@ describe("placeEntityConfig", () => {
   it("has a searchable list with a create form, but no schema", () => {
     expect(placeEntityConfig.list.searchable).toBe(true);
     expect(placeEntityConfig.list.createForm).toBeDefined();
-    expect(placeEntityConfig.list.createRequiresScope).toBeUndefined();
+    expect(placeEntityConfig.list.createProjectKind).toBeUndefined();
     expect(placeEntityConfig.list.schema).toBeUndefined();
   });
 

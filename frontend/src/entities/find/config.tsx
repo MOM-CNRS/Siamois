@@ -37,9 +37,8 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc for
     // why it needs its own recording-unit picker on top of the usual type/category one.
     createForm: (ctx) => <FindCreateForm {...ctx} />,
-    // JSF's own organization-wide list disables creation too (ToolbarCreateConfig
-    // createAllowedSupplier false): the form needs the project this list has no scope for.
-    createRequiresScope: "La création de mobilier n'est disponible que depuis un projet.",
+    // Created in a project: from the organization-wide list, the form picks it first.
+    createProjectKind: "find",
   },
   detail: {
     tabs: [

@@ -10,6 +10,10 @@ registerDefaultFieldRenderers();
 import type { EntityTypeConfig, PagedResult } from "../entities/types";
 import { EntityListPanel } from "./EntityListPanel";
 import { WriteModeProvider } from "./writeMode";
+import { searchCreatableProjects } from "../entities/project/api";
+
+vi.mock("../entities/project/api", () => ({ searchCreatableProjects: vi.fn() }));
+const mockedSearchCreatableProjects = vi.mocked(searchCreatableProjects);
 
 // Some PrimeReact internals (ripple, resize listeners) schedule state updates outside any act()
 // call this file makes; this flag is React 18's own escape hatch for that noise and doesn't
@@ -203,7 +207,7 @@ describe("EntityListPanel", () => {
     expect(onNavigate).toHaveBeenCalledWith("fake-entity", "1");
   });
 
-  it("prefers onOpenOverview over onNavigate when the identifier cell is clicked (plan §8 phase 5)", async () => {
+  it("opens the full fiche (onNavigate), not the overview, when the identifier chip is clicked", async () => {
     const onNavigate = vi.fn();
     const onOpenOverview = vi.fn();
     renderPanel(onNavigate, undefined, onOpenOverview);
@@ -214,8 +218,21 @@ describe("EntityListPanel", () => {
       identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
+    expect(onNavigate).toHaveBeenCalledWith("fake-entity", "1");
+    expect(onOpenOverview).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the overview when the identifier chip is clicked and no onNavigate is supplied", async () => {
+    const onOpenOverview = vi.fn();
+    renderPanel(undefined, undefined, onOpenOverview);
+    await flush();
+
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
+    await act(async () => {
+      identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
     expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1");
-    expect(onNavigate).not.toHaveBeenCalled();
   });
 
   it("does not navigate or open the overview when a non-identifier part of the row is clicked", async () => {
@@ -348,22 +365,41 @@ describe("EntityListPanel", () => {
     expect(header.querySelector(".bi-copy")).toBeTruthy();
   });
 
-  it("shows a selected/total chip and updates it when a row is selected", async () => {
+  it("opens the row in the overview from the button after the identifier chip", async () => {
+    const onNavigate = vi.fn();
+    const onOpenOverview = vi.fn();
+    renderPanel(onNavigate, undefined, onOpenOverview);
+    await flush();
+
+    const open = container.querySelector('.entity-list-panel-identifier-open') as HTMLButtonElement;
+    await act(async () => {
+      open.click();
+    });
+
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1");
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("hides the selection column until a row is selected from the identifier's own checkbox", async () => {
     renderPanel();
     await flush();
 
+    expect(container.querySelector("th.p-selection-column")).toBeNull();
     const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
-    expect(chips).toContain("0/1");
+    expect(chips).not.toContain("0/1");
 
-    const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    const checkbox = container.querySelector('.entity-list-panel-identifier-select input[type="checkbox"]') as HTMLInputElement;
     expect(checkbox).toBeTruthy();
     await act(async () => {
       checkbox.click();
     });
     await flush();
 
+    expect(container.querySelector("th.p-selection-column")).toBeTruthy();
     const chipsAfter = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
     expect(chipsAfter).toContain("1/1");
+    // With the column shown, the identifier no longer carries its own checkbox.
+    expect(container.querySelector(".entity-list-panel-identifier-select")).toBeNull();
   });
 
   // The list virtual-scrolls over the whole result set instead of paging through it.
@@ -972,11 +1008,19 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     renderPanel();
     await flush();
 
-    // fakeConfig: one column, `name`, marked identifier — so selection + name, and that is all.
+    // Selecting a row brings in the selection column.
+    await act(async () => {
+      (container.querySelector('.entity-list-panel-identifier-select input[type="checkbox"]') as HTMLInputElement).click();
+    });
+    await flush();
+
+    // fakeConfig: one column, `name`, marked identifier — so selection + name + the row actions
+    // right after it, and that is all.
     const frozen = headerCells().filter((th) => th.classList.contains("p-frozen-column"));
-    expect(frozen).toHaveLength(2);
+    expect(frozen).toHaveLength(3);
     expect(frozen[0].classList.contains("p-selection-column")).toBe(true);
     expect(frozen[1].textContent).toContain("Name");
+    expect(frozen[2].classList.contains("entity-list-panel-row-actions-cell")).toBe(true);
   });
 
   it("freezes every column up to AND including the identifier, not just the identifier", async () => {
@@ -1005,10 +1049,10 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     const frozenLabels = headerCells()
       .filter((th) => th.classList.contains("p-frozen-column"))
       .map((th) => th.textContent);
-    // selection + Statut + Name; "Après" scrolls away.
+    // Statut + Name + row actions (no selection column until a row is selected); "Après" scrolls away.
     expect(frozenLabels).toHaveLength(3);
-    expect(frozenLabels[1]).toContain("Statut");
-    expect(frozenLabels[2]).toContain("Name");
+    expect(frozenLabels[0]).toContain("Statut");
+    expect(frozenLabels[1]).toContain("Name");
     expect(frozenLabels.some((l) => l?.includes("Après"))).toBe(false);
   });
 
@@ -1201,7 +1245,7 @@ describe("EntityListPanel create overlay (config.list.createForm)", () => {
 });
 
 // Organization-wide lists (unscoped) vs a project's own relation tab (scoped): a parent column
-// only on the former, and a create form that needs the parent disabled on it.
+// only on the former, and a create form that needs a project, picked in the form on the former.
 const fakeScopedCreateConfig: EntityTypeConfig<FakeRow & { parent?: string }, FakeRow> = {
   ...(fakeConfig as EntityTypeConfig<FakeRow & { parent?: string }, FakeRow>),
   key: "fake-entity-needing-scope",
@@ -1212,7 +1256,7 @@ const fakeScopedCreateConfig: EntityTypeConfig<FakeRow & { parent?: string }, Fa
     ],
     searchable: false,
     createForm: () => <span data-testid="scoped-create-form">form</span>,
-    createRequiresScope: "Disponible seulement depuis un projet.",
+    createProjectKind: "recordingUnit",
   },
 };
 
@@ -1255,10 +1299,12 @@ describe("EntityListPanel scope-dependent columns and creation", () => {
     expect(container.textContent).not.toContain("Parent column");
   });
 
-  it("disables Créer on the unscoped list when the create form needs a scope", async () => {
+  it("disables Créer on the unscoped list when the caller may create in no project", async () => {
+    mockedSearchCreatableProjects.mockResolvedValue({ data: [], totalCount: 0, limit: 1, offset: 0 });
     renderScoped();
     await flush();
 
+    expect(mockedSearchCreatableProjects).toHaveBeenCalledWith(7, "recordingUnit", undefined, 1);
     expect(createButton().disabled).toBe(true);
     await act(async () => {
       createButton().dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -1266,10 +1312,24 @@ describe("EntityListPanel scope-dependent columns and creation", () => {
     expect(document.body.querySelector('[data-testid="scoped-create-form"]')).toBeNull();
   });
 
-  it("keeps Créer active inside a scope", async () => {
+  it("enables Créer on the unscoped list once there is a project to create in (the form picks it)", async () => {
+    mockedSearchCreatableProjects.mockResolvedValue({ data: [], totalCount: 3, limit: 1, offset: 0 });
+    renderScoped();
+    await flush();
+
+    expect(createButton().disabled).toBe(false);
+    await act(async () => {
+      createButton().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(document.body.querySelector('[data-testid="scoped-create-form"]')).toBeTruthy();
+  });
+
+  it("keeps Créer active inside a scope, without looking up projects", async () => {
+    mockedSearchCreatableProjects.mockReset();
     renderScoped({ entityType: "project", id: 5 });
     await flush();
 
+    expect(mockedSearchCreatableProjects).not.toHaveBeenCalled();
     expect(createButton().disabled).toBe(false);
     await act(async () => {
       createButton().dispatchEvent(new MouseEvent("click", { bubbles: true }));

@@ -1,4 +1,4 @@
-import type { DetailTabDef, DetailTabHelpers } from "../entities/types";
+import type { CreatePrefill, DetailTabDef, DetailTabHelpers } from "../entities/types";
 import { EntityListPanel } from "./EntityListPanel";
 
 // Builds a DetailTabDef whose content is another entity type's own list, scoped to this detail's
@@ -29,6 +29,9 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
   // false hides the list's "Créer": a plain create there wouldn't be linked to the parent (a new
   // RU in a "contained RUs" tab would not be a child), so it'd never show up in the tab.
   creatable?: boolean;
+  // Links the tab's own "Créer" to the parent (the new UE is its child, the new find is on it…),
+  // so what gets created shows up in this tab.
+  createPrefill?: (entity: TDetail) => CreatePrefill;
 }): DetailTabDef<TDetail> {
   return {
     key: spec.key,
@@ -40,6 +43,7 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
         entityType={spec.target}
         scope={{ entityType: spec.scopeEntityType, id: entity.id, path: spec.path, projectId: spec.projectId?.(entity) ?? undefined }}
         creatable={spec.creatable}
+        createPrefill={spec.createPrefill?.(entity)}
         organizationId={helpers.organizationId}
         onNavigate={helpers.onNavigate}
         onOpenOverview={helpers.onOpenOverview}

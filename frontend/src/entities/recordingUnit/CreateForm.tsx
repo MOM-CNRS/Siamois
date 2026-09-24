@@ -1,14 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { ApiError } from "../../api/client";
+import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
 import { createRecordingUnit } from "./api";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
-import { scopeProjectId } from "../scope";
+import { useCreateProject } from "../../components/useCreateProject";
 
 // The "Unités d'enregistrement" relation tab's own "Créer" overlay (migration plan follow-up —
 // see entities/project/CreateForm.tsx's own doc for the overlay-not-dialog rationale, and
@@ -26,9 +27,14 @@ interface ConceptPick {
   label?: string | null;
 }
 
-export function RecordingUnitCreateForm({ organizationId, scope, onCreated, onCancel }: CreateFormContext) {
-  const projectId = scopeProjectId(scope);
+export function RecordingUnitCreateForm({ organizationId, scope, prefill, onCreated, onCancel }: CreateFormContext) {
+  // The list's own project, or — on an organization-wide list — the one picked first in the form.
+  const { projectId, picker: projectPicker } = useCreateProject({ scope, organizationId, kind: "recordingUnit" });
   const [type, setType] = useState<ConceptPick | null>(null);
+  // Types are per project: a pick from the previous project's catalog no longer applies.
+  useEffect(() => {
+    setType(null);
+  }, [projectId]);
   const [error, setError] = useState<string | null>(null);
 
   const typesQuery = useQuery({
@@ -45,7 +51,13 @@ export function RecordingUnitCreateForm({ organizationId, scope, onCreated, onCa
   );
 
   const mutation = useMutation({
-    mutationFn: () => createRecordingUnit({ projectId: projectId as string, typeId: type!.resourceId }),
+    mutationFn: () =>
+      createRecordingUnit({
+        projectId: projectId as string,
+        typeId: type!.resourceId,
+        parentRecordingUnitId: prefill?.parent?.id,
+        childRecordingUnitId: prefill?.child?.id,
+      }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
       setError(err instanceof ApiError ? err.message : "Échec de la création");
@@ -65,7 +77,11 @@ export function RecordingUnitCreateForm({ organizationId, scope, onCreated, onCa
     >
       <h4 style={{ margin: 0 }}>Nouvelle unité d'enregistrement</h4>
 
-      {projectId == null && <Message severity="warn" text="Projet inconnu : création impossible" />}
+      {projectPicker}
+      {projectId == null && !projectPicker && <Message severity="warn" text="Projet inconnu : création impossible" />}
+
+      {prefill?.parent && <CreateLinkField label="Contenue dans" entityType="recordingUnit" value={prefill.parent} />}
+      {prefill?.child && <CreateLinkField label="Contient" entityType="recordingUnit" value={prefill.child} />}
 
       <label className="project-create-form-field">
         <span>Type</span>
@@ -79,7 +95,7 @@ export function RecordingUnitCreateForm({ organizationId, scope, onCreated, onCa
             onChange={(v) => setType(v as ConceptPick | null)}
           />
         ) : (
-          <span>Chargement…</span>
+          <span className="create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
         )}
       </label>
 

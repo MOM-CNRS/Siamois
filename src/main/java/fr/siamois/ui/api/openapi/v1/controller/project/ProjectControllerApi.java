@@ -72,6 +72,10 @@ public class ProjectControllerApi {
                     + "(colonnes visibles par défaut de la liste), ou une liste d'ids de champs séparés par "
                     + "des virgules. Absent : pas de clé answers, la liste reste au coût d'avant.")
             @RequestParam(required = false) String fields,
+            @Parameter(description = "Seulement les projets où l'appelant peut créer ce type : recordingUnit, "
+                    + "find, phase ou container (exige organizationId). Sert au choix du projet d'un "
+                    + "formulaire de création.")
+            @RequestParam(required = false) String canCreate,
             @Parameter(hidden = true)
             @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -82,6 +86,10 @@ public class ProjectControllerApi {
         // query params (not a dedicated @RequestParam per key) since the filterable-column set is
         // a whitelist, not a fixed handful of named parameters.
         ProjectListFilter filter = ProjectListFilter.parse(queryParams);
+        if (canCreate != null) {
+            filter = projectApiService.restrictToCreatable(caller, organizationId, filter,
+                    ProjectApiService.CreatableKind.parse(canCreate));
+        }
         Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
                 caller, organizationId, search, offset, limit, sort, filter);
 

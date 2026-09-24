@@ -126,6 +126,27 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Which of the user's current institution's projects grant a capability checked by
+     * {@link #hasProjectPermission(UserInfo, Long, String, String, String)} — the bulk, "which
+     * projects" side of that same rule.
+     *
+     * @return {@code null} when the instance or organisation counterpart grants it on every project of
+     * the institution; otherwise the ids of the projects granting it through a project profile
+     * (possibly empty)
+     */
+    public Set<Long> actionUnitIdsGranting(UserInfo user, String instanceCode, String organizationCode, String projectCode) {
+        if (hasInstancePermission(user.getUser(), instanceCode) || hasOrganizationPermission(user, organizationCode)) {
+            return null;
+        }
+        PersonDTO person = user.getUser();
+        if (person == null || person.getId() == null || user.getInstitution() == null || user.getInstitution().getId() == null) {
+            return Set.of();
+        }
+        return assignmentRepository.findInstitutionActionUnitIdsWithPermission(
+                person.getId(), user.getInstitution().getId(), projectCode);
+    }
+
+    /**
      * The "validateur" right on a project's entities (recording units, finds, phases, containers, the
      * project itself): {@code PROJECT_VALIDATE}, or its organisation/instance-wide counterparts.
      */

@@ -11,8 +11,11 @@ import { Toolbar } from "primereact/toolbar";
 import { Chip } from "primereact/chip";
 import { Button } from "primereact/button";
 import { OverlayPanel } from "primereact/overlaypanel";
+import { Checkbox } from "primereact/checkbox";
 import { getEntityType } from "../entities/registry";
-import type { ColumnDef, FilterValue, ListParams, ListScope, PagedResult } from "../entities/types";
+import { scopeProjectId } from "../entities/scope";
+import { searchCreatableProjects } from "../entities/project/api";
+import type { ColumnDef, CreatePrefill, EntityTypeConfig, FilterValue, ListParams, ListScope, PagedResult } from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import { FilterChipBar, type FilterSpec } from "../components/table/FilterChipBar";
@@ -24,6 +27,8 @@ import type { PanelToolbarSlot } from "../mountOptions";
 import { useTableState } from "./useTableState";
 import { isPlaceholderRow, useVirtualList } from "./useVirtualList";
 import { useWriteMode } from "./writeMode";
+import { useRowActions } from "./useRowActions";
+import { Message } from "primereact/message";
 
 export interface EntityListPanelProps {
   entityType: string;
@@ -59,6 +64,9 @@ export interface EntityListPanelProps {
   embedded?: boolean;
   // false: no "Créer" at all (a relation tab whose plain create wouldn't be linked to its parent).
   creatable?: boolean;
+  // What the list's own "Créer" links the new entity to — a relation tab's parent (the recording
+  // unit a new child or find belongs to, the place a new project is attached to).
+  createPrefill?: CreatePrefill;
 }
 
 // Deliberate divergence from JSF's own entityDataTable.xhtml paginator: the React list has no
@@ -95,6 +103,7 @@ export function EntityListPanel({
   scope,
   embedded,
   creatable,
+  createPrefill,
 }: EntityListPanelProps) {
   const config = getEntityType(entityType);
   const { state, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns } = useTableState({
@@ -119,6 +128,25 @@ export function EntityListPanel({
   // re-anchored (to the clicked cell's own rect) and re-seeded per click, not one per cell/column.
   const [editTarget, setEditTarget] = useState<CellEditTarget<RowRecord> | null>(null);
   const writeMode = useWriteMode();
+
+  // Created and duplicated entities open where a row's own identifier would (the overview).
+  const rowActions = useRowActions({
+    entityType,
+    config: config as EntityTypeConfig<unknown, unknown> | undefined,
+    organizationId,
+    writeMode,
+    onOpen: onOpenOverview ?? onNavigate,
+  });
+
+  // An organization-wide list of a kind created inside a project: its create form picks the project,
+  // so "Créer" needs at least one project where the caller may create this kind.
+  const createNeedsPickedProject = config?.list.createProjectKind != null && scopeProjectId(scope) == null;
+  const creatableProjects = useQuery({
+    queryKey: ["creatable-projects", config?.list.createProjectKind, organizationId],
+    queryFn: () => searchCreatableProjects(organizationId!, config!.list.createProjectKind!, undefined, 1),
+    enabled: createNeedsPickedProject && organizationId != null && creatable !== false,
+  });
+  const canCreateInSomeProject = (creatableProjects.data?.totalCount ?? 0) > 0;
 
   const hasSchema = config?.list.schema != null;
   const { data: catalog } = useQuery({
@@ -315,8 +343,9 @@ export function EntityListPanel({
   function openIdentifier(e: SyntheticEvent, row: RowRecord) {
     e.stopPropagation();
     if (row.id == null) return;
-    if (onOpenOverview) onOpenOverview(entityType, row.id);
-    else onNavigate?.(entityType, row.id);
+    // The chip opens the full fiche; the overview has its own button right after it.
+    if (onNavigate) onNavigate(entityType, row.id);
+    else onOpenOverview?.(entityType, row.id);
   }
 
   // Same target preference as openIdentifier, for a column linking to another entity.
@@ -336,7 +365,7 @@ export function EntityListPanel({
   // actually enforces it; this just avoids offering a control that would 403.
   function renderCellValue(col: ColumnDef<RowRecord>, row: RowRecord) {
     if (col.identifier) {
-      return (
+      const chip = (
         <span
           className="entity-list-panel-identifier-link entity-nav-chip"
           role="button"
@@ -345,6 +374,37 @@ export function EntityListPanel({
         >
           <i className={config!.icon} aria-hidden="true" />
           <span className="entity-nav-chip-label">{col.render(row)}</span>
+        </span>
+      );
+      // Around the chip, both shown only while the row is hovered: before it, a checkbox that
+      // selects the row (which brings the selection column in — the checkbox then goes away);
+      // after it, a button opening the row in the overview (the chip itself opens the full fiche).
+      return (
+        <span className="entity-list-panel-identifier-selectable">
+          {!selectionColumnVisible && (
+            <Checkbox
+              className="entity-list-panel-identifier-select"
+              checked={false}
+              aria-label="Sélectionner"
+              onClick={(e) => e.stopPropagation()}
+              onChange={() => setSelectedRows([row])}
+            />
+          )}
+          {chip}
+          {onOpenOverview && (
+            <Button
+              icon="bi bi-layout-sidebar-inset-reverse"
+              size="small"
+              className="entity-list-panel-identifier-open"
+              aria-label="Ouvrir dans l'aperçu"
+              tooltip="Ouvrir dans l'aperçu"
+              tooltipOptions={{ position: "top" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (row.id != null) onOpenOverview(entityType, row.id);
+              }}
+            />
+          )}
         </span>
       );
     }
@@ -399,6 +459,10 @@ export function EntityListPanel({
   // (the one whose cell navigates), so no entity type has to restate which column this is.
   // -1 (no entity declares an identifier column) freezes nothing, including the selection box.
   const lastFrozenIndex = allColumns.findIndex((col) => col.identifier);
+  // The selection column only appears once a row is selected (from the checkbox the identifier
+  // chip shows on hover). An entity with no identifier column has nowhere to put that checkbox,
+  // so it keeps the column all the time.
+  const selectionColumnVisible = selectedRows.length > 0 || lastFrozenIndex < 0;
 
   // The toolbar + table + edit overlay — identical whether or not the surrounding <Panel> chrome
   // is rendered (see `embedded` below). Only the wrapper differs: a standalone list gets its own
@@ -448,14 +512,18 @@ export function EntityListPanel({
             </>
           }
           end={
-            creatable === false ? null : config.list.createForm && config.list.createRequiresScope && !scope ? (
-              // JSF's ToolbarCreateConfig "unavailable" state: the button stays visible but disabled,
-              // explaining where creation is possible instead.
+            creatable === false ? null : config.list.createForm && createNeedsPickedProject && !canCreateInSomeProject ? (
+              // No project to create in: the button stays visible but disabled (JSF's
+              // ToolbarCreateConfig "unavailable" state), saying why.
               <Button
                 label="Créer"
                 icon="bi bi-plus-square"
                 disabled
-                tooltip={config.list.createRequiresScope}
+                tooltip={
+                  creatableProjects.isLoading
+                    ? undefined
+                    : `Vous n'avez le droit de créer ce type (${config.list.createProjectKind === "find" ? "mobilier" : config.labels.singular.toLowerCase()}) dans aucun projet.`
+                }
                 tooltipOptions={{ showOnDisabled: true, position: "left" }}
               />
             ) : config.list.createForm ? (
@@ -469,9 +537,12 @@ export function EntityListPanel({
                   {config.list.createForm({
                     organizationId,
                     scope,
+                    prefill: createPrefill,
                     onCreated: (id) => {
                       createOverlayRef.current?.hide();
                       queryClient.invalidateQueries({ queryKey: ["entity-list", entityType] });
+                      // A linked create changes the parent's relation counts (its tab badges).
+                      if (createPrefill) void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
                       // Go straight to the new entity's own fiche, the way JSF's creation dialog
                       // does today — not just its overview — falling back to onOpenOverview only
                       // for a caller with no full-navigate of its own (an embedded relation tab).
@@ -488,6 +559,18 @@ export function EntityListPanel({
         />
       )}
       {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}
+      {rowActions.error && (
+        <Message
+          severity="error"
+          className="entity-list-panel-action-error"
+          content={
+            <span style={{ display: "flex", alignItems: "center", gap: "0.5em", width: "100%" }}>
+              <span style={{ flex: 1 }}>{rowActions.error}</span>
+              <Button icon="bi bi-x" text rounded size="small" aria-label="Fermer" onClick={rowActions.clearError} />
+            </span>
+          }
+        />
+      )}
       {/* Rows arriving: the placeholder skeletons show WHERE, this shows THAT something is
           loading even when those rows are off screen or already filled in. Same convention as the
           JSF panels' own p:progressBar (panelContent.xhtml's panel-progressbar): a 3px track that
@@ -554,15 +637,19 @@ export function EntityListPanel({
         scrollHeight="flex"
       >
         {/* selectedCountChip (tableToolbar.xhtml): selected/total, in the selection column's own
-            header, same position as the JSF table. handleSelectionChange() is a no-op in JSF —
-            selection drives nothing there either; this is decoration until a bulk action exists. */}
-        <Column
-          selectionMode="multiple"
-          headerStyle={{ width: "3rem" }}
-          frozen={lastFrozenIndex >= 0}
-          header={<Chip label={`${selectedRows.length}/${totalCount}`} />}
-        />
-        {allColumns.map((col, index) => (
+            header, after the select-all box (main-panel.css reverses PrimeReact's title-then-
+            checkbox order). handleSelectionChange() is a no-op in JSF — selection drives nothing
+            there either; this is decoration until a bulk action exists. */}
+        {selectionColumnVisible && (
+          <Column
+            selectionMode="multiple"
+            headerStyle={{ width: "3rem" }}
+            headerClassName="entity-list-panel-selection-header"
+            frozen={lastFrozenIndex >= 0}
+            header={<Chip label={`${selectedRows.length}/${totalCount}`} />}
+          />
+        )}
+        {allColumns.flatMap((col, index) => [
           <Column
             key={col.key}
             field={col.key}
@@ -596,9 +683,24 @@ export function EntityListPanel({
               </span>
               )
             }
-          />
-        ))}
+          />,
+          // The row's actions (bookmark, duplicate, new child…) sit right after the identifier,
+          // frozen with it — JSF merges both into one statusIdActionsCol.
+          ...(index === Math.max(lastFrozenIndex, 0)
+            ? [
+                <Column
+                  key="__row-actions"
+                  className="entity-list-panel-row-actions-cell"
+                  headerClassName="entity-list-panel-row-actions-cell"
+                  frozen={lastFrozenIndex >= 0}
+                  header={<span className="entity-list-panel-column-header" />}
+                  body={(row: RowRecord) => (isPlaceholderRow(row) ? null : rowActions.render(row))}
+                />,
+              ]
+            : []),
+        ])}
       </DataTable>
+      {rowActions.dialog}
       {canPatchAnswers && (
         // The one shared edit surface (plan phase 4b) — re-anchored per click to the clicked
         // cell's own rect (it renders on top of that cell), not one instance per cell.

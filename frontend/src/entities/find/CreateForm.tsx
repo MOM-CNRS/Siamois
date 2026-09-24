@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { ApiError } from "../../api/client";
+import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
@@ -11,7 +12,7 @@ import { listRecordingUnits } from "../recordingUnit/api";
 import type { RecordingUnitSummary } from "../recordingUnit/types";
 import { createFind } from "./api";
 import { getFindEffectiveForm } from "./findTypes";
-import { scopeProjectId } from "../scope";
+import { useCreateProject } from "../../components/useCreateProject";
 
 // The "Mobilier" relation tab's own "Créer" overlay (migration plan follow-up — see
 // entities/project/CreateForm.tsx for the overlay-not-dialog rationale). Unlike Project's and
@@ -36,12 +37,22 @@ interface ConceptPick {
   label?: string | null;
 }
 
-export function FindCreateForm({ organizationId, scope, onCreated, onCancel }: CreateFormContext) {
-  const projectId = scopeProjectId(scope);
+export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCancel }: CreateFormContext) {
+  // The list's own project, or — on an organization-wide list — the one picked first in the form.
+  const { projectId, picker: projectPicker } = useCreateProject({ scope, organizationId, kind: "find" });
+  // Created from a recording unit (its row action, its "Mobilier" tab): that UE, no picker.
+  const fixedRecordingUnit = prefill?.recordingUnit;
   const [recordingUnit, setRecordingUnit] = useState<RecordingUnitSummary | null>(null);
+  const recordingUnitId = fixedRecordingUnit?.id ?? recordingUnit?.id;
   const [ruQuery, setRuQuery] = useState("");
   const [ruSuggestions, setRuSuggestions] = useState<RecordingUnitSummary[]>([]);
   const [category, setCategory] = useState<ConceptPick | null>(null);
+  // Categories and recording units are per project: a pick from the previous project no longer applies.
+  useEffect(() => {
+    setCategory(null);
+    setRecordingUnit(null);
+    setRuQuery("");
+  }, [projectId]);
   const [error, setError] = useState<string | null>(null);
   const autoCompleteRef = useRef<AutoComplete>(null);
 
@@ -68,14 +79,14 @@ export function FindCreateForm({ organizationId, scope, onCreated, onCancel }: C
   }
 
   const mutation = useMutation({
-    mutationFn: () => createFind({ recordingUnitId: String(recordingUnit!.id), typeId: category!.resourceId }),
+    mutationFn: () => createFind({ recordingUnitId: String(recordingUnitId), typeId: category!.resourceId }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
       setError(err instanceof ApiError ? err.message : "Échec de la création");
     },
   });
 
-  const canSubmit = projectId != null && recordingUnit != null && category != null && !mutation.isPending;
+  const canSubmit = projectId != null && recordingUnitId != null && category != null && !mutation.isPending;
 
   return (
     <form
@@ -88,30 +99,36 @@ export function FindCreateForm({ organizationId, scope, onCreated, onCancel }: C
     >
       <h4 style={{ margin: 0 }}>Nouveau mobilier</h4>
 
-      {projectId == null && <Message severity="warn" text="Projet inconnu : création impossible" />}
+      {projectPicker}
+      {projectId == null && !projectPicker && <Message severity="warn" text="Projet inconnu : création impossible" />}
 
-      <label className="project-create-form-field">
-        <span>Unité d'enregistrement</span>
-        <AutoComplete
-          ref={autoCompleteRef}
-          value={ruQuery}
-          suggestions={ruSuggestions}
-          field="fullIdentifier"
-          onChange={(e) => {
-            // A free-typed string clears the selection; picking a suggestion sets both.
-            if (typeof e.value === "string") {
-              setRuQuery(e.value);
-              setRecordingUnit(null);
-            } else {
-              setRecordingUnit(e.value as RecordingUnitSummary);
-              setRuQuery((e.value as RecordingUnitSummary).fullIdentifier ?? "");
-            }
-          }}
-          completeMethod={searchRecordingUnits}
-          onFocus={(e) => autoCompleteRef.current?.search(e, e.currentTarget.value ?? "", "dropdown")}
-          placeholder="Rechercher une UE…"
-        />
-      </label>
+      {fixedRecordingUnit ? (
+        <CreateLinkField label="Unité d'enregistrement" entityType="recordingUnit" value={fixedRecordingUnit} />
+      ) : (
+        <label className="project-create-form-field">
+          <span>Unité d'enregistrement</span>
+          <AutoComplete
+            ref={autoCompleteRef}
+            value={ruQuery}
+            suggestions={ruSuggestions}
+            field="fullIdentifier"
+            onChange={(e) => {
+              // A free-typed string clears the selection; picking a suggestion sets both.
+              if (typeof e.value === "string") {
+                setRuQuery(e.value);
+                setRecordingUnit(null);
+              } else {
+                setRecordingUnit(e.value as RecordingUnitSummary);
+                setRuQuery((e.value as RecordingUnitSummary).fullIdentifier ?? "");
+              }
+            }}
+            completeMethod={searchRecordingUnits}
+            onFocus={(e) => autoCompleteRef.current?.search(e, e.currentTarget.value ?? "", "dropdown")}
+            placeholder={projectId == null ? "Choisissez d'abord un projet" : "Rechercher une UE…"}
+            disabled={projectId == null}
+          />
+        </label>
+      )}
 
       <label className="project-create-form-field">
         <span>Catégorie</span>
@@ -125,7 +142,7 @@ export function FindCreateForm({ organizationId, scope, onCreated, onCancel }: C
             onChange={(v) => setCategory(v as ConceptPick | null)}
           />
         ) : (
-          <span>Chargement…</span>
+          <span className="create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
         )}
       </label>
 

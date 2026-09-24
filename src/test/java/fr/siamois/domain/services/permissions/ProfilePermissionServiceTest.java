@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.permissions;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -16,9 +17,12 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -229,4 +233,26 @@ class ProfilePermissionServiceTest {
                 .containsExactlyInAnyOrder(1L, 2L);
     }
 
+    // ---- actionUnitIdsGranting — which projects of the institution a capability covers ----
+
+    @Test
+    void actionUnitIdsGranting_organizationWideCounterpart_coversEveryProject() {
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.ORGANIZATION_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_PHASES)).thenReturn(true);
+
+        assertNull(profilePermissionService.actionUnitIdsGranting(new UserInfo(institution, person, null),
+                PermissionConstants.INSTANCE_EDIT_PHASES, PermissionConstants.ORGANIZATION_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES));
+    }
+
+    @Test
+    void actionUnitIdsGranting_projectProfilesOnly_listsTheirProjects() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_PHASES)).thenReturn(false);
+        when(assignmentRepository.findInstitutionActionUnitIdsWithPermission(3L, 12L, PermissionConstants.PROJECT_EDIT_PHASES))
+                .thenReturn(java.util.Set.of(4L, 5L));
+
+        assertEquals(java.util.Set.of(4L, 5L), profilePermissionService.actionUnitIdsGranting(new UserInfo(institution, person, null),
+                PermissionConstants.INSTANCE_EDIT_PHASES, PermissionConstants.ORGANIZATION_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES));
+    }
 }

@@ -1,6 +1,6 @@
 import { apiFetch } from "../../api/client";
 import { fetchList } from "../listApi";
-import type { EntitySiblings, ListParams, PagedResult } from "../types";
+import type { CreatableKind, EntitySiblings, ListParams, PagedResult } from "../types";
 import type { AnswerInputBody } from "../../fields/types";
 import type { ProjectDetail, ProjectSummary } from "./types";
 
@@ -12,6 +12,29 @@ export async function listProjects(params: ListParams): Promise<PagedResult<Proj
   return fetchList<ProjectSummary>("projects", params);
 }
 
+// What a create form can be pointed at when its list has no project of its own (lot 7): the
+// organization's projects in which the caller may create this kind — GET /api/v1/projects?canCreate=…,
+// the same permission rule each create endpoint enforces.
+export type { CreatableKind };
+
+export async function searchCreatableProjects(
+  organizationId: number,
+  kind: CreatableKind,
+  search: string | undefined,
+  limit = 20,
+): Promise<PagedResult<ProjectSummary>> {
+  const query = new URLSearchParams({
+    organizationId: String(organizationId),
+    canCreate: kind,
+    offset: "0",
+    limit: String(limit),
+    sort: "name:asc",
+  });
+  if (search) query.set("search", search);
+  const body = await apiFetch<{ data: ProjectSummary[]; meta?: { total?: number } }>(`/api/v1/projects?${query.toString()}`);
+  return { data: body.data, totalCount: body.meta?.total ?? body.data.length, limit, offset: 0 };
+}
+
 // Mirrors ProjectCreateRequest's required trio (organizationId/name/identifier/typeConceptId) —
 // dates and locations are deliberately not exposed here (CreateForm.tsx keeps the overlay to the
 // fields the user actually needs to get started; both are still editable afterward, from the
@@ -21,12 +44,20 @@ export interface ProjectCreateBody {
   name: string;
   identifier: string;
   typeId: string;
+  // Places the project is attached to (ActionUnit.spatialContext).
+  spatialContextSpatialUnitIds?: string[];
 }
 
 export async function createProject(body: ProjectCreateBody): Promise<ProjectDetail> {
   const response = await apiFetch<ProjectResponseBody>("/api/v1/projects", {
     method: "POST",
-    body: { organizationId: body.organizationId, name: body.name, identifier: body.identifier, typeConceptId: body.typeId },
+    body: {
+      organizationId: body.organizationId,
+      name: body.name,
+      identifier: body.identifier,
+      typeConceptId: body.typeId,
+      spatialContextSpatialUnitIds: body.spatialContextSpatialUnitIds,
+    },
   });
   return response.data;
 }

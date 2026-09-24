@@ -42,6 +42,10 @@ public final class ActionUnitFilterSpec {
         for (Map.Entry<String, java.util.List<Long>> e : filter.spatialOneInFilters().entrySet()) {
             spec = spec.and(spatialOneIn(e.getKey(), e.getValue()));
         }
+        if (filter.idIn() != null) {
+            java.util.Set<Long> ids = filter.idIn();
+            spec = spec.and((root, query, cb) -> ids.isEmpty() ? cb.disjunction() : root.get("id").in(ids));
+        }
         for (Map.Entry<String, ProjectListFilter.NumericRange> e : filter.numericRangeFilters().entrySet()) {
             spec = spec.and(numericRange(e.getKey(), e.getValue()));
         }

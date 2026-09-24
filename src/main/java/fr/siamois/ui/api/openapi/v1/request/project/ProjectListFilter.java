@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Per-column filters on {@code GET /api/v1/projects}, parsed from {@code f.<key>} query params.
@@ -25,10 +26,27 @@ public record ProjectListFilter(
         Map<String, List<Long>> conceptOneInFilters,
         Map<String, List<Long>> conceptManyInFilters,
         Map<String, List<Long>> spatialOneInFilters,
-        Map<String, NumericRange> numericRangeFilters
+        Map<String, NumericRange> numericRangeFilters,
+        // Not a query-string filter: set server-side (withIdIn) to restrict the list to the projects
+        // the caller may create something in (GET /projects?canCreate=…). Null = no restriction.
+        Set<Long> idIn
 ) {
     public static final ProjectListFilter EMPTY =
             new ProjectListFilter(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+
+    public ProjectListFilter(Map<String, String> containsFilters,
+                             Map<String, List<Long>> conceptOneInFilters,
+                             Map<String, List<Long>> conceptManyInFilters,
+                             Map<String, List<Long>> spatialOneInFilters,
+                             Map<String, NumericRange> numericRangeFilters) {
+        this(containsFilters, conceptOneInFilters, conceptManyInFilters, spatialOneInFilters, numericRangeFilters, null);
+    }
+
+    /** This filter, restricted to the given project ids (an empty set matches nothing). */
+    public ProjectListFilter withIdIn(Set<Long> ids) {
+        return new ProjectListFilter(containsFilters, conceptOneInFilters, conceptManyInFilters,
+                spatialOneInFilters, numericRangeFilters, Set.copyOf(ids));
+    }
 
     public record NumericRange(Double from, Double to) {}
 
@@ -37,12 +55,12 @@ public record ProjectListFilter(
         Map<String, List<Long>> manyIn = new LinkedHashMap<>(conceptManyInFilters);
         manyIn.put("spatialContext", List.of(placeId));
         return new ProjectListFilter(containsFilters, conceptOneInFilters, Map.copyOf(manyIn),
-                spatialOneInFilters, numericRangeFilters);
+                spatialOneInFilters, numericRangeFilters, idIn);
     }
 
     public boolean isEmpty() {
         return containsFilters.isEmpty() && conceptOneInFilters.isEmpty() && conceptManyInFilters.isEmpty()
-                && spatialOneInFilters.isEmpty() && numericRangeFilters.isEmpty();
+                && spatialOneInFilters.isEmpty() && numericRangeFilters.isEmpty() && idIn == null;
     }
 
     // DATE_RANGE isn't wired into FILTERABLE_FIELDS below: ActionUnitTableColumnDefaults doesn't

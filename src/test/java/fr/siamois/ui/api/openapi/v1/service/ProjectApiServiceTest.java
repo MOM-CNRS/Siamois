@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveException;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
@@ -590,5 +593,37 @@ class ProjectApiServiceTest {
     @Test
     void primaryAcceptLanguage_simpleLanguageTag_returnsLowercased() {
         assertThat(ProjectApiService.primaryAcceptLanguage("IT")).isEqualTo("it");
+    }
+
+    // ---- GET /projects?canCreate=… ----
+
+    @Test
+    void restrictToCreatable_limitsTheListToTheProjectsGrantingTheCreateRight() {
+        when(profilePermissionService.actionUnitIdsGranting(any(UserInfo.class),
+                eq(PermissionConstants.INSTANCE_EDIT_CONTAINERS), eq(PermissionConstants.ORGANIZATION_EDIT_CONTAINERS),
+                eq(PermissionConstants.PROJECT_EDIT_CONTAINERS))).thenReturn(Set.of(4L));
+
+        ProjectListFilter filter = service.restrictToCreatable(caller, 10L, ProjectListFilter.EMPTY,
+                ProjectApiService.CreatableKind.parse("container"));
+
+        assertThat(filter.idIn()).containsExactly(4L);
+    }
+
+    @Test
+    void restrictToCreatable_organizationWideRight_leavesTheListUnrestricted() {
+        when(profilePermissionService.actionUnitIdsGranting(any(UserInfo.class), any(), any(), any())).thenReturn(null);
+
+        ProjectListFilter filter = service.restrictToCreatable(caller, 10L, ProjectListFilter.EMPTY,
+                ProjectApiService.CreatableKind.FIND);
+
+        assertThat(filter.idIn()).isNull();
+    }
+
+    @Test
+    void restrictToCreatable_needsAnOrganization_andAKnownKind() {
+        assertThatThrownBy(() -> service.restrictToCreatable(caller, null, ProjectListFilter.EMPTY, ProjectApiService.CreatableKind.PHASE))
+                .isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> ProjectApiService.CreatableKind.parse("place"))
+                .isInstanceOf(ResponseStatusException.class);
     }
 }

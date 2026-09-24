@@ -20,6 +20,7 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.ConceptMapper;
@@ -49,13 +50,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class PlaceOpenApiService {
+
+    private static final int MAX_DUPLICATE_NAME_ATTEMPTS = 5;
 
     private final ProjectApiService projectApiService;
     private final InstitutionService institutionService;
@@ -283,6 +288,13 @@ public class PlaceOpenApiService {
         if (request.getAddress() != null) {
             toSave.setAddress(request.getAddress());
         }
+        // JSF's "nouvel enfant / nouveau parent" row actions: SpatialUnitService.save links them.
+        if (request.getParentPlaceId() != null) {
+            toSave.setParents(new HashSet<>(Set.of(requireLinkablePlace(caller, request.getParentPlaceId(), institution))));
+        }
+        if (request.getChildPlaceId() != null) {
+            toSave.setChildren(new HashSet<>(Set.of(requireLinkablePlace(caller, request.getChildPlaceId(), institution))));
+        }
 
         try {
             SpatialUnitDTO saved = spatialUnitService.save(userInfo, toSave);
@@ -371,6 +383,43 @@ public class PlaceOpenApiService {
         }
         projectApiService.assertOrganizationInCallerScope(institution.getId(), caller.accessibleInstitutionIds());
         return dto;
+    }
+
+    /** A place the new one may be linked to: accessible, and in the organization it is created in. */
+    private SpatialUnitSummaryDTO requireLinkablePlace(ProjectApiCaller caller, long placeId, InstitutionDTO institution) {
+        SpatialUnitDTO related = requireAccessiblePlace(caller, placeId);
+        if (!institution.getId().equals(related.getCreatedByInstitution().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le lieu lié doit appartenir à la même organisation");
+        }
+        return new SpatialUnitSummaryDTO(related);
+    }
+
+    /**
+     * Duplique un lieu ({@code POST /api/v1/places/{id}/duplicate}) — même copie que l'action de ligne
+     * JSF ({@code SpatialUnitTableViewModel.duplicateRow}) : mêmes champs et mêmes parents, sans les
+     * enfants, nommée « nom (n) » avec le premier n libre (5 essais).
+     */
+    @Transactional
+    public PlaceCreatedResponse.PlaceCreatedItem duplicatePlace(ProjectApiCaller caller, long placeId, String lang) {
+        SpatialUnitDTO source = requireAccessiblePlace(caller, placeId);
+        requirePlaceWritePermission(caller, source, lang, "Duplication de lieu non autorisée");
+        UserInfo userInfo = new UserInfo(source.getCreatedByInstitution(), caller.person(), lang);
+
+        SpatialUnitDTO copy = new SpatialUnitDTO(source);
+        copy.setId(null);
+        copy.setChildren(null);
+        copy.setParents(source.getParents() == null ? null : new HashSet<>(source.getParents()));
+        for (int i = 1; i <= MAX_DUPLICATE_NAME_ATTEMPTS; i++) {
+            copy.setName(source.getName() + " (" + i + ")");
+            try {
+                SpatialUnitDTO saved = spatialUnitService.save(userInfo, copy);
+                return new PlaceCreatedResponse.PlaceCreatedItem(
+                        saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
+            } catch (SpatialUnitAlreadyExistsException e) {
+                // name taken: try the next suffix
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Aucun nom libre pour la copie de « " + source.getName() + " »");
     }
 
     private void requirePlaceWritePermission(ProjectApiCaller caller,

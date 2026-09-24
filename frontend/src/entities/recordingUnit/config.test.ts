@@ -29,9 +29,9 @@ describe("recordingUnitEntityConfig", () => {
     expect(recordingUnitEntityConfig.list.createForm).toBeDefined();
   });
 
-  // JSF's organization-wide list disables creation for this type (it needs a project).
-  it("disables creation on the unscoped list with an explanation", () => {
-    expect(recordingUnitEntityConfig.list.createRequiresScope).toMatch(/que depuis un projet/);
+  // Created in a project: from the organization-wide list, the create form picks it.
+  it("is created in a project picked by the form on the unscoped list", () => {
+    expect(recordingUnitEntityConfig.list.createProjectKind).toBe("recordingUnit");
   });
 
   it("derives its bookmark chrome from the resource itself", () => {

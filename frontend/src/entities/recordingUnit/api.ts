@@ -35,12 +35,21 @@ export async function duplicateRecordingUnit(id: string | number): Promise<Recor
 export interface RecordingUnitCreateBody {
   projectId: string;
   typeId: string;
+  // The new UE becomes a direct child of parentRecordingUnitId / the direct parent of
+  // childRecordingUnitId — linked server-side in the same transaction as the creation.
+  parentRecordingUnitId?: string | number;
+  childRecordingUnitId?: string | number;
 }
 
 export async function createRecordingUnit(body: RecordingUnitCreateBody): Promise<RecordingUnitDetail> {
   const response = await apiFetch<RecordingUnitResponseBody>("/api/v1/recording-units", {
     method: "POST",
-    body: { projectId: body.projectId, typeId: body.typeId },
+    body: {
+      projectId: body.projectId,
+      typeId: body.typeId,
+      parentRecordingUnitId: body.parentRecordingUnitId != null ? Number(body.parentRecordingUnitId) : undefined,
+      childRecordingUnitId: body.childRecordingUnitId != null ? Number(body.childRecordingUnitId) : undefined,
+    },
   });
   return response.data;
 }

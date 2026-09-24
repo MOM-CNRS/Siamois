@@ -100,6 +100,30 @@ public class PlaceControllerApi {
         return ResponseEntity.ok(new PlaceCreatedResponse(item));
     }
 
+    @PostMapping(value = "/{id}/duplicate", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Dupliquer un lieu",
+            description = "Copie les champs et les parents du lieu (pas ses enfants), nommée « nom (n) ». "
+                    + "Droit requis : gestion des lieux de l'organisation."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Copie créée"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre ou duplication non autorisée"),
+            @ApiResponse(responseCode = "404", description = "Lieu introuvable"),
+            @ApiResponse(responseCode = "409", description = "Aucun nom libre pour la copie"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<PlaceCreatedResponse> duplicate(
+            @PathVariable Long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        PlaceCreatedResponse.PlaceCreatedItem item = placeOpenApiService.duplicatePlace(caller, id, lang);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new PlaceCreatedResponse(item));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Supprimer un lieu",

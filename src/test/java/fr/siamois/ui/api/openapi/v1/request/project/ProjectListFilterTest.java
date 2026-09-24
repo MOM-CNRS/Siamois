@@ -146,4 +146,13 @@ class ProjectListFilterTest {
         org.assertj.core.api.Assertions.assertThat(forced.conceptManyInFilters()).containsEntry("spatialContext", java.util.List.of(5L));
         org.assertj.core.api.Assertions.assertThat(forced.containsFilters()).containsEntry("name", "fouille");
     }
+
+    @Test
+    void withIdIn_restrictsToThoseIds_andIsNoLongerEmpty() {
+        ProjectListFilter filter = ProjectListFilter.EMPTY.withIdIn(java.util.Set.of(3L));
+
+        assertThat(filter.idIn()).containsExactly(3L);
+        assertThat(filter.isEmpty()).isFalse();
+        assertThat(filter.withSpatialContext(9L).idIn()).containsExactly(3L);
+    }
 }

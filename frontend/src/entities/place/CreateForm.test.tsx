@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldRendererProps } from "../../fields/registry";
 import { PlaceCreateForm } from "./CreateForm";
+import type { CreatePrefill } from "../types";
 import { createPlace } from "./api";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -28,12 +29,12 @@ const mockedCreatePlace = vi.mocked(createPlace);
 let container: HTMLDivElement;
 let root: Root;
 
-function render(onCreated = vi.fn(), onCancel = vi.fn()) {
+function render(onCreated = vi.fn(), onCancel = vi.fn(), prefill?: CreatePrefill) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   act(() => {
     root.render(
       <QueryClientProvider client={queryClient}>
-        <PlaceCreateForm organizationId={7} onCreated={onCreated} onCancel={onCancel} />
+        <PlaceCreateForm organizationId={7} prefill={prefill} onCreated={onCreated} onCancel={onCancel} />
       </QueryClientProvider>,
     );
   });
@@ -98,7 +99,23 @@ describe("PlaceCreateForm", () => {
     expect(onCreated).toHaveBeenCalledWith(42);
   });
 
-  it("calls onCancel from the cancel button", () => {
+  it("links the new place as the child of a row action's parent", async () => {
+    mockedCreatePlace.mockResolvedValue({ id: 43 });
+    render(vi.fn(), vi.fn(), { parent: { id: "8", label: "Site B" } });
+
+    expect(container.textContent).toContain("Contenu dans");
+    typeName("Cave C");
+    act(() => container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click());
+    await act(async () => {
+      button("Créer").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(mockedCreatePlace).toHaveBeenCalledWith({
+      organizationId: 7, name: "Cave C", typeConceptId: "9", parentPlaceId: "8", childPlaceId: undefined,
+    });
+  });
+
+    it("calls onCancel from the cancel button", () => {
     const { onCancel } = render();
 
     act(() => button("Annuler").click());

@@ -237,6 +237,55 @@ public class ProjectApiService {
                 filter);
     }
 
+    /**
+     * What an unscoped list's create form may pick a project from ({@code GET /projects?canCreate=…}):
+     * each kind's create endpoint checks this same instance / organisation / project triple.
+     * A find is created on a recording unit, with that recording unit's edit right.
+     */
+    public enum CreatableKind {
+        RECORDING_UNIT("recordingUnit", PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+                PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS),
+        FIND("find", PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+                PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS),
+        PHASE("phase", PermissionConstants.INSTANCE_EDIT_PHASES,
+                PermissionConstants.ORGANIZATION_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES),
+        CONTAINER("container", PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS, PermissionConstants.PROJECT_EDIT_CONTAINERS);
+
+        private final String key;
+        private final String instanceCode;
+        private final String organizationCode;
+        private final String projectCode;
+
+        CreatableKind(String key, String instanceCode, String organizationCode, String projectCode) {
+            this.key = key;
+            this.instanceCode = instanceCode;
+            this.organizationCode = organizationCode;
+            this.projectCode = projectCode;
+        }
+
+        public static CreatableKind parse(String key) {
+            for (CreatableKind kind : values()) {
+                if (kind.key.equals(key)) return kind;
+            }
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "canCreate inconnu : " + key);
+        }
+    }
+
+    /** {@code filter}, restricted to the organisation's projects in which the caller may create {@code kind}. */
+    public ProjectListFilter restrictToCreatable(ProjectApiCaller caller, Long organizationId,
+                                                 ProjectListFilter filter, CreatableKind kind) {
+        if (organizationId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "canCreate exige organizationId");
+        }
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(organizationId);
+        Set<Long> granting = profilePermissionService.actionUnitIdsGranting(
+                new UserInfo(institution, caller.person(), null),
+                kind.instanceCode, kind.organizationCode, kind.projectCode);
+        return granting == null ? filter : filter.withIdIn(granting);
+    }
+
     public AccessibleProjectForApi requireAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
         AccessibleProjectForApi row = actionUnitService.findAccessibleProjectByKey(projectIdOrKey, caller.accessibleInstitutionIds());
         ActionUnitDTO project = row.actionUnit();

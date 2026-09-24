@@ -1030,12 +1030,24 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
         }
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasProjectPermission(userInfo, au.getId(), PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)) {
+        // Same instance / organisation / project rule as editing a recording unit (and as
+        // GET /projects?canCreate=recordingUnit).
+        if (!profilePermissionService.hasProjectPermission(userInfo, au.getId(),
+                PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
+                PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
+                PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création d'unité non autorisée sur ce projet");
         }
         Concept typeConcept = conceptRepository.findById(Long.parseLong(request.getTypeId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
+        // Checked up front so an out-of-scope link is a 404 before anything is written.
+        if (request.getParentRecordingUnitId() != null) {
+            recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(request.getParentRecordingUnitId(), accessibleInstitutionIds);
+        }
+        if (request.getChildRecordingUnitId() != null) {
+            recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(request.getChildRecordingUnitId(), accessibleInstitutionIds);
+        }
 
         RecordingUnitDTO shell = initRecordingUnitShell(typeDto, au, institution, personDto);
         shell.setGeom(request.getGeom());
@@ -1049,6 +1061,17 @@ public class RecordingUnitOpenApiService {
             formService.updateJpaEntityFromResponse(response, shell);
             return saveWithGeneratedIdentifier(shell);
         });
+
+        // JSF's "nouvel enfant / nouveau parent" row actions: linked in the same transaction, so a
+        // rejected link (other project, cycle) rolls the creation back too.
+        if (request.getParentRecordingUnitId() != null) {
+            long parentId = request.getParentRecordingUnitId();
+            mutateHierarchy(() -> recordingUnitService.addHierarchyChild(parentId, created.getId()));
+        }
+        if (request.getChildRecordingUnitId() != null) {
+            long childId = request.getChildRecordingUnitId();
+            mutateHierarchy(() -> recordingUnitService.addHierarchyChild(created.getId(), childId));
+        }
 
         String key = created.getId() != null ? String.valueOf(created.getId()) : created.getFullIdentifier();
         return resolveMobileDetail(key, personDto, accessibleInstitutionIds, null, lang);
