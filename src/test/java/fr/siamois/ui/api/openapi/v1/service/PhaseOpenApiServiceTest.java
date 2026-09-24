@@ -66,10 +66,13 @@ class PhaseOpenApiServiceTest {
     private PersonDTO personDto;
     private InstitutionDTO institution;
 
+    @Mock
+    private fr.siamois.domain.services.ValidationStatusService validationStatusService;
+
     @BeforeEach
     void setUp() {
         service = new PhaseOpenApiService(phaseService, actionUnitService, conceptService, conceptMapper,
-                profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class));
+                profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService));
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -250,6 +253,51 @@ class PhaseOpenApiServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
 
         verify(phaseService, never()).save(any());
+    }
+
+    // `validated` rides the same PATCH: the edit right covers en cours/terminé/annulé, the validator
+    // right covers validé — alone, a validator without the edit right may change the status only.
+    @Test
+    void patchPhase_validatorWithoutEditRight_mayChangeOnlyTheStatus() {
+        PhaseDTO phase = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(phase);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L),
+                eq(PermissionConstants.INSTANCE_EDIT_PHASES), eq(PermissionConstants.ORGANIZATION_EDIT_PHASES),
+                eq(PermissionConstants.PROJECT_EDIT_PHASES))).thenReturn(false);
+        when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(true);
+
+        PhasePatchRequest statusOnly = new PhasePatchRequest();
+        statusOnly.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        service.patchPhase(5L, statusOnly, personDto, Set.of(10L), "fr");
+
+        verify(validationStatusService).setStatus(fr.siamois.domain.models.phase.Phase.class, 5L,
+                fr.siamois.domain.models.ValidationStatus.VALIDATED, personDto.getId());
+        verify(phaseService, never()).save(any());
+
+        PhasePatchRequest withAnswers = new PhasePatchRequest();
+        withAnswers.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        withAnswers.setAnswers(Map.of("-503", new AnswerInput("Titre", null)));
+        assertThatThrownBy(() -> service.patchPhase(5L, withAnswers, personDto, Set.of(10L), "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void patchPhase_editorWithoutValidatorRight_cannotValidate() {
+        PhaseDTO phase = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(phase);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+        when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(false);
+
+        PhasePatchRequest req = new PhasePatchRequest();
+        req.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+
+        assertThatThrownBy(() -> service.patchPhase(5L, req, personDto, Set.of(10L), "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(validationStatusService, never()).setStatus(any(), anyLong(), any(), any());
     }
 
     @Test

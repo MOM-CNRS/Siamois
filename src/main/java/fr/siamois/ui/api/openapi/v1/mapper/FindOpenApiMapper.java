@@ -23,6 +23,7 @@ public class FindOpenApiMapper {
         FindResource r = new FindResource();
         r.setResourceType("finds");
         r.setId(specimen.getId() == null ? null : String.valueOf(specimen.getId()));
+        r.setValidated(specimen.getValidated());
         r.setFullIdentifier(specimen.getFullIdentifier());
         r.setCollectionDate(specimen.getCollectionDate());
         if (specimen.getType() != null) {

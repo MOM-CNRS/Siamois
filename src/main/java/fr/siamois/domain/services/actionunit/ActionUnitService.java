@@ -451,20 +451,7 @@ public class ActionUnitService implements ArkEntityService {
         ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
 
-        // Cycle through the enum values
-        switch (actionUnit.getValidated()) {
-            case INCOMPLETE:
-                actionUnit.setValidated(ValidationStatus.COMPLETE);
-                break;
-            case COMPLETE:
-                actionUnit.setValidated(ValidationStatus.VALIDATED);
-                break;
-            case VALIDATED:
-                actionUnit.setValidated(ValidationStatus.INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + actionUnit.getValidated());
-        }
+        actionUnit.setValidated(actionUnit.getValidated().nextInCycle());
 
 
         return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));

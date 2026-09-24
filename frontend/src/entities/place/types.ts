@@ -15,6 +15,8 @@ export interface GeometryDTO {
 export interface PlacePermissions {
   canEdit: boolean;
   canDelete: boolean;
+  // Validator right — omitted by the server when false.
+  canValidate?: boolean;
 }
 
 export interface FormBundle {
@@ -42,6 +44,8 @@ export interface PlaceResource {
   _permissions?: PlacePermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // TraceableEntity.validated — "en cours", "terminé", "validé", "annulé".
+  validated?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
   // Detail only — the fiche's tab badges (PlaceOpenApiService#getPlaceById).
   _counts?: { children?: number | null; projects?: number | null; recordingUnits?: number | null };
 }

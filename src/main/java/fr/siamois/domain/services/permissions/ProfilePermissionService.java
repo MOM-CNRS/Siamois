@@ -126,6 +126,23 @@ public class ProfilePermissionService {
     }
 
     /**
+     * The "validateur" right on a project's entities (recording units, finds, phases, containers, the
+     * project itself): {@code PROJECT_VALIDATE}, or its organisation/instance-wide counterparts.
+     */
+    public boolean hasValidatePermission(UserInfo user, Long actionUnitId) {
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_VALIDATE,
+                PermissionConstants.ORGANIZATION_VALIDATE,
+                PermissionConstants.PROJECT_VALIDATE);
+    }
+
+    /** The "validateur" right on a place, which belongs to its organisation rather than a project. */
+    public boolean hasPlaceValidatePermission(UserInfo user) {
+        return hasInstancePermission(user.getUser(), PermissionConstants.INSTANCE_VALIDATE)
+                || hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_VALIDATE);
+    }
+
+    /**
      * Bulk version of {@link #hasProjectPermission} : which of the given action units the user holds
      * {@code permissionCode} on, computed in at most one query total instead of one query (or up to
      * three, counting the org/instance checks) per action unit. Meant for a whole table page's worth of

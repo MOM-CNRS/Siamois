@@ -77,6 +77,7 @@ public class FindOpenApiService {
     private final FindOpenApiMapper findOpenApiMapper;
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
+    private final ValidationOpenApiService validationOpenApiService;
 
     @Transactional
     public FindResource createFind(FindCreateRequest request,
@@ -147,26 +148,36 @@ public class FindOpenApiService {
                 ruSum.getId(), accessibleInstitutionIds);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
+        boolean canEdit = profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru);
+        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo,
+                dto.getActionUnit() != null ? dto.getActionUnit().getId() : null);
+        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), request.getValidated());
+        // A validator may change the status alone without the edit right; anything else needs it.
+        if ((!answers.isEmpty() || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
+        validationOpenApiService.requireAllowed(dto.getValidated(), request.getValidated(), canEdit, canValidate);
 
-        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        if (answers.isEmpty()) {
+        if (answers.isEmpty() && !statusChange) {
             return findOpenApiMapper.toResource(dto);
         }
 
-        FormUiDto systemForm = Specimen.DETAILS_FORM;
-
-        SpecimenDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
-            mergeFieldAnswers(response, fieldSource, answers);
-            formService.updateJpaEntityFromResponse(response, dto);
-            return specimenService.save(dto);
-        });
-        return withPermissionsAndUri(findOpenApiMapper.toResource(saved), userInfo, saved);
+        if (!answers.isEmpty()) {
+            FormUiDto systemForm = Specimen.DETAILS_FORM;
+            OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+                FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
+                FieldSource fieldSource = new PanelFieldSource(formUiDto);
+                CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+                mergeFieldAnswers(response, fieldSource, answers);
+                formService.updateJpaEntityFromResponse(response, dto);
+                return specimenService.save(dto);
+            });
+        }
+        // After the save: save() writes the DTO's (old) status back onto the entity.
+        validationOpenApiService.apply(Specimen.class, specimenId, request.getValidated(), personDto);
+        SpecimenDTO fresh = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds).orElse(dto);
+        return withPermissionsAndUri(findOpenApiMapper.toResource(fresh), userInfo, fresh);
     }
 
     /**
@@ -177,7 +188,10 @@ public class FindOpenApiService {
      */
     private FindResource withPermissionsAndUri(FindResource resource, UserInfo userInfo, SpecimenDTO dto) {
         boolean canEdit = profilePermissionService.hasSpecimenWritePermission(userInfo, dto);
-        resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit));
+        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo,
+                dto.getActionUnit() != null ? dto.getActionUnit().getId() : null);
+        resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit)
+                .withValidate(canValidate));
         if (dto.getId() != null) {
             resource.setResourceUri("/specimen/" + dto.getId());
         }

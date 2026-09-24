@@ -36,12 +36,14 @@ export interface ProjectPermissions {
   canDelete: boolean;
   // PROJECT_MANAGE_SETTINGS — omitted by the server when false.
   canManageSettings?: boolean;
+  // Validator right (PROJECT_VALIDATE…) — omitted by the server when false.
+  canValidate?: boolean;
 }
 
 // Mirrors fr.siamois.domain.models.ValidationStatus — the merged "statut + identifiant" column's
 // left-hand badge (JSF: /panel/header/validationButton.xhtml). Read-only on the API: toggling it
 // is still a JSF-side action (panelModel.toggleValidate()).
-export type ValidationStatus = "INCOMPLETE" | "COMPLETE" | "VALIDATED";
+export type ValidationStatus = "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED";
 
 export interface ProjectResource {
   resourceType: string;

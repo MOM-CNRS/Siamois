@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
+
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -76,5 +78,8 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier imple
 
     @Schema(description = "L'unité d'enregistrement est dans les favoris du caller")
     private boolean bookmarked;
+
+    @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
+    private ValidationStatus validated;
 
 }

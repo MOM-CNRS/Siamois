@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.place;
 
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,6 +11,11 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 @Data
 @Schema(description = "Mise à jour partielle d'un lieu. Champs absents ou null = inchangés.")
 public class PlacePatchRequest {
+
+    @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE (en cours), COMPLETE (terminé), "
+            + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "
+            + "avec le droit validateur (_permissions.canValidate).")
+    private ValidationStatus validated;
 
     @Schema(description = "Nom du lieu")
     private String name;

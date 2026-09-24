@@ -11,7 +11,8 @@ import { SiblingNav } from "../components/SiblingNav";
 import { CreateEntityDialog } from "../components/CreateEntityDialog";
 import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
 import { useBridge } from "./bridge";
-import { useCanEdit } from "./writeMode";
+import { useCanEdit, useWriteMode } from "./writeMode";
+import { ValidationStatusButton } from "../components/ValidationStatusButton";
 
 export interface EntityDetailPanelProps {
   entityType: string;
@@ -112,6 +113,7 @@ export function EntityDetailPanel({
   // own data, so they are right for whichever entity is displayed, however it got here. Hooks
   // stay above the early returns below.
   const canEdit = useCanEdit(data as { _permissions?: { canEdit?: boolean } } | undefined);
+  const writeMode = useWriteMode();
   const bridge = useBridge();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
@@ -146,6 +148,8 @@ export function EntityDetailPanel({
   // onOpenOverview — no server round-trip to build a toolbar from) possible at all, and it also
   // keeps title/bookmark state current after an in-place edit for the originally-seeded overview.
   const settingsProjectId = config.detail.settingsProjectId?.(data);
+  // Every entity resource carries its TraceableEntity status and the validator right.
+  const validation = data as { validated?: string | null; _permissions?: { canValidate?: boolean } };
   const entityActions: PanelActions = {
     create: canEdit && config.list.createForm ? () => setCreateOpen(true) : undefined,
     duplicate:
@@ -172,6 +176,16 @@ export function EntityDetailPanel({
               <span style={{ paddingRight: "0.5em" }}>{config.labels.singular}</span>
               {config.api.siblings && onNavigateSibling && (
                 <SiblingNav siblings={siblings} onNavigate={onNavigateSibling} disabled={siblingNavDisabled} />
+              )}
+              {/* validationButton.xhtml's place in the JSF headers, now on every fiche that has a status. */}
+              {validation.validated !== undefined && (
+                <ValidationStatusButton
+                  collectionPath={config.collectionPath}
+                  entityId={entityId}
+                  status={validation.validated}
+                  canEdit={canEdit}
+                  canValidate={writeMode && validation._permissions?.canValidate === true}
+                />
               )}
               {config.detail.header?.(data, helpers)}
             </>

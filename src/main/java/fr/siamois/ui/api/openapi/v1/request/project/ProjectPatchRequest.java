@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.project;
 
+import fr.siamois.domain.models.ValidationStatus;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -22,6 +23,11 @@ import java.util.Map;
         + "commune (mainLocationId) et localisation précise (spatialContextSpatialUnitIds). "
         + "Champs absents = inchangés.")
 public class ProjectPatchRequest {
+
+    @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE (en cours), COMPLETE (terminé), "
+            + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "
+            + "avec le droit validateur (_permissions.canValidate).")
+    private ValidationStatus validated;
 
     @Schema(description = "Nom du projet")
     @JsonSetter(nulls = Nulls.FAIL)
@@ -74,4 +80,12 @@ public class ProjectPatchRequest {
             + "Clé absente = ne pas toucher. value:null = vider. values:[] = vider (liste). "
             + "values:null = ne pas toucher (liste).")
     private Map<String, AnswerInput> answers = new HashMap<>();
+
+    /** True when the patch changes nothing but the validation status (a validator's own edit). */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public boolean isStatusOnly() {
+        return name == null && identifier == null && typeId == null && beginDate == null && endDate == null
+                && mainLocationId == null && spatialContextSpatialUnitIds == null && !geomPresent
+                && (answers == null || answers.isEmpty());
+    }
 }

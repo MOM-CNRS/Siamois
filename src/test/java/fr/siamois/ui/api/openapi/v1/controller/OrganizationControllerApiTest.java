@@ -130,7 +130,7 @@ class OrganizationControllerApiTest {
                 conceptMapper,
                 recordingUnitOpenApiService, phaseService, containerService,
                 bookmarkService,
-                historyAuditService);
+                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         OrganizationControllerApi controller = new OrganizationControllerApi(
                 recordingUnitService,

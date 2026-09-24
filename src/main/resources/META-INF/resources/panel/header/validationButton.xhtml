@@ -17,10 +17,12 @@
                 process="@this"
                 icon="#{unit.validated eq 'VALIDATED' ? 'bi bi-check-circle' :
                   unit.validated eq 'COMPLETE' ? 'bi bi-circle-fill' :
+                  unit.validated eq 'CANCELLED' ? 'bi bi-x-circle' :
                   'bi bi-circle'}"
                 styleClass="rounded-button ui-button-flat
                 #{unit.validated eq 'VALIDATED' ? 'status-button validated' :
                   unit.validated eq 'COMPLETE' ? 'status-button complete' :
+                  unit.validated eq 'CANCELLED' ? 'status-button cancelled' :
                   'status-button incomplete'}"
                 onclick="event.stopPropagation();"
         />

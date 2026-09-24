@@ -20,13 +20,22 @@ public record ProjectResourcePermissions(
         // omis du JSON quand faux, donc absent des autres types d'entité qui partagent ce bloc.
         @JsonInclude(JsonInclude.Include.NON_DEFAULT)
         @Schema(description = "Le caller peut ouvrir les paramètres de ce projet")
-        boolean canManageSettings
+        boolean canManageSettings,
+        // "Validateur" (PROJECT_VALIDATE and counterparts; ORGANIZATION_VALIDATE for a place): may set
+        // the entity to VALIDATED or move it out of VALIDATED. Detail responses only; omitted when false.
+        @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+        @Schema(description = "Le caller peut valider (ou dévalider) cette fiche")
+        boolean canValidate
 ) {
     public static ProjectResourcePermissions of(boolean canWrite) {
-        return new ProjectResourcePermissions(canWrite, canWrite, false);
+        return new ProjectResourcePermissions(canWrite, canWrite, false, false);
     }
 
     public ProjectResourcePermissions withManageSettings(boolean canManageSettings) {
-        return new ProjectResourcePermissions(canEdit, canDelete, canManageSettings);
+        return new ProjectResourcePermissions(canEdit, canDelete, canManageSettings, canValidate);
+    }
+
+    public ProjectResourcePermissions withValidate(boolean canValidate) {
+        return new ProjectResourcePermissions(canEdit, canDelete, canManageSettings, canValidate);
     }
 }

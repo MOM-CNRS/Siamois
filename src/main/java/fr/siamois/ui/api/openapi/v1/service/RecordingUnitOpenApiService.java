@@ -139,6 +139,7 @@ public class RecordingUnitOpenApiService {
     private final TableFieldConfigService tableFieldConfigService;
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
+    private final ValidationOpenApiService validationOpenApiService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -176,7 +177,8 @@ public class RecordingUnitOpenApiService {
         // defaults an ABSENT block to "editable", so a viewer with no write right saw edit
         // affordances that would then 403 on PATCH.
         resource.setPermissions(ProjectResourcePermissions.of(
-                profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)));
+                profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto))
+                .withValidate(profilePermissionService.hasValidatePermission(userInfo, projectId)));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
@@ -792,10 +794,14 @@ public class RecordingUnitOpenApiService {
         // Same source of truth as SpecimenPanel.canUserEditUnit (JSF), not the RU write check —
         // see the migration plan's "the JSF bean is the source of truth for permissions" rule.
         boolean canEdit = profilePermissionService.hasSpecimenWritePermission(userInfo, specimen);
-        resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit));
+        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo,
+                specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null);
+        resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit)
+                .withValidate(canValidate));
         if (specimen.getId() != null) {
             resource.setResourceUri("/specimen/" + specimen.getId());
         }
+        resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }
 
@@ -1149,16 +1155,23 @@ public class RecordingUnitOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité sans organisation");
         }
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)) {
+        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
+        boolean canEdit = profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto);
+        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        boolean contentChange = !answers.isEmpty() || request.isGeomPresent();
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), request.getValidated());
+        // A validator may change the status alone without the edit right; anything else needs it.
+        if ((contentChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
+        validationOpenApiService.requireAllowed(dto.getValidated(), request.getValidated(), canEdit,
+                profilePermissionService.hasValidatePermission(userInfo, projectId));
 
-        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        if (answers.isEmpty() && !request.isGeomPresent()) {
+        if (!contentChange) {
+            // Status only (or nothing): syncRevision is the entity's @Version, so this bumps it too.
+            validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidated(), personDto);
             return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
         }
-
-        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
 
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
             if (request.isGeomPresent()) {
@@ -1180,6 +1193,8 @@ public class RecordingUnitOpenApiService {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
             }
         });
+        // After the save: it writes the DTO's (old) status back onto the entity.
+        validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidated(), personDto);
 
         return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
     }

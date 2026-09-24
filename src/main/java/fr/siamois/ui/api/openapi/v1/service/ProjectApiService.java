@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
@@ -138,6 +139,7 @@ public class ProjectApiService {
     private final ContainerService containerService;
     private final BookmarkService bookmarkService;
     private final HistoryAuditService historyAuditService;
+    private final ValidationOpenApiService validationOpenApiService;
 
     private static final String ACTION_UNIT_RESOURCE_URI_PREFIX = "/action-unit/";
 
@@ -328,7 +330,10 @@ public class ProjectApiService {
                 && profilePermissionService.hasProjectPermission(
                         new UserInfo(dto.getCreatedByInstitution(), caller.person(), null),
                         dto.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
-        return ProjectResourcePermissions.of(canWrite).withManageSettings(canManageSettings);
+        boolean canValidate = dto.getCreatedByInstitution() != null
+                && profilePermissionService.hasValidatePermission(
+                        new UserInfo(dto.getCreatedByInstitution(), caller.person(), null), dto.getId());
+        return ProjectResourcePermissions.of(canWrite).withManageSettings(canManageSettings).withValidate(canValidate);
     }
 
     /**
@@ -470,8 +475,17 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!profilePermissionService.hasActionUnitWritePermission(userInfo, dto)) {
+        boolean canEdit = profilePermissionService.hasActionUnitWritePermission(userInfo, dto);
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), patch.getValidated());
+        // A validator may change the status alone without the edit right; anything else needs it.
+        if (!(statusChange && patch.isStatusOnly()) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
+        }
+        validationOpenApiService.requireAllowed(dto.getValidated(), patch.getValidated(), canEdit,
+                profilePermissionService.hasValidatePermission(userInfo, dto.getId()));
+        if (statusChange && patch.isStatusOnly()) {
+            validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidated(), caller.person());
+            return actionUnitService.findAccessibleProjectByKey(String.valueOf(dto.getId()), caller.accessibleInstitutionIds());
         }
         applyProjectPatch(dto, patch);
         ConceptDTO type = dto.getType();
@@ -502,6 +516,8 @@ public class ProjectApiService {
         } catch (NullActionUnitIdentifierException | FailedActionUnitSaveException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
+        // After the save: it writes the DTO's (old) status back onto the entity.
+        validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidated(), caller.person());
         return actionUnitService.findAccessibleProjectByKey(String.valueOf(dto.getId()), caller.accessibleInstitutionIds());
     }
 

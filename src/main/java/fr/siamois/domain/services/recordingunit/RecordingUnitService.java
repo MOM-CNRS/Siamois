@@ -1324,20 +1324,7 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnit unit = recordingUnitRepository.findById(id)
                 .orElseThrow(() -> new RecordingUnitNotFoundException("Recording not found with id: " + id));
 
-        // Cycle through the enum values
-        switch (unit.getValidated()) {
-            case INCOMPLETE:
-                unit.setValidated(COMPLETE);
-                break;
-            case COMPLETE:
-                unit.setValidated(VALIDATED);
-                break;
-            case VALIDATED:
-                unit.setValidated(INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + unit.getValidated());
-        }
+        unit.setValidated(unit.getValidated().nextInCycle());
 
         return recordingUnitMapper.convert(recordingUnitRepository.save(unit));
     }

@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.phase;
 
+
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -64,4 +66,7 @@ public class PhaseResource implements BookmarkableResource {
 
     @Schema(description = "La phase est dans les favoris du caller")
     private boolean bookmarked;
+
+    @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
+    private ValidationStatus validated;
 }

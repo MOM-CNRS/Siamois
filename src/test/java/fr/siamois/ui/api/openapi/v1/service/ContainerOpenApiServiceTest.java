@@ -75,7 +75,7 @@ class ContainerOpenApiServiceTest {
     void setUp() {
         service = new ContainerOpenApiService(containerService, actionUnitService, conceptService, conceptMapper,
                 spatialUnitService, unitDefinitionMapper, profilePermissionService, containerOpenApiMapper,
-                containerListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class));
+                containerListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         personDto = new PersonDTO();
         personDto.setId(1L);

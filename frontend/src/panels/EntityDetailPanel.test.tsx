@@ -551,6 +551,14 @@ describe("EntityDetailPanel entity actions", () => {
     expect(form?.textContent).toBe("scope 42");
   });
 
+  it("shows the validation status button on a fiche that has a status", async () => {
+    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: true } , validated: "COMPLETE" } as ActionEntity);
+    renderPanel({ writeMode: true });
+    await flush();
+
+    expect(container.querySelector("button.status-button.complete")).toBeTruthy();
+  });
+
   it("shows settings only when allowed, and opens them through the bridge with the entity's id", async () => {
     const openProjectSettings = vi.fn();
     renderPanel({ writeMode: false, bridge: { openProjectSettings } });

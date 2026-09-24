@@ -61,6 +61,7 @@ public class PhaseOpenApiService {
     private final PhaseListProjectionService phaseListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
+    private final ValidationOpenApiService validationOpenApiService;
 
     @Transactional(readOnly = true)
     public PhaseResource getPhaseById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
@@ -108,17 +109,26 @@ public class PhaseOpenApiService {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = phase.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasProjectPermission(userInfo, phase.getActionUnit().getId(),
+        boolean canEdit = profilePermissionService.hasProjectPermission(userInfo, phase.getActionUnit().getId(),
                 PermissionConstants.INSTANCE_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_PHASES,
-                PermissionConstants.PROJECT_EDIT_PHASES)) {
+                PermissionConstants.PROJECT_EDIT_PHASES);
+        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId());
+        boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
+        boolean statusChange = ValidationOpenApiService.changes(phase.getValidated(), request.getValidated());
+        // A validator may change the status alone without the edit right; anything else needs it.
+        if ((answersChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
+        validationOpenApiService.requireAllowed(phase.getValidated(), request.getValidated(), canEdit, canValidate);
 
-        applyAnswerPatch(phase, request.getAnswers());
-
-        PhaseDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> phaseService.save(phase));
-        return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
+        if (answersChange || !statusChange) {
+            applyAnswerPatch(phase, request.getAnswers());
+            OpenApiExecutionContext.callWithUserInfo(userInfo, () -> phaseService.save(phase));
+        }
+        // After the save: save() writes the DTO's (old) status back onto the entity.
+        validationOpenApiService.apply(fr.siamois.domain.models.phase.Phase.class, id, request.getValidated(), personDto);
+        return getPhaseById(id, personDto, accessibleInstitutionIds, lang);
     }
 
     private PhaseResource toResourceWithPermissionsAndAnswers(PhaseDTO phase, PersonDTO personDto, String lang) {
@@ -131,7 +141,8 @@ public class PhaseOpenApiService {
         PhaseListProjectionService.PhaseListProjection projection = phaseListProjectionService.buildOne(phase, lang);
         PhaseResource resource = phaseOpenApiMapper.toResource(phase, lang, projection.resolvedLabels());
         resource.setAnswers(projection.answersFor(phase.getId()));
-        resource.setPermissions(ProjectResourcePermissions.of(canEdit));
+        resource.setPermissions(ProjectResourcePermissions.of(canEdit)
+                .withValidate(profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }

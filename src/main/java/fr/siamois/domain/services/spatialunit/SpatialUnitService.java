@@ -508,20 +508,7 @@ public class SpatialUnitService implements ArkEntityService {
         SpatialUnit unit = spatialUnitRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("SpatialUnit not found with id: " + id));
 
-        // Cycle through the enum values
-        switch (unit.getValidated()) {
-            case INCOMPLETE:
-                unit.setValidated(ValidationStatus.COMPLETE);
-                break;
-            case COMPLETE:
-                unit.setValidated(ValidationStatus.VALIDATED);
-                break;
-            case VALIDATED:
-                unit.setValidated(ValidationStatus.INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + unit.getValidated());
-        }
+        unit.setValidated(unit.getValidated().nextInCycle());
 
         return spatialUnitMapper.convert(spatialUnitRepository.save(unit));
     }

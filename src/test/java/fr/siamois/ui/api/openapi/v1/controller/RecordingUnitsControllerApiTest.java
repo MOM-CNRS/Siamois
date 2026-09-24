@@ -143,7 +143,7 @@ class RecordingUnitsControllerApiTest {
                 phaseService,
                 containerService,
                 bookmarkService,
-                historyAuditService);
+                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,

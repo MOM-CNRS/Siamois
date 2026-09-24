@@ -661,16 +661,7 @@ public class SpecimenService implements ArkEntityService {
         Specimen unit = specimenRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
 
-        ValidationStatus status = unit.getValidated();
-        if (status == INCOMPLETE) {
-            unit.setValidated(COMPLETE);
-        } else if (status == COMPLETE) {
-            unit.setValidated(VALIDATED);
-        } else if (status == VALIDATED) {
-            unit.setValidated(INCOMPLETE);
-        } else {
-            throw new IllegalStateException("Unknown status: " + status);
-        }
+        unit.setValidated(unit.getValidated().nextInCycle());
 
         return specimenMapper.convert(specimenRepository.save(unit));
     }

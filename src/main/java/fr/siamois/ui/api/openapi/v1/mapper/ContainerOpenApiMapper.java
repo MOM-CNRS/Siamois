@@ -22,6 +22,7 @@ public class ContainerOpenApiMapper {
         ContainerResource r = new ContainerResource();
         r.setResourceType("containers");
         r.setId(container.getId() != null ? String.valueOf(container.getId()) : null);
+        r.setValidated(container.getValidated());
         r.setIdentifier(container.getIdentifier());
         if (container.getActionUnit() != null && container.getActionUnit().getId() != null) {
             r.setProjectId(String.valueOf(container.getActionUnit().getId()));

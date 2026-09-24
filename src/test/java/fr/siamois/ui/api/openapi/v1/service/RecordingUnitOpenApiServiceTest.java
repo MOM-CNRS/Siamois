@@ -150,6 +150,9 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private EntitySiblingsService entitySiblingsService;
 
+    @Mock
+    private ValidationOpenApiService validationOpenApiService;
+
     @InjectMocks
     private RecordingUnitOpenApiService service;
 

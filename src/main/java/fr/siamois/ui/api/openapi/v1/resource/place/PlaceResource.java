@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.place;
 
+
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -58,6 +60,9 @@ public class PlaceResource extends PlaceResourceIdentifier implements Bookmarkab
 
     @Schema(description = "Le lieu est dans les favoris du caller")
     private boolean bookmarked;
+
+    @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
+    private ValidationStatus validated;
 
     @JsonProperty("_counts")
     private PlaceResourceCounts count;

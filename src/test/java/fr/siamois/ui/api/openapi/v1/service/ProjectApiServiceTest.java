@@ -88,6 +88,9 @@ class ProjectApiServiceTest {
     @Mock
     private HistoryAuditService historyAuditService;
 
+    @Mock
+    private ValidationOpenApiService validationOpenApiService;
+
     @InjectMocks
     private ProjectApiService service;
     private ProjectApiCaller caller;

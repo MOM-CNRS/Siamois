@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.find;
 
+
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
 
 
@@ -62,5 +64,8 @@ public class FindResource extends FindResourceIdentifier implements Bookmarkable
 
     @Schema(description = "Le mobilier est dans les favoris du caller")
     private boolean bookmarked;
+
+    @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
+    private ValidationStatus validated;
 
 }

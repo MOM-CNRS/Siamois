@@ -7,6 +7,8 @@ import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../pro
 export interface PhasePermissions {
   canEdit: boolean;
   canDelete: boolean;
+  // Validator right — omitted by the server when false.
+  canValidate?: boolean;
 }
 
 export interface PhaseResource {
@@ -27,6 +29,8 @@ export interface PhaseResource {
   _permissions?: PhasePermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // TraceableEntity.validated — "en cours", "terminé", "validé", "annulé".
+  validated?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
 }
 
 // Same resource both in the list and the detail response, like Find/RecordingUnit.

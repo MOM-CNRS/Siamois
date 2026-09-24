@@ -118,7 +118,7 @@ class BookmarkControllerApiTest {
                 phaseService,
                 containerService,
                 bookmarkService,
-                historyAuditService);
+                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         BookmarkControllerApi controller = new BookmarkControllerApi(projectApiService, bookmarkService);
 

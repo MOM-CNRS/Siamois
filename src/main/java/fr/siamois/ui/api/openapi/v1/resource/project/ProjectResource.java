@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.resource.project;
 
 
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.domain.models.ValidationStatus;

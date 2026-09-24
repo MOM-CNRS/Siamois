@@ -65,6 +65,7 @@ public class ContainerOpenApiService {
     private final ContainerListProjectionService containerListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
+    private final ValidationOpenApiService validationOpenApiService;
 
     @Transactional(readOnly = true)
     public ContainerResource getContainerById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
@@ -109,17 +110,26 @@ public class ContainerOpenApiService {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = container.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasProjectPermission(userInfo, container.getActionUnit().getId(),
+        boolean canEdit = profilePermissionService.hasProjectPermission(userInfo, container.getActionUnit().getId(),
                 PermissionConstants.INSTANCE_EDIT_CONTAINERS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
-                PermissionConstants.PROJECT_EDIT_CONTAINERS)) {
+                PermissionConstants.PROJECT_EDIT_CONTAINERS);
+        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId());
+        boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
+        boolean statusChange = ValidationOpenApiService.changes(container.getValidated(), request.getValidated());
+        // A validator may change the status alone without the edit right; anything else needs it.
+        if ((answersChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
+        validationOpenApiService.requireAllowed(container.getValidated(), request.getValidated(), canEdit, canValidate);
 
-        applyAnswerPatch(container, request.getAnswers());
-
-        ContainerDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> containerService.save(container));
-        return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
+        if (answersChange || !statusChange) {
+            applyAnswerPatch(container, request.getAnswers());
+            OpenApiExecutionContext.callWithUserInfo(userInfo, () -> containerService.save(container));
+        }
+        // After the save: save() writes the DTO's (old) status back onto the entity.
+        validationOpenApiService.apply(fr.siamois.domain.models.container.Container.class, id, request.getValidated(), personDto);
+        return getContainerById(id, personDto, accessibleInstitutionIds, lang);
     }
 
     private ContainerResource toResourceWithPermissionsAndAnswers(ContainerDTO container, PersonDTO personDto, String lang) {
@@ -132,7 +142,8 @@ public class ContainerOpenApiService {
         ContainerListProjectionService.ContainerListProjection projection = containerListProjectionService.buildOne(container, lang);
         ContainerResource resource = containerOpenApiMapper.toResource(container, lang, projection.resolvedLabels());
         resource.setAnswers(projection.answersFor(container.getId()));
-        resource.setPermissions(ProjectResourcePermissions.of(canEdit));
+        resource.setPermissions(ProjectResourcePermissions.of(canEdit)
+                .withValidate(profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }

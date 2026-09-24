@@ -24,6 +24,7 @@ public class PhaseOpenApiMapper {
         PhaseResource r = new PhaseResource();
         r.setResourceType("phases");
         r.setId(phase.getId() != null ? String.valueOf(phase.getId()) : null);
+        r.setValidated(phase.getValidated());
         r.setIdentifier(phase.getIdentifier());
         r.setTitle(phase.getTitle());
         String label = phase.getTitle() != null && !phase.getTitle().isBlank() ? phase.getTitle() : phase.getIdentifier();

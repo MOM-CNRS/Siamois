@@ -73,7 +73,7 @@ class ProjectApiServiceOrganizationPageTest {
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService, phaseService, containerService,
-                bookmarkService, historyAuditService);
+                bookmarkService, historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
     }
 
     private ProjectApiCaller caller(List<InstitutionDTO> institutions) {

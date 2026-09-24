@@ -148,7 +148,7 @@ class ProjectSiblingsControllerApiTest {
                 phaseService,
                 containerService,
                 bookmarkService,
-                historyAuditService);
+                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
                 projectResponseMapper,

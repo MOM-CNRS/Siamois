@@ -7,6 +7,8 @@ import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../pro
 export interface FindPermissions {
   canEdit: boolean;
   canDelete: boolean;
+  // Validator right — omitted by the server when false.
+  canValidate?: boolean;
 }
 
 export interface RecordingUnitRef {
@@ -35,6 +37,8 @@ export interface FindResource {
   _permissions?: FindPermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // TraceableEntity.validated — "en cours", "terminé", "validé", "annulé".
+  validated?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
 }
 
 // Same resource both in the list and the detail response, like Project/RecordingUnit.
