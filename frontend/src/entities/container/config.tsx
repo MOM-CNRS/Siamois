@@ -1,4 +1,5 @@
 import type { EntityTypeConfig } from "../types";
+import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { getContainer, listContainers, patchContainerAnswers } from "./api";
@@ -14,8 +15,7 @@ import type { ContainerDetail, ContainerSummary } from "./types";
 // looked up by key ("container") both by the registry's generics-erasure boundary and by
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
-// Reduced scope vs RecordingUnit's own config, same precedent set for Find/Phase: no
-// `list.schema` (pinned columns only).
+// Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
 export const containerEntityConfig: EntityTypeConfig<ContainerSummary, ContainerDetail> = {
   key: "container",
   labels: { singular: "Contenant", plural: "Contenants" },
@@ -29,6 +29,8 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
     patchAnswers: (id, answers) => patchContainerAnswers(id, answers),
   },
   list: {
+    // Dynamic columns: every field of the project's container forms, additional ones included.
+    schema: { load: ({ scope }) => loadTypeCatalog(scope, "container-types") },
     columns: containerColumns,
     defaultSort: "identifier:asc",
     searchable: true,

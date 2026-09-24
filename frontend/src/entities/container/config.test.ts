@@ -23,8 +23,8 @@ describe("containerEntityConfig", () => {
 
   // Reduced scope (migration plan lot 3, same precedent as Phase/Mobilier's own): no
   // list.schema (pinned columns only).
-  it("has no dynamic column schema yet", () => {
-    expect(containerEntityConfig.list.schema).toBeUndefined();
+  it("has a dynamic column catalog, from the project's forms", () => {
+    expect(containerEntityConfig.list.schema).toBeDefined();
   });
 
   it("declares an overlay-hosted create form for the list toolbar's own Créer button", () => {

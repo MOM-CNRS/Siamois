@@ -1,4 +1,5 @@
 import type { EntityTypeConfig } from "../types";
+import { loadTypeCatalog } from "../typeCatalog";
 import { relationTab } from "../../panels/relationTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
@@ -15,8 +16,7 @@ import type { PhaseDetail, PhaseSummary } from "./types";
 // up by key ("phase") both by the registry's generics-erasure boundary and by
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
-// Reduced scope vs RecordingUnit's own config, same precedent set for Find in lot 1: no
-// `list.schema` (pinned columns only, no dynamic column catalog/toggler yet).
+// Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
 export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   key: "phase",
   labels: { singular: "Phase", plural: "Phases" },
@@ -30,6 +30,8 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
     patchAnswers: (id, answers) => patchPhaseAnswers(id, answers),
   },
   list: {
+    // Dynamic columns: every field of the project's phase forms, additional ones included.
+    schema: { load: ({ scope }) => loadTypeCatalog(scope, "phase-types") },
     columns: phaseColumns,
     defaultSort: "orderNumber:asc",
     searchable: true,

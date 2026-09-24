@@ -1,6 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
@@ -82,6 +85,26 @@ public class FieldQueryService {
     private static final List<String> LABEL_ATTRIBUTES =
             List.of("fullIdentifier", "lastname", "name", "title", "identifier", "code");
 
+    /**
+     * Each entity's system fields, as its details form declares them in code — some (the project's)
+     * have no {@code custom_field} row, so a lookup by id cannot rely on the database alone.
+     */
+    private static final Map<Class<?>, Map<Long, CustomField>> SYSTEM_FIELDS = Map.of(
+            ActionUnit.class, systemFieldsOf(ActionUnit.DETAILS_FORM),
+            RecordingUnit.class, systemFieldsOf(RecordingUnit.DETAILS_FORM),
+            Specimen.class, systemFieldsOf(Specimen.DETAILS_FORM),
+            Phase.class, systemFieldsOf(Phase.DETAILS_FORM),
+            Container.class, systemFieldsOf(Container.DETAILS_FORM),
+            SpatialUnit.class, systemFieldsOf(SpatialUnit.DETAILS_FORM));
+
+    private static Map<Long, CustomField> systemFieldsOf(fr.siamois.ui.form.dto.FormUiDto form) {
+        Map<Long, CustomField> out = new HashMap<>();
+        for (CustomField field : new PanelFieldSource(form).getAllFields()) {
+            if (field != null && field.getId() != null) out.put(field.getId(), field);
+        }
+        return out;
+    }
+
     private final CustomFieldRepository customFieldRepository;
     private final EntityManager entityManager;
 
@@ -159,8 +182,8 @@ public class FieldQueryService {
     }
 
     private Target requireTarget(Class<?> entityType, long fieldId) {
-        CustomField field = customFieldRepository.findById(fieldId)
-                .map(f -> (CustomField) Hibernate.unproxy(f))
+        CustomField field = Optional.ofNullable(SYSTEM_FIELDS.get(entityType)).map(fields -> fields.get(fieldId))
+                .or(() -> customFieldRepository.findById(fieldId).map(f -> (CustomField) Hibernate.unproxy(f)))
                 .orElseThrow(() -> badRequest("Champ inconnu : " + fieldId));
         Target target = resolve(entityType, field);
         if (target == null) throw badRequest("Le champ " + fieldId + " ne se trie ni ne se filtre sur cette liste");

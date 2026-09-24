@@ -85,7 +85,7 @@ public class ProjectRecordingUnitsControllerApi {
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
         FieldQuery fieldQuery = fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage);
         Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForProject(
-                caller, id, offset, limit, sort, search, filter);
+                caller, id, offset, limit, sort, search, filter, fieldQuery);
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 

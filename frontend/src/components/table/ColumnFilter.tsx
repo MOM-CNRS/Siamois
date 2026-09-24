@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
+import { Calendar } from "primereact/calendar";
 import { InputNumber } from "primereact/inputnumber";
 import { InputText } from "primereact/inputtext";
 import type { FilterValue } from "../../panels/tableState";
@@ -36,6 +37,9 @@ export function ColumnFilter({ label, kind, value, onChange, loadOptions, select
       return <ContainsFilter label={label} value={value} onChange={onChange} autoFocus={autoFocus} />;
     case "range":
       return <RangeFilter label={label} value={value} onChange={onChange} autoFocus={autoFocus} />;
+    case "date-range":
+      return <DateRangeFilter label={label} value={value} onChange={onChange} autoFocus={autoFocus} />;
+    case "in":
     case "concept-one":
     case "concept-many":
     case "spatial-one":
@@ -106,6 +110,49 @@ function RangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilterPro
         value={to != null ? Number(to) : null}
         onBlur={(e) => commit(from, e.target.value ? e.target.value : undefined)}
         onValueChange={(e) => commit(from, e.value != null ? String(e.value) : undefined)}
+      />
+    </span>
+  );
+}
+
+// A date range as the server takes it: bare ISO dates, both ends inclusive (FieldQueryService reads
+// "to 2024-05-02" as the whole of that day).
+function toIsoDate(date: Date | null | undefined): string | undefined {
+  if (!date) return undefined;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function fromIsoDate(value: string | undefined): Date | null {
+  if (!value) return null;
+  const [y, m, d] = value.split("-").map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+}
+
+function DateRangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilterProps, "label" | "value" | "onChange" | "autoFocus">) {
+  const from = value?.op === "range" ? value.from : undefined;
+  const to = value?.op === "range" ? value.to : undefined;
+
+  function commit(nextFrom: string | undefined, nextTo: string | undefined) {
+    onChange(nextFrom || nextTo ? { op: "range", from: nextFrom, to: nextTo } : undefined);
+  }
+
+  return (
+    <span className="entity-list-panel-range-filter">
+      <Calendar
+        placeholder={`${label} (du)`}
+        autoFocus={autoFocus}
+        dateFormat="dd/mm/yy"
+        value={fromIsoDate(from)}
+        showButtonBar
+        onChange={(e) => commit(toIsoDate(e.value as Date | null), to)}
+      />
+      <Calendar
+        placeholder={`${label} (au)`}
+        dateFormat="dd/mm/yy"
+        value={fromIsoDate(to)}
+        showButtonBar
+        onChange={(e) => commit(from, toIsoDate(e.value as Date | null))}
       />
     </span>
   );
