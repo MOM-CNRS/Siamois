@@ -424,7 +424,7 @@ export function EntityListPanel({
     if (col.identifier) {
       return (
         <span
-          className="entity-list-panel-identifier-link entity-nav-chip"
+          className="entity-list-panel-identifier-link entity-list-panel-row-identifier entity-nav-chip"
           role="button"
           tabIndex={0}
           title={onOpenOverview ? "Ouvrir dans l'aperçu" : undefined}
@@ -524,13 +524,12 @@ export function EntityListPanel({
   // DetailTabDef.badge.
   const body = (
     <>
-      {(config.list.searchable || onCreate || config.list.createForm || hasGear) && (
+      {(config.list.searchable || onCreate || config.list.createForm || hasGear || filterSpecs.length > 0) && (
         // p:toolbar (pages/shared/table/tableToolbar.xhtml) → PrimeReact Toolbar, not a plain
         // div — its own generated classes are what render the chrome the stock theme actually
-        // paints, the legacy class name alone doesn't. Gear (column show/hide only) then search on
-        // the left, create on the right. The gear leads because it acts on the table's shape,
-        // which the search box does not; filtering moved out of it entirely, into the chip bar in
-        // the table header below.
+        // paints, the legacy class name alone doesn't. Gear (table settings) then search then the
+        // filter chips on the left, create on the right. The gear leads because it acts on the
+        // table's shape, which the search box and filters do not.
         <Toolbar
           className="entity-list-panel-toolbar"
           start={
@@ -579,6 +578,17 @@ export function EntityListPanel({
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
                 </span>
+              )}
+              {/* The filters narrow the same result set as the search box, so they sit right after
+                  it, in the toolbar — not in a strip of their own above the columns. Rendered
+                  only when there is at least one filterable column. */}
+              {filterSpecs.length > 0 && (
+                <FilterChipBar
+                  specs={filterSpecs}
+                  filters={state.filters}
+                  optionsByKey={filterOptionsByKey}
+                  onChange={onFilterChange}
+                />
               )}
             </>
           }
@@ -669,19 +679,6 @@ export function EntityListPanel({
         // read as much airier than the JSF one. entity-list-panel's own CSS tightens the vertical
         // padding further on top of this.
         size="small"
-        // The table's own header, not a strip above it: the filter chips belong to the table, and
-        // this is where JSF puts its filter affordance too (entityDataTable.xhtml's header facet).
-        // Rendered only when there is at least one filterable column.
-        header={
-          filterSpecs.length > 0 ? (
-            <FilterChipBar
-              specs={filterSpecs}
-              filters={state.filters}
-              optionsByKey={filterOptionsByKey}
-              onChange={onFilterChange}
-            />
-          ) : undefined
-        }
         ref={tableRef}
         lazy
         reorderableColumns
@@ -796,6 +793,18 @@ export function EntityListPanel({
               ]
             : []),
         ])}
+        {/* An empty last column that takes up whatever width the table has left over, so a table
+            with few columns keeps them at their content width instead of stretching them across
+            the panel. It shrinks to nothing once the columns overflow. */}
+        <Column
+          key="__filler"
+          columnKey="__filler"
+          reorderable={false}
+          className="entity-list-panel-filler-cell"
+          headerClassName="entity-list-panel-filler-cell"
+          header={null}
+          body={() => null}
+        />
       </DataTable>
       </div>
       {rowActions.dialog}

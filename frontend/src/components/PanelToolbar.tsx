@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
+import { Menu } from "primereact/menu";
+import type { MenuItem } from "primereact/menuitem";
 import { createBookmark, deleteBookmark, getBookmarkStatus } from "../api/bookmarks";
 import type { PanelActions, PanelChrome } from "../mountOptions";
 
@@ -21,9 +23,13 @@ export interface PanelToolbarProps {
   chrome: PanelChrome;
   organizationId?: number;
   actions?: PanelActions;
+  // Prev/next buttons, rendered inside the navigation group (before the bookmark).
+  navigation?: ReactNode;
+  // Overview pane: create/duplicate/settings collapse into a "…" menu.
+  compact?: boolean;
 }
 
-export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarProps) {
+export function PanelToolbar({ chrome, organizationId, actions, navigation, compact }: PanelToolbarProps) {
   // chrome.bookmarked is unknown for a list/Home reached client-side — ask the server then.
   const statusKnown = chrome.bookmarked !== undefined;
   const { data: fetchedBookmarked } = useQuery({
@@ -61,10 +67,32 @@ export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarPr
     },
   });
 
-  const overview = actions;
+  const secondary = [
+    actions?.create && { label: "Créer", icon: "bi bi-plus-square", command: actions.create },
+    actions?.duplicate && { label: "Dupliquer", icon: "bi bi-copy", command: actions.duplicate },
+  ].filter(Boolean) as MenuItem[];
+  const tertiary = [
+    actions?.settings && { label: "Paramètres", icon: "bi bi-gear", command: actions.settings },
+  ].filter(Boolean) as MenuItem[];
+  const moreMenuRef = useRef<Menu>(null);
+
+  const button = (item: MenuItem) => (
+    <Button
+      key={item.label}
+      icon={item.icon as string}
+      className="sideview-topbar-button"
+      text
+      rounded
+      tooltip={item.label}
+      tooltipOptions={{ position: "bottom" }}
+      aria-label={item.label}
+      onClick={() => item.command?.({} as never)}
+    />
+  );
 
   return (
-    <div className="panel-toolbar" style={{ display: "flex", gap: "0.5rem" }}>
+    <div className="panel-toolbar" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+      {/* Navigation group: leave focus / close or promote the overview, prev/next, bookmark. */}
       {actions?.closeFocus && (
         <Button
           icon="bi bi-arrows-angle-contract"
@@ -75,64 +103,72 @@ export function PanelToolbar({ chrome, organizationId, actions }: PanelToolbarPr
           onClick={actions.closeFocus}
         />
       )}
-      {overview?.closeOverview && (
+      {actions?.closeOverview && (
         <Button
           icon="bi bi-chevron-double-right"
           className="sideview-topbar-button"
           text
           rounded
           tooltip="Fermer l'aperçu latéral"
-          onClick={overview.closeOverview}
+          onClick={actions.closeOverview}
         />
       )}
-      {overview?.fullscreen && (
+      {actions?.fullscreen && (
         <Button
           icon="bi bi-arrows-angle-expand"
           className="sideview-topbar-button"
           text
           rounded
           tooltip="Ouvrir en mode focus"
-          onClick={overview.fullscreen}
+          onClick={actions.fullscreen}
         />
       )}
+      {navigation}
       <Button
         icon={bookmarked ? "bi bi-bookmark-fill" : "bi bi-bookmark"}
         className="sideview-topbar-button"
         text
         rounded
+        tooltip={bookmarked ? "Retirer des favoris" : "Ajouter aux favoris"}
+        tooltipOptions={{ position: "bottom" }}
         disabled={bookmarkMutation.isPending || organizationId == null || chrome.resourceUri === ""}
         onClick={() => bookmarkMutation.mutate()}
       />
-      {actions?.create && (
-        <Button
-          icon="bi bi-plus-square"
-          className="sideview-topbar-button"
-          text
-          rounded
-          tooltip="Créer"
-          onClick={actions.create}
-        />
-      )}
-      {actions?.duplicate && (
-        <Button
-          icon="bi bi-copy"
-          className="sideview-topbar-button"
-          text
-          rounded
-          tooltip="Dupliquer"
-          onClick={actions.duplicate}
-        />
-      )}
-      {actions?.settings && (
-        <Button
-          icon="bi bi-gear"
-          className="sideview-topbar-button"
-          text
-          rounded
-          tooltip="Paramètres"
-          onClick={actions.settings}
-        />
+      {compact ? (
+        // The narrow overview pane: everything past navigation folds into one "…" menu.
+        secondary.length + tertiary.length > 0 && (
+          <>
+            <ToolbarSeparator />
+            <Button
+              icon="bi bi-three-dots"
+              className="sideview-topbar-button"
+              text
+              rounded
+              tooltip="Plus d'actions"
+              tooltipOptions={{ position: "bottom" }}
+              aria-label="Plus d'actions"
+              aria-haspopup
+              onClick={(e) => moreMenuRef.current?.toggle(e)}
+            />
+            <Menu
+              ref={moreMenuRef}
+              popup
+              model={[...secondary, ...(secondary.length && tertiary.length ? [{ separator: true }] : []), ...tertiary]}
+            />
+          </>
+        )
+      ) : (
+        <>
+          {secondary.length > 0 && <ToolbarSeparator />}
+          {secondary.map(button)}
+          {tertiary.length > 0 && <ToolbarSeparator />}
+          {tertiary.map(button)}
+        </>
       )}
     </div>
   );
+}
+
+function ToolbarSeparator() {
+  return <span className="panel-toolbar-separator" role="separator" aria-orientation="vertical" />;
 }

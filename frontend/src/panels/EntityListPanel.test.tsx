@@ -385,10 +385,6 @@ describe("EntityListPanel", () => {
     expect(header.querySelector(".bi-copy")).toBeTruthy();
   });
 
-    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1");
-    expect(onNavigate).not.toHaveBeenCalled();
-  });
-
   it("always shows the selection column, with its selected/total count", async () => {
     renderPanel();
     await flush();
@@ -704,7 +700,7 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ fields: undefined }));
     // The gear is the column show/hide control and nothing else now, so a config with no schema
     // has no gear at all — even though its "name" column is filterable (filtering lives in the
-    // table header's chip bar, not behind the gear).
+    // toolbar's chip bar, not behind the gear).
     expect(container.querySelector(".entity-list-panel-gear-button")).toBeFalsy();
   });
 
@@ -794,13 +790,16 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
   });
 });
 
-describe("EntityListPanel filter chips (table header)", () => {
+describe("EntityListPanel filter chips (toolbar)", () => {
   it("shows an \"Ajouter un filtre\" chip and no filter inputs until one is added", async () => {
     renderPanel();
     await flush();
 
     const bar = container.querySelector(".entity-list-panel-filter-chips")!;
     expect(bar).toBeTruthy();
+    // In the toolbar's start group (after the search box), not in the table's own header.
+    expect(bar.closest(".entity-list-panel-toolbar .p-toolbar-group-start")).toBeTruthy();
+    expect(container.querySelector(".p-datatable-header")).toBeNull();
     expect(bar.textContent).toContain("Ajouter un filtre");
     // No enable/disable switch anywhere, and no standalone filter row.
     expect(container.querySelector(".entity-list-panel-filters")).toBeFalsy();

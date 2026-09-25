@@ -15,15 +15,41 @@ import type { PanelToolbarSlot } from "../mountOptions";
 export interface PanelHeaderBarProps {
   title: ReactNode;
   toolbar?: PanelToolbarSlot;
+  // Prev/next, placed in the toolbar's navigation group.
+  navigation?: ReactNode;
+  // "main": title left, toolbar pushed to the right. "overview": toolbar first (its secondary
+  // actions folded into a "…" menu), then the title — the narrow pane reads left to right.
+  layout?: "main" | "overview";
 }
 
-export function PanelHeaderBar({ title, toolbar }: PanelHeaderBarProps) {
+export function PanelHeaderBar({ title, toolbar, navigation, layout = "main" }: PanelHeaderBarProps) {
+  const overview = layout === "overview";
+  // No toolbar (a pane rendered without one): prev/next still show, on their own.
+  const toolbarNode = toolbar ? (
+    <PanelToolbar
+      chrome={toolbar.chrome}
+      organizationId={toolbar.organizationId}
+      actions={toolbar.actions}
+      navigation={navigation}
+      compact={overview}
+    />
+  ) : (
+    navigation
+  );
   return (
-    <div className="sideview-titlebar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap" }}>{title}</div>
-      {toolbar && (
-        <PanelToolbar chrome={toolbar.chrome} organizationId={toolbar.organizationId} actions={toolbar.actions} />
-      )}
+    <div
+      className={`sideview-titlebar sideview-titlebar-${layout}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: overview ? "flex-start" : "space-between",
+        gap: "0.5em",
+        width: "100%",
+      }}
+    >
+      {overview && toolbarNode}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap", minWidth: 0 }}>{title}</div>
+      {!overview && toolbarNode}
     </div>
   );
 }

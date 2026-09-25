@@ -15,8 +15,27 @@
 
 .entity-list-panel-toolbar .p-toolbar-group-start {
   display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
+}
+
+/* The toolbar's start group (gear, search, filters) takes the room and wraps; "Créer" stays put on
+   the right. */
+.entity-list-panel-toolbar.p-toolbar {
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+}
+
+.entity-list-panel-toolbar .p-toolbar-group-end {
+  flex: none;
+}
+
+.entity-list-panel-toolbar .entity-list-panel-filter-chips {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* The gear acts on the table's whole shape, so it reads larger than the search box next to it. */
@@ -204,7 +223,12 @@
 
 
 /* Same icon/colour vocabulary as /panel/header/validationButton.xhtml, minus the button: the JSF
-   list renders that control disabled, so it is a badge here. */
+   list renders that control disabled, so it is a badge here. Cancelled (new, no JSF colour) is a
+   muted brick red — a status, not an error, so never the danger red. */
+:root {
+  --status-cancelled: #b8665a;
+}
+
 .validation-status-badge {
   font-size: 0.95rem;
   line-height: 1;
@@ -220,6 +244,14 @@
 
 .validation-status-badge.incomplete {
   color: var(--surface-400, #ced4da);
+}
+
+/* The fiche's status button and its status list: the host theme colours the other three
+   (body .ui-button.ui-button-flat.status-button.*, which .p-button-text aliases) and paints any
+   other status-button white — so cancelled needs a selector that beats that one. */
+.validation-status-badge.cancelled,
+body button.p-button.p-button-text.status-button.cancelled {
+  color: var(--status-cancelled);
 }
 
 /* A list row's identifier/link chip: outlined in the entity's context color on a transparent
@@ -387,8 +419,8 @@
 /* Columns keep a usable width instead of being squeezed to fit, so a wide catalog overflows
    sideways — which is the situation frozen columns exist for. Excludes the selection box, which
    is pinned at 3rem, and the frozen identifier, sized just below. */
-.entity-list-panel .p-datatable-thead > tr > th:not(.p-selection-column):not(.p-frozen-column),
-.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.p-frozen-column) {
+.entity-list-panel .p-datatable-thead > tr > th:not(.p-selection-column):not(.p-frozen-column):not(.entity-list-panel-filler-cell),
+.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.p-frozen-column):not(.entity-list-panel-filler-cell) {
   min-width: 9rem;
 }
 
@@ -431,6 +463,15 @@
 .entity-list-panel .p-datatable-thead > tr > th,
 .entity-list-panel .p-datatable-tbody > tr > td {
   padding: var(--cell-pad-y) var(--cell-pad-x);
+}
+
+/* EntityListPanel's trailing filler column: absorbs the table's spare width (a percentage column
+   is served first in the auto table layout, the others then get their content width), and has no
+   padding of its own so it's truly empty once the columns overflow. */
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-filler-cell,
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-filler-cell {
+  width: 100%;
+  padding: 0;
 }
 
 .entity-list-panel .p-datatable-tbody > tr {
@@ -932,15 +973,16 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   gap: 0.4rem;
 }
 
-/* The identifier chip opens the row in the overview; while its row is hovered it fills in the
-   entity's color (inverted), signalling that it's the row's one click target. */
-.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-identifier-link.entity-nav-chip,
-.entity-list-panel .entity-list-panel-identifier-link.entity-nav-chip:focus-visible {
+/* The row's own identifier chip opens the row in the overview; while its row is hovered it fills
+   in the entity's color (inverted). Only that chip — a linked entity's chip in another column
+   (the row's project…) keeps its outline. */
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
+.entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
   background: var(--context-main-color, var(--main-color, #4d7c3a));
   color: #fff;
 }
 
-.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-identifier-link.entity-nav-chip:hover {
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
   filter: brightness(1.1);
 }
 
@@ -1060,4 +1102,52 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   padding: 0.25rem;
   font-size: 0.85rem;
   color: var(--text-color-secondary, #6c757d);
+}
+
+/* A picked entity in a multi-reference picker (fields/renderers.tsx): its chip's label opens the
+   entity's fiche. */
+.resource-ref-token-link {
+  cursor: pointer;
+}
+
+.resource-ref-token-link:hover {
+  text-decoration: underline;
+  color: var(--context-main-color, var(--main-color, #4d7c3a));
+}
+
+/* ------------------------------------------------------------ panel titlebar toolbar */
+
+/* Between the toolbar's groups (navigation | create/duplicate | the rest). */
+.panel-toolbar-separator {
+  align-self: stretch;
+  width: 1px;
+  margin: 0.35rem 0.25rem;
+  background: var(--surface-border, #dee2e6);
+}
+
+/* ------------------------------------------------------------ room at the end of every scroll
+
+   Fixed buttons sit in the screen's bottom-left corner (feedback): every panel's scroll ends with
+   some empty room so its last row/field can be scrolled out from under them. */
+:root {
+  --panel-scroll-end-gap: 4rem;
+}
+
+/* A fiche tab: the tab panels box is what scrolls. A tab holding an embedded list is left alone —
+   the list scrolls itself, and gets its gap from the rule below. */
+.entity-detail-panel .p-tabview-panels:not(:has(.entity-list-panel.embedded)) {
+  padding-bottom: var(--panel-scroll-end-gap);
+}
+
+/* A list (standalone or embedded): the virtual scroller's extent is its absolutely-positioned
+   spacer, sized inline to rows × row height — padding it (content-box, so on top of that inline
+   height) lengthens the scroll without touching the rows. */
+.entity-list-panel .p-virtualscroller-spacer {
+  box-sizing: content-box;
+  padding-bottom: var(--panel-scroll-end-gap);
+}
+
+/* Home scrolls in its pane. */
+.home-panel {
+  padding-bottom: var(--panel-scroll-end-gap);
 }

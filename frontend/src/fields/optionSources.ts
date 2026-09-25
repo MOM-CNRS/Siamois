@@ -62,17 +62,20 @@ export async function fetchPlaceOptions(organizationId: number, q: string): Prom
  */
 export interface ReferenceTarget {
   resourceType: string;
+  // The registry entity type a picked value is — what its chip opens. Absent for targets with no
+  // fiche of their own (concepts, persons).
+  entityType?: string;
   createEntityType?: string;
 }
 
 const REFERENCE_TARGETS: [test: (answerType: string) => boolean, target: ReferenceTarget][] = [
-  [(t) => t.includes("SPATIAL_UNIT"), { resourceType: "spatial-units", createEntityType: "place" }],
+  [(t) => t.includes("SPATIAL_UNIT"), { resourceType: "spatial-units", entityType: "place", createEntityType: "place" }],
   [(t) => t.endsWith("_PERSON"), { resourceType: "persons" }],
-  [(t) => t.endsWith("_ACTION_UNIT"), { resourceType: "action-units" }],
-  [(t) => t.endsWith("_RECORDING_UNIT"), { resourceType: "recording-units", createEntityType: "recordingUnit" }],
-  [(t) => t.endsWith("_SPECIMEN"), { resourceType: "finds", createEntityType: "find" }],
-  [(t) => t.endsWith("_CONTAINER"), { resourceType: "containers", createEntityType: "container" }],
-  [(t) => t.endsWith("_PHASE"), { resourceType: "phases", createEntityType: "phase" }],
+  [(t) => t.endsWith("_ACTION_UNIT"), { resourceType: "action-units", entityType: "project" }],
+  [(t) => t.endsWith("_RECORDING_UNIT"), { resourceType: "recording-units", entityType: "recordingUnit", createEntityType: "recordingUnit" }],
+  [(t) => t.endsWith("_SPECIMEN"), { resourceType: "finds", entityType: "find", createEntityType: "find" }],
+  [(t) => t.endsWith("_CONTAINER"), { resourceType: "containers", entityType: "container", createEntityType: "container" }],
+  [(t) => t.endsWith("_PHASE"), { resourceType: "phases", entityType: "phase", createEntityType: "phase" }],
 ];
 
 export function referenceTargetOf(field: FieldResource): ReferenceTarget {

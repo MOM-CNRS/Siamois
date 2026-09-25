@@ -387,7 +387,7 @@ describe("EntityDetailPanel sibling navigation (plan: fiche précédente/suivant
     await flush();
 
     const buttons = container.querySelectorAll(".sideview-topbar-button");
-    expect(buttons[0].getAttribute("aria-disabled")).toBe("true");
+    expect((buttons[0] as HTMLButtonElement).disabled).toBe(true);
     await act(async () => {
       buttons[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });

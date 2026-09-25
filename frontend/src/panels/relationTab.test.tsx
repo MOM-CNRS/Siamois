@@ -109,7 +109,7 @@ describe("relationTab", () => {
     });
     await flush();
 
-    const identifierChip = container.querySelector(".entity-list-panel-identifier-open") as HTMLElement;
+    const identifierChip = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
     await act(async () => {
       identifierChip.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });

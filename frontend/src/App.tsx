@@ -9,6 +9,7 @@ import { EntityDetailPanel } from "./panels/EntityDetailPanel";
 import { HomePanel } from "./panels/HomePanel";
 import { WriteModeProvider } from "./panels/writeMode";
 import { BridgeProvider } from "./panels/bridge";
+import { EntityNavigationProvider } from "./panels/entityNavigation";
 import { paneTransitionName, withPanelTransition } from "./panels/panelTransition";
 
 const queryClient = new QueryClient();
@@ -523,7 +524,9 @@ export function App({ options }: { options: MountOptions }) {
       {/* FlowBean.isWriteMode, for every panel below — see panels/writeMode.tsx for why this is a
           context and why it needs no change subscription. */}
       <WriteModeProvider value={options.writeMode === true}>
-        <BridgeProvider value={options.bridge}>{content}</BridgeProvider>
+        <BridgeProvider value={options.bridge}>
+          <EntityNavigationProvider value={navigate}>{content}</EntityNavigationProvider>
+        </BridgeProvider>
       </WriteModeProvider>
     </QueryClientProvider>
   );

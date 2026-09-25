@@ -154,7 +154,7 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    const identifierCell = container.querySelector(".entity-list-panel-identifier-open") as HTMLElement;
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
     expect(identifierCell).toBeTruthy();
 
     await act(async () => {
@@ -180,7 +180,7 @@ describe("App client-side navigation", () => {
 
     expect(container.querySelector(".bi-bookmark")).toBeTruthy();
 
-    const identifierCell = container.querySelector(".entity-list-panel-identifier-open") as HTMLElement;
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
     await act(async () => {
       identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -246,7 +246,7 @@ describe("App client-side navigation", () => {
     await flush();
     expect(window.location.pathname).toBe(`/focus/${b64("/fake-app-entity")}`);
 
-    const identifierCell = container.querySelector(".entity-list-panel-identifier-open") as HTMLElement;
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
     await act(async () => {
       identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -282,7 +282,7 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    const identifierCell = container.querySelector(".entity-list-panel-identifier-open") as HTMLElement;
+    const identifierCell = container.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
     await act(async () => {
       identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -343,7 +343,7 @@ describe("App client-side navigation", () => {
     });
     await flush();
 
-    const childIdentifierCell = overviewPane.querySelector(".entity-list-panel-identifier-open") as HTMLElement;
+    const childIdentifierCell = overviewPane.querySelector(".entity-list-panel-identifier-link") as HTMLElement;
     expect(childIdentifierCell).toBeTruthy();
     await act(async () => {
       childIdentifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -456,7 +456,7 @@ describe("App focus mode", () => {
       el.textContent?.includes("Children"),
     );
     await click(childrenTab);
-    await click(mainPane().querySelector(".entity-list-panel-identifier-open"));
+    await click(mainPane().querySelector(".entity-list-panel-identifier-link"));
     await flush();
     expect(setOverview).toHaveBeenLastCalledWith("fake-child-entity", "9");
     // The back= still travels with the URL while the promoted entity stays on screen.

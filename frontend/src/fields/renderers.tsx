@@ -6,6 +6,7 @@ import { Calendar } from "primereact/calendar";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import { Button } from "primereact/button";
 import { CreateEntityDialog } from "../components/CreateEntityDialog";
+import { useOpenEntity } from "../panels/entityNavigation";
 import { getEntityType } from "../entities/registry";
 import type { CreatePrefill } from "../entities/types";
 import type { FieldRendererProps } from "./registry";
@@ -150,6 +151,9 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   const loadOptions = orgId != null ? optionSourceFor(field, orgId, context?.projectId) : null;
   const autoCompleteRef = useRef<AutoComplete>(null);
   const target = referenceTargetOf(field);
+  const openEntity = useOpenEntity();
+  // Only a value this app has a fiche for is a link.
+  const linkEntityType = target.entityType && getEntityType(target.entityType) ? target.entityType : undefined;
 
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
@@ -221,6 +225,34 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
       )
     : undefined;
 
+  // A picked entity's chip label opens its fiche (multi-valued pickers only: a single value sits in
+  // the input itself, where a click means "edit the text").
+  const renderToken =
+    multiple && linkEntityType && openEntity
+      ? (item: unknown) => {
+          const option = item as FilterOption;
+          return (
+            <span
+              className="resource-ref-token-link"
+              role="link"
+              tabIndex={-1}
+              title={`Ouvrir « ${option.label} »`}
+              // mousedown would focus the input and open the suggestions first.
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openEntity(linkEntityType, option.id);
+              }}
+            >
+              {option.label}
+            </span>
+          );
+        }
+      : undefined;
+
   return (
     <>
       <AutoComplete
@@ -239,6 +271,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         showEmptyMessage={footer != null}
         emptyMessage="Aucun résultat"
         panelFooterTemplate={footer}
+        selectedItemTemplate={renderToken}
         onChange={(e) => commit(e.value as FilterOption[] | FilterOption | null)}
       />
       {createConfig && (

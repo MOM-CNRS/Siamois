@@ -3,6 +3,7 @@ import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
 import { SelectManyConceptRenderer, SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRenderer } from "./renderers";
 import { registerEntityType } from "../entities/registry";
+import { EntityNavigationProvider } from "../panels/entityNavigation";
 import type { FieldRendererProps } from "./registry";
 import type { FieldResource } from "./types";
 
@@ -322,5 +323,60 @@ describe("« Nouveau » footer", () => {
     await openPicker({ organizationId: 100 });
 
     expect(newButton()).toBeUndefined();
+  });
+});
+
+// "phase" is registered by the « Nouveau » footer suite above.
+describe("picked entity chips", () => {
+  function render(field: FieldResource, openEntity?: (entityType: string, id: string | number) => void) {
+    act(() => {
+      root.render(
+        <EntityNavigationProvider value={openEntity}>
+          <SelectManyRefRenderer
+            field={field}
+            value={[{ resourceId: "31", resourceType: "phases", label: "Phase 1" }]}
+            readOnly={false}
+            required={false}
+            onChange={() => {}}
+            organizationId={100}
+          />
+        </EntityNavigationProvider>,
+      );
+    });
+  }
+
+  const phaseField: FieldResource = { id: "12", resourceType: "fields", label: "Phases", answerType: "SELECT_MULTIPLE_PHASE", isSystemField: false };
+
+  it("opens the picked entity's fiche when its chip is clicked", async () => {
+    const openEntity = vi.fn();
+    render(phaseField, openEntity);
+
+    const link = container.querySelector(".resource-ref-token-link") as HTMLElement;
+    expect(link.textContent).toBe("Phase 1");
+    await act(async () => {
+      link.click();
+    });
+
+    expect(openEntity).toHaveBeenCalledWith("phase", "31");
+  });
+
+  it("leaves a concept chip as plain text: a concept has no fiche", () => {
+    act(() => {
+      root.render(
+        <EntityNavigationProvider value={vi.fn()}>
+          <SelectManyConceptRenderer
+            field={conceptField({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" })}
+            value={[{ resourceId: "7", resourceType: "concepts", label: "En cours" }]}
+            readOnly={false}
+            required={false}
+            onChange={() => {}}
+            organizationId={100}
+          />
+        </EntityNavigationProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain("En cours");
+    expect(container.querySelector(".resource-ref-token-link")).toBeNull();
   });
 });

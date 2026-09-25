@@ -54,10 +54,10 @@ export interface EntityDetailPanelProps {
  *
  * The whole thing is one PrimeReact <Panel> (plan §7/§8 follow-up: "the toolbar is part of the
  * panel header, panels should be React panels themselves" / "reproduce the JSF header: title +
- * toolbar"). Its `header` is a single PanelHeaderBar — icon + entity singular label as the title
- * (matching EntityListPanel's own icon+label header), followed by config.detail.header?.(entity,
- * helpers) (actionUnitPanelHeader.xhtml's identifier/type/name/location chips), with the
- * toolbar on the right — one node, not split across <Panel>'s header/icons props.
+ * toolbar"). Its `header` is a single PanelHeaderBar — the status button, then
+ * config.detail.header?.(entity, helpers) (the identifier chip as title, then the other chips);
+ * the toolbar (prev/next inside its navigation group) sits on the right in the main pane and
+ * first in the overview pane — one node, not split across <Panel>'s header/icons props.
  */
 export function EntityDetailPanel({
   entityType,
@@ -169,13 +169,14 @@ export function EntityDetailPanel({
       className="entity-detail-panel"
       header={
         <PanelHeaderBar
+          layout={toolbar?.actions?.closeOverview ? "overview" : "main"}
+          navigation={
+            config.api.siblings && onNavigateSibling ? (
+              <SiblingNav siblings={siblings} onNavigate={onNavigateSibling} disabled={siblingNavDisabled} />
+            ) : undefined
+          }
           title={
             <>
-              <i className={config.icon} style={{ fontSize: "2rem", color: "var(--main-color)" }} />
-              <span style={{ paddingRight: "0.5em" }}>{config.labels.singular}</span>
-              {config.api.siblings && onNavigateSibling && (
-                <SiblingNav siblings={siblings} onNavigate={onNavigateSibling} disabled={siblingNavDisabled} />
-              )}
               {/* validationButton.xhtml's place in the JSF headers, now on every fiche that has a status. */}
               {validation.validated !== undefined && (
                 <ValidationStatusButton
@@ -186,6 +187,7 @@ export function EntityDetailPanel({
                   canValidate={writeMode && validation._permissions?.canValidate === true}
                 />
               )}
+              {/* The identifier chip (the fiche's title), then the entity's other chips. */}
               {config.detail.header?.(data, helpers)}
             </>
           }

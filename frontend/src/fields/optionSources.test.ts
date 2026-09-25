@@ -197,17 +197,18 @@ describe("optionSourceFor — reference fields", () => {
 
 describe("referenceTargetOf", () => {
   it.each([
-    ["SELECT_ONE_SPATIAL_UNIT", "spatial-units", "place"],
-    ["SELECT_MULTIPLE_RECORDING_UNIT", "recording-units", "recordingUnit"],
-    ["SELECT_MULTIPLE_SPECIMEN", "finds", "find"],
-    ["SELECT_MULTIPLE_CONTAINER", "containers", "container"],
-    ["SELECT_MULTIPLE_PHASE", "phases", "phase"],
-    ["SELECT_ONE_PERSON", "persons", undefined],
-    ["SELECT_ONE_ACTION_UNIT", "action-units", undefined],
-    ["SELECT_ONE_FROM_FIELD_CODE", "concepts", undefined],
-  ])("%s references %s, created as %s", (answerType, resourceType, createEntityType) => {
-    expect(referenceTargetOf(field({ answerType }))).toEqual(
-      createEntityType ? { resourceType, createEntityType } : { resourceType },
-    );
+    ["SELECT_ONE_SPATIAL_UNIT", "spatial-units", "place", "place"],
+    ["SELECT_MULTIPLE_RECORDING_UNIT", "recording-units", "recordingUnit", "recordingUnit"],
+    ["SELECT_MULTIPLE_SPECIMEN", "finds", "find", "find"],
+    ["SELECT_MULTIPLE_CONTAINER", "containers", "container", "container"],
+    ["SELECT_MULTIPLE_PHASE", "phases", "phase", "phase"],
+    ["SELECT_ONE_PERSON", "persons", undefined, undefined],
+    ["SELECT_ONE_ACTION_UNIT", "action-units", "project", undefined],
+    ["SELECT_ONE_FROM_FIELD_CODE", "concepts", undefined, undefined],
+  ])("%s references %s, opened as %s, created as %s", (answerType, resourceType, entityType, createEntityType) => {
+    const expected: Record<string, string> = { resourceType };
+    if (entityType) expected.entityType = entityType;
+    if (createEntityType) expected.createEntityType = createEntityType;
+    expect(referenceTargetOf(field({ answerType }))).toEqual(expected);
   });
 });
