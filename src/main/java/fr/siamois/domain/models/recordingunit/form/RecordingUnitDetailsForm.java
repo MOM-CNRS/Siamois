@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.models.form.customform.DependsOnJson;
 import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.ui.form.dto.ColumnWidth;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
@@ -26,10 +27,6 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
 
     /** Panel users add their own measurement fields to; those fields are re-injected here on reopen. */
     public static final String MEASUREMENTS_PANEL_NAME = "recordingunit.panel.measurements";
-
-    private static final String UI_G_12_UI_MD_6_UI_LG_3 = "ui-g-12 ui-md-6 ui-lg-3";
-    private static final String UI_G_12_UI_MD_12_UI_LG_12 = "ui-g-12 ui-md-12 ui-lg-12";
-    private static final String UI_G_12_UI_MD_6_UI_LG_6 = "ui-g-12 ui-md-6 ui-lg-6";
 
     private static final String SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS =
             "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldAnswerCode";
@@ -58,37 +55,37 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .isSystemPanel(true)
                 .addRow(
                         new CustomRowUiDto.Builder()
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(SPATIAL_UNIT_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(PARENTS_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CHILDREN_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(RECORDING_UNIT_TYPE_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(NATURE_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(GEOMORPHO_AGENT_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(INTERPRETATION_FIELD)
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(SPATIAL_UNIT_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(PARENTS_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CHILDREN_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).isRequired(true).field(RECORDING_UNIT_TYPE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(NATURE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(GEOMORPHO_AGENT_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(INTERPRETATION_FIELD)
                                         .dependsOnSpec(interpretationDependsOnNature).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(MATRIX_COLOR_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className("d-none").readOnly(true).field(ACTION_UNIT_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className("d-none").readOnly(true).field(FULL_IDENTIFIER_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(MATRIX_COLOR_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).hidden(true).readOnly(true).field(ACTION_UNIT_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).hidden(true).readOnly(true).field(FULL_IDENTIFIER_FIELD).build())
                                 .build()
                 )
                 .addRow(
                         new CustomRowUiDto.Builder()
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_SHAPE_FIELD)
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(EROSION_SHAPE_FIELD)
                                         .enabledWhenSpec(erosionEnabledWhen).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_PROFILE_FIELD)
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(EROSION_PROFILE_FIELD)
                                         .enabledWhenSpec(erosionEnabledWhen).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(EROSION_ORIENTATION_FIELD)
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(EROSION_ORIENTATION_FIELD)
                                         .enabledWhenSpec(erosionEnabledWhen).build())
                                 .build()
                 )
                 .addRow(
                         new CustomRowUiDto.Builder()
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(DESCRIPTION_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.FULL).field(DESCRIPTION_FIELD).build())
                                 .build()
                 )
                 .addRow(
                         new CustomRowUiDto.Builder()
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(COMMENTS_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.FULL).field(COMMENTS_FIELD).build())
                                 .build()
                 )
                 .build();
@@ -100,14 +97,14 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .isSystemPanel(true)
                 .addRow(
                         new CustomRowUiDto.Builder()
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CHRONOLOGICAL_PHASE_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(TPQ_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(TAQ_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CHRONOLOGICAL_PHASE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(TPQ_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(TAQ_FIELD).build())
                                 .build()
                 )
                 .addRow(
                         new CustomRowUiDto.Builder()
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_12_UI_LG_12).field(PHASES_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.FULL).field(PHASES_FIELD).build())
                                 .build()
                 )
                 .build();
@@ -120,8 +117,8 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .canUserAddField(true)
                 .addRow(
                         new CustomRowUiDto.Builder()
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_6).field(Z_INF_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_6).field(Z_SUP_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.HALF).field(Z_INF_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.HALF).field(Z_SUP_FIELD).build())
                                 .build()
                 )
                 .build();
@@ -133,10 +130,10 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .isSystemPanel(true)
                 .addRow(
                         new CustomRowUiDto.Builder()
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(OPENING_DATE_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CLOSING_DATE_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).isRequired(true).field(AUTHOR_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().className(UI_G_12_UI_MD_6_UI_LG_3).field(CONTRIBUTORS_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).isRequired(true).field(OPENING_DATE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CLOSING_DATE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).isRequired(true).field(AUTHOR_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CONTRIBUTORS_FIELD).build())
                                 .build()
                 )
                 .build();

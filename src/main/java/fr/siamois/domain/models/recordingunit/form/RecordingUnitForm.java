@@ -17,7 +17,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 /**
  * Shared field/concept constants for {@link RecordingUnitNewForm} and {@link RecordingUnitDetailsForm},

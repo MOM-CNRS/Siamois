@@ -5,6 +5,7 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,27 @@ import java.util.Set;
 
 @Repository
 public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, RevisionRepository<ActionUnit, Long, Long>, JpaSpecificationExecutor<ActionUnit> {
+
+    /**
+     * Préchargement des collections {@code @ManyToMany} qu'{@code ActionUnitMapper} mappe systématiquement
+     * ({@code periods}, {@code subjects}, {@code spatialContext}). Sans elles, mapper une page de liste
+     * déclenche une requête par collection et par ligne.
+     *
+     * <p>Une méthode par collection, volontairement : un seul {@code @EntityGraph} portant les trois
+     * produit un produit cartésien (périodes × sujets × unités spatiales) par projet. Trois requêtes
+     * bornées valent mieux qu'une requête qui explose.</p>
+     *
+     * <p>À appeler dans la même transaction que le chargement de la page : les entités étant déjà gérées
+     * par le contexte de persistance, ces requêtes ne font qu'initialiser leurs collections.</p>
+     */
+    @EntityGraph(attributePaths = "periods")
+    List<ActionUnit> findWithPeriodsByIdIn(Collection<Long> ids);
+
+    @EntityGraph(attributePaths = "subjects")
+    List<ActionUnit> findWithSubjectsByIdIn(Collection<Long> ids);
+
+    @EntityGraph(attributePaths = "spatialContext")
+    List<ActionUnit> findWithSpatialContextByIdIn(Collection<Long> ids);
 
     Optional<ActionUnit> findByFullIdentifier(String fullIdentifier);
 

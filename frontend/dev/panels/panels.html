@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Main panel harness (mock API)</title>
+    <!--
+      Dev-only: the REAL React main panel (window.SiamoisMainPanel.mount, like focus.xhtml) against
+      an in-browser mock API (mockApi.ts), under the real host stylesheets in the host page's order.
+      Run dev/build-theme.sh first. Query params: ?kind=list|detail|home&type=project&id=1&overview=1
+    -->
+    <link rel="stylesheet" href="../.generated/components.css" />
+    <link rel="stylesheet" href="../.generated/primeicons/primeicons.css" />
+    <link rel="stylesheet" href="../.generated/theme.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../.generated/settings.css" />
+    <style>
+      html, body { height: 100%; margin: 0; }
+    </style>
+  </head>
+  <body>
+    <!-- focus.xhtml's React wrapper: #{mainPanel.panelClass} panel-docked focus -->
+    <div id="wrapper" class="panel-docked focus" style="border-radius: 0; display: flex; flex-direction: column; height: 100vh; min-height: 0;">
+      <div id="mount" class="react-main-panel-mount" style="flex: 1; min-height: 0; display: flex; flex-direction: column;"></div>
+    </div>
+    <script type="module">
+      import "./mockApi.ts";
+      import "../../src/mount.ts";
+
+      const q = new URLSearchParams(location.search);
+      const kind = q.get("kind") ?? "list";
+      const type = q.get("type") ?? "project";
+      const id = q.get("id") ?? (kind === "detail" ? "1" : undefined);
+      const panelClass = { project: "action-unit-panel", recordingUnit: "recording-unit-panel" }[type] ?? "";
+      document.getElementById("wrapper").className +=
+        kind === "home" ? " siamois-panel" : ` siamois-panel ${panelClass} ${kind === "list" ? "list-panel" : "single-panel"}`;
+
+      window.SiamoisMainPanel.mount(document.getElementById("mount"), {
+        panelKind: kind,
+        entityType: type,
+        entityId: id,
+        overviewEntityType: q.has("overview") ? "project" : undefined,
+        overviewEntityId: q.has("overview") ? q.get("overview") : undefined,
+        organizationId: 1,
+        overviewOrganizationId: 1,
+        writeMode: q.get("write") !== "0",
+        basePath: "",
+        csrf: { headerName: "X-CSRF-TOKEN", token: "dev-harness" },
+        main: { resourceUri: kind === "list" ? "/action-unit" : `/action-unit/${id}`, title: "Projets", bookmarked: false },
+      });
+    </script>
+  </body>
+</html>

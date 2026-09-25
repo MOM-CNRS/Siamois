@@ -85,8 +85,16 @@ public class WebSecurityConfig {
                                                         JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http.securityMatcher("/api/v1/**")
                 .csrf(csrfDisabled())
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // STATELESS alone isn't enough: the JWT filter authenticates on every request and the
+                // (request-scoped) context repository never "contains" it, so SessionManagementFilter
+                // took each API call for a fresh login and applied session-fixation protection —
+                // changeSessionId() on the JSF session whose cookie the browser sends along. Parallel
+                // API calls then raced their Set-Cookie headers and the browser could end up holding
+                // a dead session id: logged out on the next JSF request. This chain must never touch
+                // the HTTP session.
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        .sessionFixation(fixation -> fixation.none()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .anyRequest().authenticated())

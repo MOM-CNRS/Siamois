@@ -5,6 +5,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.ui.form.dto.ColumnWidth;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
@@ -65,6 +66,24 @@ class EffectiveFormResolverTest {
         assertThat(additionalPanel.getRows()).hasSize(1);
         assertThat(additionalPanel.getRows().get(0).getColumns()).extracting(c -> c.getField().getValueBinding())
                 .containsExactly("couleur");
+    }
+
+    @Test
+    void resolveEffectiveForm_givesAnAdditionalFieldColumnAWidth() {
+        // Regression: this column used to carry neither `width` nor `className` at all, which
+        // React's toPrimeFlexClass(col.width) crashed on — see form.ts's own defensive fallback
+        // and its test for the frontend side of this same bug.
+        FormUiDto baseForm = formOf(col("existing", "existing"));
+        when(tableFieldConfigService.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, TYPE_CONCEPT_ID))
+                .thenReturn(new TypeFieldsConfig());
+        CustomFieldText additionalField = CustomFieldText.builder().id(9L).label("Couleur").valueBinding("couleur").build();
+        when(tableFieldConfigService.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.UE, TYPE_CONCEPT_ID))
+                .thenReturn(List.of(additionalField));
+
+        FormUiDto result = resolver.resolveEffectiveForm(baseForm, PROJECT_ID, ConfigurableTable.UE, TYPE_CONCEPT_ID);
+
+        CustomColUiDto additionalColumn = result.getLayout().get(1).getRows().get(0).getColumns().get(0);
+        assertThat(additionalColumn.getWidth()).isEqualTo(ColumnWidth.STANDARD);
     }
 
     @Test

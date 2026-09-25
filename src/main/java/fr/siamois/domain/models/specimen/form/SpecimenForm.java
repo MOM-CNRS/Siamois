@@ -18,7 +18,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 public abstract class SpecimenForm {
 

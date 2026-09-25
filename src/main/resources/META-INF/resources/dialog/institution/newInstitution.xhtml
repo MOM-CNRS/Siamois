@@ -82,7 +82,7 @@
                                     id="name"
                                     widgetVar="nameW"
                                     value="#{institutionDialogBean.institutionName}"
-                                    maxlength="#{documentCreationBean.maxTitleLength()}"
+                                    maxlength="50"
                             >
                                 <p:ajax event="keyup" delay="300" oncomplete="updateSlugFromName()" />
                             </p:inputText>

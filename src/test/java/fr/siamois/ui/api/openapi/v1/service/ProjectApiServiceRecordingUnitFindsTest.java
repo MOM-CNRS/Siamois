@@ -1,10 +1,13 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -69,6 +72,12 @@ class ProjectApiServiceRecordingUnitFindsTest {
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
     private PhaseService phaseService;
+    @Mock
+    private ContainerService containerService;
+    @Mock
+    private BookmarkService bookmarkService;
+    @Mock
+    private HistoryAuditService historyAuditService;
 
     private ProjectApiService projectApiService;
 
@@ -92,7 +101,8 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService, containerService,
+                bookmarkService, historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
     }
 
     private ProjectApiCaller caller() {
@@ -250,6 +260,25 @@ class ProjectApiServiceRecordingUnitFindsTest {
         var callerDto = caller();
         assertThatThrownBy(() -> projectApiService.pageFindsForAccessibleRecordingUnit(
                 callerDto, "ru", 0, 10, null, null))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void parseFindSort_acceptsCreationTime_theControllersDefaultSort() {
+        // RecordingUnitFindsControllerApi defaults sort to creationTime:desc; with an f.* filter
+        // that default goes through parseFindSort and must not be rejected as unknown.
+        Sort sort = ProjectApiService.parseFindSort("creationTime:desc");
+
+        assertThat(sort.getOrderFor("creationTime")).isNotNull();
+        assertThat(sort.getOrderFor("creationTime").getDirection()).isEqualTo(Sort.Direction.DESC);
+        assertThat(sort.getOrderFor("id")).isNotNull();
+    }
+
+    @Test
+    void parseFindSort_unknownProperty_isBadRequest() {
+        assertThatThrownBy(() -> ProjectApiService.parseFindSort("nope:asc"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.BAD_REQUEST.value()));

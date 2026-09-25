@@ -21,6 +21,7 @@ import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
@@ -33,8 +34,10 @@ import fr.siamois.infrastructure.database.repositories.permissions.PersonProfile
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitFilterSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
@@ -449,20 +452,7 @@ public class ActionUnitService implements ArkEntityService {
         ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
 
-        // Cycle through the enum values
-        switch (actionUnit.getValidated()) {
-            case INCOMPLETE:
-                actionUnit.setValidated(ValidationStatus.COMPLETE);
-                break;
-            case COMPLETE:
-                actionUnit.setValidated(ValidationStatus.VALIDATED);
-                break;
-            case VALIDATED:
-                actionUnit.setValidated(ValidationStatus.INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + actionUnit.getValidated());
-        }
+        actionUnit.setValidated(actionUnit.getValidated().nextInCycle());
 
 
         return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));
@@ -762,20 +752,71 @@ public class ActionUnitService implements ArkEntityService {
             Long organizationId,
             String search,
             Pageable pageable) {
+        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable, null);
+    }
+
+    /**
+     * @param recordingUnitCountOrder when non-null, order by the number of attached recording units
+     *                                instead of by {@code pageable}'s own sort — {@code recordingUnitCount}
+     *                                is not a JPA-mapped path, so it is carried by a Specification
+     *                                ({@link ActionUnitSpec#orderByRecordingUnitCount(Sort.Direction)})
+     *                                and the caller must have stripped it from {@code pageable}.
+     */
+    @Transactional(readOnly = true)
+    public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            Pageable pageable,
+            Sort.Direction recordingUnitCountOrder) {
+        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable,
+                recordingUnitCountOrder, ProjectListFilter.EMPTY);
+    }
+
+    /**
+     * @param filter per-column filters (plan §3 phase 3) — {@link ProjectListFilter#EMPTY} for none.
+     */
+    @Transactional(readOnly = true)
+    public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            Pageable pageable,
+            Sort.Direction recordingUnitCountOrder,
+            ProjectListFilter filter) {
+        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable,
+                recordingUnitCountOrder, filter, FieldQuery.NONE);
+    }
+
+    /**
+     * @param fieldQuery sort/filters on form fields (by field id), ANDed onto the rest; when it
+     *                   orders, {@code pageable} must be unsorted
+     */
+    @Transactional(readOnly = true)
+    public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            Pageable pageable,
+            Sort.Direction recordingUnitCountOrder,
+            ProjectListFilter filter,
+            FieldQuery fieldQuery) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
-        Collection<Long> institutionScope = organizationId != null
-                ? List.of(organizationId)
-                : accessibleInstitutionIds;
-
-        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
-                .and(ActionUnitSpec.visibleToPerson(personId))
-                .and(ActionUnitSpec.projectSearch(search));
+        Specification<ActionUnit> spec = accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter)
+                .and(fieldQuery.specificationFor(ActionUnit.class));
+        if (recordingUnitCountOrder != null) {
+            spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
+        }
 
         Page<ActionUnit> page = actionUnitRepository.findAll(spec, pageable);
 
         List<Long> ids = page.getContent().stream().map(ActionUnit::getId).toList();
+        warmFormCollections(ids);
         Map<Long, Long> ruByProject = ids.isEmpty()
                 ? Map.of()
                 : countingMap(recordingUnitRepository.countRecordingUnitsGroupedByActionUnitIds(ids));
@@ -791,6 +832,121 @@ public class ActionUnitService implements ArkEntityService {
                 .toList();
 
         return new PageImpl<>(mapped, pageable, page.getTotalElements());
+    }
+
+    /**
+     * The base "accessible projects" filter — institution scope, display permission, free-text
+     * search, per-column filters — shared by {@link #findAccessibleProjects} (a page of it) and
+     * {@link #findSiblingProject} (one cursored row past/before a given one). Factored out so the
+     * sibling lookup can never drift from what the list itself considers visible: reusing
+     * {@code findNextByInstitution}-style institution-only filtering here would let a sibling leak
+     * past a person's actual permissions.
+     */
+    @NonNull
+    /**
+     * Ids of the institution's projects on which the person holds a PROJECT-scoped profile — what a
+     * person without institution-wide access ({@code ProfilePermissionService#canViewInstitutionData})
+     * may see, same rule as {@link ActionUnitSpec#visibleToPerson}'s project branch.
+     */
+    @Transactional(readOnly = true)
+    public List<Long> findMemberProjectIds(Long personId, Long institutionId) {
+        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(List.of(institutionId)))
+                .and(ActionUnitSpec.hasProjectMembership(personId));
+        return actionUnitRepository.findAll(spec).stream().map(ActionUnit::getId).toList();
+    }
+
+    private Specification<ActionUnit> accessibleProjectsSpec(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            ProjectListFilter filter) {
+        Collection<Long> institutionScope = organizationId != null
+                ? List.of(organizationId)
+                : accessibleInstitutionIds;
+
+        Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
+                .and(ActionUnitSpec.visibleToPerson(personId))
+                .and(ActionUnitSpec.projectSearch(search));
+        if (filter != null && !filter.isEmpty()) {
+            spec = spec.and(ActionUnitFilterSpec.fromFilter(filter));
+        }
+        return spec;
+    }
+
+    /**
+     * The project strictly {@code forward}/backward of {@code currentId} in the caller's own
+     * accessible list order (same spec as {@link #findAccessibleProjects}, plus a cursor on
+     * {@code sortField}/{@code currentValue}/{@code currentId} — see {@link ActionUnitSpec#cursor}).
+     * Wraps around to the opposite end when there is no such neighbour, matching
+     * {@code AbstractSingleEntityPanel.goToNext/goToPrevious}'s own JSF behaviour. Returns
+     * {@link Optional#empty()} when the caller's accessible set has no OTHER project at all
+     * (the wrapped-around candidate would just be {@code currentId} itself) — deliberately not
+     * JSF's own "loops back to itself" behaviour, since a self-link is not a useful sibling.
+     *
+     * @param sortField    a real, non-null JPA path — {@code recordingUnitCount} and other
+     *                     Specification-only synthetic sorts have no cursor and must be rejected
+     *                     by the caller before reaching here (see
+     *                     {@code ProjectApiService#requireCursorableProjectSort}).
+     * @param currentValue {@code currentId}'s own value of {@code sortField}, already read off the
+     *                     current entity by the caller.
+     */
+    @Transactional(readOnly = true)
+    public Optional<ActionUnitDTO> findSiblingProject(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            ProjectListFilter filter,
+            String sortField,
+            Sort.Direction sortDirection,
+            Comparable<?> currentValue,
+            Long currentId,
+            boolean forward) {
+        if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Specification<ActionUnit> baseSpec =
+                accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter);
+
+        // Walking backwards reverses both the sort field's own direction and the id tie-break —
+        // ActionUnitSpec.cursor's own "forward" flag already accounts for the field, id here just
+        // has to match the direction cursor() compares it in.
+        Sort.Direction walkFieldDirection = forward ? sortDirection
+                : (sortDirection == Sort.Direction.ASC ? Sort.Direction.DESC : Sort.Direction.ASC);
+        Sort.Direction idDirection = forward ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable onePage = PageRequest.of(0, 1, Sort.by(walkFieldDirection, sortField).and(Sort.by(idDirection, "id")));
+
+        Specification<ActionUnit> cursored = baseSpec.and(
+                ActionUnitSpec.cursor(sortField, sortDirection, currentValue, currentId, forward));
+        List<ActionUnit> page = actionUnitRepository.findAll(cursored, onePage).getContent();
+
+        if (page.isEmpty()) {
+            // Wrap-around: same order, no cursor, first row of that order is the opposite end.
+            page = actionUnitRepository.findAll(baseSpec, onePage).getContent();
+        }
+
+        return page.stream()
+                .filter(au -> !au.getId().equals(currentId))
+                .findFirst()
+                .map(actionUnitMapper::convert);
+    }
+
+    /**
+     * Initialise en trois requêtes bornées les collections que {@code ActionUnitMapper} mappe pour chaque
+     * ligne ({@code periods}, {@code subjects}, {@code spatialContext}) : sans cela, mapper une page de 25
+     * projets déclenche 75 requêtes supplémentaires. Les entités de la page étant déjà gérées par le même
+     * contexte de persistance, le résultat de ces requêtes est ignoré — seul l'effet d'initialisation
+     * compte.
+     */
+    private void warmFormCollections(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return;
+        }
+        actionUnitRepository.findWithPeriodsByIdIn(ids);
+        actionUnitRepository.findWithSubjectsByIdIn(ids);
+        actionUnitRepository.findWithSpatialContextByIdIn(ids);
     }
 
     /**

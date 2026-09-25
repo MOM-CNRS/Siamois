@@ -1,6 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectContainerTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectPhaseTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -73,6 +75,54 @@ public class ProjectSettingsControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectFindTypeListResponse response = recordingUnitOpenApiService
                 .buildProjectFindTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/phase-types")
+    @Operation(summary = "Récupère tout les types de phase d'un projet et leurs configurations (formulaires, settings, ..)",
+            description = "")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de pagination invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectPhaseTypeListResponse> getProjectPhaseSettings(
+            @PathVariable("id") String id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "20") int limit,
+            @Parameter(description = "Tri, ex. name:asc")
+            @RequestParam(defaultValue = "name:asc") String sort,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        ProjectPhaseTypeListResponse response = recordingUnitOpenApiService
+                .buildProjectPhaseTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/container-types")
+    @Operation(summary = "Récupère tout les types de contenant d'un projet et leurs configurations (formulaires, settings, ..)",
+            description = "")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de pagination invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectContainerTypeListResponse> getProjectContainerSettings(
+            @PathVariable("id") String id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "20") int limit,
+            @Parameter(description = "Tri, ex. name:asc")
+            @RequestParam(defaultValue = "name:asc") String sort,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        ProjectContainerTypeListResponse response = recordingUnitOpenApiService
+                .buildProjectContainerTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.ok(response);
     }
 

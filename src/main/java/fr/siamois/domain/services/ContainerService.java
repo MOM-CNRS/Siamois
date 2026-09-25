@@ -1,5 +1,8 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
@@ -43,13 +46,15 @@ import java.util.stream.Stream;
 public class ContainerService {
 
     private final ContainerRepository containerRepository;
+    private final CustomFieldAnswerService customFieldAnswerService;
     private final ContainerMapper containerMapper;
     private final UnitDefinitionService unitDefinitionService;
     private final EntityIdentifierGenerator identifierGenerator;
     private final ProfilePermissionService profilePermissionService;
 
     private Specification<Container> userFilterSpecs(FilterDTO filters) {
-        Specification<Container> specs = Specification.where(null);
+        // The list's per-field sort/filters (FieldQuery), then the named ones.
+        Specification<Container> specs = filters.getFieldQuery().specificationFor(Container.class);
 
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo nameFilter = filters.filterOf(ContainerSpec.IDENTIFIER_FILTER);
@@ -132,6 +137,21 @@ public class ContainerService {
         return containerRepository.findByActionUnitIdAndIdentifier(
                         container.getActionUnit().getId(), container.getIdentifier()).stream()
                 .anyMatch(existing -> !Objects.equals(existing.getId(), container.getId()));
+    }
+
+    /**
+     * Saves the container, then its additional (non-system) field answers — the
+     * counterpart of {@code RecordingUnitService.save(RecordingUnitDTO, Map)}.
+     *
+     * @param dto                    the entity to save
+     * @param additionalFieldAnswers answers to the type's additional fields, keyed by field
+     * @return the saved entity
+     */
+    @Transactional
+    public ContainerDTO save(ContainerDTO dto, Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers) {
+        ContainerDTO saved = save(dto);
+        customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
+        return saved;
     }
 
     public ContainerDTO save(ContainerDTO dto) {

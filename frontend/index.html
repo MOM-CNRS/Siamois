@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Siamois main-panel dev harness</title>
+  </head>
+  <body>
+    <!--
+      Dev-only harness for `npm run dev`. Not built by `npm run build` (Vite's build entry is
+      src/mount.ts, see vite.config.ts) and not copied into the Java app — the real mount call
+      happens from focus.xhtml once the JSF integration phase (plan §7/§8 phase 8) lands.
+    -->
+    <div id="app" style="height: 100vh"></div>
+    <script type="module">
+      import "./src/mount.ts";
+
+      window.SiamoisMainPanel.mount(document.getElementById("app"), {
+        panelKind: "detail",
+        entityType: "project",
+        entityId: 1,
+        // Exercises the overview-pane branch (plan §3) — mount() sits above both panes, this
+        // is not a separate mount call. Drop overviewEntityType to see the no-overview fallback.
+        overviewEntityType: "project",
+        overviewEntityId: 2,
+        basePath: "",
+        csrf: { headerName: "X-CSRF-TOKEN", token: "dev-harness-no-backend" },
+      });
+    </script>
+  </body>
+</html>

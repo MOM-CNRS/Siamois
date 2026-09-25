@@ -5,36 +5,20 @@ import fr.siamois.domain.events.publisher.LoginEventPublisher;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.person.PersonService;
-import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.domain.services.recordingunit.StratigraphicRelationshipService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
-import fr.siamois.domain.services.vocabulary.FieldService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.HistoryBean;
 import fr.siamois.ui.bean.LangBean;
-import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
-import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
-import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
-import fr.siamois.ui.bean.panel.models.panel.single.*;
 import fr.siamois.utils.MessageUtils;
-import jakarta.el.MethodExpression;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
-import org.primefaces.model.dashboard.DashboardModel;
-import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
@@ -45,11 +29,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
- * <p>This ui.bean handles the home page</p>
- * <p>It is used to display the list of spatial units without parents</p>
+ * Session-wide state of the main page: read/write and field/office modes, the organization switch,
+ * the redirections to a focus URL, and the server-side copy of the overview React opened.
  *
  * @author Grégory Bliault
  */
@@ -61,44 +44,24 @@ import java.util.stream.Collectors;
 @Setter
 public class FlowBean implements Serializable {
 
-    private final transient SpatialUnitService spatialUnitService;
-    private final transient RecordingUnitService recordingUnitService;
-    private final transient ActionUnitService actionUnitService;
     private final SessionSettingsBean sessionSettings;
     private final LangBean langBean;
-    private final transient FieldConfigurationService fieldConfigurationService;
-    private final transient FieldService fieldService;
     private final transient PanelFactory panelFactory;
-    private final transient PersonService personService;
-    private final transient ConceptService conceptService;
-    private final transient StratigraphicRelationshipService stratigraphicRelationshipService;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final transient HistoryBean historyBean;
 
-    private final RedirectBean redirectBean;
     private final transient LoginEventPublisher loginEventPublisher;
 
     // locals
-    private transient DashboardModel responsiveModel;
-    private static final String RESPONSIVE_CLASS = "col-12 lg:col-6 xl:col-6";
     private Boolean isWriteMode = true;
     private Boolean isFieldMode = false;
-    private static final int MAX_NUMBER_OF_PANEL = 10;
     private transient List<InstitutionDTO> institutions;
     private transient InstitutionDTO selectedInstitution;
 
-    @Getter
-    private transient List<AbstractPanel> panels = new ArrayList<>();
-    private transient int fullscreenPanelIndex = -1;
-
-    private transient Set<AbstractSingleEntityPanel<?>> unsavedPanels = new HashSet<>();
 
     public void init() {
-        fullscreenPanelIndex = -1;
-        panels = new ArrayList<>();
-        addWelcomePanel();
         InstitutionDTO institution = sessionSettings.getSelectedInstitution();
         UserInfo info = sessionSettings.getUserInfo();
         institutions = new ArrayList<>();
@@ -117,357 +80,51 @@ public class FlowBean implements Serializable {
         init();
     }
 
-    public void addSpatialUnitListPanel() {
-        addPanel(panelFactory.createSpatialUnitListPanel());
-    }
-
-    public void addActionUnitListPanel() {
-        addPanel(panelFactory.createActionUnitListPanel());
-    }
-
-    public void addContainerListPanel() {
-        addPanel(panelFactory.createContainerListPanel());
-    }
-
-    public void addPhaseListPanel() {
-        addPanel(panelFactory.createPhaseListPanel());
-    }
-
-    public void addRecordingUnitListPanel() {
-        addPanel(panelFactory.createRecordingUnitListPanel());
-    }
-
-    public void addSpecimenListPanel() {
-        addPanel(panelFactory.createSpecimenListPanel());
-    }
-
-
-    public void addPanel(AbstractPanel panel) {
-
-        if (panels == null || panels.isEmpty()) {
-            panels = new ArrayList<>();
-        }
-
-        // If panel already exists, move it to the top
-        panels.remove(panel);
-        panels.add(0, panel);
-
-        // Trim the list if it exceeds max allowed
-        if (panels.size() > MAX_NUMBER_OF_PANEL) {
-            panels = new ArrayList<>(panels.subList(0, MAX_NUMBER_OF_PANEL));
-        }
-
-        panels.get(0).setCollapsed(false);
-
-        //if fullscreen set this new panel as the active one
-        if (fullscreenPanelIndex >= 0) {
-            fullscreenPanelIndex = 0;
-        }
-
-        // Update context form for sync
-        FacesContext facesContext = FacesContext.getCurrentInstance();
-        // Check if the current request is an AJAX request
-        if (facesContext != null) {
-            PrimeFaces.current().ajax().update("contextForm");
-        }
-
-    }
-
-
-    public void addWelcomePanel() {
-
-        // Add a new instance
-        addPanel(panelFactory.createWelcomePanel());
-
-    }
-
-
-    public void addActionUnitPanel(Long actionUnitId) {
-        addPanel(panelFactory.createActionUnitPanel(actionUnitId));
-    }
-
-    public void addRecordingUnitPanel(Long recordingUnitId) {
-        RecordingUnitPanel mainPanel = panelFactory.createRecordingUnitPanel(recordingUnitId);
-
-        addPanel(mainPanel);
-    }
-
-    public void addSpecimenPanel(Long specimenId) {
-        addPanel(panelFactory.createSpecimenPanel(specimenId));
-    }
-
-
-    public void goToSpatialUnitByIdNewPanel(Long id) {
-
-        SpatialUnitPanel newPanel = panelFactory.createSpatialUnitPanel(id);
-        addPanel(newPanel);
-
-    }
-
-    public void goToRecordingUnitByIdNewPanel(Long id) {
-
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id);
-        addPanel(newPanel);
-
-    }
-
-    @Nullable
-    private AbstractPanel findInFlowById(String panelId) {
-        // Find the target panel
-        return this.panels.stream()
-                .filter(p -> String.valueOf(p.getPanelIndex()).equals(panelId))
-                .findFirst()
-                .orElse(null);
-
-    }
-
-    public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
-        addPanelToOverview(targetPanel, overviewPanel, true);
-    }
-
     /**
-     * @param updateMainPanel whether to also force-refresh the main/root panel's container (or,
-     *                        for a list panel, its whole table). Needed the first time an
-     *                        overview is opened (to highlight the newly-selected row), but not
-     *                        when merely navigating between entities within an already-open
-     *                        overview (prev/next arrows) — nothing in the main panel changed.
+     * Keeps the page's panel in sync with the overview React opened client-side, so a reload (F5)
+     * and the navigation history reopen it. Called through the {@code reactAction_setOverview_N}
+     * remoteCommand (panel/reactPanelActions.xhtml) with the entity's React registry key
+     * ({@code entityType}) and {@code id} as request parameters. An unknown or missing key is a
+     * no-op rather than a guess.
      */
-    public void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel, boolean updateMainPanel) {
+    public void addEntityToOverviewFromRequest(AbstractPanel targetPanel) {
+        Map<String, String> params = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestParameterMap();
+        String idParam = params.get("id");
+        String entityType = params.get("entityType");
 
-        HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
-        HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
-        HistoryBean.HistoryItemComponent side = new HistoryBean.HistoryItemComponent();
+        if (targetPanel == null || idParam == null || entityType == null) {
+            return;
+        }
 
+        AbstractPanel overviewPanel = panelFactory.createForReactEntityType(entityType, Long.parseLong(idParam));
+        if (overviewPanel == null) {
+            log.warn("setOverview : entityType React inconnu côté serveur : {}", entityType);
+            return;
+        }
+        addPanelToOverview(targetPanel.isRoot() ? targetPanel : targetPanel.getParentOrOverview(), overviewPanel);
+    }
+
+    private void addPanelToOverview(AbstractPanel targetPanel, AbstractPanel overviewPanel) {
         overviewPanel.setRoot(false);
         targetPanel.setRoot(true);
         targetPanel.setParentOrOverview(overviewPanel);
         overviewPanel.setParentOrOverview(targetPanel);
 
-        if(targetPanel instanceof AbstractListPanel<?>) {
-            main.setTitle(targetPanel.resolveTitleOrTitleCode());
-        }
-        else {
-            main.setTitle(targetPanel.getTitleCodeOrTitle());
-        }
-        main.setIcon(targetPanel.getIcon());
-        main.setUri(targetPanel.ressourceUri());
-        main.setStyleClass(targetPanel.getPanelClass());
-        newEntry.setMain(main);
-
-
-        if(overviewPanel instanceof AbstractListPanel<?>) {
-            side.setTitle(overviewPanel.resolveTitleOrTitleCode());
-        }
-        else {
-            side.setTitle(overviewPanel.getTitleCodeOrTitle());
-        }
-        side.setIcon(overviewPanel.getIcon());
-        side.setUri(overviewPanel.ressourceUri());
-        side.setStyleClass(overviewPanel.getPanelClass());
-        newEntry.setSecondary(side);
-
+        HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
+        newEntry.setMain(historyComponentOf(targetPanel));
+        newEntry.setSecondary(historyComponentOf(overviewPanel));
         historyBean.addItem(newEntry);
-
-        if (targetPanel instanceof AbstractListPanel<?> listPanel
-                && listPanel.getTableModel() != null
-                && overviewPanel instanceof AbstractSingleEntityPanel<?> singlePanel) {
-            listPanel.getTableModel().setOverviewEntityId(singlePanel.getUnitId());
-        }
-
-        String base64RootUri = Base64.getUrlEncoder().withoutPadding().encodeToString(targetPanel.ressourceUri().getBytes());
-        String base64OverviewUri = Base64.getUrlEncoder().withoutPadding().encodeToString(overviewPanel.ressourceUri().getBytes());
-        List<String> updateTargets = new ArrayList<>(List.of("sideview-" + targetPanel.getPanelIndex(), "historyForm"));
-        if (updateMainPanel) {
-            String tableTarget = (targetPanel instanceof AbstractListPanel<?> lp)
-                    ? lp.getActiveTableClientId()
-                    : "panel-" + targetPanel.getPrefixPanelIndex() + "-container";
-            updateTargets.add(tableTarget);
-        }
-        PrimeFaces.current().ajax().update(updateTargets);
-        PrimeFaces.current().executeScript(
-                String.format(
-                        "showSideview('%s', '%s', '%s');",
-                        targetPanel.getPanelIndex(),
-                        base64RootUri,
-                        base64OverviewUri
-                )
-        );
-
     }
 
-    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
-        addRecordingUnitToOverview(id, targetPanel, tabIndex, true);
-    }
-
-    public void addRecordingUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
-
-        if (targetPanel != null) {
-            // Add the overview
-            RecordingUnitPanel overviewPanel = panelFactory.createRecordingUnitPanel(id);
-            overviewPanel.setRoot(false);
-
-            if(tabIndex!=null) {
-                overviewPanel.setActiveTabIndex(tabIndex);
-            }
-
-            if(targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
-            }
-            else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
-            }
-
-        }
-
-    }
-
-    public void addRecordingUnitToOverviewFromStratiModule(AbstractPanel targetPanel) {
-        String idParam = FacesContext.getCurrentInstance()
-                .getExternalContext()
-                .getRequestParameterMap()
-                .get("clickedUnitId");
-
-        if (idParam != null) {
-            addRecordingUnitToOverview(Long.parseLong(idParam), targetPanel, 3, false);
-        }
-
-
-    }
-
-
-    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel,  @Nullable Integer tabIndex) {
-        addSpatialUnitToOverview(id, targetPanel, tabIndex, true);
-    }
-
-    public void addSpatialUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
-
-        if (targetPanel != null) {
-            // Add the overview
-            SpatialUnitPanel overviewPanel = panelFactory.createSpatialUnitPanel(id);
-            if(tabIndex!=null) {
-                overviewPanel.setActiveTabIndex(tabIndex);
-            }
-            overviewPanel.setRoot(false);
-            if(targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
-            }
-            else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
-            }
-        }
-    }
-
-    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
-        addActionUnitToOverview(id, targetPanel, tabIndex, true);
-    }
-
-    public void addActionUnitToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
-
-        if (targetPanel != null) {
-            // Add the overview
-            ActionUnitPanel overviewPanel = panelFactory.createActionUnitPanel(id);
-            if(tabIndex!=null) {
-                overviewPanel.setActiveTabIndex(tabIndex);
-            }
-            overviewPanel.setRoot(false);
-            if(targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
-            }
-            else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
-            }
-        }
-    }
-
-    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
-        addSpecimenToOverview(id, targetPanel, tabIndex, true);
-    }
-
-    public void addSpecimenToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
-
-        if (targetPanel != null) {
-            // Add the overview
-            SpecimenPanel overviewPanel = panelFactory.createSpecimenPanel(id);
-            if(tabIndex!=null) {
-                overviewPanel.setActiveTabIndex(tabIndex);
-            }
-            overviewPanel.setRoot(false);
-            if(targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
-            }
-            else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
-            }
-        }
-    }
-
-    public void addPhaseToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
-        addPhaseToOverview(id, targetPanel, tabIndex, true);
-    }
-
-    public void addPhaseToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
-        if (targetPanel != null) {
-            PhasePanel overviewPanel = panelFactory.createPhasePanel(id);
-            if (tabIndex != null) {
-                overviewPanel.setActiveTabIndex(tabIndex);
-            }
-            overviewPanel.setRoot(false);
-            if (targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
-            } else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
-            }
-        }
-    }
-
-    public void addContainerToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex) {
-        addContainerToOverview(id, targetPanel, tabIndex, true);
-    }
-
-    public void addContainerToOverview(Long id, AbstractPanel targetPanel, @Nullable Integer tabIndex, boolean updateMainPanel) {
-
-        if (targetPanel != null) {
-            ContainerPanel overviewPanel = panelFactory.createContainerPanel(id);
-            if (tabIndex != null) {
-                overviewPanel.setActiveTabIndex(tabIndex);
-            }
-            overviewPanel.setRoot(false);
-            if (targetPanel.isRoot()) {
-                addPanelToOverview(targetPanel, overviewPanel, updateMainPanel);
-            } else {
-                addPanelToOverview(targetPanel.getParentOrOverview(), overviewPanel, updateMainPanel);
-            }
-        }
-    }
-
-
-
-    public void goToRecordingUnitByIdNewPanel(Long id, Integer tabIndex) {
-
-        RecordingUnitPanel newPanel = panelFactory.createRecordingUnitPanel(id, tabIndex);
-        addPanel(newPanel);
-
-    }
-
-
-    public void goToSpecimenByIdNewPanel(Long id) {
-
-        SpecimenPanel newPanel = panelFactory.createSpecimenPanel(id);
-        addPanel(newPanel);
-
-    }
-
-
-    public void goToActionUnitByIdNewPanel(Long id) {
-
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id);
-        addPanel(newPanel);
-    }
-
-    public void goToActionUnitByIdNewPanel(Long id, Integer tabIndex) {
-
-        ActionUnitPanel newPanel = panelFactory.createActionUnitPanel(id, tabIndex);
-        addPanel(newPanel);
+    private static HistoryBean.HistoryItemComponent historyComponentOf(AbstractPanel panel) {
+        HistoryBean.HistoryItemComponent component = new HistoryBean.HistoryItemComponent();
+        component.setTitle(panel.resolveTitleOrTitleCode());
+        component.setIcon(panel.getIcon());
+        component.setUri(panel.ressourceUri());
+        component.setStyleClass(panel.getPanelClass());
+        return component;
     }
 
     public void redirectToFocus(String resourceUri) throws IOException {
@@ -500,18 +157,6 @@ public class FlowBean implements Serializable {
     }
 
 
-    public void fullScreen(AbstractPanel panel) throws IOException {
-        // panel = overview panel being expanded; its parentOrOverview = root/main panel
-        AbstractPanel mainPanel = panel.getParentOrOverview();
-        String contextPath = FacesContext.getCurrentInstance().getExternalContext().getRequestContextPath();
-        String encodedMain = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(mainPanel.ressourceUri().getBytes(StandardCharsets.UTF_8));
-        String encodedOverview = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(panel.ressourceUri().getBytes(StandardCharsets.UTF_8));
-        String backUrl = contextPath + "/focus/" + encodedMain + "?s=" + encodedOverview;
-        redirectToFocus(panel.ressourceUri(), null, backUrl);
-    }
-
     public void redirectToDashboard() throws IOException {
         FacesContext context = FacesContext.getCurrentInstance();
         String basePath = context.getExternalContext().getRequestContextPath();
@@ -519,110 +164,11 @@ public class FlowBean implements Serializable {
         context.getExternalContext().redirect(url);
     }
 
-    public void closeFullScreen(AbstractPanel panel) throws IOException {
-        addPanel(panel);
-        redirectToDashboard();
-    }
-
-
-    public void addSpatialUnitPanel(Long id) {
-        addPanel(panelFactory.createSpatialUnitPanel(id));
-    }
-
-    public void handleToggleOfPanel(String panelId) {
-        if (panels == null || panels.isEmpty()) {
-            return;
-        }
-
-        // Find the index of the panel with the given panelId
-        int idx = getPanelIndex(panelId);
-        if (idx == -1) {
-            // Panel not found
-            return;
-        }
-        AbstractPanel panel = panels.get(idx);
-        panel.setCollapsed(!panel.getCollapsed());
-
-
-    }
-
-    private int getPanelIndex(String panelId) {
-        for (int i = 0; i < panels.size(); i++) {
-            if (panels.get(i).getPrefixPanelIndex().equals(panelId)) {
-                return i;
-            }
-        }
-        return -1; // Panel not found
-    }
-
-    public void closePanel(String panelId) {
-        if (panels == null || panels.isEmpty()) {
-            return;
-        }
-
-        // Find the index of the panel with the given panelId
-        int idx = getPanelIndex(panelId);
-        if (idx == -1) {
-            // Panel not found
-            return;
-        }
-
-        panels.remove(idx);
-
-        // If only one panel is left, uncollapse it
-        if (panels.size() == 1) {
-            panels.get(0).setCollapsed(false);
-            PrimeFaces.current().ajax().update("panel-" + panels.get(0).getPrefixPanelIndex());
-        }
-
-        // If no panel left, open the homepanel
-        else if (panels.isEmpty()) {
-            addWelcomePanel();
-            PrimeFaces.current().ajax().update("flow");
-        }
-
-        // If fullscreen, update the whole flow and check that the index is valid
-        if (fullscreenPanelIndex > 0) {
-            if (fullscreenPanelIndex > panels.size() - 1) {
-                fullscreenPanelIndex = 0;
-            }
-            PrimeFaces.current().ajax().update("flow");
-        }
-
-        // Update context form for sync
-        FacesContext facesContext = FacesContext.getCurrentInstance();
-        // Check if the current request is an AJAX request
-        if (facesContext != null) {
-            PrimeFaces.current().ajax().update("contextForm");
-        }
-
-    }
-
-    private void fillAllUnsavedPanel() {
-        unsavedPanels.clear();
-        for (AbstractPanel panel : panels) {
-            if (panel instanceof AbstractSingleEntityPanel<?> singleEntity && singleEntity.isHasUnsavedModifications()) {
-                unsavedPanels.add(singleEntity);
-            }
-        }
-    }
-
     /**
      * Listener called when the ReadWrite mode variable is flipped.
      */
     public void changeReadWriteMode() {
-        if (Boolean.FALSE.equals(isWriteMode)) {
-            fillAllUnsavedPanel();
-            if (unsavedPanels.isEmpty()) {
-                PrimeFaces.current().ajax().update("flow");
-                return;
-            }
-
-            isWriteMode = true;
-            PrimeFaces.current().executeScript("PF('confirmUnsavedDialog').show();");
-        } else {
-            PrimeFaces.current().ajax().update("flow");
-        }
+        PrimeFaces.current().ajax().update("flow");
     }
 
     /**
@@ -633,102 +179,10 @@ public class FlowBean implements Serializable {
     }
 
     /**
-     * Save all open panels and return true if succeeded
-     */
-    public boolean saveAllPanelsMethod() {
-        for (AbstractSingleEntityPanel<?> panel : unsavedPanels) {
-            boolean entityHasBeenSaved = panel.save(true);
-            if (!entityHasBeenSaved) {
-                String title = findMatchingTitle(panel);
-                MessageUtils.displayErrorMessage(langBean, "dialog.unsaved.error", title);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public void saveAllPanels() {
-        if (saveAllPanelsMethod()) {
-            isWriteMode = false;
-            PrimeFaces.current().ajax().update("readWriteSwitchForm");
-        }
-    }
-
-    private static String findMatchingTitle(AbstractSingleEntityPanel<?> panel) {
-        String title = "UNKNOWN";
-        if (panel.getUnit() instanceof SpatialUnitDTO su) {
-            title = su.getName();
-        } else if (panel.getUnit() instanceof ActionUnitDTO au) {
-            title = au.getFullIdentifier();
-        } else if (panel.getUnit() instanceof RecordingUnitDTO ru) {
-            title = ru.getFullIdentifier();
-        } else if (panel.getUnit() instanceof SpecimenDTO sp) {
-            title = sp.getFullIdentifier();
-        }
-        return title;
-    }
-
-    public void undoChangesOnAllPanels() {
-        isWriteMode = false;
-        PrimeFaces.current().ajax().update("readWriteSwitchForm");
-    }
-
-    public String getInPlaceFieldMode() {
-        if (Boolean.TRUE.equals(isWriteMode)) {
-            return "input";
-        }
-        return "output";
-    }
-
-    public String headerName(AbstractPanel panel) {
-        try {
-            return langBean.msg(panel.getTitleCodeOrTitle());
-        } catch (NoSuchMessageException e) {
-            return panel.getTitleCodeOrTitle();
-        }
-    }
-
-    public boolean userHasAddSpatialOrActionUnitPermission() {
-        UserInfo info = sessionSettings.getUserInfo();
-        return profilePermissionService.hasInstancePermission(info.getUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS)
-                || profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_PLACES)
-                || profilePermissionService.hasActionUnitCreatePermission(info);
-    }
-
-    public String invokeOnClick(MethodExpression method, Long id, AbstractPanel panelModel) {
-        if (method != null) {
-            method.invoke(FacesContext.getCurrentInstance().getELContext(), new Object[]{id, panelModel});
-        }
-        return null; // for commandLink action return
-    }
-
-    public void updateHomePanel() {
-        for (AbstractPanel panel : panels) {
-            if (panel instanceof WelcomePanel welcomePanel) {
-                welcomePanel.init();
-            }
-        }
-    }
-
-    /**
-     * Is creation of new action units allowed?
-     *
-     * @return true if creation is allowed
-     */
-    public boolean isActionUnitCreateAllowed() {
-        return profilePermissionService.hasActionUnitCreatePermission(sessionSettings.getUserInfo());
-    }
-
-    /**
      * Do change institution
      *
      */
-    public void changeInstitution(boolean withSave) {
-        if (withSave && !saveAllPanelsMethod()) {
-            selectedInstitution = sessionSettings.getSelectedInstitution();
-            return;
-        }
-
+    public void changeInstitution() {
         if (profilePermissionService.canAccessInstitution(sessionSettings.getUserInfo().getUser(), selectedInstitution)) {
             sessionSettings.setSelectedInstitution(selectedInstitution);
             PrimeFaces.current().ajax().update("navBar", "flow");
@@ -745,14 +199,7 @@ public class FlowBean implements Serializable {
      *
      */
     public void onInstitutionChange() {
-        fillAllUnsavedPanel();
-        if (unsavedPanels.isEmpty()) {
-            changeInstitution(false);
-            return;
-        }
-        historyBean.getItems().clear(); // clear history
-        PrimeFaces.current().executeScript("PF('confirmUnsavedOnInstitutionDialog').show();");
-        PrimeFaces.current().ajax().update("unsavedUpdatesOnInstitutionChangeForm");
+        changeInstitution();
     }
 
     /**
@@ -760,21 +207,10 @@ public class FlowBean implements Serializable {
      *
      */
     public void onFocusInstitutionChange() throws IOException {
-        changeInstitution(false);
+        changeInstitution();
         historyBean.getItems().clear(); // clear history
         redirectToDashboard();
 
-    }
-
-    /**
-     * cancel changing institution
-     *
-     */
-    public void cancelInstitutionChange(
-
-    ) {
-        selectedInstitution = sessionSettings.getSelectedInstitution();
-        PrimeFaces.current().ajax().update("searchBarCsrfForm:searchBarForm", "toggleButtonSidebarPanelCsrfForm");
     }
 
 
@@ -792,44 +228,5 @@ public class FlowBean implements Serializable {
         } else {
             return langBean.msg("common.label.switchToWriteMode");
         }
-    }
-
-    /**
-     * Retourne les URIs des panels actuels sous forme de chaîne (ex: "/spatial/1,/action/2").
-     * Pour verifier la desynchronisation coté client
-     */
-    public String getCurrentPanelIdsAsString() {
-        return panels.stream()
-                .map(AbstractPanel::ressourceUri) // Utilise resourceUri() au lieu des IDs
-                .filter(Objects::nonNull) // Ignore les panels sans URI
-                .collect(Collectors.joining(","));
-    }
-
-    /**
-     * Return the active actions units for which i'm a member
-     */
-    public List<ActionUnitDTO> getMyActionUnits() {
-        return actionUnitService.findByTeamMember(
-                sessionSettings.getUserInfo().getUser(),
-                sessionSettings.getSelectedInstitution(),
-                10);
-    }
-
-
-    public String getFlowContentStyle() {
-
-        if (fullscreenPanelIndex == -1) {
-            return "display:flex;flex-direction: column;gap:3em;padding:1em;";
-        }
-
-        return "display:flex;flex-direction: column;gap:0em;padding:0em;border-radius:0px; border:0px;";
-    }
-
-    public String getFlowContentStyleClass() {
-        if (fullscreenPanelIndex == -1) {
-            return "flow panel-flow";
-        }
-
-        return "flow fullscreen-flow focus";
     }
 }

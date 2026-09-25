@@ -1,35 +1,62 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
+
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
+import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
+import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResourceCounts;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
+import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
+import fr.siamois.ui.form.fieldsource.FieldSource;
+import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class PlaceOpenApiService {
+
+    private static final int MAX_DUPLICATE_NAME_ATTEMPTS = 5;
 
     private final ProjectApiService projectApiService;
     private final InstitutionService institutionService;
@@ -38,14 +65,28 @@ public class PlaceOpenApiService {
     private final ConceptMapper conceptMapper;
     private final ProfilePermissionService profilePermissionService;
     private final PlaceOpenApiMapper placeOpenApiMapper;
+    private final LangService langService;
+    private final ResourceBookmarkService resourceBookmarkService;
+    private final EntitySiblingsService entitySiblingsService;
+    private final ValidationOpenApiService validationOpenApiService;
 
+    /**
+     * {@code GET /api/v1/places?organizationId=…} — the React counterpart of JSF's
+     * SpatialUnitListPanel. Places have no project, so unlike the other organization-wide lists
+     * there is no per-project visibility rule and {@code _permissions} is one boolean for the page
+     * ({@code ORGANIZATION_MANAGE_PLACES}, same as {@code SpatialUnitPanel#canUserEditUnit}).
+     */
     @Transactional(readOnly = true)
     public PlaceListResponse listByOrganization(ProjectApiCaller caller,
-                                              long organizationId,
+                                              Long organizationId,
                                               int offset,
                                               int limit,
                                               String sortParam,
+                                              String search,
                                               String lang) {
+        if (organizationId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
+        }
         projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
 
         InstitutionDTO institution = institutionService.findById(organizationId);
@@ -54,14 +95,140 @@ public class PlaceOpenApiService {
         }
 
         Sort sort = ProjectApiService.parsePlaceSort(sortParam);
-        Page<SpatialUnitDTO> page = spatialUnitService.findByInstitutionId(organizationId, limit, offset, sort);
+        FilterDTO filter = new FilterDTO();
+        if (search != null && !search.isBlank()) {
+            filter.add(SpatialUnitSpec.NAME_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnits(
+                institution, filter, PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort));
+
+        return toListResponse(caller, institution, page, lang, limit, offset);
+    }
+
+    /**
+     * Direct child places of an accessible place ({@code GET /places/{id}/children}, the place
+     * fiche's "Lieux" tab) — same contract and row enrichment as {@link #listByOrganization}.
+     */
+    @Transactional(readOnly = true)
+    public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
+                                          String sortParam, String search, String lang) {
+        SpatialUnitDTO parent = requireAccessiblePlace(caller, placeId);
+        InstitutionDTO institution = parent.getCreatedByInstitution();
+        Sort sort = ProjectApiService.parsePlaceSort(sortParam);
+        FilterDTO filter = new FilterDTO();
+        if (search != null && !search.isBlank()) {
+            filter.add(SpatialUnitSpec.NAME_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnitsInSpatialUnit(
+                institution, parent, filter, PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort));
+        return toListResponse(caller, institution, page, lang, limit, offset);
+    }
+
+    /** The access check every place-scoped endpoint starts with (404 / 403 when out of scope). */
+    public SpatialUnitDTO requireAccessible(ProjectApiCaller caller, long placeId) {
+        return requireAccessiblePlace(caller, placeId);
+    }
+
+    private PlaceListResponse toListResponse(ProjectApiCaller caller, InstitutionDTO institution,
+                                             Page<SpatialUnitDTO> page, String lang, int limit, int offset) {
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(
+                profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES))
+                .withValidate(profilePermissionService.hasPlaceValidatePermission(userInfo));
 
         var resources = page.getContent().stream()
-                .map(dto -> placeOpenApiMapper.toResource(dto, lang))
+                .map(dto -> {
+                    PlaceResource resource = placeOpenApiMapper.toResource(dto, lang);
+                    resource.setPermissions(permissions);
+                    if (dto.getId() != null) {
+                        resource.setResourceUri("/spatial-unit/" + dto.getId());
+                    }
+                    return resource;
+                })
                 .toList();
 
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
         return new PlaceListResponse(resources, meta);
+    }
+
+    /**
+     * Détail d'un lieu ({@code GET /api/v1/places/{id}}), pour la fiche React du lot "Lieux" —
+     * jusqu'ici cet endpoint était un stub 501 (rien d'autre ne l'appelait ; la liste/le formulaire
+     * de création passent par {@link #listByOrganization}/{@link #createPlace}, qui n'en ont pas
+     * besoin). {@code SpatialUnit} n'a pas de catalogue de types configurable (absent de
+     * {@code ConfigurableTable}) : pas de {@code GET .../place-types} séparé — le layout et le
+     * catalogue de champs de {@link SpatialUnit#DETAILS_FORM} (statique, jamais résolu par type)
+     * sont attachés directement à cette réponse.
+     *
+     * <p>{@code answers} ne couvre pas le champ adresse ({@code CustomFieldSelectOneAddress}) :
+     * {@code FullAddress} est un objet composite sans équivalent {@link ResourceRef} simple, et
+     * rien ne l'édite encore côté React (la fiche saute ce champ — voir PlaceFicheTab.tsx). Un
+     * gap connu, pas un oubli.</p>
+     */
+    @Transactional(readOnly = true)
+    public PlaceResource getPlaceById(ProjectApiCaller caller, long placeId, String lang) {
+        SpatialUnitDTO dto = requireAccessiblePlace(caller, placeId);
+        PlaceResource resource = placeOpenApiMapper.toResource(dto, lang);
+
+        Locale locale = langService.localeForApiLang(lang);
+        FieldSource fieldSource = new PanelFieldSource(SpatialUnit.DETAILS_FORM);
+        resource.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(SpatialUnit.DETAILS_FORM.getLayout())));
+        resource.setFields(buildPlaceFieldsMetadataOnly(fieldSource, locale));
+        // resource.getType() is already the resolved concept ref (placeOpenApiMapper.toResource
+        // above) — reused here rather than re-resolving the same label a second time.
+        resource.setAnswers(buildPlaceAnswers(dto, resource.getType()));
+
+        InstitutionDTO institution = dto.getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        boolean canEdit = profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES);
+        resource.setPermissions(ProjectResourcePermissions.of(canEdit)
+                .withValidate(profilePermissionService.hasPlaceValidatePermission(userInfo)));
+        if (dto.getId() != null) {
+            resource.setResourceUri("/spatial-unit/" + dto.getId());
+        }
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resource, lang);
+        // Detail only: the fiche's tab badges, counted with the very queries the tabs themselves
+        // page with (GET /places/{id}/children and /projects) so a badge never disagrees with its tab.
+        long children = spatialUnitService.countSearchResultsInSpatialUnit(institution, dto, new FilterDTO());
+        long projects = projectApiService.pageAccessibleProjects(caller, institution.getId(), null, 0, 1, null,
+                ProjectListFilter.EMPTY.withSpatialContext(dto.getId())).getTotalElements();
+        resource.setCount(new PlaceResourceCounts(children, projects, null));
+        return resource;
+    }
+
+    /**
+     * Valeurs brutes des champs système de {@link SpatialUnit#DETAILS_FORM}, indexées par id de
+     * champ — même convention que {@code PhaseResource}/{@code ContainerResource}.answers (aucune
+     * ligne {@code CustomFieldAnswer} pour un lieu). Le champ adresse est délibérément absent (voir
+     * {@link #getPlaceById}'s own javadoc).
+     */
+    private Map<String, Object> buildPlaceAnswers(SpatialUnitDTO dto,
+                                                   fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource resolvedType) {
+        Map<String, Object> answers = new LinkedHashMap<>();
+        answers.put(String.valueOf(SpatialUnit.NAME_FIELD.getId()), dto.getName());
+        answers.put(String.valueOf(SpatialUnit.CODE_FIELD.getId()), dto.getCode());
+        answers.put(String.valueOf(SpatialUnit.PLACE_NUMBER_FIELD.getId()), dto.getPlaceNumber());
+        if (dto.getCategory() != null && resolvedType != null) {
+            answers.put(String.valueOf(SpatialUnit.SPATIAL_UNIT_TYPE_FIELD.getId()),
+                    new ResourceRef(resolvedType.getId(), "concepts", resolvedType.getResolvedLabel()));
+        }
+        return answers;
+    }
+
+    private Map<String, FieldResource> buildPlaceFieldsMetadataOnly(FieldSource fieldSource, Locale locale) {
+        Map<String, FieldResource> fields = new LinkedHashMap<>();
+        for (CustomField field : fieldSource.getAllFields()) {
+            if (field == null || field.getId() == null) continue;
+            fields.put(String.valueOf(field.getId()), toPlaceFieldResource(field, locale));
+        }
+        return fields;
+    }
+
+    private FieldResource toPlaceFieldResource(CustomField field, Locale locale) {
+        return FieldAnswerWireService.fieldResourceOf(field,
+                langService.resolveMessage(field.getLabel(), locale),
+                langService.resolveMessage(field.getHint(), locale));
     }
 
     @Transactional
@@ -104,6 +271,13 @@ public class PlaceOpenApiService {
         if (request.getAddress() != null) {
             toSave.setAddress(request.getAddress());
         }
+        // JSF's "nouvel enfant / nouveau parent" row actions: SpatialUnitService.save links them.
+        if (request.getParentPlaceId() != null) {
+            toSave.setParents(new HashSet<>(Set.of(requireLinkablePlace(caller, request.getParentPlaceId(), institution))));
+        }
+        if (request.getChildPlaceId() != null) {
+            toSave.setChildren(new HashSet<>(Set.of(requireLinkablePlace(caller, request.getChildPlaceId(), institution))));
+        }
 
         try {
             SpatialUnitDTO saved = spatialUnitService.save(userInfo, toSave);
@@ -123,10 +297,22 @@ public class PlaceOpenApiService {
             patch = new PlacePatchRequest();
         }
         SpatialUnitDTO dto = requireAccessiblePlace(caller, placeId);
-        requirePlaceWritePermission(caller, dto, lang, "Modification de lieu non autorisée");
-
         InstitutionDTO institution = dto.getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        boolean fieldsChange = patch.getName() != null || patch.getTypeConceptId() != null || patch.getAddress() != null
+                || patch.isPlaceNumberPresent() || patch.isGeomPresent();
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), patch.getValidated());
+        // A validator may change the status alone without the edit right; anything else needs it.
+        if (fieldsChange || !statusChange) {
+            requirePlaceWritePermission(caller, dto, lang, "Modification de lieu non autorisée");
+        }
+        validationOpenApiService.requireAllowed(dto.getValidated(), patch.getValidated(),
+                profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES),
+                profilePermissionService.hasPlaceValidatePermission(userInfo));
+        if (!fieldsChange && statusChange) {
+            validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidated(), caller.person());
+            return new PlaceCreatedResponse.PlaceCreatedItem(dto.getId(), dto.getName(), dto.getCode(), dto.getPlaceNumber());
+        }
 
         ConceptDTO category = null;
         if (patch.getTypeConceptId() != null) {
@@ -145,6 +331,8 @@ public class PlaceOpenApiService {
                             patch.getPlaceNumber(), patch.isPlaceNumberPresent(),
                             patch.getGeom(), patch.isGeomPresent())
                     : spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress());
+            // After the save: it writes the entity's previous status back.
+            validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidated(), caller.person());
             return new PlaceCreatedResponse.PlaceCreatedItem(
                     saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {
@@ -180,6 +368,43 @@ public class PlaceOpenApiService {
         return dto;
     }
 
+    /** A place the new one may be linked to: accessible, and in the organization it is created in. */
+    private SpatialUnitSummaryDTO requireLinkablePlace(ProjectApiCaller caller, long placeId, InstitutionDTO institution) {
+        SpatialUnitDTO related = requireAccessiblePlace(caller, placeId);
+        if (!institution.getId().equals(related.getCreatedByInstitution().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le lieu lié doit appartenir à la même organisation");
+        }
+        return new SpatialUnitSummaryDTO(related);
+    }
+
+    /**
+     * Duplique un lieu ({@code POST /api/v1/places/{id}/duplicate}) — même copie que l'action de ligne
+     * JSF ({@code SpatialUnitTableViewModel.duplicateRow}) : mêmes champs et mêmes parents, sans les
+     * enfants, nommée « nom (n) » avec le premier n libre (5 essais).
+     */
+    @Transactional
+    public PlaceCreatedResponse.PlaceCreatedItem duplicatePlace(ProjectApiCaller caller, long placeId, String lang) {
+        SpatialUnitDTO source = requireAccessiblePlace(caller, placeId);
+        requirePlaceWritePermission(caller, source, lang, "Duplication de lieu non autorisée");
+        UserInfo userInfo = new UserInfo(source.getCreatedByInstitution(), caller.person(), lang);
+
+        SpatialUnitDTO copy = new SpatialUnitDTO(source);
+        copy.setId(null);
+        copy.setChildren(null);
+        copy.setParents(source.getParents() == null ? null : new HashSet<>(source.getParents()));
+        for (int i = 1; i <= MAX_DUPLICATE_NAME_ATTEMPTS; i++) {
+            copy.setName(source.getName() + " (" + i + ")");
+            try {
+                SpatialUnitDTO saved = spatialUnitService.save(userInfo, copy);
+                return new PlaceCreatedResponse.PlaceCreatedItem(
+                        saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
+            } catch (SpatialUnitAlreadyExistsException e) {
+                // name taken: try the next suffix
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Aucun nom libre pour la copie de « " + source.getName() + " »");
+    }
+
     private void requirePlaceWritePermission(ProjectApiCaller caller,
                                              SpatialUnitDTO dto,
                                              String lang,
@@ -189,5 +414,13 @@ public class PlaceOpenApiService {
         if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, forbiddenMessage);
         }
+    }
+
+    /** Previous/next place in the same organization ({@code GET /api/v1/places/{id}/siblings}). */
+    @Transactional(readOnly = true)
+    public SiblingsResource findSiblings(ProjectApiCaller caller, long placeId) {
+        SpatialUnitDTO dto = requireAccessiblePlace(caller, placeId);
+        return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.PLACE,
+                dto.getCreatedByInstitution().getId(), dto.getId());
     }
 }

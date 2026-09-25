@@ -252,21 +252,58 @@ public class RecordingUnitSpec {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);
     }
 
+    /**
+     * Recording units having one of {@code parentIds} among their parents. An {@code IN} subquery
+     * rather than a join + {@code distinct}: Postgres rejects {@code distinct} together with an
+     * order on an expression (synthetic sorts, sorts by field).
+     */
     @NonNull
     public static Specification<RecordingUnit> isChildOf(List<Long> parentIds) {
         return (root, query, cb) -> {
-            Join<RecordingUnit, RecordingUnit> parentsJoin = root.join(PARENTS_FILTER);
-            query.distinct(true);
-            return cb.in(parentsJoin.get("id")).value(parentIds);
+            Subquery<Long> children = query.subquery(Long.class);
+            Root<RecordingUnit> child = children.from(RecordingUnit.class);
+            Join<RecordingUnit, RecordingUnit> parent = child.join(PARENTS_FILTER);
+            children.select(child.get("id")).where(parent.get("id").in(parentIds));
+            return root.get("id").in(children);
         };
     }
 
+    /** Recording units having one of {@code childIds} among their children — see {@link #isChildOf}. */
     @NonNull
     public static Specification<RecordingUnit> isParentOf(List<Long> childIds) {
         return (root, query, cb) -> {
-            Join<RecordingUnit, RecordingUnit> childrenJoin = root.join(CHILDREN_FILTER);
-            query.distinct(true);
-            return cb.in(childrenJoin.get("id")).value(childIds);
+            Subquery<Long> parents = query.subquery(Long.class);
+            Root<RecordingUnit> parent = parents.from(RecordingUnit.class);
+            Join<RecordingUnit, RecordingUnit> child = parent.join(CHILDREN_FILTER);
+            parents.select(parent.get("id")).where(child.get("id").in(childIds));
+            return root.get("id").in(parents);
+        };
+    }
+
+    /**
+     * Direct children of {@code parentId} (recording_unit_hierarchy). An {@code IN} subquery, not a
+     * join, like {@link #isChildOf}: compatible with every sort.
+     */
+    @NonNull
+    public static Specification<RecordingUnit> hasParent(long parentId) {
+        return (root, query, cb) -> {
+            Subquery<Long> children = query.subquery(Long.class);
+            Root<RecordingUnit> parent = children.from(RecordingUnit.class);
+            Join<RecordingUnit, RecordingUnit> child = parent.join(CHILDREN_FILTER);
+            children.select(child.get("id")).where(cb.equal(parent.get("id"), parentId));
+            return root.get("id").in(children);
+        };
+    }
+
+    /** Recording units attached to phase {@code phaseId} (recording_unit_phase), same subquery form as {@link #hasParent}. */
+    @NonNull
+    public static Specification<RecordingUnit> inPhase(long phaseId) {
+        return (root, query, cb) -> {
+            Subquery<Long> members = query.subquery(Long.class);
+            Root<RecordingUnit> ru = members.from(RecordingUnit.class);
+            Join<Object, Object> phase = ru.join("phases");
+            members.select(ru.get("id")).where(cb.equal(phase.get("id"), phaseId));
+            return root.get("id").in(members);
         };
     }
 

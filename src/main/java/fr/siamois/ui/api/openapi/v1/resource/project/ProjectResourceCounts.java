@@ -16,4 +16,13 @@ public class ProjectResourceCounts {
     @Schema(description = "Nombre d'unités d'enregistrement")
     private Long recordingUnits;
 
+    @Schema(description = "Nombre de mobiliers")
+    private Long finds;
+
+    @Schema(description = "Nombre de phases")
+    private Long phases;
+
+    @Schema(description = "Nombre de contenants")
+    private Long containers;
+
 }

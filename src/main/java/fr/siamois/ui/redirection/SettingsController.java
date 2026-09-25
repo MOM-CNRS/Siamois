@@ -114,12 +114,6 @@ public class SettingsController {
         return "forward:/pages/settings/administration/userManagementSettings.xhtml";
     }
 
-    @GetMapping("/dashboard")
-    public String goToDashboard() {
-        navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
-        return "forward:/flow.xhtml";
-    }
-
     /**
      * Redirect /focus/{mainToken}?s={secondaryToken} to JSF view
      */

@@ -1,0 +1,130 @@
+import { apiFetch } from "../../api/client";
+import { fetchList } from "../listApi";
+import type { CreatableKind, EntitySiblings, ListParams, PagedResult } from "../types";
+import type { AnswerInputBody } from "../../fields/types";
+import type { ProjectDetail, ProjectSummary } from "./types";
+
+interface ProjectResponseBody {
+  data: ProjectDetail;
+}
+
+export async function listProjects(params: ListParams): Promise<PagedResult<ProjectSummary>> {
+  return fetchList<ProjectSummary>("projects", params);
+}
+
+// What a create form can be pointed at when its list has no project of its own (lot 7): the
+// organization's projects in which the caller may create this kind — GET /api/v1/projects?canCreate=…,
+// the same permission rule each create endpoint enforces.
+export type { CreatableKind };
+
+export async function searchCreatableProjects(
+  organizationId: number,
+  kind: CreatableKind,
+  search: string | undefined,
+  limit = 20,
+): Promise<PagedResult<ProjectSummary>> {
+  const query = new URLSearchParams({
+    organizationId: String(organizationId),
+    canCreate: kind,
+    offset: "0",
+    limit: String(limit),
+    sort: "name:asc",
+  });
+  if (search) query.set("search", search);
+  const body = await apiFetch<{ data: ProjectSummary[]; meta?: { total?: number } }>(`/api/v1/projects?${query.toString()}`);
+  return { data: body.data, totalCount: body.meta?.total ?? body.data.length, limit, offset: 0 };
+}
+
+// Mirrors ProjectCreateRequest's required trio (organizationId/name/identifier/typeConceptId) —
+// dates and locations are deliberately not exposed here (CreateForm.tsx keeps the overlay to the
+// fields the user actually needs to get started; both are still editable afterward, from the
+// fiche, like every other field).
+export interface ProjectCreateBody {
+  organizationId: string;
+  name: string;
+  identifier: string;
+  typeId: string;
+  // Places the project is attached to (ActionUnit.spatialContext).
+  spatialContextSpatialUnitIds?: string[];
+}
+
+export async function createProject(body: ProjectCreateBody): Promise<ProjectDetail> {
+  const response = await apiFetch<ProjectResponseBody>("/api/v1/projects", {
+    method: "POST",
+    body: {
+      organizationId: body.organizationId,
+      name: body.name,
+      identifier: body.identifier,
+      typeConceptId: body.typeId,
+      spatialContextSpatialUnitIds: body.spatialContextSpatialUnitIds,
+    },
+  });
+  return response.data;
+}
+
+/**
+ * @param fields projection des champs de formulaire dans `answers` — "all", "default", ou une liste
+ *   d'ids séparés par des virgules. La fiche demande "all" : elle rend tout le layout, pas une
+ *   sélection de colonnes. Omis, la réponse n'a pas de clé `answers` et coûte ce qu'elle coûtait.
+ */
+export async function getProject(id: string | number, fields?: string): Promise<ProjectDetail> {
+  const query = fields ? `?fields=${encodeURIComponent(fields)}` : "";
+  const body = await apiFetch<ProjectResponseBody>(`/api/v1/projects/${id}${query}`);
+  return body.data;
+}
+
+// Mirrors ProjectPatchRequest's fields — the flat subset (name/identifier/beginDate/endDate;
+// typeId/mainLocationId/spatialContextSpatialUnitIds/geom exist server-side too but have no flat
+// editor here) plus `answers`, the generic by-field-id path the list's click-to-edit overlay uses
+// for every other default-visible column (status, oaCode, openingRate, periods, subjects,
+// scientificManager, mainLocation, type, ...). Absent keys are left unchanged server-side
+// (partial update), never sent as null. `answers` is applied AFTER the flat fields
+// (ProjectPatchRequest.getAnswers() javadoc) — sending both for the same field, `answers` wins.
+export interface ProjectPatch {
+  name?: string;
+  identifier?: string;
+  // The flat alias for the project type (ProjectPatchRequest.typeId, @JsonAlias typeConceptId) —
+  // the header's category chip writes here rather than through `answers`, matching the server's
+  // own documented path for that field.
+  typeId?: string | null;
+  beginDate?: string | null;
+  endDate?: string | null;
+  // The one field the fiche cannot route through `answers`: ProjectApiService.coerceScalarAnswer
+  // throws 400 for CustomFieldSelectMultipleSpatialUnitTree, so SPATIAL_CONTEXT_FIELD writes here.
+  spatialContextSpatialUnitIds?: string[];
+  answers?: Record<string, AnswerInputBody>;
+}
+
+export async function patchProject(id: string | number, patch: ProjectPatch): Promise<ProjectDetail> {
+  const body = await apiFetch<ProjectResponseBody>(`/api/v1/projects/${id}`, { method: "PATCH", body: patch });
+  return body.data;
+}
+
+interface ProjectSiblingResourceBody {
+  id: string;
+  label: string;
+  resourceUri: string;
+}
+
+interface ProjectSiblingsResponseBody {
+  data: { previous: ProjectSiblingResourceBody | null; next: ProjectSiblingResourceBody | null };
+}
+
+/**
+ * "Fiche précédente/suivante" — GET /api/v1/projects/{id}/siblings, no params beyond
+ * `organizationId` (defaults server-side to `creationTime:asc` on the caller's accessible
+ * projects, i.e. JSF parity; see ProjectApiService#findSiblings). `ctx.organizationId` is threaded
+ * through only because EntityTypeConfig.api.siblings's own signature carries it — omitted, the
+ * server falls back to every accessible institution rather than one organization.
+ */
+export async function getProjectSiblings(
+  id: string | number,
+  ctx: { organizationId?: number },
+): Promise<EntitySiblings> {
+  const query = ctx.organizationId != null ? `?organizationId=${ctx.organizationId}` : "";
+  const body = await apiFetch<ProjectSiblingsResponseBody>(`/api/v1/projects/${id}/siblings${query}`);
+  return {
+    previous: body.data.previous ?? undefined,
+    next: body.data.next ?? undefined,
+  };
+}

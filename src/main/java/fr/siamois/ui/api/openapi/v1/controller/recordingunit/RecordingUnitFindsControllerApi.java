@@ -1,5 +1,13 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
+import fr.siamois.domain.models.specimen.Specimen;
+import org.springframework.util.MultiValueMap;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
+import fr.siamois.ui.api.openapi.v1.service.FindListProjectionService;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
+import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
+
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
@@ -25,6 +33,9 @@ import org.springframework.web.bind.annotation.*;
 public class RecordingUnitFindsControllerApi {
 
     private final ProjectApiService projectApiService;
+    private final ResourceBookmarkService resourceBookmarkService;
+    private final FieldQueryService fieldQueryService;
+    private final FindListProjectionService findListProjectionService;
 
     @GetMapping("/{id}/mobiliers")
     @Operation(
@@ -32,6 +43,7 @@ public class RecordingUnitFindsControllerApi {
             description = "Spécimens liés à l'UE (table specimen, fk_recording_unit_id). "
                     + "Pagination : offset, limit (max 200, offset multiple de limit). "
                     + "Tri : creationTime, id ou fullIdentifier (ex. creationTime:desc). "
+                    + "Recherche : search, sur fullIdentifier. Chaque élément porte _permissions, resourceUri et bookmarked. "
                     + "Même clé d'UE que GET /api/v1/recording-units/{id}. "
                     + "La langue pour les libellés de type suit Accept-Language."
     )
@@ -52,13 +64,43 @@ public class RecordingUnitFindsControllerApi {
             @RequestParam(defaultValue = "10") int limit,
             @Parameter(description = "Tri, ex. fullIdentifier:asc ou creationTime:desc")
             @RequestParam(defaultValue = "creationTime:desc") String sort,
+            @Parameter(description = "Recherche libre, sur fullIdentifier")
+            @RequestParam(required = false) String search,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = "Projection des champs de formulaire dans answers : "
+                    + "\"all\" ou une liste d'ids de champs séparés par des virgules (champs additionnels compris). "
+                    + "Absent : pas de clé answers.")
+            @RequestParam(required = false) String fields,
             @Parameter(description = "Langue pour le classement des libellés de type (requête SQL).")
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
-        Page<FindResource> page = projectApiService.pageFindsForAccessibleRecordingUnit(
-                caller, id, offset, limit, sort, acceptLanguage);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        ProjectApiService.RecordingUnitFindsPage result = projectApiService.pageFindsOfRecordingUnit(
+                caller, id, offset, limit, sort, search, acceptLanguage,
+                fieldQueryService.parse(Specimen.class, queryParams, sort, acceptLanguage));
+        Page<FindResource> page = result.page();
+        RecordingUnitDTO ru = result.recordingUnit();
+
+        // Same enrichment as GET /projects/{id}/mobiliers: one _permissions for the page (the RU's
+        // project), the navigation URI, one bookmark query.
+        boolean canEdit = ru.getActionUnit() != null
+                && projectApiService.canEditFindsForProject(caller, String.valueOf(ru.getActionUnit().getId()), lang);
+        boolean canValidate = ru.getActionUnit() != null
+                && projectApiService.canValidateForProject(caller, String.valueOf(ru.getActionUnit().getId()), lang);
+        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit).withValidate(canValidate);
+        if (fields != null) {
+            FindListProjectionService.FindListProjection projection = findListProjectionService.build(result.rows(), fields, lang);
+            page.getContent().forEach(resource -> resource.setAnswers(projection.answersFor(resource.getId() == null ? null : Long.valueOf(resource.getId()))));
+        }
+        page.getContent().forEach(resource -> {
+            resource.setPermissions(permissions);
+            if (resource.getId() != null) {
+                resource.setResourceUri("/specimen/" + resource.getId());
+            }
+        });
+        resourceBookmarkService.markBookmarked(caller.person(), ru.getCreatedByInstitution(), page.getContent(), lang);
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(page.getTotalElements()))

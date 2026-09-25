@@ -34,6 +34,12 @@ public class RecordingUnitCreateRequest {
     @Schema(description = "Géométrie de l'UE (GeoJSON), dans le SRID fourni ; aucune reprojection n'est effectuée")
     private GeometryDTO geom;
 
+    @Schema(description = "UE existante (recording_unit_id) dont la nouvelle UE devient l'enfant direct ; même projet obligatoire")
+    private Long parentRecordingUnitId;
+
+    @Schema(description = "UE existante (recording_unit_id) dont la nouvelle UE devient le parent direct ; même projet obligatoire")
+    private Long childRecordingUnitId;
+
     /**
      * Contrat legacy client mobile : scalaires / listes bruts indexés par fieldId.
      * Stockage interne uniquement — désérialisé via {@link #setFieldAnswers(Map)}.

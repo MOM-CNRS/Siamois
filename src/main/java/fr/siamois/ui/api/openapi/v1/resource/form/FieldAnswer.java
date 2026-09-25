@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = TextFieldAnswer.class, names = {"TEXT"}),
         @JsonSubTypes.Type(value = IntegerFieldAnswer.class, names = {"INTEGER"}),
+        @JsonSubTypes.Type(value = DecimalFieldAnswer.class, names = {"DECIMAL"}),
         @JsonSubTypes.Type(value = DateFieldAnswer.class, names = {"DATETIME"}),
         @JsonSubTypes.Type(value = SelectOneFieldAnswer.class, names = {
                 "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
@@ -28,6 +29,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
         oneOf = {
                 TextFieldAnswer.class,
                 IntegerFieldAnswer.class,
+                DecimalFieldAnswer.class,
                 DateFieldAnswer.class,
                 SelectOneFieldAnswer.class,
                 SelectManyFieldAnswer.class,
@@ -36,7 +38,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
         discriminatorProperty = "answerType"
 )
 public sealed interface FieldAnswer
-        permits TextFieldAnswer, IntegerFieldAnswer, DateFieldAnswer,
+        permits TextFieldAnswer, IntegerFieldAnswer, DecimalFieldAnswer, DateFieldAnswer,
                 SelectOneFieldAnswer, SelectManyFieldAnswer,
                 MeasurementFieldAnswer {
 

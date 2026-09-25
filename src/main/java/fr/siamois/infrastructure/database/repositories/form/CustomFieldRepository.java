@@ -75,4 +75,32 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
             order by f.label
             """)
     List<CustomField> findAllReusableByInstitution(@Param("institutionId") Long institutionId);
+
+    /**
+     * The additional (non-system) fields active in at least one of an institution's projects for one
+     * table — the union behind an organization-wide list's column catalog. A table is recognized by
+     * its type field: a {@code FormConfig}'s {@code fieldConcept} is the concept that field code is
+     * configured on, at the institution level or overridden by a project of that institution.
+     *
+     * @param institutionId the institution whose projects are aggregated
+     * @param fieldCode     the table's type field code ({@code ConfigurableTable#getFieldCode()})
+     * @return the distinct active additional fields, ordered by label
+     */
+    @Query("""
+            select distinct f
+            from FieldFormConfig ffc
+            join ffc.field f
+            join ffc.formConfig fc
+            where fc.institution.id = :institutionId
+              and ffc.isActive = true
+              and f.isSystemField = false
+              and fc.fieldConcept.id in (
+                  select cfc.concept.id
+                  from ConceptFieldConfig cfc
+                  where cfc.institution.id = :institutionId
+                    and cfc.fieldCode = :fieldCode)
+            order by f.label
+            """)
+    List<CustomField> findActiveAdditionalByInstitutionAndTable(@Param("institutionId") Long institutionId,
+                                                               @Param("fieldCode") String fieldCode);
 }

@@ -71,6 +71,11 @@ public final class PermissionConstants {
      * Organisation-wide counterpart of {@link #PROJECT_EDIT_CONTAINERS}.
      */
     public static final String ORGANIZATION_EDIT_CONTAINERS = "ORGANIZATION_EDIT_CONTAINERS";
+    /**
+     * Organisation-wide counterpart of {@link #PROJECT_VALIDATE} — also the right to validate the
+     * organisation's places, which belong to no project.
+     */
+    public static final String ORGANIZATION_VALIDATE = "ORGANIZATION_VALIDATE";
 
     // Project SCOPE
 
@@ -83,6 +88,11 @@ public final class PermissionConstants {
     public static final String PROJECT_EDIT_PHASES = "PROJECT_EDIT_PHASES";
     public static final String PROJECT_EDIT_FINDS = "PROJECT_EDIT_FINDS";
     public static final String PROJECT_EDIT_CONTAINERS = "PROJECT_EDIT_CONTAINERS";
+    /**
+     * "Validateur": allows setting an entity of the project to VALIDATED, or moving it out of
+     * VALIDATED. Every other status change only needs the entity's edit right.
+     */
+    public static final String PROJECT_VALIDATE = "PROJECT_VALIDATE";
 
     // Instance-wide counterparts of the ORGANIZATION SCOPE permissions above, so the instance-scoped
     // superadmin profile can hold a properly-named code instead of the organisation one directly.
@@ -130,6 +140,11 @@ public final class PermissionConstants {
      * Instance-wide counterpart of {@link #PROJECT_EDIT_CONTAINERS}.
      */
     public static final String INSTANCE_EDIT_CONTAINERS = "INSTANCE_EDIT_CONTAINERS";
+
+    /**
+     * Instance-wide counterpart of {@link #PROJECT_VALIDATE}.
+     */
+    public static final String INSTANCE_VALIDATE = "INSTANCE_VALIDATE";
 
     private PermissionConstants() {
         throw new UnsupportedOperationException("PermissionConstants should never be instantiated");

@@ -18,8 +18,17 @@ import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
+/**
+ * The pivot row between an entity and its additional-field answers. There is one per (entity, form
+ * config): answers belong to the entity and every user reads and writes the same set. The row's
+ * person is only its last author — it is refreshed on every {@code createOrGet…}, which the save
+ * path calls right before writing answers.
+ */
 @Service
 @RequiredArgsConstructor
 public class FormConfigAnswerService {
@@ -37,82 +46,85 @@ public class FormConfigAnswerService {
      * saved additional-field answers back into the form, where opening a form must not create rows.
      */
     public Optional<FormConfigAnswer> findFormConfigAnswer(FormConfig formConfig, RecordingUnitDTO recordingUnitDTO) {
-        UserInfo info = ExecutionContextHolder.getNonNull();
-        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
-        Person person = personMapper.invertConvert(info.getUser());
-        return formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit);
+        return formConfigAnswerRepository.findByFormConfigAndRecordingUnit(formConfig, recordingUnitMapper.invertConvert(recordingUnitDTO));
+    }
+
+    public Optional<FormConfigAnswer> findFormConfigAnswer(FormConfig formConfig, SpecimenDTO specimenDTO) {
+        return formConfigAnswerRepository.findByFormConfigAndSpecimen(formConfig, specimenMapper.invertConvert(specimenDTO));
+    }
+
+    public Optional<FormConfigAnswer> findFormConfigAnswer(FormConfig formConfig, PhaseDTO phaseDTO) {
+        return formConfigAnswerRepository.findByFormConfigAndPhase(formConfig, phaseMapper.invertConvert(phaseDTO));
+    }
+
+    public Optional<FormConfigAnswer> findFormConfigAnswer(FormConfig formConfig, ContainerDTO containerDTO) {
+        return formConfigAnswerRepository.findByFormConfigAndContainer(formConfig, containerMapper.invertConvert(containerDTO));
+    }
+
+    /** Every answer set of the recording unit, whichever type's form config each was saved under. */
+    public List<FormConfigAnswer> findAllFormConfigAnswers(RecordingUnitDTO recordingUnitDTO) {
+        return formConfigAnswerRepository.findByRecordingUnit(recordingUnitMapper.invertConvert(recordingUnitDTO));
+    }
+
+    public List<FormConfigAnswer> findAllFormConfigAnswers(SpecimenDTO specimenDTO) {
+        return formConfigAnswerRepository.findBySpecimen(specimenMapper.invertConvert(specimenDTO));
+    }
+
+    public List<FormConfigAnswer> findAllFormConfigAnswers(PhaseDTO phaseDTO) {
+        return formConfigAnswerRepository.findByPhase(phaseMapper.invertConvert(phaseDTO));
+    }
+
+    public List<FormConfigAnswer> findAllFormConfigAnswers(ContainerDTO containerDTO) {
+        return formConfigAnswerRepository.findByContainer(containerMapper.invertConvert(containerDTO));
+    }
+
+    /** Removes an answer set; its answers must already be deleted. */
+    public void delete(FormConfigAnswer formConfigAnswer) {
+        formConfigAnswerRepository.delete(formConfigAnswer);
     }
 
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, RecordingUnitDTO recordingUnitDTO) {
-        UserInfo info = ExecutionContextHolder.getNonNull();
         RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
-        Person person = personMapper.invertConvert(info.getUser());
-
-        Optional<FormConfigAnswer> opt = formConfigAnswerRepository.findByFormConfigAndPersonAndRecordingUnit(formConfig, person, recordingUnit);
-        if (opt.isPresent()) {
-            return opt.get();
-        }
-
-        FormConfigAnswer formConfigAnswer = new FormConfigAnswer();
-        formConfigAnswer.setFormConfig(formConfig);
-        formConfigAnswer.setRecordingUnit(recordingUnit);
-        formConfigAnswer.setPerson(person);
-
-        return formConfigAnswerRepository.save(formConfigAnswer);
+        return createOrGet(formConfig,
+                () -> formConfigAnswerRepository.findByFormConfigAndRecordingUnit(formConfig, recordingUnit),
+                row -> row.setRecordingUnit(recordingUnit));
     }
 
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, SpecimenDTO specimenDTO) {
-        UserInfo info = ExecutionContextHolder.getNonNull();
         Specimen specimen = specimenMapper.invertConvert(specimenDTO);
-        Person person = personMapper.invertConvert(info.getUser());
-
-        Optional<FormConfigAnswer> opt = formConfigAnswerRepository.findByFormConfigAndPersonAndSpecimen(formConfig, person, specimen);
-        if (opt.isPresent()) {
-            return opt.get();
-        }
-
-        FormConfigAnswer formConfigAnswer = new FormConfigAnswer();
-        formConfigAnswer.setFormConfig(formConfig);
-        formConfigAnswer.setSpecimen(specimen);
-        formConfigAnswer.setPerson(person);
-
-        return formConfigAnswerRepository.save(formConfigAnswer);
+        return createOrGet(formConfig,
+                () -> formConfigAnswerRepository.findByFormConfigAndSpecimen(formConfig, specimen),
+                row -> row.setSpecimen(specimen));
     }
 
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, PhaseDTO phaseDTO) {
-        UserInfo info = ExecutionContextHolder.getNonNull();
         Phase phase = phaseMapper.invertConvert(phaseDTO);
-        Person person = personMapper.invertConvert(info.getUser());
-
-        Optional<FormConfigAnswer> opt = formConfigAnswerRepository.findByFormConfigAndPersonAndPhase(formConfig, person, phase);
-        if (opt.isPresent()) {
-            return opt.get();
-        }
-
-        FormConfigAnswer formConfigAnswer = new FormConfigAnswer();
-        formConfigAnswer.setFormConfig(formConfig);
-        formConfigAnswer.setPhase(phase);
-        formConfigAnswer.setPerson(person);
-
-        return formConfigAnswerRepository.save(formConfigAnswer);
+        return createOrGet(formConfig,
+                () -> formConfigAnswerRepository.findByFormConfigAndPhase(formConfig, phase),
+                row -> row.setPhase(phase));
     }
 
     public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, ContainerDTO containerDTO) {
-        UserInfo info = ExecutionContextHolder.getNonNull();
         Container container = containerMapper.invertConvert(containerDTO);
-        Person person = personMapper.invertConvert(info.getUser());
+        return createOrGet(formConfig,
+                () -> formConfigAnswerRepository.findByFormConfigAndContainer(formConfig, container),
+                row -> row.setContainer(container));
+    }
 
-        Optional<FormConfigAnswer> opt = formConfigAnswerRepository.findByFormConfigAndPersonAndContainer(formConfig, person, container);
-        if (opt.isPresent()) {
-            return opt.get();
-        }
+    private FormConfigAnswer createOrGet(FormConfig formConfig,
+                                         Supplier<Optional<FormConfigAnswer>> existing,
+                                         Consumer<FormConfigAnswer> linkEntity) {
+        UserInfo info = ExecutionContextHolder.getNonNull();
+        Person author = personMapper.invertConvert(info.getUser());
 
-        FormConfigAnswer formConfigAnswer = new FormConfigAnswer();
-        formConfigAnswer.setFormConfig(formConfig);
-        formConfigAnswer.setContainer(container);
-        formConfigAnswer.setPerson(person);
-
-        return formConfigAnswerRepository.save(formConfigAnswer);
+        FormConfigAnswer row = existing.get().orElseGet(() -> {
+            FormConfigAnswer created = new FormConfigAnswer();
+            created.setFormConfig(formConfig);
+            linkEntity.accept(created);
+            return created;
+        });
+        row.setPerson(author);
+        return formConfigAnswerRepository.save(row);
     }
 
 }

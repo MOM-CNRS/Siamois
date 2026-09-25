@@ -517,6 +517,12 @@ public class RecordingUnitService implements ArkEntityService {
         if (counts != null && counts.contains("specimen") && dto.getId() != null) {
             dto.setSpecimenCount(recordingUnitRepository.countSpecimensByRecordingUnitId(dto.getId()));
         }
+        if (counts != null && counts.contains("children") && dto.getId() != null) {
+            long children = recordingUnitRepository.countChildrenByIds(List.of(dto.getId())).stream()
+                    .mapToLong(row -> ((Number) row[1]).longValue())
+                    .sum();
+            dto.setChildrenCount((int) children);
+        }
         return new AccessibleRecordingUnit(entity, dto);
     }
 
@@ -963,6 +969,52 @@ public class RecordingUnitService implements ArkEntityService {
         return pageAndEnrich(specs, pageable, false);
     }
 
+    /**
+     * Same as {@link #findByActionUnitId(Long, int, int, Sort)}, plus the REST list's own per-column
+     * filters (plan: parity with {@code GET /api/v1/projects}'s {@code f.*}).
+     *
+     * <p>Deliberately NOT {@link #searchRecordingUnit}: that method's {@code prepareSpecs} starts
+     * from {@code recordingUnitInInstitution} plus a root-only/ancestor-closure path meant for the
+     * JSF tree, and its 3-arg overload hardcodes {@code includeFullRelations=true} — five extra
+     * queries per page to hydrate {@code parents}/{@code children}/{@code phases} collections this
+     * list's own mapper throws away (it reads only the *Count fields {@link #hydrateCounts} already
+     * fills in). {@link RecordingUnitSortFilterService#userFilterSpecs} is the one piece actually
+     * needed: it turns a bare {@link FilterDTO} into a {@link Specification} with no institution or
+     * root-mode concern of its own — the project scope below stays a plain {@code .and()} outside
+     * of it, rather than going through {@code FilterDTO} as an {@code actionUnit} filter, which
+     * would let a client's own {@code f.actionUnit} collide with the path's scope.</p>
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findByActionUnitId(Long actionUnitId, int limit, int offset, Sort sort, FilterDTO filters) {
+        int pageNumber = offset / limit;
+        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+        Specification<RecordingUnit> specs = Specification
+                .where(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitId))
+                .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
+        return pageAndEnrich(specs, pageable, false);
+    }
+
+    /**
+     * Direct children of a recording unit, with the same per-column filters/sort/enrichment as
+     * {@link #findByActionUnitId(Long, int, int, Sort, FilterDTO)} (the fiche's "UE" tab).
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findChildrenOf(Long parentId, int limit, int offset, Sort sort, FilterDTO filters) {
+        Specification<RecordingUnit> specs = Specification
+                .where(RecordingUnitSpec.hasParent(parentId))
+                .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
+        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+    }
+
+    /** Recording units of a phase, same contract as {@link #findChildrenOf} (the phase fiche's "UE" tab). */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findByPhaseId(Long phaseId, int limit, int offset, Sort sort, FilterDTO filters) {
+        Specification<RecordingUnit> specs = Specification
+                .where(RecordingUnitSpec.inPhase(phaseId))
+                .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
+        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+    }
+
 
     /**
      * Generates the identifier for a recording unit that has no parent.
@@ -1272,20 +1324,7 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnit unit = recordingUnitRepository.findById(id)
                 .orElseThrow(() -> new RecordingUnitNotFoundException("Recording not found with id: " + id));
 
-        // Cycle through the enum values
-        switch (unit.getValidated()) {
-            case INCOMPLETE:
-                unit.setValidated(COMPLETE);
-                break;
-            case COMPLETE:
-                unit.setValidated(VALIDATED);
-                break;
-            case VALIDATED:
-                unit.setValidated(INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + unit.getValidated());
-        }
+        unit.setValidated(unit.getValidated().nextInCycle());
 
         return recordingUnitMapper.convert(recordingUnitRepository.save(unit));
     }

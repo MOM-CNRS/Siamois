@@ -27,4 +27,10 @@ public class PlaceCreateRequest {
 
     @Schema(description = "Géométrie du lieu (GeoJSON), dans le SRID fourni ; aucune reprojection n'est effectuée")
     private GeometryDTO geom;
+
+    @Schema(description = "Lieu existant (même organisation) dont le nouveau lieu devient l'enfant direct")
+    private Long parentPlaceId;
+
+    @Schema(description = "Lieu existant (même organisation) dont le nouveau lieu devient le parent direct")
+    private Long childPlaceId;
 }
