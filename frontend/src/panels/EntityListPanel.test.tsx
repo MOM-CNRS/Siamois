@@ -265,7 +265,7 @@ describe("EntityListPanel", () => {
     expect(row.className).toContain("overview-open");
   });
 
-  it("renders the identifier cell as a navigation chip preceded by the column's leading content", async () => {
+  it("renders the identifier cell as a navigation chip preceded by the row's validation state", async () => {
     const leadingConfig: EntityTypeConfig<FakeRow, FakeRow> = {
       ...fakeConfig,
       key: "fake-leading-entity",
@@ -276,7 +276,6 @@ describe("EntityListPanel", () => {
             key: "name",
             header: "Name",
             identifier: true,
-            leading: () => <i className="test-badge" />,
             render: (row) => row.name,
           },
         ],
@@ -289,7 +288,7 @@ describe("EntityListPanel", () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
-        <WriteModeProvider value={true}>
+        <WriteModeProvider value={false}>
           <EntityListPanel entityType="fake-leading-entity" />
           </WriteModeProvider>
         </QueryClientProvider>,
@@ -298,12 +297,12 @@ describe("EntityListPanel", () => {
     await flush();
 
     const cell = container.querySelector(".entity-list-panel-cell")!;
-    expect(cell.querySelector(".test-badge")).toBeTruthy();
+    expect(cell.querySelector(".validation-status-badge")).toBeTruthy();
     const chip = cell.querySelector(".entity-nav-chip")!;
     expect(chip.querySelector(".bi-question")).toBeTruthy();
     expect(chip.textContent).toContain("Row A");
     // The badge is outside the clickable chip — only the chip opens the entity.
-    expect(chip.querySelector(".test-badge")).toBeFalsy();
+    expect(chip.querySelector(".validation-status-badge")).toBeFalsy();
   });
 
   it("renders the table in PrimeReact's small size, like the JSF p:dataTable", async () => {

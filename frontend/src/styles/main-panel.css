@@ -1151,3 +1151,53 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
 .home-panel {
   padding-bottom: var(--panel-scroll-end-gap);
 }
+
+/* The status picker in a list row: smaller than the fiche's, so the row keeps its fixed height. */
+body button.p-button.status-button.status-button-compact {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------ always-visible scrollbars
+
+   macOS overlay scrollbars only appear while scrolling, so nothing tells the user a panel holds
+   more than what's on screen. Styling ::-webkit-scrollbar (Chrome, Edge, Safari) switches these
+   boxes to classic scrollbars, which stay drawn whenever the box overflows. No scrollbar-width /
+   scrollbar-color here: Chrome ignores ::-webkit-scrollbar as soon as either is set. */
+.panel-splitter-panel-l ::-webkit-scrollbar,
+.panel-splitter-panel-r ::-webkit-scrollbar,
+.panel-splitter-panel-l::-webkit-scrollbar,
+.panel-splitter-panel-r::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.panel-splitter-panel-l ::-webkit-scrollbar-track,
+.panel-splitter-panel-r ::-webkit-scrollbar-track,
+.panel-splitter-panel-l::-webkit-scrollbar-track,
+.panel-splitter-panel-r::-webkit-scrollbar-track {
+  background: var(--surface-100, #f5f5f5);
+}
+
+.panel-splitter-panel-l ::-webkit-scrollbar-thumb,
+.panel-splitter-panel-r ::-webkit-scrollbar-thumb,
+.panel-splitter-panel-l::-webkit-scrollbar-thumb,
+.panel-splitter-panel-r::-webkit-scrollbar-thumb {
+  background: var(--surface-400, #bdbdbd);
+  border-radius: 5px;
+  border: 2px solid var(--surface-100, #f5f5f5);
+}
+
+.panel-splitter-panel-l ::-webkit-scrollbar-thumb:hover,
+.panel-splitter-panel-r ::-webkit-scrollbar-thumb:hover,
+.panel-splitter-panel-l::-webkit-scrollbar-thumb:hover,
+.panel-splitter-panel-r::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-500, #9e9e9e);
+}
+
+.panel-splitter-panel-l ::-webkit-scrollbar-corner,
+.panel-splitter-panel-r ::-webkit-scrollbar-corner {
+  background: var(--surface-100, #f5f5f5);
+}

@@ -34,6 +34,7 @@ import { useTableState } from "./useTableState";
 import { isFieldPending, isPlaceholderRow, useVirtualList } from "./useVirtualList";
 import { listPrefsKey } from "./listPreferences";
 import { useWriteMode } from "./writeMode";
+import { ValidationStatusCell, type ValidationStatusCellProps } from "../components/table/ValidationStatusCell";
 import { useRowActions } from "./useRowActions";
 import { Message } from "primereact/message";
 
@@ -756,10 +757,11 @@ export function EntityListPanel({
             sortable={col.sortable}
             // Only the identifier column is clickable (plan §8 phase 5) — matches JSF's own
             // CommandLinkColumn, the only cell in the real table that navigates/opens anything.
-            // `leading` (the validation-status badge) renders in the same cell but outside the
-            // clickable chip, exactly like JSF's merged statusIdActionsCol.
+            // The row's validation state renders in the identifier's cell but outside the clickable
+            // chip, exactly like JSF's merged statusIdActionsCol — `validated` is a root property of
+            // every entity (TraceableEntity), so every list shows it; a picker when the user may change it.
             // Every cell goes through the same wrapper, so no cell is ever more than one line:
-            // .entity-list-panel-cell is the flex row (leading badge + value) and the value slot
+            // .entity-list-panel-cell is the flex row (validation state + value) and the value slot
             // is the part that truncates with an ellipsis. Exactly one element fills that slot —
             // the identifier chip, the editable box, or a plain value — never two nested, because
             // the editable box has to reach out to the cell's padding edge and a clipping wrapper
@@ -770,7 +772,9 @@ export function EntityListPanel({
                 <Skeleton height="1rem" width={col.identifier ? "6rem" : "70%"} />
               ) : (
               <span className="entity-list-panel-cell">
-                {col.leading?.(row)}
+                {col.identifier && (
+                  <ValidationStatusCell entityType={entityType} collectionPath={config.collectionPath} row={row as ValidationStatusCellProps["row"]} />
+                )}
                 {renderCellValue(col, row)}
               </span>
               )
