@@ -82,3 +82,20 @@ Outillage :
 - **Méthodes de domaine devenues orphelines** avec le composant arbre JSF : elles ont été conservées volontairement pour la future vue arborescente React (voir §3).
 - **`UiViewService`, `TableViewState` et `UITableViewDTO`** (vues de table sauvegardées) : plus aucun consommateur côté interface. À supprimer ou à brancher sur React.
 - **Réconciliation avec la branche `feat/ru-react-panel-phase1`** (panneau UE autonome, abandonné) : elle a son propre `frontend/` et son propre point de montage. Il faut la fermer ou la réaligner, pas la merger telle quelle.
+
+## 6. Sécurité : alerte SonarCloud sur la fixation de session (à traiter la semaine prochaine)
+
+SonarCloud signale `sessionFixation(fixation -> fixation.none())` sur `apiV1SecurityFilterChain` (`WebSecurityConfig.java`, ligne 97) : « Create a new session during user authentication to prevent session fixation attacks ».
+
+**Analyse : faux positif, le code est à garder tel quel.**
+- La chaîne `/api/v1` est `STATELESS` et authentifiée par JWT Bearer. Elle ne crée ni n'utilise de session HTTP : il n'y a pas de session à fixer.
+- Avec la stratégie par défaut (`changeSessionId`), `SessionManagementFilter` prend chaque appel JWT pour une nouvelle connexion et change l'id de la session JSF dont le navigateur envoie le cookie. Les appels parallèles se disputent alors leurs `Set-Cookie`, et le navigateur peut garder un id mort : c'est le bug « renvoyé à la connexion au F5 », corrigé le 24/09/2026.
+- `credentials: "omit"` dans `frontend/src/api/client.ts` empêche React d'envoyer le cookie, mais un autre appelant de la même origine l'envoie par défaut (Swagger UI, un `fetch` JSF). `none()` reste donc la protection côté serveur.
+
+**Pistes écartées :**
+- Désactiver `sessionManagement` sur cette chaîne : STATELESS ne s'appliquerait plus, le `SecurityContext` pourrait être lu depuis la session JSF, et l'API accepterait le cookie comme authentification alors que le CSRF y est désactivé. Ce serait une vraie faille.
+- Remplacer par `sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())` : même comportement, mais ça fait juste taire la règle sans rien corriger.
+
+**À faire :**
+- [ ] Passer l'alerte en « Safe » / « False positive » dans SonarCloud, avec cette justification : « Chaîne `/api/v1` stateless (JWT Bearer, `SessionCreationPolicy.STATELESS`) : aucune session n'est créée à l'authentification. La protection par défaut (`changeSessionId`) modifiait l'id de la session JSF du navigateur à chaque appel d'API, et les appels parallèles déconnectaient l'utilisateur. `none()` est voulu. » Autre possibilité : un `// NOSONAR` commenté en fin de ligne.
+- [ ] Optionnel : un test d'intégration qui vérifie qu'un appel `/api/v1` portant un cookie `JSESSIONID` ne renvoie pas de `Set-Cookie`. Il protège la correction si quelqu'un « corrige » l'alerte.
