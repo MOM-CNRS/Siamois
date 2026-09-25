@@ -263,9 +263,7 @@ public class RecordingUnitOpenApiService {
 
     /**
      * Défauts de colonnes de la liste des unités d'enregistrement, depuis
-     * {@link RecordingUnitTableColumnDefaults} — même source que la table JSF
-     * ({@link fr.siamois.ui.table.definitions.RecordingUnitTableDefinitionFactory}), pour qu'aucune
-     * des deux ne puisse diverger silencieusement de l'autre.
+     * {@link RecordingUnitTableColumnDefaults}.
      */
     private static List<ProjectTableColumnResource> buildRecordingUnitTableColumnDefaults() {
         List<RecordingUnitTableColumnDefaults.ColumnDefault> defaults = RecordingUnitTableColumnDefaults.columns();
@@ -512,9 +510,7 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Défauts de colonnes de la liste des projets, depuis {@link ActionUnitTableColumnDefaults} — même
-     * source que la table JSF ({@code ActionUnitTableDefinitionFactory}), pour qu'aucune des deux ne
-     * puisse diverger silencieusement de l'autre.
+     * Défauts de colonnes de la liste des projets, depuis {@link ActionUnitTableColumnDefaults}.
      */
     private static List<ProjectTableColumnResource> buildTableColumnDefaults() {
         List<ActionUnitTableColumnDefaults.ColumnDefault> defaults = ActionUnitTableColumnDefaults.columns();

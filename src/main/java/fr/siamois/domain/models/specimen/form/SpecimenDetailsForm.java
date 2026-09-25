@@ -5,8 +5,8 @@ import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.LONG_COLUMN_CLASS_NAME;
+import static fr.siamois.ui.form.FormLayoutConstants.COLUMN_CLASS_NAME;
+import static fr.siamois.ui.form.FormLayoutConstants.LONG_COLUMN_CLASS_NAME;
 
 public class SpecimenDetailsForm extends SpecimenForm {
 

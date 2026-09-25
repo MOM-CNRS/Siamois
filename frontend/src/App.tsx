@@ -52,9 +52,8 @@ function sameEntity(a: OverviewState | null | undefined, b: OverviewState | null
 }
 
 // Base64url, no padding — exactly Java's Base64.getUrlEncoder().withoutPadding(), which is what
-// FlowBean.redirectToFocus/showSideview and FocusViewBean's own decode already use for the
-// `/focus/<main>?s=<overview>` URL scheme (template.js's showSideview builds the same URL for
-// JSF's own row click). Entity resourceUris here are always plain ASCII ("action-unit/123"), so
+// FlowBean.redirectToFocus and FocusViewBean's own decode already use for the
+// `/focus/<main>?s=<overview>` URL scheme. Entity resourceUris here are always plain ASCII ("action-unit/123"), so
 // no unicode handling is needed beyond what encodeURIComponent/unescape already give us.
 function base64url(value: string): string {
   return btoa(unescape(encodeURIComponent(value)))

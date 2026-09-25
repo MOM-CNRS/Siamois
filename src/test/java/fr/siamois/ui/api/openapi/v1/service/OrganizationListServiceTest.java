@@ -173,6 +173,20 @@ class OrganizationListServiceTest {
     }
 
     @Test
+    void canValidateByProject_checksEachDistinctProjectOnce() {
+        ActionUnitSummaryDTO p7 = project(7L);
+        ActionUnitSummaryDTO p8 = project(8L);
+        when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(true);
+        when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(8L))).thenReturn(false);
+
+        Map<Long, Boolean> result = service.canValidateByProject(caller, institution,
+                Arrays.asList(p7, p8, p7, null, p7), "fr");
+
+        assertThat(result).containsEntry(7L, true).containsEntry(8L, false).hasSize(2);
+        verify(profilePermissionService, times(2)).hasValidatePermission(any(UserInfo.class), anyLong());
+    }
+
+    @Test
     void projectRef_prefersFullIdentifier_thenName() {
         ActionUnitSummaryDTO withFull = project(7L);
         withFull.setFullIdentifier("OA-7");

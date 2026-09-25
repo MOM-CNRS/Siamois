@@ -1,155 +1,83 @@
 package fr.siamois.ui.bean.panel.models.panel;
 
-import fr.siamois.dto.view.TableViewState;
+import fr.siamois.domain.services.BookmarkService;
+import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.SessionSettingsBean;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AbstractPanelTest {
 
-    /**
-     * A minimal concrete panel whose {@code isReactPanelEnabled()} is settable per test — the
-     * abstract methods AbstractPanel declares are irrelevant to isReactPanelActive()/
-     * getPanelContainerId(), so they're stubbed to the simplest legal value.
-     */
-    private static class TestPanel extends AbstractPanel {
-        private final boolean reactEnabled;
+    private static ApplicationContext context() {
+        ApplicationContext context = mock(ApplicationContext.class);
+        when(context.getBean(SessionSettingsBean.class)).thenReturn(mock(SessionSettingsBean.class));
+        when(context.getBean(LangBean.class)).thenReturn(mock(LangBean.class));
+        when(context.getBean(BookmarkService.class)).thenReturn(mock(BookmarkService.class));
+        return context;
+    }
 
-        TestPanel(boolean reactEnabled) {
-            this.reactEnabled = reactEnabled;
-        }
+    private static final class TestPanel extends AbstractPanel {
+        private final String uri;
 
-        @Override
-        public boolean isReactPanelEnabled() {
-            return reactEnabled;
-        }
-
-        @Override
-        public String getPrefixPanelIndex() {
-            return "7";
-        }
-
-        @Override
-        public String svgIcon() {
-            return "";
-        }
-
-        @Override
-        public String resolveTitleOrTitleCode() {
-            return "";
-        }
-
-        @Override
-        public void refresh() {
-        }
-
-        @Override
-        public boolean hasPreviousNext() {
-            return false;
+        TestPanel(String uri) {
+            super("title", "bi bi-house", "siamois-panel", context());
+            this.uri = uri;
         }
 
         @Override
         public String ressourceUri() {
-            return "";
+            return uri;
         }
 
         @Override
-        public String buildBookmarkUrl() {
-            return "";
+        public String getPrefixPanelIndex() {
+            return "action-unit-list";
         }
 
         @Override
-        public void applyViewState(TableViewState state) {
+        public String svgIcon() {
+            return "/resources/img/svg/house.svg";
         }
 
         @Override
-        public boolean isDirty() {
-            return false;
-        }
-
-        @Override
-        public boolean isBookmarked() {
-            return false;
-        }
-
-        @Override
-        public void togglePanelBookmark() {
-        }
-
-        @Override
-        public boolean canUserUpdateView() {
-            return false;
-        }
-
-        @Override
-        public String display() {
-            return "";
+        public String reactPanelKind() {
+            return "list";
         }
     }
 
     @Test
-    void isReactPanelActive_falseWhenTheEntityTypeItselfIsNotReactEnabled() {
-        TestPanel panel = new TestPanel(false);
+    void panelIndex_isThePrefixForARootPanel_andSuffixedForAnOverview() {
+        TestPanel panel = new TestPanel("/action-unit");
+        assertThat(panel.getPanelIndex()).isEqualTo("action-unit-list");
 
-        assertThat(panel.isReactPanelActive()).isFalse();
-    }
-
-    @Test
-    void isReactPanelActive_trueWithNoOverview() {
-        TestPanel panel = new TestPanel(true);
-
-        assertThat(panel.isReactPanelActive()).isTrue();
-    }
-
-    @Test
-    void isReactPanelActive_falseWhenTheOverviewIsStillJsfOnly() {
-        // A JSF overview next to a React main panel isn't supported — both fall back to JSF
-        // together, matching focus.xhtml's own gate on the react-panel-* block.
-        TestPanel panel = new TestPanel(true);
-        TestPanel jsfOverview = new TestPanel(false);
-        panel.setParentOrOverview(jsfOverview);
-        panel.setRoot(true);
-
-        assertThat(panel.isReactPanelActive()).isFalse();
-    }
-
-    @Test
-    void isReactPanelActive_trueWhenTheOverviewIsAlsoReactEnabled() {
-        TestPanel panel = new TestPanel(true);
-        TestPanel reactOverview = new TestPanel(true);
-        panel.setParentOrOverview(reactOverview);
-        panel.setRoot(true);
-
-        assertThat(panel.isReactPanelActive()).isTrue();
-    }
-
-    @Test
-    void getPanelContainerId_matchesTheReactBlockFocusXhtmlRendersWhenActive() {
-        TestPanel panel = new TestPanel(true);
-
-        assertThat(panel.getPanelContainerId()).isEqualTo("react-panel-7");
-    }
-
-    @Test
-    void getPanelContainerId_matchesTheLegacyBlockFocusXhtmlRendersOtherwise() {
-        // Regression: this used to be hardcoded as "panel-" + panelIndex directly in focus.xhtml's
-        // p:blockUI, which stayed correct only for this branch — once the React block became the
-        // one actually rendered, that hardcoded id pointed at nothing, and PrimeFaces' own
-        // MutationObserver (core.js#registerMutationObserver) threw on every DOM mutation
-        // thereafter ("Cannot read properties of undefined (reading 'id')").
-        TestPanel panel = new TestPanel(false);
-
-        assertThat(panel.getPanelContainerId()).isEqualTo("panel-7");
-    }
-
-    // p:remoteCommand names become global JS function assignments: a hyphen ("7-overview",
-    // "action-unit-list") made every bridged React action a syntax error, silently undefined.
-    @Test
-    void jsPanelIndex_replacesCharactersInvalidInAJsIdentifier() {
-        TestPanel panel = new TestPanel(true);
         panel.setRoot(false);
+        assertThat(panel.getPanelIndex()).isEqualTo("action-unit-list-overview");
+    }
 
-        assertThat(panel.getPanelIndex()).isEqualTo("7-overview");
-        assertThat(panel.getJsPanelIndex()).isEqualTo("7_overview");
+    @Test
+    void jsPanelIndex_isAValidJsIdentifier() {
+        TestPanel panel = new TestPanel("/action-unit");
+        panel.setRoot(false);
+        assertThat(panel.getJsPanelIndex()).isEqualTo("action_unit_list_overview");
+    }
+
+    @Test
+    void closeOverview_forgetsTheOverview() {
+        TestPanel panel = new TestPanel("/action-unit");
+        panel.setParentOrOverview(new TestPanel("/action-unit/1"));
+
+        panel.closeOverview();
+
+        assertThat(panel.getParentOrOverview()).isNull();
+    }
+
+    @Test
+    void panelsAreEqualByResourceUri() {
+        assertThat(new TestPanel("/action-unit/1")).isEqualTo(new TestPanel("/action-unit/1"))
+                .isNotEqualTo(new TestPanel("/action-unit/2"));
     }
 }

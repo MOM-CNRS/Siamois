@@ -14,6 +14,8 @@ import { listRecordingUnits } from "../recordingUnit/api";
 vi.mock("./findTypes", () => ({ getFindEffectiveForm: vi.fn() }));
 vi.mock("./api", () => ({ createFind: vi.fn() }));
 vi.mock("../recordingUnit/api", () => ({ listRecordingUnits: vi.fn() }));
+// The project picker (useCreateProject) searches on focus when the list has no project of its own.
+vi.mock("../project/api", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
 
 // Same reduction as the other CreateForm test files: the concept picker is exercised elsewhere.
 vi.mock("../../fields/renderers", () => ({

@@ -1,4 +1,5 @@
 import type { EntityTypeConfig } from "../types";
+import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { getFind, listFinds, patchFindAnswers } from "./api";
@@ -14,10 +15,7 @@ import type { FindDetail, FindSummary } from "./types";
 // up by key ("find") both by the registry's generics-erasure boundary and by
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
-// Reduced scope vs RecordingUnit's own config (see the migration plan's lot 1 section): no
-// `list.schema` (pinned columns only, no dynamic column catalog/toggler yet — GET
-// /api/v1/projects/{id}/find-types is only consulted by the fiche, per-entity, not batched for a
-// list page).
+// Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
 export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   key: "find",
   labels: { singular: "Mobilier", plural: "Mobilier" },
@@ -32,6 +30,8 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     patchAnswers: (id, answers) => patchFindAnswers(id, answers),
   },
   list: {
+    // Dynamic columns: every field of the project's find forms, additional ones included.
+    schema: { load: (ctx) => loadTypeCatalog(ctx, "find-types") },
     columns: findColumns,
     defaultSort: "fullIdentifier:asc",
     searchable: true,

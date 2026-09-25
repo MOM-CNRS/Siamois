@@ -21,9 +21,8 @@ describe("findEntityConfig", () => {
     expect(findEntityConfig.api.patchAnswers).toBeDefined();
   });
 
-  // Reduced scope (migration plan lot 1): no list.schema (pinned columns only).
-  it("has no dynamic column schema yet", () => {
-    expect(findEntityConfig.list.schema).toBeUndefined();
+  it("has a dynamic column catalog, from the project's forms", () => {
+    expect(findEntityConfig.list.schema).toBeDefined();
   });
 
   it("declares an overlay-hosted create form for the list toolbar's own Créer button", () => {

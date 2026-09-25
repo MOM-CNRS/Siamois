@@ -29,6 +29,7 @@ import fr.siamois.ui.api.openapi.v1.response.phase.PhaseListResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ContainerListProjectionService;
+import fr.siamois.ui.api.openapi.v1.service.FindListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService.EditPermissions;
@@ -60,7 +61,8 @@ import java.util.function.Function;
  * Organization-wide lists, at the collection root like {@code GET /api/v1/projects?organizationId=…}
  * — the React counterparts of JSF's RecordingUnit/Specimen/Phase/Container/SpatialUnit list panels.
  * Kept in one controller (not on each entity's own controller) so the existing controllers' and
- * tests' constructors don't change. Search + sort + pagination only.
+ * tests' constructors don't change. Search, sort, {@code f.<key>} filters, pagination, and the
+ * {@code ?fields=} answers projection (columns from the organization catalogs).
  */
 @RestController
 @RequiredArgsConstructor
@@ -68,6 +70,9 @@ public class OrganizationListsControllerApi {
 
     private static final String HEADER_TOTAL_COUNT = "X-Total-Count";
     private static final String ORG_PARAM_DOC = "Organisation (obligatoire)";
+    private static final String FIELDS_PARAM_DOC = "Projection des champs de formulaire dans answers : \"all\" ou "
+            + "une liste d'ids de champs séparés par des virgules (catalogue : GET /api/v1/organizations/{id}/…-types). "
+            + "Absent : pas de clé answers.";
 
     private final ProjectApiService projectApiService;
     private final OrganizationListService organizationListService;
@@ -79,6 +84,7 @@ public class OrganizationListsControllerApi {
     private final PhaseListProjectionService phaseListProjectionService;
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
+    private final FindListProjectionService findListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
     private final FieldQueryService fieldQueryService;
 
@@ -102,6 +108,7 @@ public class OrganizationListsControllerApi {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "creationTime:desc") String sort,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
@@ -113,14 +120,16 @@ public class OrganizationListsControllerApi {
         Page<RecordingUnitDTO> page = organizationListService.pageRecordingUnits(caller, institution, offset, limit, sort, search, filter,
                 fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage));
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, RecordingUnitDTO::getActionUnit, lang, EditPermissions.RECORDING_UNITS);
+        Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
+                page.getContent().stream().map(RecordingUnitDTO::getActionUnit).toList(), lang);
         RecordingUnitListProjectionService.RecordingUnitListProjection projection =
-                recordingUnitListProjectionService.build(page.getContent(), null, lang);
+                recordingUnitListProjectionService.build(page.getContent(), fields, lang);
 
         List<RecordingUnitResource> resources = page.getContent().stream()
                 .map(dto -> {
                     RecordingUnitResource resource = recordingUnitResourceMapper.convert(dto);
                     resource.setAnswers(projection.answersFor(dto.getId()));
-                    resource.setPermissions(permissionsFor(canEdit, dto.getActionUnit()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     return resource;
                 })
@@ -148,6 +157,7 @@ public class OrganizationListsControllerApi {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "fullIdentifier:asc") String sort,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
@@ -157,11 +167,15 @@ public class OrganizationListsControllerApi {
         Page<SpecimenDTO> page = organizationListService.pageFinds(caller, institution, offset, limit, sort, search,
                 fieldQueryService.parse(Specimen.class, queryParams, sort, acceptLanguage));
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, SpecimenDTO::getActionUnit, lang, EditPermissions.FINDS);
+        Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
+                page.getContent().stream().map(SpecimenDTO::getActionUnit).toList(), lang);
+        FindListProjectionService.FindListProjection projection = findListProjectionService.build(page.getContent(), fields, lang);
 
         List<FindResource> resources = page.getContent().stream()
                 .map(dto -> {
                     FindResource resource = findOpenApiMapper.toResource(dto);
-                    resource.setPermissions(permissionsFor(canEdit, dto.getActionUnit()));
+                    if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     if (dto.getId() != null) {
                         resource.setResourceUri("/specimen/" + dto.getId());
@@ -192,6 +206,7 @@ public class OrganizationListsControllerApi {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "orderNumber:asc") String sort,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
@@ -201,12 +216,15 @@ public class OrganizationListsControllerApi {
         Page<PhaseDTO> page = organizationListService.pagePhases(caller, institution, offset, limit, sort, search,
                 fieldQueryService.parse(Phase.class, queryParams, sort, acceptLanguage));
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, PhaseDTO::getActionUnit, lang, EditPermissions.PHASES);
-        PhaseListProjectionService.PhaseListProjection projection = phaseListProjectionService.build(page.getContent(), null, lang);
+        Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
+                page.getContent().stream().map(PhaseDTO::getActionUnit).toList(), lang);
+        PhaseListProjectionService.PhaseListProjection projection = phaseListProjectionService.build(page.getContent(), fields, lang);
 
         List<PhaseResource> resources = page.getContent().stream()
                 .map(dto -> {
                     PhaseResource resource = phaseOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
-                    resource.setPermissions(permissionsFor(canEdit, dto.getActionUnit()));
+                    if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     return resource;
                 })
@@ -234,6 +252,7 @@ public class OrganizationListsControllerApi {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "identifier:asc") String sort,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
@@ -243,13 +262,16 @@ public class OrganizationListsControllerApi {
         Page<ContainerDTO> page = organizationListService.pageContainers(caller, institution, offset, limit, sort, search,
                 fieldQueryService.parse(Container.class, queryParams, sort, acceptLanguage));
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, ContainerDTO::getActionUnit, lang, EditPermissions.CONTAINERS);
+        Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
+                page.getContent().stream().map(ContainerDTO::getActionUnit).toList(), lang);
         ContainerListProjectionService.ContainerListProjection projection =
-                containerListProjectionService.build(page.getContent(), null, lang);
+                containerListProjectionService.build(page.getContent(), fields, lang);
 
         List<ContainerResource> resources = page.getContent().stream()
                 .map(dto -> {
                     ContainerResource resource = containerOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
-                    resource.setPermissions(permissionsFor(canEdit, dto.getActionUnit()));
+                    if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     return resource;
                 })
@@ -292,9 +314,11 @@ public class OrganizationListsControllerApi {
                 page.getContent().stream().map(project).toList(), lang, permissions);
     }
 
-    private static ProjectResourcePermissions permissionsFor(Map<Long, Boolean> canEdit, ActionUnitSummaryDTO project) {
+    private static ProjectResourcePermissions permissionsFor(Map<Long, Boolean> canEdit, Map<Long, Boolean> canValidate,
+                                                             ActionUnitSummaryDTO project) {
         boolean editable = project != null && Boolean.TRUE.equals(canEdit.get(project.getId()));
-        return ProjectResourcePermissions.of(editable);
+        boolean validator = project != null && Boolean.TRUE.equals(canValidate.get(project.getId()));
+        return ProjectResourcePermissions.of(editable).withValidate(validator);
     }
 
     private static ListMeta meta(Page<?> page, int limit, int offset) {

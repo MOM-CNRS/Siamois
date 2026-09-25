@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { patchValidation, requiresValidator } from "../api/validation";
+import type { PagedResult } from "../entities/types";
 import {
   VALIDATION_PRESENTATION,
   VALIDATION_STATUSES,
@@ -11,18 +12,22 @@ import {
 } from "./table/ValidationStatusBadge";
 
 export interface ValidationStatusButtonProps {
+  // The registry key: the cached list rows and fiche are keyed by it.
+  entityType: string;
   collectionPath: string;
   entityId: string | number;
   status?: string | null;
   // Already combined with the write mode by the caller: what this user may do right now.
   canEdit: boolean;
   canValidate: boolean;
+  // A table cell: a smaller button, so the row keeps its fixed height.
+  compact?: boolean;
 }
 
 // The fiche's status: its icon (validationButton.xhtml's look), and on click an overlay with the four
 // statuses. An option is offered only when the rule allows it — edit right for en cours/terminé/
 // annulé, validator right to reach or leave validé — the server enforcing the same rule on PATCH.
-export function ValidationStatusButton({ collectionPath, entityId, status, canEdit, canValidate }: ValidationStatusButtonProps) {
+export function ValidationStatusButton({ entityType, collectionPath, entityId, status, canEdit, canValidate, compact }: ValidationStatusButtonProps) {
   const overlayRef = useRef<OverlayPanel>(null);
   const queryClient = useQueryClient();
   const current = (VALIDATION_STATUSES.includes(status as ValidationStatusValue) ? status : "INCOMPLETE") as ValidationStatusValue;
@@ -34,10 +39,23 @@ export function ValidationStatusButton({ collectionPath, entityId, status, canEd
 
   const mutation = useMutation({
     mutationFn: (target: ValidationStatusValue) => patchValidation(collectionPath, entityId, target),
-    onSuccess: () => {
+    onSuccess: (_, target) => {
       overlayRef.current?.hide();
-      void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
-      void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
+      // The new state is known: write it into the cached rows and fiche rather than refetching
+      // every list page on screen for one property.
+      const isThis = (id: unknown) => String(id) === String(entityId);
+      queryClient.setQueriesData<PagedResult<{ id?: unknown }>>({ queryKey: ["entity-list", entityType] }, (page) =>
+        page?.data?.some((row) => isThis(row.id))
+          ? { ...page, data: page.data.map((row) => (isThis(row.id) ? { ...row, validated: target } : row)) }
+          : page,
+      );
+      queryClient.setQueriesData<object>(
+        {
+          predicate: ({ queryKey }) =>
+            queryKey[0] === "entity-detail" && queryKey[1] === entityType && isThis(queryKey[2]),
+        },
+        (entity) => entity && { ...entity, validated: target },
+      );
     },
   });
 
@@ -45,7 +63,7 @@ export function ValidationStatusButton({ collectionPath, entityId, status, canEd
     <>
       <Button
         icon={presentation.icon}
-        className={`rounded-button status-button ${presentation.modifier}`}
+        className={`rounded-button status-button ${presentation.modifier}${compact ? " status-button-compact" : ""}`}
         text
         rounded
         tooltip={presentation.title}

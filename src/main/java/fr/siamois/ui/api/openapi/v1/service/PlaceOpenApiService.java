@@ -133,7 +133,8 @@ public class PlaceOpenApiService {
                                              Page<SpatialUnitDTO> page, String lang, int limit, int offset) {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(
-                profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES));
+                profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES))
+                .withValidate(profilePermissionService.hasPlaceValidatePermission(userInfo));
 
         var resources = page.getContent().stream()
                 .map(dto -> {

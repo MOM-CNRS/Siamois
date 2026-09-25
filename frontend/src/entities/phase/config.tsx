@@ -32,7 +32,7 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   },
   list: {
     // Dynamic columns: every field of the project's phase forms, additional ones included.
-    schema: { load: ({ scope }) => loadTypeCatalog(scope, "phase-types") },
+    schema: { load: (ctx) => loadTypeCatalog(ctx, "phase-types") },
     columns: phaseColumns,
     defaultSort: "orderNumber:asc",
     searchable: true,

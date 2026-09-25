@@ -9,7 +9,6 @@ import fr.siamois.infrastructure.database.repositories.BookmarkRepository;
 import fr.siamois.mapper.BookmarkMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
-import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,26 +52,6 @@ public class BookmarkService {
         return entitiesPage.map(bookmarkMapper::toDto);
     }
 
-
-    /**
-     * Saves a bookmark for a user based on the provided panel.
-     *
-     * @param userInfo the user information containing the user and institution
-     * @param panel    the panel containing the resource URI and title code or title
-     * @return the saved bookmark
-     */
-    @Transactional
-    public Bookmark save(UserInfo userInfo, AbstractPanel panel) {
-        Person person = personMapper.invertConvert(userInfo.getUser());
-        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
-
-        Bookmark bookmark = new Bookmark();
-        bookmark.setPerson(person);
-        bookmark.setInstitution(institution);
-        bookmark.setResourceUri(panel.ressourceUri());
-        bookmark.setTitleCode(panel.getTitleCodeOrTitle());
-        return bookmarkRepository.save(bookmark);
-    }
 
     @Transactional
     public BookmarkDTO update(BookmarkDTO bookmarkDTO) {

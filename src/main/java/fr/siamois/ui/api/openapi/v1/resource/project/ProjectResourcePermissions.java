@@ -22,7 +22,7 @@ public record ProjectResourcePermissions(
         @Schema(description = "Le caller peut ouvrir les paramètres de ce projet")
         boolean canManageSettings,
         // "Validateur" (PROJECT_VALIDATE and counterparts; ORGANIZATION_VALIDATE for a place): may set
-        // the entity to VALIDATED or move it out of VALIDATED. Detail responses only; omitted when false.
+        // the entity to VALIDATED or move it out of VALIDATED. Detail and list rows; omitted when false.
         @JsonInclude(JsonInclude.Include.NON_DEFAULT)
         @Schema(description = "Le caller peut valider (ou dévalider) cette fiche")
         boolean canValidate

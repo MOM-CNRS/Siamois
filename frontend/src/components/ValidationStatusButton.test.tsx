@@ -20,12 +20,14 @@ async function flush() {
   });
 }
 
-function render(props: { status: string; canEdit: boolean; canValidate: boolean }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function render(
+  props: { status: string; canEdit: boolean; canValidate: boolean },
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
   act(() => {
     root.render(
       <QueryClientProvider client={queryClient}>
-        <ValidationStatusButton collectionPath="phases" entityId={3} {...props} />
+        <ValidationStatusButton entityType="phase" collectionPath="phases" entityId={3} {...props} />
       </QueryClientProvider>,
     );
   });
@@ -95,6 +97,32 @@ describe("ValidationStatusButton", () => {
     await flush();
 
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/phases/3", { method: "PATCH", body: { validated: "VALIDATED" } });
+  });
+
+  it("writes the new status into the cached rows and fiche instead of refetching them", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const listKey = ["entity-list", "phase", { offset: 0, limit: 50 }];
+    const otherTypeKey = ["entity-list", "project", { offset: 0, limit: 50 }];
+    queryClient.setQueryData(listKey, { data: [{ id: "3", validated: "COMPLETE" }, { id: "4", validated: "COMPLETE" }], totalCount: 2 });
+    queryClient.setQueryData(otherTypeKey, { data: [{ id: "3", validated: "COMPLETE" }], totalCount: 1 });
+    queryClient.setQueryData(["entity-detail", "phase", 3], { id: "3", name: "P", validated: "COMPLETE" });
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    render({ status: "COMPLETE", canEdit: true, canValidate: false }, queryClient);
+    await openOverlay();
+    await act(async () => {
+      option("Annulé").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(queryClient.getQueryData(listKey)).toEqual({
+      data: [{ id: "3", validated: "CANCELLED" }, { id: "4", validated: "COMPLETE" }],
+      totalCount: 2,
+    });
+    // Same id, another entity type: untouched.
+    expect(queryClient.getQueryData(otherTypeKey)).toEqual({ data: [{ id: "3", validated: "COMPLETE" }], totalCount: 1 });
+    expect(queryClient.getQueryData(["entity-detail", "phase", 3])).toEqual({ id: "3", name: "P", validated: "CANCELLED" });
+    expect(invalidate).not.toHaveBeenCalled();
   });
 
   it("is disabled when nothing is allowed (read mode, no rights)", () => {

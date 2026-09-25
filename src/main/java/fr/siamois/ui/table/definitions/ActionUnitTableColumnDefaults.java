@@ -10,9 +10,9 @@ import java.util.Set;
 /**
  * Ordre et visibilité par défaut des colonnes « documentaires / administratives » de la liste des projets.
  *
- * <p>Source unique de vérité, consommée à la fois par {@link ActionUnitTableDefinitionFactory} (table JSF)
- * et par l'API {@code GET /api/v1/organizations/{id}/project-types} (table React). Une constante TypeScript
- * dupliquant cette liste dériverait en quelques semaines ; le front la lit donc depuis le serveur.</p>
+ * <p>Source unique de vérité, servie par l'API {@code GET /api/v1/organizations/{id}/project-types}
+ * ({@code _default.tableColumns}). Une constante TypeScript dupliquant cette liste dériverait en quelques
+ * semaines ; le front la lit donc depuis le serveur.</p>
  *
  * <p>Ne contient <strong>pas</strong> les trois colonnes structurelles — chip identifiant, nom, compteur
  * d'unités d'enregistrement : elles ne sont pas togglables, ne viennent pas du catalogue de champs et sont

@@ -9,16 +9,31 @@ interface TypesResponseBody {
 }
 
 /**
- * A list's column catalog built from a project's per-type forms (GET /api/v1/projects/{id}/
- * phase-types, container-types): every field any of its types shows — system fields and each
- * type's additional ones — as a toggleable column, hidden until picked. Each field carries what the
- * list accepts on it (FieldResource.query). A list with no project in scope (organization-wide)
- * has no catalog: a form belongs to a project.
+ * Where a list's column catalog lives: its project's per-type forms (GET /api/v1/projects/{id}/
+ * <segment>), or — for an organization-wide list — the organization's aggregate of every project's
+ * forms (GET /api/v1/organizations/{id}/<segment>). A scoped list with no project (none today for
+ * these entities) has no catalog.
  */
-export async function loadTypeCatalog(scope: ListScope | undefined, segment: string): Promise<FieldCatalog> {
-  const projectId = scopeProjectId(scope);
-  if (projectId == null) return { fields: {}, columns: [] };
-  const body = await apiFetch<TypesResponseBody>(`/api/v1/projects/${projectId}/${segment}`);
+export function typeCatalogPath(ctx: { organizationId?: number; scope?: ListScope }, segment: string): string | undefined {
+  const projectId = scopeProjectId(ctx.scope);
+  if (projectId != null) return `/api/v1/projects/${projectId}/${segment}`;
+  if (!ctx.scope && ctx.organizationId != null) return `/api/v1/organizations/${ctx.organizationId}/${segment}`;
+  return undefined;
+}
+
+/**
+ * A list's column catalog built from per-type forms (phase-types, container-types, find-types —
+ * see typeCatalogPath): every field any of its types shows — system fields and each type's
+ * additional ones — as a toggleable column, hidden until picked. Each field carries what the list
+ * accepts on it (FieldResource.query).
+ */
+export async function loadTypeCatalog(
+  ctx: { organizationId?: number; scope?: ListScope },
+  segment: string,
+): Promise<FieldCatalog> {
+  const path = typeCatalogPath(ctx, segment);
+  if (path == null) return { fields: {}, columns: [] };
+  const body = await apiFetch<TypesResponseBody>(path);
   const fields: Record<string, FieldResource> = {};
   // System fields first, then each type's additional ones. JSON objects put integer-like keys (the
   // additional fields' positive ids) ahead of the rest whatever the server's order, hence the list

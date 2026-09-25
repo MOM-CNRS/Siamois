@@ -12,6 +12,8 @@ import { createContainer } from "./api";
 
 vi.mock("./containerTypes", () => ({ getContainerEffectiveForm: vi.fn() }));
 vi.mock("./api", () => ({ createContainer: vi.fn() }));
+// The project picker (useCreateProject) searches on focus when the list has no project of its own.
+vi.mock("../project/api", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
 
 vi.mock("../../fields/renderers", () => ({
   SelectOneConceptRenderer: ({ onChange }: FieldRendererProps) => (

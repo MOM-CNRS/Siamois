@@ -43,6 +43,16 @@ export async function getRecordingUnitTypes(projectId: string | number): Promise
   };
 }
 
+// GET /api/v1/organizations/{id}/recording-unit-types — the organization-wide list's catalog: the
+// system fields plus every additional field active in any of the organization's projects, and the
+// same default columns as a project's catalog. No per-type entries (`data` is always empty).
+export async function getOrganizationRecordingUnitTypes(organizationId: number): Promise<RecordingUnitTypesResult> {
+  const body = await apiFetch<{ fields: Record<string, FieldResource>; _default: { tableColumns?: ProjectTableColumnDefault[] } }>(
+    `/api/v1/organizations/${organizationId}/recording-unit-types`,
+  );
+  return { tableColumns: body._default.tableColumns ?? [], fields: body.fields };
+}
+
 // The fiche's own need: the layout AND field catalog for THIS recording unit's type specifically
 // (not the union across every type, which the list's column toggler uses instead) — mirrors
 // FicheTab's own `join columns to the TYPE's fields map, not the RU's answers map` rule

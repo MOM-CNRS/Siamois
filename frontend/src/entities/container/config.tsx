@@ -31,7 +31,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
   },
   list: {
     // Dynamic columns: every field of the project's container forms, additional ones included.
-    schema: { load: ({ scope }) => loadTypeCatalog(scope, "container-types") },
+    schema: { load: (ctx) => loadTypeCatalog(ctx, "container-types") },
     columns: containerColumns,
     defaultSort: "identifier:asc",
     searchable: true,

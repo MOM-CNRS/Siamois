@@ -92,7 +92,8 @@ public class ProjectRecordingUnitsControllerApi {
         // One boolean for the whole page (every row shares this project), not per-row like the
         // project list's own permissionsFor (which spans several action units at once).
         boolean canEdit = projectApiService.canEditRecordingUnitsForProject(caller, id, lang);
-        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit);
+        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit)
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
 
         // Labels et projection answers : un seul lot pour la page, jamais par ligne.
         RecordingUnitListProjectionService.RecordingUnitListProjection projection =

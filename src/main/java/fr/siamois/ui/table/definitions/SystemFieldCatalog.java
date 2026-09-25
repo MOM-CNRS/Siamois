@@ -11,6 +11,7 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -82,6 +83,23 @@ public final class SystemFieldCatalog {
      */
     public static List<CustomField> fieldsOf(ConfigurableTable table) {
         return systemColumnsOf(table).stream().map(CustomColUiDto::getField).toList();
+    }
+
+    /**
+     * The field a table's details form declares for a given binding — the same instance every other
+     * caller of this catalog gets, so column defaults describe exactly the fields the
+     * field-configuration screen and the details form agree exist.
+     *
+     * @param table        the table the field belongs to
+     * @param valueBinding the entity property the field binds to
+     * @return the table's system field bound to that property
+     */
+    public static CustomField fieldBoundTo(ConfigurableTable table, String valueBinding) {
+        return fieldsOf(table).stream()
+                .filter(field -> valueBinding.equals(field.getValueBinding()))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(
+                        "No system field bound to '" + valueBinding + "' on the details form of " + table));
     }
 
     /**

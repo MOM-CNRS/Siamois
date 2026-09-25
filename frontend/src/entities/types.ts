@@ -95,12 +95,6 @@ export interface ColumnDef<TSummary> {
   // EntityListPanel renders `render`'s output inside a navigation chip (icon + label), matching
   // CommandLinkColumn's own p:chip — so this column's `render` should return the label text only.
   identifier?: boolean;
-  // Static, non-interactive content rendered in the same cell but OUTSIDE the clickable part —
-  // JSF merges the validation-status badge and the identifier chip into a single column
-  // (entityDataTable.xhtml's statusIdActionsCol), and only the chip navigates. Kept generic rather
-  // than a `validated` flag: any column may want a leading badge, and only the entity's own
-  // columns.tsx knows where that badge's data lives on its rows.
-  leading?: (row: TSummary) => ReactNode;
   // Only shown on the unscoped (organization-wide) list — e.g. the row's project, which a
   // project-scoped relation tab would just repeat on every row.
   unscopedOnly?: boolean;

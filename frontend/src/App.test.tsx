@@ -167,8 +167,8 @@ describe("App client-side navigation", () => {
     // ...and the overview pane rendered the same entity's detail alongside it.
     expect(container.textContent).toContain("Detail of Row A");
     expect(getMock).toHaveBeenCalledWith("1");
-    // URL reflects the overview via the `s` param, mirroring FlowBean.redirectToFocus/
-    // showSideview's own `/focus/<main>?s=<overview>` scheme.
+    // URL reflects the overview via the `s` param, mirroring FlowBean.redirectToFocus's own
+    // `/focus/<main>?s=<overview>` scheme.
     expect(window.location.search).toContain("s=");
   });
 

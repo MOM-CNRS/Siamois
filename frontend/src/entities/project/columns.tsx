@@ -1,4 +1,3 @@
-import { ValidationStatusBadge } from "../../components/table/ValidationStatusBadge";
 import type { ColumnDef } from "../types";
 import type { ProjectSummary } from "./types";
 
@@ -16,15 +15,14 @@ import type { ProjectSummary } from "./types";
 // one (it's already default-visible in ActionUnitTableColumnDefaults).
 export const projectColumns: ColumnDef<ProjectSummary>[] = [
   {
-    // JSF's merged statusIdActionsCol: the validation badge (read-only, `leading`) sits next to
-    // the navigation chip, in one column, and only the chip is clickable. `render` returns the
+    // JSF's merged statusIdActionsCol: EntityListPanel puts the row's validation state next to the
+    // navigation chip, in this one column. `render` returns the
     // chip's LABEL — EntityListPanel wraps it in the chip itself, using the entity's own icon.
     key: "fullIdentifier",
     header: "Identifiant",
     sortable: true,
     filterable: true,
     identifier: true,
-    leading: (row) => <ValidationStatusBadge status={row.validated} />,
     render: (row) => row.fullIdentifier || row.identifier,
   },
   {

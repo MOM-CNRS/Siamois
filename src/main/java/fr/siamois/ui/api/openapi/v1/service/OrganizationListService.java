@@ -207,6 +207,20 @@ public class OrganizationListService {
         return result;
     }
 
+    /** Same shape as {@link #canEditByProject}, for the "validateur" right on each project's entities. */
+    public Map<Long, Boolean> canValidateByProject(ProjectApiCaller caller, InstitutionDTO institution,
+                                                   Collection<ActionUnitSummaryDTO> projects, String lang) {
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        Map<Long, Boolean> result = new HashMap<>();
+        projects.stream()
+                .filter(Objects::nonNull)
+                .map(ActionUnitSummaryDTO::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(projectId -> result.put(projectId, profilePermissionService.hasValidatePermission(userInfo, projectId)));
+        return result;
+    }
+
     /** The row's project as a light ref for the list's "Projet" column. */
     public static ResourceRef projectRef(ActionUnitSummaryDTO project) {
         if (project == null || project.getId() == null) {

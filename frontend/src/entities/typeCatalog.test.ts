@@ -22,7 +22,7 @@ describe("loadTypeCatalog", () => {
       data: [{ fields: { "-503": field("-503", "Titre"), "12": field("12", "Note") } }],
     });
 
-    const catalog = await loadTypeCatalog({ entityType: "project", id: 5 }, "phase-types");
+    const catalog = await loadTypeCatalog({ scope: { entityType: "project", id: 5 } }, "phase-types");
 
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/phase-types");
     expect(Object.keys(catalog.fields).sort()).toEqual(["-503", "12"]);
@@ -32,8 +32,19 @@ describe("loadTypeCatalog", () => {
     ]);
   });
 
-  it("has nothing to offer without a project in scope", async () => {
-    expect(await loadTypeCatalog(undefined, "phase-types")).toEqual({ fields: {}, columns: [] });
+  it("reads the organization's aggregate catalog for an organization-wide list", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ _default: { fields: { "12": field("12", "Note") } }, data: [] });
+
+    const catalog = await loadTypeCatalog({ organizationId: 7 }, "phase-types");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/organizations/7/phase-types");
+    expect(Object.keys(catalog.fields)).toEqual(["12"]);
+  });
+
+  it("has nothing to offer for a scoped list without a project, nor without any context", async () => {
+    expect(await loadTypeCatalog({ organizationId: 7, scope: { entityType: "place", id: 3 } }, "phase-types"))
+      .toEqual({ fields: {}, columns: [] });
+    expect(await loadTypeCatalog({}, "phase-types")).toEqual({ fields: {}, columns: [] });
     expect(mockedApiFetch).not.toHaveBeenCalled();
   });
 });

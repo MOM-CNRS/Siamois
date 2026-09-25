@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.find.FindListResponse;
+import fr.siamois.ui.api.openapi.v1.service.FindListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
@@ -27,10 +28,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Mobiliers d'un projet ({@code GET /api/v1/projects/{id}/mobiliers}) — pendant réduit de
- * {@link ProjectRecordingUnitsControllerApi} : recherche + tri seulement, pas encore de contrat
- * {@code f.<clé>} par colonne ni de projection {@code ?fields=} (voir le plan de migration React,
- * lot Mobilier — colonnes dynamiques déférées).
+ * Mobiliers d'un projet ({@code GET /api/v1/projects/{id}/mobiliers}) — même contrat que
+ * {@link ProjectContainersControllerApi} : recherche, tri et filtres {@code f.<id de champ>},
+ * projection {@code ?fields=} dans {@code answers}.
  */
 @RestController
 @RequestMapping("/api/v1/projects/{id}/mobiliers")
@@ -42,6 +42,7 @@ public class ProjectFindsApi {
     private final FindOpenApiMapper findOpenApiMapper;
     private final ResourceBookmarkService resourceBookmarkService;
     private final FieldQueryService fieldQueryService;
+    private final FindListProjectionService findListProjectionService;
 
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des mobiliers d'un projet",
@@ -65,6 +66,10 @@ public class ProjectFindsApi {
             @Parameter(description = "Tri, ex. fullIdentifier:asc ou collectionDate:desc")
             @RequestParam(defaultValue = "fullIdentifier:asc") String sort,
             @io.swagger.v3.oas.annotations.Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @io.swagger.v3.oas.annotations.Parameter(description = "Projection des champs de formulaire dans answers : "
+                    + "\"all\" ou une liste d'ids de champs séparés par des virgules (champs additionnels compris). "
+                    + "Absent : pas de clé answers.")
+            @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         projectApiService.validatePagedListRequest(offset, limit);
@@ -77,11 +82,15 @@ public class ProjectFindsApi {
         // One boolean for the whole page (every row shares this project), same pattern as the
         // recording-units list.
         boolean canEdit = projectApiService.canEditFindsForProject(caller, id, lang);
-        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit);
+        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit)
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
+
+        FindListProjectionService.FindListProjection projection = findListProjectionService.build(page.getContent(), fields, lang);
 
         List<FindResource> resources = page.getContent().stream()
                 .map(dto -> {
                     FindResource resource = findOpenApiMapper.toResource(dto);
+                    if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
                     resource.setPermissions(permissions);
                     if (dto.getId() != null) {
                         resource.setResourceUri("/specimen/" + dto.getId());

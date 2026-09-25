@@ -1,7 +1,6 @@
 // The left-hand half of JSF's merged "statut | identifiant" column (entityDataTable.xhtml's
-// statusIdActionsCol → /panel/header/validationButton.xhtml). Read-only in lists, exactly like the
-// JSF list, which includes that button with disabled="true": changing the status is a fiche action
-// (components/ValidationStatusButton.tsx).
+// statusIdActionsCol → /panel/header/validationButton.xhtml), read-only: what a list row shows when
+// its status can't be changed right now (ValidationStatusCell swaps in the picker otherwise).
 //
 // Icon and modifier class names are copied from validationButton.xhtml verbatim so the existing
 // .status-button.validated/.complete/.incomplete theme rules apply unchanged; "cancelled" is new.

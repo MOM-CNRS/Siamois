@@ -19,6 +19,18 @@ describe("recordingUnitEntityConfig", () => {
     expect(catalog).toEqual({ fields: {}, columns: [] });
   });
 
+  it("loads the organization's aggregate catalog for the organization-wide list", async () => {
+    mockedApiFetch.mockResolvedValueOnce({
+      fields: { "12": { id: "12" } },
+      _default: { tableColumns: [{ columnId: "-306", fieldId: "-306", visible: true, order: 0 }] },
+      data: [],
+    });
+    const catalog = await recordingUnitEntityConfig.list.schema!.load({ organizationId: 7 });
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/organizations/7/recording-unit-types");
+    expect(Object.keys(catalog.fields)).toEqual(["12"]);
+    expect(catalog.columns).toHaveLength(1);
+  });
+
   it("registers the fiche, contained-RU and finds tabs, a header, and a patchAnswers write path", () => {
     expect(recordingUnitEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "children", "finds"]);
     expect(recordingUnitEntityConfig.detail.header).toBeDefined();

@@ -20,8 +20,6 @@ describe("phaseEntityConfig", () => {
     expect(phaseEntityConfig.api.patchAnswers).toBeDefined();
   });
 
-  // Reduced scope (migration plan lot 2, same precedent as Mobilier's own lot 1): no list.schema
-  // (pinned columns only).
   it("has a dynamic column catalog, from the project's forms", () => {
     expect(phaseEntityConfig.list.schema).toBeDefined();
   });

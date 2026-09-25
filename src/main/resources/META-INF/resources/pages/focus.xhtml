@@ -187,164 +187,15 @@
                     <p:outputPanel id="panel-${focusViewBean.mainPanel.prefixPanelIndex}-container" styleClass="focus">
 
                         <!--
-                        React main-panel migration (plan §7/§8 phase 8): when the main panel (and,
-                        if one is open, its overview) is React-enabled, the whole block below
-                        (titlebar + panelContent's splitter, both panes) is replaced by a single
-                        window.SiamoisMainPanel.mount() call, which renders its own two titlebars
-                        (PanelToolbar) and both panes' bodies. Any *unmigrated* entity type keeps
-                        rendering exactly the legacy markup beneath, completely untouched — this
-                        `rendered` gate is the only change to that path.
-                        The overview fallback rule lives in this same condition: if an overview is
-                        open but its entity type hasn't migrated, the WHOLE panel (main included)
-                        falls back to legacy rendering rather than a hybrid render.
-                        -->
-                        <h:panelGroup rendered="#{not focusViewBean.mainPanel.isReactPanelActive()}">
-                        <h:panelGroup
-                                styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
-                                style="border-radius: 0px; display: flex; flex-direction: column; border-top: 3px solid var(--main-color)"
-                                id="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
-
-                            <div class="sideview-titlebar" style="background: var(--siamois-green-light-100);">
-                                <h:form style="float:right;display: flex;
-    gap: 1rem;" id="actionForm-${focusViewBean.mainPanel.panelIndex}">
-                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                    <p:splitButton id="dirtyViewSplitButton"
-                                                   styleClass="view-edit-button"
-                                                   rendered="#{focusViewBean.mainPanel.canUserUpdateView()
-                                                   and focusViewBean.mainPanel.isDirty()}"
-                                                   value="Mettre à jour"
-                                                   icon="bi bi-bookmark"
-                                                   action="#{focusViewBean.mainPanel.updateCurrentView()}"
-                                                   update="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
-                                        <p:menuitem value="Enregistrer comme nouvelle vue"
-                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
-                                                    action="#{focusViewBean.mainPanel.saveAsNewView()}"
-                                                    icon="bi bi-bookmark"/>
-                                        <p:menuitem value="Réinitialiser la vue"
-                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
-                                                    action="#{focusViewBean.mainPanel.reinitializeView()}"
-                                                    icon="bi bi-arrow-clockwise"/>
-                                    </p:splitButton>
-                                    <p:splitButton value="Enregistrer comme nouvelle vue"
-                                                   styleClass="view-edit-button"
-                                                   update="panel-${focusViewBean.mainPanel.prefixPanelIndex}, subSidebarForm"
-                                                   rendered="#{(not focusViewBean.mainPanel.canUserUpdateView()) and focusViewBean.mainPanel.isDirty()}"
-                                                   action="#{focusViewBean.mainPanel.saveAsNewView()}"
-                                                   icon="bi bi-bookmark">
-                                        <p:menuitem value="Réinitialiser la vue"
-                                                    update="panel-${focusViewBean.mainPanel.prefixPanelIndex}"
-                                                    action="#{focusViewBean.mainPanel.reinitializeView()}"
-                                                    icon="bi bi-arrow-clockwise"/>
-                                    </p:splitButton>
-                                    <div style="padding: 3px;
-                                            display: flex;
-                                            border: 1px solid var(--siamois-green-light);
-                                            border-radius: 15px;">
-
-                                        <p:commandLink id="closeFocusLink"
-                                                       rendered="#{not empty focusViewBean.mainPanel.goBackUrl}"
-                                                       styleClass="sideview-topbar-button"
-                                                       onclick="window.location.href='#{focusViewBean.mainPanel.goBackUrl}'; return false;"
-                                                       title="#{langBean.msg('nav.closeFocus')}">
-                                            <h:outputText styleClass="bi bi-arrows-angle-contract"/>
-                                        </p:commandLink>
-                                        <p:commandLink id="bookmarkToggleButton"
-                                                       styleClass="sideview-topbar-button"
-                                                       action="#{focusViewBean.mainPanel.togglePanelBookmark()}"
-                                                       update="bookmarkToggleButton, navBarCsrfForm:siamoisNavForm, subSidebarForm, actionForm-#{focusViewBean.mainPanel.panelIndex}">
-                                            <h:outputText styleClass="#{focusViewBean.mainPanel.isBookmarked() ?
-                            'ui-icon bi bi-bookmark-fill' : 'ui-icon bi bi-bookmark'}"/>
-                                        </p:commandLink>
-                                        <p:commandLink id="createEntityBtn"
-                                                       rendered="#{focusViewBean.mainPanel.creationUnitKind != null and flowBean.isWriteMode}"
-                                                       styleClass="sideview-topbar-button"
-                                                       action="#{genericNewUnitDialogBean.openNewEntityDiag(focusViewBean.mainPanel.creationUnitKind, focusViewBean.mainPanel)}"
-                                                       update="newUnitForm"
-                                                       oncomplete="PF('newUnitDiag').show();"
-                                                       immediate="true">
-                                            <h:outputText styleClass="bi bi-plus-square"/>
-                                        </p:commandLink>
-                                        <p:tooltip for="createEntityBtn" value="Créer" position="bottom"/>
-                                        <p:commandLink id="duplicateBtn"
-                                                       rendered="#{focusViewBean.mainPanel.canDuplicate() and flowBean.isWriteMode}"
-                                                       styleClass="sideview-topbar-button"
-                                                       action="#{focusViewBean.mainPanel.duplicate()}"
-                                                       update="panel-${focusViewBean.mainPanel.prefixPanelIndex}-container"
-                                                       immediate="true">
-                                            <h:outputText styleClass="bi bi-copy"/>
-                                        </p:commandLink>
-                                        <p:tooltip for="duplicateBtn" value="Dupliquer" position="bottom"/>
-                                        <h:commandLink id="duplicateBtnDisabled"
-                                                      rendered="#{focusViewBean.mainPanel.creationUnitKind != null
-                                                                  and not focusViewBean.mainPanel.canDuplicate()
-                                                                  and flowBean.isWriteMode}"
-                                                      styleClass="sideview-topbar-button ui-commandlink ui-widget"
-                                                      style="opacity:0.4; cursor:not-allowed;">
-                                            <i class="bi bi-copy"/>
-                                        </h:commandLink>
-                                        <p:tooltip for="duplicateBtnDisabled" value="À venir" position="bottom" autoHide="false"/>
-                                        <p:commandLink id="refreshPanelButton"
-                                                       styleClass="sideview-topbar-button"
-                                                       action="#{focusViewBean.mainPanel.refresh()}"
-                                                       onstart="PF('buiPanel_${focusViewBean.mainPanel.panelIndex}').show();"
-                                                       oncomplete="PF('buiPanel_${focusViewBean.mainPanel.panelIndex}').hide();"
-                                                       onclick="event.stopPropagation();"
-                                                       update="panel-${focusViewBean.mainPanel.prefixPanelIndex}">
-                                            <h:outputText styleClass="bi bi-arrow-clockwise"/>
-                                        </p:commandLink>
-                                        <p:commandLink id="openInProjectSettingsButton"
-                                                       rendered="#{focusViewBean.mainPanel.canOpenInProjectSettings()}"
-                                                       styleClass="sideview-topbar-button"
-                                                       action="#{navBean.redirectToActionUnitSettings(focusViewBean.mainPanel.unit)}"
-                                                       title="#{langBean.msg('panel.header.settings')}">
-                                            <h:outputText styleClass="bi bi-gear"/>
-                                        </p:commandLink>
-                                        <p:tooltip rendered="#{focusViewBean.mainPanel.canOpenInProjectSettings()}" autoHide="false" for="openInProjectSettingsButton" value="#{langBean.msg('panel.header.settings')}" position="bottom"/>
-
-                                    </div>
-
-                                </h:form>
-
-                                <h:form id="actionForm-${focusViewBean.mainPanel.panelIndex}-head">
-                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                    <div style="display: flex;
-                                    gap: 0.5em;
-                                    align-items: center;
-                                    flex-wrap: wrap;">
-                                        <ui:include rendered="#{focusViewBean.mainPanel.displayHeader() != null}"
-                                                    src="#{focusViewBean.mainPanel.displayHeader()}">
-                                            <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
-                                        </ui:include>
-                                    </div>
-                                </h:form>
-
-                            </div>
-                            <p:outputPanel id="panelContent" deferred="false" loaded="#{focusViewBean.mainPanel.loaded}"
-                                           deferredMode="visible" styleClass="focus" style="min-height: 0">
-                                <f:facet name="loading">
-                                    <ui:include src="/pages/shared/panelLoadingSkeleton.xhtml"/>
-                                </f:facet>
-                                <p:ajax event="load" action="#{focusViewBean.mainPanel.loadData()}"
-                                        update="panel-${focusViewBean.mainPanel.panelIndex}-container"/>
-                                <ui:include src="/panel/panelContent.xhtml" id="panel-body">
-                                    <ui:param name="panelModel" value="#{focusViewBean.mainPanel}"/>
-                                    <ui:param name="panelIndex" value="#{focusViewBean.mainPanel.panelIndex}"/>
-                                </ui:include>
-                            </p:outputPanel>
-                        </h:panelGroup>
-                        </h:panelGroup>
-
-                        <!--
-                        No border-top here (unlike the legacy panel-docked wrapper above, kept as
-                        a "#{panelClass} panel-docked" reference only): this wrapper spans BOTH
+                        The main panel is rendered by React (window.SiamoisMainPanel.mount), both
+                        panes and their titlebars. No border-top here: this wrapper spans BOTH
                         panes once React opens an overview (plan §8 phase 5), and the colored top
                         border is chrome for the main panel specifically — a react-panel-mount.js
                         panel — not a frame around the whole splitter. React applies it itself to
                         just the left/main SplitterPanel (App.tsx); the overview pane already gets
                         its own border-top for free from the existing .sideview class.
                         -->
-                        <h:panelGroup rendered="#{focusViewBean.mainPanel.isReactPanelActive()}"
-                                      styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
+                        <h:panelGroup styleClass="#{focusViewBean.mainPanel.panelClass} panel-docked focus"
                                       style="border-radius: 0px; display: flex; flex-direction: column; flex: 1; min-height: 0;"
                                       id="react-panel-${focusViewBean.mainPanel.prefixPanelIndex}">
 
@@ -376,10 +227,6 @@
                             <script src="#{request.contextPath}/resources/js/reactPanelBootstrap.js"/>
                         </h:panelGroup>
 
-                        <p:blockUI block="#{focusViewBean.mainPanel.getPanelContainerId()}"
-                                   widgetVar="buiPanel_${focusViewBean.mainPanel.panelIndex}">
-                            <i class="pi pi-spin pi-spinner" style="font-size: 3rem"/>
-                        </p:blockUI>
                     </p:outputPanel>
 
 

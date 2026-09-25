@@ -82,7 +82,8 @@ public class ProjectPhasesControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
         boolean canEdit = projectApiService.canEditPhasesForProject(caller, id, lang);
-        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit);
+        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit)
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
 
         PhaseListProjectionService.PhaseListProjection projection =
                 phaseListProjectionService.build(page.getContent(), fields, lang);

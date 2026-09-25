@@ -84,7 +84,8 @@ class OrganizationListsControllerApiTest {
         OrganizationListsControllerApi controller = new OrganizationListsControllerApi(
                 projectApiService, organizationListService, placeOpenApiService,
                 recordingUnitResponseMapper, recordingUnitListProjectionService, findOpenApiMapper,
-                phaseOpenApiMapper, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService, org.mockito.Mockito.mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                phaseOpenApiMapper, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
+                org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), org.mockito.Mockito.mock(ResourceBookmarkService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper().registerModule(new JavaTimeModule())))

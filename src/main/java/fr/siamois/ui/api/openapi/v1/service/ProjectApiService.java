@@ -1052,6 +1052,14 @@ public class ProjectApiService {
                 PermissionConstants.PROJECT_EDIT_FINDS);
     }
 
+    /** The "validateur" right on this project's entities — one answer for a whole project-scoped list page. */
+    public boolean canValidateForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return profilePermissionService.hasValidatePermission(userInfo, row.actionUnit().getId());
+    }
+
     public boolean canEditRecordingUnitsForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
         InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
@@ -1231,9 +1239,10 @@ public class ProjectApiService {
 
     /**
      * One page of a recording unit's finds, plus the recording unit itself — what the caller needs to
-     * compute the page's {@code _permissions} (its project) and bookmarks (its institution).
+     * compute the page's {@code _permissions} (its project) and bookmarks (its institution). {@code rows}
+     * are the page's DTOs, in the same order, for the {@code ?fields=} answers projection.
      */
-    public record RecordingUnitFindsPage(Page<FindResource> page, RecordingUnitDTO recordingUnit) {
+    public record RecordingUnitFindsPage(Page<FindResource> page, RecordingUnitDTO recordingUnit, List<SpecimenDTO> rows) {
     }
 
     /** Same as {@link #pageFindsForAccessibleRecordingUnit}, plus a {@code search} on fullIdentifier. */
@@ -1276,7 +1285,7 @@ public class ProjectApiService {
             Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseFindSort);
             Page<SpecimenDTO> page = specimenService.searchSpecimenInRecordingUnit(
                     institution, ru, filterDTO, PageRequest.of(pageNumber, limit, sort));
-            return new RecordingUnitFindsPage(page.map(findOpenApiMapper::toResource), ru);
+            return new RecordingUnitFindsPage(page.map(findOpenApiMapper::toResource), ru, page.getContent());
         }
         Pageable pageable = PageRequest.of(pageNumber, limit);
         Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
@@ -1288,7 +1297,7 @@ public class ProjectApiService {
                 lang,
                 sortParam,
                 pageable);
-        return new RecordingUnitFindsPage(page.map(findOpenApiMapper::toResource), ru);
+        return new RecordingUnitFindsPage(page.map(findOpenApiMapper::toResource), ru, page.getContent());
     }
 
     /** One page of recording units scoped to something other than a project, and the project they belong to. */

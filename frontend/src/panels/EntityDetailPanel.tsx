@@ -180,6 +180,7 @@ export function EntityDetailPanel({
               {/* validationButton.xhtml's place in the JSF headers, now on every fiche that has a status. */}
               {validation.validated !== undefined && (
                 <ValidationStatusButton
+                  entityType={entityType}
                   collectionPath={config.collectionPath}
                   entityId={entityId}
                   status={validation.validated}

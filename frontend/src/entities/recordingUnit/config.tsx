@@ -8,7 +8,7 @@ import { recordingUnitColumns } from "./columns";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
 import { RecordingUnitFicheTab } from "./FicheTab";
-import { getRecordingUnitTypes } from "./recordingUnitTypes";
+import { getOrganizationRecordingUnitTypes, getRecordingUnitTypes } from "./recordingUnitTypes";
 import { RECORDING_UNIT_ROUTES } from "./routes";
 import { recordingUnitHomeWidgets } from "./homeWidgets";
 import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
@@ -46,14 +46,16 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
   },
   list: {
     columns: recordingUnitColumns,
-    // Project-scoped, not organization-scoped (unlike Project's own list.schema): a project's own
-    // effective RU form(s). EntityListPanel forwards its own `scope` prop here — see
-    // relationTab/entities/types.ts's ListParams.scope.
+    // A project's own effective RU form(s) when the list has a project (EntityListPanel forwards its
+    // own `scope` prop here — see relationTab/entities/types.ts's ListParams.scope); the
+    // organization's aggregate of every project's forms for the organization-wide list.
     schema: {
-      load: async ({ scope }) => {
+      load: async ({ scope, organizationId }) => {
         const projectId = scopeProjectId(scope);
-        if (projectId == null) return { fields: {}, columns: [] };
-        const types = await getRecordingUnitTypes(projectId);
+        let types;
+        if (projectId != null) types = await getRecordingUnitTypes(projectId);
+        else if (!scope && organizationId != null) types = await getOrganizationRecordingUnitTypes(organizationId);
+        else return { fields: {}, columns: [] };
         return { fields: types.fields, columns: types.tableColumns };
       },
     },

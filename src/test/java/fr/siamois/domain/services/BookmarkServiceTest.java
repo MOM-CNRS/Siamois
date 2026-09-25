@@ -11,7 +11,6 @@ import fr.siamois.infrastructure.database.repositories.BookmarkRepository;
 import fr.siamois.mapper.BookmarkMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
-import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -121,26 +120,6 @@ class BookmarkServiceTest {
 
         verify(bookmarkRepository, times(1))
                 .findByPersonAndInstitution(person, institution, pageable);
-    }
-
-    @Test
-    void testSaveCreatesBookmark() {
-
-        AbstractPanel panel = mock(AbstractPanel.class);
-        Bookmark savedBookmark = new Bookmark();
-        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
-        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
-        when(panel.ressourceUri()).thenReturn("resourceUri");
-        when(panel.getTitleCodeOrTitle()).thenReturn("titleCode");
-        when(bookmarkRepository.save(any(Bookmark.class))).thenReturn(savedBookmark);
-
-        Bookmark result = bookmarkService.save(userInfo, panel);
-
-        assertNotNull(result);
-        assertEquals(savedBookmark, result);
-        verify(panel, times(1)).ressourceUri();
-        verify(panel, times(1)).getTitleCodeOrTitle();
-        verify(bookmarkRepository, times(1)).save(any(Bookmark.class));
     }
 
     @Test

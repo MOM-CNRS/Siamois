@@ -71,7 +71,7 @@
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--surface-300, #dee2e6);
+  border: 1px solid var(--surface-300, #e0e0e0);
   border-radius: 999px;
   background: var(--surface-0, #fff);
   font-size: 0.85rem;
@@ -98,7 +98,7 @@
 }
 
 .filter-chip-label {
-  color: var(--text-color-secondary, #6c757d);
+  color: var(--text-color-secondary, #6b7280);
 }
 
 .filter-chip-value {
@@ -116,13 +116,13 @@
 
 .filter-chip-remove {
   padding-left: 0.15rem;
-  color: var(--text-color-secondary, #6c757d);
+  color: var(--text-color-secondary, #6b7280);
 }
 
 .filter-chip-body:hover,
 .filter-chip-remove:hover,
 .filter-chip-add:hover {
-  background: var(--surface-100, #f1f3f5);
+  background: var(--surface-100, #f5f5f5);
 }
 
 .filter-chip-add {
@@ -130,7 +130,7 @@
   align-items: center;
   gap: 0.3rem;
   border-style: dashed;
-  color: var(--text-color-secondary, #6c757d);
+  color: var(--text-color-secondary, #6b7280);
 }
 
 .entity-list-panel-filter-picker .filter-picker-list {
@@ -155,7 +155,7 @@
 }
 
 .filter-picker-item:hover {
-  background: var(--surface-100, #f1f3f5);
+  background: var(--surface-100, #f5f5f5);
 }
 
 .entity-list-panel-range-filter {
@@ -212,8 +212,8 @@
   flex: none;
   padding: 0 0.3rem;
   border-radius: 999px;
-  background: var(--surface-200, #e9ecef);
-  color: var(--text-color-secondary, #6c757d);
+  background: var(--surface-200, #eeeeee);
+  color: var(--text-color-secondary, #6b7280);
   font-size: 0.78rem;
   line-height: 1.5;
   cursor: default;
@@ -223,9 +223,15 @@
 
 
 /* Same icon/colour vocabulary as /panel/header/validationButton.xhtml, minus the button: the JSF
-   list renders that control disabled, so it is a badge here. Cancelled (new, no JSF colour) is a
-   muted brick red — a status, not an error, so never the danger red. */
+   list renders that control disabled, so it is a badge here. The first three values are the JSF
+   theme's own (_styles.scss body .ui-button.ui-button-flat.status-button.*), copied rather than
+   referenced so that JSF rule stays byte-identical (frontend/dev/check-jsf-theme-regression.sh).
+   Cancelled (new, no JSF colour) is a muted brick red — a status, not an error, so never the
+   danger red. */
 :root {
+  --status-validated: #5e6ad2;
+  --status-complete: #d9b036;
+  --status-incomplete: #9f9fa2;
   --status-cancelled: #b8665a;
 }
 
@@ -235,15 +241,15 @@
 }
 
 .validation-status-badge.validated {
-  color: var(--siamois-green, #4d7c3a);
+  color: var(--status-validated);
 }
 
 .validation-status-badge.complete {
-  color: var(--siamois-green-light-100, #8bb87a);
+  color: var(--status-complete);
 }
 
 .validation-status-badge.incomplete {
-  color: var(--surface-400, #ced4da);
+  color: var(--status-incomplete);
 }
 
 /* The fiche's status button and its status list: the host theme colours the other three
@@ -264,9 +270,9 @@ body button.p-button.p-button-text.status-button.cancelled {
   gap: 0.35rem;
   padding: 0.1rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid var(--context-main-color, var(--main-color, #4d7c3a));
+  border: 1px solid var(--context-main-color, var(--main-color, #80b480));
   background: transparent;
-  color: var(--context-main-color, var(--main-color, #4d7c3a));
+  color: var(--context-main-color, var(--main-color, #80b480));
   cursor: pointer;
 }
 
@@ -276,7 +282,7 @@ body button.p-button.p-button-text.status-button.cancelled {
 }
 
 .entity-nav-chip:not(.p-chip):hover {
-  background: color-mix(in srgb, var(--context-main-color, var(--main-color, #4d7c3a)) 10%, transparent);
+  background: color-mix(in srgb, var(--context-main-color, var(--main-color, #80b480)) 10%, transparent);
 }
 
 .entity-nav-chip-label {
@@ -490,11 +496,11 @@ body button.p-button.p-button-text.status-button.cancelled {
   flex: 0 0 3px;
   height: 3px;
   border-radius: 0;
-  background-color: var(--siamois-green-light-100, #e8f1e8);
+  background-color: var(--siamois-green-light-100, #e6f0e6);
 }
 
 .entity-list-panel-progressbar.p-progressbar .p-progressbar-value {
-  background-color: var(--main-color, #3d6b3d);
+  background-color: var(--main-color, #80b480);
   visibility: hidden;
 }
 
@@ -532,13 +538,13 @@ body button.p-button.p-button-text.status-button.cancelled {
 
 .entity-list-panel-editable-cell:hover,
 .entity-list-panel-editable-cell:focus-visible {
-  background: var(--surface-100, #f1f3f5);
-  border-color: var(--surface-300, #dee2e6);
+  background: var(--surface-100, #f5f5f5);
+  border-color: var(--surface-300, #e0e0e0);
   outline: none;
 }
 
 .entity-list-panel-editable-cell-empty {
-  color: var(--text-color-secondary, #6c757d);
+  color: var(--text-color-secondary, #6b7280);
 }
 
 /* In-place editor: sits on top of the cell it edits, showing only the field's widget. */
@@ -723,7 +729,7 @@ body button.p-button.p-button-text.status-button.cancelled {
 /* .ui-button-flat.ui-state-hover: a 4%-alpha wash of the theme green, label colour unchanged. */
 .sia-fiche-tab .ellipsis-btn.p-button:enabled:hover,
 .sia-fiche-tab .ellipsis-btn.p-button:hover {
-  background: rgba(102, 153, 102, 0.04);
+  background: color-mix(in srgb, var(--primary-color, #669966) 4%, transparent);
   border-color: transparent;
   color: var(--text-light, #6b7280);
 }
@@ -792,8 +798,8 @@ body button.p-button.p-button-text.status-button.cancelled {
 
 .sia-fiche-tab .field-value-cell-editable:hover,
 .sia-fiche-tab .field-value-cell-editable:focus-visible {
-  background: var(--surface-100, #f1f3f5);
-  border-color: var(--surface-300, #dee2e6);
+  background: var(--surface-100, #f5f5f5);
+  border-color: var(--surface-300, #e0e0e0);
   outline: none;
 }
 
@@ -862,7 +868,7 @@ body button.p-button.p-button-text.status-button.cancelled {
 }
 
 .sia-clickable-card:focus-visible {
-  outline: 2px solid var(--primary-color, #3b82f6);
+  outline: 2px solid var(--primary-color, #669966);
   outline-offset: 2px;
 }
 
@@ -978,8 +984,8 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
    (the row's project…) keeps its outline. */
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
 .entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
-  background: var(--context-main-color, var(--main-color, #4d7c3a));
-  color: #fff;
+  background: var(--context-main-color, var(--main-color, #80b480));
+  color: var(--primary-color-text, #ffffff);
 }
 
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
@@ -1020,7 +1026,7 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--text-color-secondary, #6c757d);
+  color: var(--text-color-secondary, #6b7280);
 }
 
 .visibility-chooser-count {
@@ -1029,7 +1035,7 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   padding: 0 0.3rem;
   margin-left: 0.25rem;
   border-radius: 1rem;
-  background: var(--surface-200, #e9ecef);
+  background: var(--surface-200, #eeeeee);
   text-align: center;
   font-weight: 500;
 }
@@ -1050,7 +1056,7 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
 }
 
 .visibility-chooser-item:hover {
-  background: var(--surface-100, #f1f3f5);
+  background: var(--surface-100, #f5f5f5);
 }
 
 .visibility-chooser-item.is-dragging {
@@ -1064,7 +1070,7 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
 .visibility-chooser-handle {
   flex: none;
   width: 1rem;
-  color: var(--text-color-secondary, #6c757d);
+  color: var(--text-color-secondary, #6b7280);
   cursor: grab;
   text-align: center;
 }
@@ -1101,7 +1107,7 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   margin: 0;
   padding: 0.25rem;
   font-size: 0.85rem;
-  color: var(--text-color-secondary, #6c757d);
+  color: var(--text-color-secondary, #6b7280);
 }
 
 /* A picked entity in a multi-reference picker (fields/renderers.tsx): its chip's label opens the
@@ -1112,7 +1118,7 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
 
 .resource-ref-token-link:hover {
   text-decoration: underline;
-  color: var(--context-main-color, var(--main-color, #4d7c3a));
+  color: var(--context-main-color, var(--main-color, #80b480));
 }
 
 /* ------------------------------------------------------------ panel titlebar toolbar */
