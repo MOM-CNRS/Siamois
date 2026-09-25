@@ -17,12 +17,12 @@ const LAYOUT = [
     name: "common.header.general",
     rows: [
       { columns: [
-        { fieldId: -1, width: { span: 12, md: 6 }, isRequired: true, isReadOnly: false },
-        { fieldId: -2, width: { span: 12, md: 6 }, isRequired: false, isReadOnly: true },
+        { fieldId: -1, width: { span: 12, md: 6, lg: 3 }, isRequired: true, isReadOnly: false },
+        { fieldId: -2, width: { span: 12, md: 6, lg: 3 }, isRequired: false, isReadOnly: true },
       ] },
       { columns: [
-        { fieldId: -3, width: { span: 12, md: 6 }, isRequired: false, isReadOnly: false },
-        { fieldId: -4, width: { span: 12, md: 6 }, isRequired: false, isReadOnly: false },
+        { fieldId: -3, width: { span: 12, md: 6, lg: 3 }, isRequired: false, isReadOnly: false },
+        { fieldId: -4, width: { span: 12, md: 6, lg: 3 }, isRequired: false, isReadOnly: false },
       ] },
     ],
   },
@@ -75,10 +75,19 @@ const recordingUnits = Array.from({ length: 8 }, (_, i) => ({
   bookmarked: false,
 }));
 
+// `answers` projected to the requested `fields=`, like the real list endpoints — so a column shown
+// later arrives through its own request and can be seen merging in.
+function project(row: unknown, fields: string[]) {
+  const answers = (row as { answers?: Record<string, unknown> }).answers;
+  if (!answers) return row;
+  return { ...(row as object), answers: Object.fromEntries(Object.entries(answers).filter(([k]) => fields.includes(k))) };
+}
+
 function list(data: unknown[], url: URL) {
   const offset = Number(url.searchParams.get("offset") ?? 0);
   const limit = Number(url.searchParams.get("limit") ?? 20);
-  return { data: data.slice(offset, offset + limit), meta: { total: data.length, limit, offset } };
+  const fields = (url.searchParams.get("fields") ?? "").split(",").filter(Boolean);
+  return { data: data.slice(offset, offset + limit).map((r) => project(r, fields)), meta: { total: data.length, limit, offset } };
 }
 
 const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => unknown][] = [

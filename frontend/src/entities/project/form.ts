@@ -36,7 +36,7 @@ export interface FormLayoutCol {
  *
  * <p>`sia-md-col-N`/`sia-lg-col-N` are matched by `@container`
  * rules in main-panel.css scoped to the fiche's own root (`.sia-fiche-tab { container-type:
- * inline-size }`) — the usual 768/992 breakpoint values, same percentage math,
+ * inline-size }`) — breakpoints sized for the fiche's own width (400/720px, see there), same percentage math,
  * but measured against the fiche's own rendered width, which shrinks with the pane it's actually
  * in, main panel or overview alike.</p>
  *

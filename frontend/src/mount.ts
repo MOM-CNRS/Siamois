@@ -1,5 +1,6 @@
 import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
+import { PrimeReactProvider } from "primereact/api";
 import "./styles/bundle";
 import { configureBasePath } from "./api/basePath";
 import { configureCsrf } from "./auth/sessionAuth";
@@ -35,7 +36,9 @@ function mount(container: HTMLElement, options: MountOptions): void {
 
   const root = createRoot(container);
   roots.set(container, root);
-  root.render(createElement(App, { options }));
+  // PrimeReactProvider with its defaults: some components read the context unguarded (an open
+  // OverlayPanel throws on the first scroll without it).
+  root.render(createElement(PrimeReactProvider, null, createElement(App, { options })));
 }
 
 function unmount(container: HTMLElement): void {

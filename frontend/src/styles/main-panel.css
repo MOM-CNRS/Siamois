@@ -410,22 +410,23 @@
   z-index: 2;
 }
 
-/* The identifier column is what the frozen area exists to keep on screen, so it gets a width floor
-   wide enough for a full identifier chip. No max-width: in the auto table layout PrimeReact uses
-   here a cell's max-width is advisory and would silently do nothing — long values are already
-   ellipsised by .entity-list-panel-cell-value instead.
-
-   The right-hand border makes the split between the fixed and scrolling halves visible, rather
-   than something the eye has to infer from motion. */
-.entity-list-panel .p-datatable-thead > tr > th.p-frozen-column:not(.p-selection-column),
-.entity-list-panel .p-datatable-tbody > tr > td.p-frozen-column:not(.p-selection-column) {
-  min-width: 11rem;
-  border-right: 1px solid var(--siamois-green-light-200, #c0dac0);
-  /* Belt and braces over PrimeReact's own `background: inherit`: a row this app paints itself (the
-     overview-open highlight, a search hit) must never leave its frozen cells transparent. */
+/* Belt and braces over PrimeReact's own `background: inherit` on frozen cells: a row this app
+   paints itself (the overview-open highlight, a search hit) must never leave them transparent. */
+.entity-list-panel .p-datatable-thead > tr > th.p-frozen-column,
+.entity-list-panel .p-datatable-tbody > tr > td.p-frozen-column {
   background: inherit;
   background-clip: padding-box;
 }
+
+/* The identifier column is what the frozen area exists to keep on screen, so it gets a width floor
+   wide enough for a full identifier chip. No max-width: in the auto table layout PrimeReact uses
+   here a cell's max-width is advisory and would silently do nothing — long values are already
+   ellipsised by .entity-list-panel-cell-value instead. */
+.entity-list-panel .p-datatable-thead > tr > th.p-frozen-column:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
+.entity-list-panel .p-datatable-tbody > tr > td.p-frozen-column:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
+  min-width: 11rem;
+}
+
 
 .entity-list-panel .p-datatable-thead > tr > th,
 .entity-list-panel .p-datatable-tbody > tr > td {
@@ -563,8 +564,14 @@
    and it's fine, resize the overview's splitter and columns overlap). The fix is a CSS Container
    Query instead: `.sia-fiche-tab` establishes a container-query context on ITS OWN rendered width
    (which does shrink with the pane, main or overview alike), and `@container` below reacts to
-   THAT, not the window. Usual breakpoint values (768/992), same percentage math, just measured
-   against the right box. */
+   THAT, not the window.
+
+   The thresholds are NOT PrimeFaces' ui-md/ui-lg ones (641/1025px): those are window widths, and
+   the fiche is always narrower than the window (sidebar, splitter, overview), so reusing them
+   against the fiche's own width wrapped far earlier than JSF does — an 830px main panel in a
+   1600px window is "lg" (4 per row for ColumnWidth.STANDARD 12/6/3) in JSF but was stuck at 2
+   here. Instead they're sized on what a field needs: md from 400px (2 × ≥200px), lg from 720px
+   (4 × ≥180px). */
 .sia-grid {
   display: flex;
   flex-wrap: wrap;
@@ -584,9 +591,7 @@
 .sia-col-11 { flex: 0 0 auto; padding: 0.5rem; width: 91.6667%; }
 .sia-col-12 { flex: 0 0 auto; padding: 0.5rem; width: 100%; }
 
-.project-fiche-tab-row {
-  margin-bottom: 0.75rem;
-}
+/* No extra row margin: JSF's p:row adds none, the columns' own 0.5rem padding is the only gap. */
 
 .project-fiche-tab-col {
   min-width: 0;
@@ -599,7 +604,7 @@
   container-type: inline-size;
 }
 
-@container (min-width: 768px) {
+@container (min-width: 400px) {
   .sia-fiche-tab .sia-md-col-1 { width: 8.3333%; }
   .sia-fiche-tab .sia-md-col-2 { width: 16.6667%; }
   .sia-fiche-tab .sia-md-col-3 { width: 25%; }
@@ -614,7 +619,7 @@
   .sia-fiche-tab .sia-md-col-12 { width: 100%; }
 }
 
-@container (min-width: 992px) {
+@container (min-width: 720px) {
   .sia-fiche-tab .sia-lg-col-1 { width: 8.3333%; }
   .sia-fiche-tab .sia-lg-col-2 { width: 16.6667%; }
   .sia-fiche-tab .sia-lg-col-3 { width: 25%; }
@@ -652,7 +657,9 @@
 .sia-fiche-tab .ellipsis-btn.p-button {
   position: relative;
   display: flex;
-  max-width: 180px;
+  /* JSF caps this at 180px inline (panelField.xhtml), which truncated labels long before the
+     column's edge; here the label may use the whole column. */
+  max-width: 100%;
   width: fit-content;
   /* var() fallbacks throughout: the SIAMOIS custom properties come from the JSF page's theme.css,
      which is absent in the standalone Vite dev server and under vitest. */
@@ -925,45 +932,132 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   gap: 0.4rem;
 }
 
-/* The identifier cell's hover-only controls (EntityListPanel's renderCellValue): a checkbox before
-   the chip selects the row, a button after it opens the full fiche. Their room is always kept
-   (visibility, not display) so hovering never shifts the chip. */
-.entity-list-panel-identifier-selectable {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-width: 0;
-}
-
-.entity-list-panel-identifier-selectable .entity-list-panel-identifier-select,
-.entity-list-panel-identifier-selectable .entity-list-panel-identifier-select .p-checkbox-box {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
-.entity-list-panel-identifier-selectable .entity-list-panel-identifier-select,
-.entity-list-panel-identifier-selectable .p-button.entity-list-panel-identifier-open {
-  flex: 0 0 auto;
-  visibility: hidden;
-}
-
-/* A filled primary button (border + background in the entity's context color), sized to the chip. */
-.entity-list-panel-identifier-selectable .p-button.entity-list-panel-identifier-open {
-  width: 1.7rem;
-  height: 1.5rem;
-  padding: 0;
-  border: 1px solid var(--context-main-color, var(--main-color, #4d7c3a));
+/* The identifier chip opens the row in the overview; while its row is hovered it fills in the
+   entity's color (inverted), signalling that it's the row's one click target. */
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-identifier-link.entity-nav-chip,
+.entity-list-panel .entity-list-panel-identifier-link.entity-nav-chip:focus-visible {
   background: var(--context-main-color, var(--main-color, #4d7c3a));
   color: #fff;
 }
 
-.entity-list-panel-identifier-selectable .p-button.entity-list-panel-identifier-open:hover {
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-identifier-link.entity-nav-chip:hover {
   filter: brightness(1.1);
 }
 
-.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-identifier-select,
-.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-identifier-open,
-.entity-list-panel-identifier-selectable:focus-within .entity-list-panel-identifier-select,
-.entity-list-panel-identifier-selectable:focus-within .entity-list-panel-identifier-open {
-  visibility: visible;
+/* The gear's settings overlays (components/table/VisibilityChooser.tsx): a search box, then the
+   shown items (draggable) and the put-away ones. Scrolls inside itself — the app never scrolls the
+   page. */
+.entity-list-panel-settings-overlay .p-overlaypanel-content {
+  padding: 0.75rem;
+}
+
+.visibility-chooser {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+}
+
+.visibility-chooser-search,
+.visibility-chooser-search .p-inputtext {
+  width: 100%;
+}
+
+.visibility-chooser-body {
+  max-height: min(60vh, 28rem);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.visibility-chooser-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.visibility-chooser-count {
+  display: inline-block;
+  min-width: 1.25rem;
+  padding: 0 0.3rem;
+  margin-left: 0.25rem;
+  border-radius: 1rem;
+  background: var(--surface-200, #e9ecef);
+  text-align: center;
+  font-weight: 500;
+}
+
+.visibility-chooser-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.visibility-chooser-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.25rem;
+  border-radius: 4px;
+  border-top: 2px solid transparent;
+}
+
+.visibility-chooser-item:hover {
+  background: var(--surface-100, #f1f3f5);
+}
+
+.visibility-chooser-item.is-dragging {
+  opacity: 0.4;
+}
+
+.visibility-chooser-item.is-drop-target {
+  border-top-color: var(--main-color);
+}
+
+.visibility-chooser-handle {
+  flex: none;
+  width: 1rem;
+  color: var(--text-color-secondary, #6c757d);
+  cursor: grab;
+  text-align: center;
+}
+
+.visibility-chooser-handle.is-disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.visibility-chooser-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.visibility-chooser-label > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visibility-chooser-label > i {
+  color: var(--main-color);
+}
+
+.visibility-chooser-item .p-inputswitch {
+  flex: none;
+  transform: scale(0.8);
+}
+
+.visibility-chooser-empty {
+  margin: 0;
+  padding: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-color-secondary, #6c757d);
 }

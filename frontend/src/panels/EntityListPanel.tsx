@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type RefObject, type SyntheticEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { DataTable, type DataTableSelectionMultipleChangeEvent, type DataTableStateEvent } from "primereact/datatable";
+import {
+  DataTable,
+  type DataTableSelectionMultipleChangeEvent,
+  type DataTableStateEvent,
+} from "primereact/datatable";
 import type { VirtualScrollerLazyEvent } from "primereact/virtualscroller";
 import { Skeleton } from "primereact/skeleton";
 import { ProgressBar } from "primereact/progressbar";
@@ -11,7 +15,7 @@ import { Toolbar } from "primereact/toolbar";
 import { Chip } from "primereact/chip";
 import { Button } from "primereact/button";
 import { OverlayPanel } from "primereact/overlaypanel";
-import { Checkbox } from "primereact/checkbox";
+import { Menu } from "primereact/menu";
 import { getEntityType } from "../entities/registry";
 import { scopeProjectId } from "../entities/scope";
 import { searchCreatableProjects } from "../entities/project/api";
@@ -20,13 +24,15 @@ import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import { FilterChipBar, type FilterSpec } from "../components/table/FilterChipBar";
 import { ColumnToggler, type ColumnTogglerOption } from "../components/table/ColumnToggler";
+import { VisibilityChooser } from "../components/table/VisibilityChooser";
 import { renderAnswerCell, renderAnswerValue } from "../fields/display";
 import { filterKindForField, optionSourceFor, type FilterKind, type FilterOption } from "../fields/optionSources";
 import { hasFieldRenderer } from "../fields/registry";
 import { resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { useTableState } from "./useTableState";
-import { isPlaceholderRow, useVirtualList } from "./useVirtualList";
+import { isFieldPending, isPlaceholderRow, useVirtualList } from "./useVirtualList";
+import { listPrefsKey } from "./listPreferences";
 import { useWriteMode } from "./writeMode";
 import { useRowActions } from "./useRowActions";
 import { Message } from "primereact/message";
@@ -107,8 +113,11 @@ export function EntityListPanel({
   createPrefill,
 }: EntityListPanelProps) {
   const config = getEntityType(entityType);
-  const { state, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns } = useTableState({
+  // Where this list's column and action-bar arrangement is remembered (listPreferences.ts).
+  const prefsKey = listPrefsKey(entityType, scope);
+  const { state, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns, columnsSeeded } = useTableState({
     defaultSort: config?.list.defaultSort,
+    prefsKey,
   });
 
   // Decoupled from `state.search` so every keystroke re-renders the input immediately while the
@@ -121,7 +130,10 @@ export function EntityListPanel({
   }, [searchInput, setSearch]);
 
   const [selectedRows, setSelectedRows] = useState<RowRecord[]>([]);
+  const gearMenuRef = useRef<Menu>(null);
+  const gearButtonRef = useRef<HTMLButtonElement | null>(null);
   const columnTogglerRef = useRef<OverlayPanel>(null);
+  const actionBarSettingsRef = useRef<OverlayPanel>(null);
   const createOverlayRef = useRef<OverlayPanel>(null);
   const queryClient = useQueryClient();
 
@@ -137,6 +149,7 @@ export function EntityListPanel({
     organizationId,
     writeMode,
     onOpen: onOpenOverview ?? onNavigate,
+    prefsKey,
   });
 
   // An organization-wide list of a kind created inside a project: its create form picks the project,
@@ -150,15 +163,16 @@ export function EntityListPanel({
   const canCreateInSomeProject = (creatableProjects.data?.totalCount ?? 0) > 0;
 
   const hasSchema = config?.list.schema != null;
-  const { data: catalog } = useQuery({
+  const { data: catalog, isError: catalogFailed } = useQuery({
     queryKey: ["entity-list-schema", entityType, organizationId, scope?.entityType, scope?.id],
     queryFn: () => config!.list.schema!.load({ organizationId, scope }),
     enabled: hasSchema,
   });
 
-  // Seeds the toggler from the catalog's own defaults (ActionUnitTableColumnDefaults on the
-  // project side) the first time it loads — never again, so a user's toggle isn't clobbered by an
-  // organizationId change re-fetching the same catalog.
+  // Seeds the toggler the first time the catalog loads — from this browser's saved arrangement if
+  // there is one, else from the catalog's own defaults (ActionUnitTableColumnDefaults on the
+  // project side) — never again, so a user's toggle isn't clobbered by an organizationId change
+  // re-fetching the same catalog.
   useEffect(() => {
     if (!catalog) return;
     const defaults = catalog.columns
@@ -166,18 +180,20 @@ export function EntityListPanel({
       .slice()
       .sort((a, b) => a.order - b.order)
       .map((c) => c.fieldId);
-    seedVisibleColumns(defaults);
+    seedVisibleColumns(
+      defaults,
+      catalog.columns.map((c) => c.fieldId),
+    );
   }, [catalog, seedVisibleColumns]);
 
   // Only the columns currently on screen are ever requested — the projection (and its label-batch
-  // resolution cost server-side) scales with what's visible, not with the whole catalog.
-  const fieldsParam = state.visibleColumns.length > 0 ? state.visibleColumns.join(",") : undefined;
-
-  const params: Omit<ListParams, "offset" | "limit"> = {
+  // resolution cost server-side) scales with what's visible, not with the whole catalog. They're
+  // passed to useVirtualList apart from the result-set params: showing a column fetches just that
+  // column for the rows already loaded, hiding one fetches nothing.
+  const params: Omit<ListParams, "offset" | "limit" | "fields"> = {
     search: state.search,
     sort: state.sort,
     organizationId,
-    fields: fieldsParam,
     filters: Object.keys(state.filters).length > 0 ? state.filters : undefined,
     scope,
   };
@@ -193,8 +209,11 @@ export function EntityListPanel({
   } = useVirtualList<RowRecord>({
     entityType,
     params,
+    fields: state.visibleColumns,
     fetch: (p) => config!.api.list(p) as Promise<PagedResult<RowRecord>>,
-    enabled: config != null,
+    // A list with a schema waits for its columns, rather than fetching once without them and then
+    // adding each one (a failed catalog just means no dynamic columns).
+    enabled: config != null && (!hasSchema || columnsSeeded || catalogFailed),
   });
 
   // A new result set (search, sort, filter, columns) starts back at the top: the scroll position
@@ -235,10 +254,11 @@ export function EntityListPanel({
   const dynamicColumns = useMemo<ColumnDef<RowRecord>[]>(() => {
     if (!catalog) return [];
     const byFieldId = new Map(catalog.columns.map((c) => [c.fieldId, c]));
+    // In the user's order (the chooser's "visible" list, or a header dragged in the table); the
+    // catalog's own `order` only seeds the defaults.
     return state.visibleColumns
       .map((fieldId) => byFieldId.get(fieldId))
       .filter((c): c is NonNullable<typeof c> => c != null)
-      .sort((a, b) => a.order - b.order)
       .map((c): ColumnDef<RowRecord> | null => {
         const field = catalog.fields[c.fieldId];
         if (!field) return null;
@@ -332,6 +352,15 @@ export function EntityListPanel({
     }
   }
 
+  // PrimeReact keeps its own column order once a header has been dragged, and from then on sorts
+  // the children by it — a column shown later would land at the far end, and a reorder done in the
+  // chooser would be ignored. Re-syncing it to the children after every change of columns keeps
+  // `visibleColumns` the one source of truth for the order.
+  const columnOrderSignature = [...(config?.list.columns ?? []).map((c) => c.key), ...state.visibleColumns].join(",");
+  useLayoutEffect(() => {
+    tableRef.current?.resetColumnOrder();
+  }, [columnOrderSignature]);
+
   if (!config) {
     return <div className="entity-list-panel-unsupported">Unknown entity type &quot;{entityType}&quot;</div>;
   }
@@ -353,14 +382,13 @@ export function EntityListPanel({
 
   // Only the identifier cell is clickable (plan §8 phase 5), matching JSF's own CommandLinkColumn
   // — the rest of the row is inert, unlike the pre-phase-5 whole-row-click-navigates behavior.
-  // Prefers opening the overview (JSF's own row-click target) over a full navigation; onNavigate
-  // is the fallback for a caller with no overview pane at all.
+  // Opens the overview (JSF's own row-click target); onNavigate is the fallback for a caller with
+  // no overview pane at all.
   function openIdentifier(e: SyntheticEvent, row: RowRecord) {
     e.stopPropagation();
     if (row.id == null) return;
-    // The chip opens the full fiche; the overview has its own button right after it.
-    if (onNavigate) onNavigate(entityType, row.id);
-    else onOpenOverview?.(entityType, row.id);
+    if (onOpenOverview) onOpenOverview(entityType, row.id);
+    else onNavigate?.(entityType, row.id);
   }
 
   // Same target preference as openIdentifier, for a column linking to another entity.
@@ -368,6 +396,20 @@ export function EntityListPanel({
     e.stopPropagation();
     if (onOpenOverview) onOpenOverview(targetType, id);
     else onNavigate?.(targetType, id);
+  }
+
+  // A header dragged in the table: the dynamic columns' new order becomes the visible-columns order
+  // (and so what the chooser shows, and what's remembered). Pinned columns keep their place.
+  function onColReorder(e: { columns: unknown[] }) {
+    const dynamic = new Set(state.visibleColumns);
+    const order = e.columns
+      .map((col) => (col as { props?: { columnKey?: string } }).props?.columnKey)
+      .filter((key): key is string => key != null && dynamic.has(key));
+    setVisibleColumns(order);
+  }
+
+  function blockDropOnFrozenHeader(e: DragEvent) {
+    if ((e.target as Element).closest?.("th.p-frozen-column")) e.stopPropagation();
   }
 
   function onSelectionChange(e: DataTableSelectionMultipleChangeEvent<RowRecord[]>) {
@@ -380,46 +422,16 @@ export function EntityListPanel({
   // actually enforces it; this just avoids offering a control that would 403.
   function renderCellValue(col: ColumnDef<RowRecord>, row: RowRecord) {
     if (col.identifier) {
-      const chip = (
+      return (
         <span
           className="entity-list-panel-identifier-link entity-nav-chip"
           role="button"
           tabIndex={0}
+          title={onOpenOverview ? "Ouvrir dans l'aperçu" : undefined}
           onClick={(e) => openIdentifier(e, row)}
         >
           <i className={config!.icon} aria-hidden="true" />
           <span className="entity-nav-chip-label">{col.render(row)}</span>
-        </span>
-      );
-      // Around the chip, both shown only while the row is hovered: before it, a checkbox that
-      // selects the row (which brings the selection column in — the checkbox then goes away);
-      // after it, a button opening the row in the overview (the chip itself opens the full fiche).
-      return (
-        <span className="entity-list-panel-identifier-selectable">
-          {!selectionColumnVisible && (
-            <Checkbox
-              className="entity-list-panel-identifier-select"
-              checked={false}
-              aria-label="Sélectionner"
-              onClick={(e) => e.stopPropagation()}
-              onChange={() => setSelectedRows([row])}
-            />
-          )}
-          {chip}
-          {onOpenOverview && (
-            <Button
-              icon="bi bi-layout-sidebar-inset-reverse"
-              size="small"
-              className="entity-list-panel-identifier-open"
-              aria-label="Ouvrir dans l'aperçu"
-              tooltip="Ouvrir dans l'aperçu"
-              tooltipOptions={{ position: "top" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (row.id != null) onOpenOverview(entityType, row.id);
-              }}
-            />
-          )}
         </span>
       );
     }
@@ -461,6 +473,36 @@ export function EntityListPanel({
     );
   }
 
+  // The gear: table settings, each in its own overlay anchored on the gear itself (the menu that
+  // opened it is gone by then).
+  const hasActionBarSettings = rowActions.items.length > 0;
+  const hasGear = hasSchema || hasActionBarSettings;
+  function openSettings(ref: RefObject<OverlayPanel>, e: { originalEvent: SyntheticEvent }) {
+    const anchor = gearButtonRef.current;
+    if (anchor) ref.current?.show(e.originalEvent, anchor);
+    else ref.current?.toggle(e.originalEvent);
+  }
+  const gearMenuItems = [
+    ...(hasSchema
+      ? [{ label: "Colonnes…", icon: "bi bi-layout-three-columns", command: (e: { originalEvent: SyntheticEvent }) => openSettings(columnTogglerRef, e) }]
+      : []),
+    ...(hasActionBarSettings
+      ? [{ label: "Barre d'actions…", icon: "bi bi-three-dots", command: (e: { originalEvent: SyntheticEvent }) => openSettings(actionBarSettingsRef, e) }]
+      : []),
+  ];
+
+  // The action bar settings list every configurable action in the current layout's order; the
+  // shown ones are the inline ones. Hidden ones keep their relative order (the "…" menu's).
+  const itemsByKey = new Map(rowActions.items.map((item) => [item.key, item]));
+  const actionBarOrder = rowActions.actionBar.order
+    .map((key) => itemsByKey.get(key))
+    .filter((item): item is NonNullable<typeof item> => item != null)
+    .map((item) => ({ id: item.key, label: item.label, icon: item.icon }));
+  function onActionBarChange(inline: string[]) {
+    const rest = rowActions.actionBar.order.filter((k) => !inline.includes(k));
+    rowActions.setActionBar({ order: [...inline, ...rest], inline });
+  }
+
   const rows = virtualRows as RowRecord[];
   // A column that only makes sense across several parents (the row's project, on an
   // organization-wide list) is dropped inside a scoped relation tab, where it would repeat the
@@ -474,10 +516,6 @@ export function EntityListPanel({
   // (the one whose cell navigates), so no entity type has to restate which column this is.
   // -1 (no entity declares an identifier column) freezes nothing, including the selection box.
   const lastFrozenIndex = allColumns.findIndex((col) => col.identifier);
-  // The selection column only appears once a row is selected (from the checkbox the identifier
-  // chip shows on hover). An entity with no identifier column has nowhere to put that checkbox,
-  // so it keeps the column all the time.
-  const selectionColumnVisible = selectedRows.length > 0 || lastFrozenIndex < 0;
 
   // The toolbar + table + edit overlay — identical whether or not the surrounding <Panel> chrome
   // is rendered (see `embedded` below). Only the wrapper differs: a standalone list gets its own
@@ -486,7 +524,7 @@ export function EntityListPanel({
   // DetailTabDef.badge.
   const body = (
     <>
-      {(config.list.searchable || onCreate || config.list.createForm || hasSchema) && (
+      {(config.list.searchable || onCreate || config.list.createForm || hasGear) && (
         // p:toolbar (pages/shared/table/tableToolbar.xhtml) → PrimeReact Toolbar, not a plain
         // div — its own generated classes are what render the chrome the stock theme actually
         // paints, the legacy class name alone doesn't. Gear (column show/hide only) then search on
@@ -497,20 +535,38 @@ export function EntityListPanel({
           className="entity-list-panel-toolbar"
           start={
             <>
-              {hasSchema && (
+              {hasGear && (
                 <>
                   <Button
+                    // PrimeReact's Button forwards its ref to the <button> itself (its typings say
+                    // the component instance).
+                    ref={(button) => {
+                      gearButtonRef.current = button as unknown as HTMLButtonElement | null;
+                    }}
                     icon="bi bi-gear"
                     text
                     rounded
                     size="large"
-                    aria-label="Colonnes"
-                    tooltip="Afficher / masquer des colonnes"
+                    aria-label="Paramètres du tableau"
+                    aria-haspopup
+                    tooltip="Paramètres du tableau"
                     className="entity-list-panel-gear-button"
-                    onClick={(e) => columnTogglerRef.current?.toggle(e)}
+                    onClick={(e) => gearMenuRef.current?.toggle(e)}
                   />
-                  <OverlayPanel ref={columnTogglerRef}>
+                  <Menu ref={gearMenuRef} popup model={gearMenuItems} className="entity-list-panel-gear-menu" />
+                  <OverlayPanel ref={columnTogglerRef} className="entity-list-panel-settings-overlay">
                     <ColumnToggler options={togglerOptions} value={state.visibleColumns} onChange={setVisibleColumns} />
+                  </OverlayPanel>
+                  <OverlayPanel ref={actionBarSettingsRef} className="entity-list-panel-settings-overlay">
+                    <VisibilityChooser
+                      className="entity-list-panel-action-bar-settings"
+                      items={actionBarOrder}
+                      visible={rowActions.actionBar.inline.filter((k) => rowActions.actionBar.order.includes(k))}
+                      onChange={onActionBarChange}
+                      visibleTitle="Dans la ligne"
+                      hiddenTitle="Dans le menu …"
+                      locked={[{ id: "bookmark", label: "Favori", icon: "bi bi-bookmark" }]}
+                    />
                   </OverlayPanel>
                 </>
               )}
@@ -596,6 +652,16 @@ export function EntityListPanel({
         className={`panel-progressbar entity-list-panel-progressbar${isFetching && !isLoading ? " is-active" : ""}`}
         aria-hidden={!(isFetching && !isLoading)}
       />
+      {/* PrimeReact only checks that the DRAGGED column is reorderable, never the drop target, so a
+          column dropped on the frozen block would land inside it (between identifier and
+          actions). Swallowing drag events over a frozen header, in the capture phase before the
+          header's own handler, keeps the frozen block closed. display:contents: no layout box,
+          the panel's flex chain runs straight through. */}
+      <div
+        style={{ display: "contents" }}
+        onDragOverCapture={blockDropOnFrozenHeader}
+        onDropCapture={blockDropOnFrozenHeader}
+      >
       <DataTable
           value={rows}
         // pages/shared/table/entityDataTable.xhtml is size="small" too — the React table had been
@@ -625,6 +691,11 @@ export function EntityListPanel({
         // settled range instead of one per chunk flown past.
         virtualScrollerOptions={{ lazy: true, onLazyLoad, itemSize: ROW_HEIGHT_PX, delay: 150 }}
         loading={isLoading}
+        // PrimeReact memoizes each cell on its row data, so a cell would ignore anything else its
+        // body depends on — the action bar layout, write mode, the columns being fetched. The
+        // virtual scroller keeps only a screenful of rows mounted, so re-rendering them is cheap.
+        cellMemo={false}
+        onColReorder={onColReorder}
         onSort={onSortChange}
         sortField={sortField}
         sortOrder={sortOrder}
@@ -657,20 +728,26 @@ export function EntityListPanel({
             header, after the select-all box (main-panel.css reverses PrimeReact's title-then-
             checkbox order). handleSelectionChange() is a no-op in JSF — selection drives nothing
             there either; this is decoration until a bulk action exists. */}
-        {selectionColumnVisible && (
-          <Column
-            selectionMode="multiple"
-            headerStyle={{ width: "3rem" }}
-            headerClassName="entity-list-panel-selection-header"
-            frozen={lastFrozenIndex >= 0}
-            header={<Chip label={`${selectedRows.length}/${totalCount}`} />}
-          />
-        )}
+        <Column
+          columnKey="__selection"
+          selectionMode="multiple"
+          headerStyle={{ width: "3rem" }}
+          headerClassName="entity-list-panel-selection-header"
+          frozen={lastFrozenIndex >= 0}
+          reorderable={false}
+          header={<Chip label={`${selectedRows.length}/${totalCount}`} />}
+        />
         {allColumns.flatMap((col, index) => [
           <Column
             key={col.key}
+            columnKey={col.key}
             field={col.key}
             frozen={index <= lastFrozenIndex}
+            // Only scrolling dynamic columns move: dragging one into or out of the frozen block
+            // would desync `frozen` from the column's position, and the order that's kept (and
+            // shown in the chooser) is the dynamic columns' — a pinned one dragged elsewhere would
+            // snap back.
+            reorderable={index > lastFrozenIndex && state.visibleColumns.includes(col.key)}
             // Header text is always one line, truncated with an ellipsis past the CSS max-width
             // (.entity-list-panel-column-header); the full label stays available as the title
             // tooltip. A wrapping header makes every row in the table taller for one long label.
@@ -691,7 +768,8 @@ export function EntityListPanel({
             // the editable box has to reach out to the cell's padding edge and a clipping wrapper
             // around it would cut that off.
             body={(row: RowRecord) =>
-              isPlaceholderRow(row) ? (
+              // A column just shown, still being fetched for this row: a skeleton, not an empty cell.
+              isPlaceholderRow(row) || isFieldPending(row, col.key) ? (
                 <Skeleton height="1rem" width={col.identifier ? "6rem" : "70%"} />
               ) : (
               <span className="entity-list-panel-cell">
@@ -707,6 +785,8 @@ export function EntityListPanel({
             ? [
                 <Column
                   key="__row-actions"
+                  columnKey="__row-actions"
+                  reorderable={false}
                   className="entity-list-panel-row-actions-cell"
                   headerClassName="entity-list-panel-row-actions-cell"
                   frozen={lastFrozenIndex >= 0}
@@ -717,6 +797,7 @@ export function EntityListPanel({
             : []),
         ])}
       </DataTable>
+      </div>
       {rowActions.dialog}
       {canPatchAnswers && (
         // The one shared edit surface (plan phase 4b) — re-anchored per click to the clicked

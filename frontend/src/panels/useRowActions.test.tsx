@@ -109,6 +109,7 @@ async function click(el: Element) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -171,5 +172,67 @@ describe("list row actions", () => {
 
     await click(document.body.querySelector('[data-testid="row-create-submit"]')!);
     expect(onOpenOverview).toHaveBeenCalledWith("row-action-entity", "77");
+  });
+
+  it("puts actions taken out of the row into a \"…\" menu, keeping the bookmark inline", async () => {
+    duplicateMock.mockResolvedValue({ id: "42" });
+    window.localStorage.setItem(
+      "siamois.list.row-action-entity.global",
+      JSON.stringify({ v: 1, actionBar: { order: ["new-child", "duplicate"], inline: ["new-child"] } }),
+    );
+    await render([row()]);
+
+    expect(actionButton("Ajouter aux favoris")).not.toBeNull();
+    expect(actionButton("Dupliquer")).toBeNull();
+    const inline = Array.from(container.querySelectorAll(".entity-list-panel-row-actions button")).map((b) =>
+      b.getAttribute("aria-label"),
+    );
+    expect(inline).toEqual(["Ajouter aux favoris", "Créer un enfant", "Plus d'actions"]);
+
+    await click(actionButton("Plus d'actions")!);
+    const entry = Array.from(document.body.querySelectorAll(".entity-list-panel-row-actions-menu .p-menuitem-link")).find((a) =>
+      a.textContent?.includes("Dupliquer"),
+    )!;
+    expect(entry).toBeTruthy();
+    await click(entry);
+
+    expect(duplicateMock).toHaveBeenCalledWith("1");
+  });
+
+  it("follows the saved order and shows a newly added action inline", async () => {
+    window.localStorage.setItem(
+      "siamois.list.row-action-entity.global",
+      JSON.stringify({ v: 1, actionBar: { order: ["new-child", "gone"], inline: ["new-child", "gone"] } }),
+    );
+    await render([row()]);
+
+    const inline = Array.from(container.querySelectorAll(".entity-list-panel-row-actions button")).map((b) =>
+      b.getAttribute("aria-label"),
+    );
+    // "gone" no longer exists; "duplicate" wasn't in the saved layout, so it's appended inline.
+    expect(inline).toEqual(["Ajouter aux favoris", "Créer un enfant", "Dupliquer"]);
+    expect(actionButton("Plus d'actions")).toBeNull();
+  });
+
+  it("offers the action bar settings from the gear, even without a column catalog", async () => {
+    await render([row()]);
+
+    await click(container.querySelector(".entity-list-panel-gear-button")!);
+    const entry = Array.from(document.body.querySelectorAll(".entity-list-panel-gear-menu .p-menuitem-link")).find((a) =>
+      a.textContent?.includes("Barre d'actions"),
+    )!;
+    expect(entry).toBeTruthy();
+    await click(entry);
+
+    const settings = document.body.querySelector(".entity-list-panel-action-bar-settings")!;
+    // The bookmark is listed, locked on; the others can be switched into the menu.
+    expect(settings.querySelector(".is-locked")!.textContent).toContain("Favori");
+    const duplicateItem = settings.querySelector('[data-id="duplicate"]')!;
+    await click(duplicateItem.querySelector(".p-inputswitch input")!);
+
+    expect(actionButton("Dupliquer")).toBeNull();
+    expect(actionButton("Plus d'actions")).not.toBeNull();
+    const saved = JSON.parse(window.localStorage.getItem("siamois.list.row-action-entity.global")!);
+    expect(saved.actionBar).toEqual({ order: ["new-child", "duplicate"], inline: ["new-child"] });
   });
 });

@@ -116,6 +116,9 @@ async function flushDebounce() {
 }
 
 beforeEach(() => {
+  // Column/action-bar arrangements persist in localStorage (listPreferences.ts); every test starts
+  // from the catalog defaults.
+  window.localStorage.clear();
   listMock.mockReset();
   listMock.mockResolvedValue({ data: [{ id: "1", name: "Row A" }], totalCount: 1, limit: 20, offset: 0 });
   container = document.createElement("div");
@@ -207,7 +210,7 @@ describe("EntityListPanel", () => {
     expect(onNavigate).toHaveBeenCalledWith("fake-entity", "1");
   });
 
-  it("opens the full fiche (onNavigate), not the overview, when the identifier chip is clicked", async () => {
+  it("opens the overview (onOpenOverview), not the full fiche, when the identifier chip is clicked", async () => {
     const onNavigate = vi.fn();
     const onOpenOverview = vi.fn();
     renderPanel(onNavigate, undefined, onOpenOverview);
@@ -218,8 +221,10 @@ describe("EntityListPanel", () => {
       identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(onNavigate).toHaveBeenCalledWith("fake-entity", "1");
-    expect(onOpenOverview).not.toHaveBeenCalled();
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1");
+    expect(onNavigate).not.toHaveBeenCalled();
+    // No separate "open in overview" button any more: the chip is the one target.
+    expect(container.querySelector(".entity-list-panel-identifier-open")).toBeNull();
   });
 
   it("falls back to the overview when the identifier chip is clicked and no onNavigate is supplied", async () => {
@@ -380,40 +385,18 @@ describe("EntityListPanel", () => {
     expect(header.querySelector(".bi-copy")).toBeTruthy();
   });
 
-  it("opens the row in the overview from the button after the identifier chip", async () => {
-    const onNavigate = vi.fn();
-    const onOpenOverview = vi.fn();
-    renderPanel(onNavigate, undefined, onOpenOverview);
-    await flush();
-
-    const open = container.querySelector('.entity-list-panel-identifier-open') as HTMLButtonElement;
-    await act(async () => {
-      open.click();
-    });
-
     expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1");
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it("hides the selection column until a row is selected from the identifier's own checkbox", async () => {
+  it("always shows the selection column, with its selected/total count", async () => {
     renderPanel();
     await flush();
 
-    expect(container.querySelector("th.p-selection-column")).toBeNull();
-    const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
-    expect(chips).not.toContain("0/1");
-
-    const checkbox = container.querySelector('.entity-list-panel-identifier-select input[type="checkbox"]') as HTMLInputElement;
-    expect(checkbox).toBeTruthy();
-    await act(async () => {
-      checkbox.click();
-    });
-    await flush();
-
     expect(container.querySelector("th.p-selection-column")).toBeTruthy();
-    const chipsAfter = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
-    expect(chipsAfter).toContain("1/1");
-    // With the column shown, the identifier no longer carries its own checkbox.
+    const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
+    expect(chips).toContain("0/1");
+    // No hover checkbox on the identifier chip any more: selection is the column's job only.
     expect(container.querySelector(".entity-list-panel-identifier-select")).toBeNull();
   });
 
@@ -527,6 +510,140 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     });
   }
 
+  async function click(el: Element) {
+    await act(async () => {
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+  }
+
+  // Gear → its "Colonnes…" entry → the chooser overlay.
+  async function openColumnChooser() {
+    await click(container.querySelector(".entity-list-panel-gear-button")!);
+    const entry = Array.from(document.body.querySelectorAll(".entity-list-panel-gear-menu .p-menuitem-link")).find((a) =>
+      a.textContent?.includes("Colonnes"),
+    )!;
+    expect(entry).toBeTruthy();
+    await click(entry);
+  }
+
+  function chooserSwitch(fieldLabel: string, section: "visible" | "hidden"): Element {
+    const item = Array.from(
+      document.body.querySelectorAll(`.entity-list-panel-column-toggler [data-section="${section}"] .visibility-chooser-item`),
+    ).find((li) => li.textContent?.includes(fieldLabel))!;
+    expect(item).toBeTruthy();
+    return item.querySelector(".p-inputswitch input")!;
+  }
+
+  const twoFieldCatalog = {
+    fields: {
+      "-118": { id: "-118", resourceType: "fields", label: "Statut", answerType: "TEXT", isSystemField: false },
+      "-119": { id: "-119", resourceType: "fields", label: "Commentaire", answerType: "TEXT", isSystemField: false },
+    },
+    columns: [
+      { fieldId: "-118", visible: true, order: 0 },
+      { fieldId: "-119", visible: false, order: 1 },
+    ],
+  };
+
+  it("waits for the catalog and fetches the first chunk once, with its columns", async () => {
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    expect(schemaListMock).toHaveBeenCalledTimes(1);
+    expect(schemaListMock).toHaveBeenCalledWith(expect.objectContaining({ fields: "-118", offset: 0 }));
+  });
+
+  it("showing a column fetches only that column for the loaded rows and merges it in", async () => {
+    schemaLoadMock.mockResolvedValue(twoFieldCatalog);
+    schemaListMock.mockImplementation(async (params) => {
+      const fields = (params as { fields?: string }).fields;
+      const answers: Record<string, unknown> = {};
+      if (fields?.split(",").includes("-118")) answers["-118"] = "En cours";
+      if (fields?.split(",").includes("-119")) answers["-119"] = "Note A";
+      return { data: [{ id: "1", name: "Row A", answers }], totalCount: 1, limit: 50, offset: 0 };
+    });
+    renderSchemaPanel();
+    await flush();
+    await flush();
+    expect(schemaListMock).toHaveBeenCalledTimes(1);
+
+    await openColumnChooser();
+    await click(chooserSwitch("Commentaire", "hidden"));
+    await flush();
+
+    // One more request, for the new column alone — not the whole row set again.
+    expect(schemaListMock).toHaveBeenCalledTimes(2);
+    expect(schemaListMock).toHaveBeenLastCalledWith(expect.objectContaining({ fields: "-119", offset: 0 }));
+    // The existing column's value is still there, and the new one merged in beside it.
+    expect(container.textContent).toContain("En cours");
+    expect(container.textContent).toContain("Note A");
+    expect(container.querySelector("th")?.parentElement?.textContent).toContain("Commentaire");
+  });
+
+  it("hiding a column fetches nothing", async () => {
+    renderSchemaPanel();
+    await flush();
+    await flush();
+    const before = schemaListMock.mock.calls.length;
+
+    await openColumnChooser();
+    await click(chooserSwitch("Statut", "visible"));
+    await flush();
+
+    expect(schemaListMock).toHaveBeenCalledTimes(before);
+    expect(container.textContent).not.toContain("En cours");
+  });
+
+  it("filters both chooser sections with the search box", async () => {
+    schemaLoadMock.mockResolvedValue(twoFieldCatalog);
+    renderSchemaPanel();
+    await flush();
+    await flush();
+    await openColumnChooser();
+
+    const input = document.body.querySelector(".entity-list-panel-column-toggler input") as HTMLInputElement;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+      setter.call(input, "comm");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await flush();
+
+    const chooser = document.body.querySelector(".entity-list-panel-column-toggler")!;
+    expect(chooser.querySelector('[data-section="visible"] ul')!.textContent).not.toContain("Statut");
+    expect(chooser.querySelector('[data-section="hidden"] ul')!.textContent).toContain("Commentaire");
+  });
+
+  it("restores a saved column arrangement, ignoring columns the catalog no longer has", async () => {
+    schemaLoadMock.mockResolvedValue(twoFieldCatalog);
+    window.localStorage.setItem(
+      "siamois.list.fake-schema-entity.global",
+      JSON.stringify({ v: 1, visibleColumns: ["-119", "gone", "-118"] }),
+    );
+    renderSchemaPanel();
+    await flush();
+    await flush();
+
+    expect(schemaListMock).toHaveBeenCalledTimes(1);
+    expect(schemaListMock).toHaveBeenCalledWith(expect.objectContaining({ fields: "-118,-119" }));
+    const headers = Array.from(container.querySelectorAll(".entity-list-panel-column-header")).map((h) => h.textContent);
+    expect(headers.indexOf("Commentaire")).toBeLessThan(headers.indexOf("Statut"));
+  });
+
+  it("saves the arrangement when a column is toggled", async () => {
+    schemaLoadMock.mockResolvedValue(twoFieldCatalog);
+    renderSchemaPanel();
+    await flush();
+    await flush();
+    await openColumnChooser();
+    await click(chooserSwitch("Commentaire", "hidden"));
+
+    const saved = JSON.parse(window.localStorage.getItem("siamois.list.fake-schema-entity.global")!);
+    expect(saved.visibleColumns).toEqual(["-118", "-119"]);
+  });
+
   it("requests only the catalog's default-visible field ids and renders the dynamic column", async () => {
     renderSchemaPanel();
     await flush();
@@ -625,16 +742,15 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     await flush();
     await flush();
 
-    const gearButton = container.querySelector(".entity-list-panel-gear-button") as HTMLElement;
-    expect(gearButton).toBeTruthy();
-
-    await act(async () => {
-      gearButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    await flush();
+    await openColumnChooser();
 
     // PrimeReact's OverlayPanel portals into document.body by default, not into `container`.
-    expect(document.body.querySelector(".entity-list-panel-column-toggler")).toBeTruthy();
+    const chooser = document.body.querySelector(".entity-list-panel-column-toggler")!;
+    expect(chooser).toBeTruthy();
+    // Two sections and a search box — not a multiselect.
+    expect(chooser.querySelector('[data-section="visible"]')!.textContent).toContain("Statut");
+    expect(chooser.querySelector('[data-section="hidden"]')).toBeTruthy();
+    expect(chooser.querySelector("input")).toBeTruthy();
     // The gear offers column visibility and nothing else — no filter enable/disable switch.
     expect(document.body.querySelector(".entity-list-panel-filter-toggle")).toBeFalsy();
   });
@@ -1023,12 +1139,6 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     renderPanel();
     await flush();
 
-    // Selecting a row brings in the selection column.
-    await act(async () => {
-      (container.querySelector('.entity-list-panel-identifier-select input[type="checkbox"]') as HTMLInputElement).click();
-    });
-    await flush();
-
     // fakeConfig: one column, `name`, marked identifier — so selection + name + the row actions
     // right after it, and that is all.
     const frozen = headerCells().filter((th) => th.classList.contains("p-frozen-column"));
@@ -1064,10 +1174,10 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     const frozenLabels = headerCells()
       .filter((th) => th.classList.contains("p-frozen-column"))
       .map((th) => th.textContent);
-    // Statut + Name + row actions (no selection column until a row is selected); "Après" scrolls away.
-    expect(frozenLabels).toHaveLength(3);
-    expect(frozenLabels[0]).toContain("Statut");
-    expect(frozenLabels[1]).toContain("Name");
+    // Selection + Statut + Name + row actions; "Après" scrolls away.
+    expect(frozenLabels).toHaveLength(4);
+    expect(frozenLabels[1]).toContain("Statut");
+    expect(frozenLabels[2]).toContain("Name");
     expect(frozenLabels.some((l) => l?.includes("Après"))).toBe(false);
   });
 
