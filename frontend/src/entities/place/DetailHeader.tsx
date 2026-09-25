@@ -1,5 +1,6 @@
 import { Chip } from "primereact/chip";
 import type { PlaceDetail } from "./types";
+import { getEntityType } from "../registry";
 
 // spatialUnitPanelHeader.xhtml's content, reduced the same way FindDetailHeader's/
 // PhaseDetailHeader's own is: name chip + a read-only type chip. The type field is already
@@ -14,8 +15,8 @@ export interface PlaceDetailHeaderProps {
 export function PlaceDetailHeader({ entity }: PlaceDetailHeaderProps) {
   return (
     <div className="place-detail-header" style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap" }}>
-      <Chip label={entity.name || ""} className="entity-nav-chip" />
-      {entity.type?.resolvedLabel && <Chip label={entity.type.resolvedLabel} className="recording-unit-chip-alt" />}
+      <Chip label={entity.name || ""} className="spatial-unit-chip-alt entity-nav-chip" icon={getEntityType("place")?.icon} />
+      {entity.type?.resolvedLabel && <Chip label={entity.type.resolvedLabel} className="mr-2 spatial-unit-type-chip" />}
     </div>
   );
 }

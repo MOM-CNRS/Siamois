@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BreadCrumb } from "primereact/breadcrumb";
-import { Chip } from "primereact/chip";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
 import { apiUrl } from "../api/basePath";
@@ -232,6 +231,8 @@ export function EntityDetailPanel({
       />
       <TabView
         className="entity-detail-panel-tabs"
+        // One line, scrolled with ‹ › when the tabs don't fit (the narrow overview pane).
+        scrollable
         activeIndex={activeTabIndex}
         onTabChange={(e) => setActiveTabIndex(e.index)}
       >
@@ -241,17 +242,12 @@ export function EntityDetailPanel({
             <TabPanel
               key={tab.key}
               header={
-                badge == null ? (
-                  tab.label
-                ) : (
-                  // actionUnitTabView.xhtml's own count pastille next to the tab label
-                  // (panelModel.unit.recordingUnitCount) — a plain Chip, not PrimeReact's Badge,
-                  // matching the tab-header chips elsewhere in this app (PanelHeaderBar's own
-                  // count chip on the list panel).
-                  <span className="entity-detail-panel-tab-header">
-                    {tab.label} <Chip label={String(badge)} />
-                  </span>
-                )
+                // pages/shared/tab/tabTitle.xhtml's markup, as every JSF tab renders its title:
+                // bold label, then the count in parentheses when the tab has one.
+                <div style={{ display: "flex", gap: "0.2em", alignItems: "center", fontWeight: "bold" }}>
+                  {tab.label}
+                  {badge != null && <span>{` (${badge})`}</span>}
+                </div>
               }
             >
               {tab.render(data, helpers)}

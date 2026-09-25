@@ -36,6 +36,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
   collectionPath: "recording-units",
   // Matches RecordingUnitTableDefinitionFactory's own identifierCol iconClass.
   icon: "bi bi-pencil-square",
+  panelClass: "recording-unit-panel",
   api: {
     siblings: (id) => fetchSiblings("recording-units", id),
     get: getRecordingUnit,

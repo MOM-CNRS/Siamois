@@ -78,6 +78,17 @@ function focusUrl(mainPath: string, overviewPath?: string, backUrl?: string): st
   return params.length ? `${main}?${params.join("&")}` : main;
 }
 
+// The classes JSF puts on a panel's root (AbstractPanel.panelClass: "siamois-panel
+// <entity>-panel single-panel|list-panel", WelcomePanel's bare "siamois-panel"). They select the
+// entity's color scheme and the app's panel-scoped overrides in the shared theme — per pane, and
+// per what the pane shows NOW: the JSF wrapper around the mount only knows what it mounted.
+export function paneClassName(panelKind: PanelKind, entityType: string): string {
+  if (panelKind === "home") return "siamois-panel";
+  const panelClass = getEntityType(entityType)?.panelClass;
+  const kind = panelKind === "list" ? "list-panel" : "single-panel";
+  return panelClass ? `siamois-panel ${panelClass} ${kind}` : `siamois-panel ${kind}`;
+}
+
 function overviewPath(overview: OverviewState | null): string | undefined {
   if (!overview) return undefined;
   return getEntityType(overview.entityType)?.routes.detail(overview.entityId);
@@ -424,7 +435,7 @@ export function App({ options }: { options: MountOptions }) {
     // beside it). Forcing the same rule inline is robust regardless of that injection's behavior.
     <Splitter style={{ height: "100%", display: "flex", flexWrap: "nowrap" }}>
       <SplitterPanel
-        className="panel-splitter-panel-l"
+        className={`panel-splitter-panel-l ${paneClassName(view.panelKind, view.entityType)}`}
         size={60}
         // Mirrors the legacy panel-docked box's colored top border (focus.xhtml) — scoped to just
         // this pane now that the outer JSF wrapper no longer carries it (that wrapper spans both
@@ -453,7 +464,7 @@ export function App({ options }: { options: MountOptions }) {
         />
       </SplitterPanel>
       <SplitterPanel
-        className="panel-splitter-panel-r sideview"
+        className={`panel-splitter-panel-r sideview ${overview ? paneClassName("detail", overview.entityType) : ""}`}
         size={40}
         style={{ display: "flex", flexDirection: "column", minWidth: 0, viewTransitionName: overviewPaneStyleName }}
       >
@@ -487,7 +498,7 @@ export function App({ options }: { options: MountOptions }) {
     // Same colored top border as the splitter's left pane above — the no-overview case is just
     // the single-pane equivalent of "the main panel," so it gets the same chrome.
     <div
-      className="panel-splitter-panel-l"
+      className={`panel-splitter-panel-l ${paneClassName(view.panelKind, view.entityType)}`}
       style={{
         height: "100%",
         display: "flex",

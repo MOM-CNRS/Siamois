@@ -243,6 +243,11 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   // for Project) — used by EntityListPanel's header, mirroring panel/header/*ListPanelHeader.xhtml
   // (icon + title + count chip), not something list rows/columns already carry.
   icon: string;
+  // The JSF panel's entity class (AbstractPanel.panelClass without its generic parts), e.g.
+  // "action-unit-panel": what selects the entity's color scheme in the shared theme
+  // (siamois/panel/_panels.scss's themed-panel). App puts it on each pane, the way focus.xhtml and
+  // panelContent.xhtml put panelClass on theirs.
+  panelClass?: string;
   api: {
     list(params: ListParams): Promise<PagedResult<TSummary>>;
     get(id: string | number): Promise<TDetail>;

@@ -1,8 +1,10 @@
 /*
- * Styles owned by the React main panel. Until now every class name this bundle emitted
- * (entity-list-panel-*, cell-edit-overlay, ...) existed only as a hook with nothing behind it —
- * the bundle imported the PrimeReact theme and nothing else, so the JSF theme's own rules were the
- * only thing painting these panels.
+ * Styles owned by the React main panel: only what has no JSF counterpart (entity-list-panel-*,
+ * cell-edit-overlay, the fiche grid's container queries, ...). Everything with one — every
+ * PrimeReact component, and every app class shared with the .xhtml (siamois-panel,
+ * <entity>-panel, sia-form-panel, panel-bc, ...) — is painted by the host page's own theme, which
+ * aliases its .ui-* rules to PrimeReact's .p-* classes (primefaces-themes/theme-base/
+ * _primereact.scss). Prefer a JSF class name + the theme over a new rule here.
  *
  * Variables (--main-color, --context-main-color, --siamois-green-light-100) come from the host
  * page's theme (target/generated-resources/css/theme.css) — each is used with a fallback so the
@@ -220,10 +222,11 @@
   color: var(--surface-400, #ced4da);
 }
 
-/* An entity's identifier/name chip: outlined in the entity's context color on a transparent
-   background (text and icon in that color too). */
-.entity-nav-chip,
-.p-chip.entity-nav-chip {
+/* A list row's identifier/link chip: outlined in the entity's context color on a transparent
+   background (text and icon in that color too). Not the fiche header's identifier Chip: that one is
+   JSF's editableIdentifierChip — `<entity>-chip-alt entity-nav-chip`, filled in the entity colour —
+   and is painted by the shared theme. */
+.entity-nav-chip:not(.p-chip) {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -240,7 +243,7 @@
   color: inherit;
 }
 
-.entity-nav-chip:hover {
+.entity-nav-chip:not(.p-chip):hover {
   background: color-mix(in srgb, var(--context-main-color, var(--main-color, #4d7c3a)) 10%, transparent);
 }
 
@@ -270,6 +273,31 @@
   --entity-list-row-height: 38px;
 }
 
+
+/* ----------------------------------------- the root <Panel> is a bare frame
+
+   focus.xhtml has no p:panel at the root of a list or detail view: the `siamois-panel <entity>-panel
+   single-panel|list-panel` div (App.tsx's pane, same classes) holds .sideview-titlebar and the
+   content directly. EntityListPanel/EntityDetailPanel keep a PrimeReact <Panel> there for its
+   header slot, so its own chrome (the host theme's panel padding, border, grey header and radius)
+   is removed — otherwise every tab body was padded twice and the title bar sat in a grey box. */
+.entity-list-panel.p-panel > .p-panel-header,
+.entity-detail-panel.p-panel > .p-panel-header,
+.entity-list-panel.p-panel > .p-toggleable-content > .p-panel-content,
+.entity-detail-panel.p-panel > .p-toggleable-content > .p-panel-content {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* The header slot (.p-panel-title) shrinks to its content by default; the .sideview-titlebar
+   inside it must span the full width, as it does in focus.xhtml. */
+.entity-list-panel.p-panel > .p-panel-header > .p-panel-title,
+.entity-detail-panel.p-panel > .p-panel-header > .p-panel-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 
 /* ----------------------------------------- the table scrolls, the panel does not
 
@@ -366,7 +394,7 @@
 
 /* What PrimeReact already does for a frozen cell, verified rather than assumed: it injects
    `.p-frozen-column { position: sticky; background: inherit; }` into the document at runtime (no
-   stylesheet here defines that class — not the lara theme, not primereact.min.css) and writes the
+   stylesheet here defines that class — not the host theme, not the bundle) and writes the
    `left` offset inline per cell. So the sticky behaviour and the opaque background are free.
 
    What it does NOT give, and what is below: the stacking order between the frozen columns and the
@@ -499,12 +527,14 @@
    below is written against it, not against project-fiche-tab alone, so the RU fiche gets the same
    label/field look as Project's rather than a second, silently-drifting copy of these rules.
 
-   The SIAMOIS theme already styles most of this, but keyed on PrimeFaces class names
+   The SIAMOIS theme styles most of this, keyed on PrimeFaces class names
    (primefaces-themes/.../panels.scss, others/styles.scss): `.ui-panel.sia-form-panel`,
-   `.ellipsis-btn .ui-button-text`, `.siamois-panel .field-value-group`. PrimeReact emits `.p-*`
-   instead, so the rules below are the `.p-*` half of the same look — same class names on our side
+   `.ellipsis-btn .ui-button-text`, `.siamois-panel .field-value-group`. Those rules now reach
+   PrimeReact's markup directly — theme-base/_primereact.scss aliases every .ui-* class PrimeReact
+   has an equivalent for (e.g. `.ui-panel.sia-form-panel .ui-panel-titlebar` also emits
+   `.p-panel.sia-form-panel .p-panel-header`) — as long as this side uses the same class names
    (sia-form-panel, field-value-group, ellipsis-btn, required-btn, header-toggle-container,
-   panel-bc, panel-footer), so the theme keeps being the single place the colours live.
+   panel-bc, panel-footer). What stays below is only what the two DOMs genuinely need differently.
    --------------------------------------------------------------------------- */
 
 .p-panel.sia-form-panel .p-panel-content {
@@ -514,34 +544,46 @@
   padding: 0.5rem 0;
 }
 
-.p-panel.sia-form-panel .p-panel-header {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--siamois-green-light-350);
-  color: var(--text-main);
-  padding: 0.5em;
-}
-
 /* customFormPanelContent.xhtml is a p:panelGrid layout="grid" of p:row/p:column, each column
    carrying a "ui-g-12 ui-md-6 ui-lg-3"-style className computed server-side from the column's own
    ColumnWidth (span/md/lg — see CustomColUiDto#getClassName()) — PrimeFaces' OWN 12-column grid,
    not Bootstrap. The React side reads that SAME ColumnWidth object (entities/project/form.ts's
-   FormLayoutCol.width, over the wire as {span, md, lg}) and converts it via toPrimeFlexClass:
-   `.project-fiche-tab-row` adds PrimeFlex's own `.grid` class, `.project-fiche-tab-col` adds
-   `col-N` (PrimeFlex's, unprefixed — no breakpoint, always applies) plus `sia-md-col-N`/
-   `sia-lg-col-N` (OURS, below).
+   FormLayoutCol.width, over the wire as {span, md, lg}) and converts it via toGridClass:
+   `.project-fiche-tab-row` adds `sia-grid`, `.project-fiche-tab-col` adds `sia-col-N` (no
+   breakpoint, always applies) plus `sia-md-col-N`/`sia-lg-col-N`. All four are ours, below, with
+   PrimeFlex's own grid values (0.5rem gutter, same percentages). PrimeFlex itself is no longer
+   shipped: its global `.grid`/`.col-N`/`.hidden`/spacing utilities collided with Bootstrap's on
+   the host page, and this grid was the only part of it the panel used.
 
-   Those last two are not PrimeFlex's `md:col-N`/`lg:col-N`, on purpose: PrimeFlex's own
-   breakpoints are `@media`-gated, i.e. keyed to the BROWSER WINDOW's width. That is correct for
-   the main panel (which roughly IS the window) but wrong for the same fiche opened in the
-   overview pane — dragging the overview's own splitter narrower doesn't change the window at
-   all, so a window-width breakpoint never reacts, and the fiche stayed stuck at its widest
-   column count no matter how far the pane narrowed (found live: resize the window and it's
-   fine, resize the overview's splitter and columns overlap). The fix is a CSS Container Query
-   instead: `.sia-fiche-tab` establishes a container-query context on ITS OWN rendered width
+   The md/lg classes are not viewport breakpoints (`@media`, i.e. keyed to the BROWSER WINDOW's
+   width). That is correct for the main panel (which roughly IS the window) but wrong for the same
+   fiche opened in the overview pane — dragging the overview's own splitter narrower doesn't
+   change the window at all, so a window-width breakpoint never reacts, and the fiche stayed stuck
+   at its widest column count no matter how far the pane narrowed (found live: resize the window
+   and it's fine, resize the overview's splitter and columns overlap). The fix is a CSS Container
+   Query instead: `.sia-fiche-tab` establishes a container-query context on ITS OWN rendered width
    (which does shrink with the pane, main or overview alike), and `@container` below reacts to
-   THAT, not the window. Same breakpoint pixel values as PrimeFlex's own (768/992) and the same
-   percentage math, just measured against the right box. */
+   THAT, not the window. Usual breakpoint values (768/992), same percentage math, just measured
+   against the right box. */
+.sia-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -0.5rem -0.5rem 0;
+}
+
+.sia-col-1 { flex: 0 0 auto; padding: 0.5rem; width: 8.3333%; }
+.sia-col-2 { flex: 0 0 auto; padding: 0.5rem; width: 16.6667%; }
+.sia-col-3 { flex: 0 0 auto; padding: 0.5rem; width: 25%; }
+.sia-col-4 { flex: 0 0 auto; padding: 0.5rem; width: 33.3333%; }
+.sia-col-5 { flex: 0 0 auto; padding: 0.5rem; width: 41.6667%; }
+.sia-col-6 { flex: 0 0 auto; padding: 0.5rem; width: 50%; }
+.sia-col-7 { flex: 0 0 auto; padding: 0.5rem; width: 58.3333%; }
+.sia-col-8 { flex: 0 0 auto; padding: 0.5rem; width: 66.6667%; }
+.sia-col-9 { flex: 0 0 auto; padding: 0.5rem; width: 75%; }
+.sia-col-10 { flex: 0 0 auto; padding: 0.5rem; width: 83.3333%; }
+.sia-col-11 { flex: 0 0 auto; padding: 0.5rem; width: 91.6667%; }
+.sia-col-12 { flex: 0 0 auto; padding: 0.5rem; width: 100%; }
+
 .project-fiche-tab-row {
   margin-bottom: 0.75rem;
 }
@@ -602,18 +644,11 @@
   align-items: center;
 }
 
-/* The label button.
-
-   This has to restate the WHOLE flat look, not just a tweak or two. The bundled PrimeReact theme
-   (lara-light-blue, imported by mount.ts) styles .p-button as a SOLID button — blue fill, white
-   text, 1rem, 700-weight label, 6px radius — and the SIAMOIS theme's own flat rules are written
-   against PrimeFaces class names (body .ui-button.ui-button-flat), which never match a PrimeReact
-   button. So nothing of the JSF look carries over on its own; it is reproduced here, matching the
-   compiled theme.css values (transparent ground, 3px radius, grey #6B7280 label at .875rem, faint
-   green wash on hover).
-
-   No !important and no specificity games needed: lara ships inside @layer primereact, and every
-   rule in this file is unlayered, so these win outright. */
+/* The label button: panelField.xhtml's flat .ellipsis-btn (transparent ground, 3px radius, grey
+   #6B7280 label at .875rem, faint green wash on hover). Written when the bundle still shipped the
+   Lara theme, whose solid blue .p-button had to be undone; the shared theme now gives a PrimeReact
+   button the JSF look by itself, so what matters here is the label-specific part (ellipsis, max
+   width, cursor, the * of required fields). */
 .sia-fiche-tab .ellipsis-btn.p-button {
   position: relative;
   display: flex;
@@ -637,8 +672,7 @@
   cursor: pointer;
 }
 
-/* .ui-button-flat.ui-state-hover: a 4%-alpha wash of the theme green, label colour unchanged.
-   Also cancels lara's blue focus ring, which would otherwise be the one blue thing left. */
+/* .ui-button-flat.ui-state-hover: a 4%-alpha wash of the theme green, label colour unchanged. */
 .sia-fiche-tab .ellipsis-btn.p-button:enabled:hover,
 .sia-fiche-tab .ellipsis-btn.p-button:hover {
   background: rgba(102, 153, 102, 0.04);
@@ -660,7 +694,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: normal; /* lara sets 700 */
+  font-weight: normal;
 }
 
 /* The field's own type icon (CustomField.getIcon(), served as FieldResource.icon). Two kinds

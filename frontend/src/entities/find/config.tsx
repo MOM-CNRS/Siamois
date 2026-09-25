@@ -24,6 +24,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   collectionPath: "finds",
   // Matches SpecimenTableDefinitionFactory/SpecimenPanel's own icon.
   icon: "bi bi-bucket",
+  panelClass: "specimen-panel",
   api: {
     siblings: (id) => fetchSiblings("finds", id),
     get: getFind,

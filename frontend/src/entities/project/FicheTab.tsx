@@ -9,7 +9,7 @@ import { resolveValueBinding, toAnswerInput, type AnswerInputBody } from "../../
 import type { FieldResource } from "../../fields/types";
 import { useCanEdit } from "../../panels/writeMode";
 import { getProjectHistory, type ProjectHistoryEntry } from "./history";
-import { parseLayout, panelLabel, toPrimeFlexClass, type FormLayoutCol } from "./form";
+import { parseLayout, panelLabel, toGridClass, type FormLayoutCol } from "./form";
 import { getProjectTypes } from "./projectTypes";
 import { patchProject, type ProjectPatch } from "./api";
 import type { ProjectDetail } from "./types";
@@ -129,7 +129,7 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
             className={`sia-form-panel ${panel.className ?? ""}`.trim()}
           >
             {panel.rows.map((row, rowIndex) => (
-              <div key={rowIndex} className="project-fiche-tab-row grid">
+              <div key={rowIndex} className="project-fiche-tab-row sia-grid">
                 {row.columns.map((col, colIndex) => (
                   <FormField
                     key={colIndex}
@@ -253,7 +253,7 @@ function FormField({
   if (inactiveFieldIds.has(fieldId) && isEmptyValue(stored)) return null;
 
   return (
-    <div className={`project-fiche-tab-col ${toPrimeFlexClass(col.width)}`} data-field-id={fieldId}>
+    <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>
       <div className="field-value-group">
         <FieldLabel field={field} required={col.isRequired} />
         <FieldEditCell

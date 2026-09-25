@@ -1,5 +1,6 @@
 import { Chip } from "primereact/chip";
 import type { FindDetail } from "./types";
+import { getEntityType } from "../registry";
 
 // specimenPanelHeader.xhtml's content, reduced: identifier chip + a read-only category chip.
 // Unlike Project's/RecordingUnit's own DetailHeader, the category chip here is NOT inline-editable
@@ -15,8 +16,8 @@ export interface FindDetailHeaderProps {
 export function FindDetailHeader({ entity }: FindDetailHeaderProps) {
   return (
     <div className="find-detail-header" style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap" }}>
-      <Chip label={entity.fullIdentifier} className="entity-nav-chip" />
-      {entity.type?.resolvedLabel && <Chip label={entity.type.resolvedLabel} className="recording-unit-chip-alt" />}
+      <Chip label={entity.fullIdentifier} className="specimen-chip-alt entity-nav-chip" icon={getEntityType("find")?.icon} />
+      {entity.type?.resolvedLabel && <Chip label={entity.type.resolvedLabel} className="mr-2 specimen-type-chip" />}
     </div>
   );
 }

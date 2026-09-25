@@ -1,0 +1,1319 @@
+@use 'sass:list';
+@use 'sass:math';
+
+// =====================================================================================================
+// PrimeReact parity
+//
+// The React main panel (frontend/) renders PrimeReact components inside the JSF page. Rather than
+// shipping a second theme for them (it used to bundle PrimeReact's Lara), this file makes the rules
+// written for PrimeFaces also apply to PrimeReact's markup, so both render from ONE source of truth:
+// the designer variables (themes/*/variables) and the .ui-* rules — theme-base's AND the app's own
+// overrides (siamois/**), e.g. `.ui-panel.siamois-panel .ui-panel-content`.
+//
+//   1. Class aliases — `.p-x { @extend .ui-x; }`. Every selector that mentions .ui-x anywhere in the
+//      stylesheet also gets a .p-x variant; the .ui-* output itself is left exactly as it was (@extend
+//      only ever appends selectors), so the JSF side cannot regress. Only used where PrimeReact's DOM
+//      has the same shape as PrimeFaces' for that part.
+//   2. States — PrimeFaces marks them with classes PrimeReact never sets (ui-state-hover/-focus/
+//      -active); PrimeReact uses :hover, :focus-visible, .p-highlight, .p-invalid. They are written
+//      out here with the same variables, never by @extend-ing a pseudo-class: that would add a variant
+//      to every .ui-state-* rule of every component (measured: +57 KB for buttons alone).
+//   3. Structure — where the DOMs differ (a PrimeReact button pads itself, PrimeFaces pads an inner
+//      text span; SVG icons; extra wrapper elements), the equivalent is derived from the same
+//      variables so the rendered box matches.
+//
+// Imported last by the theme entry point (themes/*/theme.scss) so section 2/3 rules win over the
+// structural primereact.min.css the bundle still ships. Order matters for nothing else: @extend is
+// resolved over the whole stylesheet.
+// =====================================================================================================
+
+// ----------------------------------------------------------------------------------------- 1. aliases
+
+// Generic
+.p-component { @extend .ui-widget; }
+.p-disabled { @extend .ui-state-disabled; }
+// PrimeReact's class-based states. Classes (unlike :hover/:focus-visible) extend cheaply (+4 KB
+// gzipped for these three), and they carry the app's own state overrides along — e.g. the themed
+// panels' `.ui-datatable thead th.ui-state-active` becomes `.p-datatable thead th.p-highlight`.
+.p-highlight { @extend .ui-state-highlight, .ui-state-active; }
+.p-focus { @extend .ui-state-focus; }
+.p-invalid { @extend .ui-state-error; }
+
+// Button (colors, borders, radius, severities, outlined/text variants)
+.p-button { @extend .ui-button; }
+.p-button-outlined { @extend .ui-button-outlined; }
+.p-button-text { @extend .ui-button-flat; }
+.p-button-raised { @extend .ui-button-raised; }
+.p-button-rounded { @extend .rounded-button; }
+.p-button-secondary { @extend .ui-button-secondary; }
+.p-button-success { @extend .ui-button-success; }
+.p-button-info { @extend .ui-button-info; }
+.p-button-warning { @extend .ui-button-warning; }
+.p-button-help { @extend .ui-button-help; }
+.p-button-danger { @extend .ui-button-danger; }
+.p-button-icon-only { @extend .ui-button-icon-only; }
+
+// Inputs
+.p-inputtext { @extend .ui-inputfield; }
+.p-inputtextarea { @extend .ui-inputtextarea; }
+.p-input-icon-left { @extend .ui-input-icon-left; }
+.p-input-icon-right { @extend .ui-input-icon-right; }
+.p-fluid { @extend .ui-fluid; }
+.p-autocomplete { @extend .ui-autocomplete; }
+.p-autocomplete-panel { @extend .ui-autocomplete-panel; }
+.p-autocomplete-items { @extend .ui-autocomplete-items; }
+.p-autocomplete-item { @extend .ui-autocomplete-item; }
+.p-autocomplete-multiple-container { @extend .ui-autocomplete-multiple-container; }
+.p-autocomplete-token { @extend .ui-autocomplete-token; }
+.p-autocomplete-input-token { @extend .ui-autocomplete-input-token; }
+.p-multiselect { @extend .ui-selectcheckboxmenu; }
+.p-multiselect-panel { @extend .ui-selectcheckboxmenu-panel; }
+.p-multiselect-header { @extend .ui-selectcheckboxmenu-header; }
+.p-multiselect-items { @extend .ui-selectcheckboxmenu-items; }
+.p-multiselect-item { @extend .ui-selectcheckboxmenu-item; }
+.p-multiselect-token { @extend .ui-selectcheckboxmenu-token; }
+.p-checkbox { @extend .ui-chkbox; }
+.p-checkbox-box { @extend .ui-chkbox-box; }
+.p-datepicker { @extend .ui-datepicker; }
+
+// Panels
+.p-panel { @extend .ui-panel; }
+.p-panel-header { @extend .ui-panel-titlebar; }
+.p-panel-title { @extend .ui-panel-title; }
+.p-panel-content { @extend .ui-panel-content; }
+.p-panel-footer { @extend .ui-panel-footer; }
+.p-panel-header-icon { @extend .ui-panel-titlebar-icon; }
+.p-card { @extend .ui-card; }
+.p-card-body { @extend .ui-card-body; }
+.p-card-title { @extend .ui-card-title; }
+.p-card-subtitle { @extend .ui-card-subtitle; }
+.p-card-content { @extend .ui-card-content; }
+.p-card-footer { @extend .ui-card-footer; }
+.p-toolbar { @extend .ui-toolbar; }
+.p-splitter { @extend .ui-splitter; }
+.p-splitter-gutter { @extend .ui-splitter-gutter; }
+.p-splitter-gutter-handle { @extend .ui-splitter-gutter-handle; }
+.p-tabview { @extend .ui-tabs; }
+.p-tabview-nav { @extend .ui-tabs-nav; }
+.p-tabview-panels { @extend .ui-tabs-panels; }
+.p-tabview-panel { @extend .ui-tabs-panel; }
+
+// Data
+.p-datatable { @extend .ui-datatable; }
+.p-datatable-header { @extend .ui-datatable-header; }
+.p-datatable-footer { @extend .ui-datatable-footer; }
+.p-datatable-tbody { @extend .ui-datatable-data; }
+.p-column-title { @extend .ui-column-title; }
+.p-sortable-column { @extend .ui-sortable-column; }
+.p-sortable-column-icon { @extend .ui-sortable-column-icon; }
+.p-paginator { @extend .ui-paginator; }
+.p-datatable-sm { @extend .ui-datatable-sm; }
+.p-datatable-lg { @extend .ui-datatable-lg; }
+.p-datatable-striped { @extend .ui-datatable-striped; }
+.p-datatable-gridlines { @extend .ui-datatable-gridlines; }
+.p-row-odd { @extend .ui-datatable-odd; }
+
+// Overlays
+.p-dialog { @extend .ui-dialog; }
+.p-dialog-header { @extend .ui-dialog-titlebar; }
+.p-dialog-title { @extend .ui-dialog-title; }
+.p-dialog-content { @extend .ui-dialog-content; }
+.p-dialog-footer { @extend .ui-dialog-footer; }
+.p-overlaypanel { @extend .ui-overlaypanel; }
+.p-overlaypanel-content { @extend .ui-overlaypanel-content; }
+.p-tooltip { @extend .ui-tooltip; }
+.p-tooltip-text { @extend .ui-tooltip-text; }
+.p-tooltip-arrow { @extend .ui-tooltip-arrow; }
+.p-tooltip-right { @extend .ui-tooltip-right; }
+.p-tooltip-left { @extend .ui-tooltip-left; }
+.p-tooltip-top { @extend .ui-tooltip-top; }
+.p-tooltip-bottom { @extend .ui-tooltip-bottom; }
+
+// Menus
+.p-menu { @extend .ui-menu; }
+.p-menu-list { @extend .ui-menu-list; }
+.p-menuitem { @extend .ui-menuitem; }
+.p-menuitem-link { @extend .ui-menuitem-link; }
+.p-menuitem-text { @extend .ui-menuitem-text; }
+.p-menuitem-icon { @extend .ui-menuitem-icon; }
+.p-breadcrumb { @extend .ui-breadcrumb; }
+
+// Misc
+.p-chip { @extend .ui-chip; }
+.p-chip-text { @extend .ui-chip-text; }
+.p-chip-icon { @extend .ui-chip-icon; }
+.p-chip-remove-icon { @extend .ui-chip-remove-icon; }
+.p-progressbar { @extend .ui-progressbar; }
+.p-progressbar-value { @extend .ui-progressbar-value; }
+.p-progressbar-label { @extend .ui-progressbar-label; }
+.p-skeleton { @extend .ui-skeleton; }
+.p-badge { @extend .ui-badge; }
+.p-tag { @extend .ui-tag; }
+
+// ------------------------------------------------------------------------- 2 & 3. states + structure
+
+body {
+    // PrimeReact 10 injects its structural CSS at runtime inside `@layer primereact` (its
+    // primereact.min.css is an empty, deprecated stub). Layered rules lose to ANY unlayered rule —
+    // here Bootstrap's reboot on the host page (`ul, ol { padding-left: 2rem; margin-bottom: 1rem }`)
+    // — so the list resets it overrides are restated unlayered.
+    .p-reset,
+    .p-menu-list,
+    .p-tabview-nav,
+    .p-breadcrumb-list,
+    .p-autocomplete-multiple-container,
+    .p-autocomplete-items,
+    .p-multiselect-items,
+    .p-dropdown-items,
+    .p-listbox-list,
+    .p-virtualscroller-content {
+        margin: 0;
+        padding-left: 0;
+        list-style: none;
+    }
+
+    .p-menu-list,
+    .p-tabview-nav,
+    .p-breadcrumb-list,
+    .p-autocomplete-items,
+    .p-multiselect-items,
+    .p-dropdown-items,
+    .p-listbox-list {
+        padding: 0;
+    }
+
+    .p-component:disabled {
+        opacity: $disabledOpacity;
+    }
+
+    // PrimeReact's bare icon buttons (panel toggler, dialog close, chip remove, …).
+    .p-link {
+        font-family: inherit;
+        font-size: inherit;
+        border-radius: $borderRadius;
+        background: transparent;
+        border: 0 none;
+        padding: 0;
+
+        &:focus-visible {
+            @include focused();
+        }
+    }
+
+    // ------------------------------------------------------------------------------------- button
+    .p-button {
+        // PrimeFaces pads the inner .ui-button-text span and absolutely positions the icon inside the
+        // left padding; PrimeReact is a flex row that pads itself. Same box: horizontal text padding
+        // from $buttonTextOnlyPadding, and the icon sits where .ui-button-text-icon-left puts it.
+        padding: $buttonTextOnlyPadding;
+        font-size: $fontSize;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        vertical-align: bottom;
+        cursor: pointer;
+        line-height: normal;
+
+        .p-button-label {
+            font-weight: normal;
+            transition-duration: $transitionDuration;
+        }
+
+        .p-button-icon {
+            font-size: $iconSize;
+        }
+
+        .p-button-icon-left {
+            // .ui-button-text-icon-left: text starts at padding-left, icon centred in the first iconSize.
+            margin-left: math.div($iconSize, 2) - list.nth($buttonTextOnlyPadding, 2);
+            margin-right: list.nth($buttonWithLeftIconPadding, 4) - math.div($iconSize, 2) - $iconSize;
+        }
+
+        .p-button-icon-right {
+            margin-left: list.nth($buttonWithRightIconPadding, 2) - math.div($iconSize, 2) - $iconSize;
+            margin-right: math.div($iconSize, 2) - list.nth($buttonTextOnlyPadding, 2);
+        }
+
+        &.p-button-icon-only {
+            width: $buttonIconOnlyWidth;
+            padding: $buttonIconOnlyPadding;
+
+            .p-button-icon-left,
+            .p-button-icon-right {
+                margin: 0;
+            }
+
+            // PrimeReact renders a non-breaking-space label next to the icon.
+            .p-button-label {
+                display: none;
+            }
+
+            &.p-button-rounded {
+                border-radius: 50%;
+                height: $buttonIconOnlyWidth;
+            }
+        }
+
+        &:not(:disabled):hover {
+            background: $buttonHoverBg;
+            color: $buttonTextHoverColor;
+            border-color: $buttonHoverBorderColor;
+        }
+
+        &:not(:disabled):active {
+            background: $buttonActiveBg;
+            color: $buttonTextActiveColor;
+            border-color: $buttonActiveBorderColor;
+        }
+
+        &:focus-visible {
+            outline: $buttonFocusOutline;
+            outline-offset: $buttonFocusOutlineOffset;
+            box-shadow: $buttonFocusShadow;
+        }
+
+        &.p-button-outlined {
+            &:not(:disabled):hover {
+                background: rgba($buttonBg, $textButtonHoverBgOpacity);
+                color: $buttonBg;
+                border: $outlinedButtonBorder;
+            }
+
+            &:not(:disabled):active {
+                background: rgba($buttonBg, $textButtonActiveBgOpacity);
+                color: $buttonBg;
+                border: $outlinedButtonBorder;
+            }
+        }
+
+        &.p-button-text {
+            &:not(:disabled):hover {
+                background: rgba($buttonBg, $textButtonHoverBgOpacity);
+                color: $buttonBg;
+                border-color: transparent;
+            }
+
+            &:not(:disabled):active {
+                background: rgba($buttonBg, $textButtonActiveBgOpacity);
+                color: $buttonBg;
+                border-color: transparent;
+            }
+
+            &.p-button-plain {
+                color: $plainButtonTextColor;
+
+                &:not(:disabled):hover {
+                    background: $plainButtonHoverBgColor;
+                    color: $plainButtonTextColor;
+                }
+
+                &:not(:disabled):active {
+                    background: $plainButtonActiveBgColor;
+                    color: $plainButtonTextColor;
+                }
+            }
+        }
+
+        &.p-button-link {
+            color: $buttonBg;
+            background: transparent;
+            border: transparent;
+
+            &:not(:disabled):hover {
+                background: transparent;
+                border-color: transparent;
+
+                .p-button-label {
+                    text-decoration: underline;
+                }
+            }
+        }
+    }
+
+    // Severity states (base colors come from the .ui-button-<severity> aliases above).
+    @each $severity, $bg, $hoverBg, $hoverText, $hoverBorder, $activeBg, $activeText, $activeBorder, $focus in (
+        (secondary, $secondaryButtonBg, $secondaryButtonHoverBg, $secondaryButtonTextHoverColor, $secondaryButtonHoverBorderColor, $secondaryButtonActiveBg, $secondaryButtonTextActiveColor, $secondaryButtonActiveBorderColor, $secondaryButtonFocusShadow),
+        (success, $successButtonBg, $successButtonHoverBg, $successButtonTextHoverColor, $successButtonHoverBorderColor, $successButtonActiveBg, $successButtonTextActiveColor, $successButtonActiveBorderColor, $successButtonFocusShadow),
+        (info, $infoButtonBg, $infoButtonHoverBg, $infoButtonTextHoverColor, $infoButtonHoverBorderColor, $infoButtonActiveBg, $infoButtonTextActiveColor, $infoButtonActiveBorderColor, $infoButtonFocusShadow),
+        (warning, $warningButtonBg, $warningButtonHoverBg, $warningButtonTextHoverColor, $warningButtonHoverBorderColor, $warningButtonActiveBg, $warningButtonTextActiveColor, $warningButtonActiveBorderColor, $warningButtonFocusShadow),
+        (help, $helpButtonBg, $helpButtonHoverBg, $helpButtonTextHoverColor, $helpButtonHoverBorderColor, $helpButtonActiveBg, $helpButtonTextActiveColor, $helpButtonActiveBorderColor, $helpButtonFocusShadow),
+        (danger, $dangerButtonBg, $dangerButtonHoverBg, $dangerButtonTextHoverColor, $dangerButtonHoverBorderColor, $dangerButtonActiveBg, $dangerButtonTextActiveColor, $dangerButtonActiveBorderColor, $dangerButtonFocusShadow)
+    ) {
+        .p-button.p-button-#{$severity} {
+            &:not(:disabled):hover {
+                background: $hoverBg;
+                color: $hoverText;
+                border-color: $hoverBorder;
+            }
+
+            &:not(:disabled):active {
+                background: $activeBg;
+                color: $activeText;
+                border-color: $activeBorder;
+            }
+
+            &:focus-visible {
+                box-shadow: $focus;
+            }
+
+            &.p-button-outlined,
+            &.p-button-text {
+                &:not(:disabled):hover {
+                    background: rgba($bg, $textButtonHoverBgOpacity);
+                    color: $bg;
+                }
+
+                &:not(:disabled):active {
+                    background: rgba($bg, $textButtonActiveBgOpacity);
+                    color: $bg;
+                }
+            }
+
+            &.p-button-outlined {
+                &:not(:disabled):hover,
+                &:not(:disabled):active {
+                    border: $outlinedButtonBorder;
+                }
+            }
+
+            &.p-button-text {
+                &:not(:disabled):hover,
+                &:not(:disabled):active {
+                    border-color: transparent;
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------------------- inputs
+    .p-inputtext {
+        font-family: $fontFamily;
+
+        &:enabled:hover {
+            border-color: $inputHoverBorderColor;
+        }
+
+        &:enabled:focus {
+            @include focused-input();
+        }
+
+        &.p-invalid.p-component {
+            @include invalid-input();
+        }
+    }
+
+    .p-invalid > .p-inputtext,
+    .p-inputwrapper.p-invalid .p-inputtext {
+        @include invalid-input();
+    }
+
+    .p-inputwrapper-focus > .p-inputtext,
+    .p-inputtext.p-inputwrapper-focus {
+        @include focused-input();
+    }
+
+    // Calendar / InputNumber / AutoComplete with an attached button: square the joined corners.
+    .p-calendar-w-btn,
+    .p-inputnumber-buttons-stacked,
+    .p-autocomplete-dd {
+        .p-inputtext {
+            @include border-radius-right(0);
+        }
+
+        .p-button {
+            @include border-radius-left(0);
+            width: $inputButtonWidth;
+        }
+    }
+
+    // AutoComplete (multiple): the container is itself a .p-inputtext.
+    .p-autocomplete {
+        .p-autocomplete-multiple-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: math.div(list.nth($inputPadding, 1), 2);
+            align-items: center;
+
+            &:not(.p-disabled):hover {
+                border-color: $inputHoverBorderColor;
+            }
+
+            &:not(.p-disabled).p-focus {
+                @include focused-input();
+            }
+
+            .p-autocomplete-token {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                margin: 0;
+
+                .p-autocomplete-token-label {
+                    padding: 0 0 0 math.div($iconSize, 2);
+                }
+
+                .p-autocomplete-token-icon {
+                    margin: 0 math.div($iconSize, 2);
+                    cursor: pointer;
+                }
+            }
+
+            // Grows into the rest of the line instead of keeping its intrinsic 20ch width
+            // (which wraps it under the tokens).
+            .p-autocomplete-input-token {
+                flex: 1 1 0;
+                min-width: 4rem;
+
+                input {
+                    width: 100%;
+                    border: 0 none;
+                    outline: 0 none;
+                    background: transparent;
+                    box-shadow: none;
+                }
+            }
+        }
+    }
+
+    .p-autocomplete-panel .p-autocomplete-items {
+        .p-autocomplete-item {
+            &:not(.p-highlight):not(.p-disabled):hover {
+                background: $inputListItemHoverBg;
+                color: $inputListItemTextHoverColor;
+            }
+        }
+
+        .p-autocomplete-item-group {
+            margin: $submenuHeaderMargin;
+            padding: $submenuHeaderPadding;
+            color: $submenuHeaderTextColor;
+            background: $submenuHeaderBg;
+            font-weight: $submenuHeaderFontWeight;
+        }
+    }
+
+    .p-autocomplete-panel {
+        border-radius: $borderRadius;
+
+        .p-autocomplete-empty-message {
+            padding: $inputListItemPadding;
+            color: $inputListItemTextColor;
+        }
+    }
+
+    // MultiSelect (≈ selectCheckboxMenu)
+    .p-multiselect {
+        display: inline-flex;
+        cursor: pointer;
+
+        &:not(.p-disabled):hover {
+            border-color: $inputHoverBorderColor;
+        }
+
+        &:not(.p-disabled).p-focus {
+            @include focused-input();
+        }
+
+        &.p-invalid.p-component {
+            @include invalid-input();
+        }
+
+        .p-multiselect-label {
+            padding: $inputPadding;
+            transition: $transition;
+            color: $inputTextColor;
+
+            &.p-placeholder {
+                color: $inputPlaceholderTextColor;
+            }
+        }
+
+        &.p-multiselect-chip .p-multiselect-label {
+            display: flex;
+            flex-wrap: wrap;
+            gap: math.div(list.nth($inputPadding, 1), 2);
+        }
+
+        // .ui-selectcheckboxmenu-token — only styled inside PrimeFaces' multiple container, which
+        // PrimeReact doesn't have, hence spelled out.
+        &.p-multiselect-chip .p-multiselect-label {
+            padding: math.div(list.nth($inputPadding, 1), 2) list.nth($inputPadding, 2);
+        }
+
+        .p-multiselect-token {
+            display: inline-flex;
+            align-items: center;
+            margin: 0;
+            padding: 1px 0;
+            background: $chipBg;
+            color: $chipTextColor;
+            border-radius: $borderRadius;
+
+            .p-multiselect-token-label {
+                padding: 0 math.div($iconSize, 2);
+            }
+
+            .p-multiselect-token-icon {
+                margin-right: math.div($iconSize, 2);
+                cursor: pointer;
+            }
+        }
+
+        .p-multiselect-trigger {
+            background: transparent;
+            color: $inputIconColor;
+            width: $inputButtonWidth;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            @include border-radius-right($borderRadius);
+        }
+    }
+
+    .p-multiselect-panel {
+        .p-multiselect-header {
+            .p-checkbox {
+                margin-right: $inlineSpacing;
+            }
+
+            .p-multiselect-filter-container {
+                flex: 1 1 auto;
+
+                .p-inputtext {
+                    width: 100%;
+                    padding-right: 2 * list.nth($inputPadding, 2) + $iconSize;
+                }
+
+                .p-multiselect-filter-icon {
+                    right: list.nth($inputPadding, 2);
+                    color: $inputIconColor;
+                }
+            }
+
+            .p-multiselect-close {
+                @include action-icon();
+                margin-left: $inlineSpacing;
+            }
+        }
+
+        .p-multiselect-items {
+            .p-multiselect-item {
+                display: flex;
+                align-items: center;
+
+                &:not(.p-highlight):not(.p-disabled):hover {
+                    background: $inputListItemHoverBg;
+                    color: $inputListItemTextHoverColor;
+                }
+
+                .p-checkbox {
+                    margin-right: $inlineSpacing;
+                }
+            }
+        }
+    }
+
+    // Checkbox: PrimeReact 10 layers a transparent native <input.p-checkbox-input> over the box and
+    // marks "checked" with .p-highlight on the ROOT (.p-checkbox), with an SVG check in the box.
+    .p-checkbox {
+        width: $checkboxWidth;
+        height: $checkboxHeight;
+        position: relative;
+        display: inline-flex;
+        vertical-align: middle;
+
+        .p-checkbox-input {
+            appearance: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            opacity: 0;
+            z-index: 1;
+            cursor: pointer;
+            outline: 0 none;
+            border: $checkboxBorderWidth solid transparent;
+            border-radius: $borderRadius;
+        }
+
+        &.p-highlight .p-checkbox-box {
+            border-color: $checkboxActiveBorderColor;
+            background: $checkboxActiveBg;
+            color: $checkboxTextActiveColor;
+        }
+
+        .p-checkbox-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .p-checkbox-icon {
+                transition-duration: $transitionDuration;
+                color: $checkboxTextActiveColor;
+                font-size: $iconSize;
+                width: math.div($iconSize * 7, 8);
+                height: math.div($iconSize * 7, 8);
+            }
+
+        }
+
+        &:not(.p-disabled):has(.p-checkbox-input:hover) .p-checkbox-box {
+            border-color: $inputHoverBorderColor;
+        }
+
+        &.p-highlight:not(.p-disabled):has(.p-checkbox-input:hover) .p-checkbox-box {
+            background: $checkboxActiveHoverBg;
+            border-color: $checkboxActiveHoverBg;
+        }
+
+        &:not(.p-disabled):has(.p-checkbox-input:focus-visible) .p-checkbox-box {
+            box-shadow: $checkboxFocusShadow;
+            outline: 0 none;
+        }
+
+        &.p-invalid > .p-checkbox-box {
+            @include invalid-input();
+        }
+    }
+
+    // ------------------------------------------------------------------------------------- panels
+    .p-panel {
+        .p-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            // .ui-panel-titlebar's radius; PrimeReact adds a bottom one when collapsed.
+            @include border-radius-bottom(0);
+        }
+
+        .p-panel-title {
+            font-weight: $panelHeaderFontWeight;
+            line-height: 1;
+        }
+
+        .p-panel-header-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+
+        // .ui-panel-titlebar + .ui-panel-content: no double border. PrimeReact wraps the content in
+        // a .p-toggleable-content div, so the sibling rule has to go through it.
+        .p-panel-header + .p-toggleable-content > .p-panel-content,
+        .p-panel-header + .p-panel-content {
+            border-top: 0 none;
+        }
+
+        .p-toggleable-content:last-child > .p-panel-content,
+        > .p-panel-content:last-child {
+            @include border-radius-bottom($borderRadius);
+        }
+
+        &.p-panel-toggleable .p-panel-header {
+            padding: math.div($panelHeaderPadding * 3, 4) $panelHeaderPadding;
+        }
+    }
+
+    .p-card {
+        // PrimeFaces' .ui-card-title margin; PrimeReact's title is a div too.
+        .p-card-title {
+            line-height: normal;
+        }
+    }
+
+    .p-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: $inlineSpacing;
+
+        .p-toolbar-group-start,
+        .p-toolbar-group-center,
+        .p-toolbar-group-end {
+            display: flex;
+            align-items: center;
+        }
+    }
+
+    .p-splitter {
+        .p-splitter-gutter-resizing {
+            background: $splitterGutterHandleBg;
+        }
+    }
+
+    // TabView: PrimeFaces' .ui-tabs-top > .ui-tabs-nav > li.ui-tabs-header > a. PrimeReact nests the
+    // <ul> two wrappers deeper and puts the padding on the <a>.
+    // Unlike PrimeFaces' ui-tabs-top (which wraps), the tab bar stays on ONE line and scrolls
+    // horizontally: TabView's `scrollable` mode adds the ‹ › buttons when the tabs overflow (a
+    // narrow overview pane). PrimeReact's own structural rules for this sit in @layer primereact,
+    // which the unlayered rules here would otherwise beat, so they're restated.
+    .p-tabview {
+        .p-tabview-nav-container,
+        .p-tabview-nav-content {
+            position: relative;
+        }
+
+        .p-tabview-nav-content {
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            overscroll-behavior: contain auto;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+        }
+
+        .p-tabview-nav-btn.p-link {
+            position: absolute;
+            top: 0;
+            z-index: 2;
+            height: 100%;
+            width: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 0 none;
+            background: $tabsNavBg;
+            color: $tabsHeaderTextColor;
+            box-shadow: 0 0 10px 50px rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+
+            &:hover {
+                color: $tabsHeaderTextHoverColor;
+            }
+
+            &:focus-visible {
+                @include focused-inset();
+            }
+        }
+
+        .p-tabview-nav-prev {
+            left: 0;
+        }
+
+        .p-tabview-nav-next {
+            right: 0;
+        }
+
+        .p-tabview-nav {
+            display: flex;
+            flex-wrap: nowrap;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            background: $tabsNavBg;
+            border: $tabsNavBorder;
+            border-width: 0 0 1px 0;
+
+            li {
+                margin-right: $tabsHeaderSpacing;
+                flex-shrink: 0;
+                white-space: nowrap;
+
+                .p-tabview-nav-link {
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                    user-select: none;
+                    text-decoration: none;
+                    padding: $tabsHeaderPadding;
+                    background: $tabsHeaderBg;
+                    color: $tabsHeaderTextColor;
+                    font-weight: $tabsHeaderFontWeight;
+                    line-height: 1;
+                    border-bottom: $tabsNavBorder;
+                    // li.ui-tabs-header sits on the nav's bottom border in PrimeFaces.
+                    margin-bottom: -1px;
+                    transition: $transition;
+
+                    &:focus-visible {
+                        @include focused-inset();
+                    }
+                }
+
+                &:not(.p-highlight):not(.p-disabled):hover .p-tabview-nav-link {
+                    background: $tabsHeaderHoverBg;
+                    border-color: $tabsHeaderHoverBorderColor;
+                    color: $tabsHeaderTextHoverColor;
+                }
+
+                &.p-highlight .p-tabview-nav-link {
+                    background: $tabsHeaderActiveBg;
+                    border-color: $tabsHeaderActiveBorderColor;
+                    color: $tabsHeaderTextActiveColor;
+                }
+            }
+
+            // PrimeFaces has no animated ink bar; the active tab's own border already marks it.
+            .p-tabview-ink-bar {
+                display: none;
+            }
+        }
+
+        .p-tabview-panels {
+            border-width: 0;
+        }
+    }
+
+    // ------------------------------------------------------------------------------------ datatable
+    // PrimeFaces: .ui-datatable thead th / .ui-datatable-data > tr > td. PrimeReact keeps the
+    // <thead>/<th>/<td> shape (so the thead th and tbody rules come through the aliases above) but
+    // marks sort/selection with .p-highlight and hover with :hover.
+    .p-datatable {
+        .p-datatable-thead > tr > th {
+            // PrimeFaces' th is content-box; PrimeReact's table layout expects border-box.
+            box-sizing: border-box;
+
+            .p-column-header-content {
+                display: flex;
+                align-items: center;
+            }
+
+            &.p-sortable-column {
+                cursor: pointer;
+                user-select: none;
+
+                &:not(.p-highlight):hover {
+                    background: $datatableHeaderCellHoverBg;
+                    color: $datatableHeaderCellTextHoverColor;
+                }
+
+                // .p-highlight (sorted) comes from `thead th.ui-state-active` via the alias.
+                &.p-highlight .p-sortable-column-icon {
+                    color: inherit;
+                }
+
+                &.p-highlight:hover {
+                    background: $datatableHeaderCellHighlightHoverBg;
+                    color: $datatableHeaderCellHighlightTextHoverColor;
+                }
+
+                &:focus-visible {
+                    @include focused-inset();
+                }
+            }
+
+            .p-sortable-column-icon {
+                margin-left: $inlineSpacing;
+                width: $iconSize;
+                height: $iconSize;
+            }
+        }
+
+        // Selected rows (.p-highlight) come from `.ui-datatable-data > tr.ui-state-highlight` —
+        // including the app's own light-green override — via the aliases.
+        .p-datatable-tbody > tr.p-row-odd:not(.p-highlight) {
+            background: $datatableBodyRowOddBg;
+        }
+
+        &.p-datatable-selectable .p-datatable-tbody > tr.p-selectable-row,
+        &.p-datatable-hoverable-rows .p-datatable-tbody > tr:not(.p-highlight) {
+            cursor: pointer;
+
+            &:not(.p-highlight):hover {
+                background: $datatableBodyRowHoverBg;
+                color: $datatableBodyRowTextHoverColor;
+            }
+
+            &:focus-visible {
+                @include focused-inset();
+            }
+        }
+
+        .p-datatable-emptymessage > td {
+            padding: $datatableBodyCellPadding;
+        }
+    }
+
+    // --------------------------------------------------------------------------------------- dialog
+    .p-dialog {
+        .p-dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            @include border-radius-top($borderRadius);
+
+            .p-dialog-title {
+                font-weight: $dialogHeaderFontWeight;
+            }
+
+            .p-dialog-header-icon {
+                @include action-icon();
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                margin-left: $inlineSpacing;
+            }
+        }
+
+        .p-dialog-content:last-of-type {
+            @include border-radius-bottom($borderRadius);
+        }
+
+        .p-dialog-footer {
+            @include border-radius-bottom($borderRadius);
+
+            .p-button {
+                margin: 0 $inlineSpacing 0 0;
+                width: auto;
+            }
+        }
+    }
+
+    .p-component-overlay,
+    .p-dialog-mask.p-component-overlay {
+        background-color: $maskBg;
+    }
+
+    .p-overlaypanel {
+        margin-top: 10px;
+
+        .p-overlaypanel-close {
+            background: $overlayPanelCloseIconBg;
+            color: $overlayPanelCloseIconColor;
+            width: $actionIconWidth;
+            height: $actionIconHeight;
+            border-radius: $actionIconBorderRadius;
+            position: absolute;
+            top: math.div(-1 * $actionIconHeight, 2);
+            right: math.div(-1 * $actionIconWidth, 2);
+
+            &:enabled:hover {
+                background: $overlayPanelCloseIconHoverBg;
+                color: $overlayPanelCloseIconHoverColor;
+            }
+        }
+
+        // PrimeReact draws the arrow with ::before/::after in the panel's own colors.
+        &:after {
+            border-bottom-color: $panelContentBg;
+        }
+
+        &:before {
+            border-bottom-color: $overlayContentBorder;
+        }
+    }
+
+    .p-tooltip {
+        .p-tooltip-text {
+            padding: $inputPadding;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------- menus
+    .p-menu {
+        .p-menuitem-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .p-menuitem-icon {
+            margin-right: $inlineSpacing;
+            color: $menuitemIconColor;
+        }
+
+        .p-menuitem-text {
+            color: $menuitemTextColor;
+        }
+
+        .p-menuitem:not(.p-highlight):not(.p-disabled) > .p-menuitem-content:hover {
+            background: $menuitemHoverBg;
+            border-radius: $menuitemBorderRadius;
+
+            .p-menuitem-text {
+                color: $menuitemTextHoverColor;
+            }
+
+            .p-menuitem-icon {
+                color: $menuitemHoverIconColor;
+            }
+        }
+
+        .p-menuitem.p-focus > .p-menuitem-content {
+            @include focused-listitem();
+        }
+
+        &.p-menu-overlay {
+            border: $overlayContentBorder;
+            box-shadow: $overlayMenuShadow;
+        }
+
+        .p-submenu-header {
+            margin: $submenuHeaderMargin;
+            padding: $submenuHeaderPadding;
+            color: $submenuHeaderTextColor;
+            background: $submenuHeaderBg;
+            font-weight: $submenuHeaderFontWeight;
+        }
+
+        .p-menuitem-separator {
+            border-top: $divider;
+            margin: $menuSeparatorMargin;
+        }
+    }
+
+    // BreadCrumb: PrimeReact renders explicit separator <li>s (SVG chevrons) instead of PrimeFaces'
+    // ::before pseudo-elements.
+    .p-breadcrumb {
+        .p-breadcrumb-list {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .p-menuitem-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            transition: $transition;
+            border-radius: $borderRadius;
+
+            &:focus-visible {
+                @include focused();
+            }
+
+            .p-menuitem-text {
+                color: $breadcrumbItemTextColor;
+            }
+
+            .p-menuitem-icon {
+                color: $breadcrumbItemIconColor;
+            }
+        }
+
+        .p-menuitem-separator {
+            display: inline-flex;
+            margin: 0 $inlineSpacing;
+            color: $breadcrumbSeparatorColor;
+        }
+
+        li.p-menuitem:last-child .p-menuitem-link {
+            .p-menuitem-text {
+                color: $breadcrumbLastItemTextColor;
+            }
+
+            .p-menuitem-icon {
+                color: $breadcrumbLastItemIconColor;
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------------------- messages
+    // PrimeReact's <Message> is the inline "p-inline-message" (PrimeFaces' p:message).
+    .p-inline-message {
+        padding: $inputPadding;
+        margin: 0;
+        border-radius: $borderRadius;
+        display: inline-flex;
+        align-items: center;
+        gap: $inlineSpacing;
+
+        .p-inline-message-icon {
+            font-size: $iconSize;
+            width: $iconSize;
+            height: $iconSize;
+        }
+
+        @each $severity, $bg, $border, $text, $icon in (
+            (success, $successMessageBg, $successMessageBorder, $successMessageTextColor, $successMessageIconColor),
+            (info, $infoMessageBg, $infoMessageBorder, $infoMessageTextColor, $infoMessageIconColor),
+            (warn, $warnMessageBg, $warnMessageBorder, $warnMessageTextColor, $warnMessageIconColor),
+            (error, $errorMessageBg, $errorMessageBorder, $errorMessageTextColor, $errorMessageIconColor)
+        ) {
+            &.p-inline-message-#{$severity} {
+                background: $bg;
+                border: $border;
+                border-width: $messageBorderWidth;
+                color: $text;
+
+                .p-inline-message-icon {
+                    color: $icon;
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------ misc
+    .p-chip {
+        display: inline-flex;
+        align-items: center;
+
+        .p-chip-remove-icon {
+            cursor: pointer;
+
+            &:focus-visible {
+                @include focused();
+            }
+        }
+    }
+
+    .p-progressbar {
+        position: relative;
+        overflow: hidden;
+
+        .p-progressbar-value {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .p-progressbar-label {
+            color: $primaryTextColor;
+            line-height: $progressBarHeight;
+        }
+    }
+
+    .p-skeleton {
+        overflow: hidden;
+        position: relative;
+    }
+
+    // ------------------------------------------------------------------------ datepicker (Calendar)
+    .p-datepicker {
+        padding: $calendarPadding;
+        background: $inputContentPanelBg;
+        color: $inputContentPanelTextColor;
+        border: $inputListBorder;
+        border-radius: $borderRadius;
+
+        &:not(.p-datepicker-inline) {
+            border: $inputOverlayBorder;
+            box-shadow: $inputOverlayShadow;
+        }
+
+        .p-datepicker-header {
+            padding: $calendarTitlePadding;
+            color: $calendarTitleTextColor;
+            background: $calendarTitleBg;
+            font-weight: $panelHeaderFontWeight;
+            margin: 0;
+            border-bottom: $calendarTitleBorder;
+            border-top-right-radius: $borderRadius;
+            border-top-left-radius: $borderRadius;
+
+            .p-datepicker-prev,
+            .p-datepicker-next {
+                @include action-icon();
+            }
+
+            .p-datepicker-title {
+                line-height: $actionIconHeight;
+
+                .p-datepicker-year,
+                .p-datepicker-month {
+                    color: $calendarTitleTextColor;
+                    transition: $transition;
+                    font-weight: $panelHeaderFontWeight;
+                    padding: math.div(list.nth($inputPadding, 1), 2);
+                    border: 0 none;
+                    background: transparent;
+                    cursor: pointer;
+
+                    &:enabled:hover {
+                        color: $primaryColor;
+                    }
+                }
+
+                .p-datepicker-month {
+                    margin-right: $inlineSpacing;
+                }
+            }
+        }
+
+        table {
+            font-size: $fontSize;
+            margin: $calendarTableMargin;
+
+            th {
+                padding: $calendarCellPadding;
+
+                > span {
+                    width: $calendarCellDateWidth;
+                    height: $calendarCellDateHeight;
+                }
+            }
+
+            td {
+                padding: $calendarCellPadding;
+
+                > span {
+                    width: $calendarCellDateWidth;
+                    height: $calendarCellDateHeight;
+                    border-radius: $calendarCellDateBorderRadius;
+                    transition: $transition;
+                    border: $calendarCellDateBorder;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    &.p-highlight {
+                        color: $calendarCellDateSelectedTextColor;
+                        background: $calendarCellDateSelectedBg;
+                    }
+
+                    &:focus-visible {
+                        @include focused();
+                    }
+                }
+
+                &.p-datepicker-today > span {
+                    background: $calendarCellDateTodayBg;
+                    color: $calendarCellDateTodayTextColor;
+                    border-color: $calendarCellDateTodayBorder;
+
+                    &.p-highlight {
+                        color: $calendarCellDateSelectedTextColor;
+                        background: $calendarCellDateSelectedBg;
+                    }
+                }
+            }
+        }
+
+        .p-datepicker-buttonbar {
+            padding: $calendarButtonBarPadding;
+            border-top: $divider;
+        }
+
+        .p-timepicker {
+            border-top: $divider;
+            padding: $calendarTimePickerMargin;
+        }
+
+        &:not(.p-disabled) table td span:not(.p-highlight):not(.p-disabled):hover {
+            background: $calendarCellDateHoverBg;
+        }
+
+        &:not(.p-disabled) .p-monthpicker .p-monthpicker-month:not(.p-disabled):not(.p-highlight):hover,
+        &:not(.p-disabled) .p-yearpicker .p-yearpicker-year:not(.p-disabled):not(.p-highlight):hover {
+            background: $calendarCellDateHoverBg;
+        }
+
+        .p-monthpicker .p-monthpicker-month,
+        .p-yearpicker .p-yearpicker-year {
+            padding: $calendarCellPadding;
+            transition: $transition;
+            border-radius: $borderRadius;
+
+            &.p-highlight {
+                color: $calendarCellDateSelectedTextColor;
+                background: $calendarCellDateSelectedBg;
+            }
+        }
+    }
+}

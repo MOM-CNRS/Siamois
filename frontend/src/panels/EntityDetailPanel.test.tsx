@@ -40,7 +40,7 @@ const fakeConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
         render: (entity, helpers) => (
           <div>
             <span data-testid="name">{entity.name}</span>
-            <button onClick={() => helpers.refetch()}>refresh</button>
+            <button className="fake-refetch" onClick={() => helpers.refetch()}>refresh</button>
           </div>
         ),
       },
@@ -105,7 +105,8 @@ describe("EntityDetailPanel", () => {
     await flush();
     expect(getMock).toHaveBeenCalledTimes(1);
 
-    const button = container.querySelector("button") as HTMLElement;
+    // By class: the scrollable TabView renders its own ‹ › buttons ahead of the tab content.
+    const button = container.querySelector("button.fake-refetch") as HTMLElement;
     await act(async () => {
       button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });

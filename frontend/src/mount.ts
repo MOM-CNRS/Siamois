@@ -1,12 +1,6 @@
 import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
-import "primereact/resources/themes/lara-light-blue/theme.css";
-import "primereact/resources/primereact.min.css";
-import "primeicons/primeicons.css";
-// The fiche grid's own col-N/md:col-N/lg:col-N classes (entities/project/form.ts's
-// toPrimeFlexClass) are PrimeFlex's, not hand-rolled — this is what actually lays them out.
-import "primeflex/primeflex.css";
-import "./styles/main-panel.css";
+import "./styles/bundle";
 import { configureBasePath } from "./api/basePath";
 import { configureCsrf } from "./auth/sessionAuth";
 import { registerDefaultFieldRenderers } from "./fields/registerDefaultRenderers";

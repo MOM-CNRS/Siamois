@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
-import { App } from "./App";
+import { App, paneClassName } from "./App";
 import { registerEntityType } from "./entities/registry";
 import { relationTab } from "./panels/relationTab";
 import type { EntityTypeConfig } from "./entities/types";
@@ -500,5 +500,48 @@ describe("App focus mode", () => {
     });
     await flush();
     expect(container.querySelector(".bi-arrows-angle-contract")).toBeNull();
+  });
+});
+
+// Each pane carries the JSF panel classes of what it shows NOW (AbstractPanel.panelClass:
+// "siamois-panel <entity>-panel single-panel|list-panel"): they select the entity's colour scheme
+// in the shared theme. The JSF wrapper around the mount only knows what it mounted.
+describe("App pane classes", () => {
+  const themedConfig: EntityTypeConfig<FakeRow, FakeRow> = {
+    ...fakeConfig,
+    key: "fake-themed-entity",
+    panelClass: "fake-themed-panel",
+    routes: { list: "/fake-themed-entity", detail: (id) => `/fake-themed-entity/${id}` },
+  };
+  registerEntityType(themedConfig);
+
+  it("builds JSF's panelClass from the entity config and the panel kind", () => {
+    expect(paneClassName("list", "fake-themed-entity")).toBe("siamois-panel fake-themed-panel list-panel");
+    expect(paneClassName("detail", "fake-themed-entity")).toBe("siamois-panel fake-themed-panel single-panel");
+    expect(paneClassName("home", "fake-themed-entity")).toBe("siamois-panel");
+    expect(paneClassName("detail", "not-registered")).toBe("siamois-panel single-panel");
+  });
+
+  it("puts the main view's classes on the main pane and the overview's own on the overview pane", async () => {
+    act(() => {
+      root.render(
+        <App
+          options={baseOptions({
+            entityType: "fake-themed-entity",
+            overviewEntityType: "fake-app-entity",
+            overviewEntityId: "1",
+          })}
+        />,
+      );
+    });
+    await flush();
+
+    const main = container.querySelector(".panel-splitter-panel-l")!;
+    const overview = container.querySelector(".panel-splitter-panel-r")!;
+    expect(main.className).toContain("siamois-panel fake-themed-panel list-panel");
+    expect(overview.className).toContain("sideview");
+    // The overview entity has no panelClass of its own: it must NOT inherit the main one's.
+    expect(overview.className).not.toContain("fake-themed-panel");
+    expect(overview.className).toContain("single-panel");
   });
 });

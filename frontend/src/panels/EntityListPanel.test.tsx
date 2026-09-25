@@ -327,6 +327,21 @@ describe("EntityListPanel", () => {
     expect(header.textContent).toContain("1");
   });
 
+  it("gives the count chip JSF's <entity>-count-chip class when the entity declares a panelClass", async () => {
+    registerEntityType({ ...fakeConfig, key: "fake-themed-list-entity", panelClass: "fake-thing-panel" });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityListPanel entityType="fake-themed-list-entity" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.querySelector(".entity-list-panel-header .p-chip.fake-thing-count-chip")).toBeTruthy();
+  });
+
   it("only renders the create button when onCreate is provided (list's own toolbar create button)", async () => {
     renderPanel(undefined, undefined);
     await flush();

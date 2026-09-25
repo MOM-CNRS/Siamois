@@ -11,6 +11,7 @@ import type { FieldResource } from "../../fields/types";
 import { patchProject } from "./api";
 import { getProjectTypes } from "./projectTypes";
 import type { ProjectDetail } from "./types";
+import { getEntityType } from "../registry";
 
 // actionUnitPanelHeader.xhtml's content (identifier chip + pencil/apply/cancel, the editable
 // category chip, then name/location chips) — lives in EntityDetailPanel's own PrimeReact <Panel>
@@ -99,7 +100,7 @@ function IdentifierChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps &
         </>
       ) : (
         <>
-          <Chip label={entity.fullIdentifier || entity.identifier} className="entity-nav-chip" />
+          <Chip label={entity.fullIdentifier || entity.identifier} className="action-unit-chip-alt entity-nav-chip" icon={getEntityType("project")?.icon} />
           {canEdit && (
             <Button
               icon="pi pi-pencil"

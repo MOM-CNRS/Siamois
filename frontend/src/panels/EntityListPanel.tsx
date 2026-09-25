@@ -758,7 +758,13 @@ export function EntityListPanel({
             <div className="entity-list-panel-header" style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
               <i className={config.icon} style={{ fontSize: "2rem", color: "var(--main-color)" }} />
               <span style={{ paddingRight: "0.5em" }}>{config.labels.plural}</span>
-              <Chip label={String(totalCount)} style={{ background: "transparent", color: "var(--main-color)" }} />
+              {/* *ListPanelHeader.xhtml's count chip: `<entity>-count-chip` (themed-panel's chip rule),
+                  with the same inline transparent background/main-color text. */}
+              <Chip
+                label={String(totalCount)}
+                className={config.panelClass ? config.panelClass.replace(/-panel$/, "-count-chip") : undefined}
+                style={{ background: "transparent", color: "var(--main-color)" }}
+              />
             </div>
           }
           toolbar={toolbar}

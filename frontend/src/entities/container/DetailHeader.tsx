@@ -1,5 +1,6 @@
 import { Chip } from "primereact/chip";
 import type { ContainerDetail } from "./types";
+import { getEntityType } from "../registry";
 
 // containerPanelHeader.xhtml's content, reduced the same way Phase/FindDetailHeader's own is:
 // identifier chip + a read-only type chip. The type field is already editable like any other
@@ -12,8 +13,8 @@ export interface ContainerDetailHeaderProps {
 export function ContainerDetailHeader({ entity }: ContainerDetailHeaderProps) {
   return (
     <div className="container-detail-header" style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap" }}>
-      <Chip label={entity.identifier || ""} className="entity-nav-chip" />
-      {entity.type?.resolvedLabel && <Chip label={entity.type.resolvedLabel} className="recording-unit-chip-alt" />}
+      <Chip label={entity.identifier || ""} className="container-chip-alt entity-nav-chip" icon={getEntityType("container")?.icon} />
+      {entity.type?.resolvedLabel && <Chip label={entity.type.resolvedLabel} className="mr-2 container-type-chip" />}
     </div>
   );
 }

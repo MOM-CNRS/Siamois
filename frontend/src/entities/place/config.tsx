@@ -25,6 +25,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   collectionPath: "places",
   // Matches SpatialUnitPanel's own icon ("bi bi-geo-alt").
   icon: "bi bi-geo-alt",
+  panelClass: "spatial-unit-panel",
   api: {
     siblings: (id) => fetchSiblings("places", id),
     get: getPlace,

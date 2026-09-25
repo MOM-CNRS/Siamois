@@ -740,3 +740,6 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     font-style: italic;
     color: var(--siamois-green-active);
 }
+// PrimeReact parity (see theme-base/_primereact.scss). settings.css is compiled on its own, so the
+// .p-* aliases the React main panel needs from THIS file are declared here too.
+.p-tabview-nav { @extend .ui-tabs-nav; }

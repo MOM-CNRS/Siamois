@@ -11,6 +11,7 @@ import type { FieldResource } from "../../fields/types";
 import { patchRecordingUnitAnswers } from "./api";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import type { RecordingUnitDetail } from "./types";
+import { getEntityType } from "../registry";
 
 // recordingUnitPanelHeader.xhtml's content (identifier chip, then the editable category chip) —
 // lives in EntityDetailPanel's own PrimeReact <Panel> `header`, matching Project's own
@@ -37,7 +38,7 @@ export function RecordingUnitDetailHeader({ entity, onSaved }: RecordingUnitDeta
       className="recording-unit-detail-header"
       style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap" }}
     >
-      <Chip label={entity.fullIdentifier} className="entity-nav-chip" />
+      <Chip label={entity.fullIdentifier} className="recording-unit-chip-alt entity-nav-chip" icon={getEntityType("recordingUnit")?.icon} />
       <CategoryChip entity={entity} onSaved={onSaved} canEdit={canEdit} />
     </div>
   );
@@ -111,7 +112,7 @@ function CategoryChip({ entity, onSaved, canEdit }: RecordingUnitDetailHeaderPro
 
   return (
     <span className="recording-unit-detail-header-category" style={{ display: "inline-flex", alignItems: "center" }}>
-      <Chip label={label ?? "Sans type"} className="recording-unit-chip-alt" />
+      <Chip label={label ?? "Sans type"} className="mr-2 recording-unit-type-chip" />
       {editable && (
         <Button
           icon="pi pi-pencil"

@@ -22,6 +22,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
   collectionPath: "containers",
   // Matches ContainerTableDefinitionFactory/ContainerPanel's own icon.
   icon: "bi bi-box-seam",
+  panelClass: "container-panel",
   api: {
     siblings: (id) => fetchSiblings("containers", id),
     get: getContainer,

@@ -15,9 +15,8 @@ import type { PanelActions, PanelChrome } from "../mountOptions";
 // on toggle, rather than round-tripping through a remoteCommand.
 //
 // Buttons are PrimeReact's own <Button>, not plain <button> — "no custom theme" (plan §3) means
-// no new CSS, not "skip PrimeReact's components." sideview-topbar-button rides along via
-// className for a future theme pass; the stock lara-light-blue theme is what actually renders
-// today.
+// no new CSS, not "skip PrimeReact's components." sideview-topbar-button is JSF's own class
+// (focus.xhtml / panelContent.xhtml toolbar buttons), styled for both by the shared theme.
 export interface PanelToolbarProps {
   chrome: PanelChrome;
   organizationId?: number;

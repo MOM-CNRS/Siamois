@@ -7,7 +7,7 @@ import { FieldEditCell } from "../../fields/FieldEditCell";
 import { FieldLabel } from "../../fields/FieldLabel";
 import { resolveValueBinding } from "../../fields/types";
 import type { AnswerInputBody, FieldResource } from "../../fields/types";
-import { parseLayout, toPrimeFlexClass, type FormLayoutCol } from "../project/form";
+import { parseLayout, toGridClass, type FormLayoutCol } from "../project/form";
 import { containerPanelLabel } from "./form";
 import { getContainerEffectiveForm } from "./containerTypes";
 import { patchContainerAnswers } from "./api";
@@ -67,7 +67,7 @@ export function ContainerFicheTab({ entity, onSaved }: ContainerFicheTabProps) {
             className={`sia-form-panel ${panel.className ?? ""}`.trim()}
           >
             {panel.rows.map((row, rowIndex) => (
-              <div key={rowIndex} className="project-fiche-tab-row grid">
+              <div key={rowIndex} className="project-fiche-tab-row sia-grid">
                 {row.columns.map((col, colIndex) => (
                   <ContainerFormField
                     key={colIndex}
@@ -118,7 +118,7 @@ function ContainerFormField({
   const stored = resolveValueBinding(field).read(entity);
 
   return (
-    <div className={`project-fiche-tab-col ${toPrimeFlexClass(col.width)}`} data-field-id={fieldId}>
+    <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>
       <div className="field-value-group">
         <FieldLabel field={field} required={col.isRequired} />
         <FieldEditCell

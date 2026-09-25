@@ -33,3 +33,4 @@ frontend/*.local
 frontend/npm-debug.log*
 /.claude/*
 /.claude/
+frontend/dev/.generated/

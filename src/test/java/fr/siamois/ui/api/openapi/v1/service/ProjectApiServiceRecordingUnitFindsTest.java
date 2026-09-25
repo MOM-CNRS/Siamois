@@ -264,4 +264,23 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.BAD_REQUEST.value()));
     }
+
+    @Test
+    void parseFindSort_acceptsCreationTime_theControllersDefaultSort() {
+        // RecordingUnitFindsControllerApi defaults sort to creationTime:desc; with an f.* filter
+        // that default goes through parseFindSort and must not be rejected as unknown.
+        Sort sort = ProjectApiService.parseFindSort("creationTime:desc");
+
+        assertThat(sort.getOrderFor("creationTime")).isNotNull();
+        assertThat(sort.getOrderFor("creationTime").getDirection()).isEqualTo(Sort.Direction.DESC);
+        assertThat(sort.getOrderFor("id")).isNotNull();
+    }
+
+    @Test
+    void parseFindSort_unknownProperty_isBadRequest() {
+        assertThatThrownBy(() -> ProjectApiService.parseFindSort("nope:asc"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
 }

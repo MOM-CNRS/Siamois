@@ -23,6 +23,7 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   collectionPath: "phases",
   // Matches PhaseTableDefinitionFactory/PhasePanel's own icon.
   icon: "bi bi-layers",
+  panelClass: "phase-panel",
   api: {
     siblings: (id) => fetchSiblings("phases", id),
     get: getPhase,

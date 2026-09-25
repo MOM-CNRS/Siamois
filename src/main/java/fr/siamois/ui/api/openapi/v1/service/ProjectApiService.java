@@ -982,7 +982,7 @@ public class ProjectApiService {
     }
 
     private static final Set<String> ALLOWED_FIND_SORT_FIELDS =
-            Set.of(SpecimenSpec.FULL_IDENTIFIER_FILTER, "collectionDate", "id");
+            Set.of(SpecimenSpec.FULL_IDENTIFIER_FILTER, "collectionDate", CREATION_TIME, "id");
 
     /**
      * Same contract as {@link #parseRecordingUnitSort} — an unknown property is a 400, not a

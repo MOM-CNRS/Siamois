@@ -22,6 +22,7 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
   collectionPath: "projects",
   // Matches ActionUnitPanel/ActionUnitListPanel's own AbstractPanel.icon exactly.
   icon: "bi bi-arrow-down-square",
+  panelClass: "action-unit-panel",
   api: {
     // fields=all so the detail response carries an `answers` map for the WHOLE field catalog, not
     // just the seven properties ProjectResource exposes flat — that map is what lets the fiche
