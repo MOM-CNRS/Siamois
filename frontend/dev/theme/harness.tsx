@@ -107,6 +107,17 @@ const PF: Record<string, string> = {
         <tr class="ui-widget-content ui-datatable-odd ui-state-hover"><td>OA-02</td><td>Mur</td><td>14/03/2024</td></tr>
         <tr class="ui-widget-content ui-datatable-even ui-state-highlight"><td>OA-03</td><td>Sol</td><td>15/03/2024</td></tr>
       </tbody></table></div></div>`,
+  // entityDataTable.xhtml's paginator (paginatorTemplate "{RowsPerPageDropdown} {RowReport}
+  // {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"), as PrimeFaces renders it.
+  paginator: `<div class="ui-datatable ui-widget h-block"><div class="ui-paginator ui-paginator-bottom ui-widget-header ui-corner-bottom" role="navigation">
+      <select class="ui-paginator-rpp-options ui-widget ui-state-default ui-corner-left"><option selected>25</option><option>50</option><option>100</option><option>200</option></select>
+      <span class="ui-paginator-current">1-25 of 120</span>
+      <a class="ui-paginator-first ui-state-default ui-corner-all ui-state-disabled" tabindex="-1"><span class="ui-icon ui-icon-seek-first">p</span></a>
+      <a class="ui-paginator-prev ui-state-default ui-corner-all ui-state-disabled" tabindex="-1"><span class="ui-icon ui-icon-seek-prev">p</span></a>
+      <span class="ui-paginator-pages"><a class="ui-paginator-page ui-state-default ui-corner-all ui-state-active">1</a><a class="ui-paginator-page ui-state-default ui-corner-all">2</a><a class="ui-paginator-page ui-state-default ui-corner-all ui-state-hover">3</a><a class="ui-paginator-page ui-state-default ui-corner-all">4</a><a class="ui-paginator-page ui-state-default ui-corner-all">5</a></span>
+      <a class="ui-paginator-next ui-state-default ui-corner-all"><span class="ui-icon ui-icon-seek-next">p</span></a>
+      <a class="ui-paginator-last ui-state-default ui-corner-all"><span class="ui-icon ui-icon-seek-end">p</span></a>
+    </div></div>`,
   menu: `<div class="ui-menu ui-widget ui-widget-content ui-corner-all ui-helper-clearfix" style="width:12rem"><ul class="ui-menu-list ui-helper-reset">
       <li class="ui-menuitem ui-widget ui-corner-all"><a class="ui-menuitem-link ui-corner-all" href="#"><span class="ui-menuitem-icon ui-icon pi pi-copy"></span><span class="ui-menuitem-text">Dupliquer</span></a></li>
       <li class="ui-menuitem ui-widget ui-corner-all"><a class="ui-menuitem-link ui-corner-all ui-state-hover" href="#"><span class="ui-menuitem-icon ui-icon pi pi-star"></span><span class="ui-menuitem-text">Favori (hover)</span></a></li></ul></div>`,
@@ -227,6 +238,13 @@ const REACT: Record<string, ReactNode> = {
       <Column field="id" header="Identifiant" sortable />
       <Column field="type" header="Type" sortable />
       <Column field="date" header="Date" />
+    </DataTable>
+  ),
+  // Same props as EntityListPanel's paginated table.
+  paginator: (
+    <DataTable value={rows} className="h-block" size="small" lazy paginator first={0} rows={25} totalRecords={120} rowsPerPageOptions={[25, 50, 100, 200]} dataKey="id">
+      <Column field="id" header="Identifiant" />
+      <Column field="type" header="Type" />
     </DataTable>
   ),
   menu: <Menu model={[{ label: "Dupliquer", icon: "pi pi-copy" }, { label: "Favori (hover)", icon: "pi pi-star" }]} style={{ width: "12rem" }} />,

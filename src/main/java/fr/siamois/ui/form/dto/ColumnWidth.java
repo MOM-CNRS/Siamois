@@ -13,12 +13,12 @@ package fr.siamois.ui.form.dto;
  * PrimeFlex's {@code col-N md:col-N lg:col-N}. Neither side invents its own numbers — both read
  * this.</p>
  *
- * <p>Scoped today to {@code ActionUnitDetailsForm}/{@code RecordingUnitDetailsForm} — the only two
- * layouts that reach React via {@link FormUiDtoLayoutJson}. Every other form
- * (Container/Phase/Specimen/SpatialUnit/*NewForm) still builds its columns with the older
+ * <p>Used by every {@code *DetailsForm} (ActionUnit/RecordingUnit/Phase/Container/Specimen) — the
+ * layouts that reach React via {@link FormUiDtoLayoutJson}. The remaining JSF-only forms
+ * (SpatialUnit, *NewForm) still build their columns with the older
  * {@code CustomColUiDto.Builder#className(String)}, which {@code getClassName()} falls back to
- * verbatim when no {@code width} was set — converting those forms too is a separate, much larger
- * change (~140 call sites across 12 JSF-only files) that was deliberately left out of this one.</p>
+ * verbatim when no {@code width} was set; React parses that raw class string as a fallback
+ * (entities/project/form.ts's {@code toGridClass}).</p>
  */
 public record ColumnWidth(int span, Integer md, Integer lg) {
 

@@ -1,4 +1,5 @@
-// A list panel's whole client-side state as one serializable object (plan §f) — sort, search, which columns are visible, and (phase 3) per-column filters. Kept separate from
+// A list panel's whole client-side state as one serializable object (plan §f) — paging, sort,
+// search, which columns are visible, and (phase 3) per-column filters. Kept separate from
 // EntityListPanel's own React state management (useTableState.ts) so the shape can be
 // encoded/decoded independently of any hook: a saved view later becomes `POST /ui-views { state }`
 // with zero component changes, and a `?s=` URL param makes a list view shareable/restorable
@@ -12,9 +13,13 @@ export interface TableState {
   // Bumped whenever the shape changes — decodeTableState refuses anything else outright rather
   // than guessing, so a stale `?s=` or saved view degrades to "start over", never to a crash or a
   // silently wrong filter.
-  // v2: offset/limit dropped — the list virtual-scrolls, so there is no page to remember (a v1 view
-  // decodes to null and starts over, per the rule above).
-  v: 2;
+  // v2 dropped offset/limit while the list virtual-scrolled; v3 brings them back with the
+  // paginator (v1 and v2 views decode to null and start over, per the rule above).
+  v: 3;
+  // Always a multiple of `limit`: the list endpoints page with PageRequest.of(offset / limit, limit)
+  // and reject any other offset (ProjectApiService#validatePagedListRequest).
+  offset: number;
+  limit: number;
   sort?: string;
   search?: string;
   // Ordered field ids — omitted entirely (`[]`) means "pinned columns only, no dynamic ones",
@@ -23,9 +28,15 @@ export interface TableState {
   filters: Record<string, FilterValue>;
 }
 
+// Rows-per-page choices; the server caps a page at 200 (ProjectApiService.MAX_PAGE_SIZE).
+export const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
+export const DEFAULT_LIMIT = 25;
+
 export function createTableState(overrides: Partial<TableState> = {}): TableState {
   return {
-    v: 2,
+    v: 3,
+    offset: 0,
+    limit: DEFAULT_LIMIT,
     visibleColumns: [],
     filters: {},
     ...overrides,
@@ -70,7 +81,9 @@ function isFilterValue(value: unknown): value is FilterValue {
 function isTableState(value: unknown): value is TableState {
   if (value == null || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-  if (v.v !== 2) return false;
+  if (v.v !== 3) return false;
+  if (typeof v.limit !== "number" || !PAGE_SIZE_OPTIONS.includes(v.limit)) return false;
+  if (typeof v.offset !== "number" || v.offset < 0 || v.offset % v.limit !== 0) return false;
   if (!Array.isArray(v.visibleColumns) || !v.visibleColumns.every((c) => typeof c === "string")) return false;
   if (v.filters == null || typeof v.filters !== "object") return false;
   return Object.values(v.filters as Record<string, unknown>).every(isFilterValue);

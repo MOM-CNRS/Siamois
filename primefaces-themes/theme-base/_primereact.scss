@@ -72,6 +72,13 @@
 .p-multiselect-items { @extend .ui-selectcheckboxmenu-items; }
 .p-multiselect-item { @extend .ui-selectcheckboxmenu-item; }
 .p-multiselect-token { @extend .ui-selectcheckboxmenu-token; }
+// Dropdown (≈ selectOneMenu). Root and overlay only: the label and trigger differ in shape (the
+// PrimeFaces trigger is absolutely positioned over the label's padding, PrimeReact's is a flex
+// item), see section 3.
+.p-dropdown { @extend .ui-selectonemenu; }
+.p-dropdown-panel { @extend .ui-selectonemenu-panel; }
+.p-dropdown-items { @extend .ui-selectonemenu-items; }
+.p-dropdown-item { @extend .ui-selectonemenu-item; }
 .p-checkbox { @extend .ui-chkbox; }
 .p-checkbox-box { @extend .ui-chkbox-box; }
 .p-datepicker { @extend .ui-datepicker; }
@@ -107,6 +114,12 @@
 .p-sortable-column { @extend .ui-sortable-column; }
 .p-sortable-column-icon { @extend .ui-sortable-column-icon; }
 .p-paginator { @extend .ui-paginator; }
+// Only the parts whose DOM matches PrimeFaces'. The first/prev/next/last links are left out:
+// .ui-paginator-first & co. draw their icon with a primeicons :before, which would sit next to
+// PrimeReact's own SVG — their box is spelled out in section 3 instead.
+.p-paginator-pages { @extend .ui-paginator-pages; }
+.p-paginator-page { @extend .ui-paginator-page; }
+.p-paginator-current { @extend .ui-paginator-current; }
 .p-datatable-sm { @extend .ui-datatable-sm; }
 .p-datatable-lg { @extend .ui-datatable-lg; }
 .p-datatable-striped { @extend .ui-datatable-striped; }
@@ -1003,6 +1016,108 @@ body {
 
         .p-datatable-emptymessage > td {
             padding: $datatableBodyCellPadding;
+        }
+    }
+
+    // ------------------------------------------------------------------------------------ paginator
+    // PrimeFaces: <a> links, their icon a primeicons :before. PrimeReact: <button class="p-link">
+    // with an SVG, so the box of .ui-paginator-first & co. (_paginator.scss) is restated here. The
+    // page links come through the aliases above, active page included (.p-highlight).
+    .p-paginator {
+        .p-paginator-first,
+        .p-paginator-prev,
+        .p-paginator-next,
+        .p-paginator-last {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: $paginatorIconColor;
+            min-width: $paginatorElementWidth;
+            height: $paginatorElementHeight;
+            margin: $paginatorElementMargin;
+            border: $paginatorElementBorder;
+            border-radius: $paginatorElementBorderRadius;
+            transition: $transition;
+        }
+
+        .p-paginator-page {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .p-paginator-element {
+            &:not(.p-disabled):not(.p-highlight):hover {
+                background: $paginatorElementHoverBg;
+                color: $paginatorElementHoverIconColor;
+                border-color: $paginatorElementHoverBorderColor;
+            }
+
+            &:focus-visible {
+                @include focused();
+            }
+        }
+
+        .p-paginator-current,
+        .p-dropdown {
+            margin: 0 $inlineSpacing;
+        }
+
+        // The rows-per-page choice: PrimeFaces renders a native <select> at the paginator's own
+        // font size and element height; PrimeReact's Dropdown label is a full-size .p-inputtext.
+        .p-dropdown {
+            height: $paginatorElementHeight;
+
+            .p-dropdown-label {
+                display: flex;
+                align-items: center;
+                font-size: inherit;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+        }
+    }
+
+    // Dropdown (≈ selectOneMenu): same box as the MultiSelect above.
+    .p-dropdown {
+        display: inline-flex;
+        cursor: pointer;
+
+        &:not(.p-disabled):hover {
+            border-color: $inputHoverBorderColor;
+        }
+
+        &:not(.p-disabled).p-focus {
+            @include focused-input();
+        }
+
+        .p-dropdown-label {
+            background: transparent;
+            border: 0 none;
+            cursor: pointer;
+
+            &.p-placeholder {
+                color: $inputPlaceholderTextColor;
+            }
+        }
+
+        .p-dropdown-trigger {
+            background: transparent;
+            color: $inputIconColor;
+            width: $inputButtonWidth;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            @include border-radius-right($borderRadius);
+        }
+    }
+
+    .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+        cursor: pointer;
+
+        &:not(.p-highlight):not(.p-disabled):hover {
+            background: $inputListItemHoverBg;
+            color: $inputListItemTextHoverColor;
         }
     }
 

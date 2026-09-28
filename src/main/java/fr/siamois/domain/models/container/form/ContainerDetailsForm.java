@@ -1,11 +1,10 @@
 package fr.siamois.domain.models.container.form;
 
+import fr.siamois.ui.form.dto.ColumnWidth;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
-
-import static fr.siamois.ui.form.FormLayoutConstants.COLUMN_CLASS_NAME;
 
 public class ContainerDetailsForm extends ContainerForm {
 
@@ -19,22 +18,22 @@ public class ContainerDetailsForm extends ContainerForm {
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(true)
-                                                        .className("d-none")
+                                                        .width(ColumnWidth.STANDARD).hidden(true)
                                                         .field(identifierField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .width(ColumnWidth.STANDARD)
                                                         .field(typeField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .width(ColumnWidth.STANDARD)
                                                         .field(spatialUnitField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(true)
-                                                        .className("d-none")
+                                                        .width(ColumnWidth.STANDARD).hidden(true)
                                                         .field(actionUnitField)
                                                         .build())
                                                 .build()
@@ -50,22 +49,22 @@ public class ContainerDetailsForm extends ContainerForm {
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .width(ColumnWidth.STANDARD)
                                                         .field(lengthField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .width(ColumnWidth.STANDARD)
                                                         .field(widthField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .width(ColumnWidth.STANDARD)
                                                         .field(heightField)
                                                         .build())
                                                 .addColumn(new CustomColUiDto.Builder()
                                                         .readOnly(false)
-                                                        .className(COLUMN_CLASS_NAME)
+                                                        .width(ColumnWidth.STANDARD)
                                                         .field(weightField)
                                                         .build())
                                                 .build()

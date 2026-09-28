@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIAMOIS — Membres & profils</title>
+<!--
+  Maquette HTML/JS pure (sans dépendance) des écrans :
+    - pages/settings/project/projectMembersSettings.xhtml
+    - pages/settings/institution/institutionMembersSettings.xhtml
+    - pages/settings/administration/userManagementSettings.xhtml
+    - pages/settings/components/profilesList.xhtml + profileDetailDrawer.xhtml
+    - dialog/shared/newMemberDialog.xhtml (3 étapes : principal / invitation / import CSV)
+    - pages/settings/profileSettings.xhtml (Mon profil)
+  Toutes les données sont en mémoire : rien n'est envoyé nulle part.
+-->
+<style>
+  :root {
+    --accent: #5e8c61; --accent-soft: #eaf3ea; --accent-ink: #3a5a3c;
+    --ink: #2b2b2b; --muted: #777; --faint: #a3a3a0;
+    --line: #e7e7e3; --line-2: #ececec; --bg: #f6f6f4; --panel: #fff;
+    --danger: #b3261e; --danger-soft: #fdecea;
+    --warn: #8a7d4a; --warn-soft: #faf6e8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font: 14.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); overflow: hidden; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+
+  /* ── shell : 100vh fixe, chaque panneau scrolle en interne ── */
+  .shell { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { flex: none; display: flex; align-items: center; gap: 18px; padding: 0 20px; height: 54px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .brand { font-weight: 700; letter-spacing: .04em; color: var(--accent-ink); }
+  .topnav { display: flex; gap: 4px; }
+  .topnav button { border: 0; background: none; padding: 7px 12px; border-radius: 7px; cursor: pointer; color: var(--muted); }
+  .topnav button.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+  .scope { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .content { flex: 1; min-height: 0; overflow: auto; padding: 18px 28px 40px; }
+  .container { max-width: 1180px; margin: 0 auto; }
+
+  .breadcrumb { display: flex; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 14px; flex-wrap: wrap; }
+  .breadcrumb a { color: var(--accent-ink); text-decoration: none; cursor: pointer; }
+  .breadcrumb span.sep { color: var(--faint); }
+
+  h1.page-title { font-size: 28px; font-weight: 600; margin: 0 0 4px; letter-spacing: -.02em; }
+  .page-desc { color: var(--muted); margin: 0 0 18px; }
+
+  /* ── tabs ── */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .tabs button { border: 0; background: none; padding: 10px 16px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button.active { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+
+  /* ── datatable-settings ── */
+  .dt { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  .dt-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
+  .dt-title { font-size: 17px; font-weight: 600; margin: 0; }
+  .dt-desc { color: var(--muted); margin: 2px 0 0; font-size: 13.5px; }
+  .dt-tools { display: flex; gap: 8px; align-items: center; }
+  .dt-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); font-weight: 600; padding: 10px 16px; border-bottom: 1px solid var(--line-2); background: #fafaf8; white-space: nowrap; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--ink); }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  .empty-state { text-align: center; padding: 34px; color: var(--muted); }
+  .empty-state a { color: var(--accent-ink); cursor: pointer; text-decoration: underline; }
+
+  .user-cell { display: flex; align-items: center; gap: 11px; }
+  .avatar { width: 36px; height: 36px; flex: none; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+  .user-cell strong { display: block; }
+  .user-cell .email { font-style: italic; color: var(--muted); font-size: 13px; }
+  .user-cell .username { color: var(--faint); font-size: 12.5px; }
+
+  /* ── inputs / buttons ── */
+  .input { border: 1px solid #d8d8d2; border-radius: 8px; padding: 8px 11px; background: #fff; width: 100%; }
+  .input:focus, .ms-trigger:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .input[disabled] { background: #f3f3f0; color: var(--muted); }
+  .search { width: 240px; }
+  .btn { border: 1px solid transparent; border-radius: 8px; padding: 8px 14px; cursor: pointer; background: var(--accent); color: #fff; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { filter: brightness(.95); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; filter: none; }
+  .btn-secondary { background: #fff; color: var(--ink); border-color: #d8d8d2; }
+  .btn-outline { background: #fff; color: var(--accent-ink); border-color: var(--accent); }
+  .btn-flat { background: transparent; color: var(--muted); }
+  .btn-flat:hover { background: var(--bg); }
+  .btn-danger { background: #fff; color: var(--danger); border-color: #f0c4bf; }
+  .btn-danger:hover { background: var(--danger-soft); }
+  .btn-sm { padding: 4px 9px; font-size: 12.5px; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent-ink); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; font-size: 13.5px; }
+  .link:hover { text-decoration: underline; }
+
+  /* ── chips ── */
+  .chip { display: inline-block; font-size: 12px; border-radius: 20px; padding: 2px 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); white-space: nowrap; }
+  .chip-status-active { background: var(--accent-soft); color: var(--accent-ink); border-color: #cfe3cf; }
+  .chip-status-invited { background: #eaf1fb; color: #2f5a8f; border-color: #cddcf0; }
+  .chip-status-expired { background: var(--warn-soft); color: var(--warn); border-color: #e6dcb4; }
+  .chip-status-inactive { background: #f1f1ef; color: #888; }
+  .chip-profile { background: #fff; color: var(--accent-ink); border-color: var(--accent); cursor: pointer; }
+  .chip-error { background: var(--danger-soft); color: var(--danger); border-color: #f5c2bd; }
+  .status-cell { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  /* ── multi-select (p:selectCheckboxMenu) ── */
+  .ms { position: relative; min-width: 220px; }
+  .ms-trigger { width: 100%; display: flex; align-items: center; gap: 6px; border: 1px solid #d8d8d2; border-radius: 8px; padding: 6px 30px 6px 9px; background: #fff; cursor: pointer; text-align: left; min-height: 36px; position: relative; flex-wrap: wrap; }
+  .ms-trigger::after { content: "▾"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+  .ms-trigger .placeholder { color: var(--faint); }
+  .ms-tag { background: var(--accent-soft); color: var(--accent-ink); border-radius: 5px; padding: 1px 7px; font-size: 12.5px; }
+  .ms-panel { position: fixed; z-index: 60; background: #fff; border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 10px 30px rgba(0,0,0,.12); width: 260px; }
+  .ms-panel .ms-filter { padding: 8px; border-bottom: 1px solid var(--line-2); }
+  .ms-list { max-height: 200px; overflow: auto; padding: 4px; }
+  .ms-list label { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 6px; cursor: pointer; }
+  .ms-list label:hover { background: var(--bg); }
+  .ms-list input { accent-color: var(--accent); }
+  .ms-empty { padding: 10px; color: var(--faint); font-size: 13px; }
+
+  /* ── profils ── */
+  .profile-row { display: flex; align-items: center; gap: 14px; }
+  .profile-name { font-weight: 600; }
+  .badge-system { font-size: 10.5px; color: var(--warn); border: 1px solid #d8cfa6; border-radius: 5px; padding: 0 5px; background: var(--warn-soft); margin-left: 8px; }
+  .perm-count { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+  /* ── drawer (p:sidebar right) ── */
+  .overlay { position: fixed; inset: 0; background: rgba(20,20,20,.35); z-index: 40; display: none; }
+  .overlay.open { display: block; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 460px; max-width: 92vw; background: #fff; z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .2s ease; box-shadow: -8px 0 30px rgba(0,0,0,.12); }
+  .drawer.open { transform: none; }
+  .drawer-header { padding: 18px 22px; border-bottom: 1px solid var(--line-2); display: flex; align-items: flex-start; gap: 10px; }
+  .drawer-title { font-size: 18px; font-weight: 600; }
+  .drawer-note { font-size: 12px; color: var(--warn); margin-top: 2px; }
+  .drawer-close { margin-left: auto; border: 0; background: none; font-size: 18px; cursor: pointer; color: var(--faint); }
+  .drawer-body { flex: 1; overflow: auto; padding: 18px 22px; }
+  .perm-theme { margin-bottom: 18px; }
+  .perm-theme-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); margin-bottom: 6px; }
+  .perm-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
+  .perm-row input { accent-color: var(--accent); }
+  .perm-row.denied span { color: var(--faint); }
+
+  /* ── dialog ── */
+  .dialog { position: fixed; z-index: 50; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 480px; max-width: calc(100vw - 32px); max-height: calc(100vh - 40px); display: none; flex-direction: column; background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  .dialog.open { display: flex; }
+  .dialog.wide { width: 640px; }
+  .dialog-header { padding: 18px 22px 8px; }
+  .dialog-header h3 { margin: 0; font-size: 18px; }
+  .dialog-body { padding: 8px 22px 12px; overflow: auto; flex: 1; }
+  .dialog-buttons { display: flex; align-items: center; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line-2); }
+  .dialog-buttons .grow { flex: 1; }
+  .form-group { margin-bottom: 16px; }
+  .form-group > label, .field-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .secondary-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .invite-row { display: flex; gap: 12px; }
+  .invite-row > div { flex: 1; margin-bottom: 14px; }
+  .invite-counter { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+
+  /* autocomplete multiple */
+  .ac { position: relative; }
+  .ac-box { display: flex; flex-wrap: wrap; gap: 6px; border: 1px solid #d8d8d2; border-radius: 8px; padding: 6px; background: #fff; min-height: 40px; }
+  .ac-box:focus-within { border-color: var(--accent); }
+  .ac-box input { flex: 1; min-width: 140px; border: 0; outline: none; padding: 3px 4px; }
+  .ac-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--accent-soft); color: var(--accent-ink); border-radius: 6px; padding: 2px 4px 2px 8px; font-size: 13px; }
+  .ac-chip.new { background: #eaf1fb; color: #2f5a8f; }
+  .ac-chip button { border: 0; background: none; cursor: pointer; color: inherit; opacity: .7; padding: 0 3px; }
+  .ac-panel { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 10px 30px rgba(0,0,0,.12); z-index: 5; display: none; }
+  .ac-panel.open { display: block; }
+  .ac-item { padding: 8px 12px; cursor: pointer; display: flex; gap: 10px; align-items: center; }
+  .ac-item:hover, .ac-item.hl { background: var(--bg); }
+  .ac-item small { color: var(--muted); display: block; }
+  .ac-footer { border-top: 1px solid var(--line-2); padding: 8px; }
+
+  /* csv */
+  .csv-hint { color: var(--muted); font-size: 13.5px; }
+  .dropzone { margin-top: 12px; border: 2px dashed #cfcfca; border-radius: 10px; padding: 30px 16px; text-align: center; color: var(--muted); cursor: pointer; background: #fafaf8; }
+  .dropzone.drag { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+  .csv-error { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--danger-soft); color: var(--danger); font-size: 13.5px; }
+  .csv-table-wrap { border: 1px solid var(--line); border-radius: 9px; max-height: 320px; overflow: auto; }
+  .csv-table-wrap td, .csv-table-wrap th { padding: 8px 10px; font-size: 13px; }
+
+  /* ── mon profil ── */
+  .fv-group { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; margin-bottom: 18px; max-width: 760px; }
+  .fv-title { font-size: 17px; font-weight: 600; margin: 0 0 14px; }
+  .fv-row { display: flex; align-items: center; gap: 16px; padding: 8px 0; }
+  .fv-row label { width: 40%; color: var(--muted); }
+  .fv-row .fv-value { flex: 1; }
+  .fv-group hr { border: 0; border-top: 1px solid var(--line-2); margin: 8px 0; }
+  .fv-save { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+  /* ── toast (p:growl) ── */
+  .toasts { position: fixed; top: 64px; right: 18px; z-index: 80; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 14px; box-shadow: 0 6px 20px rgba(0,0,0,.1); font-size: 13.5px; max-width: 340px; animation: fadein .15s; }
+  .toast.error { border-left-color: var(--danger); }
+  @keyframes fadein { from { opacity: 0; transform: translateY(-4px); } }
+
+  @media (max-width: 760px) {
+    .content { padding: 14px 16px 30px; }
+    .topbar { gap: 10px; padding: 0 12px; overflow-x: auto; }
+    .scope { display: none; }
+    .search { width: 100%; }
+    .dt-tools { width: 100%; flex-wrap: wrap; }
+    .invite-row { flex-direction: column; gap: 0; }
+    .fv-row { flex-direction: column; align-items: stretch; gap: 4px; }
+    .fv-row label { width: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <span class="brand">SIAMOIS</span>
+    <nav class="topnav" id="topnav">
+      <button data-page="members" class="active">Membres &amp; profils</button>
+      <button data-page="me">Mon profil</button>
+    </nav>
+    <label class="scope">Contexte
+      <select class="input" id="scopeSelect" style="width:auto;padding:5px 8px">
+        <option value="project">Projet</option>
+        <option value="institution">Organisation</option>
+        <option value="application">Administration</option>
+      </select>
+    </label>
+  </header>
+  <main class="content"><div class="container" id="page"></div></main>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- Drawer détail profil -->
+<aside class="drawer" id="profileDrawer" aria-hidden="true">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-title" id="profileDrawerTitle"></div>
+      <div class="drawer-note">Profil système — lecture seule pour le moment.</div>
+    </div>
+    <button class="drawer-close" data-close-drawer aria-label="Fermer">✕</button>
+  </div>
+  <div class="drawer-body" id="profileDrawerBody"></div>
+</aside>
+
+<!-- Dialog ajout membre -->
+<section class="dialog" id="memberDialog" role="dialog" aria-modal="true">
+  <div class="dialog-header"><h3 id="memberDialogTitle"></h3></div>
+  <div class="dialog-body" id="memberDialogBody"></div>
+  <div class="dialog-buttons" id="memberDialogButtons"></div>
+</section>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   Données de démonstration
+   ===================================================================== */
+const PERMISSION_LABELS = {
+  INSTANCE_MANAGE_SETTINGS: "Gérer les paramètres de l'instance",
+  INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS: 'Gérer les paramètres de toutes les organisations',
+  INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS: 'Gérer les projets de toutes les organisations',
+  INSTANCE_ACCESS_ORGANIZATIONS: 'Accéder aux données de toutes les organisations',
+  INSTANCE_VALIDATE: 'Valider partout',
+  ORGANIZATION_CREATE: 'Créer des organisations',
+  ORGANIZATION_MANAGE_SETTINGS: "Gérer les paramètres de l'organisation",
+  ORGANIZATION_MANAGE_ACTIONS: "Gérer les projets de l'organisation",
+  ORGANIZATION_CREATE_ACTIONS: "Créer des projets dans l'organisation",
+  ORGANIZATION_MANAGE_PLACES: "Gérer les unités spatiales de l'organisation",
+  ORGANIZATION_ACCESS: "Accéder aux données de l'organisation",
+  ORGANIZATION_VALIDATE: "Valider dans tous les projets et les lieux de l'organisation",
+  PROJECT_MANAGE_SETTINGS: 'Gérer les paramètres du projet',
+  PROJECT_EDIT_RECORDING_UNITS: "Modifier les unités d'enregistrement",
+  PROJECT_EDIT_PHASES: 'Modifier les phases',
+  PROJECT_EDIT_FINDS: 'Modifier le mobilier',
+  PROJECT_EDIT_CONTAINERS: 'Modifier les contenants',
+  PROJECT_VALIDATE: 'Valider (validateur du projet)',
+};
+const PERMISSION_THEMES = {
+  application: [
+    { label: 'Instance', perms: ['INSTANCE_MANAGE_SETTINGS', 'INSTANCE_VALIDATE'] },
+    { label: 'Organisations', perms: ['INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS', 'INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS', 'INSTANCE_ACCESS_ORGANIZATIONS', 'ORGANIZATION_CREATE'] },
+  ],
+  institution: [
+    { label: 'Organisation', perms: ['ORGANIZATION_MANAGE_SETTINGS', 'ORGANIZATION_ACCESS', 'ORGANIZATION_VALIDATE'] },
+    { label: 'Projets', perms: ['ORGANIZATION_MANAGE_ACTIONS', 'ORGANIZATION_CREATE_ACTIONS'] },
+    { label: 'Unités spatiales', perms: ['ORGANIZATION_MANAGE_PLACES'] },
+  ],
+  project: [
+    { label: 'Projet', perms: ['PROJECT_MANAGE_SETTINGS', 'PROJECT_VALIDATE'] },
+    { label: 'Enregistrement', perms: ['PROJECT_EDIT_RECORDING_UNITS', 'PROJECT_EDIT_PHASES', 'PROJECT_EDIT_FINDS', 'PROJECT_EDIT_CONTAINERS'] },
+  ],
+};
+const PROFILES = {
+  project: [
+    { id: 'p1', name: 'Responsable de projet', permissions: ['PROJECT_MANAGE_SETTINGS', 'PROJECT_EDIT_RECORDING_UNITS', 'PROJECT_EDIT_PHASES', 'PROJECT_EDIT_FINDS', 'PROJECT_EDIT_CONTAINERS', 'PROJECT_VALIDATE'] },
+    { id: 'p2', name: 'Contributeur', permissions: ['PROJECT_EDIT_RECORDING_UNITS', 'PROJECT_EDIT_PHASES', 'PROJECT_EDIT_FINDS', 'PROJECT_EDIT_CONTAINERS'] },
+    { id: 'p3', name: 'Validateur', permissions: ['PROJECT_VALIDATE'] },
+    { id: 'p4', name: 'Lecteur', permissions: [] },
+  ],
+  institution: [
+    { id: 'o1', name: "Gestionnaire d'organisation", permissions: ['ORGANIZATION_MANAGE_SETTINGS', 'ORGANIZATION_MANAGE_ACTIONS', 'ORGANIZATION_CREATE_ACTIONS', 'ORGANIZATION_MANAGE_PLACES', 'ORGANIZATION_ACCESS'] },
+    { id: 'o2', name: 'Créateur de projets', permissions: ['ORGANIZATION_CREATE_ACTIONS', 'ORGANIZATION_ACCESS'] },
+    { id: 'o3', name: 'Validateur organisation', permissions: ['ORGANIZATION_VALIDATE', 'ORGANIZATION_ACCESS'] },
+    { id: 'o4', name: 'Membre', permissions: ['ORGANIZATION_ACCESS'] },
+  ],
+  application: [
+    { id: 'a1', name: 'Super administrateur', permissions: Object.keys(PERMISSION_LABELS).filter(k => k.startsWith('INSTANCE') || k === 'ORGANIZATION_CREATE') },
+    { id: 'a2', name: "Administrateur d'instance", permissions: ['INSTANCE_MANAGE_SETTINGS', 'ORGANIZATION_CREATE'] },
+    { id: 'a3', name: 'Utilisateur', permissions: [] },
+  ],
+};
+
+let nextId = 100;
+const person = (firstname, lastname, username, status) => ({
+  id: 'u' + (nextId++), firstname, lastname, username,
+  email: `${firstname}.${lastname}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s/g, '') + '@inrap.fr',
+  status, // enabled | invited | expired | disabled
+});
+const PERSONS = [
+  person('Camille', 'Durand', 'cdurand', 'enabled'),
+  person('Léa', 'Martin', 'lmartin', 'enabled'),
+  person('Hugo', 'Bernard', 'hbernard', 'invited'),
+  person('Inès', 'Petit', 'ipetit', 'expired'),
+  person('Nathan', 'Robert', 'nrobert', 'enabled'),
+  person('Manon', 'Richard', 'mrichard', 'disabled'),
+  person('Lucas', 'Moreau', 'lmoreau', 'enabled'),
+  person('Chloé', 'Simon', 'csimon', 'enabled'),
+  person('Jules', 'Laurent', 'jlaurent', 'enabled'),
+  person('Sarah', 'Lefebvre', 'slefebvre', 'invited'),
+];
+const P = u => PERSONS.find(p => p.username === u);
+
+const SCOPES = {
+  project: {
+    crumbs: ['Projets', 'Fouille de Saint-Martin', 'Membres'],
+    pageTitle: 'Membres & profils',
+    pageDesc: 'Gérez les membres de ce projet, leur rôle et leur profil de permissions.',
+    listTitle: 'Membres du projet Fouille de Saint-Martin',
+    listDesc: 'La liste des membres du projet et leurs rôles',
+    createLabel: 'Ajouter un membre',
+    empty: 'Ajouter des membres à ce projet',
+    profilesTitle: 'Profils',
+    profilesDesc: 'La liste des profils système du projet et leurs permissions',
+    canAdd: true, canRemove: true, showCounts: false,
+    dialogTitle: 'Ajouter des membres au projet',
+    members: [
+      { person: P('cdurand'), profiles: ['p1'] },
+      { person: P('lmartin'), profiles: ['p2', 'p3'] },
+      { person: P('hbernard'), profiles: ['p2'] },
+      { person: P('ipetit'), profiles: ['p4'] },
+    ],
+  },
+  institution: {
+    crumbs: ['Organisations', 'Inrap Grand-Est', 'Membres'],
+    pageTitle: 'Membres & profils',
+    pageDesc: "Gérez les membres de l'organisation et leurs profils de permissions.",
+    listTitle: 'Membres de Inrap Grand-Est',
+    listDesc: "La liste des membres de l'organisation et leurs profils",
+    createLabel: 'Ajouter un membre',
+    empty: 'Ajouter des membres à cette organisation',
+    profilesTitle: 'Profils',
+    profilesDesc: "La liste des profils système de l'organisation et leurs permissions",
+    canAdd: true, canRemove: true, showCounts: false,
+    dialogTitle: "Ajouter des membres à l'organisation",
+    members: [
+      { person: P('cdurand'), profiles: ['o1'] },
+      { person: P('nrobert'), profiles: ['o2'] },
+      { person: P('mrichard'), profiles: ['o4'] },
+      { person: P('slefebvre'), profiles: ['o3', 'o4'] },
+    ],
+  },
+  application: {
+    crumbs: ['Administration', 'Gestion des utilisateurs'],
+    pageTitle: 'Utilisateurs & profils',
+    pageDesc: "Gérez les utilisateurs de l'instance et leurs profils d'administration.",
+    listTitle: "Utilisateurs de l'instance",
+    listDesc: "Tous les comptes de l'application. Les membres s'ajoutent depuis une organisation ou un projet.",
+    createLabel: '',
+    empty: 'Aucun utilisateur. Ajoutez-en depuis une organisation ou un projet.',
+    profilesTitle: 'Profils',
+    profilesDesc: "La liste des profils système de l'instance et leurs permissions",
+    canAdd: false, canRemove: false, showCounts: true,
+    members: PERSONS.map((p, i) => ({ person: p, profiles: i === 0 ? ['a1'] : ['a3'], nOrgs: (i * 7) % 4, nProjects: (i * 5) % 9 })),
+  },
+};
+
+const STATUS = {
+  enabled: { label: 'Actif', cls: 'chip-status-active' },
+  invited: { label: 'Invitation envoyée', cls: 'chip-status-invited' },
+  expired: { label: 'Invitation expirée', cls: 'chip-status-expired' },
+  disabled: { label: 'Désactivé', cls: 'chip-status-inactive' },
+};
+
+/* =====================================================================
+   État UI
+   ===================================================================== */
+const state = {
+  page: 'members',
+  scope: 'project',
+  tab: 'members',
+  search: '',
+  sort: { key: null, dir: 1 },
+};
+
+/* =====================================================================
+   Utilitaires
+   ===================================================================== */
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const initials = p => ((p.firstname?.[0] ?? '') + (p.lastname?.[0] ?? '')).toUpperCase();
+const displayName = p => `${p.firstname} ${p.lastname}`;
+const scope = () => SCOPES[state.scope];
+const profilesOf = s => PROFILES[s];
+
+function toast(msg, kind = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind === 'error' ? ' error' : '');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+/* =====================================================================
+   Multi-select réutilisable (équivalent p:selectCheckboxMenu)
+   ===================================================================== */
+let openMs = null;
+function closeMs() { if (openMs) { openMs.panel.remove(); openMs = null; } }
+
+function renderMsTrigger(options, selected, placeholder) {
+  const names = options.filter(o => selected.includes(o.id)).map(o => `<span class="ms-tag">${esc(o.name)}</span>`);
+  return names.length ? names.join('') : `<span class="placeholder">${esc(placeholder)}</span>`;
+}
+
+/**
+ * Ouvre le panneau de sélection sous `trigger`.
+ * onToggle(id, checked) est appelé à chaque case cochée/décochée (comme itemSelect/itemUnselect).
+ */
+function openMultiSelect(trigger, options, getSelected, onToggle, placeholder) {
+  if (openMs && openMs.trigger === trigger) { closeMs(); return; }
+  closeMs();
+  const panel = document.createElement('div');
+  panel.className = 'ms-panel';
+  panel.innerHTML = `<div class="ms-filter"><input class="input" placeholder="Filtrer…" aria-label="Filtrer"></div><div class="ms-list"></div>`;
+  document.body.appendChild(panel);
+  const r = trigger.getBoundingClientRect();
+  const top = r.bottom + 4 + 260 > innerHeight ? Math.max(8, r.top - 264) : r.bottom + 4;
+  panel.style.top = top + 'px';
+  panel.style.left = Math.min(r.left, innerWidth - 270) + 'px';
+  const list = $('.ms-list', panel);
+  const filter = $('input', panel);
+  const draw = () => {
+    const q = norm(filter.value);
+    const sel = getSelected();
+    const opts = options.filter(o => norm(o.name).includes(q));
+    list.innerHTML = opts.length
+      ? opts.map(o => `<label><input type="checkbox" value="${o.id}" ${sel.includes(o.id) ? 'checked' : ''}> ${esc(o.name)}</label>`).join('')
+      : '<div class="ms-empty">Aucun résultat</div>';
+  };
+  draw();
+  filter.addEventListener('input', draw);
+  list.addEventListener('change', e => {
+    onToggle(e.target.value, e.target.checked);
+    trigger.innerHTML = renderMsTrigger(options, getSelected(), placeholder);
+  });
+  openMs = { panel, trigger };
+  filter.focus();
+}
+document.addEventListener('mousedown', e => {
+  if (openMs && !openMs.panel.contains(e.target) && !openMs.trigger.contains(e.target)) closeMs();
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (openMs) return closeMs();
+  closeDrawer();
+  closeDialog();
+});
+document.querySelector('.content').addEventListener('scroll', closeMs);
+
+/* =====================================================================
+   Rendu : Membres & profils
+   ===================================================================== */
+function crumbs(list) {
+  return `<nav class="breadcrumb">${list.map((c, i) => i < list.length - 1 ? `<a>${esc(c)}</a><span class="sep">›</span>` : `<span>${esc(c)}</span>`).join('')}</nav>`;
+}
+
+function filteredMembers() {
+  const q = norm(state.search);
+  let rows = scope().members.filter(m => !q || norm(`${displayName(m.person)} ${m.person.email} ${m.person.username}`).includes(q));
+  const { key, dir } = state.sort;
+  if (key) {
+    const val = m => key === 'user' ? norm(displayName(m.person))
+      : key === 'status' ? STATUS[m.person.status].label
+      : key === 'orgs' ? m.nOrgs : key === 'projects' ? m.nProjects : '';
+    rows = [...rows].sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * dir);
+  }
+  return rows;
+}
+
+function sortTh(key, label) {
+  const arrow = state.sort.key === key ? (state.sort.dir > 0 ? ' ▲' : ' ▼') : '';
+  return `<th class="sortable" data-sort="${key}">${label}${arrow}</th>`;
+}
+
+function renderMembersTab() {
+  const s = scope();
+  const rows = filteredMembers();
+  const profiles = profilesOf(state.scope);
+  const body = rows.length ? rows.map(m => {
+    const p = m.person;
+    const st = STATUS[p.status];
+    return `<tr data-id="${p.id}">
+      <td><div class="user-cell"><span class="avatar">${initials(p)}</span><div>
+        <strong>${esc(displayName(p))}</strong><div class="email">${esc(p.email)}</div><div class="username">${esc(p.username)}</div>
+      </div></div></td>
+      <td><div class="ms"><button type="button" class="ms-trigger" data-ms="${p.id}">${renderMsTrigger(profiles, m.profiles, 'Profils')}</button></div></td>
+      ${s.showCounts ? `<td><span class="chip chip-profile" title="Voir ses organisations">${m.nOrgs}</span></td><td><span class="chip chip-profile" title="Voir ses projets">${m.nProjects}</span></td>` : ''}
+      <td><div class="status-cell"><span class="chip ${st.cls}">${st.label}</span>
+        ${p.status === 'expired' ? `<button class="btn btn-flat btn-sm" data-resend="${p.id}">↻ Renvoyer l'invitation</button>` : ''}</div></td>
+      ${s.canRemove ? `<td style="text-align:right"><button class="btn btn-danger btn-sm" data-remove="${p.id}">Retirer</button></td>` : ''}
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" class="empty-state">${state.search ? 'Aucun membre ne correspond à la recherche.' : s.canAdd ? `<a data-add>${esc(s.empty)}</a>` : esc(s.empty)}</td></tr>`;
+
+  return `<section class="dt">
+    <div class="dt-head">
+      <div><h2 class="dt-title">${esc(s.listTitle)}</h2><p class="dt-desc">${esc(s.listDesc)}</p></div>
+      <div class="dt-tools">
+        <input class="input search" id="memberSearch" type="search" placeholder="Rechercher…" value="${esc(state.search)}" aria-label="Rechercher un membre">
+        ${s.canAdd ? `<button class="btn" data-add>+ ${esc(s.createLabel)}</button>` : ''}
+      </div>
+    </div>
+    <div class="dt-scroll"><table style="min-width:${s.showCounts ? 900 : 760}px">
+      <thead><tr>
+        ${sortTh('user', 'Utilisateur')}<th>Profils</th>
+        ${s.showCounts ? sortTh('orgs', 'Organisations') + sortTh('projects', 'Projets') : ''}
+        ${sortTh('status', 'Statut du compte')}${s.canRemove ? '<th></th>' : ''}
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>
+  </section>`;
+}
+
+function renderProfilesTab() {
+  const s = scope();
+  const profiles = profilesOf(state.scope);
+  return `<section class="dt">
+    <div class="dt-head"><div><h2 class="dt-title">${esc(s.profilesTitle)}</h2><p class="dt-desc">${esc(s.profilesDesc)}</p></div></div>
+    <table><thead><tr><th>Profils</th></tr></thead><tbody>
+    ${profiles.length ? profiles.map(pr => `<tr><td><div class="profile-row">
+        <span><span class="profile-name">${esc(pr.name)}</span><span class="badge-system">Système</span></span>
+        <span class="perm-count">${pr.permissions.length} permission(s)</span>
+        <button class="btn btn-secondary btn-sm" data-view-profile="${pr.id}">Voir</button>
+      </div></td></tr>`).join('') : '<tr><td class="empty-state">Aucun profil pour le moment.</td></tr>'}
+    </tbody></table>
+  </section>`;
+}
+
+function renderMembersPage() {
+  const s = scope();
+  return `${crumbs(s.crumbs)}
+    <h1 class="page-title">${esc(s.pageTitle)}</h1>
+    <p class="page-desc">${esc(s.pageDesc)}</p>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="members" class="${state.tab === 'members' ? 'active' : ''}">Membres</button>
+      <button role="tab" data-tab="profiles" class="${state.tab === 'profiles' ? 'active' : ''}">Profils</button>
+    </div>
+    <div id="tabContent">${state.tab === 'members' ? renderMembersTab() : renderProfilesTab()}</div>`;
+}
+
+/* =====================================================================
+   Rendu : Mon profil
+   ===================================================================== */
+const me = { email: 'camille.durand@inrap.fr', lastname: 'Durand', firstname: 'Camille', institution: 'i1', lang: 'fr' };
+const INSTITUTIONS = [{ id: 'i1', name: 'Inrap Grand-Est' }, { id: 'i2', name: 'Inrap Hauts-de-France' }, { id: 'i3', name: "Service archéologique de l'Eurométropole" }];
+const LANGS = [{ code: 'fr', name: 'Français' }, { code: 'en', name: 'English' }];
+
+function renderMePage() {
+  return `${crumbs(['Profil'])}
+  <form class="fv-group" id="meForm">
+    <h2 class="fv-title">Profil</h2>
+    <div class="fv-row"><label for="meEmail">Email</label><div class="fv-value"><input id="meEmail" class="input" type="email" disabled value="${esc(me.email)}"></div></div>
+    <hr>
+    <div class="fv-row"><label for="meLast">Nom</label><div class="fv-value"><input id="meLast" name="lastname" class="input" value="${esc(me.lastname)}"></div></div>
+    <div class="fv-row"><label for="meFirst">Prénom</label><div class="fv-value"><input id="meFirst" name="firstname" class="input" value="${esc(me.firstname)}"></div></div>
+    <div class="fv-save"><button class="btn" type="submit">Sauvegarder</button></div>
+  </form>
+  <form class="fv-group" id="prefForm">
+    <h2 class="fv-title">Préférences</h2>
+    <div class="fv-row"><label for="prefInst">Choix de l'organisation par défaut</label><div class="fv-value">
+      <select id="prefInst" name="institution" class="input">${INSTITUTIONS.map(i => `<option value="${i.id}" ${i.id === me.institution ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}</select></div></div>
+    <hr>
+    <div class="fv-row"><label for="prefLang">Choix de la langue</label><div class="fv-value">
+      <select id="prefLang" name="lang" class="input">${LANGS.map(l => `<option value="${l.code}" ${l.code === me.lang ? 'selected' : ''}>${l.name}</option>`).join('')}</select></div></div>
+    <div class="fv-save"><button class="btn" type="submit">Sauvegarder</button></div>
+  </form>`;
+}
+
+/* =====================================================================
+   Rendu principal + délégation d'événements
+   ===================================================================== */
+function render() {
+  closeMs();
+  $('#page').innerHTML = state.page === 'members' ? renderMembersPage() : renderMePage();
+  document.querySelectorAll('#topnav button').forEach(b => b.classList.toggle('active', b.dataset.page === state.page));
+}
+function renderTab() {
+  closeMs();
+  $('#tabContent').innerHTML = state.tab === 'members' ? renderMembersTab() : renderProfilesTab();
+}
+
+$('#topnav').addEventListener('click', e => {
+  const b = e.target.closest('button[data-page]');
+  if (b) { state.page = b.dataset.page; render(); }
+});
+$('#scopeSelect').addEventListener('change', e => {
+  state.scope = e.target.value; state.search = ''; state.sort = { key: null, dir: 1 }; state.page = 'members'; render();
+});
+
+$('#page').addEventListener('click', e => {
+  const t = e.target;
+  const tab = t.closest('[data-tab]');
+  if (tab) { state.tab = tab.dataset.tab; render(); return; }
+
+  const th = t.closest('[data-sort]');
+  if (th) {
+    const key = th.dataset.sort;
+    state.sort = state.sort.key === key ? { key, dir: -state.sort.dir } : { key, dir: 1 };
+    renderTab(); return;
+  }
+
+  if (t.closest('[data-add]')) { openMemberDialog(); return; }
+
+  const ms = t.closest('[data-ms]');
+  if (ms) {
+    const member = scope().members.find(m => m.person.id === ms.dataset.ms);
+    const profiles = profilesOf(state.scope);
+    openMultiSelect(ms, profiles, () => member.profiles, (id, checked) => {
+      member.profiles = checked ? [...member.profiles, id] : member.profiles.filter(x => x !== id);
+      const name = profiles.find(p => p.id === id).name;
+      toast(`${checked ? 'Profil ajouté' : 'Profil retiré'} : ${name} — ${displayName(member.person)}`);
+    }, 'Profils');
+    return;
+  }
+
+  const resend = t.closest('[data-resend]');
+  if (resend) {
+    const p = PERSONS.find(x => x.id === resend.dataset.resend);
+    p.status = 'invited';
+    toast(`Invitation renvoyée à ${p.email}`);
+    renderTab(); return;
+  }
+
+  const remove = t.closest('[data-remove]');
+  if (remove) {
+    const s = scope();
+    const m = s.members.find(x => x.person.id === remove.dataset.remove);
+    s.members = s.members.filter(x => x !== m);
+    toast(`${displayName(m.person)} a été retiré(e)`);
+    renderTab(); return;
+  }
+
+  const view = t.closest('[data-view-profile]');
+  if (view) { openProfileDrawer(view.dataset.viewProfile); }
+});
+
+$('#page').addEventListener('input', e => {
+  if (e.target.id === 'memberSearch') {
+    state.search = e.target.value;
+    const pos = e.target.selectionStart;
+    renderTab();
+    const input = $('#memberSearch'); input.focus(); input.setSelectionRange(pos, pos);
+  }
+});
+
+$('#page').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  if (e.target.id === 'meForm') {
+    const changed = f.get('lastname') !== me.lastname || f.get('firstname') !== me.firstname;
+    if (!changed) return toast("Aucune valeur n'a été changée");
+    me.lastname = f.get('lastname'); me.firstname = f.get('firstname');
+    toast('Informations modifiées avec succès');
+  } else {
+    me.institution = f.get('institution'); me.lang = f.get('lang');
+    toast('Les préférences ont bien été sauvegardées');
+  }
+});
+
+/* =====================================================================
+   Drawer détail de profil
+   ===================================================================== */
+function openProfileDrawer(id) {
+  const profile = profilesOf(state.scope).find(p => p.id === id);
+  $('#profileDrawerTitle').textContent = profile.name;
+  const themes = PERMISSION_THEMES[state.scope];
+  $('#profileDrawerBody').innerHTML = themes.map(th => `<div class="perm-theme">
+      <div class="perm-theme-title">${esc(th.label)}</div>
+      ${th.perms.map(k => {
+        const granted = profile.permissions.includes(k);
+        return `<div class="perm-row ${granted ? '' : 'denied'}"><input type="checkbox" disabled ${granted ? 'checked' : ''} aria-label="${esc(PERMISSION_LABELS[k])}"><span>${esc(PERMISSION_LABELS[k])}</span></div>`;
+      }).join('')}
+    </div>`).join('') + (profile.permissions.length ? '' : '<p style="color:var(--muted)">Ce profil n\'a aucune permission.</p>');
+  $('#profileDrawer').classList.add('open');
+  $('#profileDrawer').setAttribute('aria-hidden', 'false');
+  $('#overlay').classList.add('open');
+}
+function closeDrawer() {
+  $('#profileDrawer').classList.remove('open');
+  $('#profileDrawer').setAttribute('aria-hidden', 'true');
+  if (!$('#memberDialog').classList.contains('open')) $('#overlay').classList.remove('open');
+}
+$('#profileDrawer').addEventListener('click', e => { if (e.target.closest('[data-close-drawer]')) closeDrawer(); });
+$('#overlay').addEventListener('click', () => { closeDrawer(); });
+
+/* =====================================================================
+   Dialog « Ajouter des membres » (newMemberDialog.xhtml)
+   Étapes : main → invite | csv
+   ===================================================================== */
+const dlg = {
+  step: 'main',
+  selected: [],       // [{person, isNew}]
+  profiles: [],       // ids
+  invite: { firstname: '', lastname: '', email: '', username: '' },
+  csvRows: null,      // [{name, lastname, email, status, error, included}]
+  csvError: '',
+  query: '',
+};
+
+function resetDialog() {
+  Object.assign(dlg, { step: 'main', selected: [], profiles: [], invite: { firstname: '', lastname: '', email: '', username: '' }, csvRows: null, csvError: '', query: '' });
+}
+function openMemberDialog() {
+  resetDialog();
+  $('#memberDialogTitle').textContent = scope().dialogTitle;
+  $('#memberDialog').classList.add('open');
+  $('#overlay').classList.add('open');
+  renderDialog();
+  setTimeout(() => $('#acInput')?.focus(), 0);
+}
+function closeDialog() {
+  closeMs();
+  $('#memberDialog').classList.remove('open');
+  $('#memberDialog').classList.remove('wide');
+  if (!$('#profileDrawer').classList.contains('open')) $('#overlay').classList.remove('open');
+}
+
+const pendingInvitations = () => dlg.selected.filter(s => s.isNew).length;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function inviteValid() {
+  const i = dlg.invite;
+  return i.firstname.trim() && i.lastname.trim() && EMAIL_RE.test(i.email.trim()) && i.username.trim();
+}
+
+function renderDialog() {
+  const body = $('#memberDialogBody');
+  const buttons = $('#memberDialogButtons');
+  $('#memberDialog').classList.toggle('wide', dlg.step === 'csv' && !!dlg.csvRows);
+
+  if (dlg.step === 'main') {
+    const profiles = profilesOf(state.scope);
+    body.innerHTML = `
+      <div class="form-group">
+        <label for="acInput">Membres</label>
+        <div class="ac" id="ac">
+          <div class="ac-box">
+            ${dlg.selected.map((s, i) => `<span class="ac-chip ${s.isNew ? 'new' : ''}">${esc(displayName(s.person))}${s.isNew ? ' · nouveau compte' : ''}<button type="button" data-unselect="${i}" aria-label="Retirer">✕</button></span>`).join('')}
+            <input id="acInput" autocomplete="off" placeholder="${dlg.selected.length ? '' : 'Rechercher par nom ou e-mail…'}" value="${esc(dlg.query)}">
+          </div>
+          <div class="ac-panel" id="acPanel"></div>
+        </div>
+        <div class="secondary-actions">
+          <button type="button" class="link" data-go="invite">✉ Inviter une nouvelle personne par e-mail</button>
+          <button type="button" class="link" data-go="csv">⤒ Importer depuis un fichier CSV</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Profils à attribuer</label>
+        <div class="ms"><button type="button" class="ms-trigger" id="dlgProfiles">${renderMsTrigger(profiles, dlg.profiles, 'Rechercher un profil…')}</button></div>
+      </div>`;
+    const n = dlg.selected.length;
+    const inv = pendingInvitations();
+    const enabled = n > 0 && dlg.profiles.length > 0;
+    buttons.innerHTML = `
+      <button class="btn btn-secondary" data-dlg="cancel">Annuler</button>
+      <span class="grow"></span>
+      ${inv > 0 ? `<span class="invite-counter">✉ ${inv} invitation(s) sera(ont) envoyée(s)</span>` : ''}
+      <button class="btn" data-dlg="submit" ${enabled ? '' : 'disabled'}>${inv > 0 ? `Inviter et ajouter (${n})` : n ? `Ajouter (${n})` : 'Ajouter'}</button>`;
+    wireAutocomplete();
+    return;
+  }
+
+  if (dlg.step === 'invite') {
+    const i = dlg.invite;
+    const field = (key, label, ph, type = 'text') => `<div><label class="field-label" for="inv_${key}">${label}*</label>
+      <input class="input" id="inv_${key}" data-inv="${key}" type="${type}" placeholder="${esc(ph)}" value="${esc(i[key])}"></div>`;
+    body.innerHTML = `
+      <div class="invite-row">${field('firstname', 'Prénom', 'Prénom')}${field('lastname', 'Nom', 'Nom')}</div>
+      <div class="invite-row">${field('email', 'Adresse e-mail', 'nom@exemple.fr', 'email')}${field('username', "Nom d'utilisateur", "Nom d'utilisateur")}</div>`;
+    buttons.innerHTML = `<button class="btn btn-secondary" data-dlg="back">Retour</button><span class="grow"></span>
+      <button class="btn" data-dlg="invite" ${inviteValid() ? '' : 'disabled'}>Continuer</button>`;
+    setTimeout(() => $('#inv_firstname')?.focus(), 0);
+    return;
+  }
+
+  // csv
+  if (!dlg.csvRows) {
+    body.innerHTML = `
+      <p class="csv-hint">Fichier CSV avec une ligne d'en-tête et trois colonnes : name, lastname, email. Séparateur virgule ou point-virgule.</p>
+      <button class="btn btn-outline" data-dlg="example">↓ Télécharger un exemple</button>
+      <label class="dropzone" id="dropzone">
+        <input type="file" accept=".csv,text/csv" id="csvFile" hidden>
+        Glissez un fichier CSV ici ou cliquez pour le sélectionner
+      </label>
+      ${dlg.csvError ? `<div class="csv-error">⚠ ${esc(dlg.csvError)}</div>` : ''}`;
+    buttons.innerHTML = `<button class="btn btn-secondary" data-dlg="back">Retour</button>`;
+    wireDropzone();
+    return;
+  }
+  const count = dlg.csvRows.filter(r => r.included && !r.error).length;
+  body.innerHTML = `<div class="csv-table-wrap"><table>
+    <thead><tr><th>Prénom</th><th>Nom</th><th>Adresse e-mail</th><th>Statut</th><th>Inclure</th></tr></thead>
+    <tbody>${dlg.csvRows.map((r, i) => `<tr>
+      <td>${esc(r.name)}</td><td>${esc(r.lastname)}</td><td>${esc(r.email)}</td>
+      <td><span class="chip ${r.error ? 'chip-error' : r.status === 'existing' ? 'chip-status-active' : 'chip-status-invited'}" ${r.error ? `title="${esc(r.error)}"` : ''}>${r.error ? esc(r.error) : r.status === 'existing' ? 'Compte existant' : 'Nouveau compte'}</span></td>
+      <td><input type="checkbox" data-csv-include="${i}" ${r.included ? 'checked' : ''} ${r.error ? 'disabled' : ''} style="accent-color:var(--accent)"></td>
+    </tr>`).join('')}</tbody></table></div>`;
+  buttons.innerHTML = `<button class="btn btn-secondary" data-dlg="back">Retour</button><span class="grow"></span>
+    <button class="btn" data-dlg="csvConfirm" ${count ? '' : 'disabled'}>Importer les ${count} utilisateurs</button>`;
+}
+
+function wireAutocomplete() {
+  const input = $('#acInput');
+  const panel = $('#acPanel');
+  let hl = 0, results = [];
+  const draw = () => {
+    const q = norm(dlg.query);
+    const already = new Set([...dlg.selected.map(s => s.person.email), ...scope().members.map(m => m.person.email)]);
+    results = q.length < 1 ? [] : PERSONS.filter(p => !already.has(p.email) && norm(`${displayName(p)} ${p.email}`).includes(q)).slice(0, 8);
+    panel.innerHTML = results.map((p, i) => `<div class="ac-item ${i === hl ? 'hl' : ''}" data-pick="${i}"><span class="avatar" style="width:28px;height:28px;font-size:11px">${initials(p)}</span><div>${esc(displayName(p))}<small>${esc(p.email)}</small></div></div>`).join('')
+      + (q ? `${results.length ? '' : '<div class="ms-empty">Aucun utilisateur trouvé</div>'}<div class="ac-footer"><button type="button" class="btn btn-outline btn-sm" data-go="invite">＋ Inviter un nouvel utilisateur</button></div>` : '');
+    panel.classList.toggle('open', !!q);
+  };
+  let timer;
+  input.addEventListener('input', () => { dlg.query = input.value; hl = 0; clearTimeout(timer); timer = setTimeout(draw, 150); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { hl = Math.min(hl + 1, results.length - 1); draw(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { hl = Math.max(hl - 1, 0); draw(); e.preventDefault(); }
+    else if (e.key === 'Enter' && results[hl]) { e.preventDefault(); pick(results[hl]); }
+    else if (e.key === 'Backspace' && !input.value && dlg.selected.length) { dlg.selected.pop(); renderDialog(); $('#acInput').focus(); }
+  });
+  panel.addEventListener('mousedown', e => {
+    const it = e.target.closest('[data-pick]');
+    if (it) { e.preventDefault(); pick(results[+it.dataset.pick]); }
+  });
+  input.addEventListener('blur', () => setTimeout(() => panel.classList.remove('open'), 150));
+  const pick = p => { dlg.selected.push({ person: p, isNew: false }); dlg.query = ''; renderDialog(); $('#acInput').focus(); };
+}
+
+function parseCsv(text) {
+  const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) throw new Error("Le fichier n'est pas un CSV valide.");
+  const sep = lines[0].includes(';') ? ';' : ',';
+  const header = lines[0].split(sep).map(h => h.trim().toLowerCase());
+  const idx = k => header.indexOf(k);
+  if (idx('name') < 0 || idx('lastname') < 0 || idx('email') < 0)
+    throw new Error("Le fichier doit avoir une ligne d'en-tête avec les colonnes : name, lastname, email.");
+  if (lines.length - 1 > 200) throw new Error('Le fichier contient trop de lignes (maximum 200).');
+  const seen = new Set();
+  return lines.slice(1).map(l => {
+    const c = l.split(sep).map(x => x.trim().replace(/^"|"$/g, ''));
+    const r = { name: c[idx('name')] ?? '', lastname: c[idx('lastname')] ?? '', email: (c[idx('email')] ?? '').toLowerCase() };
+    if (!r.name || !r.lastname || !r.email) r.error = 'Prénom, nom ou email manquant.';
+    else if (!EMAIL_RE.test(r.email)) r.error = 'Adresse e-mail invalide.';
+    else if (seen.has(r.email)) r.error = 'E-mail en doublon dans le fichier.';
+    seen.add(r.email);
+    r.status = PERSONS.some(p => p.email === r.email) ? 'existing' : 'new';
+    r.included = !r.error;
+    return r;
+  });
+}
+
+function handleCsvFile(file) {
+  if (!file) return;
+  if (!/\.csv$/i.test(file.name)) { dlg.csvError = 'Seuls les fichiers .csv sont autorisés.'; return renderDialog(); }
+  if (file.size > 1048576) { dlg.csvError = 'Le fichier dépasse la taille maximale autorisée.'; return renderDialog(); }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { dlg.csvRows = parseCsv(reader.result); dlg.csvError = ''; }
+    catch (err) { dlg.csvError = err.message; dlg.csvRows = null; }
+    renderDialog();
+  };
+  reader.onerror = () => { dlg.csvError = "Le fichier n'a pas pu être lu."; renderDialog(); };
+  reader.readAsText(file);
+}
+
+function wireDropzone() {
+  const dz = $('#dropzone');
+  $('#csvFile').addEventListener('change', e => handleCsvFile(e.target.files[0]));
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e => handleCsvFile(e.dataTransfer.files[0]));
+}
+
+function addPersonsToScope(persons, profileIds) {
+  const s = scope();
+  persons.forEach(p => {
+    if (!s.members.some(m => m.person.email === p.email)) s.members.push({ person: p, profiles: [...profileIds], nOrgs: 1, nProjects: 0 });
+  });
+}
+
+$('#memberDialog').addEventListener('click', e => {
+  const t = e.target;
+  const un = t.closest('[data-unselect]');
+  if (un) { dlg.selected.splice(+un.dataset.unselect, 1); renderDialog(); return; }
+  const go = t.closest('[data-go]');
+  if (go) { dlg.step = go.dataset.go; renderDialog(); return; }
+  if (t.closest('#dlgProfiles')) {
+    const trig = $('#dlgProfiles');
+    openMultiSelect(trig, profilesOf(state.scope), () => dlg.profiles, (id, checked) => {
+      dlg.profiles = checked ? [...dlg.profiles, id] : dlg.profiles.filter(x => x !== id);
+      // rafraîchit uniquement les boutons (le panneau reste ouvert)
+      const n = dlg.selected.length;
+      const btn = $('[data-dlg="submit"]'); if (btn) btn.disabled = !(n > 0 && dlg.profiles.length > 0);
+    }, 'Rechercher un profil…');
+    return;
+  }
+  const action = t.closest('[data-dlg]')?.dataset.dlg;
+  switch (action) {
+    case 'cancel': closeDialog(); break;
+    case 'back': dlg.step = 'main'; dlg.csvRows = null; dlg.csvError = ''; renderDialog(); break;
+    case 'invite': {
+      const i = dlg.invite;
+      const email = i.email.trim().toLowerCase();
+      if (PERSONS.some(p => p.email === email) || dlg.selected.some(s => s.person.email === email)) { toast('Un compte existe déjà avec cette adresse e-mail', 'error'); break; }
+      dlg.selected.push({ person: { id: 'u' + (nextId++), firstname: i.firstname.trim(), lastname: i.lastname.trim(), email, username: i.username.trim(), status: 'invited' }, isNew: true });
+      dlg.invite = { firstname: '', lastname: '', email: '', username: '' };
+      dlg.step = 'main'; renderDialog(); break;
+    }
+    case 'submit': {
+      dlg.selected.filter(s => s.isNew).forEach(s => PERSONS.push(s.person));
+      addPersonsToScope(dlg.selected.map(s => s.person), dlg.profiles);
+      toast(`${dlg.selected.length} membre(s) ajouté(s)${pendingInvitations() ? `, ${pendingInvitations()} invitation(s) envoyée(s)` : ''}`);
+      closeDialog(); state.tab = 'members'; render(); break;
+    }
+    case 'example': {
+      const blob = new Blob(['name;lastname;email\nMarie;Curie;marie.curie@exemple.fr\nJean;Dupont;jean.dupont@exemple.fr\n'], { type: 'text/csv' });
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'exemple-import-membres.csv' });
+      a.click(); URL.revokeObjectURL(a.href); break;
+    }
+    case 'csvConfirm': {
+      const rows = dlg.csvRows.filter(r => r.included && !r.error);
+      const persons = rows.map(r => PERSONS.find(p => p.email === r.email) ?? (() => {
+        const p = { id: 'u' + (nextId++), firstname: r.name, lastname: r.lastname, email: r.email, username: r.email.split('@')[0], status: 'invited' };
+        PERSONS.push(p); return p;
+      })());
+      addPersonsToScope(persons, []);
+      toast(`${rows.length} utilisateur(s) importé(s)`);
+      closeDialog(); state.tab = 'members'; render(); break;
+    }
+  }
+});
+$('#memberDialog').addEventListener('input', e => {
+  const k = e.target.dataset.inv;
+  if (k) { dlg.invite[k] = e.target.value; $('[data-dlg="invite"]').disabled = !inviteValid(); }
+});
+$('#memberDialog').addEventListener('change', e => {
+  const i = e.target.dataset.csvInclude;
+  if (i !== undefined) { dlg.csvRows[+i].included = e.target.checked; renderDialog(); }
+});
+
+render();
+</script>
+</body>
+</html>

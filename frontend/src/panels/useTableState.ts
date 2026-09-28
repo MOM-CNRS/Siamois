@@ -17,8 +17,14 @@ export interface UseTableStateOptions {
 export function useTableState({ defaultSort, prefsKey }: UseTableStateOptions) {
   const [state, setState] = useState<TableState>(() => createTableState({ sort: defaultSort }));
 
+  // A new result set (sort, search, filters) starts back at the first page; the page the user was
+  // on belonged to the previous one. Showing or hiding columns keeps the page.
+  const setPage = useCallback((offset: number, limit: number) => {
+    setState((s) => ({ ...s, offset, limit }));
+  }, []);
+
   const setSort = useCallback((sort: string | undefined) => {
-    setState((s) => ({ ...s, sort }));
+    setState((s) => ({ ...s, sort, offset: 0 }));
   }, []);
 
   const setSearch = useCallback((search: string) => {
@@ -27,7 +33,7 @@ export function useTableState({ defaultSort, prefsKey }: UseTableStateOptions) {
       // Skip the update when the debounced value settles back to what it already was — avoids an
       // extra query firing on every keystroke's trailing edge.
       if (next === s.search) return s;
-      return { ...s, search: next };
+      return { ...s, search: next, offset: 0 };
     });
   }, []);
 
@@ -40,7 +46,7 @@ export function useTableState({ defaultSort, prefsKey }: UseTableStateOptions) {
   );
 
   const setFilters = useCallback((filters: Record<string, FilterValue>) => {
-    setState((s) => ({ ...s, filters }));
+    setState((s) => ({ ...s, filters, offset: 0 }));
   }, []);
 
   // Seeds visibleColumns once — never overwrites a set the user (or a restored view) already
@@ -64,5 +70,5 @@ export function useTableState({ defaultSort, prefsKey }: UseTableStateOptions) {
     [prefsKey],
   );
 
-  return { state, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns, columnsSeeded };
+  return { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns, columnsSeeded };
 }

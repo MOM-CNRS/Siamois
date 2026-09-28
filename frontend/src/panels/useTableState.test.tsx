@@ -37,7 +37,9 @@ describe("useTableState", () => {
   it("initializes with the given default sort", () => {
     renderHarness("name:asc");
     expect(latest.state).toEqual({
-      v: 2,
+      v: 3,
+      offset: 0,
+      limit: 25,
       sort: "name:asc",
       visibleColumns: [],
       filters: {},
@@ -57,6 +59,26 @@ describe("useTableState", () => {
     renderHarness();
     act(() => latest.setFilters({ name: { op: "contains", v: "fos" } }));
     expect(latest.state.filters).toEqual({ name: { op: "contains", v: "fos" } });
+  });
+
+  it("goes back to the first page when the result set changes, not when columns do", () => {
+    renderHarness();
+    act(() => latest.setPage(50, 25));
+    expect(latest.state).toMatchObject({ offset: 50, limit: 25 });
+
+    act(() => latest.setVisibleColumns(["a"]));
+    expect(latest.state.offset).toBe(50);
+
+    act(() => latest.setSearch("abc"));
+    expect(latest.state).toMatchObject({ offset: 0, limit: 25 });
+
+    act(() => latest.setPage(50, 25));
+    act(() => latest.setSort("name:desc"));
+    expect(latest.state.offset).toBe(0);
+
+    act(() => latest.setPage(50, 25));
+    act(() => latest.setFilters({}));
+    expect(latest.state.offset).toBe(0);
   });
 
   it("seedVisibleColumns sets visibleColumns only the first time it's called", () => {

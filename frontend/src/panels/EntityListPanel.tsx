@@ -5,7 +5,6 @@ import {
   type DataTableSelectionMultipleChangeEvent,
   type DataTableStateEvent,
 } from "primereact/datatable";
-import type { VirtualScrollerLazyEvent } from "primereact/virtualscroller";
 import { Skeleton } from "primereact/skeleton";
 import { ProgressBar } from "primereact/progressbar";
 import { Column } from "primereact/column";
@@ -31,7 +30,9 @@ import { hasFieldRenderer } from "../fields/registry";
 import { resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { useTableState } from "./useTableState";
-import { isFieldPending, isPlaceholderRow, useVirtualList } from "./useVirtualList";
+import { isFieldPending, usePagedList } from "./usePagedList";
+import { FROZEN_COLUMN_CLASS, frozenColumnStyle, useFrozenColumnOffsets } from "./frozenColumns";
+import { PAGE_SIZE_OPTIONS } from "./tableState";
 import { listPrefsKey } from "./listPreferences";
 import { useWriteMode } from "./writeMode";
 import { ValidationStatusCell, type ValidationStatusCellProps } from "../components/table/ValidationStatusCell";
@@ -77,14 +78,6 @@ export interface EntityListPanelProps {
   createPrefill?: CreatePrefill;
 }
 
-// Deliberate divergence from JSF's own entityDataTable.xhtml paginator: the React list has no
-// pages, it virtual-scrolls over the whole result set, fetching aligned chunks as they come into
-// view (useVirtualList). The virtual scroller positions rows by index * ROW_HEIGHT_PX, so every row
-// must be exactly this tall — main-panel.css pins `.entity-list-panel .p-datatable-tbody > tr` to
-// the same value (--entity-list-row-height); change both together. Cells are already one line
-// each (see .entity-list-panel-cell), which is what makes a fixed height possible at all.
-const ROW_HEIGHT_PX = 38;
-
 // tableToolbar.xhtml's globalFilter is debounced 500ms server-side; 300ms here errs toward
 // responsiveness since the request itself is already async. Either way: not one query per
 // keystroke, which the previous version was.
@@ -116,7 +109,7 @@ export function EntityListPanel({
   const config = getEntityType(entityType);
   // Where this list's column and action-bar arrangement is remembered (listPreferences.ts).
   const prefsKey = listPrefsKey(entityType, scope);
-  const { state, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns, columnsSeeded } = useTableState({
+  const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns, columnsSeeded } = useTableState({
     defaultSort: config?.list.defaultSort,
     prefsKey,
   });
@@ -189,7 +182,7 @@ export function EntityListPanel({
 
   // Only the columns currently on screen are ever requested — the projection (and its label-batch
   // resolution cost server-side) scales with what's visible, not with the whole catalog. They're
-  // passed to useVirtualList apart from the result-set params: showing a column fetches just that
+  // passed to usePagedList apart from the result-set params: showing a column fetches just that
   // column for the rows already loaded, hiding one fetches nothing.
   const params: Omit<ListParams, "offset" | "limit" | "fields"> = {
     search: state.search,
@@ -199,17 +192,11 @@ export function EntityListPanel({
     scope,
   };
 
-  const {
-    rows: virtualRows,
-    totalCount,
-    isLoading,
-    isFetching,
-    error,
-    requestRange,
-    resultSetKey,
-  } = useVirtualList<RowRecord>({
+  const { rows, totalCount, isLoading, isFetching, error } = usePagedList<RowRecord>({
     entityType,
     params,
+    offset: state.offset,
+    limit: state.limit,
     fields: state.visibleColumns,
     fetch: (p) => config!.api.list(p) as Promise<PagedResult<RowRecord>>,
     // A list with a schema waits for its columns, rather than fetching once without them and then
@@ -217,12 +204,14 @@ export function EntityListPanel({
     enabled: config != null && (!hasSchema || columnsSeeded || catalogFailed),
   });
 
-  // A new result set (search, sort, filter, columns) starts back at the top: the scroll position
-  // belonged to the previous one, and would otherwise land the user somewhere arbitrary in the new.
+  // A new page (or a new result set, which goes back to the first one) starts at the top of the
+  // table's own scroll box: the scroll position belonged to the rows that were there before.
   const tableRef = useRef<DataTable<RowRecord[]>>(null);
+  const pageKey = `${JSON.stringify(params)}|${state.offset}|${state.limit}`;
   useEffect(() => {
-    tableRef.current?.getVirtualScroller()?.scrollToIndex(0);
-  }, [resultSetKey]);
+    const wrapper = tableRef.current?.getElement()?.querySelector(".p-datatable-wrapper");
+    if (wrapper) wrapper.scrollTop = 0;
+  }, [pageKey]);
 
   const canPatchAnswers = config?.api.patchAnswers != null;
 
@@ -361,13 +350,18 @@ export function EntityListPanel({
   useLayoutEffect(() => {
     tableRef.current?.resetColumnOrder();
   }, [columnOrderSignature]);
+  // The frozen set follows the columns, and a scoped list drops its unscopedOnly ones.
+  useFrozenColumnOffsets(() => tableRef.current?.getElement(), `${columnOrderSignature}|${scope != null}`);
 
   if (!config) {
     return <div className="entity-list-panel-unsupported">Unknown entity type &quot;{entityType}&quot;</div>;
   }
 
-  function onLazyLoad(e: VirtualScrollerLazyEvent) {
-    requestRange(Number(e.first), Number(e.last));
+  function onPage(e: DataTableStateEvent) {
+    const limit = e.rows ?? state.limit;
+    // Keeps the offset a multiple of the page size (the server rejects any other): a size change
+    // lands on the page holding the first row that was shown.
+    setPage(Math.floor((e.first ?? 0) / limit) * limit, limit);
   }
 
   // With onSort set, PrimeReact treats sorting as controlled: it reads sortField/sortOrder back from
@@ -410,7 +404,7 @@ export function EntityListPanel({
   }
 
   function blockDropOnFrozenHeader(e: DragEvent) {
-    if ((e.target as Element).closest?.("th.p-frozen-column")) e.stopPropagation();
+    if ((e.target as Element).closest?.(`th.${FROZEN_COLUMN_CLASS}`)) e.stopPropagation();
   }
 
   function onSelectionChange(e: DataTableSelectionMultipleChangeEvent<RowRecord[]>) {
@@ -504,7 +498,6 @@ export function EntityListPanel({
     rowActions.setActionBar({ order: [...inline, ...rest], inline });
   }
 
-  const rows = virtualRows as RowRecord[];
   // A column that only makes sense across several parents (the row's project, on an
   // organization-wide list) is dropped inside a scoped relation tab, where it would repeat the
   // parent on every row.
@@ -516,7 +509,14 @@ export function EntityListPanel({
   // wide table unreadable. Driven by ColumnDef.identifier, the flag that already marks that column
   // (the one whose cell navigates), so no entity type has to restate which column this is.
   // -1 (no entity declares an identifier column) freezes nothing, including the selection box.
+  // Frozen with frozenColumns.ts, not PrimeReact's Column `frozen` (see there why): the frozen
+  // columns are the selection box, the columns up to the identifier, then the row actions.
   const lastFrozenIndex = allColumns.findIndex((col) => col.identifier);
+  const frozenProps = (position: number) => ({
+    className: FROZEN_COLUMN_CLASS,
+    headerClassName: FROZEN_COLUMN_CLASS,
+    style: frozenColumnStyle(position),
+  });
 
   // The toolbar + table + edit overlay — identical whether or not the surrounding <Panel> chrome
   // is rendered (see `embedded` below). Only the wrapper differs: a standalone list gets its own
@@ -653,8 +653,8 @@ export function EntityListPanel({
           }
         />
       )}
-      {/* Rows arriving: the placeholder skeletons show WHERE, this shows THAT something is
-          loading even when those rows are off screen or already filled in. Same convention as the
+      {/* A page or a column arriving: the previous page stays on screen meanwhile (and a new
+          column shows skeleton cells), so this is what says something is loading. Same convention as the
           JSF panels' own p:progressBar (panelContent.xhtml's panel-progressbar): a 3px track that
           is always there, so showing it never shifts the table, animated only while loading.
           Not during the very first load — the table's own loading overlay covers that. */}
@@ -683,15 +683,17 @@ export function EntityListPanel({
         ref={tableRef}
         lazy
         reorderableColumns
-        // `lazy` here only defers the loading to onLazyLoad; `value` is still the full-length
-        // array (placeholders where a chunk hasn't arrived — see useVirtualList), which is what
-        // keeps the scrollbar to scale. delay debounces a fast fling into one request per
-        // settled range instead of one per chunk flown past.
-        virtualScrollerOptions={{ lazy: true, onLazyLoad, itemSize: ROW_HEIGHT_PX, delay: 150 }}
+        // Server-side paging: `value` is just the current page, totalRecords the whole result set.
+        paginator
+        first={state.offset}
+        rows={state.limit}
+        rowsPerPageOptions={PAGE_SIZE_OPTIONS}
+        totalRecords={totalCount}
+        onPage={onPage}
         loading={isLoading}
         // PrimeReact memoizes each cell on its row data, so a cell would ignore anything else its
-        // body depends on — the action bar layout, write mode, the columns being fetched. The
-        // virtual scroller keeps only a screenful of rows mounted, so re-rendering them is cheap.
+        // body depends on — the action bar layout, write mode, the columns being fetched. A page is
+        // at most 200 rows and only re-renders when its state changes, so that's affordable.
         cellMemo={false}
         onColReorder={onColReorder}
         onSort={onSortChange}
@@ -704,7 +706,6 @@ export function EntityListPanel({
         // method's search-hit class — the flat list has no tree-ancestor case to exclude, so
         // every currently-visible row already matched the server-side search (plan §8 phase 5).
         rowClassName={(row: RowRecord) => {
-          if (isPlaceholderRow(row)) return "entity-list-panel-placeholder-row";
           const classes: string[] = [];
           if (overviewEntityId != null && row.id === overviewEntityId) classes.push("overview-open");
           if (state.search) classes.push("search-match");
@@ -713,7 +714,6 @@ export function EntityListPanel({
         selectionMode="checkbox"
         selection={selectedRows}
         onSelectionChange={onSelectionChange}
-        isDataSelectable={(e) => !isPlaceholderRow(e.data)}
         // Sticky header + frozen columns both require this; it also moves the scrolling from the
         // page onto the table's own body, which is the rule this shell is built on (the app is a
         // fixed 100vh frame — every panel scrolls inside itself, the document never does).
@@ -729,9 +729,9 @@ export function EntityListPanel({
         <Column
           columnKey="__selection"
           selectionMode="multiple"
+          {...(lastFrozenIndex >= 0 ? frozenProps(0) : {})}
           headerStyle={{ width: "3rem" }}
-          headerClassName="entity-list-panel-selection-header"
-          frozen={lastFrozenIndex >= 0}
+          headerClassName={`entity-list-panel-selection-header${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
           reorderable={false}
           header={<Chip label={`${selectedRows.length}/${totalCount}`} />}
         />
@@ -740,7 +740,7 @@ export function EntityListPanel({
             key={col.key}
             columnKey={col.key}
             field={col.key}
-            frozen={index <= lastFrozenIndex}
+            {...(index <= lastFrozenIndex ? frozenProps(index + 1) : {})}
             // Only scrolling dynamic columns move: dragging one into or out of the frozen block
             // would desync `frozen` from the column's position, and the order that's kept (and
             // shown in the chooser) is the dynamic columns' — a pinned one dragged elsewhere would
@@ -768,7 +768,7 @@ export function EntityListPanel({
             // around it would cut that off.
             body={(row: RowRecord) =>
               // A column just shown, still being fetched for this row: a skeleton, not an empty cell.
-              isPlaceholderRow(row) || isFieldPending(row, col.key) ? (
+              isFieldPending(row, col.key) ? (
                 <Skeleton height="1rem" width={col.identifier ? "6rem" : "70%"} />
               ) : (
               <span className="entity-list-panel-cell">
@@ -788,11 +788,11 @@ export function EntityListPanel({
                   key="__row-actions"
                   columnKey="__row-actions"
                   reorderable={false}
-                  className="entity-list-panel-row-actions-cell"
-                  headerClassName="entity-list-panel-row-actions-cell"
-                  frozen={lastFrozenIndex >= 0}
+                  {...(lastFrozenIndex >= 0 ? frozenProps(lastFrozenIndex + 2) : {})}
+                  className={`entity-list-panel-row-actions-cell${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
+                  headerClassName={`entity-list-panel-row-actions-cell${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
                   header={<span className="entity-list-panel-column-header" />}
-                  body={(row: RowRecord) => (isPlaceholderRow(row) ? null : rowActions.render(row))}
+                  body={(row: RowRecord) => rowActions.render(row)}
                 />,
               ]
             : []),

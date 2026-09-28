@@ -3,7 +3,7 @@ import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
-import { CHUNK_SIZE } from "./useVirtualList";
+import { DEFAULT_LIMIT } from "./tableState";
 import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderers";
 
 registerDefaultFieldRenderers();
@@ -134,12 +134,12 @@ afterEach(() => {
 });
 
 describe("EntityListPanel", () => {
-  it("fetches the first chunk with the default sort on first render", async () => {
+  it("fetches the first page with the default sort on first render", async () => {
     renderPanel();
     await flush();
 
     expect(listMock).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 0, limit: CHUNK_SIZE, sort: "name:asc", search: undefined }),
+      expect.objectContaining({ offset: 0, limit: DEFAULT_LIMIT, sort: "name:asc", search: undefined }),
     );
     expect(container.textContent).toContain("Row A");
   });
@@ -395,31 +395,40 @@ describe("EntityListPanel", () => {
     expect(container.querySelector(".entity-list-panel-identifier-select")).toBeNull();
   });
 
-  // The list virtual-scrolls over the whole result set instead of paging through it.
-  it("virtual-scrolls instead of paginating", async () => {
+  it("paginates 25 rows per page by default, with 25/50/100/200 to choose from", async () => {
     renderPanel();
     await flush();
 
-    expect(container.querySelector(".p-paginator")).toBeNull();
-    expect(container.querySelector(".p-virtualscroller")).toBeTruthy();
+    expect(container.querySelector(".p-paginator")).toBeTruthy();
+    expect(container.querySelector(".p-virtualscroller")).toBeNull();
+    const dropdown = container.querySelector(".p-paginator .p-dropdown");
+    expect(dropdown?.textContent).toContain("25");
   });
 
-  // Rows past the first chunk exist (so the scrollbar is to scale) but are only fetched once
-  // scrolled into view — until then they're placeholders (see useVirtualList.assembleRows).
-  it("counts the whole result set but fetches only the chunk in view", async () => {
-    listMock.mockResolvedValue({
-      data: Array.from({ length: CHUNK_SIZE }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` })),
-      totalCount: CHUNK_SIZE + 10,
-      limit: CHUNK_SIZE,
-      offset: 0,
+  it("fetches the page the user moves to, and counts the whole result set", async () => {
+    listMock.mockImplementation((params: unknown) => {
+      const p = params as { offset: number; limit: number };
+      return Promise.resolve({
+        data: Array.from({ length: p.limit }, (_, i) => ({ id: String(p.offset + i + 1), name: `Row ${p.offset + i + 1}` })),
+        totalCount: DEFAULT_LIMIT * 3,
+        limit: p.limit,
+        offset: p.offset,
+      });
     });
     renderPanel();
     await flush();
 
-    // Only chunk 0 was requested: the (test-sized) viewport doesn't reach row 50.
-    expect(listMock).toHaveBeenCalledTimes(1);
     const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
-    expect(chips).toContain(String(CHUNK_SIZE + 10));
+    expect(chips).toContain(String(DEFAULT_LIMIT * 3));
+
+    const next = container.querySelector(".p-paginator-next") as HTMLElement;
+    await act(async () => {
+      next.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: DEFAULT_LIMIT, limit: DEFAULT_LIMIT }));
+    expect(container.textContent).toContain(`Row ${DEFAULT_LIMIT + 1}`);
   });
 
   it("shows an unsupported message for an unregistered entity type", async () => {
@@ -1139,7 +1148,7 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
 
     // fakeConfig: one column, `name`, marked identifier — so selection + name + the row actions
     // right after it, and that is all.
-    const frozen = headerCells().filter((th) => th.classList.contains("p-frozen-column"));
+    const frozen = headerCells().filter((th) => th.classList.contains("entity-list-panel-frozen"));
     expect(frozen).toHaveLength(3);
     expect(frozen[0].classList.contains("p-selection-column")).toBe(true);
     expect(frozen[1].textContent).toContain("Name");
@@ -1170,7 +1179,7 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     await flush();
 
     const frozenLabels = headerCells()
-      .filter((th) => th.classList.contains("p-frozen-column"))
+      .filter((th) => th.classList.contains("entity-list-panel-frozen"))
       .map((th) => th.textContent);
     // Selection + Statut + Name + row actions; "Après" scrolls away.
     expect(frozenLabels).toHaveLength(4);
@@ -1196,7 +1205,7 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     await flush();
 
     // Not even the selection box: freezing it alone would pin an empty 3rem strip for no reason.
-    expect(headerCells().filter((th) => th.classList.contains("p-frozen-column"))).toHaveLength(0);
+    expect(headerCells().filter((th) => th.classList.contains("entity-list-panel-frozen"))).toHaveLength(0);
   });
 
   it("freezes the identifier column only, leaving dynamic catalog columns scrollable", async () => {
@@ -1218,7 +1227,7 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     await flush();
     await flush();
 
-    const frozen = headerCells().filter((th) => th.classList.contains("p-frozen-column"));
+    const frozen = headerCells().filter((th) => th.classList.contains("entity-list-panel-frozen"));
     expect(frozen).toHaveLength(0);
     expect(headerCells().some((th) => th.textContent?.includes("Statut"))).toBe(true);
   });

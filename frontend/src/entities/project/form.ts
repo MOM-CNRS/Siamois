@@ -18,6 +18,10 @@ export interface ColumnWidth {
 export interface FormLayoutCol {
   width: ColumnWidth;
   hidden?: boolean;
+  // Raw PrimeFaces class string — only sent for a column still built server-side with the old
+  // CustomColUiDto.Builder#className(...) instead of .width(...). parseLayout converts it to
+  // `width`/`hidden` (see normalizeCol), so renderers never need to read it.
+  className?: string | null;
   isRequired: boolean;
   isReadOnly: boolean;
   fieldId?: number | string | null;
@@ -69,7 +73,40 @@ export interface FormLayoutPanel {
 
 export function parseLayout(layoutJson: string): FormLayoutPanel[] {
   if (!layoutJson) return [];
-  return JSON.parse(layoutJson) as FormLayoutPanel[];
+  const panels = JSON.parse(layoutJson) as FormLayoutPanel[];
+  return panels.map((panel) => ({
+    ...panel,
+    rows: (panel.rows ?? []).map((row) => ({ ...row, columns: (row.columns ?? []).map(normalizeCol) })),
+  }));
+}
+
+/**
+ * A column built server-side with the legacy `.className("ui-g-12 ui-md-6 ui-lg-3")` arrives with
+ * no `width` (FormUiDtoLayoutJson#serializeCol only emits `width` for `.width(...)` columns) —
+ * without this, toGridClass would fall back to full width and every field would stack. Parses the
+ * PrimeFaces classes back into a ColumnWidth, and `d-none` into `hidden`. A structured `width`
+ * always wins.
+ */
+function normalizeCol(col: FormLayoutCol): FormLayoutCol {
+  if (col.width || !col.className) return col;
+  const classes = col.className.split(/\s+/);
+  const read = (prefix: string) => {
+    const match = classes.find((c) => c.startsWith(prefix));
+    const n = match ? Number(match.slice(prefix.length)) : NaN;
+    return Number.isInteger(n) && n >= 1 && n <= 12 ? n : undefined;
+  };
+  const span = read("ui-g-");
+  const md = read("ui-md-");
+  const lg = read("ui-lg-");
+  const width: ColumnWidth | undefined =
+    span != null || md != null || lg != null
+      ? { span: span ?? 12, ...(md != null && { md }), ...(lg != null && { lg }) }
+      : undefined;
+  return {
+    ...col,
+    width: width as ColumnWidth,
+    hidden: col.hidden || classes.includes("d-none"),
+  };
 }
 
 // Panel `name` is an i18n message code (JSF resolves it against the message bundle), not a

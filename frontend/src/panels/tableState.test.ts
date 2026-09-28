@@ -10,7 +10,9 @@ import {
 describe("createTableState", () => {
   it("defaults visibleColumns/filters", () => {
     expect(createTableState()).toEqual({
-      v: 2,
+      v: 3,
+      offset: 0,
+      limit: 25,
       visibleColumns: [],
       filters: {},
     });
@@ -18,7 +20,9 @@ describe("createTableState", () => {
 
   it("accepts overrides", () => {
     expect(createTableState({ sort: "name:asc" })).toEqual({
-      v: 2,
+      v: 3,
+      offset: 0,
+      limit: 25,
       sort: "name:asc",
       visibleColumns: [],
       filters: {},
@@ -28,7 +32,9 @@ describe("createTableState", () => {
 
 describe("encodeTableState / decodeTableState", () => {
   const state: TableState = {
-    v: 2,
+    v: 3,
+    offset: 50,
+    limit: 50,
     sort: "name:desc",
     search: "fouillé été", // non-ASCII, exercises the UTF-8 round trip
     visibleColumns: ["-118", "-109"],
@@ -51,6 +57,10 @@ describe("encodeTableState / decodeTableState", () => {
   it("returns null for a differently-versioned or malformed state", () => {
     const badVersion = btoa(JSON.stringify({ ...state, v: 2 }));
     expect(decodeTableState(badVersion)).toBeNull();
+
+    // An offset the server would reject (not a multiple of the page size), or an unoffered size.
+    expect(decodeTableState(encodeTableState({ ...state, offset: 30 }))).toBeNull();
+    expect(decodeTableState(encodeTableState({ ...state, limit: 500, offset: 0 }))).toBeNull();
 
     const missingFields = btoa(JSON.stringify({ v: 1, offset: 0 }));
     expect(decodeTableState(missingFields)).toBeNull();
@@ -107,11 +117,13 @@ describe("filtersToQueryParams", () => {
 });
 
 describe("decodeTableState across versions", () => {
-  // v1 carried offset/limit (paginated list); the list now virtual-scrolls, so an old saved view or
-  // ?s= must start over rather than be half-applied.
-  it("rejects a v1 (paginated) state", () => {
+  // v1 was the first paginated shape, v2 the virtual-scrolled one without a page: an old saved view
+  // or ?s= must start over rather than be half-applied.
+  it("rejects a v1 or v2 state", () => {
     const v1 = { v: 1, offset: 20, limit: 25, visibleColumns: [], filters: {} };
     const encoded = btoa(JSON.stringify(v1)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     expect(decodeTableState(encoded)).toBeNull();
+    const v2 = btoa(JSON.stringify({ v: 2, visibleColumns: [], filters: {} }));
+    expect(decodeTableState(v2)).toBeNull();
   });
 });

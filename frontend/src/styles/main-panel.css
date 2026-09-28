@@ -305,9 +305,8 @@ body button.p-button.p-button-text.status-button.cancelled {
 .entity-list-panel {
   --cell-pad-y: 0.3rem;
   --cell-pad-x: 0.5rem;
-  /* The list virtual-scrolls and positions each row at index * this height, so it must be exact
-     for every row, loaded or placeholder. Mirrors ROW_HEIGHT_PX in EntityListPanel.tsx — change
-     both together. */
+  /* Every row is one line (see .entity-list-panel-cell) at this same height, whatever its cells
+     hold — a row of buttons or an empty row doesn't change the table's rhythm. */
   --entity-list-row-height: 38px;
 }
 
@@ -403,21 +402,9 @@ body button.p-button.p-button-text.status-button.cancelled {
   min-height: 0;
 }
 
-/* The box the rows scroll in. The toolbar and the filter-chip header are siblings of it, so they
-   stay put. */
+/* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
+   are siblings of it, so they stay put. */
 .entity-list-panel .p-datatable-wrapper {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* With virtual scrolling the scroller inside the wrapper is what actually scrolls. PrimeReact only
-   gives it `height: 100%` of the wrapper, which is a flex item without a definite height, so that
-   resolved to 0 — and a VirtualScroller that measures 0 never initializes, computes an empty
-   visible range, and renders no rows at all while the API has answered. Flexing it instead gives
-   it the wrapper's real height from its first render. */
-.entity-list-panel .p-datatable-wrapper > .p-virtualscroller {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -425,34 +412,39 @@ body button.p-button.p-button-text.status-button.cancelled {
 /* Columns keep a usable width instead of being squeezed to fit, so a wide catalog overflows
    sideways — which is the situation frozen columns exist for. Excludes the selection box, which
    is pinned at 3rem, and the frozen identifier, sized just below. */
-.entity-list-panel .p-datatable-thead > tr > th:not(.p-selection-column):not(.p-frozen-column):not(.entity-list-panel-filler-cell),
-.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.p-frozen-column):not(.entity-list-panel-filler-cell) {
+.entity-list-panel .p-datatable-thead > tr > th:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
+.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell) {
   min-width: 9rem;
 }
 
-/* What PrimeReact already does for a frozen cell, verified rather than assumed: it injects
-   `.p-frozen-column { position: sticky; background: inherit; }` into the document at runtime (no
-   stylesheet here defines that class — not the host theme, not the bundle) and writes the
-   `left` offset inline per cell. So the sticky behaviour and the opaque background are free.
-
-   What it does NOT give, and what is below: the stacking order between the frozen columns and the
-   sticky header, a width floor, and a visible seam. */
+/* Frozen columns (panels/frozenColumns.ts, not PrimeReact's own `frozen`): sticky against the
+   table's scroll box, at the `left` offset their inline style takes from the CSS variables that
+   file keeps on the table root. Below: the stacking order between the frozen columns and the
+   sticky header, an opaque background, and a width floor. */
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+  position: sticky;
+}
 
 /* Frozen cells must sit above the columns sliding underneath them, and the header above both —
    otherwise the frozen identifier paints over the header it is supposed to pass beneath. */
-.entity-list-panel .p-datatable-tbody > tr > td.p-frozen-column {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
   z-index: 1;
 }
 
-.entity-list-panel .p-datatable-thead > tr > th.p-frozen-column {
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen {
   z-index: 2;
 }
 
-/* Belt and braces over PrimeReact's own `background: inherit` on frozen cells: a row this app
-   paints itself (the overview-open highlight, a search hit) must never leave them transparent. */
-.entity-list-panel .p-datatable-thead > tr > th.p-frozen-column,
-.entity-list-panel .p-datatable-tbody > tr > td.p-frozen-column {
+/* The columns sliding underneath must not show through. A body cell takes its row's background,
+   so a row this app paints itself (the overview-open highlight, a search hit) stays painted; a
+   header cell keeps the theme's own header background — its row has none to inherit. */
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
   background: inherit;
+}
+
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
   background-clip: padding-box;
 }
 
@@ -460,8 +452,8 @@ body button.p-button.p-button-text.status-button.cancelled {
    wide enough for a full identifier chip. No max-width: in the auto table layout PrimeReact uses
    here a cell's max-width is advisory and would silently do nothing — long values are already
    ellipsised by .entity-list-panel-cell-value instead. */
-.entity-list-panel .p-datatable-thead > tr > th.p-frozen-column:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
-.entity-list-panel .p-datatable-tbody > tr > td.p-frozen-column:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
   min-width: 11rem;
 }
 
@@ -491,7 +483,7 @@ body button.p-button.p-button-text.status-button.cancelled {
 }
 
 /* Mirrors the JSF panels' .panel-progressbar (primefaces-siamois-theme styles.scss): a thin,
-   always-present track, whose moving value only shows while more rows are loading. */
+   always-present track, whose moving value only shows while a page or a column is loading. */
 .entity-list-panel-progressbar.p-progressbar {
   flex: 0 0 3px;
   height: 3px;
@@ -508,10 +500,6 @@ body button.p-button.p-button-text.status-button.cancelled {
   visibility: visible;
 }
 
-/* A row whose chunk is still loading: skeletons only, nothing to hover or click. */
-.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-placeholder-row {
-  pointer-events: none;
-}
 
 
 /* ------------------------------------------------------------ click-to-edit cell */
@@ -1145,12 +1133,10 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   padding-bottom: var(--panel-scroll-end-gap);
 }
 
-/* A list (standalone or embedded): the virtual scroller's extent is its absolutely-positioned
-   spacer, sized inline to rows × row height — padding it (content-box, so on top of that inline
-   height) lengthens the scroll without touching the rows. */
-.entity-list-panel .p-virtualscroller-spacer {
-  box-sizing: content-box;
-  padding-bottom: var(--panel-scroll-end-gap);
+/* A list (standalone or embedded): the paginator is its last element, below the scrolling table
+   wrapper — the room goes under the paginator, not between the rows and it. */
+.entity-list-panel .p-paginator-bottom {
+  margin-bottom: var(--panel-scroll-end-gap);
 }
 
 /* Home scrolls in its pane. */

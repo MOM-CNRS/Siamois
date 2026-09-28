@@ -38,7 +38,10 @@ const LAYOUT = [
 const TYPE = (label: string) => ({ resourceType: "concepts", id: label.length.toString(), resolvedLabel: label });
 const PERMS = { canEdit: true, canDelete: true, canManageSettings: true, canValidate: true };
 
-const projects = Array.from({ length: 14 }, (_, i) => ({
+// ?rows=N: a bigger project list, to exercise the paginator and large pages.
+const PROJECT_COUNT = Number(new URLSearchParams(location.search).get("rows") ?? 14);
+
+const projects = Array.from({ length: PROJECT_COUNT }, (_, i) => ({
   resourceType: "projects",
   id: String(i + 1),
   name: ["Fouille du Mont Beuvray", "Diagnostic Rue Lafayette", "Nécropole de Saint-Denis", "Villa gallo-romaine"][i % 4] + (i > 3 ? ` ${i}` : ""),

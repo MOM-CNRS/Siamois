@@ -36,6 +36,39 @@ describe("parseLayout", () => {
       fieldId: -103,
     });
   });
+
+  it("derives width/hidden from a legacy className-only column", () => {
+    const layoutJson = JSON.stringify([
+      {
+        name: "common.header.general",
+        rows: [
+          {
+            columns: [
+              { className: "ui-g-12 ui-md-6 ui-lg-3", isRequired: false, isReadOnly: false, fieldId: 1 },
+              { className: "ui-g-12 ui-md-12 ui-lg-12", isRequired: false, isReadOnly: false, fieldId: 2 },
+              { className: "d-none", isRequired: false, isReadOnly: true, fieldId: 3 },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const [a, b, c] = parseLayout(layoutJson)[0].rows[0].columns;
+    expect(a.width).toEqual({ span: 12, md: 6, lg: 3 });
+    expect(a.hidden).toBe(false);
+    expect(b.width).toEqual({ span: 12, md: 12, lg: 12 });
+    expect(c.hidden).toBe(true);
+  });
+
+  it("keeps a structured width over a className", () => {
+    const layoutJson = JSON.stringify([
+      {
+        name: "x",
+        rows: [{ columns: [{ width: { span: 6 }, className: "ui-g-12", isRequired: false, isReadOnly: false }] }],
+      },
+    ]);
+    expect(parseLayout(layoutJson)[0].rows[0].columns[0].width).toEqual({ span: 6 });
+  });
 });
 
 describe("toGridClass", () => {
