@@ -5,6 +5,7 @@ import { Menu } from "primereact/menu";
 import type { MenuItem } from "primereact/menuitem";
 import { createBookmark, deleteBookmark, getBookmarkStatus } from "../api/bookmarks";
 import type { PanelActions, PanelChrome } from "../mountOptions";
+import { useBridge } from "../panels/bridge";
 
 // Generic panel titlebar (plan §7.3/§8 phase 8) — one component for both the main panel's
 // titlebar (focus.xhtml) and the overview pane's own (panelContent.xhtml): same actions
@@ -48,6 +49,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
   }, [chrome.resourceUri, serverBookmarked]);
 
   const queryClient = useQueryClient();
+  const bridge = useBridge();
   const bookmarkMutation = useMutation({
     mutationFn: () => {
       if (organizationId == null) {
@@ -64,6 +66,8 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
       void queryClient.invalidateQueries({ queryKey: ["bookmark-status"] });
       void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
       void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
+      // The JSF sidebar's bookmarks list, which no REST call reaches.
+      bridge.refreshBookmarks?.();
     },
   });
 

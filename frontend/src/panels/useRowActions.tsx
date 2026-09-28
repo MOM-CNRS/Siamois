@@ -7,6 +7,7 @@ import { createBookmark, deleteBookmark } from "../api/bookmarks";
 import { CreateEntityDialog } from "../components/CreateEntityDialog";
 import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext } from "../entities/types";
 import { loadListPrefs, reconcileActionBar, saveListPrefs, type ActionBarPrefs } from "./listPreferences";
+import { useBridge } from "./bridge";
 
 type Row = Record<string, unknown> & {
   id?: string | number;
@@ -85,6 +86,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
   }
 
+  const bridge = useBridge();
   const bookmarkMutation = useMutation({
     mutationFn: (row: Row) => {
       const resourceUri = row.resourceUri as string;
@@ -96,6 +98,8 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
       void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
       void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
       void queryClient.invalidateQueries({ queryKey: ["bookmark-status"] });
+      // The JSF sidebar's bookmarks list, which no REST call reaches.
+      bridge.refreshBookmarks?.();
     },
     onError: (err: unknown) => setError(err instanceof Error ? err.message : "Échec du favori"),
   });

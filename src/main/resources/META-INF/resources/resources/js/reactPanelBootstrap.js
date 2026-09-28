@@ -31,6 +31,11 @@
         return fn ? function (entityType, id) { return fn({ entityType: entityType, id: id }); } : undefined;
     }
 
+    function setMainFn(name) {
+        var fn = actionFn(name);
+        return fn ? function (path) { return fn({ path: path }); } : undefined;
+    }
+
     function openProjectSettingsFn(name) {
         var fn = actionFn(name);
         return fn ? function (projectId) { return fn({ projectId: projectId }); } : undefined;
@@ -73,6 +78,8 @@
             bridge: {
                 setOverview: setOverviewFn(d.actionSetOverview),
                 closeOverview: actionFn(d.overviewActionCloseOverview),
+                setMain: setMainFn(d.actionSetMain),
+                refreshBookmarks: actionFn(d.actionRefreshBookmarks),
                 openProjectSettings: openProjectSettingsFn(d.actionOpenProjectSettings)
             }
             // No onNavigate here: App.tsx owns navigation itself now (a client-side router, not

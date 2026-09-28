@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { apiFetch } from "../api/client";
 import { PanelToolbar } from "./PanelToolbar";
 import type { PanelActions, PanelChrome } from "../mountOptions";
+import { BridgeProvider } from "../panels/bridge";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -141,6 +142,29 @@ describe("PanelToolbar", () => {
       body: { resourceUri: "/action-unit/1", titleCode: "Fouille A", organizationId: 7 },
     });
     expect(container.querySelector(".bi-bookmark-fill")).toBeTruthy();
+  });
+
+  it("asks the JSF sidebar to redraw its bookmarks list once a bookmark is saved", async () => {
+    mockedApiFetch.mockResolvedValue(undefined);
+    const refreshBookmarks = vi.fn();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <BridgeProvider value={{ refreshBookmarks }}>
+            <PanelToolbar chrome={{ resourceUri: "/action-unit/1", title: "Fouille A", bookmarked: false }} organizationId={7} />
+          </BridgeProvider>
+        </QueryClientProvider>,
+      );
+    });
+
+    const bookmarkButton = container.querySelector(".bi-bookmark")!.closest("button")!;
+    await act(async () => {
+      bookmarkButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(refreshBookmarks).toHaveBeenCalledTimes(1);
   });
 
   it("deletes a bookmark via REST when already bookmarked", async () => {

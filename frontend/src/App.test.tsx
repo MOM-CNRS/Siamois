@@ -228,6 +228,35 @@ describe("App client-side navigation", () => {
     expect(window.location.search).toBe("");
   });
 
+  // The JSF session only learns of a client-side navigation through the bridge: without it, the
+  // history sidebar never records it and a later overview is paired with the page loaded first.
+  it("tells the server about a client-side navigation (history sidebar) through bridge.setMain", async () => {
+    const setMain = vi.fn();
+    act(() => {
+      root.render(
+        <App
+          options={baseOptions({
+            panelKind: "home",
+            entityType: "fake-app-entity",
+            main: { resourceUri: "/welcome", title: "Home", bookmarked: false },
+            bridge: { setMain },
+          })}
+        />,
+      );
+    });
+    await flush();
+    expect(setMain).not.toHaveBeenCalled();
+
+    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Go to detail")!;
+    await act(async () => {
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(setMain).toHaveBeenCalledTimes(1);
+    expect(setMain).toHaveBeenCalledWith("/fake-app-entity/1");
+  });
+
   it("encodes the CURRENT main view, not the originally mounted one, when an overview opens after navigating", async () => {
     act(() => {
       root.render(
@@ -430,6 +459,27 @@ describe("App focus mode", () => {
     expect(setOverview).not.toHaveBeenCalled();
     expect(mainPane().querySelector(".bi-arrows-angle-contract")).toBeNull();
     expect(mainPane().querySelector(".bi-bookmark")).toBeTruthy();
+  });
+
+  it("keeps the server's main panel in step with focus mode when the bridge can set it", async () => {
+    const calls: string[] = [];
+    const bridge = {
+      setMain: vi.fn((path: string) => void calls.push(`setMain ${path}`)),
+      setOverview: vi.fn((type: string, id: string | number) => void calls.push(`setOverview ${type} ${id}`)),
+      closeOverview: vi.fn(() => void calls.push("closeOverview")),
+    };
+    act(() => {
+      root.render(<App options={baseOptions({ overviewEntityType: "fake-app-entity", overviewEntityId: "1", bridge })} />);
+    });
+    await flush();
+
+    await click(container.querySelector(".panel-splitter-panel-r .bi-arrows-angle-expand"));
+    // The promoted entity becomes the server's main panel, with no overview.
+    expect(calls).toEqual(["closeOverview", "setMain /fake-app-entity/1"]);
+
+    await click(mainPane().querySelector(".bi-arrows-angle-contract"));
+    // Back to the previous main, the promoted entity back in its overview — in that order.
+    expect(calls.slice(2)).toEqual(["setMain /fake-app-entity", "setOverview fake-app-entity 1"]);
   });
 
   it("nests: focus, open an overview, focus again, then unwinds both levels and resyncs the bean", async () => {

@@ -267,9 +267,11 @@ export function App({ options }: { options: MountOptions }) {
     backUrlRef.current = undefined;
     setFocusStack([]);
     window.history.pushState(null, "", focusUrl(path, overviewPath(overviewRef.current)));
+    // The server's main panel follows (history sidebar, and the pairing of a later overview).
+    options.bridge?.setMain?.(path);
     setNavigatedAway(true);
     setView({ panelKind: id != null ? "detail" : "list", entityType, entityId: id, preview });
-  }, [setFocusStack]);
+  }, [options, setFocusStack]);
 
   // Opens (or retargets) the overview pane without touching the main pane (plan §8 phase 5) —
   // the list-row-click replacement for a full `navigate`. Optimistic: React renders the new
@@ -332,12 +334,19 @@ export function App({ options }: { options: MountOptions }) {
     overviewRef.current = null;
     backUrlRef.current = leavingUrl;
     window.history.pushState(null, "", focusUrl(path, undefined, leavingUrl));
+    // The server follows: the promoted entity becomes its main panel, with no overview (it would
+    // otherwise still pair the next overview with the previous main). closeFocus puts both back.
+    if (options.bridge?.setMain) {
+      options.bridge.closeOverview?.();
+      serverOverviewRef.current = null;
+      options.bridge.setMain(path);
+    }
     withPanelTransition("focus-enter", () => {
       setOverview(null);
       setNavigatedAway(true);
       setView({ panelKind: "detail", entityType: promoted.entityType, entityId: promoted.entityId });
     });
-  }, [setFocusStack]);
+  }, [options, setFocusStack]);
 
   // Puts the promoted entity back in the overview and restores the previous main. With an empty
   // stack (the page itself was loaded in focus mode), only a real navigation to goBackUrl can
@@ -363,8 +372,9 @@ export function App({ options }: { options: MountOptions }) {
       setOverview(snapshot.overview);
       setNavigatedAway(snapshot.navigatedAway);
     });
-    // An overview opened/closed while in focus mode moved the bean's parentOrOverview away from
-    // the entity going back into the overview pane — put it back, for F5 and the history.
+    // The server's main panel goes back to the restored one (enterFocus moved it), then the
+    // promoted entity back into its overview, for F5 and the history.
+    options.bridge?.setMain?.(snapshot.mainPath);
     if (options.bridge?.setOverview && !sameEntity(serverOverviewRef.current, snapshot.overview)) {
       options.bridge.setOverview(snapshot.overview.entityType, snapshot.overview.entityId);
       serverOverviewRef.current = snapshot.overview;

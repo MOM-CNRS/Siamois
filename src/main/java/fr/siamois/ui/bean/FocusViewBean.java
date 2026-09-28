@@ -9,6 +9,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.panel.PanelFactory;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 import lombok.Data;
@@ -105,6 +106,56 @@ public class FocusViewBean implements Serializable {
 
         historyBean.addItem(newEntry);
 
+    }
+
+    /**
+     * Keeps the view's main panel in step with a client-side navigation of the React main pane
+     * (reactAction_setMain_N({path: "/action-unit/12"})), which otherwise never reaches the server:
+     * the history sidebar records it like a page load would, and a later overview opened through
+     * the bridge is paired with the main pane actually on screen, not the one the page loaded with.
+     * The overview still open, if any, stays attached to the new main panel.
+     */
+    public void setMainFromRequest() {
+        String path = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("path");
+        if (path == null || path.isBlank() || mainPanel == null) {
+            return;
+        }
+        ParsedPath parsed;
+        AbstractPanel next;
+        try {
+            parsed = parsePath(path);
+            next = panelFactory.create(parsed.type(), parsed.id());
+        } catch (IllegalArgumentException e) {
+            log.warn("setMain : chemin React non reconnu côté serveur : {}", path);
+            return;
+        }
+        if (!activateInstitutionOf(parsed)) {
+            return;
+        }
+
+        AbstractPanel overview = mainPanel.getParentOrOverview();
+        next.setRoot(true);
+        if (overview != null) {
+            next.setParentOrOverview(overview);
+            overview.setParentOrOverview(next);
+        }
+        mainPanel = next;
+
+        HistoryBean.HistoryItem entry = new HistoryBean.HistoryItem();
+        entry.setMain(historyComponentOf(next));
+        if (overview != null) {
+            entry.setSecondary(historyComponentOf(overview));
+        }
+        historyBean.addItem(entry);
+    }
+
+    private static HistoryBean.HistoryItemComponent historyComponentOf(AbstractPanel panel) {
+        HistoryBean.HistoryItemComponent component = new HistoryBean.HistoryItemComponent();
+        component.setTitle(panel.resolveTitleOrTitleCode());
+        component.setIcon(panel.getIcon());
+        component.setUri(panel.ressourceUri());
+        component.setStyleClass(panel.getPanelClass());
+        return component;
     }
 
     private boolean activateInstitutionOf(ParsedPath parsed) {

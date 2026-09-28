@@ -40,13 +40,38 @@
         <p:remoteCommand name="reactAction_setOverview_${panelModel.jsPanelIndex}"
                           action="#{flowBean.addEntityToOverviewFromRequest(panelModel)}"
                           process="@this"
-                          update="@none"/>
+                          global="false"
+                          update="@(.sia-history-table)"/>
 
         <!-- Same sync as above, for closing the overview. -->
         <p:remoteCommand name="reactAction_overview_closeOverview_${panelModel.jsPanelIndex}"
                           action="#{panelModel.closeOverview()}"
                           process="@this"
+                          global="false"
                           update="@none"/>
+
+        <!--
+        A client-side navigation of the React main pane (reactAction_setMain_N({path: "/action-unit/12"})):
+        FocusViewBean#setMainFromRequest moves the view's main panel to it and records it in the
+        history, like a page load would. Fire-and-forget, like the other two.
+
+        These refresh the sidebar's history list (focus.xhtml, .sia-history-table) themselves: a
+        jQuery selector, so nothing happens while the sidebar shows the bookmarks instead.
+        -->
+        <p:remoteCommand name="reactAction_setMain_${panelModel.jsPanelIndex}"
+                          action="#{focusViewBean.setMainFromRequest()}"
+                          process="@this"
+                          global="false"
+                          update="@(.sia-history-table)"/>
+
+        <!--
+        A bookmark added or removed by React (REST): only the sidebar's bookmarks list needs
+        redrawing (focus.xhtml, .sia-bookmarks-table) — its lazy model reloads on render.
+        -->
+        <p:remoteCommand name="reactAction_refreshBookmarks_${panelModel.jsPanelIndex}"
+                          process="@this"
+                          global="false"
+                          update="@(.sia-bookmarks-table)"/>
     </h:form>
 
 </ui:composition>

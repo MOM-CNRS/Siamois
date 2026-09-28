@@ -55,6 +55,12 @@ export interface PanelBridge {
   closeOverview?: () => void;
   // NavBean#redirectToActionUnitSettingsFromRequest: a server-side mode switch + redirect.
   openProjectSettings?: (projectId: string | number) => void;
+  // FocusViewBean#setMainFromRequest: the main pane moved client-side to this resource path
+  // ("/action-unit/12", "/action-unit") — the server follows it and records it in the history
+  // sidebar, like a page load would. Fire-and-forget.
+  setMain?: (path: string) => void;
+  // Redraws the JSF sidebar's bookmarks list after React added or removed a bookmark (REST).
+  refreshBookmarks?: () => void;
 }
 
 export interface MountOptions {
