@@ -53,7 +53,8 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         };
       },
     },
-    defaultSort: "name:asc",
+    // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
+    defaultSort: "creationTime:desc",
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc for
     // why it's a reduced field set compared to newUnitDialog.xhtml.

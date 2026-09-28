@@ -87,7 +87,7 @@ class EntitySiblingsServiceTest {
         SiblingsResource result = service.findSiblings(EntitySiblingsService.Kind.FIND, 5L, 10L);
 
         verify(entityManager).createQuery(
-                "select e.id, e.fullIdentifier from Specimen e where e.actionUnit.id = :scope order by e.creationTime asc, e.id asc",
+                "select e.id, e.fullIdentifier from Specimen e where e.actionUnit.id = :scope order by e.creationTime desc, e.id asc",
                 Object[].class);
         assertThat(result.next().resourceUri()).isEqualTo("/specimen/11");
     }

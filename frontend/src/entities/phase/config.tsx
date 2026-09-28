@@ -34,7 +34,8 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
     // Dynamic columns: every field of the project's phase forms, additional ones included.
     schema: { load: (ctx) => loadTypeCatalog(ctx, "phase-types") },
     columns: phaseColumns,
-    defaultSort: "orderNumber:asc",
+    // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
+    defaultSort: "creationTime:desc",
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
     createForm: (ctx) => <PhaseCreateForm {...ctx} />,

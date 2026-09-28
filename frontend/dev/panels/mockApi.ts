@@ -6,8 +6,8 @@
 const FIELDS: Record<string, unknown> = {
   "-1": { id: "-1", resourceType: "fields", label: "Nom", answerType: "TEXT", isSystemField: true, valueBinding: "name", icon: "bi bi-question", query: { sortable: true, filterOp: "contains" } },
   "-2": { id: "-2", resourceType: "fields", label: "Identifiant", answerType: "TEXT", isSystemField: true, valueBinding: "fullIdentifier", icon: "bi bi-question", query: { sortable: true, filterOp: "contains" } },
-  "-3": { id: "-3", resourceType: "fields", label: "Date de début", answerType: "DATE", isSystemField: true, valueBinding: "beginDate", icon: "bi bi-calendar", query: { sortable: true, filterOp: "date-range" } },
-  "-4": { id: "-4", resourceType: "fields", label: "Date de fin", answerType: "DATE", isSystemField: true, valueBinding: "endDate", icon: "bi bi-calendar" },
+  "-3": { id: "-3", resourceType: "fields", label: "Date de début", answerType: "DATETIME", isSystemField: true, valueBinding: "beginDate", icon: "bi bi-calendar", query: { sortable: true, filterOp: "date-range" } },
+  "-4": { id: "-4", resourceType: "fields", label: "Date de fin", answerType: "DATETIME", isSystemField: true, valueBinding: "endDate", icon: "bi bi-calendar" },
   "10": { id: "10", resourceType: "fields", label: "Commentaire", answerType: "TEXT", isSystemField: false, isTextArea: true, icon: "bi bi-chat" },
   "11": { id: "11", resourceType: "fields", label: "Surface (m²)", answerType: "DECIMAL", isSystemField: false, icon: "bi bi-rulers", constraints: { min: 0 } },
 };

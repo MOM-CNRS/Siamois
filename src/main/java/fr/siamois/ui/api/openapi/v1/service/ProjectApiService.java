@@ -321,8 +321,8 @@ public class ProjectApiService {
      * {@code ActionUnitService.findNextByInstitution} (that would leak a project id the caller
      * cannot actually open).
      *
-     * @param sortParam "champ:direction", defaulting to {@code creationTime:asc} — the JSF-parity
-     *                  order — when absent. A caller wanting siblings to follow the list's own
+     * @param sortParam "champ:direction", defaulting to {@code creationTime:desc} — every list's
+     *                  default order — when absent. A caller wanting siblings to follow the list's own
      *                  current sort/filter passes the same params the list request used.
      */
     public ProjectSiblingsResource findSiblings(
@@ -366,7 +366,8 @@ public class ProjectApiService {
      */
     private static CursorSort parseCursorableProjectSort(String sortParam) {
         if (sortParam == null || sortParam.isBlank()) {
-            return new CursorSort(CREATION_TIME, Sort.Direction.ASC);
+            // Same default as every list (newest first), so "next" is the row below in the table.
+            return new CursorSort(CREATION_TIME, Sort.Direction.DESC);
         }
         String[] parts = sortParam.split(":", 2);
         String property = parts[0].trim();
@@ -913,7 +914,7 @@ public class ProjectApiService {
     // See countPhasesForProject just above for the same pattern.
 
     private static final Set<String> ALLOWED_CONTAINER_SORT_FIELDS =
-            Set.of(ContainerSpec.IDENTIFIER_FILTER, "id");
+            Set.of(ContainerSpec.IDENTIFIER_FILTER, CREATION_TIME, "id");
 
     /**
      * Same contract as {@link #parsePhaseSort} — an unknown property is a 400.
@@ -1107,7 +1108,7 @@ public class ProjectApiService {
     }
 
     private static final Set<String> ALLOWED_PHASE_SORT_FIELDS =
-            Set.of(PhaseSpec.IDENTIFIER_FILTER, "orderNumber", "title", "id");
+            Set.of(PhaseSpec.IDENTIFIER_FILTER, "orderNumber", "title", CREATION_TIME, "id");
 
     /**
      * Same contract as {@link #parseFindSort} — an unknown property is a 400.

@@ -13,6 +13,7 @@ import { parseLayout, panelLabel, toGridClass, type FormLayoutCol } from "./form
 import { getProjectTypes } from "./projectTypes";
 import { patchProject, type ProjectPatch } from "./api";
 import type { ProjectDetail } from "./types";
+import { FormSkeleton } from "../../components/DetailSkeleton";
 
 // The fiche, schema-driven off GET /api/v1/organizations/{id}/project-types — it renders every
 // panel/row/field ActionUnit.DETAILS_FORM's layout defines (4 panels, 33 fields), same as JSF's
@@ -116,7 +117,7 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
       {organizationIdRaw == null && (
         <Message severity="warn" text="Organisation inconnue : impossible de charger le formulaire" />
       )}
-      {typesQuery.isLoading && <div>Chargement du formulaire…</div>}
+      {typesQuery.isLoading && <FormSkeleton />}
       {typesQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
       {fields &&
         panels.map((panel, panelIndex) => (

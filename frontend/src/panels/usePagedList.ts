@@ -131,8 +131,10 @@ export function usePagedList<T>({ entityType, params, offset, limit, fields = []
     rows,
     totalCount: base.data?.totalCount ?? 0,
     // Only the very first load blocks the table; a page change keeps the previous rows on screen,
-    // and a column being added shows as skeleton cells.
-    isLoading: base.isLoading,
+    // and a column being added shows as skeleton cells. isPending rather than isLoading: a list
+    // holding its first request until its columns are known is not fetching yet, but it has no
+    // rows either — it must show the loading skeleton, not a flash of "no results".
+    isLoading: base.isPending && !base.isError,
     // Any request in flight — a page change, a column being added, or a background refetch after
     // an invalidation (cell edit, creation). Drives the list's progress bar.
     isFetching: base.isFetching || supplements.some((r) => r.isFetching),

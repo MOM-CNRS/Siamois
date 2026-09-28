@@ -33,7 +33,8 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
     // Dynamic columns: every field of the project's container forms, additional ones included.
     schema: { load: (ctx) => loadTypeCatalog(ctx, "container-types") },
     columns: containerColumns,
-    defaultSort: "identifier:asc",
+    // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
+    defaultSort: "creationTime:desc",
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
     createForm: (ctx) => <ContainerCreateForm {...ctx} />,

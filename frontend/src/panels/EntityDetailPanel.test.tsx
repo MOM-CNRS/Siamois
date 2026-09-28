@@ -366,7 +366,8 @@ describe("EntityDetailPanel sibling navigation (plan: fiche précédente/suivant
       buttons[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(onNavigateSibling).toHaveBeenCalledWith("2");
+    // With the neighbour's label, so the next fiche can draw its header before it loads.
+    expect(onNavigateSibling).toHaveBeenCalledWith("2", { label: expect.any(String) });
   });
 
   it("disables an arrow whose neighbour is undefined and does not navigate on click", async () => {
@@ -576,5 +577,50 @@ describe("EntityDetailPanel entity actions", () => {
       container.querySelector(".bi-gear")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(openProjectSettings).toHaveBeenCalledWith("7");
+  });
+});
+
+// While the entity loads, the fiche keeps its frame: the header already shows what the opener knew
+// (a list row's or a sibling's label), and everything below is a skeleton — no "Loading…" text,
+// no empty box.
+describe("EntityDetailPanel loading state", () => {
+  it("shows the preview's label in the header and a skeleton body until the entity arrives", async () => {
+    let resolve!: (entity: FakeEntity) => void;
+    getMock.mockReturnValue(new Promise<FakeEntity>((r) => (resolve = r)));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity" entityId="1" preview={{ label: "UE-12" }} />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.querySelector(".entity-detail-panel-preview-chip")?.textContent).toBe("UE-12");
+    expect(container.querySelector(".detail-body-skeleton")).toBeTruthy();
+    expect(container.textContent).not.toContain("Loading");
+
+    await act(async () => resolve({ id: "1", name: "First" }));
+    await flush();
+
+    expect(container.querySelector(".detail-body-skeleton")).toBeNull();
+    expect(container.querySelector('[data-testid="name"]')?.textContent).toBe("First");
+  });
+
+  it("falls back to a skeleton identifier when nothing is known yet", async () => {
+    getMock.mockReturnValue(new Promise<FakeEntity>(() => {}));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity" entityId="1" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.querySelector(".entity-detail-panel-preview-chip")).toBeNull();
+    expect(container.querySelector(".entity-detail-panel-preview-header .p-skeleton")).toBeTruthy();
   });
 });

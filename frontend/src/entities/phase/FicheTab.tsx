@@ -12,6 +12,7 @@ import { phasePanelLabel } from "./form";
 import { getPhaseEffectiveForm } from "./phaseTypes";
 import { patchPhaseAnswers } from "./api";
 import type { PhaseDetail } from "./types";
+import { FormSkeleton } from "../../components/DetailSkeleton";
 
 // The fiche, schema-driven off GET /api/v1/projects/{id}/phase-types — renders every
 // panel/row/field Phase.DETAILS_FORM's layout defines, same as JSF's phase "Détails" tab. The
@@ -65,7 +66,7 @@ export function PhaseFicheTab({ entity, onSaved }: PhaseFicheTabProps) {
       {entity.projectId == null && (
         <Message severity="warn" text="Projet inconnu : impossible de charger le formulaire" />
       )}
-      {formQuery.isLoading && <div>Chargement du formulaire…</div>}
+      {formQuery.isLoading && <FormSkeleton />}
       {formQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
       {fields &&
         panels.map((panel, panelIndex) => (

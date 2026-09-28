@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Splitter, SplitterPanel } from "primereact/splitter";
 import type { MountOptions, PanelChrome, PanelKind, PanelToolbarSlot } from "./mountOptions";
 import { apiUrl } from "./api/basePath";
 import { getAllEntityTypes, getEntityType } from "./entities/registry";
 import { EntityListPanel } from "./panels/EntityListPanel";
-import { EntityDetailPanel } from "./panels/EntityDetailPanel";
+import { EntityDetailPanel, type EntityPreview } from "./panels/EntityDetailPanel";
 import { HomePanel } from "./panels/HomePanel";
 import { WriteModeProvider } from "./panels/writeMode";
 import { BridgeProvider } from "./panels/bridge";
 import { EntityNavigationProvider } from "./panels/entityNavigation";
 import { paneTransitionName, withPanelTransition } from "./panels/panelTransition";
+import { PaneSplit } from "./panels/PaneSplit";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +21,9 @@ interface NavigationState {
   panelKind: PanelKind;
   entityType: string;
   entityId?: string | number;
+  // What the opener already knew about the entity (a list row, a sibling's label): shown in the
+  // fiche's header while the entity itself loads.
+  preview?: EntityPreview;
 }
 
 // What's open in the right-hand overview pane right now (plan §8 phase 5) — starts from the
@@ -29,6 +32,7 @@ interface NavigationState {
 interface OverviewState {
   entityType: string;
   entityId: string | number;
+  preview?: EntityPreview;
 }
 
 // One level of focus mode: the overview entity was promoted to the main pane, and this is what
@@ -107,10 +111,10 @@ function PanelContent({
 }: {
   view: NavigationState;
   organizationId?: number;
-  onNavigate: (entityType: string, id?: string | number) => void;
+  onNavigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   // Only meaningful for a "list" view — opens the entity in the overview pane instead of
   // navigating the main pane away from the list (plan §8 phase 5).
-  onOpenOverview?: (entityType: string, id: string | number) => void;
+  onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   // So a "list" view can highlight the row matching the currently-open overview (plan §8 phase
   // 5's rowClassName) — only when it's the same entity type as this list, and only while an
   // overview is actually open.
@@ -152,6 +156,7 @@ function PanelContent({
         <EntityDetailPanel
           entityType={view.entityType}
           entityId={view.entityId}
+          preview={view.preview}
           toolbar={toolbar}
           onNavigate={onNavigate}
           organizationId={organizationId}
@@ -159,7 +164,7 @@ function PanelContent({
           overviewEntityId={overview?.entityType === view.entityType ? overview.entityId : undefined}
           // A sibling jump on the MAIN pane's own fiche is a same-pane navigation — the same
           // `navigate` a list row click or the breadcrumb already use, just staying on "detail".
-          onNavigateSibling={(id) => onNavigate(view.entityType, id)}
+          onNavigateSibling={(id, preview) => onNavigate(view.entityType, id, preview)}
         />
       );
   }
@@ -174,8 +179,9 @@ function PanelContent({
  * - No overview open (options.overviewEntityType unset): renders only the main pane, no
  *   splitter/gutter — mirrors JSF's own p:splitter today, which has a single splitterPanel
  *   when panelModel.parentOrOverview is null.
- * - Overview open: PrimeReact's Splitter/SplitterPanel is the direct equivalent of JSF's
- *   p:splitter/p:splitterPanel — left pane = the main panel's entity, right pane =
+ * - Overview open: PaneSplit (panels/PaneSplit.tsx) is the equivalent of JSF's
+ *   p:splitter/p:splitterPanel, built so the main pane is never remounted when the overview
+ *   opens or closes — left pane = the main panel's entity, right pane =
  *   parentOrOverview's entity. Class names (panel-splitter-panel-l/-r, sideview,
  *   sideview-titlebar) mirror the JSF markup 1:1 per the class-name-preservation rule (§3) —
  *   audit the real markup before extending this, don't rely on this comment as the full list.
@@ -246,7 +252,7 @@ export function App({ options }: { options: MountOptions }) {
   // tells the bean), so closeFocus knows whether the bean needs resyncing.
   const serverOverviewRef = useRef<OverviewState | null>(overview);
 
-  const navigate = useCallback((entityType: string, id?: string | number) => {
+  const navigate = useCallback((entityType: string, id?: string | number, preview?: EntityPreview) => {
     const config = getEntityType(entityType);
     if (!config) {
       // Not a migrated entity — no React panel to switch to, so this is a real navigation
@@ -262,7 +268,7 @@ export function App({ options }: { options: MountOptions }) {
     setFocusStack([]);
     window.history.pushState(null, "", focusUrl(path, overviewPath(overviewRef.current)));
     setNavigatedAway(true);
-    setView({ panelKind: id != null ? "detail" : "list", entityType, entityId: id });
+    setView({ panelKind: id != null ? "detail" : "list", entityType, entityId: id, preview });
   }, [setFocusStack]);
 
   // Opens (or retargets) the overview pane without touching the main pane (plan §8 phase 5) —
@@ -270,8 +276,8 @@ export function App({ options }: { options: MountOptions }) {
   // overview immediately, and the setOverview remoteCommand (fire-and-forget) brings FlowBean's
   // own parentOrOverview back in sync in the background, for F5 and the navigation history.
   const openOverview = useCallback(
-    (entityType: string, id: string | number) => {
-      const next = { entityType, entityId: id };
+    (entityType: string, id: string | number, preview?: EntityPreview) => {
+      const next: OverviewState = { entityType, entityId: id, preview };
       // Only the opening animates: retargeting an already open overview (a row click, the
       // prev/next arrows) just swaps its content, where a slide would be noise.
       if (overviewRef.current == null) {
@@ -377,8 +383,6 @@ export function App({ options }: { options: MountOptions }) {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const hasOverview = overview != null;
-
   // options.overview is the chrome of the overview JSF mounted with — only valid for that entity.
   // For anything else it's a placeholder until EntityDetailPanel derives the real one from
   // config.detail.chrome once its data loads.
@@ -426,96 +430,53 @@ export function App({ options }: { options: MountOptions }) {
     : undefined;
   const overviewPaneStyleName = overviewPaneName === mainPaneName ? `${overviewPaneName}-overview` : overviewPaneName;
 
-  const content = hasOverview ? (
-    // PrimeReact's Splitter sets each SplitterPanel's flex-basis via an inline style, but the
-    // `display: flex` its own layout depends on only ever comes from a runtime-injected
-    // `@layer primereact` <style> tag — which this app's CSS load order/layer precedence doesn't
-    // reliably win against, so without an explicit override here both panels silently fall back
-    // to normal block stacking (the overview rendering underneath/inside the main pane instead of
-    // beside it). Forcing the same rule inline is robust regardless of that injection's behavior.
-    <Splitter style={{ height: "100%", display: "flex", flexWrap: "nowrap" }}>
-      <SplitterPanel
-        className={`panel-splitter-panel-l ${paneClassName(view.panelKind, view.entityType)}`}
-        size={60}
-        // Mirrors the legacy panel-docked box's colored top border (focus.xhtml) — scoped to just
-        // this pane now that the outer JSF wrapper no longer carries it (that wrapper spans both
-        // panes once an overview is open, so putting it there framed the whole splitter instead of
-        // the main panel alone). The overview pane needs no equivalent override: .sideview already
-        // has its own border-top.
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          minWidth: 0,
-          borderTop: "3px solid var(--main-color)",
-          viewTransitionName: mainPaneName,
-        }}
-      >
-        <PanelContent
-          // Keyed on the entity shown: a focus swap/closeFocus between two entities of the same
-          // kind would otherwise reuse the instance and keep the previous one's local state
-          // (PanelToolbar's bookmarked flag, active tab).
-          key={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}
-          view={view}
-          organizationId={options.organizationId}
-          onNavigate={navigate}
-          onOpenOverview={openOverview}
-          overview={overview}
-          toolbar={mainToolbar}
-        />
-      </SplitterPanel>
-      <SplitterPanel
-        className={`panel-splitter-panel-r sideview ${overview ? paneClassName("detail", overview.entityType) : ""}`}
-        size={40}
-        style={{ display: "flex", flexDirection: "column", minWidth: 0, viewTransitionName: overviewPaneStyleName }}
-      >
-        {overview && (
-          <EntityDetailPanel
-            entityType={overview.entityType}
-            entityId={overview.entityId}
-            toolbar={overviewToolbar}
-            organizationId={options.overviewOrganizationId ?? options.organizationId}
-            // A click inside the overview pane's own fiche (e.g. a row in a relationTab, like a
-            // project's UE list) must retarget the OVERVIEW pane, not the main one — even though
-            // the click originates from within the overview itself. EntityListPanel's row click
-            // prefers onOpenOverview over onNavigate (plan §8 phase 5), so wiring this is what
-            // makes that click replace the overview's own entity instead of silently no-op'ing
-            // (no onOpenOverview/onNavigate was passed here before — the bug this fixes).
-            onOpenOverview={openOverview}
-            // Deliberately NOT overviewEntityId={overview.entityId}: a relationTab embedded here
-            // (e.g. a project's UE list) renders a DIFFERENT entity type than the overview's own
-            // (recordingUnit vs project), and EntityListPanel's row highlighting compares raw ids
-            // with no entityType guard — passing the overview's own id through would risk
-            // highlighting a row that merely shares that id by coincidence.
-            // A sibling jump on the OVERVIEW pane's own fiche retargets the overview in place —
-            // never `navigate`, which would move the MAIN pane instead (redirectToFocusOrOverview's
-            // own distinction: root panel navigates, non-root panel just retargets the overview).
-            onNavigateSibling={(id) => openOverview(overview.entityType, id)}
-          />
-        )}
-      </SplitterPanel>
-    </Splitter>
-  ) : (
-    // Same colored top border as the splitter's left pane above — the no-overview case is just
-    // the single-pane equivalent of "the main panel," so it gets the same chrome.
-    <div
-      className={`panel-splitter-panel-l ${paneClassName(view.panelKind, view.entityType)}`}
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        borderTop: "3px solid var(--main-color)",
-        viewTransitionName: mainPaneName,
-      }}
-    >
-      <PanelContent
-        key={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}
-        view={view}
-        organizationId={options.organizationId}
-        onNavigate={navigate}
-        onOpenOverview={openOverview}
-        toolbar={mainToolbar}
-      />
-    </div>
+  // Keyed on the kind and type shown, not the entity id: a sibling jump or a same-type retarget
+  // keeps the panel mounted (its active tab survives, as in JSF's `?tab=`), while switching to a
+  // different kind or type starts fresh. Entity-bound local state resets itself on the entity
+  // (PanelToolbar's bookmark flag follows chrome.resourceUri).
+  const mainPane = (
+    <PanelContent
+      key={`${view.panelKind}:${view.entityType}`}
+      view={view}
+      organizationId={options.organizationId}
+      onNavigate={navigate}
+      onOpenOverview={openOverview}
+      overview={overview}
+      toolbar={mainToolbar}
+    />
+  );
+
+  const overviewPane = overview && (
+    <EntityDetailPanel
+      entityType={overview.entityType}
+      entityId={overview.entityId}
+      preview={overview.preview}
+      toolbar={overviewToolbar}
+      organizationId={options.overviewOrganizationId ?? options.organizationId}
+      // A click inside the overview pane's own fiche (e.g. a row in a relationTab, like a
+      // project's UE list) retargets the OVERVIEW pane, not the main one.
+      onOpenOverview={openOverview}
+      // Deliberately NOT overviewEntityId={overview.entityId}: a relationTab embedded here renders
+      // a DIFFERENT entity type than the overview's own, and EntityListPanel's row highlighting
+      // compares raw ids with no entityType guard.
+      // A sibling jump on the OVERVIEW pane's own fiche retargets the overview in place — never
+      // `navigate`, which would move the MAIN pane instead.
+      onNavigateSibling={(id, preview) => openOverview(overview.entityType, id, preview)}
+    />
+  );
+
+  // One stable tree whether or not an overview is open (see PaneSplit): the main pane is never
+  // remounted by opening or closing the overview. The main pane carries the legacy panel-docked
+  // box's colored top border (focus.xhtml); .sideview already gives the overview its own.
+  const content = (
+    <PaneSplit
+      main={mainPane}
+      mainClassName={`panel-splitter-panel-l ${paneClassName(view.panelKind, view.entityType)}`}
+      mainStyle={{ borderTop: "3px solid var(--main-color)", viewTransitionName: mainPaneName }}
+      overview={overviewPane || null}
+      overviewClassName={`panel-splitter-panel-r sideview ${overview ? paneClassName("detail", overview.entityType) : ""}`}
+      overviewStyle={{ viewTransitionName: overviewPaneStyleName }}
+    />
   );
 
   return (
@@ -524,7 +485,7 @@ export function App({ options }: { options: MountOptions }) {
           context and why it needs no change subscription. */}
       <WriteModeProvider value={options.writeMode === true}>
         <BridgeProvider value={options.bridge}>
-          <EntityNavigationProvider value={navigate}>{content}</EntityNavigationProvider>
+          <EntityNavigationProvider value={openOverview}>{content}</EntityNavigationProvider>
         </BridgeProvider>
       </WriteModeProvider>
     </QueryClientProvider>

@@ -33,7 +33,8 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     // Dynamic columns: every field of the project's find forms, additional ones included.
     schema: { load: (ctx) => loadTypeCatalog(ctx, "find-types") },
     columns: findColumns,
-    defaultSort: "fullIdentifier:asc",
+    // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
+    defaultSort: "creationTime:desc",
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc for
     // why it needs its own recording-unit picker on top of the usual type/category one.

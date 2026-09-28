@@ -329,4 +329,76 @@ describe("CellEditOverlay", () => {
     await flush();
     expect(overlayInput().value).toBe("B");
   });
+
+  // PrimeReact's InputNumber only fires onValueChange on blur — after the overlay has already
+  // committed on Enter or on the outside mousedown. The number renderers listen to onChange (every
+  // keystroke), so the typed value is what gets saved.
+  describe("number and measurement fields", () => {
+    const integerField: FieldResource = { id: "-200", resourceType: "fields", label: "Nombre", answerType: "INTEGER", isSystemField: false };
+    const measurementField: FieldResource = {
+      id: "-201",
+      resourceType: "fields",
+      label: "Longueur",
+      answerType: "MEASUREMENT",
+      isSystemField: false,
+      constraints: { unit: "cm" },
+    };
+
+    // Types into PrimeReact's InputNumber the way a user does: it handles digits itself on keydown/
+    // keypress, replacing the current selection (the whole value, selected when the overlay opens).
+    async function typeNumber(input: HTMLInputElement, digits: string) {
+      input.setSelectionRange(0, input.value.length);
+      for (const digit of digits) {
+        await act(async () => {
+          const init = { key: digit, code: `Digit${digit}`, bubbles: true, cancelable: true };
+          const down = new KeyboardEvent("keydown", init);
+          input.dispatchEvent(down);
+          const press = new KeyboardEvent("keypress", init);
+          Object.defineProperty(press, "which", { value: digit.charCodeAt(0) });
+          Object.defineProperty(press, "keyCode", { value: digit.charCodeAt(0) });
+          input.dispatchEvent(press);
+        });
+      }
+    }
+
+    it("saves the typed integer on Enter", async () => {
+      const { onSave } = renderOverlay({ target: { row: { id: "1" }, field: integerField, anchor: ANCHOR } });
+      await flush();
+
+      const input = overlayInput();
+      await typeNumber(input, "42");
+      await act(async () => {
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      });
+      await flush();
+
+      expect(onSave).toHaveBeenCalledWith("1", { "-200": { value: 42 } });
+    });
+
+    it("saves the typed integer when focus leaves the editor", async () => {
+      const { onSave } = renderOverlay({ target: { row: { id: "1" }, field: integerField, anchor: ANCHOR } });
+      await flush();
+
+      await typeNumber(overlayInput(), "7");
+      await act(async () => {
+        document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      });
+      await flush();
+
+      expect(onSave).toHaveBeenCalledWith("1", { "-200": { value: 7 } });
+    });
+
+    it("saves a measurement with its unit when focus leaves the editor", async () => {
+      const { onSave } = renderOverlay({ target: { row: { id: "1" }, field: measurementField, anchor: ANCHOR } });
+      await flush();
+
+      await typeNumber(overlayInput(), "12");
+      await act(async () => {
+        document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      });
+      await flush();
+
+      expect(onSave).toHaveBeenCalledWith("1", { "-201": { value: { numericValue: 12, symbol: "cm", comment: null } } });
+    });
+  });
 });

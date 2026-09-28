@@ -13,11 +13,14 @@ import java.util.Objects;
 /**
  * Previous/next for every entity fiche except Project (which has its own cursor-based lookup,
  * {@link ProjectApiService#findSiblings}): the neighbours of an entity inside its scope — its
- * project for the project-owned kinds, its organization for places — in creation order.
+ * project for the project-owned kinds, its organization for places — in creation order, newest first.
  *
  * <p>Callers must have checked access to the current entity first (each type's own
  * requireAccessible…): a project or organization the caller can open implies its entities are
  * listable, which is exactly what the scoped list endpoints already assume.</p>
+ *
+ * <p>Newest first, the lists' default order ({@code creationTime:desc}): "previous" is the row above
+ * in the table, "next" the row below.</p>
  */
 @Service
 public class EntitySiblingsService {
@@ -55,7 +58,7 @@ public class EntitySiblingsService {
             return new SiblingsResource(null, null);
         }
         String jpql = "select e.id, " + kind.label + " from " + kind.entity + " e where " + kind.scopePath
-                + " = :scope order by e.creationTime asc, e.id asc";
+                + " = :scope order by e.creationTime desc, e.id asc";
         List<Object[]> rows = entityManager.createQuery(jpql, Object[].class)
                 .setParameter("scope", scopeId)
                 .getResultList();

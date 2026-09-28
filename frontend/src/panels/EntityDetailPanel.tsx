@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BreadCrumb } from "primereact/breadcrumb";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
+import { Skeleton } from "primereact/skeleton";
 import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
@@ -12,6 +13,11 @@ import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
 import { useBridge } from "./bridge";
 import { useCanEdit, useWriteMode } from "./writeMode";
 import { ValidationStatusButton } from "../components/ValidationStatusButton";
+import { DetailBodySkeleton } from "../components/DetailSkeleton";
+
+import type { EntityPreview } from "../entities/types";
+
+export type { EntityPreview };
 
 export interface EntityDetailPanelProps {
   entityType: string;
@@ -33,18 +39,21 @@ export interface EntityDetailPanelProps {
   // the click originates from within the overview.
   onNavigate?: (entityType: string, id?: string | number) => void;
   organizationId?: number;
-  onOpenOverview?: (entityType: string, id: string | number) => void;
+  onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   overviewEntityId?: string | number;
   // "Fiche précédente/suivante" (plan: prev/next navigation). Deliberately NOT `onNavigate`: that
   // callback also drives the breadcrumb's "Tous les <plural>" crumb, which must switch the PANE
   // this panel is in to a list — a sibling jump must instead stay a same-kind detail navigation
   // (the main pane's own client-side nav for the main pane's fiche, App's openOverview for the
   // overview pane's fiche). Omitted, or the entity type has no config.api.siblings: no arrows.
-  onNavigateSibling?: (id: string | number) => void;
+  onNavigateSibling?: (id: string | number, preview?: EntityPreview) => void;
   // True while the pane's own navigation bridge call is in flight (App.tsx's overviewBusy for the
   // overview pane) — both arrows render disabled rather than firing a jump the bean isn't ready
   // to catch up with yet, same reason the overview toolbar's own actions are withheld then.
   siblingNavDisabled?: boolean;
+  // Shown in the header while this entity loads (see EntityPreview). Ignored once it has loaded,
+  // and whenever it doesn't belong to the entity being shown.
+  preview?: EntityPreview;
 }
 
 /**
@@ -69,13 +78,14 @@ export function EntityDetailPanel({
   overviewEntityId,
   onNavigateSibling,
   siblingNavDisabled,
+  preview,
 }: EntityDetailPanelProps) {
   const config = getEntityType(entityType);
 
   // Mirrors AbstractSingleEntityPanel.activeTabIndex — kept as this component's OWN state,
   // deliberately not TabView's own uncontrolled internal index. A sibling jump changes `entityId`,
-  // which changes the detail query's key and makes this component render its "Loading…" early
-  // return for a tick; that early return doesn't mount a <TabView> at all, so an uncontrolled
+  // which changes the detail query's key and makes this component render its loading skeleton
+  // for a tick; that skeleton doesn't mount a <TabView> at all, so an uncontrolled
   // index would silently reset to 0 on the entity that follows the loading tick. This component
   // itself never unmounts across that tick (same type, same position in the tree), so this state
   // survives it — the fiche stays on whichever tab you were looking at, same as JSF's `?tab=N`.
@@ -115,6 +125,24 @@ export function EntityDetailPanel({
   const writeMode = useWriteMode();
   const bridge = useBridge();
   const queryClient = useQueryClient();
+  // Hovering or focusing a prev/next arrow warms that fiche (and its own neighbours) in the query
+  // cache, so the jump usually lands on data that is already there — no skeleton at all.
+  const prefetchSibling = useCallback(
+    (id: string | number) => {
+      if (!config) return;
+      void queryClient.prefetchQuery({
+        queryKey: ["entity-detail", entityType, id],
+        queryFn: () => config.api.get(id),
+      });
+      if (config.api.siblings) {
+        void queryClient.prefetchQuery({
+          queryKey: ["entity-siblings", entityType, id, organizationId],
+          queryFn: () => config.api.siblings!(id, { organizationId }),
+        });
+      }
+    },
+    [config, entityType, organizationId, queryClient],
+  );
   const [createOpen, setCreateOpen] = useState(false);
   const duplicateMutation = useMutation({
     mutationFn: () => config!.api.duplicate!(entityId),
@@ -128,8 +156,48 @@ export function EntityDetailPanel({
   if (!config) {
     return <div className="entity-detail-panel-unsupported">Unknown entity type &quot;{entityType}&quot;</div>;
   }
+  const siblingNav =
+    config.api.siblings && onNavigateSibling ? (
+      <SiblingNav
+        siblings={siblings}
+        onNavigate={(sibling) => onNavigateSibling(sibling.id, { label: sibling.label })}
+        onPrefetch={(sibling) => prefetchSibling(sibling.id)}
+        disabled={siblingNavDisabled}
+      />
+    ) : undefined;
+  const headerLayout = toolbar?.actions?.closeOverview ? "overview" : "main";
+
   if (isLoading) {
-    return <div className="entity-detail-panel-loading">Loading…</div>;
+    // Same frame as the loaded fiche — panel, header, toolbar — so nothing jumps when the data
+    // arrives: the identifier from the preview (or a skeleton), the rest as skeletons.
+    return (
+      <Panel
+        className="entity-detail-panel entity-detail-panel-loading"
+        header={
+          <PanelHeaderBar
+            layout={headerLayout}
+            navigation={siblingNav}
+            title={
+              <span className="entity-detail-panel-preview-header">
+                <Skeleton shape="circle" size="2rem" />
+                {preview ? (
+                  <span className="p-chip p-component entity-nav-chip entity-detail-panel-preview-chip">
+                    <i className={`p-chip-icon ${config.icon}`} aria-hidden="true" />
+                    <span className="p-chip-text">{preview.label}</span>
+                  </span>
+                ) : (
+                  <Skeleton width="8rem" height="2rem" borderRadius="16px" />
+                )}
+                <Skeleton width="6rem" height="2rem" borderRadius="16px" className="loading-skeleton" />
+              </span>
+            }
+            toolbar={toolbar}
+          />
+        }
+      >
+        <DetailBodySkeleton />
+      </Panel>
+    );
   }
   if (error) {
     return <div className="entity-detail-panel-error">{(error as Error).message}</div>;
@@ -169,12 +237,8 @@ export function EntityDetailPanel({
       className="entity-detail-panel"
       header={
         <PanelHeaderBar
-          layout={toolbar?.actions?.closeOverview ? "overview" : "main"}
-          navigation={
-            config.api.siblings && onNavigateSibling ? (
-              <SiblingNav siblings={siblings} onNavigate={onNavigateSibling} disabled={siblingNavDisabled} />
-            ) : undefined
-          }
+          layout={headerLayout}
+          navigation={siblingNav}
           title={
             <>
               {/* validationButton.xhtml's place in the JSF headers, now on every fiche that has a status. */}
@@ -227,9 +291,9 @@ export function EntityDetailPanel({
         onCreated={(id) => {
           setCreateOpen(false);
           void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
-          // Same destination as the list toolbar's create: the new entity's own fiche in the main
-          // pane, or — from the overview pane, which has no full-navigate — the overview itself.
-          (onNavigate ?? onOpenOverview)?.(entityType, id);
+          // Same destination as the list toolbar's create: the overview, so the current view stays
+          // in place (the full fiche is one click away, the overview's focus button).
+          (onOpenOverview ?? onNavigate)?.(entityType, id);
         }}
       />
       <TabView

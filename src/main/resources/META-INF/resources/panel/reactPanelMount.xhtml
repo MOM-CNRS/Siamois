@@ -35,6 +35,19 @@
          data-action-open-project-settings="reactAction_openProjectSettings_${panelModel.jsPanelIndex}"
          data-action-set-overview="reactAction_setOverview_${panelModel.jsPanelIndex}"
          data-overview-action-close-overview="reactAction_overview_closeOverview_${panelModel.jsPanelIndex}"
-    ></div>
+    >
+        <!--
+        Static placeholder for the moment between the page render and React's first render, so the
+        panel isn't a blank box meanwhile. React's first render replaces the mount div's content;
+        its look (and the delay before it shows) is in main-panel.css.
+        -->
+        <div class="react-main-panel-placeholder" aria-busy="true">
+            <div class="react-main-panel-placeholder-bar" style="width: 30%; height: 2rem;"></div>
+            <div class="react-main-panel-placeholder-bar" style="width: 20%;"></div>
+            <div class="react-main-panel-placeholder-bar" style="width: 90%;"></div>
+            <div class="react-main-panel-placeholder-bar" style="width: 75%;"></div>
+            <div class="react-main-panel-placeholder-bar" style="width: 85%;"></div>
+        </div>
+    </div>
 
 </ui:composition>

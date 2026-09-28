@@ -51,6 +51,7 @@ Ces points sont codés et couverts par des tests unitaires, mais n'ont pas encor
 - **« Dupliquer la structure »** (une UE avec ses descendants) : seule la duplication de l'UE seule est portée.
 - **Duplication du mobilier** : non portée. Elle est cassée en JSF, car le constructeur de copie `SpecimenDTO` est vide.
 - **Vues de table sauvegardées** (`?viewId=`) : React les ignore. `UiViewService`, `TableViewState` et `UITableViewDTO` sont conservés.
+- **Fiche précédente/suivante liée au tri et aux filtres actifs de la table** : aujourd'hui les flèches suivent l'ordre par défaut de toutes les listes (date de création, la plus récente en premier ; ↓ = ligne du dessous), sans tenir compte du tri, des filtres ni de la recherche en cours. `GET /projects/{id}/siblings` accepte déjà `sort`/`search`/`f.*` ; il manque l'équivalent pour les autres types (`EntitySiblingsService`) et la transmission de l'état de la table à la fiche.
 - **Anciennes clés de filtre nommées** (`f.status`…) : toujours acceptées par le serveur, mais un état `?s=` ou une vue qui les utilise n'affiche plus de chip libellé.
 
 ## 4. Thème

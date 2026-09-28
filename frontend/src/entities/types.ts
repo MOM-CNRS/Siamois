@@ -75,6 +75,14 @@ export interface EntitySibling {
 
 // Either side is undefined when the caller's accessible set has no OTHER entity at all —
 // deliberately not JSF's own wrap-to-self behaviour (a self-link is not a useful sibling).
+// What an opener already knows about an entity before its fiche loads — a list row's label, a
+// sibling's label from the siblings lookup. Enough to draw the fiche header's identifier chip at
+// once; everything below it is a skeleton until the entity arrives.
+export interface EntityPreview {
+  label: string;
+  validated?: string | null;
+}
+
 export interface EntitySiblings {
   previous?: EntitySibling;
   next?: EntitySibling;
@@ -171,7 +179,7 @@ export interface DetailTabHelpers {
   refetch: () => void;
   organizationId?: number;
   onNavigate?: (entityType: string, id?: string | number) => void;
-  onOpenOverview?: (entityType: string, id: string | number) => void;
+  onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   overviewEntityId?: string | number;
 }
 

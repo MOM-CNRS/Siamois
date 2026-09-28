@@ -12,6 +12,7 @@ import { recordingUnitPanelLabel } from "./form";
 import { getRecordingUnitEffectiveForm } from "./recordingUnitTypes";
 import { patchRecordingUnitAnswers } from "./api";
 import type { RecordingUnitDetail } from "./types";
+import { FormSkeleton } from "../../components/DetailSkeleton";
 
 // The fiche, schema-driven off GET /api/v1/projects/{id}/recording-unit-types — renders every
 // panel/row/field RecordingUnit.DETAILS_FORM's layout defines (4 panels: general, chronology,
@@ -76,7 +77,7 @@ export function RecordingUnitFicheTab({ entity, onSaved }: RecordingUnitFicheTab
       {entity.projectId == null && (
         <Message severity="warn" text="Projet inconnu : impossible de charger le formulaire" />
       )}
-      {formQuery.isLoading && <div>Chargement du formulaire…</div>}
+      {formQuery.isLoading && <FormSkeleton />}
       {formQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
       {fields &&
         panels.map((panel, panelIndex) => (

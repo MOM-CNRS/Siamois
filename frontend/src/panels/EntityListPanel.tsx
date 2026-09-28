@@ -18,7 +18,7 @@ import { Menu } from "primereact/menu";
 import { getEntityType } from "../entities/registry";
 import { scopeProjectId } from "../entities/scope";
 import { searchCreatableProjects } from "../entities/project/api";
-import type { ColumnDef, CreatePrefill, EntityTypeConfig, FilterValue, ListParams, ListScope, PagedResult } from "../entities/types";
+import type { ColumnDef, CreatePrefill, EntityPreview, EntityTypeConfig, FilterValue, ListParams, ListScope, PagedResult } from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import { FilterChipBar, type FilterSpec } from "../components/table/FilterChipBar";
@@ -31,6 +31,7 @@ import { resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { useTableState } from "./useTableState";
 import { isFieldPending, usePagedList } from "./usePagedList";
+import { entityRowLabel } from "../fields/optionSources";
 import { FROZEN_COLUMN_CLASS, frozenColumnStyle, useFrozenColumnOffsets } from "./frozenColumns";
 import { PAGE_SIZE_OPTIONS } from "./tableState";
 import { listPrefsKey } from "./listPreferences";
@@ -49,7 +50,7 @@ export interface EntityListPanelProps {
   // Opens the row's entity in the right-hand overview pane instead of replacing the list (plan §8
   // phase 5, JSF's own row-click behavior) — wired to the identifier cell only, matching JSF's
   // CommandLinkColumn (the rest of the row is inert, unlike the pre-phase-5 whole-row click).
-  onOpenOverview?: (entityType: string, id: string | number) => void;
+  onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   // The overview's current entity id, when it's showing this same entity type — highlights that
   // row (plan §8 phase 5's rowClassName), mirroring EntityTableViewModel.getRowStyleClass's
   // "overview-open".
@@ -84,6 +85,19 @@ export interface EntityListPanelProps {
 const SEARCH_DEBOUNCE_MS = 300;
 
 type RowRecord = Record<string, unknown> & { id?: string | number };
+
+// Placeholder rows shown during a list's very first load, one skeleton per cell — the table keeps
+// its header and shape instead of an empty body under a grey loading overlay.
+const SKELETON_ROW = "__skeletonRow";
+const SKELETON_ROW_COUNT = 8;
+const SKELETON_ROWS: RowRecord[] = Array.from({ length: SKELETON_ROW_COUNT }, (_, i) => ({
+  id: `__skeleton-${i}`,
+  [SKELETON_ROW]: true,
+}));
+
+function isSkeletonRow(row: RowRecord): boolean {
+  return row[SKELETON_ROW] === true;
+}
 
 /**
  * Generic entity list — entirely driven by the registry (plan §3) plus, where supplied, an
@@ -382,8 +396,14 @@ export function EntityListPanel({
   function openIdentifier(e: SyntheticEvent, row: RowRecord) {
     e.stopPropagation();
     if (row.id == null) return;
-    if (onOpenOverview) onOpenOverview(entityType, row.id);
-    else onNavigate?.(entityType, row.id);
+    if (onOpenOverview) {
+      // The row already holds the label and status: the overview's header shows them right away.
+      const preview = {
+        label: entityRowLabel(row as Parameters<typeof entityRowLabel>[0]),
+        validated: (row as { validated?: string | null }).validated,
+      };
+      onOpenOverview(entityType, row.id, preview);
+    } else onNavigate?.(entityType, row.id);
   }
 
   // Same target preference as openIdentifier, for a column linking to another entity.
@@ -625,10 +645,9 @@ export function EntityListPanel({
                       queryClient.invalidateQueries({ queryKey: ["entity-list", entityType] });
                       // A linked create changes the parent's relation counts (its tab badges).
                       if (createPrefill) void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
-                      // Go straight to the new entity's own fiche, the way JSF's creation dialog
-                      // does today — not just its overview — falling back to onOpenOverview only
-                      // for a caller with no full-navigate of its own (an embedded relation tab).
-                      (onNavigate ?? onOpenOverview)?.(entityType, id);
+                      // Opens in the overview, so the list stays where it was; the full fiche is
+                      // one click away (the overview's focus button).
+                      (onOpenOverview ?? onNavigate)?.(entityType, id);
                     },
                     onCancel: () => createOverlayRef.current?.hide(),
                   })}
@@ -674,7 +693,7 @@ export function EntityListPanel({
         onDropCapture={blockDropOnFrozenHeader}
       >
       <DataTable
-          value={rows}
+          value={isLoading ? SKELETON_ROWS : rows}
         // pages/shared/table/entityDataTable.xhtml is size="small" too — the React table had been
         // left at the theme's default (1rem cell padding vs 0.5rem), which is a big part of why it
         // read as much airier than the JSF one. entity-list-panel's own CSS tightens the vertical
@@ -690,7 +709,6 @@ export function EntityListPanel({
         rowsPerPageOptions={PAGE_SIZE_OPTIONS}
         totalRecords={totalCount}
         onPage={onPage}
-        loading={isLoading}
         // PrimeReact memoizes each cell on its row data, so a cell would ignore anything else its
         // body depends on — the action bar layout, write mode, the columns being fetched. A page is
         // at most 200 rows and only re-renders when its state changes, so that's affordable.
@@ -707,6 +725,7 @@ export function EntityListPanel({
         // every currently-visible row already matched the server-side search (plan §8 phase 5).
         rowClassName={(row: RowRecord) => {
           const classes: string[] = [];
+          if (isSkeletonRow(row)) return "entity-list-panel-skeleton-row";
           if (overviewEntityId != null && row.id === overviewEntityId) classes.push("overview-open");
           if (state.search) classes.push("search-match");
           return classes.join(" ");
@@ -733,7 +752,7 @@ export function EntityListPanel({
           headerStyle={{ width: "3rem" }}
           headerClassName={`entity-list-panel-selection-header${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
           reorderable={false}
-          header={<Chip label={`${selectedRows.length}/${totalCount}`} />}
+          header={isLoading ? <Skeleton width="3rem" height="1.5rem" borderRadius="16px" /> : <Chip label={`${selectedRows.length}/${totalCount}`} />}
         />
         {allColumns.flatMap((col, index) => [
           <Column
@@ -768,7 +787,7 @@ export function EntityListPanel({
             // around it would cut that off.
             body={(row: RowRecord) =>
               // A column just shown, still being fetched for this row: a skeleton, not an empty cell.
-              isFieldPending(row, col.key) ? (
+              isSkeletonRow(row) || isFieldPending(row, col.key) ? (
                 <Skeleton height="1rem" width={col.identifier ? "6rem" : "70%"} />
               ) : (
               <span className="entity-list-panel-cell">
@@ -792,7 +811,7 @@ export function EntityListPanel({
                   className={`entity-list-panel-row-actions-cell${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
                   headerClassName={`entity-list-panel-row-actions-cell${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
                   header={<span className="entity-list-panel-column-header" />}
-                  body={(row: RowRecord) => rowActions.render(row)}
+                  body={(row: RowRecord) => (isSkeletonRow(row) ? null : rowActions.render(row))}
                 />,
               ]
             : []),
@@ -854,11 +873,15 @@ export function EntityListPanel({
               <span style={{ paddingRight: "0.5em" }}>{config.labels.plural}</span>
               {/* *ListPanelHeader.xhtml's count chip: `<entity>-count-chip` (themed-panel's chip rule),
                   with the same inline transparent background/main-color text. */}
+              {isLoading ? (
+                <Skeleton width="2.5rem" height="1.75rem" borderRadius="16px" className="loading-skeleton" />
+              ) : (
               <Chip
                 label={String(totalCount)}
                 className={config.panelClass ? config.panelClass.replace(/-panel$/, "-count-chip") : undefined}
                 style={{ background: "transparent", color: "var(--main-color)" }}
               />
+              )}
             </div>
           }
           toolbar={toolbar}

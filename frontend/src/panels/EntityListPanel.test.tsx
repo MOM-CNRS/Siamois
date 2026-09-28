@@ -221,7 +221,7 @@ describe("EntityListPanel", () => {
       identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1");
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1", expect.objectContaining({ label: expect.any(String) }));
     expect(onNavigate).not.toHaveBeenCalled();
     // No separate "open in overview" button any more: the chip is the one target.
     expect(container.querySelector(".entity-list-panel-identifier-open")).toBeNull();
@@ -237,7 +237,7 @@ describe("EntityListPanel", () => {
       identifierCell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1");
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity", "1", expect.objectContaining({ label: expect.any(String) }));
   });
 
   it("does not navigate or open the overview when a non-identifier part of the row is clicked", async () => {
@@ -1331,8 +1331,8 @@ describe("EntityListPanel create overlay (config.list.createForm)", () => {
     expect(document.body.querySelector('[data-testid="fake-create-form-submit"]')).toBeTruthy();
   });
 
-  it("navigates to the newly created entity and closes the overlay once the form calls onCreated", async () => {
-    const { onNavigate } = renderWithCreateForm();
+  it("opens the newly created entity in the overview (the list stays) once the form calls onCreated", async () => {
+    const { onNavigate, onOpenOverview } = renderWithCreateForm();
     await flush();
 
     const createButton = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Créer")!;
@@ -1343,11 +1343,12 @@ describe("EntityListPanel create overlay (config.list.createForm)", () => {
       document.body.querySelector<HTMLButtonElement>('[data-testid="fake-create-form-submit"]')!.click();
     });
 
-    expect(onNavigate).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it("falls back to onOpenOverview when the caller has no onNavigate of its own", async () => {
-    const onOpenOverview = vi.fn();
+  it("falls back to onNavigate when the caller has no overview pane", async () => {
+    const onNavigate = vi.fn();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {
       root.render(
@@ -1356,7 +1357,7 @@ describe("EntityListPanel create overlay (config.list.createForm)", () => {
             <EntityListPanel
               entityType="fake-entity-with-create-form"
               organizationId={7}
-              onOpenOverview={onOpenOverview}
+              onNavigate={onNavigate}
             />
           </WriteModeProvider>
         </QueryClientProvider>,
@@ -1372,7 +1373,7 @@ describe("EntityListPanel create overlay (config.list.createForm)", () => {
       document.body.querySelector<HTMLButtonElement>('[data-testid="fake-create-form-submit"]')!.click();
     });
 
-    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
+    expect(onNavigate).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
   });
 });
 

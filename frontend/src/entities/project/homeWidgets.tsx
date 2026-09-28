@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Panel } from "primereact/panel";
+import { Skeleton } from "primereact/skeleton";
 import { ClickableCard } from "../../components/home/ClickableCard";
 import { EntityCountCard } from "../../components/home/EntityCountCard";
 import { useOrganizationCounts } from "../organizationCounts";
@@ -44,7 +45,13 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
 
   return (
     <Panel header="Projets récents" toggleable className="sia-form-panel">
-      {isLoading && <div>Chargement…</div>}
+      {isLoading && (
+        <div className="loading-skeleton" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} height="3rem" />
+          ))}
+        </div>
+      )}
       {!isLoading && projects.length === 0 && <div>Aucun projet</div>}
       {projects.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>

@@ -12,6 +12,7 @@ import { findPanelLabel } from "./form";
 import { getFindEffectiveForm } from "./findTypes";
 import { patchFindAnswers } from "./api";
 import type { FindDetail } from "./types";
+import { FormSkeleton } from "../../components/DetailSkeleton";
 
 // The fiche, schema-driven off GET /api/v1/projects/{id}/find-types — renders every
 // panel/row/field Specimen.DETAILS_FORM's layout defines, same as JSF's mobilier "Détails" tab.
@@ -66,7 +67,7 @@ export function FindFicheTab({ entity, onSaved }: FindFicheTabProps) {
       {entity.projectId == null && (
         <Message severity="warn" text="Projet inconnu : impossible de charger le formulaire" />
       )}
-      {formQuery.isLoading && <div>Chargement du formulaire…</div>}
+      {formQuery.isLoading && <FormSkeleton />}
       {formQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
       {fields &&
         panels.map((panel, panelIndex) => (

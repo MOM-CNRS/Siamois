@@ -12,6 +12,7 @@ import { containerPanelLabel } from "./form";
 import { getContainerEffectiveForm } from "./containerTypes";
 import { patchContainerAnswers } from "./api";
 import type { ContainerDetail } from "./types";
+import { FormSkeleton } from "../../components/DetailSkeleton";
 
 // The fiche, schema-driven off GET /api/v1/projects/{id}/container-types — renders every
 // panel/row/field Container.DETAILS_FORM's layout defines, same as JSF's container "Détails" tab.
@@ -56,7 +57,7 @@ export function ContainerFicheTab({ entity, onSaved }: ContainerFicheTabProps) {
       {entity.projectId == null && (
         <Message severity="warn" text="Projet inconnu : impossible de charger le formulaire" />
       )}
-      {formQuery.isLoading && <div>Chargement du formulaire…</div>}
+      {formQuery.isLoading && <FormSkeleton />}
       {formQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
       {fields &&
         panels.map((panel, panelIndex) => (

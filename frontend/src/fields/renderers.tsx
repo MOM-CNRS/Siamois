@@ -11,6 +11,7 @@ import { getEntityType } from "../entities/registry";
 import type { CreatePrefill } from "../entities/types";
 import type { FieldRendererProps } from "./registry";
 import type { FieldEditContext } from "./editContext";
+import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
 import {
   entityRowLabel,
   optionSourceFor,
@@ -70,7 +71,10 @@ export function IntegerRenderer({ field, value, readOnly, required, onChange }: 
       min={field.constraints?.min ?? undefined}
       max={field.constraints?.max ?? undefined}
       useGrouping={false}
-      onValueChange={(e) => onChange(e.value ?? null)}
+      // onChange, not onValueChange: InputNumber only fires onValueChange on blur, and the cell
+      // editor commits on Enter or on an outside mousedown — both before that blur — so the draft
+      // would still hold the old value and nothing would be saved.
+      onChange={(e) => onChange(e.value ?? null)}
     />
   );
 }
@@ -87,20 +91,27 @@ export function DecimalRenderer({ field, value, readOnly, required, onChange }: 
       mode="decimal"
       maxFractionDigits={6}
       useGrouping={false}
-      onValueChange={(e) => onChange(e.value ?? null)}
+      // See IntegerRenderer: onValueChange would only fire after the editor has already committed.
+      onChange={(e) => onChange(e.value ?? null)}
     />
   );
 }
 
-export function DateRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
-  const dateValue = typeof value === "string" && value ? new Date(value) : null;
+export function DateRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+  const showTime = field.constraints?.showTime === true;
   return (
     <Calendar
-      value={dateValue}
+      value={parseDateAnswer(value, showTime)}
       disabled={readOnly}
       required={required}
       dateFormat="dd/mm/yy"
-      onChange={(e) => onChange(e.value ? (e.value as Date).toISOString().slice(0, 10) : null)}
+      showTime={showTime}
+      hourFormat="24"
+      // The panel lives inside the edit overlay's own fixed box instead of being appended to
+      // <body>, where it grew the document past the 100vh shell (a page scrollbar) and landed
+      // below the fold.
+      appendTo="self"
+      onChange={(e) => onChange(e.value ? formatDateAnswer(e.value as Date, showTime) : null)}
     />
   );
 }
@@ -361,7 +372,8 @@ export function MeasurementRenderer({ field, value, readOnly, required, onChange
           useGrouping={false}
           min={field.constraints?.min ?? undefined}
           max={field.constraints?.max ?? undefined}
-          onValueChange={(e) => emit({ ...current, numericValue: e.value ?? null })}
+          // See IntegerRenderer: onValueChange would only fire after the editor has already committed.
+          onChange={(e) => emit({ ...current, numericValue: e.value ?? null })}
         />
         {unit && <span className="p-inputgroup-addon">{unit}</span>}
       </div>

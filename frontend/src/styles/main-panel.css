@@ -1193,3 +1193,111 @@ body button.p-button.status-button.status-button-compact {
 .panel-splitter-panel-r ::-webkit-scrollbar-corner {
   background: var(--surface-100, #f5f5f5);
 }
+
+/* ---------------------------------------------------------------------------
+   No page-level scroll. The shell is a fixed 100vh frame (template.xhtml's div.d-flex) and every
+   panel scrolls inside its own box, so anything that lands past it (a popup appended to <body>)
+   must not grow the document and bring up a page scrollbar with nothing to scroll. This file is
+   only loaded by focus.xhtml, so other pages are untouched. */
+html,
+body {
+  overflow: hidden;
+}
+
+/* A date picker opened from the cell editor lives inside the editor's own fixed box
+   (DateRenderer's appendTo="self"): it overflows that box downward rather than being clipped. */
+.cell-edit-overlay .p-datepicker:not(.p-datepicker-inline) {
+  position: absolute;
+  z-index: 1;
+  min-width: 18rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Loading skeletons (components/DetailSkeleton.tsx, EntityListPanel's first-load rows). They fade
+   in only after a short delay: a fast response never shows them, so nothing flashes; a slow one
+   shows the page's shape instead of an empty box. */
+@keyframes loading-skeleton-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loading-skeleton,
+.entity-list-panel-skeleton-row .p-skeleton {
+  animation: loading-skeleton-appear 150ms ease-out 150ms both;
+}
+
+/* A placeholder row is not selectable and has no hover state. */
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row .p-checkbox {
+  visibility: hidden;
+}
+
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row:hover {
+  background: inherit;
+}
+
+/* The fiche header drawn from what the opener already knew (EntityPreview) while it loads. */
+.entity-detail-panel-preview-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detail-body-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.detail-body-skeleton-tabs {
+  display: flex;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+}
+
+.form-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-skeleton-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-skeleton .project-fiche-tab-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+   PaneSplit (panels/PaneSplit.tsx): the gutter the theme paints as .p-splitter-gutter, kept thin;
+   no text selection while dragging it. */
+.pane-split.p-splitter-resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* reactPanelMount.xhtml's static placeholder, shown until React's first render replaces it. */
+.react-main-panel-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  animation: loading-skeleton-appear 150ms ease-out 150ms both;
+}
+
+.react-main-panel-placeholder-bar {
+  height: 1.25rem;
+  border-radius: 6px;
+  background: var(--surface-200, #e9ecef);
+}
