@@ -160,11 +160,16 @@ describe("list row actions", () => {
     expect(onOpenOverview).toHaveBeenCalledWith("row-action-entity", "42");
   });
 
-  it("opens the create dialog linked to the row, then opens what was created", async () => {
+  it("opens the create form in an overlay linked to the row, then opens what was created", async () => {
     const onOpenOverview = vi.fn();
     await render([row()], { onOpenOverview });
 
     await click(actionButton("Créer un enfant")!);
+
+    // Every creation opens next to what started it, never in a modal.
+    const submit = document.body.querySelector('[data-testid="row-create-submit"]')!;
+    expect(submit.closest(".p-overlaypanel")).toBeTruthy();
+    expect(document.body.querySelector(".p-dialog")).toBeNull();
 
     const ctx = createFormMock.mock.calls[createFormMock.mock.calls.length - 1][0];
     expect(ctx.prefill).toEqual({ parent: { id: "1", label: "Row A" } });

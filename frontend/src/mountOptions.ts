@@ -1,3 +1,4 @@
+import type { SyntheticEvent } from "react";
 // Shape of the options object focus.xhtml's inline script passes to window.SiamoisMainPanel.mount
 // (plan §7.2/§8 phase 8).
 export type PanelKind = "home" | "list" | "detail";
@@ -7,7 +8,8 @@ export type PanelKind = "home" | "list" | "detail";
 // mode), never from what JSF mounted, so the toolbar stays valid after a client-side navigation.
 export interface PanelActions {
   // Same kind, same project as the displayed entity (JSF's creationUnitKind button).
-  create?: () => void;
+  // Receives the click, so the creation form can open in an overlay next to what was clicked.
+  create?: (event?: SyntheticEvent) => void;
   duplicate?: () => void;
   // Project only: opens its settings page (a JSF redirect, through PanelBridge.openProjectSettings).
   settings?: () => void;

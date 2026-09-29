@@ -260,8 +260,9 @@ body button.p-button.p-button-text.status-button.cancelled {
   color: var(--status-cancelled);
 }
 
-/* A list row's identifier/link chip: outlined in the entity's context color on a transparent
-   background (text and icon in that color too). Not the fiche header's identifier Chip: that one is
+/* A list row's identifier/link chip: outlined in its entity's colour on a transparent background
+   (text and icon in that colour too) — the colour of the entity it shows (--entity-chip-color, set
+   per chip by fields/display.tsx's entityChipStyle), never the colour of the panel it sits in. Not the fiche header's identifier Chip: that one is
    JSF's editableIdentifierChip — `<entity>-chip-alt entity-nav-chip`, filled in the entity colour —
    and is painted by the shared theme. */
 .entity-nav-chip:not(.p-chip) {
@@ -270,9 +271,9 @@ body button.p-button.p-button-text.status-button.cancelled {
   gap: 0.35rem;
   padding: 0.1rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid var(--context-main-color, var(--main-color, #80b480));
+  border: 1px solid var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
   background: transparent;
-  color: var(--context-main-color, var(--main-color, #80b480));
+  color: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
   cursor: pointer;
 }
 
@@ -282,7 +283,7 @@ body button.p-button.p-button-text.status-button.cancelled {
 }
 
 .entity-nav-chip:not(.p-chip):hover {
-  background: color-mix(in srgb, var(--context-main-color, var(--main-color, #80b480)) 10%, transparent);
+  background: color-mix(in srgb, var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480))) 10%, transparent);
 }
 
 .entity-nav-chip-label {
@@ -933,11 +934,13 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   opacity: 1;
 }
 
+/* Always Siamois green, whatever the panel: --main-color would turn them the panel's colour (blue
+   in a project's tabs). */
 .entity-list-panel .entity-list-panel-row-actions .p-button.p-button-sm {
   width: 1.9rem;
   height: 1.9rem;
   padding: 0;
-  color: var(--main-color);
+  color: var(--siamois-green, #80b480);
 }
 
 .entity-list-panel td.entity-list-panel-row-actions-cell {
@@ -972,7 +975,7 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
    (the row's project…) keeps its outline. */
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
 .entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
-  background: var(--context-main-color, var(--main-color, #80b480));
+  background: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
   color: var(--primary-color-text, #ffffff);
 }
 
@@ -1106,7 +1109,6 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
 
 .resource-ref-token-link:hover {
   text-decoration: underline;
-  color: var(--context-main-color, var(--main-color, #80b480));
 }
 
 /* ------------------------------------------------------------ panel titlebar toolbar */
@@ -1300,4 +1302,51 @@ body {
   height: 1.25rem;
   border-radius: 6px;
   background: var(--surface-200, #e9ecef);
+}
+
+/* ---------------------------------------------------------------------------
+   A reference shown read-only (fields/display.tsx RefChip): a light outlined chip in its type's
+   colour (--ref-chip-color, set inline per chip) — the reference picker's edit-mode token, minus
+   the remove button. */
+.ref-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  /* The multi-select picker's own token (theme: .p-autocomplete-token): a small-radius rectangle,
+     label padded 0.5rem, same text size as the field — minus its remove icon. */
+  padding: 1px 0.5rem;
+  border: 1px solid var(--ref-chip-color);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ref-chip-color);
+  font-size: 1em;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.ref-chip-link {
+  cursor: pointer;
+}
+
+.ref-chip-link:hover,
+.ref-chip-link:focus-visible {
+  background: color-mix(in srgb, var(--ref-chip-color) 12%, transparent);
+}
+
+/* A fiche field shows every value: the chips wrap. */
+.cell-multi-all {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* Edit mode: the picker's own tokens take the same per-type colour (ResourceRefRenderer sets
+   --ref-chip-color on the AutoComplete). */
+.resource-ref-picker .p-autocomplete-token {
+  background: transparent;
+  border: 1px solid var(--ref-chip-color);
+  color: var(--ref-chip-color);
 }

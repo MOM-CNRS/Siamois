@@ -43,15 +43,8 @@ describe("findColumns", () => {
     expect(col.link!({ resourceType: "finds", id: "2", fullIdentifier: "M2" })).toBeNull();
   });
 
-  it("links the Projet column to the row's project", () => {
-    const col = findColumns.find((c) => c.key === "project")!;
-    const row: FindSummary = {
-      resourceType: "finds",
-      id: "1",
-      fullIdentifier: "M1",
-      project: { resourceId: "7", resourceType: "projects", label: "OA-7" },
-    };
-
-    expect(col.link!(row)).toEqual({ entityType: "project", id: "7" });
+  // The project is the catalog's own (read-only) project field column now, not a pinned one.
+  it("has no pinned Projet column", () => {
+    expect(findColumns.find((c) => c.key === "project")).toBeUndefined();
   });
 });

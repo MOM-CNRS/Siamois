@@ -27,7 +27,7 @@ import { VisibilityChooser } from "../components/table/VisibilityChooser";
 import { renderAnswerCell, renderAnswerValue } from "../fields/display";
 import { filterKindForField, optionSourceFor, type FilterKind, type FilterOption } from "../fields/optionSources";
 import { hasFieldRenderer } from "../fields/registry";
-import { resolveValueBinding, type FieldResource } from "../fields/types";
+import { isOwningProjectField, resolveValueBinding, type FieldResource } from "../fields/types";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { useTableState } from "./useTableState";
 import { isFieldPending, usePagedList } from "./usePagedList";
@@ -39,6 +39,7 @@ import { useWriteMode } from "./writeMode";
 import { ValidationStatusCell, type ValidationStatusCellProps } from "../components/table/ValidationStatusCell";
 import { useRowActions } from "./useRowActions";
 import { Message } from "primereact/message";
+import { entityChipStyle } from "../fields/display";
 
 export interface EntityListPanelProps {
   entityType: string;
@@ -183,8 +184,14 @@ export function EntityListPanel({
   // re-fetching the same catalog.
   useEffect(() => {
     if (!catalog) return;
+    // The project rows belong to is a column like any other, shown by default only where rows come
+    // from several projects: inside a project's own tab it would repeat that project on every row.
+    const isProject = (fieldId: string) => {
+      const field = catalog.fields[fieldId];
+      return field != null && isOwningProjectField(field);
+    };
     const defaults = catalog.columns
-      .filter((c) => c.visible)
+      .filter((c) => (isProject(c.fieldId) ? scope == null : c.visible))
       .slice()
       .sort((a, b) => a.order - b.order)
       .map((c) => c.fieldId);
@@ -192,7 +199,7 @@ export function EntityListPanel({
       defaults,
       catalog.columns.map((c) => c.fieldId),
     );
-  }, [catalog, seedVisibleColumns]);
+  }, [catalog, seedVisibleColumns, scope]);
 
   // Only the columns currently on screen are ever requested — the projection (and its label-batch
   // resolution cost server-side) scales with what's visible, not with the whole catalog. They're
@@ -291,9 +298,9 @@ export function EntityListPanel({
     const byKey = new Map<string, FieldResource>();
     for (const fieldId of state.visibleColumns) {
       const field = catalog.fields[fieldId];
-      // A field with no editor (action code, address) would open an empty overlay: it stays a
-      // plain cell.
-      if (field && hasFieldRenderer(field.answerType)) byKey.set(field.id, field);
+      // A field with no editor (action code, address) would open an empty overlay, and a read-only
+      // one (the row's project, a generated identifier) is never edited: both stay plain cells.
+      if (field && !field.readOnly && hasFieldRenderer(field.answerType)) byKey.set(field.id, field);
     }
     return byKey;
   }, [catalog, state.visibleColumns, canPatchAnswers]);
@@ -440,6 +447,7 @@ export function EntityListPanel({
       return (
         <span
           className="entity-list-panel-identifier-link entity-list-panel-row-identifier entity-nav-chip"
+          style={entityChipStyle(entityType)}
           role="button"
           tabIndex={0}
           title={onOpenOverview ? "Ouvrir dans l'aperçu" : undefined}
@@ -457,6 +465,7 @@ export function EntityListPanel({
       return (
         <span
           className="entity-list-panel-identifier-link entity-nav-chip"
+          style={entityChipStyle(target.entityType)}
           role="button"
           tabIndex={0}
           onClick={(e) => openLinked(e, target.entityType, target.id)}

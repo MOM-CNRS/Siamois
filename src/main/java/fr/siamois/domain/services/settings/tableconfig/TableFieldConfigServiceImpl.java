@@ -605,6 +605,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
         List<FormField> fields = new ArrayList<>();
         for (CustomColUiDto column : SystemFieldCatalog.systemColumnsOf(table)) {
+            // The owning project is set at creation and never configured (SystemFieldCatalog#isOwningProject).
+            if (SystemFieldCatalog.isOwningProject(column.getField())) continue;
             CustomField field = persisted.get(SystemFieldCatalog.identityOf(column.getField()));
             if (field == null) {
                 log.warn("System field '{}' of table {} has no row; it was defined after the last startup",

@@ -99,6 +99,10 @@ public class ContainerOpenApiService {
 
         ContainerDTO shell = new ContainerDTO();
         shell.setActionUnit(new ActionUnitSummaryDTO(au));
+        // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
+        // find creation (FindOpenApiService): the caller, in the project's organization.
+        shell.setCreatedBy(personDto);
+        shell.setCreatedByInstitution(institution);
         shell.setType(conceptMapper.convert(typeConcept));
 
         ContainerDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> containerService.save(shell));

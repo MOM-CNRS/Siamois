@@ -1,4 +1,3 @@
-import { projectColumn } from "../projectColumn";
 import type { ColumnDef } from "../types";
 import type { ContainerSummary } from "./types";
 
@@ -14,7 +13,6 @@ export const containerColumns: ColumnDef<ContainerSummary>[] = [
     identifier: true,
     render: (row) => row.identifier ?? "",
   },
-  projectColumn<ContainerSummary>(),
   {
     key: "type",
     header: "Type",

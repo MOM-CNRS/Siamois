@@ -159,7 +159,9 @@ public class ContainerService {
 
         UserInfo info = ExecutionContextHolder.get();
         Long actionUnitId = entity != null && entity.getActionUnit() != null ? entity.getActionUnit().getId() : null;
-        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_CONTAINERS)) {
+        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_CONTAINERS, PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
+                PermissionConstants.PROJECT_EDIT_CONTAINERS)) {
             throw new ForbiddenOperationException("You are not allowed to edit this container");
         }
 

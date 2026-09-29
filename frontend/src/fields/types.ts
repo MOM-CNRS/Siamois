@@ -25,6 +25,15 @@ export interface FieldResource {
   // What a list accepts on this field's column (FieldResource.Query): sort=<id>:asc|desc and
   // f.<id>… Null/absent when the column can be neither sorted nor filtered.
   query?: FieldQueryCapability | null;
+  // Never editable, in the fiche as in a list (a readOnly column of the details form: the project an
+  // entity belongs to, a generated identifier). Absent = editable.
+  readOnly?: boolean | null;
+}
+
+/** The field holding the project an entity belongs to: set at creation, never edited, and — as a
+ * list column — shown by default only where rows come from several projects. */
+export function isOwningProjectField(field: FieldResource): boolean {
+  return field.answerType === "SELECT_ONE_ACTION_UNIT" && field.valueBinding === "actionUnit";
 }
 
 export interface FieldQueryCapability {

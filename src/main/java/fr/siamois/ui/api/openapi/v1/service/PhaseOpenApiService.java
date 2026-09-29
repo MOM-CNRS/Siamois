@@ -96,6 +96,10 @@ public class PhaseOpenApiService {
 
         PhaseDTO shell = new PhaseDTO();
         shell.setActionUnit(new ActionUnitSummaryDTO(au));
+        // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
+        // find creation (FindOpenApiService): the caller, in the project's organization.
+        shell.setCreatedBy(personDto);
+        shell.setCreatedByInstitution(institution);
         shell.setType(conceptMapper.convert(typeConcept));
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             shell.setTitle(request.getTitle().trim());

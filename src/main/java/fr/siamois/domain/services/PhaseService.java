@@ -133,7 +133,8 @@ public class PhaseService {
 
         UserInfo info = ExecutionContextHolder.get();
         if (info == null || !profilePermissionService.hasProjectPermission(
-                info, managed.getActionUnit().getId(), PermissionConstants.PROJECT_EDIT_PHASES)) {
+                info, managed.getActionUnit().getId(), PermissionConstants.INSTANCE_EDIT_PHASES,
+                PermissionConstants.ORGANIZATION_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES)) {
             throw new ForbiddenOperationException("You are not allowed to edit this phase");
         }
 

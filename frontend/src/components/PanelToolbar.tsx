@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
@@ -72,7 +72,8 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
   });
 
   const secondary = [
-    actions?.create && { label: "Créer", icon: "bi bi-plus-square", command: actions.create },
+    // The click itself, so the creation form opens next to the button that was clicked.
+    actions?.create && { label: "Créer", icon: "bi bi-plus-square", command: (e: { originalEvent: SyntheticEvent }) => actions.create!(e.originalEvent) },
     actions?.duplicate && { label: "Dupliquer", icon: "bi bi-copy", command: actions.duplicate },
   ].filter(Boolean) as MenuItem[];
   const tertiary = [
@@ -90,7 +91,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
       tooltip={item.label}
       tooltipOptions={{ position: "bottom" }}
       aria-label={item.label}
-      onClick={() => item.command?.({} as never)}
+      onClick={(e) => item.command?.({ originalEvent: e, item } as never)}
     />
   );
 

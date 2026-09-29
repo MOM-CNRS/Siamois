@@ -43,7 +43,8 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
 }: FieldEditCellProps<TRow>) {
   const [editTarget, setEditTarget] = useState<CellEditTarget<TRow> | null>(null);
   // A field with no editor (action code, address) is shown, never offered for editing.
-  const readOnly = readOnlyProp || !hasFieldRenderer(field.answerType);
+  // Nor is a read-only one (the entity's project, a generated identifier).
+  const readOnly = readOnlyProp || field.readOnly === true || !hasFieldRenderer(field.answerType);
 
   function open(e: SyntheticEvent) {
     if (readOnly) return;
@@ -52,11 +53,11 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   }
 
   if (readOnly) {
-    const content = renderAnswerCell(field, stored);
+    const content = renderAnswerCell(field, stored, { all: true });
     return <span className="field-value-cell field-value-cell-readonly">{content}</span>;
   }
 
-  const content = renderAnswerCell(field, stored);
+  const content = renderAnswerCell(field, stored, { all: true });
   return (
     <>
       <span

@@ -1,4 +1,3 @@
-import { projectColumn } from "../projectColumn";
 import type { ColumnDef } from "../types";
 import type { FindSummary } from "./types";
 
@@ -15,7 +14,6 @@ export const findColumns: ColumnDef<FindSummary>[] = [
     identifier: true,
     render: (row) => row.fullIdentifier ?? "",
   },
-  projectColumn<FindSummary>(),
   {
     // The find's parent UE — a chip opening that UE's overview, on the organization-wide list and
     // in a project's Mobilier tab alike (the UE differs from row to row in both).

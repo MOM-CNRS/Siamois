@@ -2,6 +2,7 @@ package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -100,6 +101,19 @@ public final class SystemFieldCatalog {
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException(
                         "No system field bound to '" + valueBinding + "' on the details form of " + table));
+    }
+
+    /**
+     * Whether a field is the project the entity belongs to (a recording unit's, find's, phase's or
+     * container's {@code actionUnit}). It is an attribute set once at creation, not a configurable
+     * field: it is never offered in a project's field configuration, never editable afterwards, and
+     * lists show it through their own "Projet" column rather than as a field column.
+     *
+     * @param field the field to test
+     * @return true for the owning-project field
+     */
+    public static boolean isOwningProject(CustomField field) {
+        return field instanceof CustomFieldSelectOneActionUnit && "actionUnit".equals(field.getValueBinding());
     }
 
     /**

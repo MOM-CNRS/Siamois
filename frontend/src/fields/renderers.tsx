@@ -1,17 +1,18 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { InputNumber } from "primereact/inputnumber";
 import { Calendar } from "primereact/calendar";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import { Button } from "primereact/button";
-import { CreateEntityDialog } from "../components/CreateEntityDialog";
+import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import { useOpenEntity } from "../panels/entityNavigation";
 import { getEntityType } from "../entities/registry";
 import type { CreatePrefill } from "../entities/types";
 import type { FieldRendererProps } from "./registry";
 import type { FieldEditContext } from "./editContext";
 import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
+import { refColor } from "./display";
 import {
   entityRowLabel,
   optionSourceFor,
@@ -157,7 +158,8 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 // (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
 function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
-  const [creating, setCreating] = useState(false);
+  // Where the « Nouveau » form is open (the picker itself), or null.
+  const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const orgId = organizationId ?? context?.organizationId;
   const loadOptions = orgId != null ? optionSourceFor(field, orgId, context?.projectId) : null;
   const autoCompleteRef = useRef<AutoComplete>(null);
@@ -205,7 +207,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   // is added to a multi-valued answer, it replaces a single one.
   const createConfig = !readOnly ? creatableConfig(target, context) : undefined;
   async function onCreated(id: string | number) {
-    setCreating(false);
+    setCreateAnchor(null);
     let label = String(id);
     try {
       label = entityRowLabel(await createConfig!.api.get(id));
@@ -229,7 +231,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
             label={`Nouveau : ${createConfig.labels.singular.toLowerCase()}`}
             onClick={() => {
               hide();
-              setCreating(true);
+              setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
             }}
           />
         </div>
@@ -268,6 +270,9 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     <>
       <AutoComplete
         ref={autoCompleteRef}
+        // Picked tokens take their type's colour, the same as the read-only chips (fields/display.tsx).
+        className="resource-ref-picker"
+        style={{ "--ref-chip-color": refColor(target.resourceType) } as CSSProperties}
         value={selected}
         suggestions={suggestions}
         completeMethod={search}
@@ -286,20 +291,17 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         onChange={(e) => commit(e.value as FilterOption[] | FilterOption | null)}
       />
       {createConfig && (
-        // The dialog is portalled out of the edit overlay's DOM box but not out of its React tree:
-        // keys typed in it would bubble to the overlay's own Escape/Enter handling (cancelling the
-        // whole edit) without this boundary.
-        <div onKeyDown={(e) => e.stopPropagation()} style={{ display: "contents" }}>
-          <CreateEntityDialog
-            entityType={target.createEntityType!}
-            visible={creating}
-            organizationId={orgId}
-            scope={context?.projectId ? { entityType: "project", id: context.projectId } : undefined}
-            prefill={createPrefill(target, context)}
-            onCreated={(id) => void onCreated(id)}
-            onHide={() => setCreating(false)}
-          />
-        </div>
+        // Opens next to the picker, in an overlay that stops key events from reaching the edit
+        // overlay's own Escape/Enter handling (see CreateEntityOverlay).
+        <CreateEntityOverlay
+          entityType={target.createEntityType!}
+          anchor={createAnchor}
+          organizationId={orgId}
+          scope={context?.projectId ? { entityType: "project", id: context.projectId } : undefined}
+          prefill={createPrefill(target, context)}
+          onCreated={(id) => void onCreated(id)}
+          onHide={() => setCreateAnchor(null)}
+        />
       )}
     </>
   );

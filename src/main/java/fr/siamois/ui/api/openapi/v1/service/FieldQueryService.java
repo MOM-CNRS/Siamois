@@ -20,6 +20,7 @@ import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAns
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.dto.FieldQuery;
@@ -140,9 +141,38 @@ public class FieldQueryService {
         return new FieldResource.Query(true, filterable ? target.kind.filterOp : null);
     }
 
+    /**
+     * The catalog entry of {@code field} for {@code entityType}: how a list can sort and filter its
+     * column, and whether it can be edited at all — a list has no layout to read that from, unlike
+     * the fiche.
+     */
     public FieldResource withQuery(FieldResource resource, Class<?> entityType, CustomField field) {
-        return resource.withQuery(capabilityOf(entityType, field));
+        FieldResource withCapability = resource.withQuery(capabilityOf(entityType, field));
+        return isReadOnly(entityType, field) ? withCapability.withReadOnly(true) : withCapability;
     }
+
+    /**
+     * Whether {@code field} is read-only on {@code entityType}: a column its details form marks
+     * readOnly (the project a recording unit, find, phase or container belongs to, a full
+     * identifier…) — the same flag the fiche honours, so a list cell can't edit what the fiche can't.
+     */
+    static boolean isReadOnly(Class<?> entityType, CustomField field) {
+        if (field == null || field.getId() == null) return false;
+        FormUiDto form = DETAILS_FORMS.get(entityType);
+        if (form == null || form.getLayout() == null) return false;
+        return form.getLayout().stream()
+                .flatMap(panel -> panel.getRows().stream())
+                .flatMap(row -> row.getColumns().stream())
+                .anyMatch(column -> column.isReadOnly() && column.getField() != null
+                        && field.getId().equals(column.getField().getId()));
+    }
+
+    private static final Map<Class<?>, FormUiDto> DETAILS_FORMS = Map.of(
+            ActionUnit.class, ActionUnit.DETAILS_FORM,
+            RecordingUnit.class, RecordingUnit.DETAILS_FORM,
+            Specimen.class, Specimen.DETAILS_FORM,
+            Phase.class, Phase.DETAILS_FORM,
+            Container.class, Container.DETAILS_FORM);
 
     // ========== Query ==========
 

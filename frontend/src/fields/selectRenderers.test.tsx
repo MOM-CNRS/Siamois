@@ -319,6 +319,18 @@ describe("« Nouveau » footer", () => {
     expect(newButton()?.textContent).toContain("Nouveau : phase");
   });
 
+  it("opens the creation form in an overlay next to the picker, not in a modal", async () => {
+    await openPicker({ organizationId: 100, projectId: "5", entityType: "recordingUnit", entityId: 4 });
+
+    await act(async () => {
+      newButton()!.click();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(document.body.querySelector(".p-overlaypanel .fake-phase-form")).toBeTruthy();
+    expect(document.body.querySelector(".p-dialog")).toBeNull();
+  });
+
   it("offers nothing when the edited entity has no project to create it in", async () => {
     await openPicker({ organizationId: 100 });
 

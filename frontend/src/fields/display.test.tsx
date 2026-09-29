@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { renderAnswerCell, renderAnswerValue } from "./display";
+import { entityChipStyle, entityColor, renderAnswerCell, renderAnswerValue } from "./display";
 import type { FieldResource } from "./types";
 
 function field(overrides: Partial<FieldResource> = {}): FieldResource {
@@ -43,14 +43,23 @@ describe("renderAnswerCell (one-line cell)", () => {
     expect(html).toContain('title="Néolithique, Âge du Fer"');
   });
 
-  it("renders a single-valued array as the bare label, with no counter", () => {
+  it("renders a single-valued array as one chip, with no counter", () => {
     const html = markup(renderAnswerCell(field(), [ref("1", "Néolithique")]));
-    expect(html).toBe("Néolithique");
+    expect(html).toContain(">Néolithique</span>");
+    expect(html).not.toContain("cell-multi-more");
   });
 
   it("ignores empty labels when counting", () => {
     const html = markup(renderAnswerCell(field(), [ref("1", "Néolithique"), null, undefined]));
-    expect(html).toBe("Néolithique");
+    expect(html).toContain(">Néolithique</span>");
+    expect(html).not.toContain("cell-multi-more");
+  });
+
+  it("shows every value when asked to (a fiche field, which wraps)", () => {
+    const html = markup(renderAnswerCell(field(), [ref("1", "Néolithique"), ref("2", "Âge du Fer")], { all: true }));
+    expect(html).toContain(">Néolithique</span>");
+    expect(html).toContain(">Âge du Fer</span>");
+    expect(html).not.toContain("cell-multi-more");
   });
 
   it("renders an empty array and a null answer as nothing", () => {
@@ -67,5 +76,49 @@ describe("renderAnswerCell (one-line cell)", () => {
       renderAnswerCell(field(), { answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE", values: [ref("1", "A"), ref("2", "B")] }),
     );
     expect(html).toContain("+1");
+  });
+});
+
+// A reference reads as a light chip in its type's colour — the edit-mode token without its remove
+// button — and opens its fiche in the overview when it has one.
+describe("reference chips", () => {
+  it("colours a chip by what it points at", () => {
+    const ru = markup(renderAnswerCell(field({ answerType: "SELECT_MULTIPLE_RECORDING_UNIT" }), [
+      { resourceId: "4", resourceType: "recording-units", label: "US-4" },
+    ]));
+    expect(ru).toContain('class="ref-chip"');
+    expect(ru).toContain("--ground-main-color");
+
+    const concept = markup(renderAnswerCell(field(), [ref("1", "Néolithique")]));
+    expect(concept).toContain("--siamois-green");
+  });
+
+  it("accepts a flat resolved resource (ProjectResource.type / mainLocation)", () => {
+    const html = markup(renderAnswerCell(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }), { id: 9, resourceType: "spatial-units", name: "Bibracte" }));
+    expect(html).toContain(">Bibracte</span>");
+    expect(html).toContain("--context-main-color");
+  });
+
+  it("is plain text only for a scalar", () => {
+    expect(markup(renderAnswerCell(field({ answerType: "TEXT" }), "OA-2024"))).not.toContain("ref-chip");
+  });
+});
+
+// An entity chip takes its entity's colour, never the colour of the panel it sits in (a recording
+// unit listed in a project's tab is still red).
+describe("entity colours", () => {
+  it("maps each entity type to the theme's colour for it", () => {
+    expect(entityColor("recordingUnit")).toContain("--ground-main-color");
+    expect(entityColor("find")).toContain("--ground-main-color");
+    expect(entityColor("phase")).toContain("--ground-main-color");
+    expect(entityColor("project")).toContain("--context-main-color");
+    expect(entityColor("place")).toContain("--context-main-color");
+    expect(entityColor("container")).toContain("--third-main-color");
+  });
+
+  it("gives a chip its colour through --entity-chip-color, and nothing for an unknown type", () => {
+    expect(entityChipStyle("recordingUnit")).toEqual({ "--entity-chip-color": entityColor("recordingUnit") });
+    expect(entityChipStyle("unknown")).toBeUndefined();
+    expect(entityChipStyle(undefined)).toBeUndefined();
   });
 });

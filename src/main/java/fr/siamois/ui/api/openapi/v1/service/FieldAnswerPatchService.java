@@ -138,6 +138,12 @@ public class FieldAnswerPatchService {
             CustomFieldAnswerViewModel viewModel;
             try {
                 field = requireField(fieldSource, entry.getKey());
+                // A column the form marks readOnly — the project the entity belongs to, a generated
+                // identifier — is never written: moving a recording unit to another project is not
+                // an edit.
+                if (isReadOnlyIn(effectiveForm, field)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
+                }
                 viewModel = viewModelOf(response, field);
                 if (viewModel == null) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
@@ -193,6 +199,17 @@ public class FieldAnswerPatchService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ absent du formulaire de l'entité : " + key);
         }
         return field;
+    }
+
+    /** Whether {@code form} lays {@code field} out in a readOnly column. */
+    static boolean isReadOnlyIn(FormUiDto form, CustomField field) {
+        if (form == null || form.getLayout() == null || field == null || field.getId() == null) return false;
+        return form.getLayout().stream()
+                .filter(Objects::nonNull)
+                .flatMap(panel -> panel.getRows() == null ? java.util.stream.Stream.empty() : panel.getRows().stream())
+                .flatMap(row -> row.getColumns() == null ? java.util.stream.Stream.empty() : row.getColumns().stream())
+                .anyMatch(column -> column.isReadOnly() && column.getField() != null
+                        && Objects.equals(column.getField().getId(), field.getId()));
     }
 
     private static CustomFieldAnswerViewModel viewModelOf(CustomFormResponseViewModel response, CustomField field) {

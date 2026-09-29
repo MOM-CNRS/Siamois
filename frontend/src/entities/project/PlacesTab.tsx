@@ -3,6 +3,7 @@ import { Column } from "primereact/column";
 import { Chip } from "primereact/chip";
 import type { DetailTabHelpers } from "../types";
 import type { PlaceLight, ProjectDetail } from "./types";
+import { entityChipStyle } from "../../fields/display";
 
 // Migration plan Lot 4 ("Lieux") decision: unlike the other relation tabs on this fiche
 // (recording-units/containers/phases/finds, all built with panels/relationTab.tsx's generic
@@ -47,6 +48,7 @@ export function PlacesTab({ entity, helpers }: PlacesTabProps) {
           body={(row: PlaceRow) => (
             <span
               className="entity-list-panel-identifier-link entity-nav-chip"
+              style={entityChipStyle("place")}
               role="button"
               tabIndex={0}
               onClick={() => openPlace(row.id)}

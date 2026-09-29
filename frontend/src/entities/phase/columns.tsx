@@ -1,4 +1,3 @@
-import { projectColumn } from "../projectColumn";
 import type { ColumnDef } from "../types";
 import type { PhaseSummary } from "./types";
 
@@ -14,7 +13,6 @@ export const phaseColumns: ColumnDef<PhaseSummary>[] = [
     identifier: true,
     render: (row) => row.label || row.identifier || "",
   },
-  projectColumn<PhaseSummary>(),
   {
     key: "type",
     header: "Type",

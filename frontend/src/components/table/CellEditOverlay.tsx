@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { ZIndexUtils } from "primereact/utils";
 import { commitsImmediately, sameValue, staysOpenAfterSave } from "../../fields/commit";
 import { editContextOf } from "../../fields/editContext";
 import { isEmptyValue } from "../../fields/FieldLabel";
@@ -54,9 +55,9 @@ export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
 // Matches p-connected-overlay-enter / -enter-active / -enter-done / -exit…: the CSSTransition
 // class names every PrimeReact connected popup (AutoComplete, Calendar, Dropdown, MultiSelect, …)
 // puts on its portalled root.
-// A reference picker's « Nouveau » opens a PrimeReact Dialog (its mask is portalled too): the
-// creation happens inside the edit, not after it.
-const PRIMEREACT_POPUP_SELECTOR = '[class*="p-connected-overlay"], .p-dialog-mask';
+// A reference picker's « Nouveau » opens the creation form in a PrimeReact OverlayPanel (portalled
+// too): the creation happens inside the edit, not after it.
+const PRIMEREACT_POPUP_SELECTOR = '[class*="p-connected-overlay"], .p-overlaypanel, .p-dialog-mask';
 
 export function CellEditOverlay<TRow extends { id?: string | number }>({
   target,
@@ -156,6 +157,18 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       control.select();
     }
   }, [target]);
+
+  // Joins PrimeReact's own z-index stack (at 1200 or above, as its CSS used to fix it) rather than
+  // sitting at a fixed value: every popup opened from inside the edit afterwards — the picker's
+  // suggestions, a « Nouveau » creation overlay and that form's own dropdowns — then stacks above
+  // it, in the order it was opened.
+  const hasTarget = target != null;
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!hasTarget || !box) return;
+    ZIndexUtils.set("overlay", box, true, 1200);
+    return () => ZIndexUtils.clear(box);
+  }, [hasTarget]);
 
   // Focus leaving the overlay (a click elsewhere, Tab) is what "the edit is finished" means for a
   // text/number widget. Mousedown rather than click: a click on another cell would otherwise open

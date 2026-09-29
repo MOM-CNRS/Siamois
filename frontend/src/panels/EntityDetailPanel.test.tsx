@@ -624,3 +624,41 @@ describe("EntityDetailPanel loading state", () => {
     expect(container.querySelector(".entity-detail-panel-preview-header .p-skeleton")).toBeTruthy();
   });
 });
+
+// The titlebar's "Créer" opens the entity's create form in an overlay next to the button — no modal.
+describe("EntityDetailPanel titlebar creation", () => {
+  registerEntityType({
+    ...fakeConfig,
+    key: "fake-detail-entity-creatable",
+    list: { ...fakeConfig.list, createForm: () => <div className="fake-create-form" /> },
+  });
+
+  it("opens the create form in an overlay anchored on the clicked button", async () => {
+    getMock.mockResolvedValue({ id: "1", name: "First", _permissions: { canEdit: true } } as FakeEntity);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityDetailPanel
+              entityType="fake-detail-entity-creatable"
+              entityId="1"
+              toolbar={{ chrome: { resourceUri: "/fake/1", title: "First", bookmarked: false }, organizationId: 7 }}
+            />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const createButton = container.querySelector('button[aria-label="Créer"]') as HTMLButtonElement;
+    expect(createButton).toBeTruthy();
+    await act(async () => {
+      createButton.click();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(document.body.querySelector(".p-overlaypanel .fake-create-form")).toBeTruthy();
+    expect(document.body.querySelector(".p-dialog")).toBeNull();
+  });
+});

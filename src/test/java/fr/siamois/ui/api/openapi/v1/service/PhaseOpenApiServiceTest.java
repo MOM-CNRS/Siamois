@@ -251,6 +251,9 @@ class PhaseOpenApiServiceTest {
         assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
         assertThat(captor.getValue().getType()).isEqualTo(typeDto);
         assertThat(captor.getValue().getTitle()).isEqualTo("Phase 1");
+        // TraceableEntity's NOT NULL author and organization: the caller, in the project's organization.
+        assertThat(captor.getValue().getCreatedBy()).isSameAs(personDto);
+        assertThat(captor.getValue().getCreatedByInstitution()).isSameAs(institution);
         assertThat(result.getId()).isEqualTo("5");
     }
 

@@ -176,6 +176,34 @@ class FieldAnswerPatchServiceTest {
         verify(formService, never()).applyTypedValueToAnswer(any(), any());
     }
 
+    // A readOnly column (the project a recording unit belongs to, a generated identifier) is never
+    // written: moving an entity to another project is not an edit.
+    @Test
+    void apply_rejectsAFieldTheFormMarksReadOnly_whileApplyLenientSkipsIt() {
+        CustomFieldText project = text(305L, true);
+        CustomFieldText title = text(1L, false);
+        givenResponse(Map.of(project, new CustomFieldAnswerTextViewModel(), title, new CustomFieldAnswerTextViewModel()));
+        FormUiDto form = form(project, title);
+        form.getLayout().get(0).getRows().get(0).getColumns().get(0).setReadOnly(true);
+        Map<String, AnswerInput> answers = Map.of("305", new AnswerInput("x", null), "1", new AnswerInput("ok", null));
+
+        assertThatThrownBy(() -> service.apply(entity, form, answers, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Champ non modifiable");
+
+        Map<CustomField, CustomFieldAnswerViewModel> lenient = service.applyLenient(entity, form, answers, PROJECT_ID);
+        assertThat(lenient).containsOnlyKeys(title);
+    }
+
+    @Test
+    void isReadOnlyIn_readsTheRealDetailsForms() {
+        CustomField project = fr.siamois.ui.table.definitions.SystemFieldCatalog.fieldBoundTo(
+                fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.UE, "actionUnit");
+
+        assertThat(FieldAnswerPatchService.isReadOnlyIn(fr.siamois.domain.models.recordingunit.RecordingUnit.DETAILS_FORM, project)).isTrue();
+        assertThat(FieldAnswerPatchService.isReadOnlyIn(form(project), project)).isFalse();
+    }
+
     // ========== Helpers ==========
 
     private CustomFormResponseViewModel givenResponse(Map<CustomField, CustomFieldAnswerViewModel> answers) {

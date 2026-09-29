@@ -4,7 +4,7 @@ import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
 import type { MenuItem } from "primereact/menuitem";
 import { createBookmark, deleteBookmark } from "../api/bookmarks";
-import { CreateEntityDialog } from "../components/CreateEntityDialog";
+import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext } from "../entities/types";
 import { loadListPrefs, reconcileActionBar, saveListPrefs, type ActionBarPrefs } from "./listPreferences";
 import { useBridge } from "./bridge";
@@ -20,6 +20,8 @@ interface PendingCreate {
   entityType: string;
   scope?: ListScope;
   prefill?: CreatePrefill;
+  // Where its form opens (the clicked action button).
+  anchor: HTMLElement | null;
 }
 
 export interface UseRowActionsOptions {
@@ -61,7 +63,7 @@ const DUPLICATE_KEY = "duplicate";
  * in a "…" menu.
  *
  * Returns the cell renderer and what the row actions share, rendered once by the list rather
- * than per row: the create dialog and the "…" menu.
+ * than per row: the create overlay and the "…" menu.
  */
 export function useRowActions({ entityType, config, organizationId, writeMode, onOpen, prefsKey }: UseRowActionsOptions): {
   render: (row: Row) => ReactNode;
@@ -77,6 +79,9 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   const [pendingCreate, setPendingCreate] = useState<PendingCreate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const menuRef = useRef<Menu>(null);
+  // What the last action was started from — the row's button, or its "…" button for an action
+  // picked in the menu — so a creation opens its form in an overlay right there.
+  const actionAnchorRef = useRef<HTMLElement | null>(null);
   const [menuRow, setMenuRow] = useState<Row | null>(null);
 
   function refreshAfterChange() {
@@ -114,7 +119,8 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   });
 
   const ctx: RowActionContext = {
-    openCreate: (targetType, options) => setPendingCreate({ entityType: targetType, ...options }),
+    openCreate: (targetType, options) =>
+      setPendingCreate({ entityType: targetType, ...options, anchor: actionAnchorRef.current }),
   };
 
   function isPending(mutation: { isPending: boolean; variables?: Row }, row: Row): boolean {
@@ -164,6 +170,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
 
   function openMenu(e: SyntheticEvent, row: Row) {
     e.stopPropagation();
+    actionAnchorRef.current = e.currentTarget as HTMLElement;
     setMenuRow(row);
     menuRef.current?.toggle(e);
   }
@@ -204,6 +211,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
               disabled={action.pending(row)}
               onClick={(e) => {
                 e.stopPropagation();
+                actionAnchorRef.current = e.currentTarget;
                 action.run(row);
               }}
             />
@@ -239,9 +247,9 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     : [];
 
   const dialog = (
-    <CreateEntityDialog
+    <CreateEntityOverlay
       entityType={pendingCreate?.entityType ?? entityType}
-      visible={pendingCreate != null}
+      anchor={pendingCreate?.anchor ?? null}
       organizationId={organizationId}
       scope={pendingCreate?.scope}
       prefill={pendingCreate?.prefill}

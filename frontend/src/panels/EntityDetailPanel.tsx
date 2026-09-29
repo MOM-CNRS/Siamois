@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState, type SyntheticEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BreadCrumb } from "primereact/breadcrumb";
 import { Panel } from "primereact/panel";
@@ -8,7 +8,7 @@ import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { SiblingNav } from "../components/SiblingNav";
-import { CreateEntityDialog } from "../components/CreateEntityDialog";
+import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
 import { useBridge } from "./bridge";
 import { useCanEdit, useWriteMode } from "./writeMode";
@@ -143,7 +143,15 @@ export function EntityDetailPanel({
     },
     [config, entityType, organizationId, queryClient],
   );
-  const [createOpen, setCreateOpen] = useState(false);
+  // Where the creation overlay opens (null = closed): the clicked "Créer" button, or the panel's
+  // own toolbar when it was picked from the "…" menu, which is gone by the time the overlay opens.
+  const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
+  const panelRef = useRef<Panel>(null);
+  function openCreate(event?: SyntheticEvent) {
+    const clicked = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    const toolbarEl = panelRef.current?.getElement()?.querySelector<HTMLElement>(".panel-toolbar") ?? null;
+    setCreateAnchor(clicked && clicked.isConnected && !clicked.closest(".p-menu") ? clicked : toolbarEl);
+  }
   const duplicateMutation = useMutation({
     mutationFn: () => config!.api.duplicate!(entityId),
     onSuccess: (copy) => {
@@ -181,7 +189,11 @@ export function EntityDetailPanel({
               <span className="entity-detail-panel-preview-header">
                 <Skeleton shape="circle" size="2rem" />
                 {preview ? (
-                  <span className="p-chip p-component entity-nav-chip entity-detail-panel-preview-chip">
+                  // The header's own identifier chip class (<entity>-chip-alt, filled in the
+                  // entity's colour by the theme), so nothing changes colour when the entity loads.
+                  <span
+                    className={`p-chip p-component entity-nav-chip entity-detail-panel-preview-chip ${config.panelClass ? config.panelClass.replace(/-panel$/, "-chip-alt") : ""}`}
+                  >
                     <i className={`p-chip-icon ${config.icon}`} aria-hidden="true" />
                     <span className="p-chip-text">{preview.label}</span>
                   </span>
@@ -218,7 +230,7 @@ export function EntityDetailPanel({
   // Every entity resource carries its TraceableEntity status and the validator right.
   const validation = data as { validated?: string | null; _permissions?: { canValidate?: boolean } };
   const entityActions: PanelActions = {
-    create: canEdit && config.list.createForm ? () => setCreateOpen(true) : undefined,
+    create: canEdit && config.list.createForm ? openCreate : undefined,
     duplicate:
       canEdit && config.api.duplicate && !duplicateMutation.isPending ? () => duplicateMutation.mutate() : undefined,
     settings:
@@ -234,6 +246,7 @@ export function EntityDetailPanel({
 
   return (
     <Panel
+      ref={panelRef}
       className="entity-detail-panel"
       header={
         <PanelHeaderBar
@@ -282,14 +295,14 @@ export function EntityDetailPanel({
           },
         ]}
       />
-      <CreateEntityDialog
+      <CreateEntityOverlay
         entityType={entityType}
-        visible={createOpen}
+        anchor={createAnchor}
         organizationId={organizationId}
         scope={config.detail.createScope?.(data)}
-        onHide={() => setCreateOpen(false)}
+        onHide={() => setCreateAnchor(null)}
         onCreated={(id) => {
-          setCreateOpen(false);
+          setCreateAnchor(null);
           void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
           // Same destination as the list toolbar's create: the overview, so the current view stays
           // in place (the full fiche is one click away, the overview's focus button).

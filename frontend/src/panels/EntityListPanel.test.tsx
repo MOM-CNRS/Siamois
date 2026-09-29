@@ -1565,3 +1565,74 @@ describe("EntityListPanel linked columns", () => {
     expect(chips).not.toContain("Parent undefined");
   });
 });
+
+// A read-only field (the row's project, a generated identifier) is shown but never edited, and the
+// project column is shown by default only where rows come from several projects.
+describe("EntityListPanel read-only and project columns", () => {
+  const projectField = {
+    id: "-305",
+    resourceType: "fields",
+    label: "Projet",
+    answerType: "SELECT_ONE_ACTION_UNIT",
+    isSystemField: true,
+    valueBinding: "actionUnit",
+    readOnly: true,
+  };
+
+  beforeEach(() => {
+    try {
+      window.localStorage.clear();
+    } catch {
+      // no storage: nothing saved to clear
+    }
+    schemaListMock.mockReset();
+    schemaLoadMock.mockReset();
+    schemaLoadMock.mockResolvedValue({
+      fields: { "-305": projectField },
+      columns: [{ fieldId: "-305", visible: false, order: 0 }],
+    });
+    schemaListMock.mockResolvedValue({
+      data: [
+        {
+          id: "1",
+          name: "Row A",
+          answers: { "-305": { resourceId: "7", resourceType: "action-units", label: "OA-7" } },
+          _permissions: { canEdit: true },
+        },
+      ],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+  });
+
+  function render(scope?: { entityType: string; id: string | number }) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel entityType="fake-schema-entity" scope={scope} />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  it("shows the project on an organization-wide list, as a cell that can't be edited", async () => {
+    render();
+    await flush();
+    await flush();
+
+    expect(container.textContent).toContain("OA-7");
+    expect(container.querySelector(".entity-list-panel-editable-cell")).toBeNull();
+  });
+
+  it("hides the project by default inside a project's own tab", async () => {
+    render({ entityType: "project", id: "7" });
+    await flush();
+    await flush();
+
+    expect(container.textContent).not.toContain("OA-7");
+  });
+});

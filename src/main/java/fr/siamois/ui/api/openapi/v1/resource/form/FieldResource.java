@@ -46,15 +46,27 @@ public record FieldResource(
 
         @Schema(description = "Tri et filtre de la colonne de liste du champ (clé = id du champ) ; "
                 + "null si la colonne n'est ni triable ni filtrable")
-        @Nullable Query query
+        @Nullable Query query,
+
+        @Schema(description = "Vrai si le champ n'est jamais modifiable, ni dans la fiche ni dans une liste "
+                + "(colonne readOnly du formulaire de détail, ex. le projet d'une UE) ; null = modifiable")
+        @Nullable Boolean readOnly
 ) {
+
+    /** The pre-read-only shape. */
+    public FieldResource(String id, String resourceType, String label, String answerType, String hint,
+                         Boolean isSystemField, String valueBinding, String fieldCode, Boolean isTextArea,
+                         String icon, String conceptUri, Constraints constraints, Query query) {
+        this(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode, isTextArea,
+                icon, conceptUri, constraints, query, null);
+    }
 
     /** The pre-constraints shape, for callers that have none to give. */
     public FieldResource(String id, String resourceType, String label, String answerType, String hint,
                          Boolean isSystemField, String valueBinding, String fieldCode, Boolean isTextArea,
                          String icon, String conceptUri) {
         this(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode, isTextArea,
-                icon, conceptUri, null, null);
+                icon, conceptUri, null, null, null);
     }
 
     /** The pre-query shape. */
@@ -62,12 +74,17 @@ public record FieldResource(
                          Boolean isSystemField, String valueBinding, String fieldCode, Boolean isTextArea,
                          String icon, String conceptUri, Constraints constraints) {
         this(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode, isTextArea,
-                icon, conceptUri, constraints, null);
+                icon, conceptUri, constraints, null, null);
     }
 
     public FieldResource withQuery(@Nullable Query query) {
         return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
-                isTextArea, icon, conceptUri, constraints, query);
+                isTextArea, icon, conceptUri, constraints, query, readOnly);
+    }
+
+    public FieldResource withReadOnly(@Nullable Boolean readOnly) {
+        return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
+                isTextArea, icon, conceptUri, constraints, query, readOnly);
     }
 
     @Schema(description = "Contraintes de saisie d'un champ")
