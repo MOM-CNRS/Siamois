@@ -5,6 +5,9 @@ import type { ListScope } from "../entities/types";
 // organization-wide list and a relation tab of the same type are arranged independently, since
 // the tab already drops columns (ColumnDef.unscopedOnly) and usually wants fewer.
 //
+// Keyed by organization too: additional field ids belong to one institution, and two organizations
+// (or two people sharing a browser and switching organization) must not overwrite each other's layout.
+//
 // Browser-local on purpose: a saved view (tableState.ts's `POST /ui-views`) is the server-side
 // follow-up; this only has to survive a reload.
 
@@ -21,8 +24,8 @@ export interface ListPrefs {
   actionBar?: ActionBarPrefs;
 }
 
-export function listPrefsKey(entityType: string, scope?: ListScope): string {
-  return `siamois.list.${entityType}.${scope ? `${scope.entityType}-tab` : "global"}`;
+export function listPrefsKey(entityType: string, scope?: ListScope, organizationId?: number): string {
+  return `siamois.list.org${organizationId ?? "-"}.${entityType}.${scope ? `${scope.entityType}-tab` : "global"}`;
 }
 
 function isStringArray(value: unknown): value is string[] {

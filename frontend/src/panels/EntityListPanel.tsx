@@ -123,7 +123,7 @@ export function EntityListPanel({
 }: EntityListPanelProps) {
   const config = getEntityType(entityType);
   // Where this list's column and action-bar arrangement is remembered (listPreferences.ts).
-  const prefsKey = listPrefsKey(entityType, scope);
+  const prefsKey = listPrefsKey(entityType, scope, organizationId);
   const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns, columnsSeeded } = useTableState({
     defaultSort: config?.list.defaultSort,
     prefsKey,

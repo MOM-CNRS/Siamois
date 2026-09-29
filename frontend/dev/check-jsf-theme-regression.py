@@ -60,18 +60,23 @@ def parse(text):
 
 old = parse(open(sys.argv[1]).read())
 new = parse(open(sys.argv[2]).read())
-index = defaultdict(list)
-for ctx, sels, decls in new:
-    index[(ctx, decls)].append(set(sels))
-used = set()
-missing, bad_added = [], []
+# Rules that share their declarations are compared as a group: several rules can carry the very same
+# declarations (button hover variants), so pairing each old rule with "the first new rule that covers
+# it" would blame selectors that belong to a sibling rule. Per (context, declarations): every old
+# selector must survive in NEW, and every selector NEW adds must mention a .p- class.
+old_sels, new_sels = defaultdict(set), defaultdict(set)
 for ctx, sels, decls in old:
-    cands = index.get((ctx, decls), [])
-    hit = next((c for c in cands if set(sels) <= c), None)
-    if hit is None:
-        missing.append((ctx, sels[:3], decls[:3])); continue
-    for extra in hit - set(sels):
-        if '.p-' not in extra and extra not in sels:
+    old_sels[(ctx, decls)].update(sels)
+for ctx, sels, decls in new:
+    new_sels[(ctx, decls)].update(sels)
+missing, bad_added = [], []
+for (ctx, decls), sels in old_sels.items():
+    lost = sels - new_sels.get((ctx, decls), set())
+    if lost:
+        missing.append((ctx, tuple(sorted(lost))[:3], decls[:3]))
+        continue
+    for extra in new_sels[(ctx, decls)] - sels:
+        if '.p-' not in extra:
             bad_added.append((ctx, extra))
 old_keys = {(ctx, decls) for ctx, _, decls in old}
 new_only_bad = []

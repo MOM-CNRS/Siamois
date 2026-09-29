@@ -5,8 +5,16 @@ beforeEach(() => window.localStorage.clear());
 
 describe("listPreferences", () => {
   it("keys a relation tab apart from the organization-wide list", () => {
-    expect(listPrefsKey("recordingUnit")).toBe("siamois.list.recordingUnit.global");
-    expect(listPrefsKey("recordingUnit", { entityType: "project", id: 5 })).toBe("siamois.list.recordingUnit.project-tab");
+    expect(listPrefsKey("recordingUnit")).toBe("siamois.list.org-.recordingUnit.global");
+    expect(listPrefsKey("recordingUnit", undefined, 3)).toBe("siamois.list.org3.recordingUnit.global");
+    expect(listPrefsKey("recordingUnit", { entityType: "project", id: 5 })).toBe("siamois.list.org-.recordingUnit.project-tab");
+  });
+
+  it("keeps two organizations' layouts apart", () => {
+    saveListPrefs(listPrefsKey("recordingUnit", undefined, 1), { visibleColumns: ["10"] });
+    saveListPrefs(listPrefsKey("recordingUnit", undefined, 2), { visibleColumns: ["20"] });
+    expect(loadListPrefs(listPrefsKey("recordingUnit", undefined, 1)).visibleColumns).toEqual(["10"]);
+    expect(loadListPrefs(listPrefsKey("recordingUnit", undefined, 2)).visibleColumns).toEqual(["20"]);
   });
 
   it("round-trips, merging each save into what's already stored", () => {

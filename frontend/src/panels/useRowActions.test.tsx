@@ -182,7 +182,7 @@ describe("list row actions", () => {
   it("puts actions taken out of the row into a \"…\" menu, keeping the bookmark inline", async () => {
     duplicateMock.mockResolvedValue({ id: "42" });
     window.localStorage.setItem(
-      "siamois.list.row-action-entity.global",
+      "siamois.list.org3.row-action-entity.global",
       JSON.stringify({ v: 1, actionBar: { order: ["new-child", "duplicate"], inline: ["new-child"] } }),
     );
     await render([row()]);
@@ -206,7 +206,7 @@ describe("list row actions", () => {
 
   it("follows the saved order and shows a newly added action inline", async () => {
     window.localStorage.setItem(
-      "siamois.list.row-action-entity.global",
+      "siamois.list.org3.row-action-entity.global",
       JSON.stringify({ v: 1, actionBar: { order: ["new-child", "gone"], inline: ["new-child", "gone"] } }),
     );
     await render([row()]);
@@ -237,7 +237,7 @@ describe("list row actions", () => {
 
     expect(actionButton("Dupliquer")).toBeNull();
     expect(actionButton("Plus d'actions")).not.toBeNull();
-    const saved = JSON.parse(window.localStorage.getItem("siamois.list.row-action-entity.global")!);
+    const saved = JSON.parse(window.localStorage.getItem("siamois.list.org3.row-action-entity.global")!);
     expect(saved.actionBar).toEqual({ order: ["new-child", "duplicate"], inline: ["new-child"] });
   });
 });

@@ -89,9 +89,9 @@ Points à trancher :
 - **Couleur « annulé »** (`--status-cancelled`, nouveau statut sans équivalent JSF) : à faire valider.
 - **Déplacement des jetons `--status-*`** dans `_variables.scss` : les règles JSF `status-button` y lisent aujourd'hui des couleurs en dur. Ce déplacement modifie leurs déclarations, et le script de non-régression le signalera (attendu).
 
-Outillage :
-- `frontend/dev/check-jsf-theme-regression.sh` signale 6 « added selectors without .p- » (`.ui-button-secondary:hover`…) même entre deux arbres identiques : c'est un faux positif de normalisation à corriger dans `check-jsf-theme-regression.py`.
-- `frontend/index.html` (harness racine de `npm run dev`) plante : il ne passe pas l'option `main` désormais obligatoire de `mount()`. Utiliser `dev/panels/panels.html`, ou mettre ce fichier à jour.
+Outillage (corrigé le 29/09/2026) :
+- `frontend/dev/check-jsf-theme-regression.py` comparait chaque ancienne règle à la première nouvelle règle qui la couvre : plusieurs règles ayant les mêmes déclarations (variantes `:hover` des boutons secondaires) produisaient 6 faux « added selectors without .p- » même entre deux arbres identiques. Il compare maintenant par groupe (contexte, déclarations). Il échoue toujours sur une déclaration modifiée, un sélecteur ajouté sans `.p-` ou une règle nouvelle non `.p-`.
+- `frontend/index.html` (harness racine de `npm run dev`) passe maintenant l'option `main`, désormais obligatoire pour `mount()`.
 
 ## 5. Nettoyage résiduel
 
@@ -115,4 +115,4 @@ SonarCloud signale `sessionFixation(fixation -> fixation.none())` sur `apiV1Secu
 
 **À faire :**
 - [ ] Passer l'alerte en « Safe » / « False positive » dans SonarCloud, avec cette justification : « Chaîne `/api/v1` stateless (JWT Bearer, `SessionCreationPolicy.STATELESS`) : aucune session n'est créée à l'authentification. La protection par défaut (`changeSessionId`) modifiait l'id de la session JSF du navigateur à chaque appel d'API, et les appels parallèles déconnectaient l'utilisateur. `none()` est voulu. » Autre possibilité : un `// NOSONAR` commenté en fin de ligne.
-- [ ] Optionnel : un test d'intégration qui vérifie qu'un appel `/api/v1` portant un cookie `JSESSIONID` ne renvoie pas de `Set-Cookie`. Il protège la correction si quelqu'un « corrige » l'alerte.
+- [x] Test `ApiV1SessionSafetyTest` (29/09/2026) : un appel `/api/v1` authentifié par JWT, avec une session HTTP existante, ne change pas son identifiant et ne renvoie pas de `Set-Cookie` ; sans session, il n'en crée pas. Vérifié par mutation : sans `sessionFixation(none())`, l'identifiant de session change et le test échoue.

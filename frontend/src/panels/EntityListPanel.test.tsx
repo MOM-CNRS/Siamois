@@ -672,7 +672,7 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
   it("restores a saved column arrangement, ignoring columns the catalog no longer has", async () => {
     schemaLoadMock.mockResolvedValue(twoFieldCatalog);
     window.localStorage.setItem(
-      "siamois.list.fake-schema-entity.global",
+      "siamois.list.org-.fake-schema-entity.global",
       JSON.stringify({ v: 1, visibleColumns: ["-119", "gone", "-118"] }),
     );
     renderSchemaPanel();
@@ -693,7 +693,7 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
     await openColumnChooser();
     await click(chooserSwitch("Commentaire", "hidden"));
 
-    const saved = JSON.parse(window.localStorage.getItem("siamois.list.fake-schema-entity.global")!);
+    const saved = JSON.parse(window.localStorage.getItem("siamois.list.org-.fake-schema-entity.global")!);
     expect(saved.visibleColumns).toEqual(["-118", "-119"]);
   });
 
