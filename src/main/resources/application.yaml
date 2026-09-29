@@ -62,6 +62,10 @@ spring:
         show_sql: false
         jdbc:
           batch_size: 50
+        # Lazy relations and eager references of a whole list page load in one IN (...) query per
+        # relation instead of one query per row: a page of finds cost ~217 index scans per row
+        # (recording units ~45) before this.
+        default_batch_fetch_size: 50
         order_inserts: true
         order_updates: true
         envers:

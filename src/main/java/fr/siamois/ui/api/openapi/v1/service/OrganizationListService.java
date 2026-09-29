@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Organization-wide lists ({@code GET /api/v1/recording-units|finds|phases|containers?organizationId=…})
@@ -189,35 +190,39 @@ public class OrganizationListService {
     }
 
     /**
-     * Write permission per project, one {@code hasProjectPermission} call per DISTINCT project of
-     * the page — never per row.
+     * Write permission per project of the page — never per row, and never one query per project: the
+     * instance/organisation-wide counterparts are checked once, then a single query lists the
+     * institution's projects granting it through a project profile
+     * ({@link ProfilePermissionService#actionUnitIdsGranting}). Valid because every project of an
+     * organisation-wide list belongs to {@code institution}.
      */
     public Map<Long, Boolean> canEditByProject(ProjectApiCaller caller, InstitutionDTO institution,
                                                Collection<ActionUnitSummaryDTO> projects,
                                                String lang, EditPermissions permissions) {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        Map<Long, Boolean> result = new HashMap<>();
-        projects.stream()
-                .filter(Objects::nonNull)
-                .map(ActionUnitSummaryDTO::getId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .forEach(projectId -> result.put(projectId, profilePermissionService.hasProjectPermission(
-                        userInfo, projectId, permissions.instance(), permissions.organization(), permissions.project())));
-        return result;
+        return grantedByProject(projects, profilePermissionService.actionUnitIdsGranting(
+                userInfo, permissions.instance(), permissions.organization(), permissions.project()));
     }
 
     /** Same shape as {@link #canEditByProject}, for the "validateur" right on each project's entities. */
     public Map<Long, Boolean> canValidateByProject(ProjectApiCaller caller, InstitutionDTO institution,
                                                    Collection<ActionUnitSummaryDTO> projects, String lang) {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return grantedByProject(projects, profilePermissionService.actionUnitIdsGranting(userInfo,
+                PermissionConstants.INSTANCE_VALIDATE,
+                PermissionConstants.ORGANIZATION_VALIDATE,
+                PermissionConstants.PROJECT_VALIDATE));
+    }
+
+    /** {@code granting} is {@code null} when the right covers every project (see actionUnitIdsGranting). */
+    private static Map<Long, Boolean> grantedByProject(Collection<ActionUnitSummaryDTO> projects, Set<Long> granting) {
         Map<Long, Boolean> result = new HashMap<>();
         projects.stream()
                 .filter(Objects::nonNull)
                 .map(ActionUnitSummaryDTO::getId)
                 .filter(Objects::nonNull)
                 .distinct()
-                .forEach(projectId -> result.put(projectId, profilePermissionService.hasValidatePermission(userInfo, projectId)));
+                .forEach(projectId -> result.put(projectId, granting == null || granting.contains(projectId)));
         return result;
     }
 

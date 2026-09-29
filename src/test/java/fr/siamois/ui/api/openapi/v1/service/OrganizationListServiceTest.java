@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
@@ -158,32 +159,44 @@ class OrganizationListServiceTest {
     }
 
     @Test
-    void canEditByProject_checksEachDistinctProjectOnce() {
+    void canEditByProject_asksOncePerPage_notOncePerProject() {
         ActionUnitSummaryDTO p7 = project(7L);
         ActionUnitSummaryDTO p8 = project(8L);
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
-        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(8L), any(), any(), any())).thenReturn(false);
+        when(profilePermissionService.actionUnitIdsGranting(any(UserInfo.class), any(), any(), any())).thenReturn(Set.of(7L));
 
         Map<Long, Boolean> result = service.canEditByProject(caller, institution,
                 Arrays.asList(p7, p8, p7, null, p7), "fr", EditPermissions.PHASES);
 
         assertThat(result).containsEntry(7L, true).containsEntry(8L, false).hasSize(2);
-        verify(profilePermissionService, times(2)).hasProjectPermission(any(UserInfo.class), anyLong(),
+        verify(profilePermissionService, times(1)).actionUnitIdsGranting(any(UserInfo.class),
                 eq(EditPermissions.PHASES.instance()), eq(EditPermissions.PHASES.organization()), eq(EditPermissions.PHASES.project()));
+        verify(profilePermissionService, never()).hasProjectPermission(any(UserInfo.class), anyLong(), any(), any(), any());
     }
 
     @Test
-    void canValidateByProject_checksEachDistinctProjectOnce() {
+    void canEditByProject_grantsEveryProjectWhenTheRightCoversTheOrganization() {
+        when(profilePermissionService.actionUnitIdsGranting(any(UserInfo.class), any(), any(), any())).thenReturn(null);
+
+        Map<Long, Boolean> result = service.canEditByProject(caller, institution,
+                List.of(project(7L), project(8L)), "fr", EditPermissions.FINDS);
+
+        assertThat(result).containsEntry(7L, true).containsEntry(8L, true).hasSize(2);
+    }
+
+    @Test
+    void canValidateByProject_asksOncePerPage_withTheValidateCodes() {
         ActionUnitSummaryDTO p7 = project(7L);
         ActionUnitSummaryDTO p8 = project(8L);
-        when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(true);
-        when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(8L))).thenReturn(false);
+        when(profilePermissionService.actionUnitIdsGranting(any(UserInfo.class), any(), any(), any())).thenReturn(Set.of(8L));
 
         Map<Long, Boolean> result = service.canValidateByProject(caller, institution,
                 Arrays.asList(p7, p8, p7, null, p7), "fr");
 
-        assertThat(result).containsEntry(7L, true).containsEntry(8L, false).hasSize(2);
-        verify(profilePermissionService, times(2)).hasValidatePermission(any(UserInfo.class), anyLong());
+        assertThat(result).containsEntry(7L, false).containsEntry(8L, true).hasSize(2);
+        verify(profilePermissionService, times(1)).actionUnitIdsGranting(any(UserInfo.class),
+                eq(PermissionConstants.INSTANCE_VALIDATE), eq(PermissionConstants.ORGANIZATION_VALIDATE),
+                eq(PermissionConstants.PROJECT_VALIDATE));
+        verify(profilePermissionService, never()).hasValidatePermission(any(UserInfo.class), anyLong());
     }
 
     @Test

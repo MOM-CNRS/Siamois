@@ -48,12 +48,15 @@ Restent ouverts : colonnes UE/Catégorie/Contient sans icône de tri dans la lis
 
 ## 2. Performance
 
-| Sujet | Où | Proposition |
-|---|---|---|
-| Droits par projet dans les listes organisation | `OrganizationListService.canEditByProject` et `canValidateByProject` | Ces méthodes font une vérification par projet distinct de la page, soit jusqu'à 4 requêtes chacune. Il faut passer à `ProfilePermissionService.actionUnitIdsGranting(user, INSTANCE_X, ORGANIZATION_X, PROJECT_X)`, qui renvoie `null` quand le droit couvre toute l'organisation, sinon l'ensemble des projets. Cela fait 3 ou 4 requêtes au total, quel que soit le nombre de projets. Ce n'est valable que si tous les projets de la page appartiennent à l'institution, ce qui est le cas pour une liste organisation. |
-| Tri et filtre sur champ additionnel | `FieldQueryService` (sous-requêtes corrélées sur `custom_field_answer`) | Lancer un `EXPLAIN ANALYZE` sur un jeu de données réaliste. Les index du lot A sont en place. Étudier un index trigram sur `value_as_text` pour les filtres « contient ». |
-| Conversion complète des mobiliers en liste | `SpecimenService.search*` → `SpecimenMapper` | Chaque ligne charge toutes ses relations (auteurs, matériaux, contenants, phases, parents/enfants) : N+1 probable. Envisager un DTO de liste ou un `@EntityGraph`. |
-| Initialisation des panels JSF (s'il en reste après le nettoyage) | `*Panel.init()` | Vérifier qu'aucun modèle lazy ni compteur n'est encore calculé pour rien au montage React. |
+Mesuré le 29/09/2026 sur la base de dev, en comptant les parcours de table côté PostgreSQL (`pg_stat_user_tables`, attente de 12 s avant de lire les compteurs) pour une requête isolée.
+
+| Sujet | Traitement |
+|---|---|
+| Droits par projet dans les listes organisation | **Fait.** `OrganizationListService.canEditByProject` et `canValidateByProject` passent par `ProfilePermissionService.actionUnitIdsGranting` : les droits d'instance et d'organisation sont testés une fois, puis une seule requête liste les projets qui donnent le droit par un profil de projet. Le nombre de requêtes ne dépend plus du nombre de projets de la page. |
+| Chargement des lignes de liste (mobilier, UE) | **Fait**, sans changer de code métier : `hibernate.default_batch_fetch_size: 50` (`application.yaml`). Les relations paresseuses et les références d'une page se chargent par un `IN (…)` par relation. Mobilier : 645 parcours pour 1 ligne, 2 382 pour 9 avant, contre 448 et 620 après (~217 par ligne avant, ~21 après). UE : 632 pour 1 ligne et 1 711 pour 25 avant, contre 434 et 492 après (~45 par ligne avant, ~2,4 après). Fiche mobilier en REST : 588 avant, 388 après. Le coût fixe d'environ 430 parcours pour une page d'une ligne n'a pas été analysé. |
+| Tri et filtre sur champ additionnel | **Mesuré, rien à changer.** `EXPLAIN ANALYZE` sur une base jetable de 300 000 UE et 540 000 réponses (mêmes tables et index que la base réelle) : tri texte 460 ms, tri numérique 340 ms (sous-requête corrélée par ligne, accès par clé primaire, coût linéaire) ; filtres « contient » 42 ms (page) et 26 ms (comptage), plage numérique 18 ms. Pas d'index trigramme (`pg_trgm` est déjà installé) : il ne se justifie qu'à partir d'environ 10 fois ce volume, quand un « contient » approche 500 ms. À refaire alors avec des données réelles. |
+| Initialisation des panels JSF | **Vérifié, rien à changer.** `AbstractEntityPanel.init()` charge l'entité une fois (titre, organisation, 404/403) : la page JSF d'une fiche mobilier coûte environ 165 parcours contre 588 pour son appel REST (avant le correctif ci-dessus). Un chargement allégé n'apporterait presque rien. |
+| Conversion complète des mobiliers en liste | Le N+1 est levé par le lot chargé par paquets. Un DTO de liste dédié ne se justifie que si le coût fixe de ~430 parcours devient gênant. |
 
 ## 3. Fonctionnel reporté
 
