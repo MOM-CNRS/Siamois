@@ -34,6 +34,7 @@ import { isFieldPending, usePagedList } from "./usePagedList";
 import { entityRowLabel } from "../fields/optionSources";
 import { FROZEN_COLUMN_CLASS, frozenColumnStyle, useFrozenColumnOffsets } from "./frozenColumns";
 import { PAGE_SIZE_OPTIONS } from "./tableState";
+import { rememberListContext } from "./listContext";
 import { listPrefsKey } from "./listPreferences";
 import { useWriteMode } from "./writeMode";
 import { ValidationStatusCell, type ValidationStatusCellProps } from "../components/table/ValidationStatusCell";
@@ -421,6 +422,10 @@ export function EntityListPanel({
   function openIdentifier(e: SyntheticEvent, row: RowRecord) {
     e.stopPropagation();
     if (row.id == null) return;
+    // The fiche's previous/next arrows walk THIS list — its sort, filters, search and scope — from
+    // this row's position (panels/listContext.ts).
+    const at = rows.findIndex((r) => String(r.id) === String(row.id));
+    if (at >= 0) rememberListContext(entityType, row.id, { params, index: state.offset + at });
     if (onOpenOverview) {
       // The row already holds the label and status: the overview's header shows them right away.
       const preview = {

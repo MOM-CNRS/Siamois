@@ -14,10 +14,17 @@ import { useBridge } from "./bridge";
 import { useCanEdit, useWriteMode } from "./writeMode";
 import { ValidationStatusButton } from "../components/ValidationStatusButton";
 import { DetailBodySkeleton } from "../components/DetailSkeleton";
+import { recallListContext, rememberListContext, type ListContext } from "./listContext";
+import { siblingsQuery } from "./listSiblings";
 
-import type { EntityPreview } from "../entities/types";
+import type { EntityPreview, EntitySibling } from "../entities/types";
 
 export type { EntityPreview };
+
+/** The list context of a neighbour found by walking `current`'s list: same request, its own position. */
+function neighbourContext(current: ListContext | undefined, sibling: EntitySibling): ListContext | undefined {
+  return current && sibling.index != null ? { params: current.params, index: sibling.index } : undefined;
+}
 
 export interface EntityDetailPanelProps {
   entityType: string;
@@ -112,9 +119,11 @@ export function EntityDetailPanel({
   // Separate from the detail query so a slow/failed siblings lookup never blocks the fiche itself
   // from rendering — the arrows just stay disabled (SiblingNav treats `undefined` as "not ready
   // yet") until this resolves. Only ever issued when the entity type registers `api.siblings`.
+  // Opened from a list, the arrows walk that list (sort, filters, search, scope); otherwise, or when
+  // that list no longer holds this entity, they use the entity's default order.
+  const listContext = recallListContext(entityType, entityId);
   const { data: siblings } = useQuery({
-    queryKey: ["entity-siblings", entityType, entityId, organizationId],
-    queryFn: () => config!.api.siblings!(entityId, { organizationId }),
+    ...siblingsQuery(config!, entityType, entityId, organizationId, listContext),
     enabled: config?.api.siblings != null,
   });
 
@@ -128,20 +137,20 @@ export function EntityDetailPanel({
   // Hovering or focusing a prev/next arrow warms that fiche (and its own neighbours) in the query
   // cache, so the jump usually lands on data that is already there — no skeleton at all.
   const prefetchSibling = useCallback(
-    (id: string | number) => {
+    (sibling: EntitySibling) => {
       if (!config) return;
       void queryClient.prefetchQuery({
-        queryKey: ["entity-detail", entityType, id],
-        queryFn: () => config.api.get(id),
+        queryKey: ["entity-detail", entityType, sibling.id],
+        queryFn: () => config.api.get(sibling.id),
       });
       if (config.api.siblings) {
-        void queryClient.prefetchQuery({
-          queryKey: ["entity-siblings", entityType, id, organizationId],
-          queryFn: () => config.api.siblings!(id, { organizationId }),
-        });
+        // The context the sibling will have once opened (see the arrow's click), so this lands on
+        // the entry its own render asks for.
+        const context = neighbourContext(listContext, sibling);
+        void queryClient.prefetchQuery(siblingsQuery(config, entityType, sibling.id, organizationId, context));
       }
     },
-    [config, entityType, organizationId, queryClient],
+    [config, entityType, organizationId, queryClient, listContext],
   );
   // Where the creation overlay opens (null = closed): the clicked "Créer" button, or the panel's
   // own toolbar when it was picked from the "…" menu, which is gone by the time the overlay opens.
@@ -176,8 +185,13 @@ export function EntityDetailPanel({
     config.api.siblings && onNavigateSibling ? (
       <SiblingNav
         siblings={siblings}
-        onNavigate={(sibling) => onNavigateSibling(sibling.id, { label: sibling.label })}
-        onPrefetch={(sibling) => prefetchSibling(sibling.id)}
+        onNavigate={(sibling) => {
+          // The neighbour carries on walking the same list, from its own position.
+          const context = neighbourContext(listContext, sibling);
+          if (context) rememberListContext(entityType, sibling.id, context);
+          onNavigateSibling(sibling.id, { label: sibling.label });
+        }}
+        onPrefetch={prefetchSibling}
         disabled={siblingNavDisabled}
       />
     ) : undefined;

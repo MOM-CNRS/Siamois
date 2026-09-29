@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
 import type { EntityTypeConfig } from "../entities/types";
 import { EntityDetailPanel } from "./EntityDetailPanel";
+import { recallListContext, rememberListContext } from "./listContext";
 import { WriteModeProvider } from "./writeMode";
 import { BridgeProvider } from "./bridge";
 import type { PanelBridge } from "../mountOptions";
@@ -306,6 +307,93 @@ describe("EntityDetailPanel sibling navigation (plan: fiche précédente/suivant
 
   beforeEach(() => {
     siblingsMock.mockReset();
+  });
+
+  describe("walking the list the fiche was opened from", () => {
+    const listMock = vi.fn();
+    const walkConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+      ...fakeConfig,
+      key: "fake-walked-entity",
+      api: { ...fakeConfig.api, list: listMock, siblings: siblingsMock },
+    };
+    registerEntityType(walkConfig);
+    // The rows of "name:asc, search=zz", as the list request serves them.
+    const ROWS = ["50", "51", "52", "53"].map((id) => ({ id, fullIdentifier: `row ${id}` }));
+
+    beforeEach(() => {
+      window.sessionStorage.clear();
+      listMock.mockReset();
+      listMock.mockImplementation(async (p: { offset: number; limit: number }) => {
+        // The real endpoints refuse an offset that isn't a multiple of the page size (a 400).
+        if (p.offset % p.limit !== 0) throw new Error("offset doit être un multiple de limit");
+        return { data: ROWS.slice(p.offset, p.offset + p.limit), totalCount: ROWS.length };
+      });
+    });
+
+    function renderFiche(entityId: string, onNavigateSibling = vi.fn()) {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      act(() => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <EntityDetailPanel entityType="fake-walked-entity" entityId={entityId} onNavigateSibling={onNavigateSibling} />
+          </QueryClientProvider>,
+        );
+      });
+      return onNavigateSibling;
+    }
+
+    it("takes the arrows from that list's own request, not the default order", async () => {
+      rememberListContext("fake-walked-entity", "51", { params: { sort: "name:asc", search: "zz" }, index: 1 });
+      const onNavigateSibling = renderFiche("51");
+      await flush();
+
+      expect(listMock).toHaveBeenCalledWith({ sort: "name:asc", search: "zz", offset: 0, limit: 1 });
+      expect(siblingsMock).not.toHaveBeenCalled();
+      const buttons = container.querySelectorAll(".sideview-topbar-button");
+      await act(async () => {
+        buttons[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+      expect(onNavigateSibling).toHaveBeenCalledWith("52", { label: "row 52" });
+    });
+
+    it("carries the walk on: the neighbour opens knowing its own position in the same list", async () => {
+      const params = { sort: "name:asc", search: "zz" };
+      rememberListContext("fake-walked-entity", "51", { params, index: 1 });
+      renderFiche("51");
+      await flush();
+      const buttons = container.querySelectorAll(".sideview-topbar-button");
+      await act(async () => {
+        buttons[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+
+      expect(recallListContext("fake-walked-entity", "52")).toEqual({ params, index: 2 });
+    });
+
+    it("falls back to the default order when that list no longer holds the entity", async () => {
+      siblingsMock.mockResolvedValue({ previous: undefined, next: { id: "77", label: "Seventy-seven", resourceUri: "/x/77" } });
+      // Position 1 of the list is row 51 now, not the entity being shown.
+      rememberListContext("fake-walked-entity", "999", { params: { sort: "name:asc" }, index: 1 });
+      const onNavigateSibling = renderFiche("999");
+      await flush();
+
+      expect(siblingsMock).toHaveBeenCalledWith("999", { organizationId: undefined });
+      const buttons = container.querySelectorAll(".sideview-topbar-button");
+      await act(async () => {
+        buttons[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+      expect(onNavigateSibling).toHaveBeenCalledWith("77", { label: "Seventy-seven" });
+      // A default-order neighbour has no list position to remember.
+      expect(recallListContext("fake-walked-entity", "77")).toBeUndefined();
+    });
+
+    it("uses the default order for an entity that was not opened from a list", async () => {
+      siblingsMock.mockResolvedValue({ previous: undefined, next: undefined });
+      renderFiche("51");
+      await flush();
+
+      expect(siblingsMock).toHaveBeenCalledTimes(1);
+      expect(listMock).not.toHaveBeenCalled();
+    });
   });
 
   it("renders no arrows when config.api.siblings is absent", async () => {

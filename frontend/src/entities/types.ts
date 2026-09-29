@@ -71,6 +71,9 @@ export interface EntitySibling {
   id: string | number;
   label: string;
   resourceUri: string;
+  // Set when the neighbour comes from the list the fiche was opened from: its absolute position in
+  // that list, so walking on from it keeps following the same list (panels/listContext.ts).
+  index?: number;
 }
 
 // Either side is undefined when the caller's accessible set has no OTHER entity at all —

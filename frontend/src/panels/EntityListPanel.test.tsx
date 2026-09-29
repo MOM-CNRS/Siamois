@@ -8,6 +8,7 @@ import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderer
 
 registerDefaultFieldRenderers();
 import type { EntityTypeConfig, PagedResult } from "../entities/types";
+import { recallListContext } from "./listContext";
 import { EntityListPanel } from "./EntityListPanel";
 import { WriteModeProvider } from "./writeMode";
 import { searchCreatableProjects } from "../entities/project/api";
@@ -1628,6 +1629,66 @@ describe("EntityListPanel linked columns", () => {
 
     const chips = Array.from(container.querySelectorAll(".entity-nav-chip")).map((el) => el.textContent);
     expect(chips).not.toContain("Parent undefined");
+  });
+});
+
+// The fiche's previous/next arrows walk the list it was opened from (panels/listContext.ts).
+describe("EntityListPanel remembers where a row was opened from", () => {
+  function renderList(props: Record<string, unknown> = {}) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel entityType="fake-entity-with-link" organizationId={7} onOpenOverview={vi.fn()} {...props} />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  function identifierChip(label: string): HTMLElement {
+    return Array.from(container.querySelectorAll<HTMLElement>(".entity-list-panel-row-identifier")).find(
+      (el) => el.textContent?.includes(label),
+    )!;
+  }
+
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    listMock.mockReset();
+    listMock.mockResolvedValue({
+      data: [
+        { id: "1", name: "Linked" } as FakeRow,
+        { id: "2", name: "Unlinked" },
+      ],
+      totalCount: 2,
+      limit: 10,
+      offset: 0,
+    });
+  });
+
+  it("stores the request and the clicked row's position", async () => {
+    renderList();
+    await flush();
+    await act(async () => {
+      identifierChip("Unlinked").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(recallListContext("fake-entity-with-link", "2")).toMatchObject({ index: 1, params: { organizationId: 7 } });
+    expect(recallListContext("fake-entity-with-link", "1")).toBeUndefined();
+  });
+
+  it("keeps the scope of a relation tab, so the walk stays inside it", async () => {
+    renderList({ scope: { entityType: "project", id: 5 } });
+    await flush();
+    await act(async () => {
+      identifierChip("Linked").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(recallListContext("fake-entity-with-link", "1")).toMatchObject({
+      index: 0,
+      params: { scope: { entityType: "project", id: 5 } },
+    });
   });
 });
 
