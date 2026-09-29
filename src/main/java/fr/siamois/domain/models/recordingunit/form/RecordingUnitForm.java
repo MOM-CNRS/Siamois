@@ -10,6 +10,8 @@ import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePers
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphicRelationships;
+import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
@@ -226,6 +228,20 @@ public abstract class RecordingUnitForm {
     protected static final Concept CHILDREN_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
             .externalId("4289278")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept FINDS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.finds")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept STRATIGRAPHIC_RELATIONSHIPS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.stratigraphicRelationships")
             .build();
 
     @Transient
@@ -482,6 +498,31 @@ public abstract class RecordingUnitForm {
             .id(-325L)
             .valueBinding("matrixColor")
             .concept(MATRIX_COLOR_CONCEPT)
+            .build();
+
+
+    // The unit's finds (specimen.fk_recording_unit_id): read-only here — a find is attached to its
+    // unit from the find's side.
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldSelectMultipleSpecimen FINDS_FIELD = CustomFieldSelectMultipleSpecimen.builder()
+            .label("recordingunit.field.finds")
+            .isSystemField(true)
+            .id(-326L)
+            .valueBinding("specimenList")
+            .concept(FINDS_CONCEPT)
+            .build();
+
+    // Not a JPA property: the unit's relationships are split between relationshipsAsUnit1 and
+    // relationshipsAsUnit2, and read as one by RelationField.RECORDING_UNIT_STRATIGRAPHY.
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldStratigraphicRelationships STRATIGRAPHIC_RELATIONSHIPS_FIELD = CustomFieldStratigraphicRelationships.builder()
+            .label("recordingunit.field.stratigraphicRelationships")
+            .isSystemField(true)
+            .id(-327L)
+            .valueBinding("stratigraphicRelationships")
+            .concept(STRATIGRAPHIC_RELATIONSHIPS_CONCEPT)
             .build();
 
 }

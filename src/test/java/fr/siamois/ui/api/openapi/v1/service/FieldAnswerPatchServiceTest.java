@@ -204,6 +204,68 @@ class FieldAnswerPatchServiceTest {
         assertThat(FieldAnswerPatchService.isReadOnlyIn(form(project), project)).isFalse();
     }
 
+    // ========== add / remove ==========
+
+    // The client may have read only a preview of the list: add/remove is applied to what the entity
+    // holds, so the values it never saw are kept.
+    @Test
+    void apply_addRemove_changesOnlyTheNamedValues_ofWhatTheEntityHolds() {
+        CustomFieldSelectMultiplePhase phases = new CustomFieldSelectMultiplePhase();
+        phases.setId(8L);
+        CustomFieldAnswerSelectMultiplePhaseViewModel vm = new CustomFieldAnswerSelectMultiplePhaseViewModel();
+        givenResponse(Map.of(phases, vm));
+        when(formService.readAnswerValueForApi(vm)).thenReturn(new LinkedHashSet<>(List.of(phase(1L), phase(2L), phase(3L))));
+        Phase added = new Phase();
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        added.setActionUnit(project);
+        when(phaseRepository.findById(4L)).thenReturn(Optional.of(added));
+        when(phaseMapper.convert(added)).thenReturn(phase(4L));
+
+        service.apply(entity, form(phases), Map.of("8", new AnswerInput(null, null, List.of(4, 1), List.of("2"))), PROJECT_ID);
+
+        verify(formService).applyTypedValueToAnswer(same(vm), argThat(value -> value instanceof Set<?> set
+                && set.stream().map(p -> ((PhaseDTO) p).getId()).toList().equals(List.of(1L, 3L, 4L))));
+    }
+
+    @Test
+    void apply_addRemove_readsARawJsonMapToo() {
+        CustomFieldSelectMultiplePhase phases = new CustomFieldSelectMultiplePhase();
+        phases.setId(8L);
+        CustomFieldAnswerSelectMultiplePhaseViewModel vm = new CustomFieldAnswerSelectMultiplePhaseViewModel();
+        givenResponse(Map.of(phases, vm));
+        when(formService.readAnswerValueForApi(vm)).thenReturn(new LinkedHashSet<>(List.of(phase(1L), phase(2L))));
+
+        service.apply(entity, form(phases), Map.of("8", Map.of("remove", List.of(1))), PROJECT_ID);
+
+        verify(formService).applyTypedValueToAnswer(same(vm), argThat(value -> value instanceof Set<?> set
+                && set.stream().map(p -> ((PhaseDTO) p).getId()).toList().equals(List.of(2L))));
+    }
+
+    @Test
+    void apply_rejectsValuesTogetherWithAddRemove_andAddRemoveOnAScalarField() {
+        CustomFieldSelectMultiplePhase phases = new CustomFieldSelectMultiplePhase();
+        phases.setId(8L);
+        CustomFieldText title = text(1L, false);
+        givenResponse(Map.of(phases, new CustomFieldAnswerSelectMultiplePhaseViewModel(), title, new CustomFieldAnswerTextViewModel()));
+
+        assertThatThrownBy(() -> service.apply(entity, form(phases, title),
+                Map.of("8", new AnswerInput(null, List.of(1), List.of(2), null)), PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("ne se combinent pas");
+        assertThatThrownBy(() -> service.apply(entity, form(phases, title),
+                Map.of("1", new AnswerInput(null, null, List.of("x"), null)), PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("multivalué");
+        verify(formService, never()).applyTypedValueToAnswer(any(), any());
+    }
+
+    private static PhaseDTO phase(long id) {
+        PhaseDTO phase = new PhaseDTO();
+        phase.setId(id);
+        return phase;
+    }
+
     // ========== Helpers ==========
 
     private CustomFormResponseViewModel givenResponse(Map<CustomField, CustomFieldAnswerViewModel> answers) {

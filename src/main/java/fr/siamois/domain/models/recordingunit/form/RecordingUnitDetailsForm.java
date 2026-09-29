@@ -58,6 +58,8 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(SPATIAL_UNIT_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(PARENTS_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CHILDREN_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).readOnly(true).field(STRATIGRAPHIC_RELATIONSHIPS_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).readOnly(true).field(FINDS_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).isRequired(true).field(RECORDING_UNIT_TYPE_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(NATURE_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(GEOMORPHO_AGENT_FIELD).build())

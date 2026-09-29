@@ -5,7 +5,7 @@ import { Panel } from "primereact/panel";
 import { Toolbar } from "primereact/toolbar";
 import { FieldEditCell } from "../../fields/FieldEditCell";
 import { FieldLabel, isEmptyValue } from "../../fields/FieldLabel";
-import { resolveValueBinding, toAnswerInput, type AnswerInputBody } from "../../fields/types";
+import { resolveValueBinding, toAnswerInput, unwrapAnswer, type AnswerInputBody } from "../../fields/types";
 import type { FieldResource } from "../../fields/types";
 import { useCanEdit } from "../../panels/writeMode";
 import { getProjectHistory, type ProjectHistoryEntry } from "./history";
@@ -99,11 +99,17 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
   //
   // No onSaved() call here: CellEditOverlay calls its own onSaved prop itself once onSave resolves
   // — this only builds the patch and lets the failure propagate for the overlay to show inline.
+  //
+  // A multi-valued field comes as an add/remove difference, which goes out as is — except the
+  // spatial context, written through its flat alias as a whole list: the overlay's `value`.
   const save = useCallback(
-    (id: string | number, answers: Record<string, AnswerInputBody>) => {
+    (id: string | number, answers: Record<string, AnswerInputBody>, value?: unknown) => {
       if (!fields) return Promise.resolve();
       const [fieldId, input] = Object.entries(answers)[0];
-      const rawValue = "values" in input ? input.values : input.value;
+      if (("add" in input || "remove" in input) && fields[fieldId]?.answerType !== SPATIAL_CONTEXT_ANSWER_TYPE) {
+        return patchProject(id, { answers: { [fieldId]: input } });
+      }
+      const rawValue = "add" in input || "remove" in input ? value : "values" in input ? input.values : input.value;
       return patchProject(id, buildPatch({ [fieldId]: rawValue }, fields));
     },
     [fields],
@@ -250,8 +256,8 @@ function FormField({
   const field = fields[fieldId];
   if (!field) return null;
 
-  const stored = resolveValueBinding(field).read(entity);
-  if (inactiveFieldIds.has(fieldId) && isEmptyValue(stored)) return null;
+  const stored = resolveValueBinding(field).readRaw(entity);
+  if (inactiveFieldIds.has(fieldId) && isEmptyValue(unwrapAnswer(stored))) return null;
 
   return (
     <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>

@@ -1,9 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,7 @@ public class ContainerListProjectionService {
 
     private final ContainerAnswersProjector containerAnswersProjector;
     private final ConceptLabelBatchResolver conceptLabelBatchResolver;
+    private final MultiValueAnswers multiValueAnswers;
     private final AdditionalAnswersListProjector additionalAnswersListProjector;
 
     public record ContainerListProjection(Map<Long, String> resolvedLabels,
@@ -39,6 +42,11 @@ public class ContainerListProjectionService {
     }
 
     public ContainerListProjection build(Collection<ContainerDTO> rows, String fieldsParam, String lang) {
+        return build(rows, fieldsParam, lang, ValuesLimit.forList());
+    }
+
+    /** {@link #build(Collection, String, String)} with each multi-valued answer cut to {@code valuesLimit} values. */
+    public ContainerListProjection build(Collection<ContainerDTO> rows, String fieldsParam, String lang, int valuesLimit) {
         if (rows == null || rows.isEmpty()) {
             return ContainerListProjection.empty();
         }
@@ -53,11 +61,13 @@ public class ContainerListProjectionService {
         Map<Long, String> labels = conceptLabelBatchResolver.resolveLabels(concepts, lang);
 
         List<Long> rowIds = rows.stream().filter(java.util.Objects::nonNull).map(ContainerDTO::getId).filter(java.util.Objects::nonNull).toList();
-        return new ContainerListProjection(labels, additionalAnswersListProjector.merge(containerAnswersProjector.project(rows, fieldIds, labels),
-                CustomFieldAnswerService.ListOwner.CONTAINER, rowIds, fieldsParam, fieldIds, lang));
+        Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(containerAnswersProjector.project(rows, fieldIds, labels),
+                CustomFieldAnswerService.ListOwner.CONTAINER, rowIds, fieldsParam, fieldIds, lang);
+        return new ContainerListProjection(labels, multiValueAnswers.shape(Container.class, answers, fieldIds, valuesLimit, lang));
     }
 
+    /** Un seul contenant (détail) — les valeurs multiples coupées à la limite d'un détail. */
     public ContainerListProjection buildOne(ContainerDTO row, String lang) {
-        return build(row == null ? List.of() : List.of(row), ContainerAnswersProjector.FIELDS_ALL, lang);
+        return build(row == null ? List.of() : List.of(row), ContainerAnswersProjector.FIELDS_ALL, lang, ValuesLimit.forDetail());
     }
 }

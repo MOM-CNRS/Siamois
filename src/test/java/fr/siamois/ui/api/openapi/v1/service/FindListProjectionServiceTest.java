@@ -21,7 +21,7 @@ class FindListProjectionServiceTest {
     private final ConceptLabelBatchResolver labels = mock(ConceptLabelBatchResolver.class);
     private final AdditionalAnswersListProjector additional = mock(AdditionalAnswersListProjector.class);
     private final FindListProjectionService service =
-            new FindListProjectionService(new SpecimenAnswersProjector(), labels, additional);
+            new FindListProjectionService(new SpecimenAnswersProjector(), labels, ListQueryStubs.multiValueAnswers(), additional);
 
     @Test
     void noFieldsParam_meansNoProjectionAtAll() {

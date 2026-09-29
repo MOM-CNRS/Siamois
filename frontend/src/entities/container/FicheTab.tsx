@@ -116,7 +116,7 @@ function ContainerFormField({
   const field = fields[fieldId];
   if (!field) return null;
 
-  const stored = resolveValueBinding(field).read(entity);
+  const stored = resolveValueBinding(field).readRaw(entity);
 
   return (
     <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>

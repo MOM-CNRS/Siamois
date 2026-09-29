@@ -12,6 +12,7 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitResponse
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -94,6 +95,7 @@ public class RecordingUnitsControllerApi {
                 recordingUnitOpenApiService.findSiblings(id, caller.person(), caller.accessibleInstitutionIds())));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @GetMapping("/{id}")
     @Operation(
             summary = "Détail d'une unité d'enregistrement",
@@ -162,6 +164,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.noContent().build();
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer une unité d'enregistrement",
@@ -188,6 +191,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(new RecordingUnitResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PostMapping("/{id}/duplicate")
     @Operation(
             summary = "Dupliquer une unité d'enregistrement",
@@ -218,6 +222,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(new RecordingUnitResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Modifier partiellement une unité d'enregistrement",

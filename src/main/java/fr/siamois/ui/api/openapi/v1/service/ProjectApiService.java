@@ -42,6 +42,7 @@ import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.FieldAnswerMaps;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
@@ -668,6 +669,14 @@ public class ProjectApiService {
                 // "values: null" veut dire "ne pas toucher" (même convention que
                 // RecordingUnitPatchRequest.answers) — contrairement à "value: null" pour un champ
                 // scalaire, qui veut dire "vider".
+                FieldAnswerMaps.Delta delta = FieldAnswerMaps.delta(input);
+                if (delta != null) {
+                    // add/remove: applied to what the project holds, never to what the client read.
+                    List<ConceptDTO> added = delta.add().stream().map(this::coerceConceptId).toList();
+                    writeAnswerBinding(dto, field, delta.applyTo(readConceptsBinding(dto, field), added,
+                            ProjectApiService::conceptIdOf, new LinkedHashSet<>()));
+                    continue;
+                }
                 if (input == null || input.values() == null) {
                     continue;
                 }
@@ -676,6 +685,10 @@ public class ProjectApiService {
                         .collect(Collectors.toCollection(LinkedHashSet::new));
                 writeAnswerBinding(dto, field, concepts);
                 continue;
+            }
+            if (input != null && input.isDelta()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "add/remove ne s'appliquent qu'à un champ multivalué : " + fieldId);
             }
 
             Object raw = input == null ? null : input.value();
@@ -775,6 +788,24 @@ public class ProjectApiService {
      * désigne, par réflexion — miroir en écriture de la lecture faite par
      * {@code ProjectAnswersProjector}.
      */
+    @SuppressWarnings("unchecked")
+    private static Collection<ConceptDTO> readConceptsBinding(ActionUnitDTO dto, CustomField field) {
+        PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(ActionUnitDTO.class, field.getValueBinding());
+        Method getter = descriptor == null ? null : descriptor.getReadMethod();
+        if (getter == null) return List.of();
+        try {
+            Object value = getter.invoke(dto);
+            return value instanceof Collection<?> c ? (Collection<ConceptDTO>) c : List.of();
+        } catch (ReflectiveOperationException e) {
+            return List.of();
+        }
+    }
+
+    /** A concept's id — a ConceptDTO the project holds, or a raw id from the request. */
+    private static Long conceptIdOf(Object item) {
+        return item instanceof ConceptDTO concept ? concept.getId() : extractLongId(item);
+    }
+
     private static void writeAnswerBinding(ActionUnitDTO dto, CustomField field, Object value) {
         String binding = field.getValueBinding();
         if (binding == null || binding.isBlank()) {
@@ -1216,6 +1247,18 @@ public class ProjectApiService {
                 .sorted(Comparator.comparing(Document::getId, Comparator.nullsLast(Long::compareTo)))
                 .map(projectDocumentOpenApiMapper::toResource)
                 .toList();
+    }
+
+    /**
+     * The recording unit {@code recordingUnitKey} designates, if the caller can see it — same scope
+     * and 404 as its detail.
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitDTO requireViewableRecordingUnit(ProjectApiCaller caller, String recordingUnitKey) {
+        RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
+                recordingUnitKey, caller.accessibleInstitutionIds(), null);
+        requireRecordingUnitViewPermission(caller, ru);
+        return ru;
     }
 
     private void requireRecordingUnitViewPermission(ProjectApiCaller caller, RecordingUnitDTO ru) {

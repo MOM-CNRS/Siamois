@@ -122,3 +122,47 @@ describe("entity colours", () => {
     expect(entityChipStyle(undefined)).toBeUndefined();
   });
 });
+
+describe("a multi-valued preview (MultiValue, complete=false)", () => {
+  const preview = {
+    values: [ref("1", "US 1")],
+    total: 37,
+    complete: false,
+    _links: { values: "/api/v1/recording-units/42/fields/-319/values" },
+  };
+
+  it("counts what it leaves out from the total, not from the preview", () => {
+    const html = markup(renderAnswerCell(field(), preview));
+    expect(html).toContain("US 1");
+    expect(html).toContain("+36");
+    // The counter opens the whole list rather than pretending to hold it.
+    expect(html).toContain("cell-multi-more-link");
+  });
+
+  it("says so in plain text too", () => {
+    expect(renderAnswerValue(field(), preview)).toBe("US 1 (+36)");
+  });
+
+  it("shows a complete MultiValue like a plain list", () => {
+    const html = markup(renderAnswerCell(field(), { values: [ref("1", "A"), ref("2", "B")], total: 2, complete: true }));
+    expect(html).toContain("+1");
+    expect(html).not.toContain("cell-multi-more-link");
+  });
+
+  it("shows nothing for an empty one", () => {
+    expect(markup(renderAnswerCell(field(), { values: [], total: 0, complete: true }))).toBe("");
+  });
+});
+
+describe("a stratigraphic relationship", () => {
+  it("reads as its concept, the other unit, and a ? when uncertain", () => {
+    const relation = {
+      resourceId: "12",
+      resourceType: "recording-units",
+      label: "US 12",
+      qualifier: { concept: { label: "coupe" }, position: "posterior", uncertain: true },
+    };
+    expect(renderAnswerValue(field({ answerType: "SELECT_MULTIPLE_STRATIGRAPHY" }), [relation]))
+      .toBe("coupe US 12 ?");
+  });
+});

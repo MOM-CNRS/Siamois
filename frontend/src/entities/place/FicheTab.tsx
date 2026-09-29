@@ -110,7 +110,7 @@ function PlaceFormField({
   // `answers` — see this file's own top-of-file doc.
   if (field.valueBinding === "address") return null;
 
-  const stored = resolveValueBinding(field).read(entity);
+  const stored = resolveValueBinding(field).readRaw(entity);
 
   return (
     <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>

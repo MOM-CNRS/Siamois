@@ -9,28 +9,10 @@ describe("recordingUnitColumns", () => {
     expect(identifierColumns[0].key).toBe("fullIdentifier");
   });
 
-  it("reads every count column from _counts, keyed the way RecordingUnitResourceCounts serializes them", () => {
-    const row: RecordingUnitSummary = {
-      resourceType: "recording-units",
-      id: "1",
-      fullIdentifier: "INST-PROJ-UE1",
-      _counts: { parents: 2, children: 3, relationships: 4, finds: 5 },
-    };
-
-    const byKey = Object.fromEntries(recordingUnitColumns.map((c) => [c.key, c.render(row)]));
-    expect(byKey.parentsCount).toBe(2);
-    expect(byKey.childrenCount).toBe(3);
-    expect(byKey.relationshipCount).toBe(4);
-    expect(byKey.specimenCount).toBe(5);
-  });
-
-  it("falls back to 0 for every count column when _counts is absent", () => {
-    const row: RecordingUnitSummary = { resourceType: "recording-units", id: "1", fullIdentifier: "INST-PROJ-UE1" };
-
-    for (const col of recordingUnitColumns) {
-      if (col.key === "fullIdentifier" || col.key === "project") continue;
-      expect(col.render(row)).toBe(0);
-    }
+  // Parents, children, stratigraphic relationships and finds are catalog fields now (answers), not
+  // pinned count columns.
+  it("has no pinned relation count column", () => {
+    expect(recordingUnitColumns.map((c) => c.key)).toEqual(["fullIdentifier"]);
   });
 
   // The project is the catalog's own (read-only) project field column now, not a pinned one.

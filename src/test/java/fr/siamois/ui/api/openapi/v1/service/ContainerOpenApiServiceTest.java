@@ -87,7 +87,7 @@ class ContainerOpenApiServiceTest {
     void setUp() {
         service = new ContainerOpenApiService(containerService, actionUnitService, conceptService, conceptMapper,
                 profilePermissionService, containerOpenApiMapper,
-                containerListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
+                containerListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
 
         lenient().when(fieldAnswerWireService.additionalAnswers(any(), any())).thenReturn(Map.of());

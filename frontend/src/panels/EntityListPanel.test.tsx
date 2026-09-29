@@ -384,13 +384,22 @@ describe("EntityListPanel", () => {
     expect(header.querySelector(".bi-copy")).toBeTruthy();
   });
 
-  it("always shows the selection column, with its selected/total count", async () => {
+  it("always shows the selection column, and a selected count in the toolbar only once rows are selected", async () => {
     renderPanel();
     await flush();
 
     expect(container.querySelector("th.p-selection-column")).toBeTruthy();
+    // The total is the titlebar's count chip; "0/N" in the column header is gone.
     const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
-    expect(chips).toContain("0/1");
+    expect(chips).not.toContain("0/1");
+    expect(container.querySelector(".entity-list-panel-selection-count")).toBeNull();
+
+    const rowBox = container.querySelector("td.p-selection-column .p-checkbox-box, td.p-selection-column input") as HTMLElement;
+    await act(async () => {
+      rowBox.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    expect(container.querySelector(".entity-list-panel-selection-count")?.textContent).toContain("1 sélectionné");
     // No hover checkbox on the identifier chip any more: selection is the column's job only.
     expect(container.querySelector(".entity-list-panel-identifier-select")).toBeNull();
   });

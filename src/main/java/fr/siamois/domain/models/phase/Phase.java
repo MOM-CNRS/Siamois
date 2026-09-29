@@ -8,11 +8,14 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.phase.form.PhaseDetailsForm;
 import fr.siamois.domain.models.phase.form.PhaseNewUnitForm;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
@@ -93,6 +96,15 @@ public class Phase extends TraceableEntity {
     )
     @NotAudited
     private Set<Concept> keywords = new HashSet<>();
+
+    // The inverse of RecordingUnit.phases, mapped only so a phase list can sort and filter on its
+    // recording units (FieldQueryService reads the metamodel); never loaded otherwise.
+    @ManyToMany(mappedBy = "phases", fetch = FetchType.LAZY)
+    @NotAudited
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private Set<RecordingUnit> recordingUnits = new HashSet<>();
 
     @Transient
     @JsonIgnore

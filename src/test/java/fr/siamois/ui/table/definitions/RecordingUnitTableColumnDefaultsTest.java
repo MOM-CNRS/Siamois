@@ -14,7 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class RecordingUnitTableColumnDefaultsTest {
 
-    private static final Set<String> STRUCTURAL_COLUMN_IDS = Set.of("identifierCol", "relationships", "specimen");
+    // The identifier chip is built by hand; the relation columns (relationships, specimen) are fields now.
+    private static final Set<String> STRUCTURAL_COLUMN_IDS = Set.of("identifierCol");
 
     @Test
     void everyColumnIsAUniqueSystemFieldOfTheRecordingUnitForm() {
@@ -27,6 +28,22 @@ class RecordingUnitTableColumnDefaultsTest {
                 .allSatisfy(column -> assertThat(SystemFieldCatalog.fieldsOf(ConfigurableTable.UE))
                         .extracting(field -> field.getId())
                         .contains(column.field().getId()));
+    }
+
+    @Test
+    void theRelationColumnsAreFieldsOfTheirOwn() {
+        assertThat(RecordingUnitTableColumnDefaults.columns())
+                .filteredOn(column -> Set.of("isPartOf", "contains", "relationships", "specimen").contains(column.columnId()))
+                .extracting(column -> column.field().getValueBinding())
+                .containsExactly("parents", "children", "stratigraphicRelationships", "specimenList");
+    }
+
+    // The project and the type come first; the relations right after them.
+    @Test
+    void theRelationColumnsComeRightAfterTheProjectAndTheType() {
+        assertThat(RecordingUnitTableColumnDefaults.columns())
+                .extracting(RecordingUnitTableColumnDefaults.ColumnDefault::columnId)
+                .startsWith("action", "type", "isPartOf", "contains", "relationships", "specimen");
     }
 
     @Test

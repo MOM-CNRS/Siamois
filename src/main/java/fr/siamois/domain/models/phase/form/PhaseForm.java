@@ -3,6 +3,7 @@ package fr.siamois.domain.models.phase.form;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.phase.Phase;
@@ -35,6 +36,8 @@ public abstract class PhaseForm {
             .vocabulary(SYSTEM_THESO).externalId("phase.keywords").build();
     protected static final Concept actionUnitConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO).externalId("phase.actionUnit").build();
+    protected static final Concept recordingUnitsConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO).externalId("phase.recordingUnits").build();
 
     @Transient
     protected static final CustomFieldText identifierField = CustomFieldText.builder()
@@ -137,5 +140,16 @@ public abstract class PhaseForm {
             .id(-510L)
             .valueBinding("actionUnit")
             .concept(actionUnitConcept)
+            .build();
+
+    // The inverse of a recording unit's phases (recording_unit_phase): read-only here, written from
+    // the recording unit's side.
+    @Transient
+    protected static final CustomFieldSelectMultipleRecordingUnit recordingUnitsField = CustomFieldSelectMultipleRecordingUnit.builder()
+            .label("phase.field.recordingUnits")
+            .isSystemField(true)
+            .id(-511L)
+            .valueBinding("recordingUnits")
+            .concept(recordingUnitsConcept)
             .build();
 }

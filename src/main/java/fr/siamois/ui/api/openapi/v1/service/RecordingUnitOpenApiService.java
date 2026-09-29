@@ -38,6 +38,7 @@ import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
@@ -118,6 +119,7 @@ public class RecordingUnitOpenApiService {
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
+    private final MultiValueAnswers multiValueAnswers;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -170,7 +172,9 @@ public class RecordingUnitOpenApiService {
         // RecordingUnitResource.answers is Map<String, Object> (shared with the list's raw-value
         // shape) — wrap rather than assign directly, since Map<String, FieldAnswer> isn't a
         // Map<String, Object> under Java's invariant generics even though every value already is one.
-        resource.setAnswers(new LinkedHashMap<>(fields));
+        // Its relation fields (parents, children, finds, stratigraphy) are read in there, a preview each.
+        resource.setAnswers(multiValueAnswers.shapeOne(RecordingUnit.class, dto.getId(), new LinkedHashMap<>(fields),
+                fields.keySet(), ValuesLimit.forDetail(), lang));
         return resource;
     }
 
@@ -654,7 +658,8 @@ public class RecordingUnitOpenApiService {
 
         // FindResource.answers is Map<String, Object> (shared with the list's raw-value shape,
         // see its own javadoc) — the detail's FieldAnswer envelope values just widen here.
-        resource.setAnswers(new LinkedHashMap<>(answers));
+        resource.setAnswers(multiValueAnswers.shapeOne(Specimen.class, specimen.getId(), new LinkedHashMap<>(answers),
+                answers.keySet(), ValuesLimit.forDetail(), lang));
         // Same source of truth as SpecimenPanel.canUserEditUnit (JSF), not the RU write check —
         // see the migration plan's "the JSF bean is the source of truth for permissions" rule.
         boolean canEdit = profilePermissionService.hasSpecimenWritePermission(userInfo, specimen);

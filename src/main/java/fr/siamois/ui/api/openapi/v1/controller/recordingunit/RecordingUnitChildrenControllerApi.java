@@ -11,6 +11,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListAssembler;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.MultiValueMap;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +41,7 @@ public class RecordingUnitChildrenControllerApi {
     private final FieldQueryService fieldQueryService;
     
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/{id}/children")
     @Operation(
             summary = "Unités d'enregistrement enfants d'une UE",

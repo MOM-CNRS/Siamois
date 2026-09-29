@@ -161,12 +161,12 @@ class ProjectControllerApiTest {
                 projectResponseMapper,
                 recordingUnitResourceMapper,
                 documentWriteOpenApiService,
-                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver), ListQueryStubs.none());
+                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers()), ListQueryStubs.none());
 
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
                 recordingUnitResourceMapper,
-                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.noAdditionalAnswers()), mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers(), ListQueryStubs.noAdditionalAnswers()), mock(ResourceBookmarkService.class), ListQueryStubs.none());
 
         ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
                 projectApiService,

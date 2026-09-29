@@ -55,6 +55,13 @@ public class PhaseDetailsForm extends PhaseForm {
                                                 .field(descriptionField)
                                                 .build())
                                         .build())
+                                .addRow(new CustomRowUiDto.Builder()
+                                        .addColumn(new CustomColUiDto.Builder()
+                                                .readOnly(true)
+                                                .width(ColumnWidth.FULL)
+                                                .field(recordingUnitsField)
+                                                .build())
+                                        .build())
                                 .build()
                 )
                 .addPanel(

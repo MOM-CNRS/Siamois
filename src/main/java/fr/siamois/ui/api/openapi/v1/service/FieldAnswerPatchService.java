@@ -154,12 +154,26 @@ public class FieldAnswerPatchService {
                 continue;
             }
 
-            Object raw = FieldAnswerMaps.unwrap(entry.getValue());
-            if (raw == null && isMultiple(field)) {
+            FieldAnswerMaps.Delta delta;
+            try {
+                delta = FieldAnswerMaps.delta(entry.getValue());
+                if (delta != null && !isMultiple(field)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "add/remove ne s'appliquent qu'à un champ multivalué : " + field.getId());
+                }
+            } catch (ResponseStatusException e) {
+                if (strict) throw e;
+                log.debug("Réponse ignorée pour le champ {} : {}", entry.getKey(), e.getReason());
+                continue;
+            }
+            Object raw = delta != null ? null : FieldAnswerMaps.unwrap(entry.getValue());
+            if (delta == null && raw == null && isMultiple(field)) {
                 continue; // "values: null" = leave the multi-value field untouched ("values: []" clears it)
             }
             Object typed;
-            if (raw == null) {
+            if (delta != null) {
+                typed = applyDelta(field, viewModel, delta, projectId);
+            } else if (raw == null) {
                 typed = emptyValueOf(field);
             } else if (!strict && !isWritable(field)) {
                 log.debug("Type de champ non pris en charge pour l'API v1, réponse ignorée : {}", field.getClass().getSimpleName());
@@ -244,6 +258,42 @@ public class FieldAnswerPatchService {
                 || f instanceof CustomFieldSelectMultiplePhase
                 || f instanceof CustomFieldSelectMultipleContainer
                 || f instanceof CustomFieldSelectMultipleSpecimen;
+    }
+
+    /**
+     * The field's current values with {@code delta} applied: its removed ids taken out, its added
+     * ones (each checked like any written value) appended. What the field holds is only ever read
+     * from the entity here, never from the client — which may have seen a truncated list of it.
+     */
+    private Object applyDelta(CustomField field, CustomFieldAnswerViewModel viewModel, FieldAnswerMaps.Delta delta,
+                              Long projectId) {
+        Object current = formService.readAnswerValueForApi(viewModel);
+        // A value already there is ignored, not checked again.
+        Set<Long> held = new HashSet<>();
+        if (current instanceof Collection<?> c) c.forEach(item -> held.add(idOf(item)));
+        List<Object> toAdd = delta.add().stream().filter(id -> !held.contains(idOf(id))).toList();
+        Collection<?> added = toAdd.isEmpty() ? List.of() : (Collection<?>) coerce(field, toAdd, projectId);
+        @SuppressWarnings("unchecked")
+        Collection<Object> empty = (Collection<Object>) emptyValueOf(field);
+        return delta.applyTo(current instanceof Collection<?> c ? c : null, added,
+                FieldAnswerPatchService::idOf, empty);
+    }
+
+    /** The id a value of a multi-valued field — a DTO, or a raw id from the request — is referenced by. */
+    private static Long idOf(Object item) {
+        Long id;
+        try {
+            id = extractLongId(item);
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu : " + item);
+        }
+        if (id != null) return id;
+        try {
+            Object value = item.getClass().getMethod("getId").invoke(item);
+            return value instanceof Number n ? n.longValue() : null;
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Valeur sans identifiant : " + item.getClass().getName(), e);
+        }
     }
 
     /** What the view model takes for "cleared": an empty collection for multi-value fields (their handlers skip null). */

@@ -29,6 +29,7 @@ import fr.siamois.ui.api.openapi.v1.request.phase.PhaseCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.phase.PhasePatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,7 @@ public class PhaseOpenApiService {
     private final ProfilePermissionService profilePermissionService;
     private final PhaseOpenApiMapper phaseOpenApiMapper;
     private final PhaseListProjectionService phaseListProjectionService;
+    private final MultiValueAnswers multiValueAnswers;
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
@@ -157,7 +159,9 @@ public class PhaseOpenApiService {
         // The projection reads system fields only; the type's additional fields live in their own answer rows.
         answers.putAll(OpenApiExecutionContext.callWithUserInfo(userInfo, () -> fieldAnswerWireService.additionalAnswers(
                 customFieldAnswerService.loadAdditionalFieldAnswers(phase), lang)));
-        resource.setAnswers(answers);
+        // The additional answers join after the projection's own shaping: cut them the same way.
+        resource.setAnswers(multiValueAnswers.shapeOne(Phase.class, phase.getId(), answers, null,
+                ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
                 .withValidate(profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);

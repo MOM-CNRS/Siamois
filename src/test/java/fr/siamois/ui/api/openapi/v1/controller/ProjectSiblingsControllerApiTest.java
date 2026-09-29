@@ -155,12 +155,12 @@ class ProjectSiblingsControllerApiTest {
                 projectResponseMapper,
                 recordingUnitResourceMapper,
                 documentWriteOpenApiService,
-                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver), ListQueryStubs.none());
+                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers()), ListQueryStubs.none());
 
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
                 recordingUnitResourceMapper,
-                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.noAdditionalAnswers()), org.mockito.Mockito.mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers(), ListQueryStubs.noAdditionalAnswers()), org.mockito.Mockito.mock(ResourceBookmarkService.class), ListQueryStubs.none());
 
         ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
                 projectApiService,

@@ -27,6 +27,8 @@ import fr.siamois.dto.FieldQuery;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.ui.api.openapi.v1.request.list.FieldListQuery;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
+import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.Attribute;
@@ -232,6 +234,10 @@ public class FieldQueryService {
 
     @Nullable
     private Target resolveSystem(Class<?> entityType, String binding) {
+        if (isStratigraphy(entityType, binding)) {
+            // Not a property: a unit's relationships are split over relationshipsAsUnit1/2.
+            return new Target(true, binding, Kind.REFERENCES, RecordingUnit.class, null, false, "fullIdentifier", true);
+        }
         ManagedType<?> type = managedType(entityType);
         if (type == null) return null;
         Attribute<?, ?> attribute;
@@ -346,6 +352,11 @@ public class FieldQueryService {
         return type;
     }
 
+    /** A recording unit's stratigraphic relationships: one field, two JPA collections. */
+    private static boolean isStratigraphy(Class<?> entityType, String binding) {
+        return RelationField.of(entityType, binding).filter(r -> r == RelationField.RECORDING_UNIT_STRATIGRAPHY).isPresent();
+    }
+
     // ========== Filter ==========
 
     private <E> Specification<E> filter(Target target, long fieldId, FieldListQuery.Criterion criterion) {
@@ -368,6 +379,15 @@ public class FieldQueryService {
         List<String> texts = criterion.values().stream().map(v -> "%" + v.toLowerCase(Locale.ROOT) + "%").toList();
 
         return (root, query, cb) -> {
+            if (isStratigraphy(root.getJavaType(), target.attribute)) {
+                // Related to at least one of them, from either side of the relationship.
+                Subquery<Integer> related = query.subquery(Integer.class);
+                Root<StratigraphicRelationship> rel = related.from(StratigraphicRelationship.class);
+                related.select(cb.literal(1)).where(cb.or(
+                        cb.and(cb.equal(rel.get("unit1"), root), rel.get("unit2").get("id").in(ids)),
+                        cb.and(cb.equal(rel.get("unit2"), root), rel.get("unit1").get("id").in(ids))));
+                return cb.exists(related);
+            }
             if (target.system && target.kind == Kind.REFERENCES) {
                 // Has at least one of them: an EXISTS over the collection, since a join would
                 // repeat the row once per matching element.
@@ -433,6 +453,10 @@ public class FieldQueryService {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Expression<?> sortKey(Target target, long fieldId, Root<?> root, CriteriaQuery<?> query,
                                   CriteriaBuilder cb, String lang) {
+        if (isStratigraphy(root.getJavaType(), target.attribute)) {
+            return cb.sum(cb.size((Expression<Collection<?>>) (Expression) root.get("relationshipsAsUnit1")),
+                    cb.size((Expression<Collection<?>>) (Expression) root.get("relationshipsAsUnit2")));
+        }
         if (target.system) {
             return switch (target.kind) {
                 case TEXT -> cb.lower((Expression<String>) (Expression) root.get(target.attribute));

@@ -10,11 +10,14 @@ import fr.siamois.domain.models.container.form.ContainerNewUnitForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
@@ -34,6 +37,15 @@ public class Container extends TraceableEntity {
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Container> children = new HashSet<>();
+
+    // The inverse of Specimen.containers, mapped only so a container list can sort and filter on its
+    // finds (FieldQueryService reads the metamodel); never loaded otherwise.
+    @ManyToMany(mappedBy = "containers", fetch = FetchType.LAZY)
+    @NotAudited
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private Set<Specimen> specimens = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_type")

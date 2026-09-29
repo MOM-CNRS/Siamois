@@ -24,6 +24,7 @@ import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceResponse;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -177,6 +178,7 @@ public class PlaceControllerApi {
                 .body(body);
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/{id}/projects")
     @Operation(summary = "Projets d'un lieu",
             description = "Projets accessibles dont le contexte spatial contient ce lieu — même contrat et même "

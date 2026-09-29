@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.response.container.ContainerResponse;
 import fr.siamois.ui.api.openapi.v1.service.ContainerOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -47,6 +48,7 @@ public class ContainerControllerApi {
                 containerOpenApiService.findSiblings(id, caller.person(), caller.accessibleInstitutionIds())));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @GetMapping("/{id}")
     @Operation(
             summary = "Un contenant via son identifiant",
@@ -68,6 +70,7 @@ public class ContainerControllerApi {
         return ResponseEntity.ok(new ContainerResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer un contenant",
@@ -92,6 +95,7 @@ public class ContainerControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(new ContainerResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Modifier partiellement un contenant",

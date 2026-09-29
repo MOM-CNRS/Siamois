@@ -31,6 +31,7 @@ import fr.siamois.ui.api.openapi.v1.request.container.ContainerCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.container.ContainerPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.container.ContainerResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -60,6 +61,7 @@ public class ContainerOpenApiService {
     private final ProfilePermissionService profilePermissionService;
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
+    private final MultiValueAnswers multiValueAnswers;
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
@@ -157,11 +159,18 @@ public class ContainerOpenApiService {
         // The projection reads system fields only; the type's additional fields live in their own answer rows.
         answers.putAll(OpenApiExecutionContext.callWithUserInfo(userInfo, () -> fieldAnswerWireService.additionalAnswers(
                 customFieldAnswerService.loadAdditionalFieldAnswers(container), lang)));
-        resource.setAnswers(answers);
+        // The additional answers join after the projection's own shaping: cut them the same way.
+        resource.setAnswers(multiValueAnswers.shapeOne(Container.class, container.getId(), answers, null,
+                ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
                 .withValidate(profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
+    }
+
+    /** The container, if the caller can see it — 404 otherwise, whether it doesn't exist or is out of scope. */
+    public ContainerDTO requireAccessible(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {
+        return requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
     }
 
     private ContainerDTO requireAccessibleContainer(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {

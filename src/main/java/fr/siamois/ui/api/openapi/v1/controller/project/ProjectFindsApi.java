@@ -14,6 +14,7 @@ import fr.siamois.ui.api.openapi.v1.service.FindListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -44,6 +45,7 @@ public class ProjectFindsApi {
     private final FieldQueryService fieldQueryService;
     private final FindListProjectionService findListProjectionService;
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des mobiliers d'un projet",
             description = "Clé de projet : identique à GET /api/v1/projects/{id}. Tri : paramètre sort au "

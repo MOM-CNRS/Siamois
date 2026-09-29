@@ -1,9 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,7 @@ public class FindListProjectionService {
 
     private final SpecimenAnswersProjector specimenAnswersProjector;
     private final ConceptLabelBatchResolver conceptLabelBatchResolver;
+    private final MultiValueAnswers multiValueAnswers;
     private final AdditionalAnswersListProjector additionalAnswersListProjector;
 
     public record FindListProjection(Map<Long, Map<String, Object>> answersByFindId) {
@@ -38,6 +41,11 @@ public class FindListProjectionService {
     }
 
     public FindListProjection build(Collection<SpecimenDTO> rows, String fieldsParam, String lang) {
+        return build(rows, fieldsParam, lang, ValuesLimit.forList());
+    }
+
+    /** {@link #build(Collection, String, String)} with each multi-valued answer cut to {@code valuesLimit} values. */
+    public FindListProjection build(Collection<SpecimenDTO> rows, String fieldsParam, String lang, int valuesLimit) {
         if (rows == null || rows.isEmpty() || fieldsParam == null) {
             return FindListProjection.empty();
         }
@@ -46,7 +54,8 @@ public class FindListProjectionService {
         Map<Long, String> labels = concepts.isEmpty() ? Map.of() : conceptLabelBatchResolver.resolveLabels(concepts, lang);
 
         List<Long> rowIds = rows.stream().filter(Objects::nonNull).map(SpecimenDTO::getId).filter(Objects::nonNull).toList();
-        return new FindListProjection(additionalAnswersListProjector.merge(specimenAnswersProjector.project(rows, fieldIds, labels),
-                CustomFieldAnswerService.ListOwner.SPECIMEN, rowIds, fieldsParam, fieldIds, lang));
+        Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(specimenAnswersProjector.project(rows, fieldIds, labels),
+                CustomFieldAnswerService.ListOwner.SPECIMEN, rowIds, fieldsParam, fieldIds, lang);
+        return new FindListProjection(multiValueAnswers.shape(Specimen.class, answers, fieldIds, valuesLimit, lang));
     }
 }

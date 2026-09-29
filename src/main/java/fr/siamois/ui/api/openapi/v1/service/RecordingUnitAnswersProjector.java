@@ -20,6 +20,7 @@ import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -60,12 +61,10 @@ import java.util.function.Function;
  * le sélecteur de colonnes PROPOSE ; un id demandé absent d'ici projette simplement {@code null},
  * même politique d'ignorance silencieuse que {@link #resolveRequestedFieldIds}.</p>
  *
- * <p><strong>{@code isPartOf}/{@code contains} ({@code parents}/{@code children}) ne sont pas
- * projetés ici.</strong> Sur cette liste ({@code includeFullRelations=false}), ces collections ne
- * sont jamais chargées sur le DTO — seuls {@code parentsCount}/{@code childrenCount} le sont. React
- * les sert depuis {@code _counts}, en colonnes épinglées, pas depuis {@code answers} ; leur entrée
- * dans le catalogue de colonnes reste togglable côté JSF (qui, lui, charge les collections
- * complètes) mais ne produira aucune valeur dans cette projection.</p>
+ * <p><strong>Les champs de relation ({@link RelationField} : parents, enfants, mobilier, relations
+ * stratigraphiques) ne sont pas projetés ici.</strong> Sur cette liste ({@code includeFullRelations=false}),
+ * ces collections ne sont jamais chargées sur le DTO : {@link MultiValueAnswers} les lit lui-même,
+ * un aperçu et un total par UE, en une requête par relation pour toute la page.</p>
  */
 @Slf4j
 @Component
@@ -184,14 +183,13 @@ public class RecordingUnitAnswersProjector {
     }
 
     /**
-     * Lit la propriété du DTO pointée par {@code valueBinding}. {@code parents}/{@code children} ne
-     * sont volontairement jamais lus ici (voir la javadoc de la classe) : sur cette liste, ils ne
-     * sont jamais chargés ({@code includeFullRelations=false}), donc toujours {@code null} — pas la
-     * peine d'un accès réflexif pour ça.
+     * Lit la propriété du DTO pointée par {@code valueBinding}. Les champs de relation ne sont
+     * volontairement jamais lus ici (voir la javadoc de la classe) : sur cette liste, ils ne sont
+     * jamais chargés ({@code includeFullRelations=false}) — {@link MultiValueAnswers} les remplit.
      */
     private static Object readBinding(RecordingUnitDTO row, CustomField field) {
         String binding = field.getValueBinding();
-        if (binding == null || binding.isBlank() || "parents".equals(binding) || "children".equals(binding)) {
+        if (binding == null || binding.isBlank() || RelationField.isRelation(RecordingUnit.class, binding)) {
             return null;
         }
         PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(RecordingUnitDTO.class, binding);

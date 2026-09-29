@@ -14,6 +14,7 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.response.find.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -37,6 +38,7 @@ public class RecordingUnitFindsControllerApi {
     private final FieldQueryService fieldQueryService;
     private final FindListProjectionService findListProjectionService;
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/{id}/mobiliers")
     @Operation(
             summary = "Liste des mobiliers d'une unité d'enregistrement",

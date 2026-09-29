@@ -98,6 +98,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
@@ -170,6 +171,10 @@ class RecordingUnitOpenApiServiceTest {
 
     @Mock
     private ValidationOpenApiService validationOpenApiService;
+
+    // Real: every detail's multi-valued answers are shaped through it (relations empty here).
+    @Spy
+    private MultiValueAnswers multiValueAnswers = ListQueryStubs.multiValueAnswers();
 
     @Mock
     private CustomFieldAnswerService customFieldAnswerService;
@@ -2169,7 +2174,10 @@ class RecordingUnitOpenApiServiceTest {
 
         fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer nullAnswer =
                 (fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer) data.getAnswers().get("98");
-        assertThat(nullAnswer.values()).isNull();
+        // An unanswered multi-valued field is an empty, complete answer — never a bare null list.
+        assertThat(nullAnswer.values()).isEmpty();
+        assertThat(nullAnswer.total()).isZero();
+        assertThat(nullAnswer.complete()).isTrue();
     }
 
     @Test
@@ -2435,7 +2443,8 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(tableColumns)
                 .filteredOn(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::visible)
                 .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)
-                .containsExactlyInAnyOrder("isPartOf", "contains", "action", "type", "phases", "spatial", "author");
+                .containsExactlyInAnyOrder("isPartOf", "contains", "relationships", "specimen", "action", "type", "phases",
+                        "spatial", "author");
         assertThat(tableColumns)
                 .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)
                 .doesNotHaveDuplicates();

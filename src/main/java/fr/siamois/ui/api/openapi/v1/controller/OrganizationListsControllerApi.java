@@ -38,6 +38,7 @@ import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListProjectionService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -88,6 +89,7 @@ public class OrganizationListsControllerApi {
     private final ResourceBookmarkService resourceBookmarkService;
     private final FieldQueryService fieldQueryService;
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/api/v1/recording-units")
     @Tag(name = "Unité d'enregistrement")
     @Operation(summary = "Unités d'enregistrement d'une organisation",
@@ -138,6 +140,7 @@ public class OrganizationListsControllerApi {
         return ok(new RecordingUnitListResponse(resources, meta(page, limit, offset)), page);
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/api/v1/finds")
     @Tag(name = "Mobilier")
     @Operation(summary = "Mobiliers d'une organisation",
@@ -187,6 +190,7 @@ public class OrganizationListsControllerApi {
         return ok(new FindListResponse(resources, meta(page, limit, offset)), page);
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/api/v1/phases")
     @Tag(name = "Phase")
     @Operation(summary = "Phases d'une organisation",
@@ -233,6 +237,7 @@ public class OrganizationListsControllerApi {
         return ok(new PhaseListResponse(resources, meta(page, limit, offset)), page);
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/api/v1/containers")
     @Tag(name = "Contenant")
     @Operation(summary = "Contenants d'une organisation",

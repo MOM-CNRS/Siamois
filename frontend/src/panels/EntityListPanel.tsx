@@ -284,7 +284,7 @@ export function EntityListPanel({
           // business (see the Column body below), not the column's: the editable wrapper has to be
           // the cell's own value slot — it eats the cell's padding to make the whole cell
           // clickable — so it cannot be nested inside one.
-          render: (row: RowRecord) => renderAnswerCell(field, binding.read(row)),
+          render: (row: RowRecord) => renderAnswerCell(field, binding.readRaw(row)),
         };
       })
       .filter((c): c is ColumnDef<RowRecord> => c != null);
@@ -489,10 +489,12 @@ export function EntityListPanel({
         tabIndex={0}
         // The cell is one line and may be truncated, so the full text is always reachable as the
         // native tooltip; an empty cell falls back to naming what clicking it would edit.
-        title={renderAnswerValue(field, resolveValueBinding(field).read(row)) || `Modifier « ${field.label} »`}
+        title={renderAnswerValue(field, resolveValueBinding(field).readRaw(row)) || `Modifier « ${field.label} »`}
         onClick={(e) => openCellEditor(e, row, field)}
       >
-        {content || <span className="entity-list-panel-editable-cell-empty">—</span>}
+        {/* An empty cell shows nothing: a non-breaking space keeps it one line tall, so the whole cell
+            stays a click target (the hover outline and the tooltip say it is editable). */}
+        {content || <span className="entity-list-panel-editable-cell-empty">{"\u00a0"}</span>}
       </span>
     );
   }
@@ -623,7 +625,21 @@ export function EntityListPanel({
             </>
           }
           end={
-            creatable === false ? null : config.list.createForm && createNeedsPickedProject && !canCreateInSomeProject ? (
+            <>
+              {/* How many rows are selected — only once there is a selection: the total is already
+                  the titlebar's count chip, so "0/N" said nothing. Its × clears the selection. */}
+              {selectedRows.length > 0 && (
+                <Chip
+                  className="entity-list-panel-selection-count"
+                  label={`${selectedRows.length} sélectionné${selectedRows.length > 1 ? "s" : ""}`}
+                  removable
+                  onRemove={() => {
+                    setSelectedRows([]);
+                    return true;
+                  }}
+                />
+              )}
+              {creatable === false ? null : config.list.createForm && createNeedsPickedProject && !canCreateInSomeProject ? (
               // No project to create in: the button stays visible but disabled (JSF's
               // ToolbarCreateConfig "unavailable" state), saying why.
               <Button
@@ -664,7 +680,8 @@ export function EntityListPanel({
               </>
             ) : (
               onCreate && <Button label="Créer" icon="bi bi-plus-square" onClick={onCreate} />
-            )
+            )}
+            </>
           }
         />
       )}
@@ -750,10 +767,9 @@ export function EntityListPanel({
         scrollable
         scrollHeight="flex"
       >
-        {/* selectedCountChip (tableToolbar.xhtml): selected/total, in the selection column's own
-            header, after the select-all box (main-panel.css reverses PrimeReact's title-then-
-            checkbox order). handleSelectionChange() is a no-op in JSF — selection drives nothing
-            there either; this is decoration until a bulk action exists. */}
+        {/* The select-all box alone: the selected count lives in the toolbar (see its end group),
+            where it doesn't widen the frozen first column. Selection drives nothing yet, as in
+            JSF (handleSelectionChange() is a no-op there) — it waits for a bulk action. */}
         <Column
           columnKey="__selection"
           selectionMode="multiple"
@@ -761,7 +777,6 @@ export function EntityListPanel({
           headerStyle={{ width: "3rem" }}
           headerClassName={`entity-list-panel-selection-header${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
           reorderable={false}
-          header={isLoading ? <Skeleton width="3rem" height="1.5rem" borderRadius="16px" /> : <Chip label={`${selectedRows.length}/${totalCount}`} />}
         />
         {allColumns.flatMap((col, index) => [
           <Column

@@ -18,11 +18,10 @@ import static fr.siamois.ui.table.definitions.SystemFieldCatalog.fieldBoundTo;
  * et {@code GET /api/v1/organizations/{id}/recording-unit-types} ({@code _default.tableColumns}),
  * exactement comme {@link ActionUnitTableColumnDefaults} l'est pour le projet.</p>
  *
- * <p>Ne contient <strong>pas</strong> les trois colonnes structurelles — chip identifiant
- * ({@code identifierCol}), et les deux compteurs de relation ({@code relationships},
- * {@code specimen}) : elles ne viennent pas du catalogue de champs (pas de {@link CustomField}
- * associé) et sont construites à la main de chaque côté (React les fabrique depuis
- * {@code fullIdentifier} et {@code _counts}).</p>
+ * <p>Ne contient <strong>pas</strong> la chip identifiant ({@code identifierCol}) : elle ne vient
+ * pas du catalogue de champs et est construite à la main (React la fabrique depuis
+ * {@code fullIdentifier}). Les relations — parents, enfants, relations stratigraphiques, mobilier —
+ * sont, elles, des champs comme les autres : chaque ligne en porte un aperçu et le total.</p>
  */
 public final class RecordingUnitTableColumnDefaults {
 
@@ -50,14 +49,19 @@ public final class RecordingUnitTableColumnDefaults {
     }
 
     private static final List<ColumnDefault> COLUMNS = List.of(
-            new ColumnDefault("isPartOf", "common.field.parents", fieldBoundTo(ConfigurableTable.UE, "parents"),
-                    true, true, true, RecordingUnitSpec.PARENTS_COUNT_SORT, false, false),
-            new ColumnDefault("contains", "common.field.children", fieldBoundTo(ConfigurableTable.UE, "children"),
-                    true, true, true, RecordingUnitSpec.CHILDREN_COUNT_SORT, false, false),
             new ColumnDefault("action", "recordingunit.field.actionUnit", fieldBoundTo(ConfigurableTable.UE, "actionUnit"),
                     true, true, true, null, true, true),
             new ColumnDefault("type", "recordingunit.property.type", fieldBoundTo(ConfigurableTable.UE, "type"),
                     true, true, true, null, true, false),
+            new ColumnDefault("isPartOf", "common.field.parents", fieldBoundTo(ConfigurableTable.UE, "parents"),
+                    true, true, true, RecordingUnitSpec.PARENTS_COUNT_SORT, false, false),
+            new ColumnDefault("contains", "common.field.children", fieldBoundTo(ConfigurableTable.UE, "children"),
+                    true, true, true, RecordingUnitSpec.CHILDREN_COUNT_SORT, false, false),
+            new ColumnDefault("relationships", "recordingunit.field.stratigraphicRelationships",
+                    fieldBoundTo(ConfigurableTable.UE, "stratigraphicRelationships"),
+                    true, true, true, RecordingUnitSpec.RELATIONSHIP_COUNT_SORT, false, true),
+            new ColumnDefault("specimen", "recordingunit.field.finds", fieldBoundTo(ConfigurableTable.UE, "specimenList"),
+                    true, true, true, RecordingUnitSpec.SPECIMEN_COUNT_SORT, false, true),
             new ColumnDefault("phases", "recordingunit.field.phases", fieldBoundTo(ConfigurableTable.UE, "phases"),
                     true, false, false, null, false, false),
             new ColumnDefault("spatial", "recordingunit.field.spatialUnit", fieldBoundTo(ConfigurableTable.UE, "spatialUnit"),

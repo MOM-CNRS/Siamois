@@ -9,6 +9,9 @@ import type { FieldResource } from "../../fields/types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const { fetchAllValues } = vi.hoisted(() => ({ fetchAllValues: vi.fn() }));
+vi.mock("../../fields/multiValues", () => ({ fetchAllValues }));
+
 registerDefaultFieldRenderers();
 
 // Stand-ins for the two "commits immediately" shapes, so a value change can be triggered directly
@@ -30,6 +33,7 @@ registerFieldRenderer("SELECT_MULTIPLE_TEST", picker(["picked"]));
 interface Row {
   id: string;
   oaCode?: string;
+  answers?: Record<string, unknown>;
 }
 
 const singleSelectField: FieldResource = {
@@ -266,10 +270,32 @@ describe("CellEditOverlay", () => {
     });
     await flush();
 
-    // One pick is not the whole answer — closing here would force a reopen per value.
-    expect(onSave).toHaveBeenCalledWith("1", { "-120": { values: ["picked"] } });
+    // One pick is not the whole answer — closing here would force a reopen per value. And it is
+    // written as what changed (add/remove), never as a whole list the row may only preview.
+    expect(onSave).toHaveBeenCalledWith("1", { "-120": { add: ["picked"], remove: [] } }, ["picked"]);
     expect(onClose).not.toHaveBeenCalled();
     expect(overlayEl()).not.toBeNull();
+  });
+
+  // The row only carried a preview (complete=false): the editor loads the whole list first, then
+  // writes only what changed — a whole list built from the preview would drop the unseen values.
+  it("loads an incomplete multi-valued answer whole before editing it, then writes add/remove", async () => {
+    fetchAllValues.mockResolvedValue([{ resourceId: "1" }, { resourceId: "2" }]);
+    const preview = { values: [{ resourceId: "1" }], total: 2, complete: false, _links: { values: "/api/v1/x" } };
+    const { onSave } = renderOverlay({
+      target: { row: { id: "1", answers: { "-120": preview } }, field: multiSelectField, anchor: ANCHOR },
+    });
+    expect(document.body.querySelector(".cell-edit-overlay-loading")).not.toBeNull();
+    await flush();
+
+    expect(fetchAllValues).toHaveBeenCalledWith(preview);
+    const pick = document.body.querySelector(".test-pick") as HTMLElement;
+    await act(async () => {
+      pick.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(onSave).toHaveBeenCalledWith("1", { "-120": { add: ["picked"], remove: ["1", "2"] } }, ["picked"]);
   });
 
   it("cancels on Escape without saving", async () => {

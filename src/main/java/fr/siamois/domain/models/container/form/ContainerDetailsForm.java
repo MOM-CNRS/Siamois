@@ -38,6 +38,15 @@ public class ContainerDetailsForm extends ContainerForm {
                                                         .build())
                                                 .build()
                                 )
+                                .addRow(
+                                        new CustomRowUiDto.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
+                                                        .readOnly(true)
+                                                        .width(ColumnWidth.FULL)
+                                                        .field(findsField)
+                                                        .build())
+                                                .build()
+                                )
                                 .build()
                 )
                 .addPanel(

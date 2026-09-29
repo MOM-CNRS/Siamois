@@ -1,9 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,7 @@ public class ProjectListProjectionService {
 
     private final ProjectAnswersProjector projectAnswersProjector;
     private final ConceptLabelBatchResolver conceptLabelBatchResolver;
+    private final MultiValueAnswers multiValueAnswers;
 
     /**
      * @param resolvedLabels libellé par id de concept, couvrant à la fois le type de chaque projet et les
@@ -51,6 +54,11 @@ public class ProjectListProjectionService {
      *                    clé {@code answers} et la liste reste au coût qu'elle avait avant.
      */
     public ProjectListProjection build(Collection<AccessibleProjectForApi> rows, String fieldsParam, String lang) {
+        return build(rows, fieldsParam, lang, ValuesLimit.forList());
+    }
+
+    /** {@link #build(Collection, String, String)} with each multi-valued answer cut to {@code valuesLimit} values. */
+    public ProjectListProjection build(Collection<AccessibleProjectForApi> rows, String fieldsParam, String lang, int valuesLimit) {
         if (rows == null || rows.isEmpty()) {
             return ProjectListProjection.empty();
         }
@@ -67,6 +75,7 @@ public class ProjectListProjectionService {
         }
         Map<Long, String> labels = conceptLabelBatchResolver.resolveLabels(concepts, lang);
 
-        return new ProjectListProjection(labels, projectAnswersProjector.project(dtos, fieldIds, labels));
+        return new ProjectListProjection(labels, multiValueAnswers.shape(ActionUnit.class,
+                projectAnswersProjector.project(dtos, fieldIds, labels), fieldIds, valuesLimit, lang));
     }
 }

@@ -219,6 +219,27 @@
   cursor: default;
 }
 
+/* The "+N" of a preview (MultiValueAnswer.complete false): opens the whole list. */
+.cell-multi-more-link {
+  cursor: pointer;
+}
+
+.cell-multi-more-link:hover,
+.cell-multi-more-link:focus-visible {
+  background: var(--surface-300, #e0e0e0);
+}
+
+.cell-multi-overlay {
+  max-width: 28rem;
+  max-height: 20rem;
+  overflow: auto;
+}
+
+.cell-multi-overlay-status {
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.85rem;
+}
+
 /* --------------------------------------------- merged status + identifier cell */
 
 
@@ -554,6 +575,12 @@ body button.p-button.p-button-text.status-button.cancelled {
   margin-top: 0.25rem;
   color: var(--red-500, #d32f2f);
   font-size: 0.8rem;
+}
+
+.cell-edit-overlay-loading {
+  padding: 0.5rem;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.85rem;
 }
 
 /* ---------------------------------------------------------------------------
@@ -962,12 +989,16 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   color: var(--text-color);
 }
 
-/* Selection column header: select-all box first, then the selected/total count (PrimeReact
-   renders the header title before the checkbox). */
-.entity-list-panel th.entity-list-panel-selection-header .p-column-header-content {
-  flex-direction: row-reverse;
-  justify-content: flex-end;
-  gap: 0.4rem;
+/* The toolbar's selected-rows count, before "Créer" (EntityListPanel), shown only once rows are
+   selected. */
+.entity-list-panel-toolbar .p-toolbar-group-end {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.entity-list-panel-selection-count.p-chip {
+  font-size: 0.85rem;
 }
 
 /* The row's own identifier chip opens the row in the overview; while its row is hovered it fills
@@ -1315,7 +1346,8 @@ body {
   /* The multi-select picker's own token (theme: .p-autocomplete-token): a small-radius rectangle,
      label padded 0.5rem, same text size as the field — minus its remove icon. */
   padding: 1px 0.5rem;
-  border: 1px solid var(--ref-chip-color);
+  /* Read-only: the palette's -100 variant (RefChip sets it); the label keeps the full colour. */
+  border: 1px solid var(--ref-chip-border, var(--ref-chip-color));
   border-radius: 3px;
   background: transparent;
   color: var(--ref-chip-color);

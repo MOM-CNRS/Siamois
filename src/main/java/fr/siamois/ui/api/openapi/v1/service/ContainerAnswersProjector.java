@@ -11,6 +11,7 @@ import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -147,7 +148,8 @@ public class ContainerAnswersProjector {
 
     private static Object readBinding(ContainerDTO row, CustomField field) {
         String binding = field.getValueBinding();
-        if (binding == null || binding.isBlank()) {
+        // A relation field is never on the DTO: MultiValueAnswers reads it, a preview and a count.
+        if (binding == null || binding.isBlank() || RelationField.isRelation(Container.class, binding)) {
             return null;
         }
         PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(ContainerDTO.class, binding);

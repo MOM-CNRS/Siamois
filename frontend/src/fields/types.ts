@@ -67,6 +67,9 @@ export interface FieldConstraints {
  */
 export interface ResolvedBinding {
   read(entity: unknown): unknown;
+  // The answer as served, before unwrapAnswer: what a display needs to show a multi-valued
+  // answer's total ("+N") and fetch the rest of it (MultiValueAnswer).
+  readRaw(entity: unknown): unknown;
   write<T extends object>(entity: T, value: unknown): T;
 }
 
@@ -80,13 +83,45 @@ interface FieldAnswerEnvelope {
   values?: unknown;
 }
 
+/**
+ * A multi-valued answer as the API serves it — MultiValue on a raw answer, the same properties on
+ * the SelectManyFieldAnswer envelope: at most `valuesLimit` values, how many there are in all, and
+ * where the rest is when `values` isn't all of them.
+ */
+export interface MultiValueAnswer {
+  values: unknown[];
+  total: number;
+  complete: boolean;
+  _links?: { values: string } | null;
+}
+
+function isMultiValue(value: unknown): value is MultiValueAnswer {
+  return (
+    value != null &&
+    typeof value === "object" &&
+    Array.isArray((value as MultiValueAnswer).values) &&
+    typeof (value as MultiValueAnswer).total === "number"
+  );
+}
+
 /** Accepts either a raw value or a FieldAnswer envelope and always yields the raw value. */
 export function unwrapAnswer(value: unknown): unknown {
+  if (isMultiValue(value)) return value.values;
   if (value != null && typeof value === "object" && "answerType" in value) {
     const envelope = value as FieldAnswerEnvelope;
     return "values" in envelope ? envelope.values : envelope.value;
   }
   return value;
+}
+
+/**
+ * The multi-valued answer `value` holds — its preview, total and completeness — or null for any
+ * other value. A plain array (an entity property, a value the client built itself) is complete.
+ */
+export function readMultiValue(value: unknown): MultiValueAnswer | null {
+  if (isMultiValue(value)) return value;
+  if (Array.isArray(value)) return { values: value, total: value.length, complete: true };
+  return null;
 }
 
 export function resolveValueBinding(field: FieldResource): ResolvedBinding {
@@ -95,14 +130,17 @@ export function resolveValueBinding(field: FieldResource): ResolvedBinding {
   const answerKey = field.id;
   const propertyKey = field.valueBinding ?? field.id;
 
+  const readRaw = (entity: unknown): unknown => {
+    const answers = (entity as EntityWithAnswers)?.answers;
+    if (answers && answerKey in answers) {
+      return answers[answerKey];
+    }
+    return field.isSystemField ? (entity as Record<string, unknown>)?.[propertyKey] : undefined;
+  };
+
   return {
-    read: (entity) => {
-      const answers = (entity as EntityWithAnswers)?.answers;
-      if (answers && answerKey in answers) {
-        return unwrapAnswer(answers[answerKey]);
-      }
-      return field.isSystemField ? (entity as Record<string, unknown>)?.[propertyKey] : undefined;
-    },
+    read: (entity) => unwrapAnswer(readRaw(entity)),
+    readRaw,
     write: <T extends object>(entity: T, value: unknown): T => {
       if (field.isSystemField) {
         return { ...entity, [propertyKey]: value } as T;
@@ -120,10 +158,13 @@ export function resolveValueBinding(field: FieldResource): ResolvedBinding {
 // Mirrors fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput — the write-side counterpart of
 // FieldAnswer. "value: null" clears a scalar/single-reference field; "values: null" leaves a
 // SELECT_MANY field untouched (ProjectPatchRequest/RecordingUnitPatchRequest's shared convention);
-// "values: []" clears it.
+// "values: []" clears it. "add"/"remove" change a SELECT_MANY field by the ids they name, leaving
+// every other value alone — the only safe write when what was read was only a preview.
 export interface AnswerInputBody {
   value?: unknown;
   values?: unknown[] | null;
+  add?: unknown[];
+  remove?: unknown[];
 }
 
 interface ResourceRefLike {
@@ -144,10 +185,23 @@ function toId(value: unknown): unknown {
  * Converts a field renderer's onChange value (fields/renderers.tsx: a scalar, a ResourceRef-like
  * object/array, or null) into the AnswerInput shape a PATCH body sends. The inverse of what
  * resolveValueBinding's read side does with unwrapAnswer — same field, opposite direction.
+ *
+ * <p>Given the value the editor started from, a multi-valued field is written as the difference
+ * (add/remove) rather than as a whole list: that start may have been a preview of a longer list,
+ * and a whole list would drop every value it never showed.</p>
  */
-export function toAnswerInput(field: FieldResource, value: unknown): AnswerInputBody {
+export function toAnswerInput(field: FieldResource, value: unknown, previous?: unknown): AnswerInputBody {
   if (field.answerType.startsWith("SELECT_MULTIPLE")) {
-    return { values: Array.isArray(value) ? value.map(toId) : [] };
+    const next = Array.isArray(value) ? value.map(toId) : [];
+    if (previous === undefined) return { values: next };
+    const before = Array.isArray(previous) ? previous.map(toId) : [];
+    const key = (id: unknown) => String(id);
+    const beforeKeys = new Set(before.map(key));
+    const nextKeys = new Set(next.map(key));
+    return {
+      add: next.filter((id) => !beforeKeys.has(key(id))),
+      remove: before.filter((id) => !nextKeys.has(key(id))),
+    };
   }
   return { value: toId(value) };
 }

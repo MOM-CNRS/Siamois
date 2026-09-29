@@ -9,6 +9,7 @@ import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import lombok.extern.slf4j.Slf4j;
@@ -157,7 +158,8 @@ public class PhaseAnswersProjector {
 
     private static Object readBinding(PhaseDTO row, CustomField field) {
         String binding = field.getValueBinding();
-        if (binding == null || binding.isBlank()) {
+        // A relation field is never on the DTO: MultiValueAnswers reads it, a preview and a count.
+        if (binding == null || binding.isBlank() || RelationField.isRelation(Phase.class, binding)) {
             return null;
         }
         PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(PhaseDTO.class, binding);

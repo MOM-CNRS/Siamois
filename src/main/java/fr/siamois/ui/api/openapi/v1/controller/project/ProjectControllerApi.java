@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
@@ -53,6 +54,7 @@ public class ProjectControllerApi {
     private final ProjectListProjectionService projectListProjectionService;
     private final FieldQueryService fieldQueryService;
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping
     @Operation(summary = "La liste des projets")
     @ApiResponses(value = {
@@ -126,6 +128,7 @@ public class ProjectControllerApi {
                 .body(new ProjectListResponse(resources, meta));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @GetMapping("/{id}")
     @Operation(summary = "Un projet via son identifiant",
             description = "")
@@ -151,7 +154,7 @@ public class ProjectControllerApi {
         // Même service par lot que la liste, sur une page d'une seule ligne : les libellés de concepts
         // des champs projetés se résolvent en un lot, pas un appel par champ.
         ProjectListProjectionService.ProjectListProjection projection =
-                projectListProjectionService.build(List.of(row), fields, lang);
+                projectListProjectionService.build(List.of(row), fields, lang, ValuesLimit.forDetail());
         ProjectResource resource = projectResponseMapper.toResource(
                 row, lang, permissions, bookmarked,
                 projection.resolvedLabels(), projection.answersFor(row.actionUnit().getId()));

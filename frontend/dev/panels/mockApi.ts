@@ -10,7 +10,48 @@ const FIELDS: Record<string, unknown> = {
   "-4": { id: "-4", resourceType: "fields", label: "Date de fin", answerType: "DATETIME", isSystemField: true, valueBinding: "endDate", icon: "bi bi-calendar" },
   "10": { id: "10", resourceType: "fields", label: "Commentaire", answerType: "TEXT", isSystemField: false, isTextArea: true, icon: "bi bi-chat" },
   "11": { id: "11", resourceType: "fields", label: "Surface (m²)", answerType: "DECIMAL", isSystemField: false, icon: "bi bi-rulers", constraints: { min: 0 } },
+  // A recording unit's relation fields (shown after the project and type columns in the real
+// defaults; this harness has neither): every list row carries a preview and a total (MultiValue).
+  "-319": { id: "-319", resourceType: "fields", label: "Parents", answerType: "SELECT_MULTIPLE_RECORDING_UNIT", isSystemField: true, valueBinding: "parents", icon: "bi bi-pencil-square", query: { sortable: true, filterOp: "in" } },
+  "-320": { id: "-320", resourceType: "fields", label: "Contient", answerType: "SELECT_MULTIPLE_RECORDING_UNIT", isSystemField: true, valueBinding: "children", icon: "bi bi-pencil-square", query: { sortable: true, filterOp: "in" } },
+  "-327": { id: "-327", resourceType: "fields", label: "Relations stratigraphiques", answerType: "SELECT_MULTIPLE_STRATIGRAPHY", isSystemField: true, valueBinding: "stratigraphicRelationships", icon: "bi bi-layers", readOnly: true, query: { sortable: true, filterOp: "in" } },
+  "-326": { id: "-326", resourceType: "fields", label: "Mobilier", answerType: "SELECT_MULTIPLE_SPECIMEN", isSystemField: true, valueBinding: "specimenList", icon: "bi bi-bucket", readOnly: true, query: { sortable: true, filterOp: "in" } },
 };
+
+const RELATION_COLUMNS = [
+  { columnId: "fullIdentifier", fieldId: "-2", visible: true, order: 0 },
+  { columnId: "isPartOf", fieldId: "-319", visible: true, order: 1 },
+  { columnId: "contains", fieldId: "-320", visible: true, order: 2 },
+  { columnId: "relationships", fieldId: "-327", visible: true, order: 3 },
+  { columnId: "specimen", fieldId: "-326", visible: true, order: 4 },
+];
+
+const usRef = (n: number) => ({ resourceId: String(100 + n), resourceType: "recording-units", label: `2026-OA1000-US${n + 1}` });
+const findRef = (n: number) => ({ resourceId: String(500 + n), resourceType: "finds", label: `2026-OA1000-M${n + 1}` });
+const stratiRef = (n: number) => ({
+  ...usRef(n),
+  qualifier: { concept: { resourceId: "164", resourceType: "concepts", label: ["coupe", "recouvre", "synchrone de"][n % 3] }, role: "unit1", position: n % 3 === 2 ? "synchronous" : "posterior", asynchronous: n % 3 !== 2, uncertain: n % 4 === 3 },
+});
+// MultiValue as the list serves it (valuesLimit=1): the first value, the total, and the link to the rest.
+function preview(unitId: number, fieldId: string, all: unknown[]) {
+  return {
+    values: all.slice(0, 1),
+    total: all.length,
+    complete: all.length <= 1,
+    ...(all.length > 1 ? { _links: { values: `/api/v1/recording-units/${unitId}/fields/${fieldId}/values` } } : {}),
+  };
+}
+function relationValues(unitId: number, fieldId: string): unknown[] {
+  const i = unitId - 100;
+  const n = (k: number) => Array.from({ length: k }, (_, j) => j);
+  switch (fieldId) {
+    case "-319": return n(i % 2).map((j) => usRef(j));
+    case "-320": return n(i % 4).map((j) => usRef(j + 1));
+    case "-327": return n(i % 5 === 0 ? 0 : i + 2).map((j) => stratiRef(j));
+    case "-326": return n(i * 7).map((j) => findRef(j));
+    default: return [];
+  }
+}
 
 const LAYOUT = [
   {
@@ -76,6 +117,7 @@ const recordingUnits = Array.from({ length: 8 }, (_, i) => ({
   _permissions: PERMS,
   resourceUri: `/recording-unit/${100 + i}`,
   bookmarked: false,
+  answers: Object.fromEntries(["-319", "-320", "-327", "-326"].map((f) => [f, preview(100 + i, f, relationValues(100 + i, f))])),
 }));
 
 // `answers` projected to the requested `fields=`, like the real list endpoints — so a column shown
@@ -119,7 +161,13 @@ const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => un
   }],
   [/^\/api\/v1\/projects\/(\d+)\/history$/, () => ({ data: [{ revisionDate: "2026-09-20T10:12:00Z", revisionType: "MOD", author: { id: 1, name: "Grégory", lastname: "B." } }], meta: { total: 1, limit: 50, offset: 0 } })],
   [/^\/api\/v1\/projects\/(\d+)\/recording-units$/, (_m, url) => list(recordingUnits, url)],
-  [/^\/api\/v1\/projects\/(\d+)\/recording-unit-types$/, () => ({ data: [], _default: { formBundle: { resourceType: "forms", layoutJson: JSON.stringify(LAYOUT) }, tableColumns: [{ columnId: "fullIdentifier", fieldId: "-2", visible: true, order: 0 }], fields: FIELDS }, fields: FIELDS })],
+  [/^\/api\/v1\/(?:projects|organizations)\/(\d+)\/recording-unit-types$/, () => ({ data: [], _default: { formBundle: { resourceType: "forms", layoutJson: JSON.stringify(LAYOUT) }, tableColumns: RELATION_COLUMNS, fields: FIELDS }, fields: FIELDS })],
+  [/^\/api\/v1\/recording-units\/(\d+)\/fields\/(-?\d+)\/values$/, (m, url) => {
+    const all = relationValues(Number(m[1]), m[2]);
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    const limit = Number(url.searchParams.get("limit") ?? 50);
+    return { data: all.slice(offset, offset + limit), meta: { total: all.length, limit, offset } };
+  }],
   [/^\/api\/v1\/recording-units$/, (_m, url) => list(recordingUnits, url)],
   [/^\/api\/v1\/recording-units\/(\d+)\/siblings$/, () => ({ data: { previous: { id: "100", label: "US1", resourceUri: "/recording-unit/100" }, next: { id: "101", label: "US2", resourceUri: "/recording-unit/101" } } })],
   [/^\/api\/v1\/recording-units\/(\d+)\/(children|parents)$/, (_m, url) => list(recordingUnits.slice(0, 2), url)],

@@ -5,6 +5,7 @@ import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -56,6 +57,11 @@ public abstract class ContainerForm {
     protected static final Concept weightConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
             .externalId("container.weight")
+            .build();
+
+    protected static final Concept findsConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("container.finds")
             .build();
 
     // --- Fields ---
@@ -138,5 +144,16 @@ public abstract class ContainerForm {
             .valueBinding("weight")
             .unit(new UnitDefinition(null, null, "Kilogramme", "kg", UnitDefinition.Dimension.MASS, 1000.0, false))
             .concept(weightConcept)
+            .build();
+
+    // The inverse of a find's containers (specimen_container): read-only here, written from the
+    // find's side.
+    @Transient
+    protected static final CustomFieldSelectMultipleSpecimen findsField = CustomFieldSelectMultipleSpecimen.builder()
+            .label("container.field.finds")
+            .isSystemField(true)
+            .id(-609L)
+            .valueBinding("specimens")
+            .concept(findsConcept)
             .build();
 }

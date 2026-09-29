@@ -88,7 +88,7 @@ class PhaseOpenApiServiceTest {
     @BeforeEach
     void setUp() {
         service = new PhaseOpenApiService(phaseService, actionUnitService, conceptService, conceptMapper,
-                profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
+                profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
 
         lenient().when(fieldAnswerWireService.additionalAnswers(any(), any())).thenReturn(Map.of());

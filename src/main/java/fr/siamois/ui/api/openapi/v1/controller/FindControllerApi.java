@@ -14,6 +14,7 @@ import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -55,6 +56,7 @@ public class FindControllerApi {
                 findOpenApiService.findSiblings(id, caller.accessibleInstitutionIds())));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @GetMapping("/{id}")
     @Operation(
             summary = "Un mobilier avec ces valeurs",
@@ -85,6 +87,7 @@ public class FindControllerApi {
                         caller.person(), caller.accessibleInstitutionIds(), lang)));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer un mobilier",
@@ -111,6 +114,7 @@ public class FindControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(new FindResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Modifier partiellement un mobilier",

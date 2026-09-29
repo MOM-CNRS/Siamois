@@ -20,6 +20,7 @@ import fr.siamois.ui.api.openapi.v1.response.phase.PhaseResponse;
 import fr.siamois.ui.api.openapi.v1.service.PhaseOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -43,6 +44,7 @@ public class PhaseControllerApi {
     private final RecordingUnitListAssembler recordingUnitListAssembler;
     private final FieldQueryService fieldQueryService;
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/{id}/recording-units")
     @Operation(summary = "Unités d'enregistrement d'une phase",
             description = "UE rattachées à la phase (recording_unit_phase), avec le même contrat que "
@@ -95,6 +97,7 @@ public class PhaseControllerApi {
                 phaseOpenApiService.findSiblings(id, caller.person(), caller.accessibleInstitutionIds())));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @GetMapping("/{id}")
     @Operation(
             summary = "Une phase via son identifiant",
@@ -116,6 +119,7 @@ public class PhaseControllerApi {
         return ResponseEntity.ok(new PhaseResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer une phase",
@@ -140,6 +144,7 @@ public class PhaseControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(new PhaseResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Modifier partiellement une phase",

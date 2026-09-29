@@ -1,9 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,7 @@ public class RecordingUnitListProjectionService {
 
     private final RecordingUnitAnswersProjector recordingUnitAnswersProjector;
     private final ConceptLabelBatchResolver conceptLabelBatchResolver;
+    private final MultiValueAnswers multiValueAnswers;
     private final AdditionalAnswersListProjector additionalAnswersListProjector;
 
     public record RecordingUnitListProjection(Map<Long, String> resolvedLabels,
@@ -44,6 +47,11 @@ public class RecordingUnitListProjectionService {
      *                    {@code answers} key, at no extra cost over the plain page.
      */
     public RecordingUnitListProjection build(Collection<RecordingUnitDTO> rows, String fieldsParam, String lang) {
+        return build(rows, fieldsParam, lang, ValuesLimit.forList());
+    }
+
+    /** {@link #build(Collection, String, String)} with each multi-valued answer cut to {@code valuesLimit} values. */
+    public RecordingUnitListProjection build(Collection<RecordingUnitDTO> rows, String fieldsParam, String lang, int valuesLimit) {
         if (rows == null || rows.isEmpty()) {
             return RecordingUnitListProjection.empty();
         }
@@ -60,7 +68,9 @@ public class RecordingUnitListProjectionService {
         Map<Long, String> labels = conceptLabelBatchResolver.resolveLabels(concepts, lang);
 
         List<Long> rowIds = rows.stream().filter(java.util.Objects::nonNull).map(RecordingUnitDTO::getId).filter(java.util.Objects::nonNull).toList();
-        return new RecordingUnitListProjection(labels, additionalAnswersListProjector.merge(recordingUnitAnswersProjector.project(rows, fieldIds, labels),
-                CustomFieldAnswerService.ListOwner.RECORDING_UNIT, rowIds, fieldsParam, fieldIds, lang));
+        Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(recordingUnitAnswersProjector.project(rows, fieldIds, labels),
+                CustomFieldAnswerService.ListOwner.RECORDING_UNIT, rowIds, fieldsParam, fieldIds, lang);
+        return new RecordingUnitListProjection(labels,
+                multiValueAnswers.shape(RecordingUnit.class, answers, fieldIds, valuesLimit, lang));
     }
 }

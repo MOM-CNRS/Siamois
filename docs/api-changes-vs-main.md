@@ -12,8 +12,8 @@
 | Kind | Count |
 |---|---|
 | Endpoints **removed** | 3 |
-| Endpoints whose contract changed in a **breaking** way | 6 (plus 3 schema-level breaks) |
-| Endpoints **added** | 34 |
+| Endpoints whose contract changed in a **breaking** way | 6 (plus 4 schema-level breaks) |
+| Endpoints **added** | 35 |
 | Existing endpoints with **additive** changes (new params/fields) | ~15 |
 
 Things most likely to break an existing client, in order:
@@ -24,6 +24,7 @@ Things most likely to break an existing client, in order:
 4. `ValidationStatus` has a new value, **`CANCELLED`**.
 5. The `answers` key on list items (recording units) is **omitted** unless `?fields=` is sent. Previously it was always present as `{}`.
 6. Project, recording-unit, find, phase and container lists now **reject unknown sort properties and unknown `f.*` filter keys with `400`**. On `main`, an unknown sort property was silently replaced by the default order.
+7. A **multi-valued answer** is no longer a bare array (lists) nor always complete (details): it is `{ values, total, complete, _links? }`, cut to `valuesLimit` values (1 on lists, 50 on details). See S5.
 
 ---
 
@@ -42,7 +43,8 @@ Things most likely to break an existing client, in order:
 | S1 | `ValidationStatus` enum | `INCOMPLETE, COMPLETE, VALIDATED` | **+ `CANCELLED`** | Clients that deserialise into a closed enum must accept the new value. `validated` is now also exposed on all entity resources (see A-fields). |
 | S2 | `RecordingUnitResource.answers` on **lists** (`/projects/{id}/recording-units`, `/recording-units`, `/phases/{id}/recording-units`, children) | Always present, always `{}` | **Absent** unless `?fields=all\|default\|<id,id,…>` is sent. When present, it holds **raw values** keyed by fieldId, **not** the `FieldAnswer` envelope | Don't rely on the key existing. Ask for `fields=` if you need values. On the **detail** endpoint (`GET /recording-units/{id}`) `answers` is still the `FieldAnswer` envelope, unchanged. |
 | S3 | `FindResource.recordingUnit` | `RecordingUnitResourceIdentifier { resourceType, id }` | `RecordingUnitReference { resourceType, id, fullIdentifier? }` | Additive on the wire (`fullIdentifier` added, omitted when null). Only strict/closed schema validators break. |
-| S4 | `FieldAnswer` polymorphism (`answerType` discriminator) | `TEXT`, `INTEGER`, `DATE`, … | **+ `DECIMAL`** (`DecimalFieldAnswer { answerType, field, value: number \| null }`) | Handle the new discriminator value. Treat unknown ones as a fallback. |
+| S4 | `FieldAnswer` polymorphism (`answerType` discriminator) | `TEXT`, `INTEGER`, `DATE`, … | **+ `DECIMAL`** (`DecimalFieldAnswer { answerType, field, value: number \| null }`), **+ `SELECT_MULTIPLE_STRATIGRAPHY`** (a `SelectManyFieldAnswer` whose values carry a `qualifier`) | Handle the new discriminator values. Treat unknown ones as a fallback. |
+| S5 | Every **multi-valued answer** (`SELECT_MULTIPLE_*`), on every list and detail that serves `answers` (projects, RUs, finds, phases, containers) | Lists: a bare array of `ResourceRef`. Details: `SelectManyFieldAnswer { answerType, field, values }` with every value | Raw answers (lists; phase, container and project details): **`MultiValue { values, total, complete, _links? }`**. Envelope (RU and find details): `SelectManyFieldAnswer` gains the same `total`, `complete`, `_links`. `values` holds at most `valuesLimit` values (default **1** on lists, **50** on details), in the order of their label; `total` is how many there are; when `complete` is `false`, `_links.values` is the paginated list of all of them (`GET /api/v1/{collection}/{id}/fields/{fieldId}/values`). An unanswered multi-valued field is `{ values: [], total: 0, complete: true }`, never `null` on the envelope | Read `values` inside the object. **Never write back a list you read with `complete: false`**: a `values` PATCH replaces the whole list and would drop what you didn't see; use `add` / `remove` (§3.3). |
 
 ### Validation errors that used to be silent
 
@@ -130,6 +132,12 @@ Items in these organisation lists carry a `project: ResourceRef` (owning project
 | `DELETE /api/v1/bookmarks?resourceUri=&organizationId=` | `204`, idempotent |
 | `GET /api/v1/bookmarks/status?resourceUri=&organizationId=` | `{ bookmarked: boolean }` |
 
+**Values of one multi-valued answer.** The target of every incomplete answer's `_links.values`.
+
+| Endpoint | Params | Response |
+|---|---|---|
+| `GET /api/v1/{collection}/{id}/fields/{fieldId}/values`, `collection` ∈ `recording-units`, `finds`, `phases`, `containers`, `projects` | `offset` (0), `limit` (default 50, max 200), `search` (label contains, case-insensitive), `sort` (`label:asc` default, `label:desc`) | `FieldValuesResponse { data: ResourceRef[], meta: { total, limit, offset } }` + `X-Total-Count`. Same access scope as the resource's detail. `400` if the field isn't multi-valued, `404` for an unknown field or resource. |
+
 **Siblings contract** (every `…/siblings` endpoint): `{ data: { previous: { id, label, resourceUri } | null, next: … | null } }`. The list wraps around, so the next of the last item is the first. A value is `null` only when there is no other item.
 
 ### 3.2 New query parameters on existing endpoints
@@ -157,12 +165,15 @@ Items in these organisation lists carry a `project: ResourceRef` (owning project
 
 When present, `answers` holds raw values keyed by fieldId.
 
+**`valuesLimit`** (every endpoint whose response carries `answers`: the lists above, and the project, RU, find, phase and container details and their POST/PATCH responses): how many values each multi-valued answer carries, `0`–`200`. Default `1` on lists, `50` on details. `0` sends only `total`. See S5.
+
 ### 3.3 New request body fields
 
 | Request | New field |
 |---|---|
 | `ProjectPatchRequest` | `validated: ValidationStatus`; `answers: { [fieldId]: { value } \| { values } }` merged after the flat fields. A missing key leaves the value untouched; `value: null` and `values: []` clear it; `values: null` leaves it untouched. |
 | `RecordingUnitPatchRequest`, `PlacePatchRequest`, `FindPatchRequest` | `validated: ValidationStatus`. Absent means unchanged. `INCOMPLETE`/`COMPLETE`/`CANCELLED` need the edit right. Reaching **or leaving** `VALIDATED` needs the validator right (`_permissions.canValidate`), otherwise `403`. |
+| `AnswerInput` (every `answers` map: project, RU, find, phase and container PATCH) | `add`, `remove`: ids to add to / remove from a multi-valued field, leaving every other value alone (an id already there, or not there, is ignored). Cannot be combined with `values` (`400`); a scalar field rejects them (`400`). The only safe write after reading an incomplete answer. |
 | `RecordingUnitCreateRequest` | `parentRecordingUnitId`, `childRecordingUnitId`: link the new RU as child/parent of an existing RU in the same project |
 | `PlaceCreateRequest` | `parentPlaceId`, `childPlaceId`: same idea, within the same organisation |
 
@@ -181,7 +192,9 @@ All of these are additive. Nullable fields are omitted when `null` wherever mark
 | `PhaseResource` | `projectId`, `project`, `organization`, `type`, `answers`, `_permissions`, `resourceUri`, `bookmarked`, `validated` (existing `id`, `identifier`, `title`, `label` unchanged) |
 | `PlaceResource` | `answers`, `formBundle`, `fields`, `_permissions` (detail only), `resourceUri`, `bookmarked`, `validated` |
 | `OrganizationResource` | `_permissions { canCreateProjects }` |
-| `FieldResource` | `isTextArea`, `icon`, `conceptUri`, `constraints { min, max, showTime, unit }`, `query { sortable, filterOp }` |
+| `FieldResource` | `isTextArea`, `icon`, `conceptUri`, `constraints { min, max, showTime, unit }`, `query { sortable, filterOp }`, `readOnly` |
+| `ResourceRef` | `href`: the referenced resource's detail URL (`/api/v1/recording-units/12`), absent for a type with no detail endpoint (persons, action codes). `qualifier` (stratigraphic relationships only): `{ concept: ResourceRef, role: unit1\|unit2, position: anterior\|posterior\|synchronous, conceptDirection, asynchronous, uncertain }` |
+| New system fields | RU: **`-326` Mobilier** (`SELECT_MULTIPLE_SPECIMEN`, binding `specimenList`), **`-327` Relations stratigraphiques** (`SELECT_MULTIPLE_STRATIGRAPHY`). Phase: **`-511` Unités d'enregistrement** (`SELECT_MULTIPLE_RECORDING_UNIT`). Container: **`-609` Mobilier** (`SELECT_MULTIPLE_SPECIMEN`). All read-only (`FieldResource.readOnly`), sortable by number of values and filterable (`in`). The RU parents (`-319`) and children (`-320`) are now projected on lists too (preview + total) and are default columns, as are `-326` and `-327`. |
 | `RecordingUnitDefaultType` (`/projects/{id}/recording-unit-types` → `_default`) | `tableColumns: [{ columnId, fieldId, visible, order }]` |
 | `ProjectRecordingUnitTypeListResponse` | `fields`: merged field catalogue across `_default` and every type |
 

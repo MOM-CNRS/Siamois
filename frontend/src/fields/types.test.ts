@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveValueBinding, toAnswerInput, unwrapAnswer, type FieldResource } from "./types";
+import { readMultiValue, resolveValueBinding, toAnswerInput, unwrapAnswer, type FieldResource } from "./types";
 
 function field(overrides: Partial<FieldResource>): FieldResource {
   return {
@@ -122,5 +122,35 @@ describe("toAnswerInput", () => {
       .toEqual({ values: [] });
     expect(toAnswerInput(field({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" }), null))
       .toEqual({ values: [] });
+  });
+});
+
+// MultiValue (a raw multi-valued answer) and SelectManyFieldAnswer: a preview, its total, whether
+// it is complete, and where the rest is.
+describe("multi-valued answers", () => {
+  const preview = { values: [{ resourceId: "1" }], total: 37, complete: false, _links: { values: "/api/v1/x" } };
+
+  it("unwraps a MultiValue to its values", () => {
+    expect(unwrapAnswer(preview)).toEqual([{ resourceId: "1" }]);
+  });
+
+  it("reads the preview's total and completeness, and takes a plain array as complete", () => {
+    expect(readMultiValue(preview)).toBe(preview);
+    expect(readMultiValue([1, 2])).toEqual({ values: [1, 2], total: 2, complete: true });
+    expect(readMultiValue("x")).toBeNull();
+  });
+
+  it("keeps the raw answer reachable through readRaw", () => {
+    const binding = resolveValueBinding(field({ id: "-319" }));
+    expect(binding.readRaw({ answers: { "-319": preview } })).toBe(preview);
+    expect(binding.read({ answers: { "-319": preview } })).toEqual([{ resourceId: "1" }]);
+  });
+
+  it("writes a multi-valued field as add/remove when given what the editor started from", () => {
+    const multi = field({ answerType: "SELECT_MULTIPLE_RECORDING_UNIT" });
+    const before = [{ resourceId: "1" }, { resourceId: "2" }];
+    const after = [{ resourceId: "2" }, { resourceId: "3" }];
+    expect(toAnswerInput(multi, after, before)).toEqual({ add: ["3"], remove: ["1"] });
+    expect(toAnswerInput(multi, after)).toEqual({ values: ["2", "3"] });
   });
 });

@@ -5,7 +5,14 @@ import { commitsImmediately, sameValue, staysOpenAfterSave } from "../../fields/
 import { editContextOf } from "../../fields/editContext";
 import { isEmptyValue } from "../../fields/FieldLabel";
 import { getFieldRenderer } from "../../fields/registry";
-import { resolveValueBinding, toAnswerInput, type AnswerInputBody, type FieldResource } from "../../fields/types";
+import { fetchAllValues } from "../../fields/multiValues";
+import {
+  readMultiValue,
+  resolveValueBinding,
+  toAnswerInput,
+  type AnswerInputBody,
+  type FieldResource,
+} from "../../fields/types";
 import { ApiError } from "../../api/client";
 
 /**
@@ -45,7 +52,9 @@ export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
   // Registry key of the edited rows' entity type — with the row, what tells a relation picker
   // which project to search and what a « Nouveau » from it is linked to (fields/editContext.ts).
   entityType?: string;
-  onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
+  // `value` is the field's whole new value, for a caller that can't write an add/remove difference
+  // (the Project fiche's spatial context, written through its flat alias).
+  onSave: (id: string | number, answers: Record<string, AnswerInputBody>, value?: unknown) => Promise<unknown>;
   // Called after a successful save so the caller can invalidate/refetch (the overlay itself
   // doesn't know about React Query).
   onSaved: () => void;
@@ -70,6 +79,11 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   const [draft, setDraft] = useState<unknown>(undefined);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A multi-valued answer that was only a preview (MultiValueAnswer.complete false) is fetched
+  // whole before it can be edited: the picker must show every value to let one be removed.
+  const [loadingValues, setLoadingValues] = useState(false);
+  const loadingRef = useRef(false);
+  loadingRef.current = loadingValues;
   const boxRef = useRef<HTMLDivElement>(null);
 
   // The value the cell held when the overlay opened — the baseline every "did it actually change?"
@@ -93,11 +107,35 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
     setSeededTarget(target);
     setDraft(current);
     setError(null);
+    setLoadingValues(target != null && partialAnswerOf(target) != null);
   }
+
+  useEffect(() => {
+    const partial = seededTarget ? partialAnswerOf(seededTarget) : null;
+    if (!partial) return;
+    let cancelled = false;
+    fetchAllValues(partial)
+      .then((all) => {
+        if (cancelled) return;
+        initialRef.current = all;
+        setDraft(all);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof ApiError ? e.message : "Impossible de charger toutes les valeurs.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingValues(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [seededTarget]);
 
   const save = useCallback(
     async (value: unknown): Promise<boolean> => {
       if (!target || target.row.id == null) return false;
+      // Nothing to save before the whole value is known — and nothing was edited either.
+      if (loadingRef.current) return true;
       if (sameValue(value, initialRef.current)) return true;
       if (savingRef.current) return false;
       // p:outputLabel indicateRequired + required="#{col.required}" is what stops this in JSF, on
@@ -111,7 +149,15 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       setSaving(true);
       setError(null);
       try {
-        await onSave(target.row.id, { [target.field.id]: toAnswerInput(target.field, value) });
+        // A multi-valued field is written as what changed since the editor opened (add/remove),
+        // never as a whole list: other clients may have added values since, and the server keeps them.
+        // An answer the row didn't carry at all counts as empty: only what was picked is added.
+        if (target.field.answerType.startsWith("SELECT_MULTIPLE")) {
+          const input = toAnswerInput(target.field, value, initialRef.current ?? []);
+          await onSave(target.row.id, { [target.field.id]: input }, value);
+        } else {
+          await onSave(target.row.id, { [target.field.id]: toAnswerInput(target.field, value) });
+        }
         initialRef.current = value;
         onSaved();
         return true;
@@ -238,17 +284,28 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       }}
       onKeyDown={onKeyDown}
     >
-      <Renderer
-        field={field}
-        value={draft}
-        readOnly={saving}
-        required={target.required ?? false}
-        organizationId={organizationId}
-        context={editContextOf(target.row, entityType, organizationId)}
-        onChange={onValueChange}
-      />
+      {loadingValues ? (
+        <div className="cell-edit-overlay-loading">Chargement des valeurs…</div>
+      ) : (
+        <Renderer
+          field={field}
+          value={draft}
+          readOnly={saving}
+          required={target.required ?? false}
+          organizationId={organizationId}
+          context={editContextOf(target.row, entityType, organizationId)}
+          onChange={onValueChange}
+        />
+      )}
       {error && <div className="cell-edit-overlay-error">{error}</div>}
     </div>,
     document.body,
   );
+}
+
+/** The target's answer when it is a multi-valued one the row only carries a preview of. */
+function partialAnswerOf<TRow>(target: CellEditTarget<TRow>) {
+  if (!target.field.answerType.startsWith("SELECT_MULTIPLE")) return null;
+  const answer = readMultiValue(resolveValueBinding(target.field).readRaw(target.row));
+  return answer && !answer.complete && answer._links?.values ? answer : null;
 }
