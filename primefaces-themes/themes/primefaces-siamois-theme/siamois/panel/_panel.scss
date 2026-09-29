@@ -1,6 +1,4 @@
-.content-body {
-  background: var(--siamois-green-unknown);
-}
+
 
 .siamois-panel .ui-widget {
   font-family: 'Inter', sans-serif;
@@ -13,12 +11,7 @@
 
 }
 
-.panel-highlight {
-  outline: 3px solid var(--siamois-green-light-350);
-  transition: outline 0.5s ease-in-out;
-}
-
-.sia-flow-panel-title, .ui-chip-text {
+.ui-chip-text {
   font-size: 14px;
 }
 
@@ -30,17 +23,6 @@
 }
 
 .siamois-panel .ui-datatable .ui-datatable-header {
-  background: transparent;
-  border: none;
-}
-
-.sia-panel-title {
-  font-size: 22px;
-  padding: 0.5em 0.5em 0.5em 2em;
-}
-
-/* BUTTONS */
-.ui-button.sia-icon-btn {
   background: transparent;
   border: none;
 }
@@ -60,10 +42,6 @@
   background: var(--siamois-green-light-100);
   color: var(--text-light);
   border-bottom: none;
-}
-
-.siamois-panel .panel-top-section {
-  padding: 1em;
 }
 
 .siamois-panel .ui-tabs.ui-tabs-top > .ui-tabs-nav li.ui-tabs-header {
@@ -86,16 +64,6 @@
   background: none;
 }
 
-.siamois-toolbar {
-  background: transparent;
-  box-shadow: none;
-}
-
-.recording-unit-single-panel .siamois-toolbar {
-  background: transparent;
-  box-shadow: none;
-}
-
 /* forms */
 
 .ui-panel.sia-form-panel .ui-panel-content {
@@ -104,7 +72,6 @@
   border: none;
   padding: 0;
 }
-
 
 .siamois-panel .ui-panel.sia-form-panel .ui-panel-titlebar {
   background: transparent;
@@ -131,23 +98,6 @@
 
 /* dialogs */
 
-.sia-new-unit-dialog.ui-dialog .ui-dialog-titlebar,
-.sia-duplicate-structure-dialog.ui-dialog .ui-dialog-titlebar {
-  padding: 1em;
-  background: var(--siamois-green-light-100);
-}
-
-.sia-new-unit-dialog.ui-dialog .ui-dialog-footer,
-.sia-duplicate-structure-dialog.ui-dialog .ui-dialog-footer {
-  padding: 0;
-}
-
-/* The duplication modal's body is a bare two-column grid rather than a form
-   component, so it needs its own breathing room inside the dialog. */
-.sia-duplicate-structure-dialog.ui-dialog .ui-dialog-content {
-  padding: 1.25em;
-}
-
 body {
   .ui-selectonemenu {
     &.ui-state-hover {
@@ -159,7 +109,6 @@ body {
       box-shadow: 0 0 0 .2em var(--light-color-100);
     }
   }
-
 
   .ui-selectonemenu-panel {
     .ui-button {
@@ -222,18 +171,6 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
     border: 1px solid var(--dark-color);
   }
 
-  &.sia-icon-btn {
-    background: transparent;
-    border: none;
-    color: var(--main-color);
-
-    &:hover {
-      background: var(--dark-color);
-      border: none;
-      color: var(--main-color);
-    }
-  }
-
 }
 
 .ui-commandlink.ui-widget.sideview-topbar-button {
@@ -293,7 +230,4 @@ body .ui-autocomplete .ui-autocomplete-dropdown {
 .ui-splitter-gutter-handle {
   background: white;
 }
-
-
-
 

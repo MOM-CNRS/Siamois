@@ -223,42 +223,29 @@
 /* --------------------------------------------- merged status + identifier cell */
 
 
-/* Same icon/colour vocabulary as /panel/header/validationButton.xhtml, minus the button: the JSF
-   list renders that control disabled, so it is a badge here. The first three values are the JSF
-   theme's own (_styles.scss body .ui-button.ui-button-flat.status-button.*), copied rather than
-   referenced so that JSF rule stays byte-identical (frontend/dev/check-jsf-theme-regression.sh).
-   Cancelled (new, no JSF colour) is a muted brick red — a status, not an error, so never the
-   danger red. */
-:root {
-  --status-validated: #5e6ad2;
-  --status-complete: #d9b036;
-  --status-incomplete: #9f9fa2;
-  --status-cancelled: #b8665a;
-}
-
+/* Same icon/colour vocabulary as /panel/header/validationButton.xhtml, minus the button: the list
+   renders that control read-only, so it is a badge here. The colours are the theme's --status-*
+   tokens (_variables.scss), which the status button reads too (_styles.scss .status-button.*); the
+   fallbacks only matter where the host theme is absent (the standalone dev server, vitest). */
 .validation-status-badge {
   font-size: 0.95rem;
   line-height: 1;
 }
 
 .validation-status-badge.validated {
-  color: var(--status-validated);
+  color: var(--status-validated, #5e6ad2);
 }
 
 .validation-status-badge.complete {
-  color: var(--status-complete);
+  color: var(--status-complete, #d9b036);
 }
 
 .validation-status-badge.incomplete {
-  color: var(--status-incomplete);
+  color: var(--status-incomplete, #9f9fa2);
 }
 
-/* The fiche's status button and its status list: the host theme colours the other three
-   (body .ui-button.ui-button-flat.status-button.*, which .p-button-text aliases) and paints any
-   other status-button white — so cancelled needs a selector that beats that one. */
-.validation-status-badge.cancelled,
-body button.p-button.p-button-text.status-button.cancelled {
-  color: var(--status-cancelled);
+.validation-status-badge.cancelled {
+  color: var(--status-cancelled, #b8665a);
 }
 
 /* A list row's identifier/link chip: outlined in its entity's colour on a transparent background
@@ -724,6 +711,11 @@ body button.p-button.p-button-text.status-button.cancelled {
   /* JSF puts .5rem 1rem on the inner .ui-button-text span; PrimeReact has no equivalent inner
      padding, so the same box is produced on the button itself. */
   padding: 0.5rem 1rem;
+  /* Lines the label's icon up with the value below it. The value's own box reaches 0.4rem into the
+     gutter (.field-value-cell-editable's margin), so its text starts that much further left than a
+     padded button's; pulling the label the same distance puts both on one left edge, and both hover
+     backgrounds in the same gutter. */
+  margin-left: -0.4rem;
   font-size: 0.875rem;
   /* A label is only a button when there is a thesaurus entry behind it — see FieldLabel. */
   cursor: default;

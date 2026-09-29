@@ -169,4 +169,11 @@ $highlightTextColor:#6B7280 !default;
     --third-dark-color: #{$thirdDarkColor};
 
     --error-main: #D32F2F;
+
+    // Validation status of an entity (draft / complete / validated / cancelled): one source for the
+    // status button and the list badge. Cancelled is a muted brick red — a status, not an error.
+    --status-validated: #5e6ad2;
+    --status-complete: #d9b036;
+    --status-incomplete: #9f9fa2;
+    --status-cancelled: #b8665a;
 }

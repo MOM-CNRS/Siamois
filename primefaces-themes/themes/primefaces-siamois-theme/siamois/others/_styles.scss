@@ -22,87 +22,8 @@ html, body {
   color: var(--text-main);
 }
 
-.layout-container {
-
-  height: 100vh;
-
-}
-
-.left-panel {
-  background-color: #c7c7c7;
-  padding: 20px;
-  min-height: 100%;
-  transition: width 0.3s;
-}
-
-.app-name {
-  font-size: 20px;
-  min-height: 100%;
-  background-color: white;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
-.top-bar {
-  flex-grow: 1;
-  background-color: #bed730;
-  padding: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.label-icon {
-  margin-left: 4px; /* Adjust spacing between the image and label */
-  max-height: 16px; /* Prevent image from exceeding the container's height */
-  width: auto; /* Maintain aspect ratio of the image */
-}
-
-.siamois-row {
-  margin-bottom: 1rem;
-}
-
-.shadow {
-  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
-}
-
-.main-content {
-  flex-grow: 1;
-  margin: 20px;
-  overflow-y: auto;
-}
-
-.icon-only-menu .ui-menuitem-text {
-  display: none; /* Hide the text labels */
-}
-
-.icon-only-menu .ui-menuitem-link {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 40px; /* Adjust width as needed */
-  height: 40px; /* Adjust height as needed */
-}
-
-.form-panel {
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
 .form-control {
   border: none;
-}
-
-.custom-marker {
-  display: flex;
-  width: 2rem;
-  height: 2rem;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  border-radius: 50%;
-  z-index: 1;
 }
 
 .ui-chronoline-event-content,
@@ -111,23 +32,9 @@ html, body {
   width: 0;
 }
 
-.ui-chip.custom-chip {
-  background: white;
-  color: var(--primary-color-text);
-}
-
-.left-menu {
-  border: none !important;
-  width: 100% !important;
-}
-
 i#user-icon {
   width: 40px;
   height: 40px;
-}
-
-.bootstrap-icon-select-one-button .ui-button.ui-widget.ui-state-default.ui-button-text-only {
-  font-family: 'bootstrap-icons', serif;
 }
 
 .panel-history-colored-span {
@@ -176,137 +83,7 @@ body .ui-treetable-header {
 
 /* Apply only on devices that support hover (mouse, trackpad) */
 @media (hover: hover) and (pointer: fine) {
-  .hidden-column {
-    visibility: hidden;
-    opacity: 0;
-    transition: visibility 0s, opacity 0.3s;
-  }
-}
 
-/* Show the column when the row is hovered */
-.datatable-hoverable-table tbody tr.ui-state-hover .hidden-column {
-  visibility: visible;
-  opacity: 1;
-}
-
-.identifier-input-button-div .ui-button-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Side Panel Styling */
-.side-panel {
-  position: fixed;
-  top: 0;
-  right: -400px; /* Hidden by default */
-  width: 400px;
-  height: 100%;
-  background: #fff;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-  transition: right 0.3s ease;
-  z-index: 1000;
-  border-left: 1px solid #e2e8f0;
-}
-
-.side-panel.open {
-  right: 0; /* Slide in */
-}
-
-.side-panel-header {
-  padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.side-panel-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #1a202c;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #718096;
-}
-
-.side-panel-content {
-  padding: 16px;
-}
-
-.relation-vocab {
-  margin: 12px 0;
-}
-
-.relation-docs {
-  margin: 12px 0;
-}
-
-.delete-relation-btn {
-  background: #e53e3e;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  width: 100%;
-  margin-top: 12px;
-}
-
-.delete-relation-btn:hover {
-  background: #c53030;
-}
-
-.side-panel-content {
-  padding: 1rem;
-  display: flex;
-  border-left: 1px dashed var(--siamois-green-light-100);
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.relation-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.relation-edit-row {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.relation-select {
-  width: 100%;
-}
-
-.section-title {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.docs-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
-.add-doc-btn {
-  color: #7e1717;
-}
-
-.add-doc-btn,
-.delete-relation-btn {
-  width: 100%;
 }
 
 nav.panel-bc {
@@ -318,10 +95,6 @@ nav.panel-bc {
     font-size: 14px;
     color: var(--text-light) !important;
   }
-}
-
-.action-col.ui-toolbar-group-left {
-  flex-wrap: nowrap;
 }
 
 body .panel-progressbar.ui-progressbar {
@@ -371,20 +144,8 @@ body .panel-menu .ui-menuitem-icon {
   color: var(--main-color);
 }
 
-body .panel-menu-text.ui-tabmenu .ui-tabmenu-nav .ui-tabmenuitem {
-  a {
-    color: var(--main-color);
-  }
-}
-
 body .panel-menu .ui-menuitem-icon {
   color: var(--main-color);
-}
-
-body .history-menu-text.ui-tabmenu .ui-tabmenu-nav .ui-tabmenuitem {
-  a {
-    color: var(--main-color);
-  }
 }
 
 /* Primary menu: icons only, not overlaying */
@@ -396,33 +157,8 @@ body .history-menu-text.ui-tabmenu .ui-tabmenu-nav .ui-tabmenuitem {
   height: 500px;
 }
 
-body .ui-tabmenu.panel-menu-text {
-  position: absolute;
-  left: 0; /* Align with the primary menu */
-  top: 0;
-  z-index: 999;
-  background: #f8f8f8;
-  display: none;
-  white-space: nowrap;
-  margin-left: 50px; /* Offset by the width of the primary menu */
-
-  ul {
-    box-shadow: 1px 5px 5px #e0e0e0;
-  }
-}
-
-/* Hide immediately when not hovering either menu */
-.panel-menu-text {
-  display: none;
-}
-
 /* Only show when hovering the primary menu OR the text menu */
 .panel-menu:hover + .body .history .ui-button-text {
-  display: block;
-}
-
-/* Only show when hovering the primary menu OR the text menu */
-.panel-menu:hover .history-menu-text {
   display: block;
 }
 
@@ -452,31 +188,28 @@ body .ui-button.ui-button-flat.status-button {
   width: 2em;
 
   &.validated {
-    color: #5e6ad2;
+    color: var(--status-validated);
     background-color: transparent;
   }
 
   &.complete {
-    color: #d9b036;
+    color: var(--status-complete);
     background-color: transparent;
   }
 
   &.incomplete {
-    color: #9f9fa2;
+    color: var(--status-incomplete);
+    background-color: transparent;
+  }
+
+  &.cancelled {
+    color: var(--status-cancelled);
     background-color: transparent;
   }
 }
 
 .focus {
   height: 100%;
-}
-
-body .ui-treetable.ui-treetable-sm .ui-treetable-data > tr > td.small-cell {
-  padding: 0rem .5rem;
-}
-
-body .ui-datatable.ui-datatable-sm .ui-datatable-data > tr > td.small-cell {
-  padding: 0rem .5rem;
 }
 
 body .ui-inplace .ui-inplace-display {
@@ -493,10 +226,6 @@ body .history .ui-datascroller-content {
 
 .sidebar.collapsed .change-instit {
   display: none;
-}
-
-.sia-form {
-  max-width: 1200px;
 }
 
 /* The main wrapper form/container holding your sub-sidebar */
@@ -533,48 +262,6 @@ body .history .ui-datascroller-content {
   flex-direction: column;
 }
 
-/* Fix for the actions column layout */
-.actions-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-}
-
-.svg-shortcuts-legend {
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: column;
-  gap: 15px;
-  padding: 6px 16px;
-  border-bottom: 1px dashed var(--siamois-green-light-100);
-  pointer-events: none; /* Allows clicks to pass through to the SVG */
-}
-
-.shortcut-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: #4b5563;
-}
-
-.key-badge {
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-family: sans-serif;
-  font-size: 0.75rem;
-  font-weight: bold;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
-}
-
-.shortcut-label {
-  font-weight: 500;
-}
-
 body .ui-autocomplete-panel .ui-autocomplete-items .ui-autocomplete-item.ui-state-highlight {
   background: var(--siamois-green-light-200);
   color: var(--text-main);
@@ -605,55 +292,6 @@ body .required-btn::after {
   right: 6px;
 }
 
-/* Container for the switch */
-.toggle-wrapper {
-  transition: all 0.2s ease-in-out;
-  font-size: 0.8rem;
-  opacity: 0; /* Hide by default */
-}
-
-/* State: Hovering parent OR checked (Sticky) */
-.header-toggle-container:hover .toggle-wrapper,
-.toggle-wrapper:has(input:checked),
-.toggle-wrapper.is-active {
-  opacity: 1 !important;
-  pointer-events: auto;
-  transform: translateX(0);
-}
-
-/* 1. The checkbox box itself (Unchecked state) */
-.small-toggle .ui-chkbox-box {
-  width: 14px !important;
-  height: 14px !important;
-  border-color: #d1d5db; /* Light grey border when off */
-  transition: background-color 0.2s, border-color 0.2s;
-}
-
-/* 2. The checkbox box when CHECKED (Orange background and border) */
-.small-toggle .ui-chkbox-box.ui-state-active {
-  background-color: orange !important;
-  border-color: orange !important;
-  color: #fff !important; /* Ensure the checkmark icon is white */
-}
-
-/* 3. Adjust the checkmark icon size to fit the smaller box */
-.small-toggle .ui-chkbox-icon {
-  font-size: 10px !important;
-  margin-top: -1px;
-}
-
-/* 4. The label style */
-.small-toggle .ui-chkbox-label {
-  color: var(--text-light);
-  font-style: italic;
-  cursor: pointer;
-}
-
-/* 5. Highlight the label color when checked (Optional) */
-.toggle-wrapper:has(input:checked) .ui-chkbox-label {
-  color: orange;
-}
-
 .sia-icon-opentheso {
   content: "";
   display: inline-block;
@@ -673,24 +311,6 @@ body .required-btn::after {
 /* Ensure the button text span inside takes up the remaining horizontal space */
 .bookmark-full-button .ui-button-text {
   text-align: left;
-}
-
-body .view-edit-button.ui-splitbutton {
-  .ui-button {
-    background: var(--siamois-green-light-100);
-    color: var(--text-color);
-    border-color: var(--siamois-green-light);
-  }
-
-  .ui-button:first-child {
-    border-top-left-radius: 10px;
-    border-bottom-left-radius: 10px;
-  }
-
-  .ui-button.ui-splitbutton-menubutton {
-    border-top-right-radius: 10px;
-    border-bottom-right-radius: 10px;
-  }
 }
 
 /* Conteneur principal blanc avec coins arrondis */
@@ -771,18 +391,6 @@ body .view-edit-button.ui-splitbutton {
   content: "Supporte les fichiers .csv de moins de 1MB";
 }
 
-.ui-treetable .new-entity-overlay tbody td {
-  border: none;
-}
-
-.ui-datatable .new-entity-overlay tbody td {
-  border: none;
-}
-
-.ui-overlaypanel.new-entity-overlay .ui-overlaypanel-content {
-  max-width: 50em;
-}
-
 /* ── entityDataTable / entityTreeTable: layout ── */
 .ui-treetable thead th {
   text-align: left;
@@ -817,10 +425,6 @@ body .view-edit-button.ui-splitbutton {
   border-right: 2px solid var(--siamois-green-active) !important;
 }
 
-/* ── entityDataTable: layout ── */
-.filter-table-column-hidden .ui-column-filter {
-  display: none !important;
-}
 .ui-datatable thead th {
   text-align: left;
   vertical-align: top;
@@ -870,31 +474,7 @@ body .view-edit-button.ui-splitbutton {
     background-color: var(--siamois-green-light-350);
   }
 }
-.ui-treetable tr.row-newly-duplicated > td,
-.ui-datatable tr.row-newly-duplicated > td {
-  animation: row-newly-duplicated-blink 0.4s ease-in-out 3;
-}
 
-/* ── entityDataTable: chip-cell ── */
-.chip-cell-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-}
-.chip-cell-actions {
-  visibility: hidden;
-  opacity: 0;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  transition: opacity 0.12s ease;
-}
-.chip-cell-wrapper:hover .chip-cell-actions {
-  visibility: visible;
-  opacity: 1;
-}
 .chip-nav-link {
   text-decoration: none !important;
   color: inherit !important;
@@ -909,16 +489,6 @@ body .view-edit-button.ui-splitbutton {
 /* standalone "edit identifier" icon button, sitting right after the chip */
 
 /* ── entityDataTable: merged status/id/actions column ── */
-
-body .panel-tab-wrapper .ui-tabs-top {
-  height: 100%;
-  overflow: hidden;
-}
-
-body .panel-tab-wrapper .ui-tabs-panels {
-  height: 100%;
-  overflow: auto;
-}
 
 .ui-tabs {
   display: flex;
