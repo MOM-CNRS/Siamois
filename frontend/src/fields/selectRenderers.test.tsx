@@ -244,7 +244,7 @@ describe("picker opening (search on focus)", () => {
     expect(document.body.textContent).toContain("En cours");
   });
 
-  it("does not search on focus for a spatial-unit picker, whose endpoint rejects a blank query", async () => {
+  it("searches with an empty query on focus for every picker — a spatial-unit one too", async () => {
     const loader = vi.fn().mockResolvedValue([]);
     mockedOptionSourceFor.mockReturnValue(loader);
 
@@ -267,7 +267,35 @@ describe("picker opening (search on focus)", () => {
     });
     await flush();
 
-    expect(loader).not.toHaveBeenCalled();
+    expect(loader).toHaveBeenCalledWith("");
+  });
+
+  // The input shows the picked person's name; searching with it would list only that person.
+  it("searches with an empty query when a single picker's input only shows its current value", async () => {
+    const loader = vi.fn().mockResolvedValue([]);
+    mockedOptionSourceFor.mockReturnValue(loader);
+
+    act(() => {
+      root.render(
+        <SelectOneRefRenderer
+          field={conceptField({ answerType: "SELECT_ONE_PERSON", fieldCode: null })}
+          value={{ resourceId: "3", resourceType: "persons", label: "Jane Doe" }}
+          readOnly={false}
+          required={false}
+          onChange={() => {}}
+          organizationId={100}
+        />,
+      );
+    });
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    expect(input.value).toBe("Jane Doe");
+    await act(async () => {
+      input.focus();
+    });
+    await flush();
+
+    expect(loader).toHaveBeenCalledWith("");
   });
 });
 

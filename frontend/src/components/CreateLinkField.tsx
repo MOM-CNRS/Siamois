@@ -7,7 +7,7 @@ import { entityChipStyle } from "../fields/display";
 export function CreateLinkField({ label, entityType, value }: { label: string; entityType: string; value: EntityRef }) {
   return (
     <div className="project-create-form-field create-link-field">
-      <span>{label}</span>
+      <span className="create-form-label">{label}</span>
       <span className="entity-nav-chip create-link-field-value" style={entityChipStyle(entityType)}>
         <i className={getEntityType(entityType)?.icon ?? "bi bi-link"} aria-hidden="true" />
         <span className="entity-nav-chip-label">{value.label}</span>

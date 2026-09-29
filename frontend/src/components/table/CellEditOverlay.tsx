@@ -198,8 +198,11 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   // Deliberately done by reaching into the DOM rather than by passing an `autoFocus` prop through
   // FieldRendererProps: renderers are a registry any module can add to, and this way a renderer
   // written later gets the behaviour without knowing about it.
+  //
+  // Not before a preview's whole list has loaded: the widget isn't there yet, so the focus (and
+  // with it the picker's first search) waits for it.
   useEffect(() => {
-    if (!target) return;
+    if (!target || loadingValues) return;
     const control = boxRef.current?.querySelector<HTMLElement>("input, textarea, select");
     if (!control) return;
     control.focus();
@@ -208,7 +211,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
     } else if (control instanceof HTMLTextAreaElement) {
       control.select();
     }
-  }, [target]);
+  }, [target, loadingValues]);
 
   // Joins PrimeReact's own z-index stack (at 1200 or above, as its CSS used to fix it) rather than
   // sitting at a fixed value: every popup opened from inside the edit afterwards — the picker's

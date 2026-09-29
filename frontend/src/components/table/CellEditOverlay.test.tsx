@@ -301,6 +301,24 @@ describe("CellEditOverlay", () => {
     expect(onSave).toHaveBeenCalledWith("1", { "-120": { add: ["picked"], remove: ["1", "2"] } }, ["picked"]);
   });
 
+  // The focus is what starts a picker's first search: it must wait for the widget, which only
+  // appears once the whole list has loaded.
+  it("focuses an incomplete multi-valued answer's widget once its values have loaded", async () => {
+    registerFieldRenderer("SELECT_MULTIPLE_INPUT_TEST", () => <input className="test-multi-input" />);
+    fetchAllValues.mockResolvedValue([{ resourceId: "1" }, { resourceId: "2" }]);
+    const preview = { values: [{ resourceId: "1" }], total: 2, complete: false, _links: { values: "/api/v1/x" } };
+    renderOverlay({
+      target: {
+        row: { id: "1", answers: { "-120": preview } },
+        field: { ...multiSelectField, answerType: "SELECT_MULTIPLE_INPUT_TEST" },
+        anchor: ANCHOR,
+      },
+    });
+    await flush();
+
+    expect(document.activeElement).toBe(document.body.querySelector(".test-multi-input"));
+  });
+
   // A field that can't be edited opens all the same, showing its value — the first click is
   // always the overlay — and nothing it does is ever saved.
   it("shows a read-only target's value instead of an editor, and never saves", async () => {

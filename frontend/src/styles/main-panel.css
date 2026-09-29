@@ -847,17 +847,104 @@ body button.p-button.p-button-text.status-button.cancelled {
   color: var(--text-light);
 }
 
-/* entities/project/CreateForm.tsx's own overlay-hosted form, and any future entity's — one label
-   per field, stacked above its input (EntityListPanel's own "Créer" button toggles the OverlayPanel
-   this lives inside). */
-.entity-list-panel-create-overlay .project-create-form-field,
-.entity-list-panel-create-overlay label.project-create-form-field,
-.create-entity-dialog .project-create-form-field {
+/* ---------------------------------------------------------------------------
+   Create forms (components/CreateFormShell.tsx), in their overlay: JSF's newUnitDialog.xhtml made
+   lighter — the entity's icon and title in its colour, the fields labelled like a fiche's, a light
+   footer with « Annuler » / « Créer ». --entity-chip-color is the entity's, set on the form. */
+/* Beats the theme's `body .p-overlaypanel .p-overlaypanel-content` padding: header and footer
+   run edge to edge. */
+.p-overlaypanel.entity-list-panel-create-overlay .p-overlaypanel-content {
+  padding: 0;
+}
+
+.create-form {
   display: flex;
   flex-direction: column;
-  gap: 0.25em;
-  font-size: 0.85em;
-  color: var(--text-light);
+  min-width: 22rem;
+  max-width: 30rem;
+  border-top: 3px solid var(--entity-chip-color, var(--main-color, #669966));
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.create-form-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem 0.25rem;
+  color: var(--entity-chip-color, var(--main-color, #669966));
+}
+
+.create-form-header > i {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.create-form-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+.create-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem 1rem;
+}
+
+/* Every widget fills its field, as in the cell editor (p-fluid). */
+.create-form-body .p-inputtext,
+.create-form-body .p-autocomplete,
+.create-form-body .p-autocomplete-input,
+.create-form-body .p-autocomplete-multiple-container {
+  width: 100%;
+}
+
+/* One field: its label above it, the fiche's label look (FieldLabel: grey, .875rem). */
+.project-create-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.create-form-label {
+  color: var(--text-light, #6b7280);
+  font-size: 0.875rem;
+}
+
+.create-form-label-required::after {
+  content: " *";
+}
+
+.create-form-hint {
+  color: var(--text-light, #6b7280);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.create-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: color-mix(in srgb, var(--entity-chip-color, #669966) 7%, var(--surface-0, #ffffff));
+  border-top: 1px solid color-mix(in srgb, var(--entity-chip-color, #669966) 18%, transparent);
+}
+
+.create-form-footer .p-button.p-button-text {
+  color: var(--text-light, #6b7280);
+}
+
+.create-form-footer .p-button:not(.p-button-text) {
+  background: var(--entity-chip-color, var(--primary-color, #669966));
+  border-color: var(--entity-chip-color, var(--primary-color, #669966));
+}
+
+.create-form-footer .p-button:not(.p-button-text):enabled:hover {
+  filter: brightness(1.1);
 }
 
 

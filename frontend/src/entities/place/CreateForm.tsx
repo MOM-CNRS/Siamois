@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
-import { Message } from "primereact/message";
 import { ApiError } from "../../api/client";
+import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
@@ -58,26 +57,23 @@ export function PlaceCreateForm({ organizationId, prefill, onCreated, onCancel }
   const canSubmit = organizationId != null && name.trim() !== "" && type != null && !mutation.isPending;
 
   return (
-    <form
-      className="place-create-form"
-      style={{ display: "flex", flexDirection: "column", gap: "0.75em", minWidth: "22em" }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (canSubmit) mutation.mutate();
-      }}
+    <CreateFormShell
+      entityType="place"
+      title="Nouveau lieu"
+      canSubmit={canSubmit}
+      pending={mutation.isPending}
+      error={error}
+      onSubmit={() => mutation.mutate()}
+      onCancel={onCancel}
     >
-      <h4 style={{ margin: 0 }}>Nouveau lieu</h4>
-
       {prefill?.parent && <CreateLinkField label="Contenu dans" entityType="place" value={prefill.parent} />}
       {prefill?.child && <CreateLinkField label="Contient" entityType="place" value={prefill.child} />}
 
-      <label className="project-create-form-field">
-        <span>Nom</span>
-        <InputText value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
-      </label>
+      <CreateFormField label="Nom" required>
+        <InputText value={name} onChange={(e) => setName(e.target.value)} required />
+      </CreateFormField>
 
-      <label className="project-create-form-field">
-        <span>Type</span>
+      <CreateFormField label="Type" required>
         <SelectOneConceptRenderer
           field={PLACE_TYPE_FIELD}
           value={type}
@@ -86,14 +82,8 @@ export function PlaceCreateForm({ organizationId, prefill, onCreated, onCancel }
           organizationId={organizationId}
           onChange={(v) => setType(v as ConceptPick | null)}
         />
-      </label>
+      </CreateFormField>
 
-      {error && <Message severity="error" text={error} />}
-
-      <div style={{ display: "flex", gap: "0.5em", justifyContent: "flex-end" }}>
-        <Button type="button" label="Annuler" text onClick={onCancel} />
-        <Button type="submit" label="Créer" disabled={!canSubmit} loading={mutation.isPending} />
-      </div>
-    </form>
+    </CreateFormShell>
   );
 }

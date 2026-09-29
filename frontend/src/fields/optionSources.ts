@@ -39,16 +39,12 @@ interface PlaceAutocompleteResponseBody {
 }
 
 /**
- * GET /api/v1/places/autocomplete — mainLocation's option source.
- *
- * <p>Unlike the concepts endpoint, this one <strong>requires</strong> {@code q}: an empty or blank
- * value is a 400 ({@code PlaceSearchControllerApi#autocomplete}, "q ne doit pas être vide"). There
- * is no "list every place" mode to fall back on, and there could not sensibly be one — a whole
- * institution's spatial units is not a picker list. Callers that open a picker before anything is
- * typed must therefore not call this with an empty query; {@link optionSourceFor} enforces that.</p>
+ * GET /api/v1/places/autocomplete — mainLocation's option source. An empty query is the first page
+ * of the organization's places by name: what a picker shows as soon as it opens.
  */
-export async function fetchPlaceOptions(organizationId: number, q: string): Promise<FilterOption[]> {
-  const query = new URLSearchParams({ organizationId: String(organizationId), q });
+export async function fetchPlaceOptions(organizationId: number, q?: string): Promise<FilterOption[]> {
+  const query = new URLSearchParams({ organizationId: String(organizationId) });
+  if (q) query.set("q", q);
   const body = await apiFetch<PlaceAutocompleteResponseBody>(`/api/v1/places/autocomplete?${query.toString()}`);
   return body.data.map((p) => ({ id: String(p.id), label: p.name }));
 }
@@ -80,21 +76,6 @@ const REFERENCE_TARGETS: [test: (answerType: string) => boolean, target: Referen
 
 export function referenceTargetOf(field: FieldResource): ReferenceTarget {
   return REFERENCE_TARGETS.find(([test]) => test(field.answerType))?.[1] ?? { resourceType: "concepts" };
-}
-
-/**
- * Whether a field's option source can answer an empty query — i.e. whether a picker may show a
- * starting list before the user types anything.
- *
- * <p>Concepts can (GET /api/v1/organizations/{id}/concepts with no {@code q} returns the field's
- * whole vocabulary, paginated), and so can every paged entity list; spatial units cannot (see
- * {@link fetchPlaceOptions}). Exposed so a caller can tell "nothing matches" from "type something
- * first".</p>
- */
-const SPATIAL_ANSWER_TYPES = new Set(["SELECT_ONE_SPATIAL_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT_TREE"]);
-
-export function supportsEmptyQuery(field: FieldResource): boolean {
-  return !SPATIAL_ANSWER_TYPES.has(field.answerType);
 }
 
 /**
@@ -201,9 +182,7 @@ export function optionSourceFor(
       return (q) => fetchFieldConceptOptions(organizationId, field.id, projectId, q);
     case "SELECT_ONE_SPATIAL_UNIT":
     case "SELECT_MULTIPLE_SPATIAL_UNIT_TREE":
-      // An empty query would be a 400 here, so it short-circuits to no options rather than firing
-      // a request that cannot succeed — the picker simply stays empty until something is typed.
-      return (q) => (q && q.trim() ? fetchPlaceOptions(organizationId, q) : Promise.resolve([]));
+      return (q) => fetchPlaceOptions(organizationId, q);
     case "SELECT_ONE_PERSON":
     case "SELECT_MULTIPLE_PERSON":
       return (q) => fetchPersonOptions(organizationId, q);

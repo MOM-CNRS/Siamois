@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
-import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { ApiError } from "../../api/client";
+import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
@@ -89,24 +89,22 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
   const canSubmit = projectId != null && recordingUnitId != null && category != null && !mutation.isPending;
 
   return (
-    <form
-      className="project-create-form"
-      style={{ display: "flex", flexDirection: "column", gap: "0.75em", minWidth: "22em" }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (canSubmit) mutation.mutate();
-      }}
+    <CreateFormShell
+      entityType="find"
+      title="Nouveau mobilier"
+      canSubmit={canSubmit}
+      pending={mutation.isPending}
+      error={error}
+      onSubmit={() => mutation.mutate()}
+      onCancel={onCancel}
     >
-      <h4 style={{ margin: 0 }}>Nouveau mobilier</h4>
-
       {projectPicker}
       {projectId == null && !projectPicker && <Message severity="warn" text="Projet inconnu : création impossible" />}
 
       {fixedRecordingUnit ? (
         <CreateLinkField label="Unité d'enregistrement" entityType="recordingUnit" value={fixedRecordingUnit} />
       ) : (
-        <label className="project-create-form-field">
-          <span>Unité d'enregistrement</span>
+        <CreateFormField label="Unité d'enregistrement" required>
           <AutoComplete
             ref={autoCompleteRef}
             value={ruQuery}
@@ -127,11 +125,10 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
             placeholder={projectId == null ? "Choisissez d'abord un projet" : "Rechercher une UE…"}
             disabled={projectId == null}
           />
-        </label>
+        </CreateFormField>
       )}
 
-      <label className="project-create-form-field">
-        <span>Catégorie</span>
+      <CreateFormField label="Catégorie" required>
         {categoryField ? (
           <SelectOneConceptRenderer
             field={categoryField}
@@ -144,14 +141,8 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
         ) : (
           <span className="create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
         )}
-      </label>
+      </CreateFormField>
 
-      {error && <Message severity="error" text={error} />}
-
-      <div style={{ display: "flex", gap: "0.5em", justifyContent: "flex-end" }}>
-        <Button type="button" label="Annuler" text onClick={onCancel} />
-        <Button type="submit" label="Créer" disabled={!canSubmit} loading={mutation.isPending} />
-      </div>
-    </form>
+    </CreateFormShell>
   );
 }

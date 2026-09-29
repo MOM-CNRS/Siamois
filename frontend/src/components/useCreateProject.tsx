@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
+import { CreateFormField } from "./CreateFormShell";
 import { searchCreatableProjects, type CreatableKind } from "../entities/project/api";
 import type { ProjectSummary } from "../entities/project/types";
 import { scopeProjectId } from "../entities/scope";
@@ -43,8 +44,7 @@ export function useCreateProject({
   }
 
   const picker = (
-    <label className="project-create-form-field">
-      <span>Projet</span>
+    <CreateFormField label="Projet" required>
       <AutoComplete
         ref={autoCompleteRef}
         value={query}
@@ -70,9 +70,8 @@ export function useCreateProject({
         completeMethod={search}
         onFocus={(e) => autoCompleteRef.current?.search(e, e.currentTarget.value ?? "", "dropdown")}
         placeholder="Rechercher un projet…"
-        autoFocus
       />
-    </label>
+    </CreateFormField>
   );
 
   return { projectId: picked ? String(picked.id) : undefined, picker };

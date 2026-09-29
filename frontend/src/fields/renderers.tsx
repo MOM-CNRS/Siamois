@@ -17,7 +17,6 @@ import {
   entityRowLabel,
   optionSourceFor,
   referenceTargetOf,
-  supportsEmptyQuery,
   type FilterOption,
   type ReferenceTarget,
 } from "./optionSources";
@@ -174,14 +173,14 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   }
 
   // PrimeReact only searches once something is typed, so a freshly-focused picker is a blank box
-  // with no indication that there is anything to pick. Searching on focus with whatever the input
-  // currently holds ("" on open) gives the user the starting list immediately — for concepts that
-  // is the field's whole vocabulary, which is exactly what they would get by typing and deleting a
-  // character. Skipped for the answerTypes whose endpoint rejects an empty query (spatial units),
-  // where it would be a guaranteed-failing request.
+  // with no indication that there is anything to pick. Searching on focus gives the user the
+  // starting list immediately — every option source answers an empty query with its first page.
+  // A single picker whose input still shows the picked value's label searches with "" too: that
+  // label would narrow the list to the value already there.
   function onFocus(e: React.FocusEvent<HTMLInputElement>) {
-    const query = e.target.value ?? "";
-    if (!query && !supportsEmptyQuery(field)) return;
+    const text = e.target.value ?? "";
+    const current = !multiple && !asTokens ? (selected as FilterOption | null)?.label : undefined;
+    const query = text === current ? "" : text;
     // `search` is AutoComplete's own imperative entry point. The source must not be "input":
     // that is the only one it refuses a blank query for. "dropdown" is the typed value that means
     // "opened rather than typed into", which is exactly this case (there is no dropdown button).

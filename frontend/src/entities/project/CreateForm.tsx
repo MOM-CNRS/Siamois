@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
-import { Message } from "primereact/message";
 import { ApiError } from "../../api/client";
+import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
@@ -69,30 +68,26 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
     organizationId != null && name.trim() !== "" && identifier.trim() !== "" && type != null && !mutation.isPending;
 
   return (
-    <form
-      className="project-create-form"
-      style={{ display: "flex", flexDirection: "column", gap: "0.75em", minWidth: "22em" }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (canSubmit) mutation.mutate();
-      }}
+    <CreateFormShell
+      entityType="project"
+      title="Nouveau projet"
+      canSubmit={canSubmit}
+      pending={mutation.isPending}
+      error={error}
+      onSubmit={() => mutation.mutate()}
+      onCancel={onCancel}
     >
-      <h4 style={{ margin: 0 }}>Nouveau projet</h4>
-
       {prefill?.spatialContext && <CreateLinkField label="Lieu" entityType="place" value={prefill.spatialContext} />}
 
-      <label className="project-create-form-field">
-        <span>Nom</span>
-        <InputText value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
-      </label>
+      <CreateFormField label="Nom" required>
+        <InputText value={name} onChange={(e) => setName(e.target.value)} required />
+      </CreateFormField>
 
-      <label className="project-create-form-field">
-        <span>Identifiant</span>
+      <CreateFormField label="Identifiant" required>
         <InputText value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
-      </label>
+      </CreateFormField>
 
-      <label className="project-create-form-field">
-        <span>Type</span>
+      <CreateFormField label="Type" required>
         {typeField ? (
           <SelectOneConceptRenderer
             field={typeField}
@@ -105,14 +100,8 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
         ) : (
           <span>Chargement…</span>
         )}
-      </label>
+      </CreateFormField>
 
-      {error && <Message severity="error" text={error} />}
-
-      <div style={{ display: "flex", gap: "0.5em", justifyContent: "flex-end" }}>
-        <Button type="button" label="Annuler" text onClick={onCancel} />
-        <Button type="submit" label="Créer" disabled={!canSubmit} loading={mutation.isPending} />
-      </div>
-    </form>
+    </CreateFormShell>
   );
 }

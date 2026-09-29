@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { ApiError } from "../../api/client";
+import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
@@ -67,24 +67,22 @@ export function RecordingUnitCreateForm({ organizationId, scope, prefill, onCrea
   const canSubmit = projectId != null && type != null && !mutation.isPending;
 
   return (
-    <form
-      className="project-create-form"
-      style={{ display: "flex", flexDirection: "column", gap: "0.75em", minWidth: "22em" }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (canSubmit) mutation.mutate();
-      }}
+    <CreateFormShell
+      entityType="recordingUnit"
+      title="Nouvelle unité d'enregistrement"
+      canSubmit={canSubmit}
+      pending={mutation.isPending}
+      error={error}
+      onSubmit={() => mutation.mutate()}
+      onCancel={onCancel}
     >
-      <h4 style={{ margin: 0 }}>Nouvelle unité d'enregistrement</h4>
-
       {projectPicker}
       {projectId == null && !projectPicker && <Message severity="warn" text="Projet inconnu : création impossible" />}
 
       {prefill?.parent && <CreateLinkField label="Contenue dans" entityType="recordingUnit" value={prefill.parent} />}
       {prefill?.child && <CreateLinkField label="Contient" entityType="recordingUnit" value={prefill.child} />}
 
-      <label className="project-create-form-field">
-        <span>Type</span>
+      <CreateFormField label="Type" required>
         {typeField ? (
           <SelectOneConceptRenderer
             field={typeField}
@@ -97,14 +95,8 @@ export function RecordingUnitCreateForm({ organizationId, scope, prefill, onCrea
         ) : (
           <span className="create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
         )}
-      </label>
+      </CreateFormField>
 
-      {error && <Message severity="error" text={error} />}
-
-      <div style={{ display: "flex", gap: "0.5em", justifyContent: "flex-end" }}>
-        <Button type="button" label="Annuler" text onClick={onCancel} />
-        <Button type="submit" label="Créer" disabled={!canSubmit} loading={mutation.isPending} />
-      </div>
-    </form>
+    </CreateFormShell>
   );
 }
