@@ -54,9 +54,13 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   }
 
   const content = renderAnswerCell(field, stored, { all: true });
-  // An empty field nobody can edit has nothing to open.
+  // An empty field nobody can edit has nothing to open — just the same dash as any empty field.
   if (readOnly && !content) {
-    return <span className="field-value-cell field-value-cell-readonly" />;
+    return (
+      <span className="field-value-cell field-value-cell-readonly">
+        <span className="field-value-cell-empty">—</span>
+      </span>
+    );
   }
 
   return (

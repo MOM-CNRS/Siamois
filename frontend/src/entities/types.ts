@@ -235,7 +235,9 @@ export interface RowActionDef<TSummary> {
 
 export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   key: string;
-  labels: { singular: string; plural: string };
+  // `all` is the breadcrumb's "all of them" crumb, for types whose plural doesn't fit "Tous les …"
+  // (mobilier is a collective noun: "Tout le mobilier").
+  labels: { singular: string; plural: string; all?: string };
   // The REST collection segment for this entity ("projects", "recording-units") — used to build a
   // scoped list URL generically (entities/listApi.ts: `/api/v1/{parent.collectionPath}/{id}/{path
   // ?? child.collectionPath}`) without a per-relation lookup table. Every registered entity has

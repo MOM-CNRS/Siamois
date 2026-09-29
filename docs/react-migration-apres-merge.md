@@ -30,6 +30,22 @@ Ces points sont codés et couverts par des tests unitaires, mais n'ont pas encor
   - [ ] Les champs sans éditeur (code action, adresse) ne sont pas cliquables.
   - [ ] Anomalie de données de dev à confirmer : sur la liste UE de l'organisation, le tri asc et le tri desc sur le champ additionnel `1` donnent le même ordre.
 
+### Vérification en direct du 29/09/2026 (lot 0, en cours)
+
+Vérifié sur l'application relancée (base de dev, une seule organisation) :
+- [x] Colonnes dynamiques du mobilier (sélecteur, valeurs, tri, filtres), listes organisation, projet et UE.
+- [x] Catalogues de colonnes de l'organisation : seuls les champs actifs de la bonne table (contrôlé en base).
+- [x] Tri de tous les champs triables des UE et des projets (aucune erreur) ; les ordres identiques en asc/desc sont des égalités ou des valeurs vides (dernières). L'« anomalie du champ `1` » n'en est pas une : les UE 4 et 5 ont la même valeur.
+- [x] Filtres (texte, référence, plage numérique, plage de dates, recherche) et erreurs 400 explicites sur clé inconnue.
+- [x] Onglets de relation (UE enfants, mobilier d'une UE, lieux enfants, projets d'un lieu).
+- [x] 404, aperçu + F5, mode focus + retour (avec F5), bouton précédent du navigateur (un seul rechargement), recherche du haut, favori (React ↔ barre latérale), historique.
+- [x] Éditeur de référence en cellule, pied « Nouveau » (l'overlay reste ouvert, Échap dans le dialog ne ferme que le dialog).
+- Non vérifié : 403 (une seule organisation en base), changement de type d'UE (tous les types du projet 3 partagent les mêmes champs), champs sans éditeur (code action, adresse).
+
+Corrigé pendant la vérification : titre de l'onglet du navigateur après navigation client, « Unité d'enregistrement » vide sur la fiche mobilier (`FormService` ne relisait pas la réponse « une UE »), fils d'Ariane « Tout le mobilier »/« Toutes les phases »/« Toutes les unités d'enregistrement », placeholder de recherche en anglais, tiret sur les champs vides en lecture seule, icône et couleur des favoris phase/contenant.
+
+Restent ouverts : colonnes UE/Catégorie/Contient sans icône de tri dans la liste mobilier alors que le catalogue les déclare triables ; Échap ne ferme pas la liste de colonnes ; boutons de barre d'outils sans `aria-label` ; titre « Mobiliers » (JSF) vs « Mobilier » (React) après rechargement ; `recording-unit-types` chargé 3 fois d'affilée à l'ouverture d'un onglet de relation ; focus non rendu à l'éditeur après le dialog « Nouveau ».
+
 ## 2. Performance
 
 | Sujet | Où | Proposition |

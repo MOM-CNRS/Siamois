@@ -19,7 +19,7 @@ import type { PhaseDetail, PhaseSummary } from "./types";
 // Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
 export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   key: "phase",
-  labels: { singular: "Phase", plural: "Phases" },
+  labels: { singular: "Phase", plural: "Phases", all: "Toutes les phases" },
   collectionPath: "phases",
   // Matches PhaseTableDefinitionFactory/PhasePanel's own icon.
   icon: "bi bi-layers",

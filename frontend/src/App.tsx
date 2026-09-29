@@ -414,6 +414,13 @@ export function App({ options }: { options: MountOptions }) {
       ? { resourceUri: viewConfig.routes.list, title: viewConfig.labels.plural }
       : { resourceUri: "", title: "" };
 
+  // The browser tab's title follows the main pane: focus.xhtml's <title> is only right for the view
+  // JSF rendered. A fiche sets its own once its entity loads (EntityDetailPanel).
+  const mainTitle = navigatedAway && view.panelKind !== "detail" ? mainChrome.title : "";
+  useEffect(() => {
+    if (mainTitle) document.title = mainTitle;
+  }, [mainTitle]);
+
   const inFocus = focusStack.length > 0;
   const mainToolbar: PanelToolbarSlot = {
     chrome: mainChrome,

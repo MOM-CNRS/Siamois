@@ -18,7 +18,7 @@ import type { FindDetail, FindSummary } from "./types";
 // Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
 export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   key: "find",
-  labels: { singular: "Mobilier", plural: "Mobilier" },
+  labels: { singular: "Mobilier", plural: "Mobilier", all: "Tout le mobilier" },
   collectionPath: "finds",
   // Matches SpecimenTableDefinitionFactory/SpecimenPanel's own icon.
   icon: "bi bi-bucket",

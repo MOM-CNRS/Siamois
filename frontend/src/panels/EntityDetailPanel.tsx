@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BreadCrumb } from "primereact/breadcrumb";
 import { Panel } from "primereact/panel";
@@ -161,6 +161,14 @@ export function EntityDetailPanel({
     },
   });
 
+  // The main pane's fiche names the browser tab after its entity (focus.xhtml's <title> only knows
+  // the entity JSF rendered). The overview's fiche doesn't.
+  const documentTitle =
+    toolbar && !toolbar.actions?.closeOverview && data && config?.detail.chrome ? config.detail.chrome(data).title : "";
+  useEffect(() => {
+    if (documentTitle) document.title = documentTitle;
+  }, [documentTitle]);
+
   if (!config) {
     return <div className="entity-detail-panel-unsupported">Unknown entity type &quot;{entityType}&quot;</div>;
   }
@@ -289,7 +297,7 @@ export function EntityDetailPanel({
         model={[
           {
             // ActionUnitPanel.createRootTypeItem: "Tous les projets", linking to the entity's list.
-            label: `Tous les ${config.labels.plural.toLowerCase()}`,
+            label: config.labels.all ?? `Tous les ${config.labels.plural.toLowerCase()}`,
             icon: config.icon,
             command: onNavigate ? () => onNavigate(entityType) : undefined,
           },

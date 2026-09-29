@@ -32,7 +32,7 @@ function projectScope(ru: RecordingUnitSummary): ListScope | undefined {
 // Project's is.
 export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, RecordingUnitDetail> = {
   key: "recordingUnit",
-  labels: { singular: "Unité d'enregistrement", plural: "Unités d'enregistrement" },
+  labels: { singular: "Unité d'enregistrement", plural: "Unités d'enregistrement", all: "Toutes les unités d'enregistrement" },
   collectionPath: "recording-units",
   // Matches RecordingUnitTableDefinitionFactory's own identifierCol iconClass.
   icon: "bi bi-pencil-square",

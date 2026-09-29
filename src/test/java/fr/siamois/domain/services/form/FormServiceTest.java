@@ -57,6 +57,14 @@ class FormServiceTest {
     @InjectMocks
     private FormService formService;
 
+    @Test
+    void readAnswerValueForApi_returnsTheSingleRecordingUnit() {
+        RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO(29L);
+        CustomFieldAnswerSelectOneRecordingUnitViewModel answer = new CustomFieldAnswerSelectOneRecordingUnitViewModel();
+        answer.setValue(ru);
+
+        assertSame(ru, formService.readAnswerValueForApi(answer));
+    }
 
 
 

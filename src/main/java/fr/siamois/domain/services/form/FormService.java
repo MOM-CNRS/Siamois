@@ -325,6 +325,8 @@ public class FormService {
                             CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectOneAddressViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerSelectOneRecordingUnitViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectMultipleRecordingUnitViewModel.class,
                             a -> extractRecordingUnitSet((CustomFieldAnswerSelectMultipleRecordingUnitViewModel) a)),
                     Map.entry(CustomFieldAnswerSelectMultipleFromFieldCodeViewModel.class,

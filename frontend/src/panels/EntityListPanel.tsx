@@ -627,7 +627,7 @@ export function EntityListPanel({
                 <span className="p-input-icon-left">
                   <i className="bi bi-search" />
                   <InputText
-                    placeholder={`Search ${config.labels.plural}`}
+                    placeholder="Rechercher"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
