@@ -3,6 +3,7 @@ import { relationTab } from "../../panels/relationTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
+import { loadPlaceCatalog } from "./catalog";
 import { placeColumns } from "./columns";
 import { PlaceCreateForm } from "./CreateForm";
 import { PlaceDetailHeader } from "./DetailHeader";
@@ -34,6 +35,8 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
     duplicate: duplicatePlace,
   },
   list: {
+    // Dynamic columns: the place form's fields, picked and sorted/filtered like the other lists'.
+    schema: { load: loadPlaceCatalog },
     columns: placeColumns,
     // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
     defaultSort: "creationTime:desc",

@@ -200,7 +200,7 @@ class OrganizationListsControllerApiTest {
         when(projectApiService.requireCaller()).thenReturn(caller);
         PlaceResource place = new PlaceResource();
         place.setName("Cave A");
-        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(0), eq(10), eq("name:asc"), eq("cave"), any()))
+        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(0), eq(10), eq("name:asc"), eq("cave"), any(), any(), any()))
                 .thenReturn(new PlaceListResponse(List.of(place), new ListMeta(1L, 10, 0L)));
 
         mockMvc.perform(get("/api/v1/places").param("organizationId", "10").param("search", "cave"))

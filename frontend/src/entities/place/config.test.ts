@@ -22,11 +22,11 @@ describe("placeEntityConfig", () => {
 
   // The organization-wide list (JSF's SpatialUnitListPanel): searchable, and — unlike the
   // project-bound types — creation is allowed, since places belong to the organization.
-  it("has a searchable list with a create form, but no schema", () => {
+  it("has a searchable list with a create form and a column catalog", () => {
     expect(placeEntityConfig.list.searchable).toBe(true);
     expect(placeEntityConfig.list.createForm).toBeDefined();
     expect(placeEntityConfig.list.createProjectKind).toBeUndefined();
-    expect(placeEntityConfig.list.schema).toBeUndefined();
+    expect(placeEntityConfig.list.schema).toBeDefined();
   });
 
   it("derives its bookmark chrome from the resource itself", () => {

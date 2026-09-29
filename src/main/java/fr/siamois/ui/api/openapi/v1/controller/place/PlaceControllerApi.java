@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.place;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.SpatialUnitDTO;
@@ -155,7 +156,8 @@ public class PlaceControllerApi {
     @GetMapping("/{id}/children")
     @Operation(summary = "Lieux contenus dans un lieu",
             description = "Lieux enfants directs (hiérarchie des lieux), même contrat que GET /api/v1/places : "
-                    + "pagination, tri (name, id, code, creationTime), recherche sur name.")
+                    + "pagination, tri (name, id, code, creationTime ou sort=<fieldId>:dir), recherche sur name, "
+                    + "filtres par champ (f.<fieldId>) et projection des champs (fields).")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "400", description = "Pagination ou tri invalides"),
@@ -168,11 +170,15 @@ public class PlaceControllerApi {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "name:asc") String sort,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = "Projection des champs de formulaire dans answers : \"all\" ou une liste d'identifiants de champ séparés par des virgules.")
+            @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        PlaceListResponse body = placeOpenApiService.listChildren(caller, id, offset, limit, sort, search, lang);
+        PlaceListResponse body = placeOpenApiService.listChildren(caller, id, offset, limit, sort, search, lang,
+                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(body.getMeta().total()))
                 .body(body);

@@ -89,6 +89,23 @@ public class OrganizationFieldCatalogControllerApi {
         return catalog(id, ConfigurableTable.CONTENANT, acceptLanguage);
     }
 
+    @GetMapping("/place-types")
+    @Operation(summary = "Catalogue de colonnes des lieux de l'organisation",
+            description = "Champs du formulaire d'un lieu (nom, catégorie, code, numéro), avec ce que la liste accepte sur chacun "
+                    + "(tri, filtre). Les lieux n'ont ni configuration par projet ni champ additionnel : même catalogue partout.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    })
+    public ResponseEntity<OrganizationFieldCatalogResponse> placeTypes(
+            @PathVariable("id") long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        projectApiService.assertOrganizationInCallerScope(id, caller.accessibleInstitutionIds());
+        return ResponseEntity.ok(organizationFieldCatalogService.buildPlaces(ProjectApiService.primaryAcceptLanguage(acceptLanguage)));
+    }
+
     private ResponseEntity<OrganizationFieldCatalogResponse> catalog(long id, ConfigurableTable table, String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         projectApiService.assertOrganizationInCallerScope(id, caller.accessibleInstitutionIds());

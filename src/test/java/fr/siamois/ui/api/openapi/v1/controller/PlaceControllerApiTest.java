@@ -210,7 +210,7 @@ class PlaceControllerApiTest {
 
     @Test
     void getChildren_delegatesToTheService() throws Exception {
-        org.mockito.Mockito.when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr")))
+        org.mockito.Mockito.when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr"), any(), any()))
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse(
                         List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
 

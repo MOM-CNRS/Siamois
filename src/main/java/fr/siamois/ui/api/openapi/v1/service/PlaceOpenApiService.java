@@ -6,6 +6,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -14,6 +15,7 @@ import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
@@ -47,6 +49,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -84,6 +88,24 @@ public class PlaceOpenApiService {
                                               String sortParam,
                                               String search,
                                               String lang) {
+        return listByOrganization(caller, organizationId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null);
+    }
+
+    /**
+     * {@link #listByOrganization} with the list's sort and filters on form fields
+     * ({@code sort=<fieldId>:dir}, {@code f.<fieldId>}) and the {@code fields=} projection of
+     * {@code answers}, like every other list.
+     */
+    @Transactional(readOnly = true)
+    public PlaceListResponse listByOrganization(ProjectApiCaller caller,
+                                              Long organizationId,
+                                              int offset,
+                                              int limit,
+                                              String sortParam,
+                                              String search,
+                                              String lang,
+                                              FieldQuery fieldQuery,
+                                              String fieldsParam) {
         if (organizationId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
@@ -94,15 +116,16 @@ public class PlaceOpenApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organisation introuvable");
         }
 
-        Sort sort = ProjectApiService.parsePlaceSort(sortParam);
+        Sort sort = ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePlaceSort);
         FilterDTO filter = new FilterDTO();
+        filter.setFieldQuery(fieldQuery);
         if (search != null && !search.isBlank()) {
             filter.add(SpatialUnitSpec.NAME_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }
         Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnits(
                 institution, filter, PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort));
 
-        return toListResponse(caller, institution, page, lang, limit, offset);
+        return toListResponse(caller, institution, page, lang, limit, offset, fieldsParam);
     }
 
     /**
@@ -112,16 +135,25 @@ public class PlaceOpenApiService {
     @Transactional(readOnly = true)
     public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
                                           String sortParam, String search, String lang) {
+        return listChildren(caller, placeId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null);
+    }
+
+    /** {@link #listChildren} with the sort/filters on form fields and the {@code fields=} projection. */
+    @Transactional(readOnly = true)
+    public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
+                                          String sortParam, String search, String lang,
+                                          FieldQuery fieldQuery, String fieldsParam) {
         SpatialUnitDTO parent = requireAccessiblePlace(caller, placeId);
         InstitutionDTO institution = parent.getCreatedByInstitution();
-        Sort sort = ProjectApiService.parsePlaceSort(sortParam);
+        Sort sort = ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePlaceSort);
         FilterDTO filter = new FilterDTO();
+        filter.setFieldQuery(fieldQuery);
         if (search != null && !search.isBlank()) {
             filter.add(SpatialUnitSpec.NAME_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }
         Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnitsInSpatialUnit(
                 institution, parent, filter, PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort));
-        return toListResponse(caller, institution, page, lang, limit, offset);
+        return toListResponse(caller, institution, page, lang, limit, offset, fieldsParam);
     }
 
     /** The access check every place-scoped endpoint starts with (404 / 403 when out of scope). */
@@ -130,7 +162,9 @@ public class PlaceOpenApiService {
     }
 
     private PlaceListResponse toListResponse(ProjectApiCaller caller, InstitutionDTO institution,
-                                             Page<SpatialUnitDTO> page, String lang, int limit, int offset) {
+                                             Page<SpatialUnitDTO> page, String lang, int limit, int offset,
+                                             String fieldsParam) {
+        Set<String> requested = requestedFieldIds(fieldsParam);
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(
                 profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES))
@@ -142,6 +176,12 @@ public class PlaceOpenApiService {
                     resource.setPermissions(permissions);
                     if (dto.getId() != null) {
                         resource.setResourceUri("/spatial-unit/" + dto.getId());
+                    }
+                    if (requested != null) {
+                        // Only the columns asked for, as on every other list's `fields=`.
+                        Map<String, Object> answers = new LinkedHashMap<>(buildPlaceAnswers(dto, resource.getType()));
+                        answers.keySet().retainAll(requested);
+                        resource.setAnswers(answers);
                     }
                     return resource;
                 })
@@ -214,6 +254,35 @@ public class PlaceOpenApiService {
                     new ResourceRef(resolvedType.getId(), "concepts", resolvedType.getResolvedLabel()));
         }
         return answers;
+    }
+
+    /**
+     * The place details form's fields a list can show as a column: all of them but the address, a
+     * composite with no list value (the fiche skips it too, see {@link #getPlaceById}).
+     */
+    public static List<CustomField> listableFields() {
+        return new PanelFieldSource(SpatialUnit.DETAILS_FORM).getAllFields().stream()
+                .filter(field -> field != null && field.getId() != null && !(field instanceof CustomFieldSelectOneAddress))
+                .toList();
+    }
+
+    /**
+     * The field ids a {@code fields=} parameter asks for: {@code null} when it is absent (no
+     * projection), every listable field for {@code all}, else the listed ids that exist (unknown
+     * ones are ignored, like the other lists).
+     */
+    static Set<String> requestedFieldIds(String fieldsParam) {
+        if (fieldsParam == null || fieldsParam.isBlank()) return null;
+        Set<String> known = new LinkedHashSet<>();
+        for (CustomField field : listableFields()) known.add(String.valueOf(field.getId()));
+        String value = fieldsParam.trim();
+        if ("all".equalsIgnoreCase(value)) return known;
+        Set<String> requested = new LinkedHashSet<>();
+        for (String raw : value.split(",")) {
+            String id = raw.trim();
+            if (known.contains(id)) requested.add(id);
+        }
+        return requested;
     }
 
     private Map<String, FieldResource> buildPlaceFieldsMetadataOnly(FieldSource fieldSource, Locale locale) {

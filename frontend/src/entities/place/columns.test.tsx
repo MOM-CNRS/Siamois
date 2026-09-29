@@ -18,13 +18,11 @@ describe("placeColumns", () => {
     expect(identifiers[0].render(row)).toBe("Cave A");
   });
 
-  it("renders the type label and the place number, empty when absent", () => {
-    const type = placeColumns.find((c) => c.key === "type")!;
-    const number = placeColumns.find((c) => c.key === "placeNumber")!;
+  it("pins nothing else: the type, code and place number are catalog columns", () => {
+    expect(placeColumns.map((c) => c.key)).toEqual(["name"]);
+  });
 
-    expect(type.render(row)).toBe("Grotte");
-    expect(number.render(row)).toBe("3");
-    expect(type.render({ resourceType: "places", id: "6" })).toBe("");
-    expect(number.render({ resourceType: "places", id: "6" })).toBe("");
+  it("renders an empty name as empty", () => {
+    expect(placeColumns[0].render({ resourceType: "places", id: "6" })).toBe("");
   });
 });

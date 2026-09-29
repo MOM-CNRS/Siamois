@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
@@ -288,7 +289,8 @@ public class OrganizationListsControllerApi {
     @GetMapping("/api/v1/places")
     @Tag(name = OpenApiTags.SPATIAL_UNIT)
     @Operation(summary = "Lieux d'une organisation",
-            description = "Tri : name, id, code, creationTime ; direction asc ou desc. Recherche : name.")
+            description = "Tri : name, id, code, creationTime ou l'identifiant d'un champ (sort=<fieldId>:asc) ; direction asc ou desc. "
+                    + "Recherche : name. Filtres par champ : f.<fieldId>. Projection des champs : fields.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "400", description = "organizationId absent ou pagination invalide"),
@@ -302,11 +304,14 @@ public class OrganizationListsControllerApi {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "name:asc") String sort,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        PlaceListResponse body = placeOpenApiService.listByOrganization(caller, organizationId, offset, limit, sort, search, lang);
+        PlaceListResponse body = placeOpenApiService.listByOrganization(caller, organizationId, offset, limit, sort, search, lang,
+                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields);
         return ResponseEntity.ok()
                 .header(HEADER_TOTAL_COUNT, String.valueOf(body.getMeta().total()))
                 .body(body);

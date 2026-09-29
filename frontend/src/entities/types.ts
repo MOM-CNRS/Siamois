@@ -109,6 +109,11 @@ export interface ColumnDef<TSummary> {
   // Only shown on the unscoped (organization-wide) list — e.g. the row's project, which a
   // project-scoped relation tab would just repeat on every row.
   unscopedOnly?: boolean;
+  // The catalog field this pinned column shows (a hand-written column with the field's own
+  // rendering, e.g. a link chip). The column then sorts by that field's id when the catalog says
+  // the field is sortable — without listing it — and the picker no longer offers the field a
+  // second time. Sorting by the plain `key` only works for keys the server's allow-list knows.
+  fieldId?: string;
   // Makes the cell a navigation chip to ANOTHER entity (e.g. the row's project): EntityListPanel
   // renders it like the identifier chip, with the target type's own icon, and opens that entity's
   // overview on click. Null for a row with nothing to link to (plain empty cell).

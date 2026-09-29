@@ -1,9 +1,9 @@
 import type { ColumnDef } from "../types";
 import type { PlaceSummary } from "./types";
 
-// SpatialUnitTableDefinitionFactory's core columns, reduced like the other organization-wide
-// lists: the name (the chip that opens the fiche), its type and its code. Sort keys follow
-// ProjectApiService.ALLOWED_PLACE_SORT_FIELDS (name, code, …).
+// The one pinned column: the name, the chip that opens the fiche. Every other column (type, code,
+// place number) comes from the field catalog (catalog.ts), sortable and filterable like the other
+// lists'. Sorts on the name follow ProjectApiService.ALLOWED_PLACE_SORT_FIELDS.
 export const placeColumns: ColumnDef<PlaceSummary>[] = [
   {
     key: "name",
@@ -11,15 +11,5 @@ export const placeColumns: ColumnDef<PlaceSummary>[] = [
     sortable: true,
     identifier: true,
     render: (row) => row.name ?? "",
-  },
-  {
-    key: "type",
-    header: "Type",
-    render: (row) => row.type?.resolvedLabel ?? "",
-  },
-  {
-    key: "placeNumber",
-    header: "N° de regroupement",
-    render: (row) => (row.placeNumber != null ? String(row.placeNumber) : ""),
   },
 ];

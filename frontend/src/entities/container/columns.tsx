@@ -15,6 +15,7 @@ export const containerColumns: ColumnDef<ContainerSummary>[] = [
   },
   {
     key: "type",
+    fieldId: "-602",
     header: "Type",
     render: (row) => row.type?.resolvedLabel ?? "",
   },

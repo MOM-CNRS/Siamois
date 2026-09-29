@@ -5,6 +5,7 @@ import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionCode;
@@ -89,6 +90,22 @@ public class FieldQueryService {
             List.of("fullIdentifier", "lastname", "name", "title", "identifier", "code");
 
     /**
+     * A form binds the DTO's property name, which is not always the JPA attribute's: the recording
+     * unit's {@code chronologicalPhase} is the entity's {@code chronologicalAttribution}
+     * ({@code RecordingUnitMapper} maps one to the other).
+     */
+    private static final Map<Class<?>, Map<String, String>> ENTITY_ATTRIBUTES = Map.of(
+            RecordingUnit.class, Map.of("chronologicalPhase", "chronologicalAttribution"));
+
+    /** The entity attribute a form's {@code valueBinding} reads, differing only by the aliases above. */
+    static String entityAttribute(Class<?> entityType, String binding) {
+        return ENTITY_ATTRIBUTES.getOrDefault(entityType, Map.of()).getOrDefault(binding, binding);
+    }
+
+    /** The one property of a measurement that lists compare and sort on: its value in the base unit. */
+    private static final String MEASUREMENT_VALUE = "normalizedValue";
+
+    /**
      * Each entity's system fields, as its details form declares them in code — some (the project's)
      * have no {@code custom_field} row, so a lookup by id cannot rely on the database alone.
      */
@@ -125,11 +142,20 @@ public class FieldQueryService {
      * Where a field's value is, and how it is compared. {@code attribute} is the entity property (a
      * system field) or the answer's own property (an additional one: {@code value}, or the
      * collection of referenced entities); {@code labelAttribute} is the referenced entity's label,
-     * null for a concept; {@code idFilterable} is false when the target isn't keyed by a numeric id.
+     * null for a concept; {@code idFilterable} is false when the target isn't keyed by a numeric id;
+     * {@code nested} names the property read on a single linked entity (a measurement's value)
+     * rather than the attribute itself.
      */
     private record Target(boolean system, String attribute, Kind kind, Class<?> valueType,
                           @Nullable Class<? extends CustomFieldAnswer> answerClass,
-                          boolean concept, @Nullable String labelAttribute, boolean idFilterable) {
+                          boolean concept, @Nullable String labelAttribute, boolean idFilterable,
+                          @Nullable String nested) {
+
+        Target(boolean system, String attribute, Kind kind, Class<?> valueType,
+               @Nullable Class<? extends CustomFieldAnswer> answerClass,
+               boolean concept, @Nullable String labelAttribute, boolean idFilterable) {
+            this(system, attribute, kind, valueType, answerClass, concept, labelAttribute, idFilterable, null);
+        }
     }
 
     // ========== Catalog ==========
@@ -174,7 +200,8 @@ public class FieldQueryService {
             RecordingUnit.class, RecordingUnit.DETAILS_FORM,
             Specimen.class, Specimen.DETAILS_FORM,
             Phase.class, Phase.DETAILS_FORM,
-            Container.class, Container.DETAILS_FORM);
+            Container.class, Container.DETAILS_FORM,
+            SpatialUnit.class, SpatialUnit.DETAILS_FORM);
 
     // ========== Query ==========
 
@@ -233,7 +260,8 @@ public class FieldQueryService {
     }
 
     @Nullable
-    private Target resolveSystem(Class<?> entityType, String binding) {
+    private Target resolveSystem(Class<?> entityType, String formBinding) {
+        String binding = entityAttribute(entityType, formBinding);
         if (isStratigraphy(entityType, binding)) {
             // Not a property: a unit's relationships are split over relationshipsAsUnit1/2.
             return new Target(true, binding, Kind.REFERENCES, RecordingUnit.class, null, false, "fullIdentifier", true);
@@ -251,7 +279,10 @@ public class FieldQueryService {
                 Kind kind = scalarKind(attribute.getJavaType());
                 yield kind == null ? null : new Target(true, binding, kind, attribute.getJavaType(), null, false, null, false);
             }
-            case MANY_TO_ONE, ONE_TO_ONE -> reference(true, binding, Kind.REFERENCE, attribute.getJavaType(), null);
+            case MANY_TO_ONE, ONE_TO_ONE -> MeasurementAnswer.class.equals(attribute.getJavaType())
+                    // A measurement (an altitude): compared and sorted as a number, in the base unit.
+                    ? new Target(true, binding, Kind.NUMBER, Double.class, null, false, null, false, MEASUREMENT_VALUE)
+                    : reference(true, binding, Kind.REFERENCE, attribute.getJavaType(), null);
             case MANY_TO_MANY, ONE_TO_MANY -> {
                 Class<?> element = ((PluralAttribute<?, ?, ?>) attribute).getElementType().getJavaType();
                 yield reference(true, binding, Kind.REFERENCES, element, null);
@@ -397,7 +428,7 @@ public class FieldQueryService {
                 return cb.exists(elements);
             }
             if (target.system) {
-                return valuePredicate(target, root.get(target.attribute), texts, ids, from, to, cb);
+                return valuePredicate(target, systemValue(root, target), texts, ids, from, to, cb);
             }
             Subquery<Integer> answers = query.subquery(Integer.class);
             Root<? extends CustomFieldAnswer> answer = answers.from(target.answerClass);
@@ -409,6 +440,16 @@ public class FieldQueryService {
                     valuePredicate(target, value, texts, ids, from, to, cb));
             return cb.exists(answers);
         };
+    }
+
+    /**
+     * A system field's value on the listed entity: its attribute, or — for a measurement — the
+     * measurement's value through a LEFT join, so a unit without one is empty, not dropped.
+     */
+    private static Path<?> systemValue(Root<?> root, Target target) {
+        return target.nested == null
+                ? root.get(target.attribute)
+                : root.join(target.attribute, JoinType.LEFT).get(target.nested);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -460,7 +501,7 @@ public class FieldQueryService {
         if (target.system) {
             return switch (target.kind) {
                 case TEXT -> cb.lower((Expression<String>) (Expression) root.get(target.attribute));
-                case NUMBER, DATE -> root.get(target.attribute);
+                case NUMBER, DATE -> systemValue(root, target);
                 case REFERENCE -> target.concept
                         ? conceptLabel(query, cb, root.get(target.attribute), lang)
                         : root.join(target.attribute, JoinType.LEFT).get(target.labelAttribute);

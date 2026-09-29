@@ -63,7 +63,7 @@ Mesuré le 29/09/2026 sur la base de dev, en comptant les parcours de table côt
 - **Vue arborescente** de la liste des projets et des lieux. Le composant JSF (`LazyTreeTable`, `BaseLazyDataModel`…) a été retiré, mais le domaine est conservé : `FilterDTO.rootOnly/ancestorClosure/matchIds`, les branches `rootOnly` des services, les méthodes `findChildren…`/`existsChildren…` et les requêtes des repositories. Il manque `GET /projects/{id}/children` (l'URL est déjà annoncée par `ProjectResourceLinks.children`) et le mode arbre d'`EntityListPanel`.
 - **Carte**. Il n'en existe aucune aujourd'hui.
 - **Documents** et **Stratigraphie** (onglets de fiche).
-- **Règles conditionnelles de la fiche UE** (`enabledWhen`/`dependsOn` de `RecordingUnitDetailsForm` : érosion selon la nature, interprétation selon la nature). Les champs s'affichent aujourd'hui sans condition.
+- **Règles conditionnelles des formulaires** (`enabledWhen`/`dependsOn`, pas seulement la fiche UE) : à concevoir plus précisément (retirées de la feuille de route le 29/09/2026). Aujourd'hui seul `RecordingUnitDetailsForm` en déclare (érosion selon la nature, interprétation selon la nature), par colonne du layout (`CustomColUiDto.enabledWhenSpec/dependsOnSpec`) ; JSF les évaluait via `FormService` et `EnabledRulesEngine`. Les champs s'affichent sans condition dans React.
 - **Adresse** (`SELECT_ADDRESS`) : lecture seule, en attendant GéoPlateforme/INSEE.
 - **Champs non triables** : `zInf`/`zSup` (mesures embarquées), `chronologicalPhase`, `endDate` et `excavators` sur les UE (binding non mappé).
 - **Lieux** : pas de tri ni de filtre par id de champ, et pas de catalogue de colonnes.

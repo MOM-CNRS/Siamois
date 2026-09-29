@@ -6,6 +6,7 @@ import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
@@ -57,6 +58,24 @@ public class OrganizationFieldCatalogService {
             fields.putIfAbsent(String.valueOf(field.getId()), fieldQueryService.withQuery(resource, entityType, field));
         }
         return new OrganizationFieldCatalogResponse(fields, table == ConfigurableTable.UE ? recordingUnitTableColumns() : null);
+    }
+
+    /**
+     * The place list's column catalog. Places are not a {@link ConfigurableTable}: no per-project
+     * configuration and no additional fields, so the catalog is just the details form's fields the
+     * list can show ({@link PlaceOpenApiService#listableFields}), the same in every organization.
+     */
+    @Transactional(readOnly = true)
+    public OrganizationFieldCatalogResponse buildPlaces(String lang) {
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, FieldResource> fields = new LinkedHashMap<>();
+        for (CustomField field : PlaceOpenApiService.listableFields()) {
+            FieldResource resource = FieldAnswerWireService.fieldResourceOf(field,
+                    langService.resolveMessage(field.getLabel(), locale),
+                    langService.resolveMessage(field.getHint(), locale));
+            fields.put(String.valueOf(field.getId()), fieldQueryService.withQuery(resource, SpatialUnit.class, field));
+        }
+        return new OrganizationFieldCatalogResponse(fields, null);
     }
 
     static Class<?> entityTypeOf(ConfigurableTable table) {

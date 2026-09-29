@@ -18,12 +18,14 @@ export const findColumns: ColumnDef<FindSummary>[] = [
     // The find's parent UE — a chip opening that UE's overview, on the organization-wide list and
     // in a project's Mobilier tab alike (the UE differs from row to row in both).
     key: "recordingUnit",
+    fieldId: "-401",
     header: "UE",
     render: (row) => row.recordingUnit?.fullIdentifier ?? "",
     link: (row) => (row.recordingUnit ? { entityType: "recordingUnit", id: row.recordingUnit.id } : null),
   },
   {
     key: "type",
+    fieldId: "-409",
     header: "Catégorie",
     render: (row) => row.type?.resolvedLabel ?? "",
   },

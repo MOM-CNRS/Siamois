@@ -15,11 +15,13 @@ export const phaseColumns: ColumnDef<PhaseSummary>[] = [
   },
   {
     key: "type",
+    fieldId: "-502",
     header: "Type",
     render: (row) => row.type?.resolvedLabel ?? "",
   },
   {
     key: "title",
+    fieldId: "-503",
     header: "Titre",
     render: (row) => row.title ?? "",
   },

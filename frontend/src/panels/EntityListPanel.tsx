@@ -179,6 +179,12 @@ export function EntityListPanel({
     enabled: hasSchema,
   });
 
+  // The catalog fields a pinned column already shows: not offered (or seeded) a second time.
+  const pinnedFieldIds = useMemo(
+    () => new Set((config?.list.columns ?? []).flatMap((c) => (c.fieldId ? [c.fieldId] : []))),
+    [config],
+  );
+
   // Seeds the toggler the first time the catalog loads — from this browser's saved arrangement if
   // there is one, else from the catalog's own defaults (ActionUnitTableColumnDefaults on the
   // project side) — never again, so a user's toggle isn't clobbered by an organizationId change
@@ -192,15 +198,16 @@ export function EntityListPanel({
       return field != null && isOwningProjectField(field);
     };
     const defaults = catalog.columns
+      .filter((c) => !pinnedFieldIds.has(c.fieldId))
       .filter((c) => (isProject(c.fieldId) ? scope == null : c.visible))
       .slice()
       .sort((a, b) => a.order - b.order)
       .map((c) => c.fieldId);
     seedVisibleColumns(
       defaults,
-      catalog.columns.map((c) => c.fieldId),
+      catalog.columns.map((c) => c.fieldId).filter((id) => !pinnedFieldIds.has(id)),
     );
-  }, [catalog, seedVisibleColumns, scope]);
+  }, [catalog, seedVisibleColumns, scope, pinnedFieldIds]);
 
   // Only the columns currently on screen are ever requested — the projection (and its label-batch
   // resolution cost server-side) scales with what's visible, not with the whole catalog. They're
@@ -327,10 +334,11 @@ export function EntityListPanel({
   const togglerOptions = useMemo<ColumnTogglerOption[]>(() => {
     if (!catalog) return [];
     return catalog.columns
+      .filter((c) => !pinnedFieldIds.has(c.fieldId))
       .slice()
       .sort((a, b) => a.order - b.order)
       .map((c) => ({ fieldId: c.fieldId, label: catalog.fields[c.fieldId]?.label ?? c.fieldId }));
-  }, [catalog]);
+  }, [catalog, pinnedFieldIds]);
 
   // Labels for the ids an "in" filter carries — FilterValue itself is ids-only (the wire shape),
   // so the chip bar needs this to print "Statut: En cours" rather than "Statut: 4711".
@@ -559,7 +567,14 @@ export function EntityListPanel({
   // A column that only makes sense across several parents (the row's project, on an
   // organization-wide list) is dropped inside a scoped relation tab, where it would repeat the
   // parent on every row.
-  const pinnedColumns = (config.list.columns as ColumnDef<RowRecord>[]).filter((c) => !(scope && c.unscopedOnly));
+  const pinnedColumns = (config.list.columns as ColumnDef<RowRecord>[])
+    .filter((c) => !(scope && c.unscopedOnly))
+    // A pinned column showing a catalog field sorts by that field's id, if the catalog says it can.
+    .map((c) =>
+      c.fieldId && c.sortable == null && catalog?.fields[c.fieldId]?.query?.sortable
+        ? { ...c, sortable: true }
+        : c,
+    );
   const allColumns: ColumnDef<RowRecord>[] = [...pinnedColumns, ...dynamicColumns];
 
   // Everything up to and including the identifier column stays put while the rest scrolls
@@ -832,6 +847,7 @@ export function EntityListPanel({
               </span>
             }
             sortable={col.sortable}
+            sortField={col.fieldId ?? col.key}
             // Only the identifier column is clickable (plan §8 phase 5) — matches JSF's own
             // CommandLinkColumn, the only cell in the real table that navigates/opens anything.
             // The row's validation state renders in the identifier's cell but outside the clickable

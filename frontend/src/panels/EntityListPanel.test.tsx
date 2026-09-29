@@ -1632,6 +1632,107 @@ describe("EntityListPanel linked columns", () => {
   });
 });
 
+// A pinned column that shows a catalog field (ColumnDef.fieldId) sorts by that field's id, and the
+// field isn't offered as a second column.
+const pinnedFieldListMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeFormRow & { kind?: string }>>>();
+const pinnedFieldLoadMock = vi.fn();
+
+registerEntityType({
+  key: "fake-pinned-field-entity",
+  labels: { singular: "FakeP", plural: "FakePs" },
+  collectionPath: "fake-pinned-field-entities",
+  icon: "bi bi-question",
+  api: { list: pinnedFieldListMock, get: vi.fn() },
+  list: {
+    columns: [
+      { key: "name", header: "Name", render: (row: FakeFormRow) => row.name, sortable: true },
+      // Not sortable by its own key on the server: only its field id is.
+      { key: "kind", fieldId: "-7", header: "Kind", render: (row: FakeFormRow & { kind?: string }) => row.kind ?? "" },
+    ],
+    schema: { load: pinnedFieldLoadMock },
+    defaultSort: "name:asc",
+    searchable: false,
+  },
+  detail: { tabs: [] },
+  routes: { list: "/fake-pinned", detail: (id: string | number) => `/fake-pinned/${id}` },
+} as unknown as EntityTypeConfig<FakeFormRow, FakeFormRow>);
+
+describe("EntityListPanel pinned columns backed by a catalog field", () => {
+  const catalogWith = (sortable: boolean) => ({
+    fields: {
+      "-7": {
+        id: "-7", resourceType: "fields", label: "Kind", answerType: "TEXT", isSystemField: true,
+        query: { sortable, filterOp: "contains" },
+      },
+      "-8": { id: "-8", resourceType: "fields", label: "Other", answerType: "TEXT", isSystemField: true },
+    },
+    columns: [
+      { fieldId: "-7", columnId: "-7", visible: true, order: 0 },
+      { fieldId: "-8", columnId: "-8", visible: true, order: 1 },
+    ],
+  });
+
+  function renderPinned() {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel entityType="fake-pinned-field-entity" />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  function header(label: string): HTMLElement | undefined {
+    return Array.from(container.querySelectorAll<HTMLElement>("th")).find((th) => th.textContent?.trim() === label);
+  }
+
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    window.localStorage.clear();
+    pinnedFieldListMock.mockReset();
+    pinnedFieldListMock.mockResolvedValue({ data: [{ id: "1", name: "Row A", kind: "K1" }], totalCount: 1, limit: 25, offset: 0 });
+    pinnedFieldLoadMock.mockReset();
+  });
+
+  it("sorts by the field's id when the catalog says the field is sortable", async () => {
+    pinnedFieldLoadMock.mockResolvedValue(catalogWith(true));
+    renderPinned();
+    await flush();
+
+    expect(header("Kind")?.classList.contains("p-sortable-column")).toBe(true);
+    await act(async () => {
+      header("Kind")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(pinnedFieldListMock).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "-7:asc" }));
+  });
+
+  it("stays unsortable when the catalog says the field is not", async () => {
+    pinnedFieldLoadMock.mockResolvedValue(catalogWith(false));
+    renderPinned();
+    await flush();
+
+    expect(header("Kind")).toBeDefined();
+    expect(header("Kind")?.classList.contains("p-sortable-column")).toBe(false);
+  });
+
+  it("does not show the field a second time as a dynamic column", async () => {
+    pinnedFieldLoadMock.mockResolvedValue(catalogWith(true));
+    renderPinned();
+    await flush();
+
+    const headers = Array.from(container.querySelectorAll("th")).map((th) => th.textContent?.trim());
+    expect(headers.filter((h) => h === "Kind")).toHaveLength(1);
+    expect(headers).toContain("Other");
+    // Nor requested: the projection only asks for the dynamic columns actually shown.
+    expect(pinnedFieldListMock).toHaveBeenCalledWith(expect.objectContaining({ fields: "-8" }));
+  });
+});
+
 // The fiche's previous/next arrows walk the list it was opened from (panels/listContext.ts).
 describe("EntityListPanel remembers where a row was opened from", () => {
   function renderList(props: Record<string, unknown> = {}) {
