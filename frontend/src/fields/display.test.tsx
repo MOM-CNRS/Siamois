@@ -135,8 +135,8 @@ describe("a multi-valued preview (MultiValue, complete=false)", () => {
     const html = markup(renderAnswerCell(field(), preview));
     expect(html).toContain("US 1");
     expect(html).toContain("+36");
-    // The counter opens the whole list rather than pretending to hold it.
-    expect(html).toContain("cell-multi-more-link");
+    // Only counted: the cell's overlay is what loads and shows the whole list.
+    expect(html).toContain('title="37 valeurs"');
   });
 
   it("says so in plain text too", () => {
@@ -146,7 +146,7 @@ describe("a multi-valued preview (MultiValue, complete=false)", () => {
   it("shows a complete MultiValue like a plain list", () => {
     const html = markup(renderAnswerCell(field(), { values: [ref("1", "A"), ref("2", "B")], total: 2, complete: true }));
     expect(html).toContain("+1");
-    expect(html).not.toContain("cell-multi-more-link");
+    expect(html).toContain('title="A, B"');
   });
 
   it("shows nothing for an empty one", () => {
@@ -164,5 +164,12 @@ describe("a stratigraphic relationship", () => {
     };
     expect(renderAnswerValue(field({ answerType: "SELECT_MULTIPLE_STRATIGRAPHY" }), [relation]))
       .toBe("coupe US 12 ?");
+  });
+});
+
+describe("chips as links", () => {
+  it("are plain chips in a cell, and links only where asked (the overlay)", () => {
+    const value = { resourceId: "12", resourceType: "recording-units", label: "US 12" };
+    expect(markup(renderAnswerCell(field(), value))).not.toContain("ref-chip-link");
   });
 });

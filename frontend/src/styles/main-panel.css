@@ -219,26 +219,6 @@
   cursor: default;
 }
 
-/* The "+N" of a preview (MultiValueAnswer.complete false): opens the whole list. */
-.cell-multi-more-link {
-  cursor: pointer;
-}
-
-.cell-multi-more-link:hover,
-.cell-multi-more-link:focus-visible {
-  background: var(--surface-300, #e0e0e0);
-}
-
-.cell-multi-overlay {
-  max-width: 28rem;
-  max-height: 20rem;
-  overflow: auto;
-}
-
-.cell-multi-overlay-status {
-  color: var(--text-color-secondary, #6b7280);
-  font-size: 0.85rem;
-}
 
 /* --------------------------------------------- merged status + identifier cell */
 
@@ -577,6 +557,17 @@ body button.p-button.p-button-text.status-button.cancelled {
   font-size: 0.8rem;
 }
 
+/* A read-only overlay: the whole value, wrapping, its chips linking to their fiches. */
+.cell-edit-overlay-readonly {
+  padding: 0.4rem 0.5rem;
+  white-space: normal;
+}
+
+.cell-edit-overlay-empty {
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.85rem;
+}
+
 .cell-edit-overlay-loading {
   padding: 0.5rem;
   color: var(--text-color-secondary, #6b7280);
@@ -804,7 +795,9 @@ body button.p-button.p-button-text.status-button.cancelled {
   min-height: 1.5em;
 }
 
-.sia-fiche-tab .field-value-cell-editable {
+/* A read-only field with a value opens its (read-only) overlay too: same click target. */
+.sia-fiche-tab .field-value-cell-editable,
+.sia-fiche-tab .field-value-cell-readonly[role="button"] {
   margin: 0 -0.4rem;
   padding: 0.2rem 0.4rem;
   border: 1px solid transparent;
@@ -813,7 +806,9 @@ body button.p-button.p-button-text.status-button.cancelled {
 }
 
 .sia-fiche-tab .field-value-cell-editable:hover,
-.sia-fiche-tab .field-value-cell-editable:focus-visible {
+.sia-fiche-tab .field-value-cell-editable:focus-visible,
+.sia-fiche-tab .field-value-cell-readonly[role="button"]:hover,
+.sia-fiche-tab .field-value-cell-readonly[role="button"]:focus-visible {
   background: var(--surface-100, #f5f5f5);
   border-color: var(--surface-300, #e0e0e0);
   outline: none;
@@ -989,8 +984,7 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   color: var(--text-color);
 }
 
-/* The toolbar's selected-rows count, before "Créer" (EntityListPanel), shown only once rows are
-   selected. */
+/* The toolbar's selected / filtered-total count, before "Créer" (EntityListPanel). */
 .entity-list-panel-toolbar .p-toolbar-group-end {
   display: flex;
   align-items: center;
@@ -1359,13 +1353,17 @@ body {
   vertical-align: middle;
 }
 
+/* A chip that opens its fiche (the overlay's): the edit-mode token's look — full-colour border,
+   label underlined on hover — rather than the plain chip's light one. */
 .ref-chip-link {
+  display: inline-block;
+  border-color: var(--ref-chip-color);
   cursor: pointer;
 }
 
 .ref-chip-link:hover,
 .ref-chip-link:focus-visible {
-  background: color-mix(in srgb, var(--ref-chip-color) 12%, transparent);
+  text-decoration: underline;
 }
 
 /* A fiche field shows every value: the chips wrap. */

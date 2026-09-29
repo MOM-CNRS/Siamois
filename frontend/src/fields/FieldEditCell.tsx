@@ -46,22 +46,23 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   // Nor is a read-only one (the entity's project, a generated identifier).
   const readOnly = readOnlyProp || field.readOnly === true || !hasFieldRenderer(field.answerType);
 
+  // Same gesture as a list cell: the click opens the overlay, to edit the field or — read-only —
+  // to show it, its chips linking to their fiches.
   function open(e: SyntheticEvent) {
-    if (readOnly) return;
     const anchor = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setEditTarget({ row, field, anchor, required });
-  }
-
-  if (readOnly) {
-    const content = renderAnswerCell(field, stored, { all: true });
-    return <span className="field-value-cell field-value-cell-readonly">{content}</span>;
+    setEditTarget({ row, field, anchor, required, readOnly });
   }
 
   const content = renderAnswerCell(field, stored, { all: true });
+  // An empty field nobody can edit has nothing to open.
+  if (readOnly && !content) {
+    return <span className="field-value-cell field-value-cell-readonly" />;
+  }
+
   return (
     <>
       <span
-        className="field-value-cell field-value-cell-editable"
+        className={`field-value-cell ${readOnly ? "field-value-cell-readonly" : "field-value-cell-editable"}`}
         role="button"
         tabIndex={0}
         // Same affordance as the table's own editable cell: the full value as the native tooltip,

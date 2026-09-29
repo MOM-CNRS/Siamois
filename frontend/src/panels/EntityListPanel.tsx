@@ -225,6 +225,20 @@ export function EntityListPanel({
     enabled: config != null && (!hasSchema || columnsSeeded || catalogFailed),
   });
 
+  // The titlebar's count chip is the whole collection, not the filtered result set (that one is the
+  // toolbar's selected/total chip). While nothing narrows the list they are the same number, so the
+  // extra count request (one row) only runs once a search or a filter is active. A key under
+  // "entity-list" so a create's invalidation refreshes it too. Not for an embedded list: its tab
+  // badge already is that total.
+  const narrowed = Boolean(state.search) || Object.keys(state.filters).length > 0;
+  const unfilteredTotal = useQuery({
+    queryKey: ["entity-list", entityType, "unfiltered-total", organizationId, scope?.entityType, scope?.id],
+    queryFn: () => config!.api.list({ offset: 0, limit: 1, organizationId, scope }) as Promise<PagedResult<RowRecord>>,
+    select: (page) => page.totalCount,
+    enabled: config != null && !embedded && narrowed,
+  });
+  const collectionTotal = narrowed ? unfilteredTotal.data : totalCount;
+
   // A new page (or a new result set, which goes back to the first one) starts at the top of the
   // table's own scroll box: the scroll position belonged to the rows that were there before.
   const tableRef = useRef<DataTable<RowRecord[]>>(null);
@@ -253,13 +267,19 @@ export function EntityListPanel({
   // click-to-edit).
   function openCellEditor(e: SyntheticEvent, row: RowRecord, field: FieldResource) {
     e.stopPropagation();
-    if (!canPatchAnswers || !canEditRow(row)) return;
     // Anchored on the <td>, not on the clicked span: the span is only as wide as its text, so
     // anchoring to it would open an editor narrower than the cell it replaces (and offset from it
     // by the cell's padding).
     const target = e.currentTarget as HTMLElement;
     const cell = target.closest("td") ?? target;
-    setEditTarget({ row, field, anchor: cell.getBoundingClientRect() });
+    setEditTarget({ row, field, anchor: cell.getBoundingClientRect(), readOnly: !isEditable(field, row) });
+  }
+
+  // entityDataTable.xhtml's isRendered(col, "writeMode", item): the app's write mode and the row's
+  // own right, then the field itself — a read-only one (the row's project, a generated identifier)
+  // and a type with no editor (action code, address) are never edited.
+  function isEditable(field: FieldResource, row: RowRecord): boolean {
+    return canPatchAnswers && canEditRow(row) && !field.readOnly && hasFieldRenderer(field.answerType);
   }
 
   const dynamicColumns = useMemo<ColumnDef<RowRecord>[]>(() => {
@@ -290,20 +310,18 @@ export function EntityListPanel({
       .filter((c): c is ColumnDef<RowRecord> => c != null);
   }, [catalog, state.visibleColumns, canPatchAnswers]);
 
-  // Which columns are editable, and with which field — keyed by the ColumnDef key the body
-  // renderer below receives. Only catalog-driven columns can be: a pinned column has no
-  // FieldResource to build an AnswerInput from.
-  const editableFieldByColumn = useMemo<Map<string, FieldResource>>(() => {
-    if (!catalog || !canPatchAnswers) return new Map();
+  // Each catalog-driven column's field, keyed by the ColumnDef key the body renderer below
+  // receives: a click on its cell opens the overlay — to edit it, or to read it (isEditable). A
+  // pinned column has no FieldResource and stays a plain cell (or its own link).
+  const fieldByColumn = useMemo<Map<string, FieldResource>>(() => {
+    if (!catalog) return new Map();
     const byKey = new Map<string, FieldResource>();
     for (const fieldId of state.visibleColumns) {
       const field = catalog.fields[fieldId];
-      // A field with no editor (action code, address) would open an empty overlay, and a read-only
-      // one (the row's project, a generated identifier) is never edited: both stay plain cells.
-      if (field && !field.readOnly && hasFieldRenderer(field.answerType)) byKey.set(field.id, field);
+      if (field) byKey.set(field.id, field);
     }
     return byKey;
-  }, [catalog, state.visibleColumns, canPatchAnswers]);
+  }, [catalog, state.visibleColumns]);
 
   const togglerOptions = useMemo<ColumnTogglerOption[]>(() => {
     if (!catalog) return [];
@@ -476,12 +494,16 @@ export function EntityListPanel({
       );
     }
 
-    const field = editableFieldByColumn.get(col.key);
-    if (!field || !canEditRow(row)) {
-      return <span className="entity-list-panel-cell-value">{col.render(row)}</span>;
+    const field = fieldByColumn.get(col.key);
+    const content = col.render(row);
+    const editable = field != null && isEditable(field, row);
+    // An empty cell nobody can edit has nothing to open.
+    if (!field || (!editable && !content)) {
+      return <span className="entity-list-panel-cell-value">{content}</span>;
     }
 
-    const content = col.render(row);
+    // One gesture for every field cell: the first click opens the overlay — its editor, or the
+    // value itself when it can't be edited — and the chips there open the referenced fiches.
     return (
       <span
         className="entity-list-panel-editable-cell"
@@ -626,16 +648,23 @@ export function EntityListPanel({
           }
           end={
             <>
-              {/* How many rows are selected — only once there is a selection: the total is already
-                  the titlebar's count chip, so "0/N" said nothing. Its × clears the selection. */}
-              {selectedRows.length > 0 && (
+              {/* selectedCountChip (tableToolbar.xhtml): selected / total of the FILTERED result set —
+                  the only place that total shows in a relation tab, whose badge counts every related
+                  row. Here rather than in the selection column's header, which it widened. Its ×
+                  (only once rows are selected) clears the selection. */}
+              {isLoading ? (
+                <Skeleton width="3rem" height="1.5rem" borderRadius="16px" />
+              ) : (
                 <Chip
+                  // Remounted when the selection empties or fills: PrimeReact's Chip hides itself on
+                  // remove and would otherwise stay hidden.
+                  key={selectedRows.length > 0 ? "selected" : "none"}
                   className="entity-list-panel-selection-count"
-                  label={`${selectedRows.length} sélectionné${selectedRows.length > 1 ? "s" : ""}`}
-                  removable
+                  label={`${selectedRows.length}/${totalCount}`}
+                  removable={selectedRows.length > 0}
                   onRemove={() => {
                     setSelectedRows([]);
-                    return true;
+                    return false;
                   }}
                 />
               )}
@@ -897,11 +926,11 @@ export function EntityListPanel({
               <span style={{ paddingRight: "0.5em" }}>{config.labels.plural}</span>
               {/* *ListPanelHeader.xhtml's count chip: `<entity>-count-chip` (themed-panel's chip rule),
                   with the same inline transparent background/main-color text. */}
-              {isLoading ? (
+              {isLoading || collectionTotal == null ? (
                 <Skeleton width="2.5rem" height="1.75rem" borderRadius="16px" className="loading-skeleton" />
               ) : (
               <Chip
-                label={String(totalCount)}
+                label={String(collectionTotal)}
                 className={config.panelClass ? config.panelClass.replace(/-panel$/, "-count-chip") : undefined}
                 style={{ background: "transparent", color: "var(--main-color)" }}
               />

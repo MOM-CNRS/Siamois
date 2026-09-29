@@ -54,6 +54,17 @@ const fakeConfig: EntityTypeConfig<FakeRow, FakeRow> = {
 
 registerEntityType(fakeConfig);
 
+// The list's page requests — not the one-row count behind the titlebar's unfiltered total, which a
+// search or a filter also triggers.
+function pageCalls(): Record<string, unknown>[] {
+  return listMock.mock.calls.map(([p]) => p as Record<string, unknown>).filter((p) => p.limit !== 1);
+}
+
+function lastPageCall(): Record<string, unknown> | undefined {
+  const calls = pageCalls();
+  return calls[calls.length - 1];
+}
+
 // A second, separate fake entity for the createForm overlay tests below — its own key so it
 // doesn't interfere with fakeConfig's own onCreate-bridge tests, exercising EntityListPanel's own
 // mechanism (an entity supplying list.createForm gets an overlay instead of the onCreate bridge),
@@ -161,7 +172,7 @@ describe("EntityListPanel", () => {
     await flushDebounce();
     await flush();
 
-    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 0, search: "abc" }));
+    expect(lastPageCall()).toEqual(expect.objectContaining({ offset: 0, search: "abc" }));
   });
 
   it("does not fire a new query on every keystroke while still typing (debounced search)", async () => {
@@ -191,8 +202,8 @@ describe("EntityListPanel", () => {
 
     await flushDebounce();
     await flush();
-    expect(listMock).toHaveBeenCalledTimes(1);
-    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ search: "ab" }));
+    expect(pageCalls()).toHaveLength(1);
+    expect(lastPageCall()).toEqual(expect.objectContaining({ search: "ab" }));
   });
 
   it("calls onNavigate with the row's entity type and id when the identifier cell is clicked and no onOpenOverview is supplied", async () => {
@@ -331,6 +342,35 @@ describe("EntityListPanel", () => {
     expect(header.textContent).toContain("1");
   });
 
+  // The titlebar counts the whole collection; the toolbar's selected/total chip the filtered result.
+  it("keeps the unfiltered total in the titlebar while a search narrows the list", async () => {
+    listMock.mockImplementation(async (params) => {
+      const p = params as { search?: string; limit: number };
+      const total = p.search ? 3 : 40;
+      return { data: [{ id: "1", name: "Alpha" }], totalCount: total, limit: p.limit, offset: 0 };
+    });
+    renderPanel();
+    await flush();
+    const titleCount = () => container.querySelector(".entity-list-panel-header .p-chip")?.textContent;
+    const toolbarCount = () => container.querySelector(".entity-list-panel-selection-count")?.textContent;
+    expect(titleCount()).toBe("40");
+    expect(toolbarCount()).toContain("0/40");
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      nativeSetter.call(input, "al");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await flushDebounce();
+    await flush();
+
+    expect(titleCount()).toBe("40");
+    expect(toolbarCount()).toContain("0/3");
+    expect(listMock).toHaveBeenCalledWith(expect.objectContaining({ offset: 0, limit: 1 }));
+    expect(listMock).not.toHaveBeenCalledWith(expect.objectContaining({ limit: 1, search: "al" }));
+  });
+
   it("gives the count chip JSF's <entity>-count-chip class when the entity declares a panelClass", async () => {
     registerEntityType({ ...fakeConfig, key: "fake-themed-list-entity", panelClass: "fake-thing-panel" });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -384,22 +424,22 @@ describe("EntityListPanel", () => {
     expect(header.querySelector(".bi-copy")).toBeTruthy();
   });
 
-  it("always shows the selection column, and a selected count in the toolbar only once rows are selected", async () => {
+  it("always shows the selection column, and the selected/filtered-total count in the toolbar", async () => {
     renderPanel();
     await flush();
 
     expect(container.querySelector("th.p-selection-column")).toBeTruthy();
-    // The total is the titlebar's count chip; "0/N" in the column header is gone.
-    const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
-    expect(chips).not.toContain("0/1");
-    expect(container.querySelector(".entity-list-panel-selection-count")).toBeNull();
+    // In the toolbar, not in the selection column's header (which it widened).
+    const count = container.querySelector(".entity-list-panel-toolbar .entity-list-panel-selection-count");
+    expect(count?.textContent).toContain("0/1");
+    expect(container.querySelector("th.p-selection-column .p-chip")).toBeNull();
 
     const rowBox = container.querySelector("td.p-selection-column .p-checkbox-box, td.p-selection-column input") as HTMLElement;
     await act(async () => {
       rowBox.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
-    expect(container.querySelector(".entity-list-panel-selection-count")?.textContent).toContain("1 sélectionné");
+    expect(container.querySelector(".entity-list-panel-selection-count")?.textContent).toContain("1/1");
     // No hover checkbox on the identifier chip any more: selection is the column's job only.
     expect(container.querySelector(".entity-list-panel-identifier-select")).toBeNull();
   });
@@ -858,7 +898,7 @@ describe("EntityListPanel filter chips (toolbar)", () => {
     });
     await flush();
 
-    expect(listMock).toHaveBeenLastCalledWith(
+    expect(lastPageCall()).toEqual(
       expect.objectContaining({ filters: { name: { op: "contains", v: "abc" } } }),
     );
     // The chip now carries the applied value, so the active filter is readable without opening it.
@@ -903,6 +943,20 @@ describe("EntityListPanel filter chips (toolbar)", () => {
   });
 });
 
+// One gesture for every field cell: a click opens the overlay — an editor, or the value alone
+// when it can't be edited. Clicks the (first) field cell and says which one opened.
+async function openedOverlayMode(): Promise<"editor" | "readonly" | "none"> {
+  const cell = container.querySelector(".entity-list-panel-editable-cell") as HTMLElement | null;
+  if (!cell) return "none";
+  await act(async () => {
+    cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  await flush();
+  const overlay = document.body.querySelector(".cell-edit-overlay");
+  if (!overlay) return "none";
+  return overlay.querySelector(".cell-edit-overlay-readonly") ? "readonly" : "editor";
+}
+
 describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
   beforeEach(() => {
     schemaListMock.mockReset();
@@ -931,7 +985,7 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
   // entityDataTable.xhtml gates an editable cell on isRendered(col, "writeMode", item): the app's
   // global read/write switch AND the row's own permission, the same two-part rule the fiche and the
   // panel header follow.
-  it("offers no editable cell in read mode, even for a row the user may edit", async () => {
+  it("opens the value read-only in read mode, even for a row the user may edit", async () => {
     schemaListMock.mockResolvedValue({
       data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: true } }],
       totalCount: 1,
@@ -942,9 +996,10 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
     await flush();
     await flush();
 
-    expect(container.querySelector(".entity-list-panel-editable-cell")).toBeNull();
-    // The value is still shown — read mode removes the control, not the data.
+    // The value is still shown — read mode removes the editor, not the data nor the overlay.
     expect(container.textContent).toContain("En cours");
+    expect(await openedOverlayMode()).toBe("readonly");
+    expect(document.body.querySelector(".cell-edit-overlay input")).toBeNull();
   });
 
   it("anchors the editor on the whole cell, not on the clicked text span", async () => {
@@ -995,13 +1050,14 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
 
     // PrimeReact's OverlayPanel portals into document.body.
     expect(document.body.querySelector(".cell-edit-overlay")).toBeTruthy();
+    expect(document.body.querySelector(".cell-edit-overlay-readonly")).toBeNull();
     // Clicking the editable cell must NOT also trigger row-click navigation (the "collision" the
     // plan calls out) — nothing here wires onNavigate for this fake config, but the absence of a
     // navigation call is exactly the point.
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it("does not wrap the cell as editable when _permissions.canEdit is false", async () => {
+  it("opens the value read-only when _permissions.canEdit is false", async () => {
     schemaListMock.mockResolvedValue({
       data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: false } }],
       totalCount: 1,
@@ -1012,11 +1068,11 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
     await flush();
     await flush();
 
-    expect(container.querySelector(".entity-list-panel-editable-cell")).toBeFalsy();
     expect(container.textContent).toContain("En cours");
+    expect(await openedOverlayMode()).toBe("readonly");
   });
 
-  it("does not wrap the cell as editable when _permissions is absent", async () => {
+  it("opens the value read-only when _permissions is absent", async () => {
     schemaListMock.mockResolvedValue({
       data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" } }],
       totalCount: 1,
@@ -1027,7 +1083,7 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
     await flush();
     await flush();
 
-    expect(container.querySelector(".entity-list-panel-editable-cell")).toBeFalsy();
+    expect(await openedOverlayMode()).toBe("readonly");
   });
 
   it("saves through config.api.patchAnswers and refetches the list", async () => {
@@ -1634,7 +1690,7 @@ describe("EntityListPanel read-only and project columns", () => {
     await flush();
 
     expect(container.textContent).toContain("OA-7");
-    expect(container.querySelector(".entity-list-panel-editable-cell")).toBeNull();
+    expect(await openedOverlayMode()).toBe("readonly");
   });
 
   it("hides the project by default inside a project's own tab", async () => {

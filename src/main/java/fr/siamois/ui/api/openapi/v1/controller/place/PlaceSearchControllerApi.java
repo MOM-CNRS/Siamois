@@ -19,11 +19,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -59,8 +58,9 @@ public class PlaceSearchControllerApi {
     public ResponseEntity<PlaceAutocompleteListResponse> autocomplete(
             @Parameter(description = "Institution propriétaire des lieux (doit être dans le périmètre JWT).", example = "10", required = true)
             @RequestParam("organizationId") long organizationId,
-            @Parameter(description = "Sous-chaîne recherchée dans le nom du lieu (insensible à la casse côté requête SQL).", example = "rue")
-            @RequestParam("q") String q,
+            @Parameter(description = "Sous-chaîne recherchée dans le nom du lieu (insensible à la casse côté requête SQL). "
+                    + "Vide ou absente : la première page des lieux de l'organisation, par nom — ce qu'un sélecteur montre à l'ouverture.", example = "rue")
+            @RequestParam(value = "q", required = false, defaultValue = "") String q,
             @Parameter(description = "Nombre max de résultats (1 à 50, défaut 20).")
             @RequestParam(defaultValue = "20") int limit,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -69,9 +69,6 @@ public class PlaceSearchControllerApi {
         projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
 
         String query = q == null ? "" : q.trim();
-        if (query.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "q ne doit pas être vide");
-        }
         if (query.length() > 200) {
             query = query.substring(0, 200);
         }
@@ -91,7 +88,7 @@ public class PlaceSearchControllerApi {
                 null,
                 null,
                 lang,
-                PageRequest.of(0, safeLimit));
+                PageRequest.of(0, safeLimit, Sort.by("name")));
 
         List<PlaceAutocompleteItemApi> items = page.getContent().stream()
                 .map(dto -> toItem(dto, lang))

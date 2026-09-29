@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react-dom/test-utils";
 import { createRoot, type Root } from "react-dom/client";
-import { SelectManyConceptRenderer, SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRenderer } from "./renderers";
+import { SelectManyConceptRenderer, SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneRefRenderer, SelectOneSpatialUnitRenderer } from "./renderers";
 import { registerEntityType } from "../entities/registry";
 import { EntityNavigationProvider } from "../panels/entityNavigation";
 import type { FieldRendererProps } from "./registry";
@@ -390,5 +390,49 @@ describe("picked entity chips", () => {
 
     expect(container.textContent).toContain("En cours");
     expect(container.querySelector(".resource-ref-token-link")).toBeNull();
+  });
+
+  // A single reference to an entity with a fiche is a token too — the input's text couldn't be a
+  // link — and a new pick replaces it rather than adding to it.
+  it("shows a single linked reference as a token that opens its fiche, and clears it with its ×", async () => {
+    registerEntityType({
+      key: "recordingUnit",
+      labels: { singular: "UE", plural: "UE" },
+      collectionPath: "recording-units",
+      icon: "bi bi-pencil-square",
+      api: { list: vi.fn(), get: vi.fn() },
+      list: { columns: [], searchable: true },
+      detail: { tabs: [] },
+      routes: { list: "/recording-units", detail: (id) => `/recording-units/${id}` },
+    });
+    const openEntity = vi.fn();
+    const onChange = vi.fn();
+    act(() => {
+      root.render(
+        <EntityNavigationProvider value={openEntity}>
+          <SelectOneRefRenderer
+            field={{ id: "14", resourceType: "fields", label: "UE", answerType: "SELECT_ONE_RECORDING_UNIT", isSystemField: false }}
+            value={{ resourceId: "42", resourceType: "recording-units", label: "US 42" }}
+            readOnly={false}
+            required={false}
+            onChange={onChange}
+            organizationId={100}
+          />
+        </EntityNavigationProvider>,
+      );
+    });
+
+    const link = container.querySelector(".resource-ref-token-link") as HTMLElement;
+    expect(link.textContent).toBe("US 42");
+    await act(async () => {
+      link.click();
+    });
+    expect(openEntity).toHaveBeenCalledWith("recordingUnit", "42");
+
+    const remove = container.querySelector(".p-autocomplete-token-icon") as Element;
+    await act(async () => {
+      remove.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(onChange).toHaveBeenLastCalledWith(null);
   });
 });

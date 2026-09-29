@@ -6,6 +6,9 @@ import { registerFieldRenderer } from "../../fields/registry";
 import { ApiError } from "../../api/client";
 import { CellEditOverlay, type CellEditTarget } from "./CellEditOverlay";
 import type { FieldResource } from "../../fields/types";
+import { registerEntityType } from "../../entities/registry";
+import type { EntityTypeConfig } from "../../entities/types";
+import { EntityNavigationProvider } from "../../panels/entityNavigation";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -296,6 +299,63 @@ describe("CellEditOverlay", () => {
     await flush();
 
     expect(onSave).toHaveBeenCalledWith("1", { "-120": { add: ["picked"], remove: ["1", "2"] } }, ["picked"]);
+  });
+
+  // A field that can't be edited opens all the same, showing its value — the first click is
+  // always the overlay — and nothing it does is ever saved.
+  it("shows a read-only target's value instead of an editor, and never saves", async () => {
+    const { onSave, onClose } = renderOverlay({
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR, readOnly: true },
+    });
+    await flush();
+
+    expect(document.body.querySelector(".cell-edit-overlay-readonly")?.textContent).toBe("OA-2024");
+    expect(overlayInput()).toBeNull();
+
+    await act(async () => {
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
+    await flush();
+    expect(onSave).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  // The chip must open its fiche before the overlay closes: closing from a capture handler around
+  // it would unmount the chip before its own click handler ran.
+  it("opens a read-only reference's fiche from its chip, then closes", async () => {
+    registerEntityType({ key: "project" } as EntityTypeConfig<unknown, unknown>);
+    const openEntity = vi.fn();
+    const onClose = vi.fn();
+    const projectField: FieldResource = {
+      id: "-5",
+      resourceType: "fields",
+      label: "Projet",
+      answerType: "SELECT_ONE_ACTION_UNIT",
+      isSystemField: false,
+    };
+    const row = { id: "1", answers: { "-5": { resourceId: "7", resourceType: "action-units", label: "7894" } } };
+    act(() => {
+      root.render(
+        <EntityNavigationProvider value={openEntity}>
+          <CellEditOverlay
+            target={{ row, field: projectField, anchor: ANCHOR, readOnly: true }}
+            onSave={vi.fn()}
+            onSaved={vi.fn()}
+            onClose={onClose}
+          />
+        </EntityNavigationProvider>,
+      );
+    });
+    await flush();
+
+    const chip = document.body.querySelector(".cell-edit-overlay .ref-chip-link") as HTMLElement;
+    await act(async () => {
+      chip.click();
+    });
+
+    expect(openEntity).toHaveBeenCalledWith("project", "7");
+    expect(onClose).toHaveBeenCalled();
+    expect(openEntity.mock.invocationCallOrder[0]).toBeLessThan(onClose.mock.invocationCallOrder[0]);
   });
 
   it("cancels on Escape without saving", async () => {

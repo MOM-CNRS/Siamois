@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Keyboar
 import { createPortal } from "react-dom";
 import { ZIndexUtils } from "primereact/utils";
 import { commitsImmediately, sameValue, staysOpenAfterSave } from "../../fields/commit";
+import { renderAnswerCell } from "../../fields/display";
 import { editContextOf } from "../../fields/editContext";
 import { isEmptyValue } from "../../fields/FieldLabel";
 import { getFieldRenderer } from "../../fields/registry";
@@ -44,6 +45,10 @@ export interface CellEditTarget<TRow> {
   // column, which has no per-cell required flag today, leaves it unset (same as before this
   // existed: no required guard at all).
   required?: boolean;
+  // Show the value rather than an editor: a read-only field, a type with no editor, or a row the
+  // user can't edit. The overlay opens all the same — a cell's first click always does — and its
+  // chips are the links that open the referenced fiches.
+  readOnly?: boolean;
 }
 
 export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
@@ -134,8 +139,9 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   const save = useCallback(
     async (value: unknown): Promise<boolean> => {
       if (!target || target.row.id == null) return false;
-      // Nothing to save before the whole value is known — and nothing was edited either.
-      if (loadingRef.current) return true;
+      // Nothing to save before the whole value is known — and nothing was edited either. Nor
+      // ever from a read-only overlay.
+      if (loadingRef.current || target.readOnly) return true;
       if (sameValue(value, initialRef.current)) return true;
       if (savingRef.current) return false;
       // p:outputLabel indicateRequired + required="#{col.required}" is what stops this in JSF, on
@@ -286,6 +292,13 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
     >
       {loadingValues ? (
         <div className="cell-edit-overlay-loading">Chargement des valeurs…</div>
+      ) : target.readOnly ? (
+        <div className="cell-edit-overlay-readonly">
+          {/* A chip opens its fiche in the overview; the overlay's job is done then. */}
+          {renderAnswerCell(field, draft, { all: true, onOpenLink: onClose }) || (
+            <span className="cell-edit-overlay-empty">Aucune valeur</span>
+          )}
+        </div>
       ) : (
         <Renderer
           field={field}

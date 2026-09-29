@@ -1,11 +1,9 @@
 // Read-only cell formatting for a dynamic (schema-driven) list column. Deliberately separate from
 // fields/renderers.tsx: those are full PrimeReact edit-mode widgets meant for a form or an edit
 // overlay, which is far more machinery than a table cell needs. A cell just needs a string.
-import { useRef, useState, type CSSProperties, type ReactNode, type SyntheticEvent } from "react";
-import { OverlayPanel } from "primereact/overlaypanel";
-import type { FieldResource, MultiValueAnswer } from "./types";
+import type { CSSProperties, ReactNode, SyntheticEvent } from "react";
+import type { FieldResource } from "./types";
 import { readMultiValue, unwrapAnswer } from "./types";
-import { fetchAllValues } from "./multiValues";
 import { getEntityType } from "../entities/registry";
 import { useOpenEntity } from "../panels/entityNavigation";
 
@@ -118,13 +116,25 @@ export function refColor(resourceType: string): string {
 
 /**
  * A read-only reference: a light outlined chip in its type's colour — the same token the
- * reference picker shows in edit mode, minus the remove button. A reference to an entity with a
- * fiche opens it in the overview; the click stops there, so it doesn't also open the field's editor.
+ * reference picker shows in edit mode, minus the remove button. With `onOpen`, a reference to an
+ * entity with a fiche opens it in the overview (the click stops there), then calls `onOpen`.
+ * Without, it is only a chip: in a list cell or a fiche field, the first click opens the field's
+ * overlay, and it is the chips there that open fiches.
  */
-export function RefChip({ label, id, resourceType }: { label: string; id: string; resourceType: string }) {
+export function RefChip({
+  label,
+  id,
+  resourceType,
+  onOpen,
+}: {
+  label: string;
+  id: string;
+  resourceType: string;
+  onOpen?: () => void;
+}) {
   const openEntity = useOpenEntity();
   const entityType = REF_KINDS[resourceType]?.entityType;
-  const linkable = entityType != null && openEntity != null && getEntityType(entityType) != null;
+  const linkable = onOpen != null && entityType != null && openEntity != null && getEntityType(entityType) != null;
   const style = {
     "--ref-chip-color": refColor(resourceType),
     "--ref-chip-border": REF_KINDS[resourceType]?.border ?? GREEN_BORDER,
@@ -133,6 +143,9 @@ export function RefChip({ label, id, resourceType }: { label: string; id: string
   function open(e: SyntheticEvent) {
     e.stopPropagation();
     openEntity!(entityType!, id);
+    // After, not from a capture handler around the chip: that would unmount the chip before its
+    // own click handler runs (React flushes a real click's updates between capture and bubble).
+    onOpen!();
   }
 
   return linkable ? (
@@ -199,10 +212,16 @@ export function renderAnswerValue(field: FieldResource, rawValue: unknown): stri
  *
  * <p>References render as {@link RefChip}s. By default (a table cell, one line tall) a multi-valued
  * answer shows its first value plus a {@code +N} count, never the full list: a joined list is just a
- * long string that gets cut mid-label. The full list stays available as the counter's tooltip.
- * {@code all} (a fiche field, which wraps) shows every value.</p>
+ * long string that gets cut mid-label. {@code all} (a fiche field, the overlay) shows every value it
+ * has — a preview's missing ones still counted as "+N". {@code onOpenLink} makes the chips open
+ * their entity, then calls it: only the overlay's, so that a cell's first click always opens the
+ * overlay.</p>
  */
-export function renderAnswerCell(field: FieldResource, rawValue: unknown, options: { all?: boolean } = {}): ReactNode {
+export function renderAnswerCell(
+  field: FieldResource,
+  rawValue: unknown,
+  options: { all?: boolean; onOpenLink?: () => void } = {},
+): ReactNode {
   const value = unwrapAnswer(rawValue);
   if (value == null) return "";
   const items = (Array.isArray(value) ? value : [value]).filter((item) => formatOne(field, item).length > 0);
@@ -214,86 +233,26 @@ export function renderAnswerCell(field: FieldResource, rawValue: unknown, option
 
   const render = (item: unknown, key?: number): ReactNode => {
     const ref = asRef(item);
-    return ref ? <RefChip key={key} {...ref} /> : formatOne(field, item);
+    return ref ? <RefChip key={key} {...ref} onOpen={options.onOpenLink} /> : formatOne(field, item);
   };
 
   if (items.length === 1 && total === 1) return render(items[0]);
-  const complete = multi == null || multi.complete;
-  if (options.all && complete) {
-    return <span className="cell-multi cell-multi-all">{items.map((item, i) => render(item, i))}</span>;
-  }
-  // A cell shows its first value; a fiche every value it has. Either way, what isn't shown is a
-  // "+N" — which, when the answer is only a preview, opens the whole list.
   const shown = options.all ? items : items.slice(0, 1);
   const hidden = total - shown.length;
+  // The counter's tooltip lists every value when the row has them all; a preview's are only
+  // counted (the overlay loads them).
+  const complete = multi == null || multi.complete;
+  const title = complete ? items.map((item) => formatOne(field, item)).join(", ") : `${total} valeurs`;
   return (
     <span className={options.all ? "cell-multi cell-multi-all" : "cell-multi"}>
       {options.all
         ? shown.map((item, i) => render(item, i))
         : shown.length > 0 && <span className="cell-multi-first">{render(shown[0])}</span>}
-      {hidden > 0 &&
-        (complete ? (
-          <span className="cell-multi-more" title={items.map((item) => formatOne(field, item)).join(", ")}>
-            +{hidden}
-          </span>
-        ) : (
-          <MoreValues field={field} answer={multi!} hidden={hidden} render={render} />
-        ))}
+      {hidden > 0 && (
+        <span className="cell-multi-more" title={title}>
+          +{hidden}
+        </span>
+      )}
     </span>
-  );
-}
-
-/**
- * The "+N" of a preview: a button that fetches the answer's whole list (its `_links.values`) and
- * shows it in a popover. The click stops there, so it doesn't also open the field's editor.
- */
-function MoreValues({
-  field,
-  answer,
-  hidden,
-  render,
-}: {
-  field: FieldResource;
-  answer: MultiValueAnswer;
-  hidden: number;
-  render: (item: unknown, key?: number) => ReactNode;
-}) {
-  const panelRef = useRef<OverlayPanel>(null);
-  const [values, setValues] = useState<unknown[] | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  function open(e: SyntheticEvent) {
-    e.stopPropagation();
-    panelRef.current?.toggle(e);
-    if (values != null) return;
-    fetchAllValues(answer)
-      .then(setValues)
-      .catch(() => setFailed(true));
-  }
-
-  return (
-    <>
-      <span
-        className="cell-multi-more cell-multi-more-link"
-        role="button"
-        tabIndex={0}
-        title={`Voir les ${answer.total} valeurs de « ${field.label} »`}
-        onClick={open}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") open(e);
-        }}
-      >
-        +{hidden}
-      </span>
-      <OverlayPanel ref={panelRef} className="cell-multi-overlay" onClick={(e) => e.stopPropagation()}>
-        {failed ? (
-          <span className="cell-multi-overlay-status">Impossible de charger les valeurs.</span>
-        ) : values == null ? (
-          <span className="cell-multi-overlay-status">Chargement…</span>
-        ) : (
-          <span className="cell-multi cell-multi-all">{values.map((item, i) => render(item, i))}</span>
-        )}
-      </OverlayPanel>
-    </>
   );
 }

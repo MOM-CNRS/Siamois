@@ -192,6 +192,12 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     ? (Array.isArray(value) ? value.filter((v): v is ResourceRefLike | ResolvedResourceLike => isResourceRef(v) || isResolvedResource(v)).map(toOption) : [])
     : (isResourceRef(value) || isResolvedResource(value) ? toOption(value) : null);
 
+  // A single reference to an entity with a fiche is shown as a token too, not as the input's text:
+  // the token is what links to the fiche (a click in the input means "edit the text"). Picking a
+  // suggestion replaces it, its × clears the field.
+  const asTokens = multiple || (linkEntityType != null && openEntity != null);
+  const tokens = multiple ? selected : selected ? [selected as FilterOption] : [];
+
   const toRef = (o: FilterOption): ResourceRefLike => ({ resourceId: o.id, resourceType: target.resourceType, label: o.label });
 
   function commit(next: FilterOption[] | FilterOption | null) {
@@ -238,10 +244,9 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
       )
     : undefined;
 
-  // A picked entity's chip label opens its fiche (multi-valued pickers only: a single value sits in
-  // the input itself, where a click means "edit the text").
+  // A picked entity's chip label opens its fiche.
   const renderToken =
-    multiple && linkEntityType && openEntity
+    asTokens && linkEntityType && openEntity
       ? (item: unknown) => {
           const option = item as FilterOption;
           return (
@@ -273,11 +278,11 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         // Picked tokens take their type's colour, the same as the read-only chips (fields/display.tsx).
         className="resource-ref-picker"
         style={{ "--ref-chip-color": refColor(target.resourceType) } as CSSProperties}
-        value={selected}
+        value={asTokens ? tokens : selected}
         suggestions={suggestions}
         completeMethod={search}
         field="label"
-        multiple={multiple}
+        multiple={asTokens}
         dropdown={false}
         disabled={readOnly}
         required={required}
@@ -288,7 +293,15 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         emptyMessage="Aucun résultat"
         panelFooterTemplate={footer}
         selectedItemTemplate={renderToken}
-        onChange={(e) => commit(e.value as FilterOption[] | FilterOption | null)}
+        onChange={(e) => {
+          if (asTokens && !multiple) {
+            // The last pick is the value; none left means cleared.
+            const picked = (e.value as FilterOption[] | null) ?? [];
+            commit(picked.length > 0 ? picked[picked.length - 1] : null);
+          } else {
+            commit(e.value as FilterOption[] | FilterOption | null);
+          }
+        }}
       />
       {createConfig && (
         // Opens next to the picker, in an overlay that stops key events from reaching the edit
