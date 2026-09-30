@@ -2,7 +2,6 @@ package fr.siamois.domain.services.form.rules;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.domain.models.form.rules.FieldRulesJson;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
@@ -13,7 +12,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,11 +39,6 @@ class FieldRulesEvaluatorConformanceTest {
     }
 
     private void run(JsonNode c) {
-        // The wire carries the conceptId the server resolved: the lookup answers with it.
-        Map<String, Long> resolved = new HashMap<>();
-        collectConceptIds(c.get("columns"), resolved);
-        ConceptIdLookup lookup = (voc, concept) -> Optional.ofNullable(resolved.get(voc + "|" + concept));
-
         List<FieldRulesEvaluator.RuledColumn> columns = new ArrayList<>();
         for (JsonNode col : c.get("columns")) {
             columns.add(new FieldRulesEvaluator.RuledColumn(
@@ -56,7 +49,7 @@ class FieldRulesEvaluatorConformanceTest {
         Map<Long, Object> values = new HashMap<>();
         c.get("values").fields().forEachRemaining(e -> values.put(Long.parseLong(e.getKey()), MAPPER.convertValue(e.getValue(), Object.class)));
 
-        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator(lookup).evaluate(columns, values::get);
+        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator().evaluate(columns, values::get);
 
         c.get("expected").fields().forEachRemaining(e -> {
             JsonNode expected = e.getValue();
@@ -112,15 +105,4 @@ class FieldRulesEvaluatorConformanceTest {
         return m;
     }
 
-    private static void collectConceptIds(JsonNode node, Map<String, Long> out) {
-        if (node == null) return;
-        if (node.isObject()) {
-            if (node.has("conceptExtId") && node.has("conceptId")) {
-                out.put(node.get("vocabularyExtId").asText() + "|" + node.get("conceptExtId").asText(), node.get("conceptId").asLong());
-            }
-            node.fields().forEachRemaining(e -> collectConceptIds(e.getValue(), out));
-        } else if (node.isArray()) {
-            node.forEach(n -> collectConceptIds(n, out));
-        }
-    }
 }

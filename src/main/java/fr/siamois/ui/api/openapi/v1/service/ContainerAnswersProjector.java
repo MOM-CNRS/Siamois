@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -14,7 +16,6 @@ import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
-import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
@@ -57,7 +58,7 @@ public class ContainerAnswersProjector {
 
     private static Map<String, CustomField> indexDetailsFormFields() {
         Map<String, CustomField> out = new LinkedHashMap<>();
-        for (CustomField field : new PanelFieldSource(Container.DETAILS_FORM).getAllFields()) {
+        for (CustomField field : SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.CONTENANT)) {
             if (field != null && field.getId() != null) {
                 out.put(String.valueOf(field.getId()), field);
             }

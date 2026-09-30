@@ -33,10 +33,9 @@ d'un autre champ** (pas de transitivité).
 
 ### Format (fil = futur stockage)
 
-Défini une seule fois dans `domain/models/form/rules/FieldRulesJson.java`. Un concept est stocké par
-ses identifiants externes `{vocabularyExtId, conceptExtId}` ; le serveur ajoute `conceptId` (id
-interne, en chaîne) à l'envoi pour que le client compare directement avec `ResourceRef.resourceId`
-(`ConceptIdLookup`, `RepositoryConceptIdLookup`).
+Défini une seule fois dans `domain/models/form/rules/FieldRulesJson.java`. Un concept est désormais
+stocké et envoyé par son id interne, `{conceptId}` (chaîne), que le client compare directement avec
+`ResourceRef.resourceId`. `ConceptIdLookup` ne sert plus qu'à convertir les fichiers de mise en page initiale.
 
 ### Où les règles circulent
 
@@ -64,7 +63,72 @@ ZMAX ≥ ZMIN.
 - `REF_MATCH` n'est appliqué que dans le sélecteur, pas contrôlé au PATCH ; aucune règle réelle ne
   l'utilise encore.
 
-## 2. Phase 2 : configurer les règles par table et par type
+## 2. Phase 2 : formulaires composés depuis la configuration (état au 2026-09-30)
+
+La phase 2 a été élargie : les formulaires codés en dur (`*DetailsForm`) de UE, Mobilier, Phase et
+Contenant disparaissent, chaque formulaire est composé depuis la configuration du type dans le projet
+(groupes, ordre, largeur, règles par champ). Projet et Lieu gardent leur formulaire codé pour l'instant.
+Plan : `~/.claude/plans/vectorized-imagining-bird.md`.
+
+**Fait (lots 0 à 2)**
+
+- Catalogue des champs système découplé des mises en page : `SystemFieldSpec` (`hidden`, `readOnly`),
+  `SystemFieldCatalog.specsOf`. Les `*DetailsForm` et `*NewForm` sont supprimés.
+- Mise en page initiale par table : `src/main/resources/form-layouts/{UE,MOBILIER,PHASE,CONTENANT}.json`
+  (`FormLayoutSeeds`). Les concepts des règles y sont cités par identifiants externes et convertis en id
+  interne ; une règle dont le concept est inconnu est ignorée avec un avertissement.
+- Stockage : `form_config_group` (`FormConfigGroup`) et, sur `field_form_config`, `fk_group_id`, `width`
+  (`FieldWidth` : 1/4, 1/2, 3/4, pleine) et `rules` (jsonb). Une configuration « a une mise en page »
+  dès qu'elle a un groupe. Les valeurs de concept des règles sont `{"conceptId":"<id interne>"}`.
+- `EffectiveFormResolver` : mise en page stockée du type, sinon celle de `_default` (en bloc), sinon
+  mise en page initiale + fusion historique des drapeaux actif/obligatoire. Un groupe sans champ actif
+  n'est pas une section. Rien ne change pour un projet qui n'a pas de mise en page stockée.
+- Écriture (`FormLayoutService`) : `rowsOf`, `ensureLayouts`, `ensureOwnLayout`, `saveArrangement`,
+  `setFieldWidth`. **Pas de migration au démarrage** : la première édition d'une table écrit la mise en
+  page effective de *toutes* ses configurations existantes (`TableFieldConfigService#legacyLayout`), donc
+  rien ne bouge à l'écran. Un champ ajouté à une configuration qui a une mise en page tombe dans le groupe
+  « Champs additionnels ».
+- Écran JSF (`projectTablesSettings.xhtml`) : une seule table glissable (en-têtes de groupe et champs),
+  largeur par champ, ajout/renommage/suppression/déplacement de groupes. Un champ appartient à l'en-tête
+  situé au-dessus de lui. Le libellé d'un groupe reste une clé i18n tant qu'il n'est pas modifié.
+
+**Lot 3 (fait) : éditeur de règles**
+
+- Bouton « Règles du champ » sur chaque ligne de l'écran → tiroir `fieldRulesDrawer.xhtml`
+  (`FieldRulesEditorBean`). Il édite « Modifiable seulement si », « Obligatoire si » (une comparaison, ou
+  plusieurs combinées par tout/au moins une), « Valeurs proposées » (concepts liés à un autre champ) et
+  l'ordre avec d'autres champs. Une règle plus complexe (composition imbriquée, filtre `REF_MATCH`) est
+  conservée telle quelle, affichée comme « règle avancée », supprimable mais pas modifiable.
+- Opérateurs et valeurs selon la famille du champ lu (`RuleFieldFamily` : concept, nombre, date, texte,
+  autre). Les valeurs de concept viennent du vocabulaire configuré du champ (id interne).
+- Enregistrement : `FormLayoutService#saveRules` passe par `FieldRulesValidator` (champ existant dans le
+  même formulaire, pas d'auto-référence, opérateur et valeur compatibles, contraintes entre champs du même
+  type ordonnable, 20 conditions au plus) ; `InvalidRulesException` porte les messages affichés dans le
+  tiroir. Un champ `is_institution_locked` garde ses règles. La règle configurée remplace toutes celles du champ.
+- Les sélecteurs de valeurs de concept chargent la liste complète de l'autocomplétion du champ
+  (`fetchAutocomplete` sans saisie) : à surveiller pour un très gros vocabulaire.
+
+**Lot 4 (web, fait) : la liste lit les règles par type**
+
+- Les règles d'une table configurable n'accompagnent plus le catalogue de champs
+  (`FieldQueryService#rulesOf` ne renvoie des règles que pour Projet et Lieu, dont le formulaire est fixe).
+- `EntityListPanel` charge, pour chaque projet présent dans les lignes déjà reçues, les formulaires par type
+  de l'endpoint du projet (`recording-unit-types`, `find-types`, `phase-types`, `container-types` ; clé
+  `list.rulesSegment` de la config d'entité) et évalue chaque ligne avec les règles du formulaire de son
+  projet et de son type (`_default` pour une ligne sans type) : `panels/useTypeRules.ts`, `useRowRules.ts`.
+  Les champs lus par ces règles sont demandés (`fields=`) dès la deuxième requête, une fois les projets connus.
+- Audit : `FormConfig`, `FormConfigGroup`, `FieldFormConfig` et `ConceptFieldFormConfig` sont `@Audited`
+  (relations vers champ, concept, projet et institution en `NOT_AUDITED`).
+
+**Reste à faire**
+
+- Mobile (à discuter) : bundle hors ligne `relatedByConcept` et endpoint de synchronisation à confirmer ;
+  pour l'instant l'endpoint des concepts par field code suffit.
+- Obligatoire par type dans la liste (seule la fiche l'applique).
+- Plus tard : supprimer `_default`, rendre Projet et Lieu configurables.
+
+### Conception d'origine (avant l'élargissement)
+
 
 ### Pourquoi le catalogue actuel ne suffit pas
 

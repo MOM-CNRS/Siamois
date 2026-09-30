@@ -333,7 +333,7 @@ class PhaseOpenApiServiceTest {
         when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
                 .thenReturn(true);
         FormUiDto effectiveForm = new FormUiDto();
-        when(effectiveFormResolver.resolveEffectiveForm(fr.siamois.domain.models.phase.Phase.DETAILS_FORM, 7L,
+        when(effectiveFormResolver.resolveEffectiveForm(7L,
                 ConfigurableTable.PHASE, 40L)).thenReturn(effectiveForm);
         Map<CustomField, CustomFieldAnswerViewModel> additional = Map.of(new CustomFieldText(), new CustomFieldAnswerTextViewModel());
         Map<String, AnswerInput> answers = Map.of("-503", new AnswerInput("Nouveau titre", null));

@@ -1,5 +1,8 @@
 package fr.siamois.domain.models.recordingunit.form;
 
+
+import java.util.List;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -525,4 +528,38 @@ public abstract class RecordingUnitForm {
             .concept(STRATIGRAPHIC_RELATIONSHIPS_CONCEPT)
             .build();
 
+    /**
+     * The table's system fields, in their default order, with the properties intrinsic to each.
+     * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
+     */
+    public static List<SystemFieldSpec> systemFields() {
+        return List.of(
+            SystemFieldSpec.of(SPATIAL_UNIT_FIELD),
+            SystemFieldSpec.of(PARENTS_FIELD),
+            SystemFieldSpec.of(CHILDREN_FIELD),
+            SystemFieldSpec.readOnly(STRATIGRAPHIC_RELATIONSHIPS_FIELD),
+            SystemFieldSpec.readOnly(FINDS_FIELD),
+            SystemFieldSpec.of(RECORDING_UNIT_TYPE_FIELD),
+            SystemFieldSpec.of(NATURE_FIELD),
+            SystemFieldSpec.of(GEOMORPHO_AGENT_FIELD),
+            SystemFieldSpec.of(INTERPRETATION_FIELD),
+            SystemFieldSpec.of(MATRIX_COLOR_FIELD),
+            SystemFieldSpec.hiddenReadOnly(ACTION_UNIT_FIELD),
+            SystemFieldSpec.hiddenReadOnly(FULL_IDENTIFIER_FIELD),
+            SystemFieldSpec.of(EROSION_SHAPE_FIELD),
+            SystemFieldSpec.of(EROSION_PROFILE_FIELD),
+            SystemFieldSpec.of(EROSION_ORIENTATION_FIELD),
+            SystemFieldSpec.of(DESCRIPTION_FIELD),
+            SystemFieldSpec.of(COMMENTS_FIELD),
+            SystemFieldSpec.of(CHRONOLOGICAL_PHASE_FIELD),
+            SystemFieldSpec.of(TPQ_FIELD),
+            SystemFieldSpec.of(TAQ_FIELD),
+            SystemFieldSpec.of(PHASES_FIELD),
+            SystemFieldSpec.of(Z_INF_FIELD),
+            SystemFieldSpec.of(Z_SUP_FIELD),
+            SystemFieldSpec.of(OPENING_DATE_FIELD),
+            SystemFieldSpec.of(CLOSING_DATE_FIELD),
+            SystemFieldSpec.of(AUTHOR_FIELD),
+            SystemFieldSpec.of(CONTRIBUTORS_FIELD));
+    }
 }

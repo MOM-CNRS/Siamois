@@ -78,8 +78,7 @@ class FieldAnswerPatchServiceTest {
                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 phaseRepository, phaseMapper, mock(ContainerRepository.class), mock(ContainerMapper.class),
-                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class),
-                fr.siamois.domain.models.form.rules.ConceptIdLookup.NONE);
+                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class));
     }
 
     @Test
@@ -210,7 +209,7 @@ class FieldAnswerPatchServiceTest {
         CustomField project = fr.siamois.ui.table.definitions.SystemFieldCatalog.fieldBoundTo(
                 fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.UE, "actionUnit");
 
-        assertThat(FieldAnswerPatchService.isReadOnlyIn(fr.siamois.domain.models.recordingunit.RecordingUnit.DETAILS_FORM, project)).isTrue();
+        assertThat(FieldAnswerPatchService.isReadOnlyIn(fr.siamois.utils.TestForms.of(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.UE), project)).isTrue();
         assertThat(FieldAnswerPatchService.isReadOnlyIn(form(project), project)).isFalse();
     }
 

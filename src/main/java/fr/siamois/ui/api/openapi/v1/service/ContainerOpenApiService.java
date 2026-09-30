@@ -134,7 +134,7 @@ public class ContainerOpenApiService {
             Long projectId = container.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the container-types catalog lays out (system + additional fields).
-                FormUiDto form = effectiveFormResolver.resolveEffectiveForm(Container.DETAILS_FORM, projectId,
+                FormUiDto form = effectiveFormResolver.resolveEffectiveForm(projectId,
                         ConfigurableTable.CONTENANT, container.getType() != null ? container.getType().getId() : null);
                 Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                         fieldAnswerPatchService.apply(container, form, request.getAnswers(), projectId);

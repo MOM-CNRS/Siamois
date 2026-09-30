@@ -100,6 +100,11 @@ class TableFieldConfigServiceImplTest {
     private PersonRepository personRepository;
     @Mock
     private ObjectProvider<TableFieldConfigServiceImpl> selfProvider;
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository formConfigGroupRepository;
+
+    @org.mockito.Spy
+    private fr.siamois.domain.services.form.layout.FormLayoutSeeds formLayoutSeeds = fr.siamois.utils.TestForms.seeds();
 
     @InjectMocks
     private TableFieldConfigServiceImpl service;
@@ -243,7 +248,7 @@ class TableFieldConfigServiceImplTest {
                 .containsExactly(IDENTIFIER_FIELD, CATEGORY_FIELD);
         assertThat(fields).allMatch(TypeFieldFormConfig::isSystemField);
         assertThat(fields).allMatch(TypeFieldFormConfig::isActive);
-        // Mandatory falls back on the requiredness SpecimenDetailsForm's real panel declares for
+        // Mandatory falls back on the requiredness the initial Specimen layout declares for
         // each field — neither the identifier nor the category column is marked required there.
         assertThat(fields.get(0).isMandatory()).isFalse();
         assertThat(fields.get(1).isMandatory()).isFalse();
@@ -410,7 +415,7 @@ class TableFieldConfigServiceImplTest {
         assertThat(saved.getValue().getField()).isEqualTo(identifier);
         assertThat(saved.getValue().getFormConfig()).isEqualTo(defaultConfig);
         assertThat(saved.getValue().isActive()).isFalse();
-        // Falls back on SpecimenDetailsForm's real requiredness for the identifier column: false.
+        // Falls back on the initial Specimen layout's real requiredness for the identifier column: false.
         assertThat(saved.getValue().isMandatory()).isFalse();
     }
 
@@ -1384,6 +1389,34 @@ class TableFieldConfigServiceImplTest {
         verify(fieldFormConfigRepository).save(any(FieldFormConfig.class));
     }
 
+    @Test
+    void addExistingField_shouldLandInTheAdditionalGroupOfAConfigurationThatHasALayout() {
+        CustomField existingField = textField(1L, "Couleur", false);
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+                .thenReturn(Optional.of(ceramiqueConfig));
+        fr.siamois.domain.models.form.config.FormConfigGroup general =
+                new fr.siamois.domain.models.form.config.FormConfigGroup(ceramiqueConfig, "General", 0);
+        general.setId(7L);
+        when(formConfigGroupRepository.findAllByFormConfigIdOrderByPosition(11L)).thenReturn(List.of(general));
+        when(formConfigGroupRepository.save(any(fr.siamois.domain.models.form.config.FormConfigGroup.class)))
+                .thenAnswer(call -> {
+                    fr.siamois.domain.models.form.config.FormConfigGroup group = call.getArgument(0);
+                    group.setId(8L);
+                    return group;
+                });
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of());
+        when(customFieldRepository.findAllReusableByInstitution(1L)).thenReturn(List.of(existingField));
+        when(fieldFormConfigRepository.save(any(FieldFormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        service.addExistingField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
+
+        org.mockito.ArgumentCaptor<FieldFormConfig> saved = org.mockito.ArgumentCaptor.forClass(FieldFormConfig.class);
+        verify(fieldFormConfigRepository).save(saved.capture());
+        assertThat(saved.getValue().getGroup().getLabel())
+                .isEqualTo(fr.siamois.domain.models.form.layout.FormLayout.ADDITIONAL_GROUP_LABEL);
+        assertThat(saved.getValue().getPosition()).isEqualTo(1);
+    }
+
     // --- updateField ---
     @Test
     void updateField_shouldReturnNullForSystemField() {
@@ -1984,9 +2017,7 @@ class TableFieldConfigServiceImplTest {
         Set<String> wanted = Set.of(labels);
         Map<String, CustomField> rows = new LinkedHashMap<>();
         long id = SYSTEM_FIELD_FIRST_ID;
-        for (CustomColUiDto column : SystemFieldCatalog.systemColumnsOf(table)) {
-            CustomField definition = column.getField();
-            Assertions.assertNotNull(definition);
+        for (CustomField definition : SystemFieldCatalog.fieldsOf(table)) {
             if (!wanted.contains(definition.getLabel())) continue;
             definition.setId(id++);
             rows.put(definition.getLabel(), definition);

@@ -5,13 +5,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.container.form.ContainerDetailsForm;
-import fr.siamois.domain.models.container.form.ContainerNewUnitForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -97,12 +94,6 @@ public class Container extends TraceableEntity {
     @NotAudited
     private MeasurementAnswer weight;
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto DETAILS_FORM = ContainerDetailsForm.build();
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto NEW_UNIT_FORM = ContainerNewUnitForm.build();
 
 }

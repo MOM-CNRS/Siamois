@@ -324,6 +324,10 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
       // under the organization).
       load: (ctx: { organizationId?: number; scope?: ListScope }) => Promise<FieldCatalog>;
     };
+    // The project endpoint serving this entity's per-type forms (e.g. "recording-unit-types"), whose
+    // layouts carry the conditional rules of each (project, type). Set for the entities whose form is
+    // configured per type; the others keep the rules their field catalog carries.
+    rulesSegment?: string;
     defaultSort?: string;
     searchable: boolean;
     // An overlay-hosted creation form for this entity's OWN list toolbar "Créer" button

@@ -5,7 +5,9 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
+import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
+import fr.siamois.domain.models.form.config.FormConfigGroup;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
@@ -23,9 +25,12 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMul
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.layout.FormLayout;
+import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
+import fr.siamois.domain.services.form.layout.FormLayoutSeeds;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
@@ -33,11 +38,11 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepo
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldAnswerRepository;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
+import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -92,6 +97,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final CustomFieldAnswerRepository customFieldAnswerRepository;
     private final PersonRepository personRepository;
     private final ObjectProvider<TableFieldConfigServiceImpl> selfProvider;
+    private final FormLayoutSeeds formLayoutSeeds;
+    private final FormConfigGroupRepository formConfigGroupRepository;
 
     @Override
     public List<ConfigurableTable> listTables() {
@@ -468,10 +475,14 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
         SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, newName, newType, description);
 
-        if (ownedBy(effective, result.owner())) {
+        boolean owned = ownedBy(effective, result.owner());
+        if (owned) {
             fieldFormConfigRepository.delete(effective.stored());
         }
         FieldFormConfig link = linkField(result.savedReplacement(), result.owner(), effective.active(), effective.mandatory());
+        if (owned && effective.stored().getGroup() != null) {
+            copyPlacement(effective.stored(), link);
+        }
         if (fieldFormConfigRepository.countByFieldId(current.getId()) == 0) {
             customFieldRepository.delete(current);
         }
@@ -503,7 +514,38 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         link.setActive(active);
         link.setMandatory(mandatory);
         link.setInstitutionLocked(false);
+        placeInLayout(link, formConfig);
         return fieldFormConfigRepository.save(link);
+    }
+
+    /**
+     * A configuration that has a layout shows only the fields that are in one of its groups, so a
+     * field linked to it lands at the end of the "additional fields" group (created when missing).
+     * A configuration without a layout is left alone: its fields are laid out when it gets one.
+     */
+    private void placeInLayout(FieldFormConfig link, FormConfig formConfig) {
+        List<FormConfigGroup> groups = formConfigGroupRepository.findAllByFormConfigIdOrderByPosition(formConfig.getId());
+        if (groups == null || groups.isEmpty()) return;
+        FormConfigGroup target = groups.stream()
+                .filter(group -> FormLayout.ADDITIONAL_GROUP_LABEL.equals(group.getLabel()))
+                .findFirst()
+                .orElseGet(() -> formConfigGroupRepository.save(new FormConfigGroup(
+                        formConfig, FormLayout.ADDITIONAL_GROUP_LABEL, groups.get(groups.size() - 1).getPosition() + 1)));
+        int last = fieldFormConfigRepository.findAllByFormConfigId(formConfig.getId()).stream()
+                .filter(other -> other.getGroup() != null && target.getId().equals(other.getGroup().getId()))
+                .mapToInt(FieldFormConfig::getPosition)
+                .max().orElse(0);
+        link.setGroup(target);
+        link.setWidth(FieldWidth.QUARTER);
+        link.setPosition(last + 1);
+    }
+
+    private void copyPlacement(FieldFormConfig from, FieldFormConfig to) {
+        to.setGroup(from.getGroup());
+        to.setWidth(from.getWidth());
+        to.setPosition(from.getPosition());
+        to.setRules(from.getRules());
+        fieldFormConfigRepository.save(to);
     }
 
     private List<CustomField> reusableCatalogFields() {
@@ -604,18 +646,59 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .forEach(field -> persisted.putIfAbsent(SystemFieldCatalog.identityOf(field), field));
 
         List<FormField> fields = new ArrayList<>();
-        for (CustomColUiDto column : SystemFieldCatalog.systemColumnsOf(table)) {
+        Set<Long> required = formLayoutSeeds.requiredFieldIds(table);
+        for (CustomField declared : SystemFieldCatalog.sharedFieldsOf(table)) {
             // The owning project is set at creation and never configured (SystemFieldCatalog#isOwningProject).
-            if (SystemFieldCatalog.isOwningProject(column.getField())) continue;
-            CustomField field = persisted.get(SystemFieldCatalog.identityOf(column.getField()));
+            if (SystemFieldCatalog.isOwningProject(declared)) continue;
+            CustomField field = persisted.get(SystemFieldCatalog.identityOf(declared));
             if (field == null) {
                 log.warn("System field '{}' of table {} has no row; it was defined after the last startup",
-                        column.getField().getLabel(), table);
+                        declared.getLabel(), table);
                 continue;
             }
-            fields.add(new FormField(field, column.isRequired()));
+            fields.add(new FormField(field, required.contains(declared.getId())));
         }
         return fields;
+    }
+
+    /**
+     * The layout a configuration without a stored one effectively has: the table's initial layout
+     * carrying the type's (and the default's) active/mandatory flags, plus the additional fields in a
+     * group of their own. It is what the form showed before layouts were stored, and what gets
+     * written when a configuration is first edited.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public FormLayout legacyLayout(Long projectId, ConfigurableTable table, String typeName) {
+        Map<Long, EffectiveField> effective = effectiveFields(projectId, table, typeName);
+        Map<String, EffectiveField> systemByIdentity = new HashMap<>();
+        effective.values().stream()
+                .filter(field -> isSystemField(field.field()))
+                .forEach(field -> systemByIdentity.put(SystemFieldCatalog.identityOf(field.field()), field));
+
+        Set<Long> placed = new HashSet<>();
+        List<FormLayout.Group> groups = new ArrayList<>();
+        for (FormLayout.Group seedGroup : formLayoutSeeds.layoutOf(table).groups()) {
+            List<FormLayout.Item> items = new ArrayList<>();
+            for (FormLayout.Item seed : seedGroup.items()) {
+                EffectiveField field = systemByIdentity.get(SystemFieldCatalog.identityOf(seed.field()));
+                if (field == null) continue;
+                placed.add(field.field().getId());
+                items.add(new FormLayout.Item(field.field(), seed.width(), field.active(), field.mandatory(),
+                        field.institutionLocked(), seed.rules()));
+            }
+            groups.add(new FormLayout.Group(null, seedGroup.label(), items));
+        }
+        List<FormLayout.Item> additional = effective.values().stream()
+                .filter(field -> !placed.contains(field.field().getId()) && !isSystemField(field.field()))
+                .sorted(Comparator.comparingInt(field -> field.stored() == null ? 0 : field.stored().getPosition()))
+                .map(field -> new FormLayout.Item(field.field(), FieldWidth.QUARTER, field.active(), field.mandatory(),
+                        field.institutionLocked(), FieldRules.NONE))
+                .toList();
+        if (!additional.isEmpty()) {
+            groups.add(new FormLayout.Group(null, FormLayout.ADDITIONAL_GROUP_LABEL, additional));
+        }
+        return new FormLayout(groups);
     }
 
     @Override
@@ -902,15 +985,21 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     private TypeFieldFormConfig toDto(EffectiveField effective) {
-        CustomField field = effective.field();
+        return describe(effective.field(), effective.active(), effective.mandatory(), effective.institutionLocked());
+    }
+
+    @Override
+    public TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked) {
         FieldType type = typeOf(field);
         return TypeFieldFormConfig.builder()
+                .id(field.getId())
+                .ruleFamily(fr.siamois.domain.models.form.rules.RuleFieldFamily.of(field))
                 .name(field.getLabel())
                 .type(type)
                 .systemField(isSystemField(field))
-                .active(effective.active())
-                .mandatory(effective.mandatory())
-                .institutionLocked(effective.institutionLocked())
+                .active(active)
+                .mandatory(mandatory)
+                .institutionLocked(institutionLocked)
                 .configurable(type.isConfigurable())
                 .sourceLabel(sourceOf(field))
                 .valueBinding(field.getValueBinding())

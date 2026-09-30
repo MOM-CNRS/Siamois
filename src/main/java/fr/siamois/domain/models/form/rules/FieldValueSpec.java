@@ -10,16 +10,11 @@ public sealed interface FieldValueSpec extends Serializable
         permits FieldValueSpec.ConceptValue, FieldValueSpec.RefValue, FieldValueSpec.LiteralValue {
 
     /**
-     * Un concept, identifié par ses identifiants externes (thésaurus), portables d'une instance à
-     * l'autre. L'id interne ({@code conceptId}) n'est pas stocké : il est résolu à la sérialisation
-     * vers le front (voir {@link ConceptIdLookup}), pour que le client compare directement avec
-     * {@code ResourceRef.resourceId}.
+     * Un concept, par son id interne SIAMOIS — celui que le client compare directement avec
+     * {@code ResourceRef.resourceId}. Les fichiers de mise en page initiale désignent les concepts
+     * par leurs identifiants externes ; ils sont convertis en id interne à la lecture.
      */
-    record ConceptValue(String vocabularyExtId, String conceptExtId) implements FieldValueSpec {
-        public ConceptValue {
-            Objects.requireNonNull(vocabularyExtId, "vocabularyExtId");
-            Objects.requireNonNull(conceptExtId, "conceptExtId");
-        }
+    record ConceptValue(long conceptId) implements FieldValueSpec {
     }
 
     /** Une entité référencée (personne, unité, lieu…), par son id d'API. */
@@ -38,8 +33,8 @@ public sealed interface FieldValueSpec extends Serializable
         }
     }
 
-    static FieldValueSpec concept(String vocabularyExtId, String conceptExtId) {
-        return new ConceptValue(vocabularyExtId, conceptExtId);
+    static FieldValueSpec concept(long conceptId) {
+        return new ConceptValue(conceptId);
     }
 
     static FieldValueSpec ref(String id) {

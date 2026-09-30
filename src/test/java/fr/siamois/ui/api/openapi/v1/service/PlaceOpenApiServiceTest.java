@@ -89,8 +89,7 @@ class PlaceOpenApiServiceTest {
                 conceptMapper,
                 profilePermissionService,
                 placeOpenApiMapper,
-                langService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
-                fr.siamois.domain.models.form.rules.ConceptIdLookup.NONE);
+                langService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         personDto = new PersonDTO();
         personDto.setId(1L);

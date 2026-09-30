@@ -1,7 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.domain.models.UserInfo;
@@ -722,7 +721,7 @@ public class ProjectApiService {
             values.put(field.getId(), ProjectAnswersProjector.readBinding(dto, field));
         }
         Map<Long, FieldRulesEvaluator.FieldState> states =
-                new FieldRulesEvaluator(ConceptIdLookup.NONE).evaluate(columns, values::get);
+                new FieldRulesEvaluator().evaluate(columns, values::get);
         for (String key : answers.keySet()) {
             FieldRulesEvaluator.FieldState state = states.get(Long.parseLong(key));
             if (state == null) continue;

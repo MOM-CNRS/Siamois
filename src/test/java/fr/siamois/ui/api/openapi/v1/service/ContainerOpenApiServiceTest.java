@@ -282,7 +282,7 @@ class ContainerOpenApiServiceTest {
         when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
                 .thenReturn(true);
         FormUiDto effectiveForm = new FormUiDto();
-        when(effectiveFormResolver.resolveEffectiveForm(fr.siamois.domain.models.container.Container.DETAILS_FORM, 7L,
+        when(effectiveFormResolver.resolveEffectiveForm(7L,
                 ConfigurableTable.CONTENANT, null)).thenReturn(effectiveForm);
         Map<CustomField, CustomFieldAnswerViewModel> additional = Map.of(new CustomFieldText(), new CustomFieldAnswerTextViewModel());
         Map<String, AnswerInput> answers = Map.of("-608", new AnswerInput(12.5, null));

@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -23,7 +25,6 @@ import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
-import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -87,7 +88,7 @@ public class RecordingUnitAnswersProjector {
 
     private static Map<String, CustomField> indexDetailsFormFields() {
         Map<String, CustomField> out = new LinkedHashMap<>();
-        for (CustomField field : new PanelFieldSource(RecordingUnit.DETAILS_FORM).getAllFields()) {
+        for (CustomField field : SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.UE)) {
             if (field != null && field.getId() != null) {
                 out.put(String.valueOf(field.getId()), field);
             }

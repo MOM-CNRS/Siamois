@@ -1,10 +1,12 @@
 package fr.siamois.ui.bean.settings.project;
 
+import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.settings.tableconfig.LayoutRow;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.services.form.FormConfigService;
+import fr.siamois.domain.services.form.layout.FormLayoutService;
 import fr.siamois.domain.services.identifier.IdentifierResolver;
 import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
@@ -25,36 +27,108 @@ import static org.mockito.Mockito.when;
 
 class ProjectTableFieldSettingsBeanTest {
 
-    @Test
-    void getSystemFields_shouldHideThePivotTypeField_butKeepOtherSystemFields() {
-        TableFieldConfigService tableService = mock(TableFieldConfigService.class);
-        TypeFieldFormConfig pivot = TypeFieldFormConfig.builder()
-                .name("recordingunit.property.type")
-                .systemField(true)
-                .active(false)
-                .sourceLabel(ConfigurableTable.UE.getFieldCode())
-                .build();
-        TypeFieldFormConfig otherSystemField = TypeFieldFormConfig.builder()
-                .name("recordingunit.field.description")
-                .systemField(true)
-                .active(false)
-                .sourceLabel("common.action.noSource")
-                .build();
-        TypeFieldsConfig fieldsConfig = new TypeFieldsConfig();
-        fieldsConfig.setFields(List.of(pivot, otherSystemField));
-        when(tableService.getFieldsConfig(42L, ConfigurableTable.UE, "Creusement")).thenReturn(fieldsConfig);
+    private static TypeFieldFormConfig field(String name, boolean active) {
+        return TypeFieldFormConfig.builder().name(name).systemField(true).active(active).sourceLabel("common.action.noSource").build();
+    }
 
-        ProjectTableFieldSettingsBean bean = bean(tableService);
+    private ProjectTableFieldSettingsBean beanOn(FormLayoutService layout) {
+        ProjectTableFieldSettingsBean bean = bean(mock(TableFieldConfigService.class), layout);
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(42L);
         bean.setProject(project);
         bean.setSelectedTable(ConfigurableTable.UE);
+        return bean;
+    }
+
+    @Test
+    void layoutRows_shouldListGroupsAndFields_andFlagThePivotTypeField() {
+        FormLayoutService layout = mock(FormLayoutService.class);
+        TypeFieldFormConfig pivot = TypeFieldFormConfig.builder().name("recordingunit.property.type").systemField(true)
+                .active(true).sourceLabel(ConfigurableTable.UE.getFieldCode()).build();
+        TypeFieldFormConfig hidden = field("recordingunit.field.description", false);
+        when(layout.rowsOf(42L, ConfigurableTable.UE, "Creusement")).thenReturn(List.of(
+                LayoutRow.header(1L, "A"), LayoutRow.of(pivot, FieldWidth.QUARTER), LayoutRow.of(hidden, FieldWidth.HALF)));
+
+        ProjectTableFieldSettingsBean bean = beanOn(layout);
         bean.selectType("Creusement");
 
-        assertThat(bean.getSystemFields()).containsExactly(otherSystemField);
-        // the pivot is inactive-looking to the caller building the "hidden fields" badge too : it's
-        // not merely filtered out of the visible rows, it must never count towards that number either
-        assertThat(bean.getHiddenSystemFieldCount()).isEqualTo(1);
+        assertThat(bean.getLayoutRows()).hasSize(3);
+        assertThat(bean.getFieldCount()).isEqualTo(2);
+        assertThat(bean.getHiddenFieldCount()).isEqualTo(1);
+        assertThat(bean.isPivotField(pivot)).isTrue();
+        assertThat(bean.isPivotField(hidden)).isFalse();
+    }
+
+    @Test
+    void onLayoutReorder_shouldSendGroupsWithTheirFieldsInOrder() {
+        FormLayoutService layout = mock(FormLayoutService.class);
+        ProjectTableFieldSettingsBean bean = beanOn(layout);
+        bean.setSelectedTypeName("Creusement");
+        bean.setLayoutRows(new java.util.ArrayList<>(List.of(
+                LayoutRow.header(1L, "G1"), LayoutRow.of(field("a", true), FieldWidth.QUARTER),
+                LayoutRow.header(null, "G2"), LayoutRow.of(field("b", true), FieldWidth.QUARTER),
+                LayoutRow.of(field("c", true), FieldWidth.QUARTER))));
+
+        bean.onLayoutReorder();
+
+        org.mockito.Mockito.verify(layout).saveArrangement(42L, ConfigurableTable.UE, "Creusement", List.of(
+                new FormLayoutService.GroupSpec(1L, "G1", List.of("a")),
+                new FormLayoutService.GroupSpec(null, "G2", List.of("b", "c"))));
+    }
+
+    @Test
+    void onLayoutReorder_shouldRefuseAFieldDroppedAboveTheFirstGroup() {
+        FormLayoutService layout = mock(FormLayoutService.class);
+        ProjectTableFieldSettingsBean bean = beanOn(layout);
+        bean.setSelectedTypeName("Creusement");
+        bean.setLayoutRows(new java.util.ArrayList<>(List.of(
+                LayoutRow.of(field("a", true), FieldWidth.QUARTER), LayoutRow.header(1L, "G1"))));
+
+        try (org.mockito.MockedStatic<fr.siamois.utils.MessageUtils> ignored =
+                     org.mockito.Mockito.mockStatic(fr.siamois.utils.MessageUtils.class)) {
+            bean.onLayoutReorder();
+        }
+
+        org.mockito.Mockito.verify(layout, org.mockito.Mockito.never())
+                .saveArrangement(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void deleteGroup_shouldRefuseANonEmptyGroup_andDropAnEmptyOne() {
+        FormLayoutService layout = mock(FormLayoutService.class);
+        ProjectTableFieldSettingsBean bean = beanOn(layout);
+        bean.setSelectedTypeName("Creusement");
+        LayoutRow g1 = LayoutRow.header(1L, "G1");
+        LayoutRow g2 = LayoutRow.header(2L, "G2");
+        bean.setLayoutRows(new java.util.ArrayList<>(List.of(g1, LayoutRow.of(field("a", true), FieldWidth.QUARTER), g2)));
+
+        try (org.mockito.MockedStatic<fr.siamois.utils.MessageUtils> ignored =
+                     org.mockito.Mockito.mockStatic(fr.siamois.utils.MessageUtils.class)) {
+            bean.deleteGroup(g1);
+        }
+        assertThat(bean.getLayoutRows()).hasSize(3);
+
+        bean.deleteGroup(g2);
+        assertThat(bean.getLayoutRows()).doesNotContain(g2);
+    }
+
+    @Test
+    void moveGroup_shouldMoveTheGroupWithItsFields() {
+        FormLayoutService layout = mock(FormLayoutService.class);
+        ProjectTableFieldSettingsBean bean = beanOn(layout);
+        bean.setSelectedTypeName("Creusement");
+        LayoutRow g1 = LayoutRow.header(1L, "G1");
+        LayoutRow a = LayoutRow.of(field("a", true), FieldWidth.QUARTER);
+        LayoutRow g2 = LayoutRow.header(2L, "G2");
+        LayoutRow b = LayoutRow.of(field("b", true), FieldWidth.QUARTER);
+        bean.setLayoutRows(new java.util.ArrayList<>(List.of(g1, a, g2, b)));
+
+        bean.moveGroup(g2, -1);
+
+        org.mockito.Mockito.verify(layout).saveArrangement(42L, ConfigurableTable.UE, "Creusement", List.of(
+                new FormLayoutService.GroupSpec(2L, "G2", List.of("b")),
+                new FormLayoutService.GroupSpec(1L, "G1", List.of("a"))));
     }
 
     @Test
@@ -105,6 +179,10 @@ class ProjectTableFieldSettingsBeanTest {
     }
 
     private ProjectTableFieldSettingsBean bean(TableFieldConfigService tableService) {
+        return bean(tableService, mock(FormLayoutService.class));
+    }
+
+    private ProjectTableFieldSettingsBean bean(TableFieldConfigService tableService, FormLayoutService layoutService) {
         LangBean langBean = mock(LangBean.class);
         when(langBean.msg(org.mockito.ArgumentMatchers.anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -117,6 +195,7 @@ class ProjectTableFieldSettingsBeanTest {
                 mock(VocabularyMapper.class),
                 mock(LabelService.class),
                 langBean,
-                new IdentifierResolverRegistry());
+                new IdentifierResolverRegistry(),
+                layoutService);
     }
 }

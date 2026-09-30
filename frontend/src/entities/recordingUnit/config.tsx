@@ -66,6 +66,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         return { fields: types.fields, columns: types.tableColumns };
       },
     },
+    rulesSegment: "recording-unit-types",
     defaultSort: "creationTime:desc",
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.

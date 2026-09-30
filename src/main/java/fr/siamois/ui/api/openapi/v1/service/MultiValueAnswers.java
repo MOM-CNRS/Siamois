@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -41,15 +43,15 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class MultiValueAnswers {
 
-    private record Owner(String collection, FormUiDto detailsForm) {
+    private record Owner(String collection, java.util.Collection<CustomField> fields) {
     }
 
     private static final Map<Class<?>, Owner> OWNERS = Map.of(
-            RecordingUnit.class, new Owner("recording-units", RecordingUnit.DETAILS_FORM),
-            Specimen.class, new Owner("finds", Specimen.DETAILS_FORM),
-            Phase.class, new Owner("phases", Phase.DETAILS_FORM),
-            Container.class, new Owner("containers", Container.DETAILS_FORM),
-            ActionUnit.class, new Owner("projects", ActionUnit.DETAILS_FORM));
+            RecordingUnit.class, new Owner("recording-units", SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.UE)),
+            Specimen.class, new Owner("finds", SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.MOBILIER)),
+            Phase.class, new Owner("phases", SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.PHASE)),
+            Container.class, new Owner("containers", SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.CONTENANT)),
+            ActionUnit.class, new Owner("projects", new PanelFieldSource(ActionUnit.DETAILS_FORM).getAllFields()));
 
     /** Each owner's relation fields, by field id. */
     private static final Map<Class<?>, Map<String, RelationField>> RELATION_FIELDS = indexRelationFields();
@@ -63,7 +65,7 @@ public class MultiValueAnswers {
         Map<Class<?>, Map<String, RelationField>> out = new LinkedHashMap<>();
         OWNERS.forEach((type, owner) -> {
             Map<String, RelationField> byId = new LinkedHashMap<>();
-            for (CustomField field : new PanelFieldSource(owner.detailsForm()).getAllFields()) {
+            for (CustomField field : owner.fields()) {
                 if (field == null || field.getId() == null) continue;
                 RelationField.of(type, field.getValueBinding())
                         .ifPresent(relation -> byId.put(String.valueOf(field.getId()), relation));
@@ -77,7 +79,7 @@ public class MultiValueAnswers {
         Map<Class<?>, Map<String, CustomField>> out = new LinkedHashMap<>();
         OWNERS.forEach((type, owner) -> {
             Map<String, CustomField> byId = new LinkedHashMap<>();
-            for (CustomField field : new PanelFieldSource(owner.detailsForm()).getAllFields()) {
+            for (CustomField field : owner.fields()) {
                 if (field != null && field.getId() != null) byId.put(String.valueOf(field.getId()), field);
             }
             out.put(type, Map.copyOf(byId));

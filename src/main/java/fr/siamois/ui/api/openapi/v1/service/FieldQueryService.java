@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -36,7 +39,6 @@ import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.ManagedType;
 import jakarta.persistence.metamodel.PluralAttribute;
-import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.form.rules.FieldRulesJson;
 import fr.siamois.ui.form.dto.CustomColUiDto;
@@ -115,15 +117,19 @@ public class FieldQueryService {
      */
     private static final Map<Class<?>, Map<Long, CustomField>> SYSTEM_FIELDS = Map.of(
             ActionUnit.class, systemFieldsOf(ActionUnit.DETAILS_FORM),
-            RecordingUnit.class, systemFieldsOf(RecordingUnit.DETAILS_FORM),
-            Specimen.class, systemFieldsOf(Specimen.DETAILS_FORM),
-            Phase.class, systemFieldsOf(Phase.DETAILS_FORM),
-            Container.class, systemFieldsOf(Container.DETAILS_FORM),
+            RecordingUnit.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.UE)),
+            Specimen.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.MOBILIER)),
+            Phase.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.PHASE)),
+            Container.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.CONTENANT)),
             SpatialUnit.class, systemFieldsOf(SpatialUnit.DETAILS_FORM));
 
     private static Map<Long, CustomField> systemFieldsOf(fr.siamois.ui.form.dto.FormUiDto form) {
+        return systemFieldsOf(new PanelFieldSource(form).getAllFields());
+    }
+
+    private static Map<Long, CustomField> systemFieldsOf(java.util.Collection<CustomField> fields) {
         Map<Long, CustomField> out = new HashMap<>();
-        for (CustomField field : new PanelFieldSource(form).getAllFields()) {
+        for (CustomField field : fields) {
             if (field != null && field.getId() != null) out.put(field.getId(), field);
         }
         return out;
@@ -131,7 +137,6 @@ public class FieldQueryService {
 
     private final CustomFieldRepository customFieldRepository;
     private final EntityManager entityManager;
-    private final ConceptIdLookup conceptIdLookup;
 
     private enum Kind {
         TEXT("contains"), NUMBER("range"), DATE("date-range"), REFERENCE("in"), REFERENCES("in");
@@ -183,16 +188,21 @@ public class FieldQueryService {
         FieldResource withCapability = resource.withQuery(capabilityOf(entityType, field));
         FieldResource maybeReadOnly = isReadOnly(entityType, field) ? withCapability.withReadOnly(true) : withCapability;
         FieldRules rules = rulesOf(entityType, field);
-        return rules.isEmpty() ? maybeReadOnly : maybeReadOnly.withRules(FieldRulesJson.toWire(rules, conceptIdLookup));
+        return rules.isEmpty() ? maybeReadOnly : maybeReadOnly.withRules(FieldRulesJson.toWire(rules));
     }
 
     /**
-     * The conditional rules {@code field}'s column carries in {@code entityType}'s details form
-     * ({@link FieldRules#NONE} when it has none, or isn't in it — an additional field). A list has no
-     * layout to read them from, so they travel with the catalog entry, the way {@code readOnly} does.
+     * The conditional rules {@code field}'s column carries in the fixed details form of {@code entityType}
+     * (projects, places: their forms are not configurable). They travel with the catalog entry, the way
+     * {@code readOnly} does. {@link FieldRules#NONE} for a configurable table, whose rules are per type.
      */
-    static FieldRules rulesOf(Class<?> entityType, CustomField field) {
+    FieldRules rulesOf(Class<?> entityType, CustomField field) {
         if (field == null || field.getId() == null) return FieldRules.NONE;
+        if (TABLES.containsKey(entityType)) {
+            // Rules of a configurable table belong to a (project, type): the list reads them from the
+            // project's per-type forms, not from one catalog entry shared by every type.
+            return FieldRules.NONE;
+        }
         FormUiDto form = DETAILS_FORMS.get(entityType);
         if (form == null || form.getLayout() == null) return FieldRules.NONE;
         return form.getLayout().stream()
@@ -212,6 +222,10 @@ public class FieldQueryService {
      */
     static boolean isReadOnly(Class<?> entityType, CustomField field) {
         if (field == null || field.getId() == null) return false;
+        ConfigurableTable table = TABLES.get(entityType);
+        if (table != null) {
+            return SystemFieldCatalog.specOf(table, field.getId()).map(SystemFieldSpec::readOnly).orElse(false);
+        }
         FormUiDto form = DETAILS_FORMS.get(entityType);
         if (form == null || form.getLayout() == null) return false;
         return form.getLayout().stream()
@@ -221,12 +235,15 @@ public class FieldQueryService {
                         && field.getId().equals(column.getField().getId()));
     }
 
+    /** The configurable tables: their system fields (and intrinsic flags) come from the catalog. */
+    private static final Map<Class<?>, ConfigurableTable> TABLES = Map.of(
+            RecordingUnit.class, ConfigurableTable.UE,
+            Specimen.class, ConfigurableTable.MOBILIER,
+            Phase.class, ConfigurableTable.PHASE,
+            Container.class, ConfigurableTable.CONTENANT);
+
     private static final Map<Class<?>, FormUiDto> DETAILS_FORMS = Map.of(
             ActionUnit.class, ActionUnit.DETAILS_FORM,
-            RecordingUnit.class, RecordingUnit.DETAILS_FORM,
-            Specimen.class, Specimen.DETAILS_FORM,
-            Phase.class, Phase.DETAILS_FORM,
-            Container.class, Container.DETAILS_FORM,
             SpatialUnit.class, SpatialUnit.DETAILS_FORM);
 
     // ========== Query ==========

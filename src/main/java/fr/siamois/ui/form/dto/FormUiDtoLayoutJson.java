@@ -3,7 +3,6 @@ package fr.siamois.ui.form.dto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.exceptions.form.CantSerializeFormPanelException;
-import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.domain.models.form.rules.FieldRulesJson;
 
 import java.util.HashMap;
@@ -25,22 +24,13 @@ public final class FormUiDtoLayoutJson {
         throw new UnsupportedOperationException();
     }
 
-    /** Sans résolution des concepts des règles (leurs valeurs partent sans {@code conceptId}). */
     public static String serialize(List<CustomFormPanelUiDto> layout) {
-        return serialize(layout, ConceptIdLookup.NONE);
-    }
-
-    /**
-     * @param conceptIds résout l'id interne des concepts cités par les règles des colonnes, que le
-     *                   front compare à {@code ResourceRef.resourceId}
-     */
-    public static String serialize(List<CustomFormPanelUiDto> layout, ConceptIdLookup conceptIds) {
         if (layout == null || layout.isEmpty()) {
             return "[]";
         }
         try {
             List<Map<String, Object>> serializedLayout = layout.stream()
-                    .map(panel -> serializePanel(panel, conceptIds))
+                    .map(panel -> serializePanel(panel))
                     .toList();
             return objectMapper.writeValueAsString(serializedLayout);
         } catch (JsonProcessingException e) {
@@ -48,7 +38,7 @@ public final class FormUiDtoLayoutJson {
         }
     }
 
-    private static Map<String, Object> serializePanel(CustomFormPanelUiDto panel, ConceptIdLookup conceptIds) {
+    private static Map<String, Object> serializePanel(CustomFormPanelUiDto panel) {
         Map<String, Object> panelMap = new HashMap<>();
         panelMap.put(CLASS_NAME_KEY, panel.getClassName());
         panelMap.put("name", panel.getName());
@@ -56,23 +46,23 @@ public final class FormUiDtoLayoutJson {
         panelMap.put("isSystemPanel", panel.getIsSystemPanel());
 
         List<Map<String, Object>> rows = Optional.ofNullable(panel.getRows()).orElse(List.of()).stream()
-                .map(row -> serializeRow(row, conceptIds))
+                .map(row -> serializeRow(row))
                 .toList();
 
         panelMap.put("rows", rows);
         return panelMap;
     }
 
-    private static Map<String, Object> serializeRow(CustomRowUiDto row, ConceptIdLookup conceptIds) {
+    private static Map<String, Object> serializeRow(CustomRowUiDto row) {
         Map<String, Object> rowMap = new HashMap<>();
         List<Map<String, Object>> columns = Optional.ofNullable(row.getColumns()).orElse(List.of()).stream()
-                .map(col -> serializeCol(col, conceptIds))
+                .map(col -> serializeCol(col))
                 .toList();
         rowMap.put("columns", columns);
         return rowMap;
     }
 
-    private static Map<String, Object> serializeCol(CustomColUiDto col, ConceptIdLookup conceptIds) {
+    private static Map<String, Object> serializeCol(CustomColUiDto col) {
         Map<String, Object> colMap = new HashMap<>();
         if (col.getWidth() != null) {
             // The structured shape (React converts this to PrimeFlex's own col-N/md:col-N/lg:col-N
@@ -101,7 +91,7 @@ public final class FormUiDtoLayoutJson {
             colMap.put("fieldId", col.getField().getId());
         }
         if (col.getRules() != null && !col.getRules().isEmpty()) {
-            colMap.put("rules", FieldRulesJson.toWire(col.getRules(), conceptIds));
+            colMap.put("rules", FieldRulesJson.toWire(col.getRules()));
         }
         return colMap;
     }

@@ -125,13 +125,12 @@ class FindOpenApiServiceTest {
                 mock(PhaseRepository.class), mock(PhaseMapper.class),
                 mock(ContainerRepository.class), mock(ContainerMapper.class),
                 mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class),
-                mock(UnitDefinitionMapper.class), fr.siamois.domain.models.form.rules.ConceptIdLookup.NONE);
+                mock(UnitDefinitionMapper.class));
         service = new FindOpenApiService(
                 specimenService,
                 recordingUnitService,
                 conceptRepository,
                 conceptMapper,
-                conversionService,
                 profilePermissionService,
                 findOpenApiMapper, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class),
                 org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
@@ -240,7 +239,7 @@ class FindOpenApiServiceTest {
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(new HashMap<>());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         lenient().when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
 
         SpecimenDTO saved = new SpecimenDTO();
@@ -250,7 +249,7 @@ class FindOpenApiServiceTest {
         FindResource result = service.createFind(createRequest("UE-1", "3"), personDto, SCOPE, LANG);
 
         assertThat(result).isSameAs(findResource);
-        verify(conversionService).convert(Specimen.NEW_UNIT_FORM, FormUiDto.class);
+        verify(effectiveFormResolver).resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong());
         // No answers: nothing to apply, the form response is not even built.
         verify(formService, never()).updateJpaEntityFromResponse(any(), any());
         verify(specimenService).save(any(SpecimenDTO.class));
@@ -270,7 +269,7 @@ class FindOpenApiServiceTest {
         answers.put(textField, new CustomFieldAnswerTextViewModel());
         responseVm.setAnswers(answers);
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
 
         SpecimenDTO saved = new SpecimenDTO();
@@ -303,7 +302,7 @@ class FindOpenApiServiceTest {
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(new HashMap<>());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         lenient().when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -329,7 +328,7 @@ class FindOpenApiServiceTest {
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(new HashMap<>(Map.of(fieldDb, answerVm)));
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -370,7 +369,7 @@ class FindOpenApiServiceTest {
         answers.put(unsupported, new CustomFieldAnswerTextViewModel());
         responseVm.setAnswers(answers);
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -444,7 +443,7 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(intField);
         CustomFormResponseViewModel responseVm = responseWith(intField, new CustomFieldAnswerIntegerViewModel());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -466,7 +465,7 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(withVm, withoutVm);
         CustomFormResponseViewModel responseVm = responseWith(withVm, new CustomFieldAnswerIntegerViewModel());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -492,7 +491,7 @@ class FindOpenApiServiceTest {
                 new fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel());
         responseVm.getAnswers().put(intField, intVm);
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -518,7 +517,7 @@ class FindOpenApiServiceTest {
         CustomFormResponseViewModel responseVm = responseWith(dtField,
                 new fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerDateTimeViewModel());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -540,7 +539,7 @@ class FindOpenApiServiceTest {
         CustomFormResponseViewModel responseVm = responseWith(conceptField,
                 new CustomFieldAnswerSelectOneFromFieldCodeViewModel());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(conceptRepository.findById(404L)).thenReturn(Optional.empty());
 
@@ -561,7 +560,7 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(personField);
         CustomFormResponseViewModel responseVm = responseWith(personField, new CustomFieldAnswerSelectOnePersonViewModel());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(personRepository.findById(Long.valueOf(99L))).thenReturn(Optional.empty());
 
@@ -584,7 +583,7 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(projectField);
         CustomFormResponseViewModel responseVm = responseWith(projectField, new CustomFieldAnswerSelectOneActionUnitViewModel());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(actionUnitRepository.findById(77L)).thenReturn(Optional.empty());
 
@@ -607,7 +606,7 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(suField);
         CustomFormResponseViewModel responseVm = responseWith(suField, new CustomFieldAnswerSelectOneSpatialUnitViewModel());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(spatialUnitRepository.findById(55L)).thenReturn(Optional.empty());
 
@@ -631,7 +630,7 @@ class FindOpenApiServiceTest {
         CustomFormResponseViewModel responseVm = responseWith(conceptField,
                 new CustomFieldAnswerSelectOneFromFieldCodeViewModel());
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
 
         FindCreateRequest request = createRequest("UE-1", "3");
@@ -653,7 +652,7 @@ class FindOpenApiServiceTest {
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(null);
 
-        when(conversionService.convert(Specimen.NEW_UNIT_FORM, FormUiDto.class)).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -756,7 +755,7 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(textField);
         CustomFormResponseViewModel responseVm = responseWith(textField, new CustomFieldAnswerTextViewModel());
 
-        when(effectiveFormResolver.resolveEffectiveForm(eq(Specimen.DETAILS_FORM), any(), eq(ConfigurableTable.MOBILIER), any())).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), same(specimen), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(same(specimen), anyMap())).thenReturn(specimen);
 
@@ -766,7 +765,7 @@ class FindOpenApiServiceTest {
         FindResource result = service.patchFind(7L, request, personDto, SCOPE, LANG);
 
         assertThat(result).isSameAs(findResource);
-        verify(effectiveFormResolver).resolveEffectiveForm(eq(Specimen.DETAILS_FORM), any(), eq(ConfigurableTable.MOBILIER), any());
+        verify(effectiveFormResolver).resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any());
         verify(specimenService).save(same(specimen), anyMap());
     }
 
@@ -780,7 +779,7 @@ class FindOpenApiServiceTest {
         FormUiDto formUi = formUiDtoWithFields(textField);
         CustomFormResponseViewModel responseVm = responseWith(textField, new CustomFieldAnswerTextViewModel());
 
-        when(effectiveFormResolver.resolveEffectiveForm(eq(Specimen.DETAILS_FORM), any(), eq(ConfigurableTable.MOBILIER), any())).thenReturn(formUi);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), same(specimen), any(), eq(true))).thenReturn(responseVm);
         when(specimenService.save(same(specimen), anyMap())).thenReturn(specimen);
 

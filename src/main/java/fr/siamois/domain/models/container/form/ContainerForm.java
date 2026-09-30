@@ -1,5 +1,8 @@
 package fr.siamois.domain.models.container.form;
 
+
+import java.util.List;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -156,4 +159,21 @@ public abstract class ContainerForm {
             .valueBinding("specimens")
             .concept(findsConcept)
             .build();
+
+    /**
+     * The table's system fields, in their default order, with the properties intrinsic to each.
+     * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
+     */
+    public static List<SystemFieldSpec> systemFields() {
+        return List.of(
+            SystemFieldSpec.hiddenReadOnly(identifierField),
+            SystemFieldSpec.of(typeField),
+            SystemFieldSpec.of(spatialUnitField),
+            SystemFieldSpec.hiddenReadOnly(actionUnitField),
+            SystemFieldSpec.readOnly(findsField),
+            SystemFieldSpec.of(lengthField),
+            SystemFieldSpec.of(widthField),
+            SystemFieldSpec.of(heightField),
+            SystemFieldSpec.of(weightField));
+    }
 }

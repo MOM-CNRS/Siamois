@@ -1,5 +1,8 @@
 package fr.siamois.domain.models.phase.form;
 
+
+import java.util.List;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -152,4 +155,23 @@ public abstract class PhaseForm {
             .valueBinding("recordingUnits")
             .concept(recordingUnitsConcept)
             .build();
+
+    /**
+     * The table's system fields, in their default order, with the properties intrinsic to each.
+     * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
+     */
+    public static List<SystemFieldSpec> systemFields() {
+        return List.of(
+            SystemFieldSpec.hiddenReadOnly(identifierField),
+            SystemFieldSpec.of(typeField),
+            SystemFieldSpec.of(titleField),
+            SystemFieldSpec.hiddenReadOnly(actionUnitField),
+            SystemFieldSpec.of(orderNumberField),
+            SystemFieldSpec.of(keywordsField),
+            SystemFieldSpec.of(descriptionField),
+            SystemFieldSpec.readOnly(recordingUnitsField),
+            SystemFieldSpec.of(periodsField),
+            SystemFieldSpec.of(lowerBoundField),
+            SystemFieldSpec.of(upperBoundField));
+    }
 }

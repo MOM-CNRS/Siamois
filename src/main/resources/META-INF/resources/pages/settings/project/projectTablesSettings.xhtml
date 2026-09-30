@@ -100,6 +100,11 @@
             .ptc-drag-handle { color: #c4c4c0; font-size: 16px; cursor: grab; }
             .ptc-drag-handle:active { cursor: grabbing; }
             tr:hover .ptc-drag-handle { color: #8c8c8c; }
+            .ptc-rule-block { border-top: 1px solid #ececec; padding-top: 14px; }
+            .ptc-rule-leaf { border: 1px solid #e7e7e3; border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+            .ptc-rule-leaf-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+            .ptc-group-row > td { background: #f3f6f2 !important; font-weight: 600; }
+            .ptc-group-input.ui-inputtext { width: 100%; max-width: 360px; font-weight: 600; }
             .ui-datatable-rowordering { outline: 1px dashed #cfcfca; background: #f6f6f4 !important; height: 42px; }
 
             /* ── add-field picker ──────────────────────── */
@@ -251,77 +256,73 @@
                                 <h:panelGroup rendered="#{not empty projectTableFieldSettingsBean.fieldsConfig}">
 
                                     <div class="ptc-section-head">
-                                        <span class="ptc-section-title">#{langBean.msg('projectTables.champs.systemTitle')}</span>
-                                        <span class="ptc-section-meta">#{projectTableFieldSettingsBean.systemFields.size()} #{langBean.msg('projectTables.champs.countFields')} · #{projectTableFieldSettingsBean.hiddenSystemFieldCount} #{langBean.msg('projectTables.champs.countHidden')}</span>
-                                    </div>
-
-                                    <div class="ptc-table-scroll">
-                                    <p:dataTable id="systemFieldsTable" value="#{projectTableFieldSettingsBean.systemFields}" var="f" rowKey="#{f.name}" style="min-width:600px">
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnActive')}" style="width:80px">
-                                            <p:toggleSwitch value="#{f.active}" disabled="#{f.institutionLocked}">
-                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldActive(f)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:systemFieldsTable"/>
-                                            </p:toggleSwitch>
-                                        </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
-                                            <span class="#{not f.active ? 'ptc-hidden-name' : ''}">#{projectTableFieldSettingsBean.resolveFieldLabel(f)}</span>
-                                            <h:panelGroup rendered="#{f.institutionLocked}">
-                                                <span class="bi bi-lock-fill ptc-lock-icon" title="#{langBean.msg('projectTables.champs.institutionLocked')}"/>
-                                            </h:panelGroup>
-                                        </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:190px">
-                                            <span class="ptc-chip">#{f.type.label}</span>
-                                        </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnRequired')}" style="width:130px">
-                                            <p:toggleSwitch value="#{f.mandatory}" disabled="#{f.institutionLocked}">
-                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldMandatory(f)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:systemFieldsTable"/>
-                                            </p:toggleSwitch>
-                                        </p:column>
-                                        <p:column style="width:80px">
-                                            <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.champs.editSystemField')}" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(f)}" update=":fieldEditForm" rendered="#{f.configurable}"/>
-                                        </p:column>
-                                    </p:dataTable>
-                                    </div>
-
-                                    <div class="ptc-section-head">
                                         <span>
-                                            <span class="ptc-section-title">#{langBean.msg('projectTables.champs.additionalTitle')}</span>
-                                            <span class="ptc-section-meta">#{langBean.msg('projectTables.champs.additionalHint')}</span>
+                                            <span class="ptc-section-title">#{langBean.msg('projectTables.layout.title')}</span>
+                                            <span class="ptc-section-meta">#{projectTableFieldSettingsBean.fieldCount} #{langBean.msg('projectTables.champs.countFields')} · #{projectTableFieldSettingsBean.hiddenFieldCount} #{langBean.msg('projectTables.champs.countHidden')}</span>
                                         </span>
-                                        <p:commandButton value="#{langBean.msg('projectTables.champs.addField')}" actionListener="#{projectTableFieldSettingsBean.addField()}" update=":addFieldForm"/>
+                                        <span>
+                                            <p:commandButton value="#{langBean.msg('projectTables.layout.addGroup')}" styleClass="ui-button-outlined" actionListener="#{projectTableFieldSettingsBean.addGroup()}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                            <p:commandButton value="#{langBean.msg('projectTables.champs.addField')}" actionListener="#{projectTableFieldSettingsBean.addField()}" update=":addFieldForm"/>
+                                        </span>
                                     </div>
+                                    <p class="ptc-hint" style="margin-bottom:14px;">#{langBean.msg('projectTables.layout.hint')}</p>
 
-                                    <!-- Row reordering drags from the grip only: the row carries switches and buttons,
-                                         and PrimeFaces would otherwise start a drag from any cell of it. -->
+                                    <!-- One draggable list: group headers and fields. Row reordering drags from the grip
+                                         only (the row carries switches and buttons), and a field belongs to the header above it.
+                                         p:tabView is a NamingContainer, hence the full client ids. -->
                                     <div class="ptc-table-scroll">
-                                    <p:dataTable id="additionalFieldsTable" value="#{projectTableFieldSettingsBean.additionalFields}" var="a" rowKey="#{a.name}"
+                                    <p:dataTable id="layoutTable" value="#{projectTableFieldSettingsBean.layoutRows}" var="r" rowKey="#{r.key}"
                                                  draggableRows="true" rowDragSelector=".ptc-drag-handle"
-                                                 style="min-width:680px"
-                                                 emptyMessage="#{langBean.msg('projectTables.champs.emptyAdditional')}">
-                                        <p:ajax event="rowReorder" listener="#{projectTableFieldSettingsBean.onAdditionalFieldReorder}"/>
+                                                 rowStyleClass="#{r.group ? 'ptc-group-row' : ''}"
+                                                 style="min-width:1000px"
+                                                 emptyMessage="#{langBean.msg('projectTables.layout.empty')}">
+                                        <p:ajax event="rowReorder" listener="#{projectTableFieldSettingsBean.onLayoutReorder}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
                                         <p:column styleClass="ptc-drag-cell" style="width:38px">
                                             <span class="bi bi-grip-vertical ptc-drag-handle" title="#{langBean.msg('projectTables.champs.reorderHint')}"/>
                                         </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}">
-                                            <h:outputText value="#{a.name}"/>
-                                        </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:190px">
-                                            <span class="ptc-chip">#{a.type.label}</span>
-                                        </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnRequired')}" style="width:130px">
-                                            <p:toggleSwitch value="#{a.mandatory}" disabled="#{a.institutionLocked}">
-                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldMandatory(a)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:additionalFieldsTable"/>
+                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnActive')}" style="width:80px">
+                                            <p:toggleSwitch rendered="#{r.fieldRow}" value="#{r.field.active}" disabled="#{r.field.institutionLocked or projectTableFieldSettingsBean.isPivotField(r.field)}">
+                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldActive(r.field)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
                                             </p:toggleSwitch>
                                         </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnSource')}">
-                                            <h:outputText value="#{a.sourceLabel}"/>
+                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}" style="min-width:260px">
+                                            <h:panelGroup rendered="#{r.group}">
+                                                <p:inputText value="#{r.displayLabel}" styleClass="ptc-group-input" maxlength="120" title="#{langBean.msg('projectTables.layout.groupName')}">
+                                                    <p:ajax event="change" listener="#{projectTableFieldSettingsBean.onGroupRenamed}" process="@this" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                                </p:inputText>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{r.fieldRow}">
+                                                <span class="#{not r.field.active ? 'ptc-hidden-name' : ''}">#{projectTableFieldSettingsBean.resolveFieldLabel(r.field)}</span>
+                                                <h:panelGroup rendered="#{r.field.institutionLocked}">
+                                                    <span class="bi bi-lock-fill ptc-lock-icon" title="#{langBean.msg('projectTables.champs.institutionLocked')}"/>
+                                                </h:panelGroup>
+                                            </h:panelGroup>
                                         </p:column>
-                                        <p:column style="width:80px">
-                                            <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(a)}" update=":fieldEditForm"/>
-                                            <!-- Only the table is re-rendered: the tab panel is what scrolls
-                                                 (.ui-tabs-panels), so replacing the whole form would put the user
-                                                 back at the top of it. p:tabView is a NamingContainer, hence the
-                                                 full client id. -->
-                                            <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.deleteAdditionalField(a.name)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:additionalFieldsTable"/>
+                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:170px">
+                                            <span class="ptc-chip" style="#{r.group ? 'display:none' : ''}">#{r.field.type.label}</span>
+                                        </p:column>
+                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnRequired')}" style="width:120px">
+                                            <p:toggleSwitch rendered="#{r.fieldRow}" value="#{r.field.mandatory}" disabled="#{r.field.institutionLocked or projectTableFieldSettingsBean.isPivotField(r.field)}">
+                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldMandatory(r.field)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                            </p:toggleSwitch>
+                                        </p:column>
+                                        <p:column headerText="#{langBean.msg('projectTables.layout.columnWidth')}" style="width:120px">
+                                            <p:selectOneMenu rendered="#{r.fieldRow}" value="#{r.width}" style="width:100px">
+                                                <f:selectItems value="#{projectTableFieldSettingsBean.fieldWidths}" var="w" itemLabel="#{projectTableFieldSettingsBean.widthLabel(w)}" itemValue="#{w}"/>
+                                                <p:ajax event="change" listener="#{projectTableFieldSettingsBean.onWidthChanged(r)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                            </p:selectOneMenu>
+                                        </p:column>
+                                        <p:column style="width:170px">
+                                            <h:panelGroup rendered="#{r.group}">
+                                                <p:commandButton icon="bi bi-arrow-up" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.layout.moveGroupUp')}" actionListener="#{projectTableFieldSettingsBean.moveGroup(r, -1)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                                <p:commandButton icon="bi bi-arrow-down" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.layout.moveGroupDown')}" actionListener="#{projectTableFieldSettingsBean.moveGroup(r, 1)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                                <p:commandButton icon="bi bi-trash" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.layout.deleteGroup')}" actionListener="#{projectTableFieldSettingsBean.deleteGroup(r)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{r.fieldRow}">
+                                                <p:commandButton icon="#{r.hasRules ? 'bi bi-diagram-2-fill' : 'bi bi-diagram-2'}" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('rules.title')}" actionListener="#{fieldRulesEditorBean.openFor(r.field)}" process="@this" update=":rulesForm"/>
+                                                <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.champs.editSystemField')}" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(r.field)}" update=":fieldEditForm" rendered="#{r.field.configurable or not r.field.systemField}"/>
+                                                <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" actionListener="#{projectTableFieldSettingsBean.deleteAdditionalField(r.field.name)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable" rendered="#{not r.field.systemField}"/>
+                                            </h:panelGroup>
                                         </p:column>
                                     </p:dataTable>
                                     </div>
@@ -413,6 +414,7 @@
             <ui:include src="/pages/settings/project/addFieldDialog.xhtml"/>
             <ui:include src="/pages/settings/project/newConfigDialog.xhtml"/>
             <ui:include src="/pages/settings/project/fieldEditDrawer.xhtml"/>
+            <ui:include src="/pages/settings/project/fieldRulesDrawer.xhtml"/>
         </main>
     </ui:define>
 

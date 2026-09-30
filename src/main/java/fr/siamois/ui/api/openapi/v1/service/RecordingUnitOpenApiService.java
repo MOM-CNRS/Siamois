@@ -69,7 +69,6 @@ import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTy
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -121,7 +120,6 @@ public class RecordingUnitOpenApiService {
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
     private final MultiValueAnswers multiValueAnswers;
-    private final ConceptIdLookup conceptIdLookup;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -164,8 +162,7 @@ public class RecordingUnitOpenApiService {
         resourceBookmarkService.markBookmarked(userInfo, resource);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
                     dto.getType() != null ? dto.getType().getId() : null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             return buildFieldsWithFallback(dto, fieldSource, locale);
@@ -256,10 +253,9 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, null);
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class);
         });
         defaultType.setFields(fields);
@@ -291,10 +287,9 @@ public class RecordingUnitOpenApiService {
         type.setIdentifierConfig(identifierConfig);
 
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, concept.getId());
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class);
         });
         type.setFields(fields);
@@ -309,10 +304,9 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER, null);
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class);
         });
         defaultType.setFields(fields);
@@ -329,10 +323,9 @@ public class RecordingUnitOpenApiService {
         type.setIdentifierConfig(identifierConfig);
 
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER, concept.getId());
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class);
         });
         type.setFields(fields);
@@ -377,10 +370,9 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    Phase.DETAILS_FORM, projectId, ConfigurableTable.PHASE, null);
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.PHASE, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
         });
         defaultType.setFields(fields);
@@ -397,10 +389,9 @@ public class RecordingUnitOpenApiService {
         type.setIdentifierConfig(identifierConfig);
 
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    Phase.DETAILS_FORM, projectId, ConfigurableTable.PHASE, concept.getId());
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.PHASE, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
         });
         type.setFields(fields);
@@ -444,10 +435,9 @@ public class RecordingUnitOpenApiService {
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    Container.DETAILS_FORM, projectId, ConfigurableTable.CONTENANT, null);
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.CONTENANT, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, Container.class);
         });
         defaultType.setFields(fields);
@@ -464,10 +454,9 @@ public class RecordingUnitOpenApiService {
         type.setIdentifierConfig(identifierConfig);
 
         Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    Container.DETAILS_FORM, projectId, ConfigurableTable.CONTENANT, concept.getId());
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.CONTENANT, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, Container.class);
         });
         type.setFields(fields);
@@ -497,7 +486,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto systemForm = ActionUnit.DETAILS_FORM;
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout(), conceptIdLookup);
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
         FormResource form = new FormResource(layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
@@ -651,10 +640,8 @@ public class RecordingUnitOpenApiService {
             // The effective form, as the find-types catalog lays it out and the PATCH writes it:
             // without the category's additional fields their answers would never be read back.
             Long projectId = specimenProjectId(specimen);
-            FormUiDto formUiDto = projectId != null
-                    ? effectiveFormResolver.resolveEffectiveForm(Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER,
-                            specimen.getCategory() != null ? specimen.getCategory().getId() : null)
-                    : conversionService.convert(Specimen.DETAILS_FORM, FormUiDto.class);
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER,
+                    specimen.getCategory() != null ? specimen.getCategory().getId() : null);
             return buildSpecimenFieldsWithFallback(specimen, new PanelFieldSource(formUiDto), locale);
         });
 
@@ -885,8 +872,7 @@ public class RecordingUnitOpenApiService {
         shell.setGeom(request.getGeom());
 
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                    RecordingUnit.DETAILS_FORM, au.getId(), ConfigurableTable.UE, typeDto.getId());
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(au.getId(), ConfigurableTable.UE, typeDto.getId());
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                     fieldAnswerPatchService.applyLenient(shell, formUiDto, request.getFieldAnswers(), au.getId());
             RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell);
@@ -1035,8 +1021,7 @@ public class RecordingUnitOpenApiService {
             }
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers = Map.of();
             if (!answers.isEmpty()) {
-                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
-                        RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE,
+                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
                         dto.getType() != null ? dto.getType().getId() : null);
                 // Lenient: the mobile client's legacy payloads may carry fields this form lacks.
                 additionalAnswers = fieldAnswerPatchService.applyLenient(dto, formUiDto, answers, projectId);

@@ -134,7 +134,7 @@ public class PhaseOpenApiService {
             Long projectId = phase.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the phase-types catalog lays out (system + additional fields).
-                FormUiDto form = effectiveFormResolver.resolveEffectiveForm(Phase.DETAILS_FORM, projectId,
+                FormUiDto form = effectiveFormResolver.resolveEffectiveForm(projectId,
                         ConfigurableTable.PHASE, phase.getType() != null ? phase.getType().getId() : null);
                 Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                         fieldAnswerPatchService.apply(phase, form, request.getAnswers(), projectId);

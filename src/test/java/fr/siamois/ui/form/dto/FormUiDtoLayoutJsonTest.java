@@ -9,7 +9,6 @@ import fr.siamois.domain.models.form.rules.FieldValueSpec;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,16 +68,16 @@ class FormUiDtoLayoutJsonTest {
     }
 
     @Test
-    void serialize_emitsRulesWithResolvedConceptIds() throws Exception {
+    void serialize_emitsRulesWithConceptIds() throws Exception {
         CustomColUiDto col = new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(field(42))
-                .rules(FieldRules.NONE.withEnabledWhen(Condition.eq(7L, FieldValueSpec.concept("th230", "4287639"))))
+                .rules(FieldRules.NONE.withEnabledWhen(Condition.eq(7L, FieldValueSpec.concept(5L))))
                 .build();
         CustomFormPanelUiDto panel = new CustomFormPanelUiDto.Builder()
                 .name("panel")
                 .addRow(new CustomRowUiDto.Builder().addColumn(col).build())
                 .build();
 
-        String json = FormUiDtoLayoutJson.serialize(List.of(panel), (voc, concept) -> Optional.of(5L));
+        String json = FormUiDtoLayoutJson.serialize(List.of(panel));
         JsonNode column = objectMapper.readTree(json).get(0).get("rows").get(0).get("columns").get(0);
 
         JsonNode leaf = column.get("rules").get("enabledWhen");

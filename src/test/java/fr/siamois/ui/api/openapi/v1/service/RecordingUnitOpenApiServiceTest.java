@@ -206,8 +206,7 @@ class RecordingUnitOpenApiServiceTest {
                 spatialUnitRepository, spatialUnitSummaryMapper, mock(RecordingUnitRepository.class),
                 mock(RecordingUnitSummaryMapper.class), phaseRepository, phaseMapper,
                 mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class),
-                mock(SpecimenSummaryMapper.class), unitDefinitionMapper,
-                fr.siamois.domain.models.form.rules.ConceptIdLookup.NONE));
+                mock(SpecimenSummaryMapper.class), unitDefinitionMapper));
         ReflectionTestUtils.setField(service, "fieldAnswerWireService", new FieldAnswerWireService(formService, labelService));
         // Catalogs are decorated with each field's list capability; not what these tests are about.
         FieldQueryService fieldQueryService = mock(FieldQueryService.class);
@@ -232,8 +231,8 @@ class RecordingUnitOpenApiServiceTest {
         ConceptPrefLabelDTO stubLabel = new ConceptPrefLabelDTO();
         stubLabel.setLabel("stub-label");
         lenient().when(labelService.findLabelOf(any(ConceptDTO.class), any())).thenReturn(stubLabel);
-        lenient().when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any()))
-                .thenReturn(RecordingUnit.DETAILS_FORM);
+        lenient().when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any()))
+                .thenReturn(fr.siamois.utils.TestForms.of(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.UE));
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -343,7 +342,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithVocab);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithVocab);
 
         CustomFieldAnswerTextViewModel answerVm = new CustomFieldAnswerTextViewModel();
         answerVm.setValue("hello");
@@ -485,7 +484,7 @@ class RecordingUnitOpenApiServiceTest {
         textField.setId(55L);
         textField.setLabel("Description");
         textField.setIsSystemField(false);
-        when(effectiveFormResolver.resolveEffectiveForm(Specimen.DETAILS_FORM, 5L, ConfigurableTable.MOBILIER, 7L))
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.MOBILIER, 7L))
                 .thenReturn(formUiDtoWithOneField(textField));
 
         FindCreateFormData data = service.buildFindCreateForm("5", 7L, personDto, SCOPE, "fr");
@@ -521,7 +520,7 @@ class RecordingUnitOpenApiServiceTest {
         textField.setId(43L);
         textField.setLabel("Champ");
         textField.setIsSystemField(false);
-        when(effectiveFormResolver.resolveEffectiveForm(RecordingUnit.DETAILS_FORM, 5L, ConfigurableTable.UE, 7L))
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.UE, 7L))
                 .thenReturn(formUiDtoWithOneField(textField));
 
         RecordingUnitCreateFormData data = service.buildRecordingUnitCreateForm("5", 7L, personDto, SCOPE, "fr");
@@ -636,7 +635,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(specimenService.findAccessibleByKey("7", SCOPE)).thenReturn(Optional.of(spec));
         when(findOpenApiMapper.toResource(spec)).thenReturn(expected);
-        when(conversionService.convert(fr.siamois.domain.models.specimen.Specimen.DETAILS_FORM, FormUiDto.class))
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any()))
                 .thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(spec), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(same(answerVm))).thenReturn("silex");
@@ -785,7 +784,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(specimenService.findAccessibleByKey("1", SCOPE)).thenReturn(Optional.of(spec));
         when(findOpenApiMapper.toResource(spec)).thenReturn(expected);
-        when(conversionService.convert(fr.siamois.domain.models.specimen.Specimen.DETAILS_FORM, FormUiDto.class))
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any()))
                 .thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(spec), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(any())).thenReturn(null);
@@ -922,7 +921,7 @@ class RecordingUnitOpenApiServiceTest {
         when(intField.getValueBinding()).thenReturn(null);
         when(intField.getIsSystemField()).thenReturn(false);
         FormUiDto formUiDto = formUiDtoWithOneField(intField);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
 
         CustomFieldAnswerIntegerViewModel answerVm = new CustomFieldAnswerIntegerViewModel();
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
@@ -1049,7 +1048,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("3000"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any()))
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any()))
                 .thenReturn(formUiDtoWithOneField(mock(CustomFieldInteger.class)));
 
         RecordingUnitResource data = service.duplicateRecordingUnit("1026", personDto, SCOPE, "fr");
@@ -1087,7 +1086,7 @@ class RecordingUnitOpenApiServiceTest {
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
 
         when(spatialUnitService.getSpatialUnitOptionsFor(any(RecordingUnitDTO.class))).thenReturn(List.of());
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(new FormUiDto());
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(new FormUiDto());
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(Map.of());
         // not reached without answers: applying an empty answer map is a no-op
@@ -1134,7 +1133,7 @@ class RecordingUnitOpenApiServiceTest {
         when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
         when(spatialUnitService.getSpatialUnitOptionsFor(any())).thenReturn(List.of());
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(new FormUiDto());
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(new FormUiDto());
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(Map.of());
         // not reached without answers: applying an empty answer map is a no-op
@@ -1190,7 +1189,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -1258,7 +1257,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(conceptRepository.findById(99L)).thenReturn(Optional.of(concept));
         when(conceptMapper.convert(concept)).thenReturn(conceptDto);
@@ -1295,7 +1294,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(conceptField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(conceptField));
         when(formService.initOrReuseResponse(isNull(), any(), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(conceptRepository.findById(404L)).thenReturn(Optional.empty());
 
@@ -1322,7 +1321,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
         when(formService.initOrReuseResponse(isNull(), any(), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(any(RecordingUnitDTO.class), anyMap()))
                 .thenThrow(new FailedRecordingUnitSaveException("err"));
@@ -1362,7 +1361,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(personRepository.findById(Long.valueOf(4L))).thenReturn(Optional.ofNullable(person));
         when(personMapper.convert(person)).thenReturn(personResult);
@@ -1401,7 +1400,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(personRepository.findById(Long.valueOf(6L))).thenReturn(Optional.ofNullable(person));
         when(personMapper.convert(person)).thenReturn(personResult);
@@ -1435,7 +1434,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
@@ -1466,7 +1465,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(personRepository.findById(Long.valueOf(999L))).thenReturn(Optional.ofNullable(null));
 
@@ -1500,7 +1499,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(auField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(auField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(actionUnitRepository.findById(998L)).thenReturn(Optional.empty());
 
@@ -1536,7 +1535,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(intField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(intField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -1572,7 +1571,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(dateField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(dateField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -1604,7 +1603,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -1635,7 +1634,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(textField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -1730,7 +1729,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(same(spatialVm))).thenReturn(spatialValue);
         when(formService.readAnswerValueForApi(same(actionUnitVm))).thenReturn(actionUnitValue);
@@ -1805,7 +1804,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(same(personVm))).thenReturn(author);
         when(formService.readAnswerValueForApi(same(nullValueVm))).thenReturn(null);
@@ -1856,7 +1855,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true))).thenReturn(responseVm);
         ConceptDTO conceptItem = new ConceptDTO();
         conceptItem.setId(603L);
@@ -1921,7 +1920,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(same(measurementVm))).thenReturn(measurement);
 
@@ -2245,7 +2244,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true)))
                 .thenReturn(responseVm);
     }
@@ -2266,7 +2265,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true)))
                 .thenThrow(new RuntimeException("boom"));
 
@@ -2299,7 +2298,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(specimenService.findAccessibleByKey("8", SCOPE)).thenReturn(Optional.of(spec));
         when(findOpenApiMapper.toResource(spec)).thenReturn(expected);
-        when(conversionService.convert(fr.siamois.domain.models.specimen.Specimen.DETAILS_FORM, FormUiDto.class)).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(spec), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(same(answerVm))).thenReturn("silex");
 
@@ -2329,7 +2328,7 @@ class RecordingUnitOpenApiServiceTest {
 
         when(specimenService.findAccessibleByKey("8", SCOPE)).thenReturn(Optional.of(spec));
         when(findOpenApiMapper.toResource(spec)).thenReturn(expected);
-        when(conversionService.convert(fr.siamois.domain.models.specimen.Specimen.DETAILS_FORM, FormUiDto.class)).thenReturn(formUiDto);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any())).thenReturn(formUiDto);
         when(formService.initOrReuseResponse(isNull(), same(spec), any(FieldSource.class), eq(true)))
                 .thenThrow(new RuntimeException("boom"));
 
@@ -2360,7 +2359,7 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), isNull()))
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.UE), isNull()))
                 .thenReturn(new FormUiDto());
 
         Concept concept = new Concept();
@@ -2380,7 +2379,7 @@ class RecordingUnitOpenApiServiceTest {
         field.setId(43L);
         field.setLabel("Champ");
         field.setIsSystemField(false);
-        when(effectiveFormResolver.resolveEffectiveForm(RecordingUnit.DETAILS_FORM, 5L, ConfigurableTable.UE, 42L))
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.UE, 42L))
                 .thenReturn(formUiDtoWithOneField(field));
 
         ProjectRecordingUnitTypeListResponse response =
@@ -2409,7 +2408,7 @@ class RecordingUnitOpenApiServiceTest {
         defaultField.setId(45L);
         defaultField.setLabel("Champ par défaut");
         defaultField.setIsSystemField(true);
-        when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), isNull()))
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.UE), isNull()))
                 .thenReturn(formUiDtoWithOneField(defaultField));
 
         when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of());
@@ -2431,7 +2430,7 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), isNull()))
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.UE), isNull()))
                 .thenReturn(new FormUiDto());
         when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of());
 
@@ -2468,7 +2467,7 @@ class RecordingUnitOpenApiServiceTest {
         defaultOnlyField.setId(45L);
         defaultOnlyField.setLabel("Champ par défaut");
         defaultOnlyField.setIsSystemField(true);
-        when(effectiveFormResolver.resolveEffectiveForm(eq(RecordingUnit.DETAILS_FORM), eq(5L), eq(ConfigurableTable.UE), isNull()))
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.UE), isNull()))
                 .thenReturn(formUiDtoWithOneField(defaultOnlyField));
 
         Concept concept = new Concept();
@@ -2488,7 +2487,7 @@ class RecordingUnitOpenApiServiceTest {
         typeOnlyField.setId(46L);
         typeOnlyField.setLabel("Champ propre au type");
         typeOnlyField.setIsSystemField(true);
-        when(effectiveFormResolver.resolveEffectiveForm(RecordingUnit.DETAILS_FORM, 5L, ConfigurableTable.UE, 42L))
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.UE, 42L))
                 .thenReturn(formUiDtoWithFields(overriddenField, typeOnlyField));
 
         ProjectRecordingUnitTypeListResponse response =
@@ -2525,7 +2524,7 @@ class RecordingUnitOpenApiServiceTest {
         field.setId(44L);
         field.setLabel("Champ mobilier");
         field.setIsSystemField(true);
-        when(effectiveFormResolver.resolveEffectiveForm(eq(Specimen.DETAILS_FORM), eq(5L), eq(ConfigurableTable.MOBILIER), isNull()))
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.MOBILIER), isNull()))
                 .thenReturn(formUiDtoWithOneField(field));
 
         when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.MOBILIER)).thenReturn(List.of());
@@ -2545,7 +2544,7 @@ class RecordingUnitOpenApiServiceTest {
         au.setCreatedByInstitution(inst);
         when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
                 .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(effectiveFormResolver.resolveEffectiveForm(eq(Specimen.DETAILS_FORM), eq(5L), eq(ConfigurableTable.MOBILIER), isNull()))
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.MOBILIER), isNull()))
                 .thenReturn(new FormUiDto());
 
         Concept concept = new Concept();
@@ -2565,7 +2564,7 @@ class RecordingUnitOpenApiServiceTest {
         field.setId(46L);
         field.setLabel("Champ mobilier");
         field.setIsSystemField(false);
-        when(effectiveFormResolver.resolveEffectiveForm(Specimen.DETAILS_FORM, 5L, ConfigurableTable.MOBILIER, 42L))
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.MOBILIER, 42L))
                 .thenReturn(formUiDtoWithOneField(field));
 
         ProjectFindTypeListResponse response = service.buildProjectFindTypeSettings("5", personDto, SCOPE, "fr");
@@ -2759,7 +2758,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(auField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(auField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         ActionUnit relatedAuEntity = new ActionUnit();
         relatedAuEntity.setId(9L);
@@ -2800,7 +2799,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(suField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(suField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         SpatialUnit spatialUnitEntity = new SpatialUnit();
         spatialUnitEntity.setId(77L);
@@ -2838,7 +2837,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(suField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(suField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(spatialUnitRepository.findById(404L)).thenReturn(Optional.empty());
 
@@ -2876,7 +2875,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(measurementField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(measurementField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -2912,7 +2911,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(measurementField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(measurementField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -2949,7 +2948,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(measurementField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(measurementField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
@@ -2989,7 +2988,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(phaseField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(phaseField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(phaseRepository.findById(11L)).thenReturn(Optional.of(phase));
         when(phaseMapper.convert(phase)).thenReturn(phaseDto);
@@ -3036,7 +3035,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.findAccessibleRecordingUnitWithEntity(any(), any(), any()))
                 .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any(), any())).thenReturn(formUiDtoWithOneField(phaseField));
+        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(phaseField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
         when(phaseRepository.findById(12L)).thenReturn(Optional.of(phase));
 

@@ -5,11 +5,8 @@ import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.phase.form.PhaseDetailsForm;
-import fr.siamois.domain.models.phase.form.PhaseNewUnitForm;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -106,11 +103,5 @@ public class Phase extends TraceableEntity {
     @ToString.Exclude
     private Set<RecordingUnit> recordingUnits = new HashSet<>();
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto DETAILS_FORM = PhaseDetailsForm.build();
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto NEW_UNIT_FORM = PhaseNewUnitForm.build();
 }

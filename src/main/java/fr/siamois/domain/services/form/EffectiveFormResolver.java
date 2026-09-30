@@ -2,6 +2,10 @@ package fr.siamois.domain.services.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
+import fr.siamois.domain.models.form.layout.FormLayout;
+import fr.siamois.domain.services.form.layout.FormLayoutComposer;
+import fr.siamois.domain.services.form.layout.FormLayoutSeeds;
+import fr.siamois.domain.services.form.layout.FormLayoutService;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
@@ -12,15 +16,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Composes a base system form with a project's {@link TableFieldConfigService} configuration:
- * inactive system fields removed, mandatory fields marked required, active additional fields
- * appended.
+ * Composes the form of a (project, table, type) from its configuration. When the type's
+ * configuration holds a stored layout ({@link FormLayoutService}), that layout is the form. Until
+ * one is stored, the table's initial layout ({@link FormLayoutSeeds}) is composed with the project's
+ * {@link TableFieldConfigService} configuration: inactive system fields removed, mandatory fields
+ * marked required, active additional fields appended.
  * <p>
  * This is the single implementation of the logic single-item panels (e.g.
  * {@code RecordingUnitPanel}) and the OpenAPI services both rely on, so a project's configured
@@ -31,16 +38,25 @@ import java.util.stream.Collectors;
 public class EffectiveFormResolver {
 
     private final TableFieldConfigService tableFieldConfigService;
+    private final FormLayoutService formLayoutService;
+    private final FormLayoutSeeds formLayoutSeeds;
 
     /**
-     * @param baseForm      the system form to start from, left untouched
      * @param projectId     the project (action unit) the configuration is scoped to
      * @param table         the table the type belongs to
      * @param typeConceptId the type's concept id, or {@code null} for the default configuration
      * @return {@code baseForm} minus its inactive system fields, plus the project's active
      * additional fields for that type
      */
-    public FormUiDto resolveEffectiveForm(FormUiDto baseForm, Long projectId, ConfigurableTable table, Long typeConceptId) {
+    public FormUiDto resolveEffectiveForm(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        if (projectId == null) {
+            return FormLayoutComposer.compose(formLayoutSeeds.layoutOf(table), table);
+        }
+        Optional<FormLayout> stored = formLayoutService.storedLayout(projectId, table, typeConceptId);
+        if (stored.isPresent()) {
+            return FormLayoutComposer.compose(stored.get(), table);
+        }
+        FormUiDto baseForm = FormLayoutComposer.compose(formLayoutSeeds.layoutOf(table), table);
         List<TypeFieldFormConfig> configs = tableFieldConfigService.getFieldsConfig(projectId, table, typeConceptId).getFields();
         Set<String> inactive = configs.stream()
                 .filter(field -> !field.isActive())

@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.form.rules;
 
-import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.domain.models.form.rules.Condition;
 import fr.siamois.domain.models.form.rules.FieldConstraint;
 import fr.siamois.domain.models.form.rules.FieldRules;
@@ -27,8 +26,7 @@ import java.util.function.Function;
  *   <li>rules read values, not other fields' states</li>
  *   <li>a constraint {@code A op B}, declared on A, bounds and flags both sides</li>
  * </ul>
- * A concept expected by a rule compares by its internal id, resolved through {@link ConceptIdLookup}
- * like the layout the front receives.
+ * A concept expected by a rule compares by its internal id, like the layout the front receives.
  */
 public final class FieldRulesEvaluator {
 
@@ -100,12 +98,6 @@ public final class FieldRulesEvaluator {
         }
     }
 
-    private final ConceptIdLookup conceptIds;
-
-    public FieldRulesEvaluator(ConceptIdLookup conceptIds) {
-        this.conceptIds = conceptIds;
-    }
-
     public boolean test(Condition condition, Function<Long, Object> valueOf) {
         if (condition instanceof Condition.All all) {
             return all.conditions().stream().allMatch(c -> test(c, valueOf));
@@ -148,7 +140,7 @@ public final class FieldRulesEvaluator {
     @Nullable
     private Object expectedScalar(FieldValueSpec spec) {
         if (spec instanceof FieldValueSpec.ConceptValue c) {
-            return conceptIds.conceptId(c.vocabularyExtId(), c.conceptExtId()).map(String::valueOf).orElse(null);
+            return String.valueOf(c.conceptId());
         }
         if (spec instanceof FieldValueSpec.RefValue r) {
             return r.id();

@@ -40,6 +40,7 @@ import { useWriteMode } from "./writeMode";
 import { ValidationStatusCell, type ValidationStatusCellProps } from "../components/table/ValidationStatusCell";
 import { useRowActions } from "./useRowActions";
 import { useRowRules, useRuleFields } from "./useRowRules";
+import { useProjectIdsOf, useTypeRules, type RowTypeRef } from "./useTypeRules";
 import { describeIncoherence } from "../fields/incoherence";
 import { Message } from "primereact/message";
 import { entityChipStyle } from "../fields/display";
@@ -226,7 +227,11 @@ export function EntityListPanel({
   // What the cells' rules read on top of the visible columns (rules/dependencies.ts): fetched with
   // the rows although not shown, so a cell can be greyed by an answer whose column is hidden.
   const shownFieldIds = useMemo(() => [...pinnedFieldIds, ...state.visibleColumns], [pinnedFieldIds, state.visibleColumns]);
-  const ruleFields = useRuleFields(catalog?.fields, shownFieldIds);
+  // Rules belong to a (project, type): the forms to read them from are those of the projects the rows
+  // fetched so far belong to, so the fields they read are requested from the second fetch on.
+  const [seenRows, setSeenRows] = useState<RowRecord[]>([]);
+  const typeRules = useTypeRules(config?.list.rulesSegment, useProjectIdsOf(seenRows as RowTypeRef[]));
+  const ruleFields = useRuleFields(catalog?.fields, shownFieldIds, typeRules);
 
   const { rows, totalCount, isLoading, isFetching, error } = usePagedList<RowRecord>({
     entityType,
@@ -239,7 +244,8 @@ export function EntityListPanel({
     // adding each one (a failed catalog just means no dynamic columns).
     enabled: config != null && (!hasSchema || columnsSeeded || catalogFailed),
   });
-  const rowRules = useRowRules(catalog?.fields, shownFieldIds, ruleFields, rows);
+  useEffect(() => setSeenRows(rows), [rows]);
+  const rowRules = useRowRules(catalog?.fields, shownFieldIds, ruleFields, rows, typeRules);
 
   // The titlebar's count chip is the whole collection, not the filtered result set (that one is the
   // toolbar's selected/total chip). While nothing narrows the list they are the same number, so the

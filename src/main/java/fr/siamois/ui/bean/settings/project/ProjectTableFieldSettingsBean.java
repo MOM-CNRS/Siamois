@@ -7,6 +7,7 @@ import fr.siamois.domain.models.exceptions.form.FieldVocabularyConfigException;
 import fr.siamois.domain.models.exceptions.form.NoVocabularySelectedException;
 import fr.siamois.domain.models.exceptions.form.VocabularyConfigNotSavedException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
+import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -16,6 +17,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
+import fr.siamois.domain.services.form.layout.FormLayoutService;
 import fr.siamois.domain.services.identifier.*;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
@@ -46,7 +48,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -71,6 +72,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private final transient LabelService labelService;
     private final LangBean langBean;
     private final transient IdentifierResolverRegistry identifierResolverRegistry;
+    private final transient FormLayoutService formLayoutService;
 
     private ActionUnitDTO project;
     private List<ConfigurableTable> tables = new ArrayList<>();
@@ -83,13 +85,13 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private TypeFieldsConfig fieldsConfig;
 
     /**
-     * The additional fields of {@link #fieldsConfig}, in display order — held as a mutable list
-     * rather than derived on every call because the table they back is row-draggable: PrimeFaces
-     * reorders the very list a draggable table reads while decoding the drag (see
-     * {@code DraggableRowsFeature}), so a fresh list per call would drop the new order, and an
-     * immutable one would make the decode throw.
+     * The form's layout as the screen lists it: group headers and fields in one list, a field
+     * belonging to the closest header above it. Held as a mutable list rather than derived on every
+     * call because the table it backs is row-draggable: PrimeFaces reorders the very list a
+     * draggable table reads while decoding the drag (see {@code DraggableRowsFeature}), so a fresh
+     * list per call would drop the new order, and an immutable one would make the decode throw.
      */
-    private List<TypeFieldFormConfig> additionalFields = new ArrayList<>();
+    private List<LayoutRow> layoutRows = new ArrayList<>();
 
     private boolean pickerOpen;
     private String pickerQuery;
@@ -160,7 +162,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                                          VocabularyService vocabularyService,
                                          VocabularyMapper vocabularyMapper,
                                          LabelService labelService,
-                                         LangBean langBean, IdentifierResolverRegistry identifierResolverRegistry) {
+                                         LangBean langBean, IdentifierResolverRegistry identifierResolverRegistry,
+                                         FormLayoutService formLayoutService) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.formConfigService = formConfigService;
         this.conceptService = conceptService;
@@ -170,6 +173,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.labelService = labelService;
         this.langBean = langBean;
         this.identifierResolverRegistry = identifierResolverRegistry;
+        this.formLayoutService = formLayoutService;
     }
 
     @EventListener(LoginEvent.class)
@@ -182,6 +186,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         activeTabIndex = TAB_CHAMPS;
         formConfig = null;
         setFieldsConfig(null);
+        layoutRows = new ArrayList<>();
         pickerOpen = false;
         pickerQuery = null;
         closeDrawer();
@@ -231,6 +236,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         if (typeName == null) {
             formConfig = null;
             setFieldsConfig(null);
+            layoutRows = new ArrayList<>();
             return;
         }
         loadConfigs();
@@ -239,6 +245,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private void loadConfigs() {
         formConfig = tableFieldConfigService.getFormConfig(project.getId(), selectedTable, selectedTypeName);
         setFieldsConfig(tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName));
+        reloadLayoutRows();
         loadIdentConfig();
     }
 
@@ -258,56 +265,152 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         identSegments = parseFormat(formConfig.getIdentifierFormat());
     }
 
-    /**
-     * Reloads {@link #additionalFields} along, so the list the draggable table reads always mirrors
-     * the configuration it is the additional-field view of.
-     */
     public void setFieldsConfig(TypeFieldsConfig fieldsConfig) {
         this.fieldsConfig = fieldsConfig;
-        this.additionalFields = fieldsConfig == null ? new ArrayList<>() : fieldsConfig.getFields().stream()
-                .filter(f -> !f.isSystemField())
-                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    public void reloadLayoutRows() {
+        layoutRows = new ArrayList<>(formLayoutService.rowsOf(project.getId(), selectedTable, selectedTypeName));
+        layoutRows.stream().filter(LayoutRow::isGroup)
+                .forEach(row -> row.setDisplayLabel(resolveGroupLabel(row.getGroupLabel())));
     }
 
     public boolean isSelectedTypeDefault() {
         return "_default".equals(selectedTypeName);
     }
 
-    public long getHiddenSystemFieldCount() {
-        if (fieldsConfig == null) return 0;
-        return fieldsConfig.getFields().stream()
-                .filter(f -> f.isSystemField() && !f.isActive() && !isPivotField(f))
-                .count();
+    public long getHiddenFieldCount() {
+        return layoutRows.stream().filter(LayoutRow::isFieldRow).filter(r -> !r.getField().isActive()).count();
     }
 
-    public List<TypeFieldFormConfig> getSystemFields() {
-        if (fieldsConfig == null) return List.of();
-        return fieldsConfig.getFields().stream()
-                .filter(TypeFieldFormConfig::isSystemField)
-                .filter(f -> !isPivotField(f))
-                .toList();
+    public long getFieldCount() {
+        return layoutRows.stream().filter(LayoutRow::isFieldRow).count();
     }
 
     /**
      * The table's own "type" field — the pivot whose value picks which {@link FormConfig} applies —
-     * has no business being toggled active/mandatory or reordered here: it isn't an optional field of
-     * the form, it's what selects the form. It stays a real, active system field of the table/entity
-     * form ({@link TableFieldConfigService#getFieldsConfig} is untouched), only hidden from this
-     * settings screen.
+     * is not an optional field of the form, it is what selects the form: it stays in its place but
+     * cannot be switched off or made optional.
      */
-    private boolean isPivotField(TypeFieldFormConfig field) {
+    public boolean isPivotField(TypeFieldFormConfig field) {
         return selectedTable != null && selectedTable.getFieldCode().equals(field.getSourceLabel());
     }
 
     /**
-     * Persists the order the user dropped the additional fields in. PrimeFaces has already applied
-     * the move to {@link #additionalFields} by the time this runs — it reorders the list backing a
-     * draggable table itself while decoding the drag — so the listener only reads the resulting
-     * order off the list; the {@code ReorderEvent} indices carry nothing else it needs.
+     * A group's label is either the message key of one of the original sections or free text.
      */
-    public void onAdditionalFieldReorder() {
-        tableFieldConfigService.reorderAdditionalFields(project.getId(), selectedTable, selectedTypeName,
-                additionalFields.stream().map(TypeFieldFormConfig::getName).toList());
+    public String resolveGroupLabel(String label) {
+        if (label == null) return "";
+        try {
+            return langBean.msg(label);
+        } catch (RuntimeException e) {
+            return label;
+        }
+    }
+
+    public List<FieldWidth> getFieldWidths() {
+        return List.of(FieldWidth.values());
+    }
+
+    public String widthLabel(FieldWidth width) {
+        return langBean.msg("projectTables.layout.width." + width.name());
+    }
+
+    /**
+     * Persists what the user dropped: PrimeFaces has already applied the move to {@link #layoutRows}
+     * by the time this runs, so the listener only reads the resulting order off the list. A field
+     * dropped above the first header belongs to no group: the move is refused.
+     */
+    public void onLayoutReorder() {
+        saveRows();
+    }
+
+    private void saveRows() {
+        if (layoutRows.isEmpty()) return;
+        if (!layoutRows.get(0).isGroup()) {
+            MessageUtils.displayWarnMessage(langBean, "projectTables.layout.fieldBeforeGroup");
+            reloadLayoutRows();
+            return;
+        }
+        List<FormLayoutService.GroupSpec> specs = new ArrayList<>();
+        Long id = null;
+        String label = null;
+        List<String> names = null;
+        for (LayoutRow row : layoutRows) {
+            if (row.isGroup()) {
+                if (names != null) specs.add(new FormLayoutService.GroupSpec(id, label, names));
+                id = row.getGroupId();
+                label = storedLabelOf(row);
+                names = new ArrayList<>();
+            } else {
+                names.add(row.getField().getName());
+            }
+        }
+        specs.add(new FormLayoutService.GroupSpec(id, label, names));
+        formLayoutService.saveArrangement(project.getId(), selectedTable, selectedTypeName, specs);
+        reloadLayoutRows();
+    }
+
+    /** The label to store: the stored key stays as it is while the user left its translation untouched. */
+    private String storedLabelOf(LayoutRow header) {
+        String shown = header.getDisplayLabel();
+        if (shown == null || shown.isBlank() || shown.equals(resolveGroupLabel(header.getGroupLabel()))) {
+            return header.getGroupLabel();
+        }
+        return shown.trim();
+    }
+
+    public void onGroupRenamed() {
+        saveRows();
+    }
+
+    public void onWidthChanged(LayoutRow row) {
+        formLayoutService.setFieldWidth(project.getId(), selectedTable, selectedTypeName, row.getField().getName(), row.getWidth());
+        reloadLayoutRows();
+    }
+
+    public void addGroup() {
+        layoutRows.add(LayoutRow.header(null, langBean.msg("projectTables.layout.newGroup")));
+        saveRows();
+    }
+
+    /** A group can be deleted once it holds no field: its header is then followed by another or by nothing. */
+    public void deleteGroup(LayoutRow header) {
+        int index = layoutRows.indexOf(header);
+        boolean empty = index >= 0 && (index == layoutRows.size() - 1 || layoutRows.get(index + 1).isGroup());
+        if (!empty) {
+            MessageUtils.displayWarnMessage(langBean, "projectTables.layout.groupNotEmpty");
+            return;
+        }
+        if (layoutRows.stream().filter(LayoutRow::isGroup).count() == 1) {
+            MessageUtils.displayWarnMessage(langBean, "projectTables.layout.lastGroup");
+            return;
+        }
+        layoutRows.remove(index);
+        saveRows();
+    }
+
+    /** Moves a group, with its fields, one group up (-1) or down (+1). */
+    public void moveGroup(LayoutRow header, int direction) {
+        int start = layoutRows.indexOf(header);
+        if (start < 0) return;
+        int end = start + 1;
+        while (end < layoutRows.size() && !layoutRows.get(end).isGroup()) end++;
+        List<LayoutRow> block = new ArrayList<>(layoutRows.subList(start, end));
+        int target;
+        if (direction < 0) {
+            target = start - 1;
+            while (target >= 0 && !layoutRows.get(target).isGroup()) target--;
+            if (target < 0) return;
+        } else {
+            if (end >= layoutRows.size()) return;
+            int nextEnd = end + 1;
+            while (nextEnd < layoutRows.size() && !layoutRows.get(nextEnd).isGroup()) nextEnd++;
+            target = start + (nextEnd - end);
+        }
+        layoutRows.subList(start, end).clear();
+        layoutRows.addAll(target, block);
+        saveRows();
     }
 
     public int getTypeCountFor(ConfigurableTable table) {
@@ -324,11 +427,15 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * field marked institutionLocked ignores the write (enforced server-side by the service too).
      */
     public void toggleFieldActive(TypeFieldFormConfig field) {
+        formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
         tableFieldConfigService.setFieldActive(project.getId(), selectedTable, selectedTypeName, field.getName(), field.isActive());
+        reloadLayoutRows();
     }
 
     public void toggleFieldMandatory(TypeFieldFormConfig field) {
+        formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
         tableFieldConfigService.setFieldMandatory(project.getId(), selectedTable, selectedTypeName, field.getName(), field.isMandatory());
+        reloadLayoutRows();
     }
 
     /**
@@ -336,6 +443,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * then keeps the field and the user is told why the row is still there.
      */
     public void deleteAdditionalField(String fieldName) {
+        formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
         boolean deleted = tableFieldConfigService.deleteAdditionalField(project.getId(), selectedTable, selectedTypeName, fieldName);
         if (!deleted) {
             MessageUtils.displayWarnMessage(langBean, "projectTables.champs.deleteRefusedInUse", fieldName);
@@ -368,6 +476,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public void pickExistingField(FieldCatalogEntry entry) {
+        formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
         tableFieldConfigService.addExistingField(project.getId(), selectedTable, selectedTypeName, entry.getName());
         pickerOpen = false;
         loadConfigs();
@@ -662,6 +771,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     public void saveDrawer() {
         drawerErrorMessage = null;
+        formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
         if (draftOriginalName == null) {
             tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription);
         } else {
@@ -822,6 +932,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public void addConfiguration() {
         tableFieldConfigService.addConfiguration(project.getId(), selectedTable, newTypeName);
+        formLayoutService.ensureOwnLayout(project.getId(), selectedTable, newTypeName);
         typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), selectedTable);
         selectType(newTypeName);
         MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.tree.newConfigSuccess", newTypeName);

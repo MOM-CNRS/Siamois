@@ -59,13 +59,10 @@ export function idOf(value: unknown): string | null {
   return first == null ? null : String(first);
 }
 
-/**
- * The scalar an expected value compares as. A concept whose `conceptId` the server couldn't resolve
- * yields null: it matches nothing (never a false positive).
- */
+/** The scalar an expected value compares as. */
 export function expectedScalar(spec: FieldValueSpec): Scalar | null {
   if (spec != null && typeof spec === "object") {
-    if ("conceptExtId" in spec) return spec.conceptId != null ? String(spec.conceptId) : null;
+    if ("conceptId" in spec) return String(spec.conceptId);
     if ("id" in spec) return String(spec.id);
     return null;
   }

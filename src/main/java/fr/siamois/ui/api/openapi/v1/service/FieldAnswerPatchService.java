@@ -23,7 +23,6 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMul
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.domain.models.form.rules.FieldConstraint;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
@@ -95,7 +94,6 @@ public class FieldAnswerPatchService {
     private final SpecimenRepository specimenRepository;
     private final SpecimenSummaryMapper specimenSummaryMapper;
     private final UnitDefinitionMapper unitDefinitionMapper;
-    private final ConceptIdLookup conceptIdLookup;
 
     /**
      * @param dto           the entity DTO to write system fields onto
@@ -228,7 +226,7 @@ public class FieldAnswerPatchService {
     private void checkRules(FormUiDto form, Map<Long, Object> values, List<CustomField> written, boolean strict) {
         if (written.isEmpty()) return;
         List<FieldRulesEvaluator.RuledColumn> columns = ruledColumns(form);
-        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator(conceptIdLookup).evaluate(columns, values::get);
+        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator().evaluate(columns, values::get);
         for (CustomField field : written) {
             FieldRulesEvaluator.FieldState state = states.get(field.getId());
             if (state == null) continue;

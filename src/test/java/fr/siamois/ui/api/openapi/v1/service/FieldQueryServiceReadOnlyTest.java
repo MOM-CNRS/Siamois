@@ -4,14 +4,13 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * A catalog field is read-only where its details form says so — what a list cell reads, having no
+ * A catalog field is read-only where its declaration says so — what a list cell reads, having no
  * layout of its own (the fiche honours the same flag through the layout).
  */
 class FieldQueryServiceReadOnlyTest {
@@ -25,9 +24,9 @@ class FieldQueryServiceReadOnlyTest {
 
     @Test
     void aFieldTheDetailsFormLetsEditStaysEditable() {
-        CustomField editable = SystemFieldCatalog.systemColumnsOf(ConfigurableTable.UE).stream()
-                .filter(column -> !column.isReadOnly())
-                .map(CustomColUiDto::getField)
+        CustomField editable = SystemFieldCatalog.specsOf(ConfigurableTable.UE).stream()
+                .filter(spec -> !spec.readOnly())
+                .map(fr.siamois.domain.models.form.config.SystemFieldSpec::field)
                 .findFirst()
                 .orElseThrow();
 
@@ -36,9 +35,9 @@ class FieldQueryServiceReadOnlyTest {
 
     @Test
     void everyReadOnlyColumnOfAPhaseIsReadOnly() {
-        SystemFieldCatalog.systemColumnsOf(ConfigurableTable.PHASE).stream()
-                .filter(CustomColUiDto::isReadOnly)
-                .forEach(column -> assertThat(FieldQueryService.isReadOnly(Phase.class, column.getField())).isTrue());
+        SystemFieldCatalog.specsOf(ConfigurableTable.PHASE).stream()
+                .filter(fr.siamois.domain.models.form.config.SystemFieldSpec::readOnly)
+                .forEach(spec -> assertThat(FieldQueryService.isReadOnly(Phase.class, spec.field())).isTrue());
     }
 
     @Test

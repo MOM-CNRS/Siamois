@@ -15,11 +15,9 @@ export type ConditionOp =
   | "LT"
   | "LTE";
 
-/** A concept, by its thesaurus ids; `conceptId` is resolved by the server (absent = unknown here). */
+/** A concept, by its internal SIAMOIS id (compared with `ResourceRef.resourceId`). */
 export interface ConceptValueSpec {
-  vocabularyExtId: string;
-  conceptExtId: string;
-  conceptId?: string;
+  conceptId: string;
 }
 
 /** A referenced entity (person, unit, place…), by its API id. */

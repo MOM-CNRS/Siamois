@@ -1871,7 +1871,7 @@ describe("EntityListPanel with catalog rules (FieldResource.rules)", () => {
   const EROSION = "-311";
   const OPENING = "-303";
   const CLOSING = "-318";
-  const erosionConcept = { vocabularyExtId: "th252", conceptExtId: "4287639", conceptId: "77" };
+  const erosionConcept = { conceptId: "77" };
 
   const ruleCatalog = {
     fields: {

@@ -11,7 +11,7 @@
       "name": "EQ concept: enabled when matching",
       "columns": [
         { "fieldId": 10 },
-        { "fieldId": 11, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "vocabularyExtId": "th230", "conceptExtId": "4287639", "conceptId": "77" }] } } }
+        { "fieldId": 11, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "conceptId": "77" }] } } }
       ],
       "values": { "10": { "resourceId": "77", "resourceType": "concepts", "label": "Érosion" } },
       "expected": { "11": { "enabled": true, "incoherent": [] } }
@@ -20,7 +20,7 @@
       "name": "EQ concept: disabled when not matching, value kept and flagged",
       "columns": [
         { "fieldId": 10 },
-        { "fieldId": 11, "isRequired": true, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "vocabularyExtId": "th230", "conceptExtId": "4287639", "conceptId": "77" }] } } }
+        { "fieldId": 11, "isRequired": true, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "conceptId": "77" }] } } }
       ],
       "values": { "10": { "resourceId": "78" }, "11": "forme en V" },
       "expected": { "11": { "enabled": false, "required": false, "incoherent": ["DISABLED_WITH_VALUE"] } }
@@ -35,10 +35,10 @@
       "expected": { "11": { "enabled": false, "incoherent": [] } }
     },
     {
-      "name": "unresolved concept id matches nothing",
+      "name": "a different concept id does not match",
       "columns": [
         { "fieldId": 10 },
-        { "fieldId": 11, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "vocabularyExtId": "th230", "conceptExtId": "404" }] } } }
+        { "fieldId": 11, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "conceptId": "404" }] } } }
       ],
       "values": { "10": { "resourceId": "77" } },
       "expected": { "11": { "enabled": false } }

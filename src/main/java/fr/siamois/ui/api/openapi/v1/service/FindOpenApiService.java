@@ -26,7 +26,6 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +51,6 @@ public class FindOpenApiService {
     private final RecordingUnitService recordingUnitService;
     private final ConceptRepository conceptRepository;
     private final ConceptMapper conceptMapper;
-    private final ConversionService conversionService;
     private final ProfilePermissionService profilePermissionService;
     private final FindOpenApiMapper findOpenApiMapper;
     private final ResourceBookmarkService resourceBookmarkService;
@@ -98,10 +96,9 @@ public class FindOpenApiService {
 
         Map<String, Object> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
         SpecimenDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto systemForm = Specimen.NEW_UNIT_FORM;
-            FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
-            fieldAnswerPatchService.applyLenient(shell, formUiDto, fieldAnswers,
-                    ru.getActionUnit() != null ? ru.getActionUnit().getId() : null);
+            Long projectId = ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER, typeConceptId);
+            fieldAnswerPatchService.applyLenient(shell, formUiDto, fieldAnswers, projectId);
             return specimenService.save(shell);
         });
         return withPermissionsAndUri(findOpenApiMapper.toResource(created), userInfo, created);
@@ -148,7 +145,7 @@ public class FindOpenApiService {
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the find-types catalog lays out: system fields minus the
                 // inactive ones, plus the category's additional fields.
-                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(Specimen.DETAILS_FORM, projectId,
+                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId,
                         ConfigurableTable.MOBILIER, dto.getCategory() != null ? dto.getCategory().getId() : null);
                 Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                         fieldAnswerPatchService.apply(dto, formUiDto, answers, projectId);
