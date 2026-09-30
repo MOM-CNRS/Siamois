@@ -19,10 +19,12 @@ import java.util.Map;
  *   "constraints":  [{"op":"GTE","fieldId":3}]
  * }
  * Condition  = {"all":[..]} | {"any":[..]} | {"not":c} | {"fieldId":1,"op":"EQ","values":[FieldValue]}
- * FieldValue = {"conceptId"} | {"id"} | littéral
+ * FieldValue = {CONCEPT_ID} | {"id"} | littéral
  * </pre>
  */
 public final class FieldRulesJson {
+
+    private static final String CONCEPT_ID = "conceptId";
 
     private static final String FIELD_ID = "fieldId";
     private static final String KIND_RELATED_CONCEPTS = "RELATED_CONCEPTS";
@@ -72,7 +74,7 @@ public final class FieldRulesJson {
 
     private static Object valueToWire(FieldValueSpec value) {
         if (value instanceof FieldValueSpec.ConceptValue c) {
-            return Map.of("conceptId", String.valueOf(c.conceptId()));
+            return Map.of(CONCEPT_ID, String.valueOf(c.conceptId()));
         }
         if (value instanceof FieldValueSpec.RefValue r) {
             return Map.of("id", r.id());
@@ -138,8 +140,8 @@ public final class FieldRulesJson {
 
     private static FieldValueSpec valueFromJson(JsonNode v) {
         if (v.isObject()) {
-            if (v.has("conceptId")) {
-                return new FieldValueSpec.ConceptValue(v.get("conceptId").asLong());
+            if (v.has(CONCEPT_ID)) {
+                return new FieldValueSpec.ConceptValue(v.get(CONCEPT_ID).asLong());
             }
             if (v.has("id")) {
                 return new FieldValueSpec.RefValue(v.get("id").asText());

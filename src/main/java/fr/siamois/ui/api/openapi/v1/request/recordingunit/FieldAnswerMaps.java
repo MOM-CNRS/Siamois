@@ -17,6 +17,8 @@ import java.util.function.Function;
 /** Normalise les réponses formulaire (OpenAPI {@link AnswerInput} + payload mobile legacy). */
 public final class FieldAnswerMaps {
 
+    private static final String VALUES = "values";
+
     private FieldAnswerMaps() {
     }
 
@@ -80,7 +82,7 @@ public final class FieldAnswerMaps {
         } else if (raw instanceof Map<?, ?> map) {
             add = listOf(map.get("add"), "add");
             remove = listOf(map.get("remove"), "remove");
-            setsValues = map.get("values") != null;
+            setsValues = map.get(VALUES) != null;
         }
         if (add == null && remove == null) return null;
         if (setsValues) {
@@ -109,8 +111,8 @@ public final class FieldAnswerMaps {
             return ai.value();
         }
         if (raw instanceof Map<?, ?> map) {
-            if (map.containsKey("values")) {
-                return map.get("values");
+            if (map.containsKey(VALUES)) {
+                return map.get(VALUES);
             }
             if (map.containsKey("value")) {
                 return map.get("value");

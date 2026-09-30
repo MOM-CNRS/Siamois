@@ -108,11 +108,17 @@ public class OrganizationListService {
     public Page<RecordingUnitDTO> pageRecordingUnits(ProjectApiCaller caller, InstitutionDTO institution,
                                                      int offset, int limit, String sortParam, String search,
                                                      RecordingUnitListFilter columnFilter) {
-        return pageRecordingUnits(caller, institution, offset, limit, sortParam, search, columnFilter, FieldQuery.NONE);
+        return pageRecordingUnitsQuery(caller, institution, offset, limit, sortParam, search, columnFilter, FieldQuery.NONE);
     }
 
     @Transactional(readOnly = true)
     public Page<RecordingUnitDTO> pageRecordingUnits(ProjectApiCaller caller, InstitutionDTO institution,
+                                                     int offset, int limit, String sortParam, String search,
+                                                     RecordingUnitListFilter columnFilter, FieldQuery fieldQuery) {
+        return pageRecordingUnitsQuery(caller, institution, offset, limit, sortParam, search, columnFilter, fieldQuery);
+    }
+
+    private Page<RecordingUnitDTO> pageRecordingUnitsQuery(ProjectApiCaller caller, InstitutionDTO institution,
                                                      int offset, int limit, String sortParam, String search,
                                                      RecordingUnitListFilter columnFilter, FieldQuery fieldQuery) {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort));
@@ -124,16 +130,22 @@ public class OrganizationListService {
             return Page.empty(pageable);
         }
         return recordingUnitService.searchRecordingUnit(institution, filter, pageable, false);
-    }
+        }
+
 
     @Transactional(readOnly = true)
     public Page<SpecimenDTO> pageFinds(ProjectApiCaller caller, InstitutionDTO institution,
                                  int offset, int limit, String sortParam, String search) {
-        return pageFinds(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
+        return pageFindsQuery(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
     }
 
     @Transactional(readOnly = true)
     public Page<SpecimenDTO> pageFinds(ProjectApiCaller caller, InstitutionDTO institution,
+                                 int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
+        return pageFindsQuery(caller, institution, offset, limit, sortParam, search, fieldQuery);
+    }
+
+    private Page<SpecimenDTO> pageFindsQuery(ProjectApiCaller caller, InstitutionDTO institution,
                                  int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseFindSort));
         FilterDTO filter = new FilterDTO();
@@ -145,16 +157,22 @@ public class OrganizationListService {
             return Page.empty(pageable);
         }
         return specimenService.searchSpecimen(institution, filter, pageable);
-    }
+        }
+
 
     @Transactional(readOnly = true)
     public Page<PhaseDTO> pagePhases(ProjectApiCaller caller, InstitutionDTO institution,
                                  int offset, int limit, String sortParam, String search) {
-        return pagePhases(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
+        return pagePhasesQuery(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
     }
 
     @Transactional(readOnly = true)
     public Page<PhaseDTO> pagePhases(ProjectApiCaller caller, InstitutionDTO institution,
+                                 int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
+        return pagePhasesQuery(caller, institution, offset, limit, sortParam, search, fieldQuery);
+    }
+
+    private Page<PhaseDTO> pagePhasesQuery(ProjectApiCaller caller, InstitutionDTO institution,
                                  int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePhaseSort));
         FilterDTO filter = new FilterDTO();
@@ -166,16 +184,22 @@ public class OrganizationListService {
             return Page.empty(pageable);
         }
         return phaseService.searchPhases(institution, filter, pageable);
-    }
+        }
+
 
     @Transactional(readOnly = true)
     public Page<ContainerDTO> pageContainers(ProjectApiCaller caller, InstitutionDTO institution,
                                  int offset, int limit, String sortParam, String search) {
-        return pageContainers(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
+        return pageContainersQuery(caller, institution, offset, limit, sortParam, search, FieldQuery.NONE);
     }
 
     @Transactional(readOnly = true)
     public Page<ContainerDTO> pageContainers(ProjectApiCaller caller, InstitutionDTO institution,
+                                 int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
+        return pageContainersQuery(caller, institution, offset, limit, sortParam, search, fieldQuery);
+    }
+
+    private Page<ContainerDTO> pageContainersQuery(ProjectApiCaller caller, InstitutionDTO institution,
                                  int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseContainerSort));
         FilterDTO filter = new FilterDTO();
@@ -187,7 +211,8 @@ public class OrganizationListService {
             return Page.empty(pageable);
         }
         return containerService.searchContainers(institution, filter, pageable);
-    }
+        }
+
 
     /**
      * Write permission per project of the page — never per row, and never one query per project: the

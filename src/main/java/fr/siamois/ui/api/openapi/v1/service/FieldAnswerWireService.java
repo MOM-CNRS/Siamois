@@ -36,6 +36,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FieldAnswerWireService {
 
+    private static final String SPATIAL_UNITS = "spatial-units";
+
     public static final String CONCEPTS = "concepts";
 
     private final FormService formService;
@@ -165,9 +167,9 @@ public class FieldAnswerWireService {
             String label = p.getTitle() != null && !p.getTitle().isBlank() ? p.getTitle() : p.getIdentifier();
             return ref(p.getId(), "phases", label);
         }
-        if (item instanceof SpatialUnitSummaryDTO s) return ref(s.getId(), "spatial-units", s.getName());
-        if (item instanceof PlaceSuggestionDTO s) return ref(s.getId(), "spatial-units", s.getName());
-        if (item instanceof SpatialUnitDTO s) return ref(s.getId(), "spatial-units", s.getName());
+        if (item instanceof SpatialUnitSummaryDTO s) return ref(s.getId(), SPATIAL_UNITS, s.getName());
+        if (item instanceof PlaceSuggestionDTO s) return ref(s.getId(), SPATIAL_UNITS, s.getName());
+        if (item instanceof SpatialUnitDTO s) return ref(s.getId(), SPATIAL_UNITS, s.getName());
         if (item instanceof RecordingUnitSummaryDTO r) return ref(r.getId(), "recording-units", r.getFullIdentifier());
         if (item instanceof ActionUnitSummaryDTO a) return ref(a.getId(), "action-units", a.getName());
         if (item instanceof ActionUnitDTO a) return ref(a.getId(), "action-units", a.getName());

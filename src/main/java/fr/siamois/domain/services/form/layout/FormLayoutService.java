@@ -144,7 +144,7 @@ public class FormLayoutService {
      */
     @Transactional
     public void saveRules(Long projectId, ConfigurableTable table, String typeName, long fieldId, FieldRules rules) {
-        FormConfig config = ensureOwnLayout(projectId, table, typeName);
+        FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
         List<FieldFormConfig> rows = fieldFormConfigRepository.findAllByFormConfigId(config.getId());
         FieldFormConfig target = rows.stream().filter(r -> r.getField().getId() == fieldId).findFirst()
                 .orElseThrow(() -> new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName));
@@ -181,6 +181,10 @@ public class FormLayoutService {
      */
     @Transactional
     public void ensureLayouts(Long projectId, ConfigurableTable table) {
+        ensureLayoutsInternal(projectId, table);
+    }
+
+    private void ensureLayoutsInternal(Long projectId, ConfigurableTable table) {
         for (TypeSummary type : tableFieldConfigService.listTypes(projectId, table)) {
             Optional<FormConfig> config = tableFieldConfigService.findFormConfig(projectId, table, type.getName());
             if (config.isPresent() && groupRepository.countByFormConfigId(config.get().getId()) == 0) {
@@ -195,7 +199,11 @@ public class FormLayoutService {
      */
     @Transactional
     public FormConfig ensureOwnLayout(Long projectId, ConfigurableTable table, String typeName) {
-        ensureLayouts(projectId, table);
+        return ensureOwnLayoutInternal(projectId, table, typeName);
+    }
+
+    private FormConfig ensureOwnLayoutInternal(Long projectId, ConfigurableTable table, String typeName) {
+        ensureLayoutsInternal(projectId, table);
         Optional<FormConfig> existing = tableFieldConfigService.findFormConfig(projectId, table, typeName);
         if (existing.isPresent()) {
             return existing.get();
@@ -217,7 +225,7 @@ public class FormLayoutService {
         if (specs.isEmpty()) {
             throw new IllegalArgumentException("A layout needs at least one group");
         }
-        FormConfig config = ensureOwnLayout(projectId, table, typeName);
+        FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
         Map<Long, FormConfigGroup> stored = new HashMap<>();
         groupRepository.findAllByFormConfigIdOrderByPosition(config.getId()).forEach(g -> stored.put(g.getId(), g));
         Map<String, FieldFormConfig> byName = new HashMap<>();
@@ -262,7 +270,7 @@ public class FormLayoutService {
 
     @Transactional
     public void setFieldWidth(Long projectId, ConfigurableTable table, String typeName, String fieldName, FieldWidth width) {
-        FormConfig config = ensureOwnLayout(projectId, table, typeName);
+        FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
         fieldFormConfigRepository.findAllByFormConfigId(config.getId()).stream()
                 .filter(row -> fieldName.equals(row.getField().getLabel()))
                 .findFirst()

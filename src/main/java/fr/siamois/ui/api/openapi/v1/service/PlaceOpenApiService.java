@@ -88,7 +88,7 @@ public class PlaceOpenApiService {
                                               String sortParam,
                                               String search,
                                               String lang) {
-        return listByOrganization(caller, organizationId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null);
+        return listByOrganizationInternal(caller, organizationId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null);
     }
 
     /**
@@ -106,6 +106,12 @@ public class PlaceOpenApiService {
                                               String lang,
                                               FieldQuery fieldQuery,
                                               String fieldsParam) {
+        return listByOrganizationInternal(caller, organizationId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam);
+    }
+
+    private PlaceListResponse listByOrganizationInternal(ProjectApiCaller caller, Long organizationId, int offset, int limit,
+                                                         String sortParam, String search, String lang,
+                                                         FieldQuery fieldQuery, String fieldsParam) {
         if (organizationId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
@@ -135,7 +141,7 @@ public class PlaceOpenApiService {
     @Transactional(readOnly = true)
     public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
                                           String sortParam, String search, String lang) {
-        return listChildren(caller, placeId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null);
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null);
     }
 
     /** {@link #listChildren} with the sort/filters on form fields and the {@code fields=} projection. */
@@ -143,6 +149,12 @@ public class PlaceOpenApiService {
     public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
                                           String sortParam, String search, String lang,
                                           FieldQuery fieldQuery, String fieldsParam) {
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam);
+    }
+
+    private PlaceListResponse listChildrenInternal(ProjectApiCaller caller, long placeId, int offset, int limit,
+                                                   String sortParam, String search, String lang,
+                                                   FieldQuery fieldQuery, String fieldsParam) {
         SpatialUnitDTO parent = requireAccessiblePlace(caller, placeId);
         InstitutionDTO institution = parent.getCreatedByInstitution();
         Sort sort = ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePlaceSort);

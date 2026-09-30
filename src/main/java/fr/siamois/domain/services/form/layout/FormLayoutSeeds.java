@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * The initial layout of each configurable table, read from {@code form-layouts/<TABLE>.json}.
  * <pre>
- * {"groups":[{"label":"…","fields":[{"fieldId":-301,"width":"QUARTER","required":true,"rules":{…}}]}]}
+ * {GROUPS:[{"label":"…",FIELDS:[{FIELD_ID:-301,"width":"QUARTER","required":true,"rules":{…}}]}]}
  * </pre>
  * Fields are the table's system fields (by their stable id). Rules cite concepts by their thesaurus
  * identifiers ({@code vocabularyExtId}/{@code conceptExtId}), which are portable between instances;
@@ -43,6 +43,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FormLayoutSeeds {
 
+    private static final String FIELD_ID = "fieldId";
+
+    private static final String FIELDS = "fields";
+
+    private static final String GROUPS = "groups";
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final ConceptIdLookup conceptIds;
@@ -53,10 +59,10 @@ public class FormLayoutSeeds {
         Map<Long, CustomField> catalog = SystemFieldCatalog.sharedFieldsOf(table).stream()
                 .collect(Collectors.toMap(CustomField::getId, f -> f));
         List<FormLayout.Group> groups = new ArrayList<>();
-        for (JsonNode group : rawOf(table).get("groups")) {
+        for (JsonNode group : rawOf(table).get(GROUPS)) {
             List<FormLayout.Item> items = new ArrayList<>();
-            for (JsonNode field : group.get("fields")) {
-                long fieldId = field.get("fieldId").asLong();
+            for (JsonNode field : group.get(FIELDS)) {
+                long fieldId = field.get(FIELD_ID).asLong();
                 CustomField customField = catalog.get(fieldId);
                 if (customField == null) {
                     throw new IllegalStateException("form-layouts/" + table + ".json cites field " + fieldId
@@ -78,9 +84,9 @@ public class FormLayoutSeeds {
     /** The ids of the fields the initial layout marks mandatory — no rule resolution involved. */
     public Set<Long> requiredFieldIds(ConfigurableTable table) {
         Set<Long> ids = new HashSet<>();
-        for (JsonNode group : rawOf(table).get("groups")) {
-            for (JsonNode field : group.get("fields")) {
-                if (field.path("required").asBoolean(false)) ids.add(field.get("fieldId").asLong());
+        for (JsonNode group : rawOf(table).get(GROUPS)) {
+            for (JsonNode field : group.get(FIELDS)) {
+                if (field.path("required").asBoolean(false)) ids.add(field.get(FIELD_ID).asLong());
             }
         }
         return ids;
@@ -88,9 +94,9 @@ public class FormLayoutSeeds {
 
     /** The rules the initial layout gives a field, {@link FieldRules#NONE} when it has none. */
     public FieldRules rulesOf(ConfigurableTable table, long fieldId) {
-        for (JsonNode group : rawOf(table).get("groups")) {
-            for (JsonNode field : group.get("fields")) {
-                if (field.get("fieldId").asLong() == fieldId) return rulesOf(table, fieldId, field.get("rules"));
+        for (JsonNode group : rawOf(table).get(GROUPS)) {
+            for (JsonNode field : group.get(FIELDS)) {
+                if (field.get(FIELD_ID).asLong() == fieldId) return rulesOf(table, fieldId, field.get("rules"));
             }
         }
         return FieldRules.NONE;

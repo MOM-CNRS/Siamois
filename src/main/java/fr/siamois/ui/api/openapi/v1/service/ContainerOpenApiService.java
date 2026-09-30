@@ -72,6 +72,10 @@ public class ContainerOpenApiService {
 
     @Transactional(readOnly = true)
     public ContainerResource getContainerById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        return loadContainer(id, personDto, accessibleInstitutionIds, lang);
+    }
+
+    private ContainerResource loadContainer(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         return toResourceWithPermissionsAndAnswers(container, personDto, lang);
     }
@@ -143,7 +147,7 @@ public class ContainerOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(fr.siamois.domain.models.container.Container.class, id, request.getValidated(), personDto);
-        return getContainerById(id, personDto, accessibleInstitutionIds, lang);
+        return loadContainer(id, personDto, accessibleInstitutionIds, lang);
     }
 
     private ContainerResource toResourceWithPermissionsAndAnswers(ContainerDTO container, PersonDTO personDto, String lang) {

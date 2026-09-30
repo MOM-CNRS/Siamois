@@ -69,6 +69,10 @@ public class PhaseOpenApiService {
 
     @Transactional(readOnly = true)
     public PhaseResource getPhaseById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        return loadPhase(id, personDto, accessibleInstitutionIds, lang);
+    }
+
+    private PhaseResource loadPhase(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
         return toResourceWithPermissionsAndAnswers(phase, personDto, lang);
     }
@@ -143,7 +147,7 @@ public class PhaseOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(fr.siamois.domain.models.phase.Phase.class, id, request.getValidated(), personDto);
-        return getPhaseById(id, personDto, accessibleInstitutionIds, lang);
+        return loadPhase(id, personDto, accessibleInstitutionIds, lang);
     }
 
     private PhaseResource toResourceWithPermissionsAndAnswers(PhaseDTO phase, PersonDTO personDto, String lang) {

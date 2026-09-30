@@ -47,6 +47,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class FindOpenApiService {
 
+    private static final String FIND_NOT_FOUND = "Mobilier introuvable ou hors périmètre";
+
     private final SpecimenService specimenService;
     private final RecordingUnitService recordingUnitService;
     private final ConceptRepository conceptRepository;
@@ -111,7 +113,7 @@ public class FindOpenApiService {
                                   Set<Long> accessibleInstitutionIds,
                                   String lang) {
         SpecimenDTO dto = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
 
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
@@ -188,7 +190,7 @@ public class FindOpenApiService {
                                       Set<Long> accessibleInstitutionIds,
                                       String lang) {
         SpecimenDTO source = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
         InstitutionDTO institution = source.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
@@ -218,7 +220,7 @@ public class FindOpenApiService {
                            Set<Long> accessibleInstitutionIds,
                            String lang) {
         SpecimenDTO dto = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
 
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
@@ -249,7 +251,7 @@ public class FindOpenApiService {
     @Transactional(readOnly = true)
     public SiblingsResource findSiblings(long specimenId, Set<Long> accessibleInstitutionIds) {
         SpecimenDTO dto = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
         Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
         return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.FIND, projectId, dto.getId());
     }

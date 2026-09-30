@@ -63,31 +63,46 @@ public record FieldListQuery(Map<Long, Criterion> filters, @Nullable Long sortFi
         Map<Long, String> to = new LinkedHashMap<>();
         if (queryParams != null) {
             for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
-                String rawKey = entry.getKey();
-                if (!rawKey.startsWith("f.")) continue;
-                String key = rawKey.substring(2);
-                String bound = null;
-                if (key.endsWith(".from")) {
-                    bound = "from";
-                    key = key.substring(0, key.length() - ".from".length());
-                } else if (key.endsWith(".to")) {
-                    bound = "to";
-                    key = key.substring(0, key.length() - ".to".length());
-                }
-                if (!isFieldKey(key)) continue;
-                long fieldId = Long.parseLong(key);
-                List<String> raw = entry.getValue() == null ? List.of() : entry.getValue();
-                if (bound == null) {
-                    values.computeIfAbsent(fieldId, k -> new ArrayList<>()).addAll(raw);
-                } else {
-                    if (raw.size() != 1) throw badRequest("Une seule valeur attendue pour : " + rawKey);
-                    String value = raw.get(0).trim();
-                    if (value.isEmpty()) continue;
-                    ("from".equals(bound) ? from : to).put(fieldId, value);
-                }
+                collect(entry.getKey(), entry.getValue(), values, from, to);
             }
         }
+        Map<Long, Criterion> filters = criteria(values, from, to);
 
+        Long sortFieldId = null;
+        boolean ascending = true;
+        if (isFieldSort(sort)) {
+            sortFieldId = Long.parseLong(sortProperty(sort));
+            ascending = isAscending(sort);
+        }
+        return new FieldListQuery(Map.copyOf(filters), sortFieldId, ascending, lang);
+    }
+
+    /** One {@code f.<fieldId>[.from|.to]} parameter, sorted into the value, lower-bound or upper-bound map. */
+    private static void collect(String rawKey, @Nullable List<String> rawValues, Map<Long, List<String>> values,
+                                Map<Long, String> from, Map<Long, String> to) {
+        if (!rawKey.startsWith("f.")) return;
+        String key = rawKey.substring(2);
+        String bound = null;
+        if (key.endsWith(".from")) {
+            bound = "from";
+            key = key.substring(0, key.length() - ".from".length());
+        } else if (key.endsWith(".to")) {
+            bound = "to";
+            key = key.substring(0, key.length() - ".to".length());
+        }
+        if (!isFieldKey(key)) return;
+        long fieldId = Long.parseLong(key);
+        List<String> raw = rawValues == null ? List.of() : rawValues;
+        if (bound == null) {
+            values.computeIfAbsent(fieldId, k -> new ArrayList<>()).addAll(raw);
+            return;
+        }
+        if (raw.size() != 1) throw badRequest("Une seule valeur attendue pour : " + rawKey);
+        String value = raw.get(0).trim();
+        if (!value.isEmpty()) ("from".equals(bound) ? from : to).put(fieldId, value);
+    }
+
+    private static Map<Long, Criterion> criteria(Map<Long, List<String>> values, Map<Long, String> from, Map<Long, String> to) {
         Map<Long, Criterion> filters = new LinkedHashMap<>();
         for (Long fieldId : union(values.keySet(), from.keySet(), to.keySet())) {
             List<String> v = values.getOrDefault(fieldId, List.of()).stream()
@@ -99,19 +114,16 @@ public record FieldListQuery(Map<Long, Criterion> filters, @Nullable Long sortFi
             if (!range && v.isEmpty()) continue;
             filters.put(fieldId, new Criterion(v, from.get(fieldId), to.get(fieldId)));
         }
+        return filters;
+    }
 
-        Long sortFieldId = null;
-        boolean ascending = true;
-        if (isFieldSort(sort)) {
-            sortFieldId = Long.parseLong(sortProperty(sort));
-            int colon = sort.lastIndexOf(':');
-            String direction = colon < 0 ? "asc" : sort.substring(colon + 1).trim().toLowerCase();
-            if (!direction.equals("asc") && !direction.equals("desc")) {
-                throw badRequest("Direction de tri invalide : " + sort);
-            }
-            ascending = direction.equals("asc");
+    private static boolean isAscending(String sort) {
+        int colon = sort.lastIndexOf(':');
+        String direction = colon < 0 ? "asc" : sort.substring(colon + 1).trim().toLowerCase();
+        if (!direction.equals("asc") && !direction.equals("desc")) {
+            throw badRequest("Direction de tri invalide : " + sort);
         }
-        return new FieldListQuery(Map.copyOf(filters), sortFieldId, ascending, lang);
+        return direction.equals("asc");
     }
 
     private static String sortProperty(String sort) {

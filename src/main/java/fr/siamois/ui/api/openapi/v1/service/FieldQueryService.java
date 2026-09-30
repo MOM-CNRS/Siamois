@@ -255,6 +255,10 @@ public class FieldQueryService {
      */
     @Transactional(readOnly = true)
     public <E> FieldQuery toFieldQuery(Class<E> entityType, FieldListQuery query) {
+        return buildFieldQuery(entityType, query);
+    }
+
+    private <E> FieldQuery buildFieldQuery(Class<E> entityType, FieldListQuery query) {
         if (query == null || query.isEmpty()) return FieldQuery.NONE;
         List<Specification<E>> parts = new ArrayList<>();
         for (Map.Entry<Long, FieldListQuery.Criterion> e : query.filters().entrySet()) {
@@ -280,7 +284,7 @@ public class FieldQueryService {
     public FieldQuery parse(Class<?> entityType, @Nullable MultiValueMap<String, String> queryParams,
                             @Nullable String sort, @Nullable String acceptLanguage) {
         FieldListQuery query = FieldListQuery.parse(queryParams, sort, ProjectApiService.primaryAcceptLanguage(acceptLanguage));
-        return query.isEmpty() ? FieldQuery.NONE : toFieldQuery(entityType, query);
+        return query.isEmpty() ? FieldQuery.NONE : buildFieldQuery(entityType, query);
     }
 
     private Target requireTarget(Class<?> entityType, long fieldId) {
@@ -542,15 +546,25 @@ public class FieldQueryService {
                     cb.size((Expression<Collection<?>>) (Expression) root.get("relationshipsAsUnit2")));
         }
         if (target.system) {
-            return switch (target.kind) {
-                case TEXT -> cb.lower((Expression<String>) (Expression) root.get(target.attribute));
-                case NUMBER, DATE -> systemValue(root, target);
-                case REFERENCE -> target.concept
-                        ? conceptLabel(query, cb, root.get(target.attribute), lang)
-                        : root.join(target.attribute, JoinType.LEFT).get(target.labelAttribute);
-                case REFERENCES -> cb.size((Expression<Collection<?>>) (Expression) root.get(target.attribute));
-            };
+            return systemSortKey(target, root, query, cb, lang);
         }
+        return additionalSortKey(target, fieldId, root, query, cb, lang);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Expression<?> systemSortKey(Target target, Root<?> root, CriteriaQuery<?> query, CriteriaBuilder cb, String lang) {
+        return switch (target.kind) {
+            case TEXT -> cb.lower((Expression<String>) (Expression) root.get(target.attribute));
+            case NUMBER, DATE -> systemValue(root, target);
+            case REFERENCE -> target.concept
+                    ? conceptLabel(query, cb, root.get(target.attribute), lang)
+                    : root.join(target.attribute, JoinType.LEFT).get(target.labelAttribute);
+            case REFERENCES -> cb.size((Expression<Collection<?>>) (Expression) root.get(target.attribute));
+        };
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Expression<?> additionalSortKey(Target target, long fieldId, Root<?> root, CriteriaQuery<?> query, CriteriaBuilder cb, String lang) {
         return switch (target.kind) {
             case TEXT, NUMBER, DATE -> {
                 Subquery<Comparable> sub = query.subquery(Comparable.class);

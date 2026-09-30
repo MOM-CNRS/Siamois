@@ -25,15 +25,17 @@ import java.util.Objects;
 @Service
 public class EntitySiblingsService {
 
+    private static final String ACTION_UNIT_SCOPE = "e.actionUnit.id";
+
     /**
      * Fixed per-kind query parts (never user input): the JPA entity, the label expression, the
      * scope path and the navigation URI prefix (JSF's own entityRessourceUri()).
      */
     public enum Kind {
-        RECORDING_UNIT("RecordingUnit", "e.fullIdentifier", "e.actionUnit.id", "/recording-unit/"),
-        FIND("Specimen", "e.fullIdentifier", "e.actionUnit.id", "/specimen/"),
-        CONTAINER("Container", "e.identifier", "e.actionUnit.id", "/container/"),
-        PHASE("Phase", "coalesce(e.identifier, e.title)", "e.actionUnit.id", "/phase/"),
+        RECORDING_UNIT("RecordingUnit", "e.fullIdentifier", ACTION_UNIT_SCOPE, "/recording-unit/"),
+        FIND("Specimen", "e.fullIdentifier", ACTION_UNIT_SCOPE, "/specimen/"),
+        CONTAINER("Container", "e.identifier", ACTION_UNIT_SCOPE, "/container/"),
+        PHASE("Phase", "coalesce(e.identifier, e.title)", ACTION_UNIT_SCOPE, "/phase/"),
         PLACE("SpatialUnit", "e.name", "e.createdByInstitution.id", "/spatial-unit/");
 
         private final String entity;

@@ -74,6 +74,8 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class FieldAnswerPatchService {
 
+    private static final String RECORDING_UNIT_LABEL = "Unité d'enregistrement";
+
     private final FormService formService;
     private final ConceptRepository conceptRepository;
     private final ConceptMapper conceptMapper;
@@ -139,80 +141,105 @@ public class FieldAnswerPatchService {
         for (CustomField field : fieldSource.getAllFields()) {
             values.put(field.getId(), formService.readAnswerValueForApi(viewModelOf(response, field)));
         }
-        List<CustomField> written = new ArrayList<>();
-
-        Map<CustomField, CustomFieldAnswerViewModel> touchedAdditional = new HashMap<>();
-        List<CustomField> clearedSystemFields = new ArrayList<>();
+        Patch patch = new Patch(fieldSource, effectiveForm, response, projectId, strict, values);
         for (Map.Entry<String, ?> entry : answers.entrySet()) {
-            CustomField field;
-            CustomFieldAnswerViewModel viewModel;
-            try {
-                field = requireField(fieldSource, entry.getKey());
-                // A column the form marks readOnly — the project the entity belongs to, a generated
-                // identifier — is never written: moving a recording unit to another project is not
-                // an edit.
-                if (isReadOnlyIn(effectiveForm, field)) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
-                }
-                viewModel = viewModelOf(response, field);
-                if (viewModel == null) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
-                }
-            } catch (ResponseStatusException e) {
-                if (strict) throw e;
-                log.debug("Réponse ignorée pour le champ {} : {}", entry.getKey(), e.getReason());
-                continue;
-            }
-
-            FieldAnswerMaps.Delta delta;
-            try {
-                delta = FieldAnswerMaps.delta(entry.getValue());
-                if (delta != null && !isMultiple(field)) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "add/remove ne s'appliquent qu'à un champ multivalué : " + field.getId());
-                }
-            } catch (ResponseStatusException e) {
-                if (strict) throw e;
-                log.debug("Réponse ignorée pour le champ {} : {}", entry.getKey(), e.getReason());
-                continue;
-            }
-            Object raw = delta != null ? null : FieldAnswerMaps.unwrap(entry.getValue());
-            if (delta == null && raw == null && isMultiple(field)) {
-                continue; // "values: null" = leave the multi-value field untouched ("values: []" clears it)
-            }
-            Object typed;
-            if (delta != null) {
-                typed = applyDelta(field, viewModel, delta, projectId);
-            } else if (raw == null) {
-                typed = emptyValueOf(field);
-            } else if (!strict && !isWritable(field)) {
-                log.debug("Type de champ non pris en charge pour l'API v1, réponse ignorée : {}", field.getClass().getSimpleName());
-                continue;
-            } else {
-                try {
-                    typed = coerce(field, raw, projectId);
-                } catch (InvalidAnswerValueException e) {
-                    if (strict) throw e;
-                    log.warn("Valeur ignorée pour le champ {} : {}", field.getId(), e.getReason());
-                    continue;
-                }
-            }
-            formService.applyTypedValueToAnswer(viewModel, typed);
-            values.put(field.getId(), typed);
-            written.add(field);
-
-            if (Boolean.TRUE.equals(field.getIsSystemField())) {
-                if (raw == null) clearedSystemFields.add(field);
-            } else {
-                touchedAdditional.put(field, viewModel);
-            }
+            applyEntry(entry, patch);
         }
 
-        checkRules(effectiveForm, values, written, strict);
+        checkRules(effectiveForm, values, patch.written, strict);
 
         formService.updateJpaEntityFromResponse(response, dto);
-        clearedSystemFields.forEach(field -> formService.clearSystemField(dto, field));
-        return touchedAdditional;
+        patch.clearedSystemFields.forEach(field -> formService.clearSystemField(dto, field));
+        return patch.touchedAdditional;
+    }
+
+    /** What one {@code apply} call carries from answer to answer. */
+    private static final class Patch {
+        final FieldSource fieldSource;
+        final FormUiDto effectiveForm;
+        final CustomFormResponseViewModel response;
+        final Long projectId;
+        final boolean strict;
+        final Map<Long, Object> values;
+        final List<CustomField> written = new ArrayList<>();
+        final Map<CustomField, CustomFieldAnswerViewModel> touchedAdditional = new HashMap<>();
+        final List<CustomField> clearedSystemFields = new ArrayList<>();
+
+        Patch(FieldSource fieldSource, FormUiDto effectiveForm, CustomFormResponseViewModel response, Long projectId,
+              boolean strict, Map<Long, Object> values) {
+            this.fieldSource = fieldSource;
+            this.effectiveForm = effectiveForm;
+            this.response = response;
+            this.projectId = projectId;
+            this.strict = strict;
+            this.values = values;
+        }
+    }
+
+    /** One {@code fieldId: value} of the patch: skipped (lenient), refused (strict) or written onto the response. */
+    private void applyEntry(Map.Entry<String, ?> entry, Patch patch) {
+        CustomField field;
+        CustomFieldAnswerViewModel viewModel;
+        try {
+            field = requireField(patch.fieldSource, entry.getKey());
+            // A column the form marks readOnly — the project the entity belongs to, a generated
+            // identifier — is never written: moving a recording unit to another project is not
+            // an edit.
+            if (isReadOnlyIn(patch.effectiveForm, field)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
+            }
+            viewModel = viewModelOf(patch.response, field);
+            if (viewModel == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
+            }
+        } catch (ResponseStatusException e) {
+            if (patch.strict) throw e;
+            log.debug("Réponse ignorée pour le champ {} : {}", entry.getKey(), e.getReason());
+            return;
+        }
+
+        FieldAnswerMaps.Delta delta;
+        try {
+            delta = FieldAnswerMaps.delta(entry.getValue());
+            if (delta != null && !isMultiple(field)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "add/remove ne s'appliquent qu'à un champ multivalué : " + field.getId());
+            }
+        } catch (ResponseStatusException e) {
+            if (patch.strict) throw e;
+            log.debug("Réponse ignorée pour le champ {} : {}", entry.getKey(), e.getReason());
+            return;
+        }
+        Object raw = delta != null ? null : FieldAnswerMaps.unwrap(entry.getValue());
+        if (delta == null && raw == null && isMultiple(field)) {
+            return; // "values: null" = leave the multi-value field untouched ("values: []" clears it)
+        }
+        Object typed;
+        if (delta != null) {
+            typed = applyDelta(field, viewModel, delta, patch.projectId);
+        } else if (raw == null) {
+            typed = emptyValueOf(field);
+        } else if (!patch.strict && !isWritable(field)) {
+            log.debug("Type de champ non pris en charge pour l'API v1, réponse ignorée : {}", field.getClass().getSimpleName());
+            return;
+        } else {
+            try {
+                typed = coerce(field, raw, patch.projectId);
+            } catch (InvalidAnswerValueException e) {
+                if (patch.strict) throw e;
+                log.warn("Valeur ignorée pour le champ {} : {}", field.getId(), e.getReason());
+                return;
+            }
+        }
+        formService.applyTypedValueToAnswer(viewModel, typed);
+        patch.values.put(field.getId(), typed);
+        patch.written.add(field);
+
+        if (Boolean.TRUE.equals(field.getIsSystemField())) {
+            if (raw == null) patch.clearedSystemFields.add(field);
+        } else {
+            patch.touchedAdditional.put(field, viewModel);
+        }
     }
 
     /**
@@ -425,12 +452,12 @@ public class FieldAnswerPatchService {
                 return many(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
             }
             if (f instanceof CustomFieldSelectOneRecordingUnit) {
-                return one(raw, "Unité d'enregistrement", id -> recordingUnitRepository.findById(id)
-                        .map(ru -> inProject(ru.getActionUnit(), projectId, "Unité d'enregistrement", id, ru)), recordingUnitSummaryMapper::convert);
+                return one(raw, RECORDING_UNIT_LABEL, id -> recordingUnitRepository.findById(id)
+                        .map(ru -> inProject(ru.getActionUnit(), projectId, RECORDING_UNIT_LABEL, id, ru)), recordingUnitSummaryMapper::convert);
             }
             if (f instanceof CustomFieldSelectMultipleRecordingUnit) {
-                return many(raw, "Unité d'enregistrement", id -> recordingUnitRepository.findById(id)
-                        .map(ru -> inProject(ru.getActionUnit(), projectId, "Unité d'enregistrement", id, ru)), recordingUnitSummaryMapper::convert);
+                return many(raw, RECORDING_UNIT_LABEL, id -> recordingUnitRepository.findById(id)
+                        .map(ru -> inProject(ru.getActionUnit(), projectId, RECORDING_UNIT_LABEL, id, ru)), recordingUnitSummaryMapper::convert);
             }
             if (f instanceof CustomFieldSelectMultiplePhase) {
                 return many(raw, "Phase", id -> phaseRepository.findById(id)

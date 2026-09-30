@@ -752,7 +752,8 @@ public class ActionUnitService implements ArkEntityService {
             Long organizationId,
             String search,
             Pageable pageable) {
-        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable, null);
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, pageable, null,
+                ProjectListFilter.EMPTY, FieldQuery.NONE);
     }
 
     /**
@@ -770,8 +771,8 @@ public class ActionUnitService implements ArkEntityService {
             String search,
             Pageable pageable,
             Sort.Direction recordingUnitCountOrder) {
-        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable,
-                recordingUnitCountOrder, ProjectListFilter.EMPTY);
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, pageable,
+                recordingUnitCountOrder, ProjectListFilter.EMPTY, FieldQuery.NONE);
     }
 
     /**
@@ -786,7 +787,7 @@ public class ActionUnitService implements ArkEntityService {
             Pageable pageable,
             Sort.Direction recordingUnitCountOrder,
             ProjectListFilter filter) {
-        return findAccessibleProjects(personId, accessibleInstitutionIds, organizationId, search, pageable,
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, pageable,
                 recordingUnitCountOrder, filter, FieldQuery.NONE);
     }
 
@@ -796,6 +797,19 @@ public class ActionUnitService implements ArkEntityService {
      */
     @Transactional(readOnly = true)
     public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            Pageable pageable,
+            Sort.Direction recordingUnitCountOrder,
+            ProjectListFilter filter,
+            FieldQuery fieldQuery) {
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, pageable,
+                recordingUnitCountOrder, filter, fieldQuery);
+    }
+
+    private Page<AccessibleProjectForApi> findAccessibleProjectsInternal(
             Long personId,
             Set<Long> accessibleInstitutionIds,
             Long organizationId,
