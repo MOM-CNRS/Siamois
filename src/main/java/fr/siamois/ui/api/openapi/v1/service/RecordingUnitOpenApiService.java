@@ -610,7 +610,6 @@ public class RecordingUnitOpenApiService {
     /**
      * Mobilier existant : champs avec leurs valeurs ({@link Specimen#DETAILS_FORM}, comme le panel web).
      */
-    @Transactional(readOnly = true)
     private Long specimenProjectId(SpecimenDTO specimen) {
         if (specimen.getActionUnit() != null) return specimen.getActionUnit().getId();
         if (specimen.getRecordingUnit() == null || specimen.getRecordingUnit().getId() == null) return null;

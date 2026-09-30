@@ -83,6 +83,8 @@ import fr.siamois.ui.api.openapi.v1.resource.form.TextFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectPhaseTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectContainerTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectTypeListResponse;
 import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
@@ -2575,6 +2577,106 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getIdentifierConfig().getIdentifierFormat())
                 .isEqualTo("M-{NUM_MOBILIER:000}");
+        assertThat(response.getData().get(0).getFields()).containsKey("46");
+    }
+
+    @Test
+    void buildProjectPhaseTypeSettings_projectWithoutOrganization_throws400() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        assertThatThrownBy(() -> service.buildProjectPhaseTypeSettings("5", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void buildProjectPhaseTypeSettings_returnsTheDefaultTypeAndEachConfiguredTypeWithItsForm() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        CustomFieldText defaultField = new CustomFieldText();
+        defaultField.setId(44L);
+        defaultField.setLabel("Champ par défaut");
+        defaultField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.PHASE), isNull()))
+                .thenReturn(formUiDtoWithOneField(defaultField));
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.PHASE)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+        CustomFieldText typeField = new CustomFieldText();
+        typeField.setId(46L);
+        typeField.setLabel("Champ du type");
+        typeField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.PHASE, 42L))
+                .thenReturn(formUiDtoWithOneField(typeField));
+
+        ProjectPhaseTypeListResponse response = service.buildProjectPhaseTypeSettings("5", personDto, SCOPE, "fr");
+
+        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getData()).hasSize(1);
+        assertThat(response.getData().get(0).getId()).isEqualTo("42");
+        assertThat(response.getData().get(0).getFields()).containsKey("46");
+    }
+
+    @Test
+    void buildProjectContainerTypeSettings_projectWithoutOrganization_throws400() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        assertThatThrownBy(() -> service.buildProjectContainerTypeSettings("5", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void buildProjectContainerTypeSettings_returnsTheDefaultTypeAndEachConfiguredTypeWithItsForm() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        CustomFieldText defaultField = new CustomFieldText();
+        defaultField.setId(44L);
+        defaultField.setLabel("Champ par défaut");
+        defaultField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.CONTENANT), isNull()))
+                .thenReturn(formUiDtoWithOneField(defaultField));
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.CONTENANT)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+        CustomFieldText typeField = new CustomFieldText();
+        typeField.setId(46L);
+        typeField.setLabel("Champ du type");
+        typeField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.CONTENANT, 42L))
+                .thenReturn(formUiDtoWithOneField(typeField));
+
+        ProjectContainerTypeListResponse response = service.buildProjectContainerTypeSettings("5", personDto, SCOPE, "fr");
+
+        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getData()).hasSize(1);
+        assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getFields()).containsKey("46");
     }
 

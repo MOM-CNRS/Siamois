@@ -17,6 +17,8 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
+import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
@@ -109,6 +111,16 @@ class CustomFieldAnswerServiceTest {
 
     @Mock
     private PersonRepository personRepository;
+    @Mock
+    private fr.siamois.mapper.PersonMapper personMapper;
+    @Mock
+    private fr.siamois.mapper.SpatialUnitMapper spatialUnitMapper;
+    @Mock
+    private fr.siamois.mapper.PlaceSuggestionMapper placeSuggestionMapper;
+    @Mock
+    private fr.siamois.mapper.ActionUnitSummaryMapper actionUnitSummaryMapper;
+    @Mock
+    private fr.siamois.mapper.ActionCodeMapper actionCodeMapper;
     @Mock
     private RecordingUnitRepository recordingUnitRepository;
 
@@ -870,6 +882,195 @@ class CustomFieldAnswerServiceTest {
 
         // A find's form config is keyed by its category, not its type.
         verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.MOBILIER, 70L);
+    }
+
+    // ========== Phase / container owners, and a whole page of entities ==========
+
+    @Test
+    void loadAdditionalFieldAnswers_ofAPhaseAndAContainer_usesTheirTableAndType() {
+        ConceptDTO type = conceptDto(60L);
+        PhaseDTO phase = new PhaseDTO();
+        phase.setId(300L);
+        phase.setType(type);
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(7L);
+        phase.setActionUnit(project);
+        ContainerDTO container = new ContainerDTO();
+        container.setId(301L);
+        container.setActionUnit(project);
+
+        assertThat(service.loadAdditionalFieldAnswers(phase)).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers(container)).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers((PhaseDTO) null)).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers(new ContainerDTO())).isEmpty();
+
+        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.PHASE, 60L);
+        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.CONTENANT, (Long) null);
+    }
+
+    @Test
+    void saveAdditionalFieldAnswers_ofAContainerAndAnEntityWithoutProject_resolveTheirOwner() {
+        ContainerDTO container = new ContainerDTO();
+        container.setId(301L);
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(7L);
+        container.setActionUnit(project);
+        service.saveAdditionalFieldAnswers(container, Map.of());
+        verify(customFieldAnswerRepository, never()).save(any());
+
+        // No project (a find with neither an action unit nor a recording unit): nothing to persist, no failure.
+        SpecimenDTO orphan = new SpecimenDTO();
+        orphan.setId(9L);
+        service.saveAdditionalFieldAnswers(orphan, Map.of(CustomFieldText.builder().id(1L).build(), viewModelOf("x")));
+        verify(customFieldAnswerRepository, never()).save(any());
+    }
+
+    private static CustomFieldAnswerText textAnswer(CustomField field, FormConfigAnswer set, String value) {
+        CustomFieldAnswerText answer = new CustomFieldAnswerText();
+        answer.setCustomField(field);
+        answer.setFormConfigAnswer(set);
+        answer.setValue(value);
+        return answer;
+    }
+
+    @Test
+    void loadAdditionalFieldAnswers_ofAPageOfEntities_groupsByOwnerAndTheMostRecentSetWins() {
+        CustomFieldText field = CustomFieldText.builder().id(1L).build();
+        for (CustomerOwnerCase c : ownerCases()) {
+            FormConfigAnswer older = new FormConfigAnswer();
+            older.setId(1L);
+            FormConfigAnswer newer = new FormConfigAnswer();
+            newer.setId(2L);
+            c.attach().accept(older);
+            c.attach().accept(newer);
+            when(c.query().apply(customFieldAnswerRepository, List.of(5L))).thenReturn(List.of(
+                    textAnswer(field, newer, "recent"), textAnswer(field, older, "former")));
+
+            Map<Long, Map<CustomField, CustomFieldAnswerViewModel>> result =
+                    service.loadAdditionalFieldAnswers(c.owner(), List.of(5L), List.of(1L));
+
+            assertThat(result).containsOnlyKeys(5L);
+            assertThat(result.get(5L).get(field)).isInstanceOfSatisfying(CustomFieldAnswerTextViewModel.class,
+                    v -> assertThat(v.getValue()).isEqualTo("recent"));
+        }
+    }
+
+    @Test
+    void loadAdditionalFieldAnswers_ofAPage_withoutOwnersOrFieldsAsksNothing() {
+        assertThat(service.loadAdditionalFieldAnswers(CustomFieldAnswerService.ListOwner.PHASE, List.of(), List.of(1L))).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers(CustomFieldAnswerService.ListOwner.PHASE, null, List.of(1L))).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers(CustomFieldAnswerService.ListOwner.PHASE, List.of(1L), List.of())).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers(CustomFieldAnswerService.ListOwner.PHASE, List.of(1L), null)).isEmpty();
+        verifyNoInteractions(customFieldAnswerRepository);
+    }
+
+    @Test
+    void loadAdditionalFieldAnswers_ofAPage_skipsAnswersWhoseOwnerOrTypeIsUnknown() {
+        CustomFieldText text = CustomFieldText.builder().id(1L).build();
+        FormConfigAnswer ownerless = new FormConfigAnswer();
+        ownerless.setId(1L);
+        CustomFieldSelectOneAddress address = new CustomFieldSelectOneAddress();
+        address.setId(2L);
+        FormConfigAnswer owned = new FormConfigAnswer();
+        owned.setId(2L);
+        owned.setPhase(phaseEntity(5L));
+        when(customFieldAnswerRepository.findAnswersOfPhases(List.of(5L), List.of(1L, 2L))).thenReturn(List.of(
+                textAnswer(text, ownerless, "no owner"), textAnswer(address, owned, "no view model for this type")));
+
+        assertThat(service.loadAdditionalFieldAnswers(CustomFieldAnswerService.ListOwner.PHASE, List.of(5L), List.of(1L, 2L))).isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void loadAdditionalFieldAnswers_readsBackEveryKindOfStoredValue() {
+        FormConfigAnswer set = new FormConfigAnswer();
+        set.setId(1L);
+        set.setPhase(phaseEntity(5L));
+
+        Person person = person(20L);
+        SpatialUnit place = spatialUnit(30L);
+        ActionUnit project = actionUnit(40L);
+        ActionCode code = actionCode("FOUILLE");
+        PersonDTO personDto = new PersonDTO();
+        SpatialUnitDTO placeDto = new SpatialUnitDTO();
+        PlaceSuggestionDTO suggestion = new PlaceSuggestionDTO();
+        ActionUnitSummaryDTO projectDto = new ActionUnitSummaryDTO();
+        ActionCodeDTO codeDto = new ActionCodeDTO();
+        when(personMapper.convert(any(Person.class))).thenReturn(personDto);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(placeDto);
+        when(placeSuggestionMapper.convert(any(SpatialUnitDTO.class))).thenReturn(suggestion);
+        when(actionUnitSummaryMapper.convert(any(ActionUnit.class))).thenReturn(projectDto);
+        when(actionCodeMapper.convert(any(ActionCode.class))).thenReturn(codeDto);
+
+        List<CustomFieldAnswer> answers = new ArrayList<>();
+        Map<Long, CustomField> fields = new HashMap<>();
+        answers.add(withField(fields, 1L, CustomFieldText.builder().id(1L).build(), new CustomFieldAnswerText(), set, "t"));
+        answers.add(withField(fields, 2L, CustomFieldDecimal.builder().id(2L).build(), new fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDecimal(), set, 1.5));
+        answers.add(withField(fields, 3L, CustomFieldDateTime.builder().id(3L).build(), new CustomFieldAnswerDateTime(), set, LocalDateTime.of(2026, 1, 2, 3, 4)));
+        answers.add(withField(fields, 4L, CustomFieldSelectOnePerson.builder().id(4L).build(), new CustomFieldAnswerSelectOnePerson(), set, person));
+        answers.add(withField(fields, 5L, CustomFieldSelectMultiplePerson.builder().id(5L).build(), new CustomFieldAnswerSelectMultiplePerson(), set, new ArrayList<>(List.of(person))));
+        answers.add(withField(fields, 6L, CustomFieldSelectOneSpatialUnit.builder().id(6L).build(), new CustomFieldAnswerSelectOneSpatialUnit(), set, place));
+        answers.add(withField(fields, 7L, CustomFieldSelectMultipleSpatialUnitTree.builder().id(7L).build(), new CustomFieldAnswerSelectMultipleSpatialUnitTree(), set, new ArrayList<>(List.of(place))));
+        answers.add(withField(fields, 8L, CustomFieldSelectOneActionUnit.builder().id(8L).build(), new CustomFieldAnswerSelectOneActionUnit(), set, project));
+        answers.add(withField(fields, 9L, CustomFieldSelectOneActionCode.builder().id(9L).build(), new CustomFieldAnswerSelectOneActionCode(), set, code));
+        when(customFieldAnswerRepository.findAnswersOfPhases(List.of(5L), List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))).thenReturn(answers);
+
+        Map<CustomField, CustomFieldAnswerViewModel> read = service
+                .loadAdditionalFieldAnswers(CustomFieldAnswerService.ListOwner.PHASE, List.of(5L), List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
+                .get(5L);
+
+        assertThat(read).hasSize(9);
+        assertThat(read.get(fields.get(2L)).getValue()).isEqualTo(1.5);
+        assertThat(read.get(fields.get(3L)).getValue()).isEqualTo(LocalDateTime.of(2026, 1, 2, 3, 4));
+        assertThat(read.get(fields.get(4L)).getValue()).isSameAs(personDto);
+        assertThat((List<Object>) read.get(fields.get(5L)).getValue()).containsExactly(personDto);
+        assertThat(read.get(fields.get(6L)).getValue()).isSameAs(suggestion);
+        assertThat((List<Object>) read.get(fields.get(7L)).getValue()).containsExactly(suggestion);
+        assertThat(read.get(fields.get(8L)).getValue()).isSameAs(projectDto);
+        assertThat(read.get(fields.get(9L)).getValue()).isSameAs(codeDto);
+    }
+
+    private static CustomFieldAnswer withField(Map<Long, CustomField> fields, long id, CustomField field,
+                                               CustomFieldAnswer answer, FormConfigAnswer set, Object value) {
+        fields.put(id, field);
+        answer.setCustomField(field);
+        answer.setFormConfigAnswer(set);
+        answer.setValue(value);
+        return answer;
+    }
+
+    private static fr.siamois.domain.models.phase.Phase phaseEntity(long id) {
+        fr.siamois.domain.models.phase.Phase phase = new fr.siamois.domain.models.phase.Phase();
+        phase.setId(id);
+        return phase;
+    }
+
+    private record CustomerOwnerCase(CustomFieldAnswerService.ListOwner owner,
+                                     java.util.function.Consumer<FormConfigAnswer> attach,
+                                     QueryOf query) {
+    }
+
+    @FunctionalInterface
+    private interface QueryOf {
+        List<CustomFieldAnswer> apply(CustomFieldAnswerRepository repository, Collection<Long> ownerIds);
+    }
+
+    private static List<CustomerOwnerCase> ownerCases() {
+        RecordingUnit unit = new RecordingUnit();
+        unit.setId(5L);
+        fr.siamois.domain.models.specimen.Specimen specimen = new fr.siamois.domain.models.specimen.Specimen();
+        specimen.setId(5L);
+        fr.siamois.domain.models.container.Container container = new fr.siamois.domain.models.container.Container();
+        container.setId(5L);
+        return List.of(
+                new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.RECORDING_UNIT, set -> set.setRecordingUnit(unit),
+                        (repo, ids) -> repo.findAnswersOfRecordingUnits(ids, List.of(1L))),
+                new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.SPECIMEN, set -> set.setSpecimen(specimen),
+                        (repo, ids) -> repo.findAnswersOfSpecimens(ids, List.of(1L))),
+                new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.PHASE, set -> set.setPhase(phaseEntity(5L)),
+                        (repo, ids) -> repo.findAnswersOfPhases(ids, List.of(1L))),
+                new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.CONTAINER, set -> set.setContainer(container),
+                        (repo, ids) -> repo.findAnswersOfContainers(ids, List.of(1L))));
     }
 
     // ========== Type change ==========

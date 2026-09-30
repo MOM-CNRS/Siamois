@@ -5,6 +5,7 @@ import fr.siamois.ui.api.openapi.v1.service.FieldAnswerWireService;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,9 +18,13 @@ class SystemFieldDiscriminatorTest {
 
     @Test
     void everyPersistedSystemFieldTypeFitsTheDiscriminatorColumn() {
-        assertThat(Arrays.stream(ConfigurableTable.values())
+        List<String> answerTypes = Arrays.stream(ConfigurableTable.values())
                 .flatMap(table -> SystemFieldCatalog.fieldsOf(table).stream())
-                .map(FieldAnswerWireService::answerTypeOf))
+                .map(FieldAnswerWireService::answerTypeOf)
+                .toList();
+
+        assertThat(answerTypes).isNotEmpty();
+        assertThat(answerTypes)
                 .allSatisfy(answerType -> assertThat(answerType).hasSizeLessThanOrEqualTo(31));
     }
 }

@@ -109,7 +109,8 @@ function checkDesync() {
             if (data.reload === true) {
                 location.reload(true);
             }
-        });
+        })
+        .catch(() => { /* transient network error: the next poll retries */ });
 }
 
 document.addEventListener("visibilitychange", () => {

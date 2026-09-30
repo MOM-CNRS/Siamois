@@ -62,7 +62,7 @@ public class FocusViewBean implements Serializable {
     private ParsedPath parsePath(String path) {
         if (path.startsWith("/")) path = path.substring(1);
         String[] parts = path.split("\\?", 2)[0].split("/");
-        return new ParsedPath(parts[0], parts.length > 1 ? Long.parseLong(parts[1]) : null);
+        return new ParsedPath(parts.length > 0 ? parts[0] : "", parts.length > 1 ? Long.parseLong(parts[1]) : null);
     }
 
     public void beforeInit() {

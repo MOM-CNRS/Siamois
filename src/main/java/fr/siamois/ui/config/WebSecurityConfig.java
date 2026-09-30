@@ -94,7 +94,7 @@ public class WebSecurityConfig {
                 // the HTTP session.
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                        .sessionFixation(fixation -> fixation.none()))
+                        .sessionFixation(fixation -> fixation.none())) // NOSONAR S5876: stateless JWT chain, must never touch the JSF session (see comment above)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .anyRequest().authenticated())

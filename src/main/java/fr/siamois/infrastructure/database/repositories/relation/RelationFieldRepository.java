@@ -49,7 +49,7 @@ public class RelationFieldRepository {
                 + "count(*) OVER (PARTITION BY v.owner_id) AS total FROM (" + valuesSql(relation) + ") v "
                 + "WHERE v.owner_id IN (:owners)) ranked "
                 + "WHERE rn <= :limit ORDER BY owner_id, rn";
-        Query query = entityManager.createNativeQuery(sql)
+        Query query = entityManager.createNativeQuery(sql) // NOSONAR S2077: SQL fragments are the constants of the RelationField enum; values are bound
                 .setParameter("owners", ownerIds)
                 // One row per owner even for limit 0: that row is where its total is read from.
                 .setParameter("limit", Math.max(limit, 1));
@@ -70,7 +70,7 @@ public class RelationFieldRepository {
     public List<Row> page(RelationField relation, long ownerId, int offset, int limit,
                           @Nullable String search, boolean ascending) {
         String direction = ascending ? "ASC" : "DESC";
-        Query query = entityManager.createNativeQuery("SELECT v.* FROM (" + valuesSql(relation) + ") v "
+        Query query = entityManager.createNativeQuery("SELECT v.* FROM (" + valuesSql(relation) + ") v " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum; values are bound
                         + "WHERE v.owner_id = :owner" + searchClause(search)
                         + " ORDER BY lower(v.label) " + direction + " NULLS LAST, v.target_id " + direction)
                 .setParameter("owner", ownerId)
@@ -87,7 +87,7 @@ public class RelationFieldRepository {
     /** How many values an owner has, those whose label contains {@code search}. */
     @Transactional(readOnly = true)
     public long count(RelationField relation, long ownerId, @Nullable String search) {
-        Query query = entityManager.createNativeQuery("SELECT count(*) FROM (" + valuesSql(relation) + ") v "
+        Query query = entityManager.createNativeQuery("SELECT count(*) FROM (" + valuesSql(relation) + ") v " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum; values are bound
                         + "WHERE v.owner_id = :owner" + searchClause(search))
                 .setParameter("owner", ownerId);
         bindSearch(query, search);

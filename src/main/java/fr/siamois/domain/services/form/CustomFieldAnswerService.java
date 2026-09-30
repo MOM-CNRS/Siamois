@@ -311,7 +311,8 @@ public class CustomFieldAnswerService {
     }
 
     private static Set<CustomFieldAnswer> answersOf(FormConfigAnswer set) {
-        return set.getAnswers() != null ? new HashSet<>(set.getAnswers()) : Set.of();
+        // @NonNull on the entity is only enforced by Lombok setters: a row loaded by JPA can still hold null.
+        return Optional.ofNullable(set.getAnswers()).<Set<CustomFieldAnswer>>map(HashSet::new).orElseGet(Set::of);
     }
 
     /** Copies a former type's answer into the current set — a new row, the answer's key includes its set. */

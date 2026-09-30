@@ -506,6 +506,123 @@ class ProjectApiServiceMutationTest {
         assertThat(au.getType()).isEqualTo(typeDto);
     }
 
+    private ActionUnitDTO patchableProject() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        org.mockito.Mockito.lenient().when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+        return au;
+    }
+
+    private void assertPatchRefused(String fieldId, AnswerInput input, HttpStatus status) {
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put(fieldId, input);
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(status));
+    }
+
+    @Test
+    void patchProject_answers_readsANumberFromAString_andRefusesGarbage() throws Exception {
+        ActionUnitDTO au = patchableProject();
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-128", new AnswerInput(" 0.5 ", null)); // OPENING_RATE_FIELD (decimal)
+        service.patchProject(caller, "7", patch, "fr");
+        assertThat(au.getOpeningRate()).isEqualTo(0.5);
+
+        assertPatchRefused("-128", new AnswerInput("beaucoup", null), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void patchProject_answers_readsADateFromABareDayOrAFullTimestamp_andRefusesGarbage() throws Exception {
+        ActionUnitDTO au = patchableProject();
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-105", new AnswerInput("2024-05-01", null)); // BEGIN_DATE_FIELD
+        patch.getAnswers().put("-106", new AnswerInput("2024-06-01T10:00:00+02:00", null)); // END_DATE_FIELD
+        service.patchProject(caller, "7", patch, "fr");
+        assertThat(au.getBeginDate().toLocalDate()).isEqualTo(java.time.LocalDate.of(2024, 5, 1));
+        assertThat(au.getEndDate().getOffset()).isEqualTo(java.time.ZoneOffset.ofHours(2));
+
+        ProjectPatchRequest again = new ProjectPatchRequest();
+        java.time.OffsetDateTime already = java.time.OffsetDateTime.parse("2024-05-15T00:00:00Z");
+        again.getAnswers().put("-105", new AnswerInput(already, null));
+        service.patchProject(caller, "7", again, "fr");
+        assertThat(au.getBeginDate()).isEqualTo(already);
+
+        assertPatchRefused("-105", new AnswerInput("pas une date", null), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void patchProject_answers_aReferenceCanBeGivenAsAStringOrAnObject_andAnythingElseIs400() throws Exception {
+        patchableProject();
+        Concept concept = new Concept();
+        concept.setId(5L);
+        ConceptDTO dto = new ConceptDTO();
+        dto.setId(5L);
+        when(conceptService.findById(5L)).thenReturn(Optional.of(concept));
+        when(conceptMapper.convert(concept)).thenReturn(dto);
+
+        for (Object reference : List.of("5", java.util.Map.of("id", 5), java.util.Map.of("id", "5"), java.util.Map.of("resourceId", 5))) {
+            ProjectPatchRequest patch = new ProjectPatchRequest();
+            patch.getAnswers().put("-118", new AnswerInput(reference, null)); // STATUS_FIELD
+            service.patchProject(caller, "7", patch, "fr");
+        }
+
+        assertPatchRefused("-118", new AnswerInput("abc", null), HttpStatus.BAD_REQUEST);
+        assertPatchRefused("-118", new AnswerInput(java.util.Map.of("id", "abc"), null), HttpStatus.BAD_REQUEST);
+        assertPatchRefused("-118", new AnswerInput(java.util.Map.of("nope", 1), null), HttpStatus.BAD_REQUEST);
+        assertPatchRefused("-118", new AnswerInput(true, null), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void patchProject_answers_anUnknownPlaceIs404() throws Exception {
+        patchableProject();
+        when(spatialUnitService.findById(99L)).thenThrow(new IllegalArgumentException("nope"));
+
+        assertPatchRefused("-108", new AnswerInput(99, null), HttpStatus.NOT_FOUND); // MAIN_LOCATION_FIELD
+    }
+
+    @Test
+    void patchProject_answers_addAndRemoveApplyToWhatTheProjectHolds() throws Exception {
+        ActionUnitDTO au = patchableProject();
+        ConceptDTO kept = new ConceptDTO();
+        kept.setId(1L);
+        kept.setExternalId("1");
+        ConceptDTO dropped = new ConceptDTO();
+        dropped.setId(2L);
+        dropped.setExternalId("2");
+        au.setPeriods(new java.util.LinkedHashSet<>(List.of(kept, dropped)));
+        Concept added = new Concept();
+        added.setId(3L);
+        added.setExternalId("3");
+        ConceptDTO addedDto = new ConceptDTO();
+        addedDto.setId(3L);
+        addedDto.setExternalId("3");
+        when(conceptService.findById(3L)).thenReturn(Optional.of(added));
+        when(conceptMapper.convert(added)).thenReturn(addedDto);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-115", new AnswerInput(null, null, List.of(3), List.of(2))); // PERIODS_FIELD
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getPeriods()).containsExactlyInAnyOrder(kept, addedDto);
+    }
+
+    @Test
+    void patchProject_answers_addRemoveOnAScalarFieldIs400_andAClearedSelectManyIsLeftAlone() throws Exception {
+        patchableProject();
+        assertPatchRefused("-109", new AnswerInput(null, null, List.of(1), null), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void patchProject_answers_aFieldTheApiCannotWriteIs400() throws Exception {
+        patchableProject();
+        // The spatial context is a multi-place tree, not one of the scalar kinds the API coerces.
+        assertPatchRefused("-104", new AnswerInput("x", null), HttpStatus.BAD_REQUEST);
+    }
+
     @Test
     void patchProject_answers_unknownFieldId_throws400() throws Exception {
         ActionUnitDTO au = projectWithInstitution();

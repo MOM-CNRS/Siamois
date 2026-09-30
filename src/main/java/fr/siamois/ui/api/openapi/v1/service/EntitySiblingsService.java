@@ -59,7 +59,7 @@ public class EntitySiblingsService {
         }
         String jpql = "select e.id, " + kind.label + " from " + kind.entity + " e where " + kind.scopePath
                 + " = :scope order by e.creationTime desc, e.id asc";
-        List<Object[]> rows = entityManager.createQuery(jpql, Object[].class)
+        List<Object[]> rows = entityManager.createQuery(jpql, Object[].class) // NOSONAR S2077: jpql parts are the constants of the Kind enum; the scope is bound
                 .setParameter("scope", scopeId)
                 .getResultList();
         return pick(kind, rows, currentId);
