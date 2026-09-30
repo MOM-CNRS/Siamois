@@ -1459,3 +1459,70 @@ body {
   border: 1px solid var(--ref-chip-color);
   color: var(--ref-chip-color);
 }
+
+/* "Dupliquer la structure" (components/DuplicateStructureOverlay.tsx), in the create overlay's
+   frame: how many exemplars, then what to include. */
+.duplicate-structure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 24rem;
+}
+
+/* The number of copies: its label and a small box on one line. */
+.duplicate-structure-copies {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.duplicate-structure-copies .p-inputnumber {
+  width: auto;
+}
+
+.duplicate-structure-copies .duplicate-structure-count-input {
+  width: 4rem;
+  padding: 0.35rem 0.5rem;
+  text-align: center;
+}
+
+.duplicate-structure-elements {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.duplicate-structure-toggle-all {
+  align-self: flex-end;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--entity-chip-color, var(--primary-color));
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.duplicate-structure-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.duplicate-structure-node {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+/* What the form is about to create, at the footer's left. */
+.create-form-footer-note {
+  margin-right: auto;
+  font-size: 0.9rem;
+  color: var(--text-color, inherit);
+}

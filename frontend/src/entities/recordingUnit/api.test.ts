@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../../api/client";
 import { registerEntityType } from "../registry";
-import { getRecordingUnit, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
+import {
+  duplicateRecordingUnitStructure,
+  getRecordingUnit,
+  getRecordingUnitStructure,
+  listRecordingUnits,
+  patchRecordingUnitAnswers,
+} from "./api";
 
 vi.mock("../../api/client", () => ({
   apiFetch: vi.fn(),
@@ -77,5 +83,28 @@ describe("patchRecordingUnitAnswers", () => {
       method: "PATCH",
       body: { answers: { "-90": { value: "silex" } } },
     });
+  });
+});
+
+describe("structure duplication", () => {
+  it("reads the unit's structure and unwraps it", async () => {
+    const structure = { root: { id: 1, label: "UE-1" }, descendants: [], truncated: false };
+    mockedApiFetch.mockResolvedValueOnce({ data: structure });
+
+    await expect(getRecordingUnitStructure(1)).resolves.toEqual(structure);
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/recording-units/1/structure");
+  });
+
+  it("posts the copies and the chosen descendants as numbers", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { copies: [{ id: 9, label: "UE-9" }], createdCount: 3 } });
+
+    const result = await duplicateRecordingUnitStructure(1, { copies: 2, descendantIds: ["2", 3] });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/recording-units/1/duplicate-structure", {
+      method: "POST",
+      body: { copies: 2, descendantIds: [2, 3] },
+    });
+    expect(result.createdCount).toBe(3);
   });
 });

@@ -180,6 +180,41 @@ public class FindOpenApiService {
         return resource;
     }
 
+    /**
+     * {@code POST /api/v1/finds/{id}/duplicate}: a copy of the find's descriptive data (see
+     * {@link SpecimenDTO#SpecimenDTO(SpecimenDTO)}) on the same recording unit, with a regenerated
+     * identifier. Same right as creating a find on that recording unit.
+     */
+    @Transactional
+    public FindResource duplicateFind(long specimenId,
+                                      PersonDTO personDto,
+                                      Set<Long> accessibleInstitutionIds,
+                                      String lang) {
+        SpecimenDTO source = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+        InstitutionDTO institution = source.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
+        }
+        RecordingUnitSummaryDTO ruSum = source.getRecordingUnit();
+        if (ruSum == null || ruSum.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans unité d'enregistrement");
+        }
+        RecordingUnitDTO ru = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                ruSum.getId(), accessibleInstitutionIds);
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Duplication non autorisée");
+        }
+
+        SpecimenDTO copy = new SpecimenDTO(source);
+        copy.setCreatedBy(personDto);
+        copy.setAuthors(new ArrayList<>(List.of(personDto)));
+        copy.setValidated(ValidationStatus.INCOMPLETE);
+        SpecimenDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> specimenService.save(copy));
+        return withPermissionsAndUri(findOpenApiMapper.toResource(created), userInfo, created);
+    }
+
     @Transactional
     public void deleteFind(long specimenId,
                            PersonDTO personDto,

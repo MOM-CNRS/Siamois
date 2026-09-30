@@ -1,7 +1,7 @@
 import { apiFetch } from "../../api/client";
 import { fetchList } from "../listApi";
 import type { AnswerInputBody } from "../../fields/types";
-import type { ListParams, PagedResult } from "../types";
+import type { DuplicationNode, DuplicationResult, DuplicationStructure, ListParams, PagedResult } from "../types";
 import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
 
 interface RecordingUnitResponseBody {
@@ -28,6 +28,30 @@ export async function duplicateRecordingUnit(id: string | number): Promise<Recor
     method: "POST",
   });
   return response.data;
+}
+
+interface StructureBody {
+  data: { root: DuplicationNode; descendants: DuplicationNode[]; truncated: boolean };
+}
+
+// GET /api/v1/recording-units/{id}/structure — the unit and its descendants, what "Dupliquer la
+// structure" offers to include.
+export async function getRecordingUnitStructure(id: string | number): Promise<DuplicationStructure> {
+  const body = await apiFetch<StructureBody>(`/api/v1/recording-units/${id}/structure`);
+  return body.data;
+}
+
+// POST /api/v1/recording-units/{id}/duplicate-structure — N exemplars of the unit and the chosen
+// descendants, in one transaction.
+export async function duplicateRecordingUnitStructure(
+  id: string | number,
+  options: { copies: number; descendantIds: (string | number)[] },
+): Promise<DuplicationResult> {
+  const body = await apiFetch<{ data: DuplicationResult }>(`/api/v1/recording-units/${id}/duplicate-structure`, {
+    method: "POST",
+    body: { copies: options.copies, descendantIds: options.descendantIds.map(Number) },
+  });
+  return body.data;
 }
 
 // Mirrors RecordingUnitCreateRequest's required pair (projectId/typeId — answers/geom both

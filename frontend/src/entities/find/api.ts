@@ -38,6 +38,13 @@ export async function createFind(body: FindCreateBody): Promise<FindDetail> {
   return response.data;
 }
 
+// POST /api/v1/finds/{id}/duplicate — a copy of the find's descriptive data on the same recording
+// unit, with a regenerated identifier.
+export async function duplicateFind(id: string | number): Promise<FindDetail> {
+  const response = await apiFetch<FindResponseBody>(`/api/v1/finds/${id}/duplicate`, { method: "POST" });
+  return response.data;
+}
+
 // Mirrors FindPatchRequest.answers — same by-field-id write path Project/RecordingUnit's fiches
 // use for their own autosaving fields.
 export async function patchFindAnswers(

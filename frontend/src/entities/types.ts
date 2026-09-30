@@ -241,6 +241,37 @@ export interface RowActionDef<TSummary> {
   run: (row: TSummary, ctx: RowActionContext) => void;
 }
 
+// One node of the structure a duplication offers to include (the entity and its descendants).
+export interface DuplicationNode {
+  id: string | number;
+  label: string;
+  parentId?: string | number | null;
+}
+
+export interface DuplicationStructure {
+  root: DuplicationNode;
+  // A parent before its children.
+  descendants: DuplicationNode[];
+  // The tree was cut at the server's limit.
+  truncated: boolean;
+}
+
+export interface DuplicationResult {
+  // The copies of the entity itself, one per exemplar.
+  copies: { id: string | number; label: string }[];
+  createdCount: number;
+}
+
+// "Dupliquer la structure": the row action's overlay lets the user pick which descendants to copy
+// and how many exemplars. Without it, a row's "Dupliquer" just makes one copy (`api.duplicate`).
+export interface DuplicationConfig {
+  load(id: string | number): Promise<DuplicationStructure>;
+  run(id: string | number, options: { copies: number; descendantIds: (string | number)[] }): Promise<DuplicationResult>;
+  // What a copy is called in the summary ("UE").
+  unit: string;
+  maxCopies: number;
+}
+
 export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   key: string;
   // `all` is the breadcrumb's "all of them" crumb, for types whose plural doesn't fit "Tous les …"
@@ -275,6 +306,8 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // Resolves to the copy, which the panel then opens in the overview like JSF does.
     duplicate?(id: string | number): Promise<{ id: string | number }>;
   };
+  // Present: a list row's "Dupliquer" opens the structure overlay (see DuplicationConfig).
+  duplication?: DuplicationConfig;
   list: {
     // Pinned, hand-written columns — structural ones with no field-catalog equivalent (an
     // identifier chip that's also a navigation link, a relation count) — always rendered first,

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../../api/client";
 import { registerEntityType } from "../registry";
-import { getFind, listFinds, patchFindAnswers } from "./api";
+import { duplicateFind, getFind, listFinds, patchFindAnswers } from "./api";
 
 vi.mock("../../api/client", () => ({
   apiFetch: vi.fn(),
@@ -84,5 +84,16 @@ describe("patchFindAnswers", () => {
       method: "PATCH",
       body: { answers: { "-10": { value: "silex" } } },
     });
+  });
+});
+
+describe("duplicateFind", () => {
+  it("posts to the find's duplicate endpoint and unwraps the copy", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: 43 } });
+
+    const copy = await duplicateFind(42);
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/finds/42/duplicate", { method: "POST" });
+    expect(copy).toEqual({ id: 43 });
   });
 });

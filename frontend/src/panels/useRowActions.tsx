@@ -5,6 +5,7 @@ import { Menu } from "primereact/menu";
 import type { MenuItem } from "primereact/menuitem";
 import { createBookmark, deleteBookmark } from "../api/bookmarks";
 import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
+import { DuplicateStructureOverlay } from "../components/DuplicateStructureOverlay";
 import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext } from "../entities/types";
 import { loadListPrefs, reconcileActionBar, saveListPrefs, type ActionBarPrefs } from "./listPreferences";
 import { useBridge } from "./bridge";
@@ -70,6 +71,9 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   dialog: ReactNode;
   error: string | null;
   clearError: () => void;
+  // What the last action did, when it has something to say (a duplication).
+  notice: string | null;
+  clearNotice: () => void;
   // The configurable actions (for the settings overlay), and their current layout.
   items: RowActionItem[];
   actionBar: ActionBarPrefs;
@@ -78,6 +82,9 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   const queryClient = useQueryClient();
   const [pendingCreate, setPendingCreate] = useState<PendingCreate | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  // The row whose structure the duplication overlay is open for, next to the button that opened it.
+  const [pendingDuplicate, setPendingDuplicate] = useState<{ id: string | number; anchor: HTMLElement | null } | null>(null);
   const menuRef = useRef<Menu>(null);
   // What the last action was started from — the row's button, or its "…" button for an action
   // picked in the menu — so a creation opens its form in an overlay right there.
@@ -135,7 +142,11 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
             icon: "bi bi-copy",
             label: "Dupliquer",
             pending: (row: Row) => isPending(duplicateMutation, row),
-            run: (row: Row) => duplicateMutation.mutate(row),
+            // With a structure to pick from, the button opens the overlay; otherwise it copies at once.
+            run: (row: Row) =>
+              config.duplication
+                ? setPendingDuplicate({ id: row.id as string | number, anchor: actionAnchorRef.current })
+                : duplicateMutation.mutate(row),
           },
         ]
       : []),
@@ -263,12 +274,35 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     />
   );
 
+  const duplicateDialog = (
+    <DuplicateStructureOverlay
+      entityType={entityType}
+      entityId={pendingDuplicate?.id ?? null}
+      anchor={pendingDuplicate?.anchor ?? null}
+      onDone={(result, source) => {
+        setPendingDuplicate(null);
+        refreshAfterChange();
+        const unit = config?.duplication?.unit ?? "";
+        const copies = result.copies.length;
+        setNotice(
+          copies === 1
+            ? `${unit} ${result.copies[0].label} créée`
+            : `${unit} ${source.label} dupliquée ${copies} fois`,
+        );
+        // A single copy opens where a plain duplicate does; several are left to the refreshed list.
+        if (copies === 1) onOpen?.(entityType, result.copies[0].id);
+      }}
+      onHide={() => setPendingDuplicate(null)}
+    />
+  );
+
   const shared = (
     <>
       {dialog}
+      {duplicateDialog}
       <Menu ref={menuRef} popup model={menuModel} className="entity-list-panel-row-actions-menu" onHide={() => setMenuRow(null)} />
     </>
   );
 
-  return { render, dialog: shared, error, clearError: () => setError(null), items, actionBar, setActionBar };
+  return { render, dialog: shared, error, clearError: () => setError(null), notice, clearNotice: () => setNotice(null), items, actionBar, setActionBar };
 }

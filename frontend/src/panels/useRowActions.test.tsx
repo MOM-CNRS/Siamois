@@ -160,6 +160,35 @@ describe("list row actions", () => {
     expect(onOpenOverview).toHaveBeenCalledWith("row-action-entity", "42");
   });
 
+  it("opens the structure overlay instead of copying at once when the entity has one", async () => {
+    const structure = { root: { id: "1", label: "Row A" }, descendants: [], truncated: false };
+    const duplication = {
+      load: vi.fn().mockResolvedValue(structure),
+      run: vi.fn().mockResolvedValue({ copies: [{ id: "42", label: "Row B" }], createdCount: 1 }),
+      unit: "Chose",
+      maxCopies: 50,
+    };
+    registerEntityType({ ...config, key: "row-action-entity", duplication } as EntityTypeConfig<unknown, unknown>);
+    const onOpenOverview = vi.fn();
+    try {
+      await render([row()], { onOpenOverview });
+
+      await click(actionButton("Dupliquer")!);
+
+      expect(duplicateMock).not.toHaveBeenCalled();
+      expect(duplication.load).toHaveBeenCalledWith("1");
+      const submit = [...document.querySelectorAll<HTMLButtonElement>(".create-form-footer button")].find((b) => b.type === "submit")!;
+      await act(async () => submit.click());
+      await flush();
+
+      expect(duplication.run).toHaveBeenCalledWith("1", { copies: 1, descendantIds: [] });
+      expect(onOpenOverview).toHaveBeenCalledWith("row-action-entity", "42");
+      expect(container.textContent).toContain("Chose Row B créée");
+    } finally {
+      registerEntityType(config as EntityTypeConfig<unknown, unknown>);
+    }
+  });
+
   it("opens the create form in an overlay linked to the row, then opens what was created", async () => {
     const onOpenOverview = vi.fn();
     await render([row()], { onOpenOverview });

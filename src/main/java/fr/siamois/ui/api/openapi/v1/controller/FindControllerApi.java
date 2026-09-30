@@ -143,6 +143,32 @@ public class FindControllerApi {
         return ResponseEntity.ok(new FindResponse(resource));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @Operation(
+            summary = "Dupliquer un mobilier",
+            description = "Copie des données descriptives du mobilier (type, catégorie, UE, matériaux, description, "
+                    + "commentaires, datation, poids…) sur la même UE, avec un identifiant régénéré. Ne sont pas "
+                    + "copiés : les identifiants propres au mobilier (autre identifiant, n° d'isolat), les liens "
+                    + "parent/enfant, les contenants et les phases. Même droit que la création d'un mobilier sur l'UE."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Créé"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Interdit"),
+            @ApiResponse(responseCode = "404", description = "Mobilier introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<FindResponse> duplicateFind(
+            @Parameter(description = "Identifiant numérique du spécimen (specimen_id).", example = "42")
+            @PathVariable("id") long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        FindResource resource = findOpenApiService.duplicateFind(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new FindResponse(resource));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Supprimer un mobilier",

@@ -735,6 +735,18 @@ export function EntityListPanel({
         />
       )}
       {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}
+      {rowActions.notice && (
+        <Message
+          severity="success"
+          className="entity-list-panel-action-error"
+          content={
+            <span style={{ display: "flex", alignItems: "center", gap: "0.5em", width: "100%" }}>
+              <span style={{ flex: 1 }}>{rowActions.notice}</span>
+              <Button icon="bi bi-x" text rounded size="small" aria-label="Fermer" onClick={rowActions.clearNotice} />
+            </span>
+          }
+        />
+      )}
       {rowActions.error && (
         <Message
           severity="error"

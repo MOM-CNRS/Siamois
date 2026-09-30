@@ -3,7 +3,7 @@ import { relationTab } from "../../panels/relationTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { scopeProjectId } from "../scope";
-import { duplicateRecordingUnit, getRecordingUnit, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
+import { duplicateRecordingUnit, duplicateRecordingUnitStructure, getRecordingUnit, getRecordingUnitStructure, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
 import { recordingUnitColumns } from "./columns";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
@@ -43,6 +43,13 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     list: listRecordingUnits,
     patchAnswers: (id, answers) => patchRecordingUnitAnswers(id, answers),
     duplicate: duplicateRecordingUnit,
+  },
+  // The list row's "Dupliquer" (JSF's DUPLICATE_ROW): pick the descendants and the number of copies.
+  duplication: {
+    load: getRecordingUnitStructure,
+    run: duplicateRecordingUnitStructure,
+    unit: "UE",
+    maxCopies: 50,
   },
   list: {
     columns: recordingUnitColumns,

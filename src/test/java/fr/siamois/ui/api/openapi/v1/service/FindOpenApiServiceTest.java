@@ -50,6 +50,7 @@ import fr.siamois.ui.viewmodel.fieldanswer.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -806,6 +807,54 @@ class FindOpenApiServiceTest {
         service.patchFind(7L, request, personDto, SCOPE, LANG);
 
         verify(specimenService, never()).save(any());
+    }
+
+    // --- duplicateFind ---
+
+    @Test
+    void duplicateFind_notFound_throws404() {
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.duplicateFind(7L, personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void duplicateFind_withoutWritePermission_throws403_andSavesNothing() {
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(accessibleSpecimen()));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.duplicateFind(7L, personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(specimenService, never()).save(any(SpecimenDTO.class));
+    }
+
+    @Test
+    void duplicateFind_savesANewFindOnTheSameRecordingUnit_madeByTheCaller() {
+        SpecimenDTO source = accessibleSpecimen();
+        source.setId(7L);
+        source.setFullIdentifier("UE1-7");
+        source.setDescription("silex taillé");
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(source));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
+        SpecimenDTO saved = new SpecimenDTO();
+        saved.setId(8L);
+        when(specimenService.save(any(SpecimenDTO.class))).thenReturn(saved);
+
+        service.duplicateFind(7L, personDto, SCOPE, LANG);
+
+        ArgumentCaptor<SpecimenDTO> copy = ArgumentCaptor.forClass(SpecimenDTO.class);
+        verify(specimenService).save(copy.capture());
+        assertThat(copy.getValue().getId()).isNull();
+        assertThat(copy.getValue().getFullIdentifier()).isNull();
+        assertThat(copy.getValue().getDescription()).isEqualTo("silex taillé");
+        assertThat(copy.getValue().getRecordingUnit()).isSameAs(source.getRecordingUnit());
+        assertThat(copy.getValue().getCreatedBy()).isSameAs(personDto);
+        assertThat(copy.getValue().getAuthors()).containsExactly(personDto);
     }
 
     // --- deleteFind ---

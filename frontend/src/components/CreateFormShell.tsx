@@ -14,8 +14,10 @@ export function CreateFormShell({
   entityType,
   title,
   canSubmit,
+  submitLabel = "Créer",
   pending,
   error,
+  footerNote,
   onSubmit,
   onCancel,
   children,
@@ -24,8 +26,12 @@ export function CreateFormShell({
   entityType: string;
   title: string;
   canSubmit: boolean;
+  // The confirm button's label — « Créer » unless the form does something else (a duplication).
+  submitLabel?: string;
   pending: boolean;
   error?: string | null;
+  // Shown at the footer's left, before the buttons (what the form is about to do).
+  footerNote?: ReactNode;
   onSubmit: () => void;
   onCancel: () => void;
   children: ReactNode;
@@ -51,8 +57,9 @@ export function CreateFormShell({
       </div>
 
       <div className="create-form-footer">
+        {footerNote && <span className="create-form-footer-note">{footerNote}</span>}
         <Button type="button" label="Annuler" text onClick={onCancel} />
-        <Button type="submit" label="Créer" disabled={!canSubmit} loading={pending} />
+        <Button type="submit" label={submitLabel} disabled={!canSubmit} loading={pending} />
       </div>
     </form>
   );

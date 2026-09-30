@@ -2,7 +2,7 @@ import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
-import { getFind, listFinds, patchFindAnswers } from "./api";
+import { duplicateFind, getFind, listFinds, patchFindAnswers } from "./api";
 import { findColumns } from "./columns";
 import { FindCreateForm } from "./CreateForm";
 import { FindDetailHeader } from "./DetailHeader";
@@ -28,6 +28,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     get: getFind,
     list: listFinds,
     patchAnswers: (id, answers) => patchFindAnswers(id, answers),
+    duplicate: duplicateFind,
   },
   list: {
     // Dynamic columns: every field of the project's find forms, additional ones included.
