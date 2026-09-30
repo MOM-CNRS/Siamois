@@ -36,14 +36,15 @@ public final class FormLayoutComposer {
             SystemFieldSpec spec = specs.stream()
                     .filter(s -> s.field().getId().equals(item.field().getId()))
                     .findFirst().orElse(null);
-            if (spec != null && spec.hidden()) continue;
-            visible.add(new CustomColUiDto.Builder()
-                    .field(item.field())
-                    .width(item.width().toColumnWidth())
-                    .readOnly(spec != null && spec.readOnly())
-                    .isRequired(item.mandatory())
-                    .rules(item.rules())
-                    .build());
+            if (spec == null || !spec.hidden()) {
+                visible.add(new CustomColUiDto.Builder()
+                        .field(item.field())
+                        .width(item.width().toColumnWidth())
+                        .readOnly(spec != null && spec.readOnly())
+                        .isRequired(item.mandatory())
+                        .rules(item.rules())
+                        .build());
+            }
         }
         return visible;
     }

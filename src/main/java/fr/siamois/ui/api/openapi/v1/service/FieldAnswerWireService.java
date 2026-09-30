@@ -81,17 +81,22 @@ public class FieldAnswerWireService {
      * The entry constraints a field carries. The defaults its classes fall back to (Integer.MIN_VALUE,
      * ±Double.MAX_VALUE) mean "unbounded" and are dropped rather than sent as bounds.
      */
+    /** A bound as a double, or null when it is absent or is the "unbounded" default. */
+    private static Double boundOrNull(Number value, double unbounded) {
+        return value == null || value.doubleValue() == unbounded ? null : value.doubleValue();
+    }
+
     private static FieldResource.Constraints constraintsOf(Object f) {
         Double min = null;
         Double max = null;
         Boolean showTime = null;
         String unit = null;
         if (f instanceof CustomFieldInteger i) {
-            min = i.getMinValue() != null && i.getMinValue() != Integer.MIN_VALUE ? i.getMinValue().doubleValue() : null;
-            max = i.getMaxValue() != null && i.getMaxValue() != Integer.MAX_VALUE ? i.getMaxValue().doubleValue() : null;
+            min = boundOrNull(i.getMinValue(), Integer.MIN_VALUE);
+            max = boundOrNull(i.getMaxValue(), Integer.MAX_VALUE);
         } else if (f instanceof CustomFieldDecimal d) {
-            min = d.getMinValue() != null && d.getMinValue() != -Double.MAX_VALUE ? d.getMinValue() : null;
-            max = d.getMaxValue() != null && d.getMaxValue() != Double.MAX_VALUE ? d.getMaxValue() : null;
+            min = boundOrNull(d.getMinValue(), -Double.MAX_VALUE);
+            max = boundOrNull(d.getMaxValue(), Double.MAX_VALUE);
         } else if (f instanceof CustomFieldMeasurement m) {
             min = m.getMinValue() != null ? m.getMinValue().doubleValue() : null;
             max = m.getMaxValue() != null ? m.getMaxValue().doubleValue() : null;
@@ -185,6 +190,14 @@ public class FieldAnswerWireService {
         return new ResourceRef(String.valueOf(id), resourceType, label);
     }
 
+    private static String preferredLabelOf(ConceptAutocompleteDTO ac) {
+        String label = ac.getConceptLabelToDisplay() != null ? ac.getConceptLabelToDisplay().getLabel() : null;
+        if ((label == null || label.isBlank()) && ac.getOriginalPrefLabel() != null) {
+            return ac.getOriginalPrefLabel();
+        }
+        return label;
+    }
+
     private ResourceRef conceptResourceRef(Object raw, String lang) {
         ConceptDTO concept = null;
         String preferredLabel = null;
@@ -192,12 +205,7 @@ public class FieldAnswerWireService {
             concept = c;
         } else if (raw instanceof ConceptAutocompleteDTO ac) {
             concept = ac.concept();
-            if (ac.getConceptLabelToDisplay() != null) {
-                preferredLabel = ac.getConceptLabelToDisplay().getLabel();
-            }
-            if ((preferredLabel == null || preferredLabel.isBlank()) && ac.getOriginalPrefLabel() != null) {
-                preferredLabel = ac.getOriginalPrefLabel();
-            }
+            preferredLabel = preferredLabelOf(ac);
         }
         if (concept == null) {
             return null;

@@ -57,6 +57,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.stream.Collectors;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -121,10 +122,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional(readOnly = true)
     public List<String> listConfigurableTypes(Long projectId, ConfigurableTable table, String input) {
         Set<String> configured = configuredTypeNames(projectId, table);
-        Set<String> candidates = new LinkedHashSet<>();
-        for (ConceptAutocompleteDTO value : fieldValues(projectId, table, input)) {
-            candidates.add(value.getConceptLabelToDisplay().getLabel());
-        }
+        Set<String> candidates = fieldValues(projectId, table, input).stream()
+                .map(value -> value.getConceptLabelToDisplay().getLabel())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         candidates.removeAll(configured);
         return List.copyOf(candidates);
     }
@@ -144,21 +144,16 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
         if (fieldConcept.isEmpty()) return List.of();
 
-        List<Concept> concepts = new ArrayList<>();
-        for (FormConfig config : formConfigRepository.findAllByActionUnitAndField(projectId, fieldConcept.get().getId())) {
-            if (config.getValueConcept() != null) {
-                concepts.add(config.getValueConcept());
-            }
-        }
-        return concepts;
+        return formConfigRepository.findAllByActionUnitAndField(projectId, fieldConcept.get().getId()).stream()
+                .map(FormConfig::getValueConcept)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private Set<String> configuredTypeNames(Long projectId, ConfigurableTable table) {
-        Set<String> names = new LinkedHashSet<>();
-        for (Concept concept : listConfiguredTypeConcepts(projectId, table)) {
-            names.add(labelOf(concept));
-        }
-        return names;
+        return listConfiguredTypeConcepts(projectId, table).stream()
+                .map(this::labelOf)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override
@@ -394,13 +389,10 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     private Set<String> configuredFieldNames(Long projectId, ConfigurableTable table, String typeName) {
-        Set<String> names = new HashSet<>();
-        for (EffectiveField field : effectiveFields(projectId, table, typeName).values()) {
-            if (field.field().getLabel() != null) {
-                names.add(field.field().getLabel());
-            }
-        }
-        return names;
+        return effectiveFields(projectId, table, typeName).values().stream()
+                .map(field -> field.field().getLabel())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     /**
@@ -654,9 +646,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             if (field == null) {
                 log.warn("System field '{}' of table {} has no row; it was defined after the last startup",
                         declared.getLabel(), table);
-                continue;
+            } else {
+                fields.add(new FormField(field, required.contains(declared.getId())));
             }
-            fields.add(new FormField(field, required.contains(declared.getId())));
         }
         return fields;
     }

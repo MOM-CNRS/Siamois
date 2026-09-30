@@ -77,11 +77,9 @@ public class RelationFieldRepository {
                 .setFirstResult(offset)
                 .setMaxResults(limit);
         bindSearch(query, search);
-        List<Row> out = new ArrayList<>();
-        for (Object result : query.getResultList()) {
-            out.add(toRow((Object[]) result));
-        }
-        return out;
+        return new ArrayList<>(((List<?>) query.getResultList()).stream()
+                .map(result -> toRow((Object[]) result))
+                .toList());
     }
 
     /** How many values an owner has, those whose label contains {@code search}. */

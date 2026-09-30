@@ -96,32 +96,36 @@ public record ProjectListFilter(
             Map.entry("openingRate", Kind.NUMERIC_RANGE)
     );
 
-    public static ProjectListFilter parse(MultiValueMap<String, String> queryParams) {
-        Map<String, String> contains = new LinkedHashMap<>();
-        Map<String, List<Long>> conceptOne = new LinkedHashMap<>();
-        Map<String, List<Long>> conceptMany = new LinkedHashMap<>();
-        Map<String, List<Long>> spatialOne = new LinkedHashMap<>();
-        Map<String, Double> numericFrom = new LinkedHashMap<>();
-        Map<String, Double> numericTo = new LinkedHashMap<>();
-
-        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
-            String rawKey = entry.getKey();
-            if (!rawKey.startsWith("f.")) continue;
-            List<String> values = entry.getValue();
-
+    /** The two halves of an {@code f.<key>[.from|.to]} parameter name. */
+    private record FilterKey(String base, String rangeBound) {
+        static FilterKey of(String rawKey) {
             String afterPrefix = rawKey.substring("f.".length());
-            String baseKey = afterPrefix;
-            String rangeBound = null;
             if (afterPrefix.endsWith(".from")) {
-                baseKey = afterPrefix.substring(0, afterPrefix.length() - ".from".length());
-                rangeBound = "from";
-            } else if (afterPrefix.endsWith(".to")) {
-                baseKey = afterPrefix.substring(0, afterPrefix.length() - ".to".length());
-                rangeBound = "to";
+                return new FilterKey(afterPrefix.substring(0, afterPrefix.length() - ".from".length()), "from");
             }
+            if (afterPrefix.endsWith(".to")) {
+                return new FilterKey(afterPrefix.substring(0, afterPrefix.length() - ".to".length()), "to");
+            }
+            return new FilterKey(afterPrefix, null);
+        }
+    }
 
+    /** The parameters read so far, by kind of filter. */
+    private static final class Collected {
+        final Map<String, String> contains = new LinkedHashMap<>();
+        final Map<String, List<Long>> conceptOne = new LinkedHashMap<>();
+        final Map<String, List<Long>> conceptMany = new LinkedHashMap<>();
+        final Map<String, List<Long>> spatialOne = new LinkedHashMap<>();
+        final Map<String, Double> numericFrom = new LinkedHashMap<>();
+        final Map<String, Double> numericTo = new LinkedHashMap<>();
+
+        void accept(String rawKey, List<String> values) {
+            if (!rawKey.startsWith("f.")) return;
+            FilterKey key = FilterKey.of(rawKey);
+            String baseKey = key.base();
+            String rangeBound = key.rangeBound();
             // f.<fieldId>: a field-keyed filter, FieldListQuery's.
-            if (FieldListQuery.isFieldKey(baseKey)) continue;
+            if (FieldListQuery.isFieldKey(baseKey)) return;
 
             Kind kind = FILTERABLE_FIELDS.get(baseKey);
             if (kind == null) {
@@ -153,15 +157,21 @@ public record ProjectListFilter(
                 }
             }
         }
+    }
 
+    public static ProjectListFilter parse(MultiValueMap<String, String> queryParams) {
+        Collected collected = new Collected();
+        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
+            collected.accept(entry.getKey(), entry.getValue());
+        }
         Map<String, NumericRange> numericRanges = new LinkedHashMap<>();
-        for (String key : union(numericFrom.keySet(), numericTo.keySet())) {
-            numericRanges.put(key, new NumericRange(numericFrom.get(key), numericTo.get(key)));
+        for (String key : union(collected.numericFrom.keySet(), collected.numericTo.keySet())) {
+            numericRanges.put(key, new NumericRange(collected.numericFrom.get(key), collected.numericTo.get(key)));
         }
 
         return new ProjectListFilter(
-                Map.copyOf(contains), Map.copyOf(conceptOne), Map.copyOf(conceptMany),
-                Map.copyOf(spatialOne), Map.copyOf(numericRanges));
+                Map.copyOf(collected.contains), Map.copyOf(collected.conceptOne), Map.copyOf(collected.conceptMany),
+                Map.copyOf(collected.spatialOne), Map.copyOf(numericRanges));
     }
 
     private static java.util.Set<String> union(java.util.Set<String> a, java.util.Set<String> b) {

@@ -666,37 +666,39 @@ public class ProjectApiService {
             if (field == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de formulaire inconnu : " + fieldId);
             }
-            AnswerInput input = entry.getValue();
+            applyOneAnswer(dto, field, fieldId, entry.getValue());
+        }
+    }
 
-            if (field instanceof CustomFieldSelectMultipleFromFieldCode) {
-                // "values: null" veut dire "ne pas toucher" (même convention que
-                // RecordingUnitPatchRequest.answers) — contrairement à "value: null" pour un champ
-                // scalaire, qui veut dire "vider".
-                FieldAnswerMaps.Delta delta = FieldAnswerMaps.delta(input);
-                if (delta != null) {
-                    // add/remove: applied to what the project holds, never to what the client read.
-                    List<ConceptDTO> added = delta.add().stream().map(this::coerceConceptId).toList();
-                    writeAnswerBinding(dto, field, delta.applyTo(readConceptsBinding(dto, field), added,
-                            ProjectApiService::conceptIdOf, new LinkedHashSet<>()));
-                    continue;
-                }
-                if (input == null || input.values() == null) {
-                    continue;
-                }
-                Set<ConceptDTO> concepts = input.values().stream()
-                        .map(this::coerceConceptId)
-                        .collect(Collectors.toCollection(LinkedHashSet::new));
-                writeAnswerBinding(dto, field, concepts);
-                continue;
-            }
-            if (input != null && input.isDelta()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "add/remove ne s'appliquent qu'à un champ multivalué : " + fieldId);
-            }
+    private void applyOneAnswer(ActionUnitDTO dto, CustomField field, String fieldId, AnswerInput input) {
+        if (field instanceof CustomFieldSelectMultipleFromFieldCode) {
+            applyConceptListAnswer(dto, field, input);
+            return;
+        }
+        if (input != null && input.isDelta()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "add/remove ne s'appliquent qu'à un champ multivalué : " + fieldId);
+        }
+        Object raw = input == null ? null : input.value();
+        Object coerced = raw == null ? null : coerceScalarAnswer(field, raw);
+        writeAnswerBinding(dto, field, coerced);
+    }
 
-            Object raw = input == null ? null : input.value();
-            Object coerced = raw == null ? null : coerceScalarAnswer(field, raw);
-            writeAnswerBinding(dto, field, coerced);
+    private void applyConceptListAnswer(ActionUnitDTO dto, CustomField field, AnswerInput input) {
+        // "values: null" veut dire "ne pas toucher" (même convention que
+        // RecordingUnitPatchRequest.answers) — contrairement à "value: null" pour un champ
+        // scalaire, qui veut dire "vider".
+        FieldAnswerMaps.Delta delta = FieldAnswerMaps.delta(input);
+        if (delta != null) {
+            // add/remove: applied to what the project holds, never to what the client read.
+            List<ConceptDTO> added = delta.add().stream().map(this::coerceConceptId).toList();
+            writeAnswerBinding(dto, field, delta.applyTo(readConceptsBinding(dto, field), added,
+                    ProjectApiService::conceptIdOf, new LinkedHashSet<>()));
+        } else if (input != null && input.values() != null) {
+            Set<ConceptDTO> concepts = input.values().stream()
+                    .map(this::coerceConceptId)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            writeAnswerBinding(dto, field, concepts);
         }
     }
 

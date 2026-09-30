@@ -77,32 +77,36 @@ public record RecordingUnitListFilter(
             Map.entry(RecordingUnitSpec.TAQ_FILTER, Kind.INT_RANGE)
     );
 
-    public static RecordingUnitListFilter parse(MultiValueMap<String, String> queryParams) {
-        Map<String, String> contains = new LinkedHashMap<>();
-        Map<String, List<Long>> idLists = new LinkedHashMap<>();
-        Map<String, OffsetDateTime> dateFrom = new LinkedHashMap<>();
-        Map<String, OffsetDateTime> dateTo = new LinkedHashMap<>();
-        Map<String, Integer> intFrom = new LinkedHashMap<>();
-        Map<String, Integer> intTo = new LinkedHashMap<>();
-
-        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
-            String rawKey = entry.getKey();
-            if (!rawKey.startsWith("f.")) continue;
-            List<String> values = entry.getValue();
-
+    /** The two halves of an {@code f.<key>[.from|.to]} parameter name. */
+    private record FilterKey(String base, String rangeBound) {
+        static FilterKey of(String rawKey) {
             String afterPrefix = rawKey.substring("f.".length());
-            String baseKey = afterPrefix;
-            String rangeBound = null;
             if (afterPrefix.endsWith(".from")) {
-                baseKey = afterPrefix.substring(0, afterPrefix.length() - ".from".length());
-                rangeBound = "from";
-            } else if (afterPrefix.endsWith(".to")) {
-                baseKey = afterPrefix.substring(0, afterPrefix.length() - ".to".length());
-                rangeBound = "to";
+                return new FilterKey(afterPrefix.substring(0, afterPrefix.length() - ".from".length()), "from");
             }
+            if (afterPrefix.endsWith(".to")) {
+                return new FilterKey(afterPrefix.substring(0, afterPrefix.length() - ".to".length()), "to");
+            }
+            return new FilterKey(afterPrefix, null);
+        }
+    }
 
+    /** The parameters read so far, by kind of filter. */
+    private static final class Collected {
+        final Map<String, String> contains = new LinkedHashMap<>();
+        final Map<String, List<Long>> idLists = new LinkedHashMap<>();
+        final Map<String, OffsetDateTime> dateFrom = new LinkedHashMap<>();
+        final Map<String, OffsetDateTime> dateTo = new LinkedHashMap<>();
+        final Map<String, Integer> intFrom = new LinkedHashMap<>();
+        final Map<String, Integer> intTo = new LinkedHashMap<>();
+
+        void accept(String rawKey, List<String> values) {
+            if (!rawKey.startsWith("f.")) return;
+            FilterKey key = FilterKey.of(rawKey);
+            String baseKey = key.base();
+            String rangeBound = key.rangeBound();
             // f.<fieldId>: a field-keyed filter, FieldListQuery's.
-            if (FieldListQuery.isFieldKey(baseKey)) continue;
+            if (FieldListQuery.isFieldKey(baseKey)) return;
 
             Kind kind = FILTERABLE_FIELDS.get(baseKey);
             if (kind == null) {
@@ -131,18 +135,24 @@ public record RecordingUnitListFilter(
                 }
             }
         }
+    }
 
+    public static RecordingUnitListFilter parse(MultiValueMap<String, String> queryParams) {
+        Collected collected = new Collected();
+        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
+            collected.accept(entry.getKey(), entry.getValue());
+        }
         Map<String, DateRange> dateRanges = new LinkedHashMap<>();
-        for (String key : union(dateFrom.keySet(), dateTo.keySet())) {
-            dateRanges.put(key, new DateRange(dateFrom.get(key), dateTo.get(key)));
+        for (String key : union(collected.dateFrom.keySet(), collected.dateTo.keySet())) {
+            dateRanges.put(key, new DateRange(collected.dateFrom.get(key), collected.dateTo.get(key)));
         }
         Map<String, IntRange> intRanges = new LinkedHashMap<>();
-        for (String key : union(intFrom.keySet(), intTo.keySet())) {
-            intRanges.put(key, new IntRange(intFrom.get(key), intTo.get(key)));
+        for (String key : union(collected.intFrom.keySet(), collected.intTo.keySet())) {
+            intRanges.put(key, new IntRange(collected.intFrom.get(key), collected.intTo.get(key)));
         }
 
         return new RecordingUnitListFilter(
-                Map.copyOf(contains), Map.copyOf(idLists), Map.copyOf(dateRanges), Map.copyOf(intRanges));
+                Map.copyOf(collected.contains), Map.copyOf(collected.idLists), Map.copyOf(dateRanges), Map.copyOf(intRanges));
     }
 
     /**

@@ -102,10 +102,9 @@ public final class FieldRulesJson {
         if (node == null || node.isNull() || node.isMissingNode()) {
             return FieldRules.NONE;
         }
-        List<FieldConstraint> constraints = new ArrayList<>();
-        for (JsonNode c : iterable(node.get("constraints"))) {
-            constraints.add(new FieldConstraint(FieldConstraint.Op.valueOf(c.get("op").asText()), c.get(FIELD_ID).asLong()));
-        }
+        List<FieldConstraint> constraints = elements(node.get("constraints"))
+                .map(c -> new FieldConstraint(FieldConstraint.Op.valueOf(c.get("op").asText()), c.get(FIELD_ID).asLong()))
+                .toList();
         return new FieldRules(
                 conditionOrNull(node.get("enabledWhen")),
                 conditionOrNull(node.get("requiredWhen")),
@@ -125,17 +124,12 @@ public final class FieldRulesJson {
         if (!node.has(FIELD_ID) || !node.has("op")) {
             throw new IllegalArgumentException("Invalid condition: " + node);
         }
-        List<FieldValueSpec> values = new ArrayList<>();
-        for (JsonNode v : iterable(node.get("values"))) {
-            values.add(valueFromJson(v));
-        }
+        List<FieldValueSpec> values = elements(node.get("values")).map(FieldRulesJson::valueFromJson).toList();
         return new Condition.Leaf(node.get(FIELD_ID).asLong(), ConditionOp.valueOf(node.get("op").asText()), values);
     }
 
     private static List<Condition> conditionList(JsonNode array) {
-        List<Condition> out = new ArrayList<>();
-        for (JsonNode c : iterable(array)) out.add(conditionFromJson(c));
-        return out;
+        return elements(array).map(FieldRulesJson::conditionFromJson).toList();
     }
 
     private static FieldValueSpec valueFromJson(JsonNode v) {
@@ -162,6 +156,10 @@ public final class FieldRulesJson {
             case KIND_REF_MATCH -> new OptionsFilter.RefMatch(node.get(FIELD_ID).asLong(), node.get("candidateFieldId").asLong());
             default -> throw new IllegalArgumentException("Unknown options kind: " + kind);
         };
+    }
+
+    private static java.util.stream.Stream<JsonNode> elements(@Nullable JsonNode array) {
+        return java.util.stream.StreamSupport.stream(iterable(array).spliterator(), false);
     }
 
     private static Iterable<JsonNode> iterable(@Nullable JsonNode array) {

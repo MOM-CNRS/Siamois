@@ -53,10 +53,8 @@ public class RecordingUnitDuplicationOpenApiService {
             RecordingUnitDTO parent = queue.poll();
             for (RecordingUnitDTO child : recordingUnitService.findAllByParentRecordingUnit(parent.getId())) {
                 if (!visited.add(child.getId())) continue;
-                if (descendants.size() >= MAX_NODES) {
-                    truncated = true;
-                    break;
-                }
+                truncated = descendants.size() >= MAX_NODES;
+                if (truncated) break;
                 descendants.add(new RecordingUnitStructureResource.Node(child.getId(), child.getFullIdentifier(), parent.getId()));
                 queue.add(child);
             }

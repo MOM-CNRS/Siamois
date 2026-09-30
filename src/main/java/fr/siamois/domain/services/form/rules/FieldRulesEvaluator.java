@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.LongFunction;
 
 /**
  * Evaluates the conditional rules of a form's columns against an entity's values — the Java twin
@@ -98,7 +99,7 @@ public final class FieldRulesEvaluator {
         }
     }
 
-    public boolean test(Condition condition, Function<Long, Object> valueOf) {
+    public boolean test(Condition condition, LongFunction<Object> valueOf) {
         if (condition instanceof Condition.All all) {
             return all.conditions().stream().allMatch(c -> test(c, valueOf));
         }
@@ -111,7 +112,7 @@ public final class FieldRulesEvaluator {
         return testLeaf((Condition.Leaf) condition, valueOf);
     }
 
-    private boolean testLeaf(Condition.Leaf leaf, Function<Long, Object> valueOf) {
+    private boolean testLeaf(Condition.Leaf leaf, LongFunction<Object> valueOf) {
         Object value = valueOf.apply(leaf.fieldId());
         List<Object> actual = RuleValues.scalarsOf(value);
         List<Object> expected = leaf.values().stream().map(this::expectedScalar).toList();
@@ -166,7 +167,7 @@ public final class FieldRulesEvaluator {
         };
     }
 
-    private boolean safe(@Nullable Condition condition, Function<Long, Object> valueOf, boolean whenAbsent) {
+    private boolean safe(@Nullable Condition condition, LongFunction<Object> valueOf, boolean whenAbsent) {
         if (condition == null) return whenAbsent;
         try {
             return test(condition, valueOf);
@@ -176,7 +177,7 @@ public final class FieldRulesEvaluator {
     }
 
     /** One state per column, keyed by field id. */
-    public Map<Long, FieldState> evaluate(List<RuledColumn> columns, Function<Long, Object> valueOf) {
+    public Map<Long, FieldState> evaluate(List<RuledColumn> columns, LongFunction<Object> valueOf) {
         Map<Long, FieldState> states = new LinkedHashMap<>();
         for (RuledColumn col : columns) {
             states.put(col.fieldId(), initialState(col, valueOf));
@@ -192,7 +193,7 @@ public final class FieldRulesEvaluator {
     }
 
     /** A column's state before the ordering constraints: enabled, required, what it holds while disabled, its options' context. */
-    private FieldState initialState(RuledColumn col, Function<Long, Object> valueOf) {
+    private FieldState initialState(RuledColumn col, LongFunction<Object> valueOf) {
         FieldRules rules = col.rules() == null ? FieldRules.NONE : col.rules();
         boolean enabled = safe(rules.enabledWhen(), valueOf, true);
         boolean required = enabled && (col.required() || safe(rules.requiredWhen(), valueOf, false));
@@ -211,7 +212,7 @@ public final class FieldRulesEvaluator {
     }
 
     private static void applyConstraint(@Nullable FieldState state, long selfId, FieldConstraint.Op op, long otherId,
-                                        Function<Long, Object> valueOf) {
+                                        LongFunction<Object> valueOf) {
         if (state == null) return;
         Double other = RuleValues.numberOf(valueOf.apply(otherId));
         if (other == null) return;

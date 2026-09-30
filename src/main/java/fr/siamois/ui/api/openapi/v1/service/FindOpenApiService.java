@@ -143,21 +143,25 @@ public class FindOpenApiService {
         }
 
         if (!answers.isEmpty()) {
-            Long projectId = ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
-            OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-                // The same effective form the find-types catalog lays out: system fields minus the
-                // inactive ones, plus the category's additional fields.
-                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId,
-                        ConfigurableTable.MOBILIER, dto.getCategory() != null ? dto.getCategory().getId() : null);
-                Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
-                        fieldAnswerPatchService.apply(dto, formUiDto, answers, projectId);
-                return specimenService.save(dto, additionalAnswers);
-            });
+            writeAnswers(dto, ru, answers, userInfo);
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(Specimen.class, specimenId, request.getValidated(), personDto);
         SpecimenDTO fresh = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds).orElse(dto);
         return withPermissionsAndUri(findOpenApiMapper.toResource(fresh), userInfo, fresh);
+    }
+
+    private void writeAnswers(SpecimenDTO dto, RecordingUnitDTO ru, Map<String, Object> answers, UserInfo userInfo) {
+        Long projectId = ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
+        OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            // The same effective form the find-types catalog lays out: system fields minus the
+            // inactive ones, plus the category's additional fields.
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId,
+                    ConfigurableTable.MOBILIER, dto.getCategory() != null ? dto.getCategory().getId() : null);
+            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
+                    fieldAnswerPatchService.apply(dto, formUiDto, answers, projectId);
+            return specimenService.save(dto, additionalAnswers);
+        });
     }
 
     /**

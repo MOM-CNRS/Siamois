@@ -221,6 +221,13 @@ public class RecordingUnitAnswersProjector {
         if (field instanceof CustomFieldDateTime) {
             return raw;
         }
+        if (field instanceof CustomFieldMeasurement) {
+            return raw instanceof MeasurementAnswerDTO m ? measurementRef(m) : null;
+        }
+        return referenceWireValue(field, raw, labels);
+    }
+
+    private static Object referenceWireValue(CustomField field, Object raw, Map<Long, String> labels) {
         if (field instanceof CustomFieldSelectOneFromFieldCode) {
             return raw instanceof ConceptDTO c ? conceptRef(c, labels) : null;
         }
@@ -238,9 +245,6 @@ public class RecordingUnitAnswersProjector {
         }
         if (field instanceof CustomFieldSelectMultiplePhase) {
             return refList(raw, item -> item instanceof PhaseDTO p ? phaseRef(p) : null);
-        }
-        if (field instanceof CustomFieldMeasurement) {
-            return raw instanceof MeasurementAnswerDTO m ? measurementRef(m) : null;
         }
         log.debug("Type de champ non projeté pour la liste UE: {}", field.getClass().getSimpleName());
         return null;

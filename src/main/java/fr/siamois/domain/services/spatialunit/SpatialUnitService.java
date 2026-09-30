@@ -333,25 +333,19 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A list of root SpatialUnit that have no parents
      */
     public List<SpatialUnitDTO> findRootsOf(Long id) {
-        List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
-            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
-                result.add(spatialUnit);
-            }
-        }
-        return result.stream()
+        return rootsOf(id).stream()
                 .map(spatialUnitMapper::convert)
                 .toList();
     }
 
+    private List<SpatialUnit> rootsOf(Long institutionId) {
+        return spatialUnitRepository.findAllOfInstitution(institutionId).stream()
+                .filter(spatialUnit -> spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0)
+                .toList();
+    }
+
     public List<SpatialUnitSummaryDTO> findSummaryRootsOf(Long id) {
-        List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
-            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
-                result.add(spatialUnit);
-            }
-        }
-        return result.stream()
+        return rootsOf(id).stream()
                 .map(spatialUnitSummaryMapper::convert)
                 .toList();
     }

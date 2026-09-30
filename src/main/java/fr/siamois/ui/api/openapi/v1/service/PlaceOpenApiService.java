@@ -285,8 +285,9 @@ public class PlaceOpenApiService {
      */
     static Set<String> requestedFieldIds(String fieldsParam) {
         if (fieldsParam == null || fieldsParam.isBlank()) return null;
-        Set<String> known = new LinkedHashSet<>();
-        for (CustomField field : listableFields()) known.add(String.valueOf(field.getId()));
+        Set<String> known = listableFields().stream()
+                .map(field -> String.valueOf(field.getId()))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         String value = fieldsParam.trim();
         if ("all".equalsIgnoreCase(value)) return known;
         Set<String> requested = new LinkedHashSet<>();

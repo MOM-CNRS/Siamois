@@ -180,6 +180,7 @@ public class FieldAnswerPatchService {
     private void applyEntry(Map.Entry<String, ?> entry, Patch patch) {
         CustomField field;
         CustomFieldAnswerViewModel viewModel;
+        FieldAnswerMaps.Delta delta;
         try {
             field = requireField(patch.fieldSource, entry.getKey());
             // A column the form marks readOnly — the project the entity belongs to, a generated
@@ -192,14 +193,6 @@ public class FieldAnswerPatchService {
             if (viewModel == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
             }
-        } catch (ResponseStatusException e) {
-            if (patch.strict) throw e;
-            log.debug("Réponse ignorée pour le champ {} : {}", entry.getKey(), e.getReason());
-            return;
-        }
-
-        FieldAnswerMaps.Delta delta;
-        try {
             delta = FieldAnswerMaps.delta(entry.getValue());
             if (delta != null && !isMultiple(field)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -214,31 +207,42 @@ public class FieldAnswerPatchService {
         if (delta == null && raw == null && isMultiple(field)) {
             return; // "values: null" = leave the multi-value field untouched ("values: []" clears it)
         }
-        Object typed;
-        if (delta != null) {
-            typed = applyDelta(field, viewModel, delta, patch.projectId);
-        } else if (raw == null) {
-            typed = emptyValueOf(field);
-        } else if (!patch.strict && !isWritable(field)) {
-            log.debug("Type de champ non pris en charge pour l'API v1, réponse ignorée : {}", field.getClass().getSimpleName());
-            return;
-        } else {
-            try {
-                typed = coerce(field, raw, patch.projectId);
-            } catch (InvalidAnswerValueException e) {
-                if (patch.strict) throw e;
-                log.warn("Valeur ignorée pour le champ {} : {}", field.getId(), e.getReason());
-                return;
-            }
-        }
-        formService.applyTypedValueToAnswer(viewModel, typed);
-        patch.values.put(field.getId(), typed);
+        TypedValue typed = typedValue(field, viewModel, delta, raw, patch);
+        if (typed == null) return;
+        formService.applyTypedValueToAnswer(viewModel, typed.value());
+        patch.values.put(field.getId(), typed.value());
         patch.written.add(field);
 
         if (Boolean.TRUE.equals(field.getIsSystemField())) {
             if (raw == null) patch.clearedSystemFields.add(field);
         } else {
             patch.touchedAdditional.put(field, viewModel);
+        }
+    }
+
+    /** A value ready for the view model (possibly null: a cleared field). */
+    private record TypedValue(Object value) {
+    }
+
+    /** The typed value of an answer, or null when the (lenient) patch leaves that answer out. */
+    private TypedValue typedValue(CustomField field, CustomFieldAnswerViewModel viewModel, FieldAnswerMaps.Delta delta,
+                                  Object raw, Patch patch) {
+        if (delta != null) {
+            return new TypedValue(applyDelta(field, viewModel, delta, patch.projectId));
+        }
+        if (raw == null) {
+            return new TypedValue(emptyValueOf(field));
+        }
+        if (!patch.strict && !isWritable(field)) {
+            log.debug("Type de champ non pris en charge pour l'API v1, réponse ignorée : {}", field.getClass().getSimpleName());
+            return null;
+        }
+        try {
+            return new TypedValue(coerce(field, raw, patch.projectId));
+        } catch (InvalidAnswerValueException e) {
+            if (patch.strict) throw e;
+            log.warn("Valeur ignorée pour le champ {} : {}", field.getId(), e.getReason());
+            return null;
         }
     }
 
@@ -256,8 +260,7 @@ public class FieldAnswerPatchService {
         Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator().evaluate(columns, values::get);
         for (CustomField field : written) {
             FieldRulesEvaluator.FieldState state = states.get(field.getId());
-            if (state == null) continue;
-            String violation = violationOf(field.getId(), values.get(field.getId()), state);
+            String violation = state == null ? null : violationOf(field.getId(), values.get(field.getId()), state);
             if (violation == null) continue;
             if (strict) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, violation);
             log.warn("Règle de formulaire non respectée, réponse conservée : {}", violation);
@@ -279,17 +282,22 @@ public class FieldAnswerPatchService {
         }
         FieldRulesEvaluator.OptionsContext options = state.optionsContext();
         if (!empty && options != null && "RELATED_CONCEPTS".equals(options.kind())) {
-            if (options.value() == null) {
-                return "Renseignez d'abord le champ " + options.parentFieldId() + " : " + fieldId;
-            }
-            long parent = Long.parseLong(options.value());
-            for (Object id : RuleValues.scalarsOf(value)) {
-                if (!conceptRepository.isRelated(parent, Long.parseLong(String.valueOf(id)))) {
-                    return "Concept " + id + " hors de la liste liée au champ " + options.parentFieldId() + " : " + fieldId;
-                }
-            }
+            return relatedConceptsViolation(fieldId, value, options);
         }
         // REF_MATCH is only applied client side for now (the picker's own filter).
+        return null;
+    }
+
+    private String relatedConceptsViolation(long fieldId, Object value, FieldRulesEvaluator.OptionsContext options) {
+        if (options.value() == null) {
+            return "Renseignez d'abord le champ " + options.parentFieldId() + " : " + fieldId;
+        }
+        long parent = Long.parseLong(options.value());
+        for (Object id : RuleValues.scalarsOf(value)) {
+            if (!conceptRepository.isRelated(parent, Long.parseLong(String.valueOf(id)))) {
+                return "Concept " + id + " hors de la liste liée au champ " + options.parentFieldId() + " : " + fieldId;
+            }
+        }
         return null;
     }
 
@@ -423,60 +431,75 @@ public class FieldAnswerPatchService {
 
     // ========== Coercion: raw JSON value → the typed value FormService's view-model handlers take ==========
 
+    /** Marks a field kind a coercion step does not handle. */
+    private static final Object UNHANDLED = new Object();
+
     private Object coerce(CustomField field, Object raw, Long projectId) {
         Object f = Hibernate.unproxy(field);
         try {
-            if (f instanceof CustomFieldText) return String.valueOf(raw);
-            if (f instanceof CustomFieldInteger) return raw instanceof Number n ? n.intValue() : Integer.parseInt(String.valueOf(raw).trim());
-            if (f instanceof CustomFieldDecimal) return toDouble(raw);
-            if (f instanceof CustomFieldDateTime) return toOffsetDateTime(raw);
-            if (f instanceof CustomFieldMeasurement measurement) return toMeasurement(raw, measurement);
-            if (f instanceof CustomFieldSelectOneFromFieldCode || f instanceof CustomFieldSelectOne) {
-                return one(raw, "Concept", conceptRepository::findById, conceptMapper::convert);
-            }
-            if (f instanceof CustomFieldSelectMultipleFromFieldCode || f instanceof CustomFieldSelectMultiple) {
-                return new ArrayList<>(many(raw, "Concept", conceptRepository::findById, conceptMapper::convert));
-            }
-            if (f instanceof CustomFieldSelectOnePerson) return one(raw, "Personne", personRepository::findById, personMapper::convert);
-            if (f instanceof CustomFieldSelectMultiplePerson) {
-                return new ArrayList<>(many(raw, "Personne", personRepository::findById, personMapper::convert));
-            }
-            if (f instanceof CustomFieldSelectOneActionUnit) {
-                return one(raw, "Projet", actionUnitRepository::findById, actionUnitSummaryMapper::convert);
-            }
-            if (f instanceof CustomFieldSelectOneActionCode) return actionCode(raw);
-            if (f instanceof CustomFieldSelectOneSpatialUnit) {
-                return one(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
-            }
-            if (f instanceof CustomFieldSelectMultipleSpatialUnitTree) {
-                return many(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
-            }
-            if (f instanceof CustomFieldSelectOneRecordingUnit) {
-                return one(raw, RECORDING_UNIT_LABEL, id -> recordingUnitRepository.findById(id)
-                        .map(ru -> inProject(ru.getActionUnit(), projectId, RECORDING_UNIT_LABEL, id, ru)), recordingUnitSummaryMapper::convert);
-            }
-            if (f instanceof CustomFieldSelectMultipleRecordingUnit) {
-                return many(raw, RECORDING_UNIT_LABEL, id -> recordingUnitRepository.findById(id)
-                        .map(ru -> inProject(ru.getActionUnit(), projectId, RECORDING_UNIT_LABEL, id, ru)), recordingUnitSummaryMapper::convert);
-            }
-            if (f instanceof CustomFieldSelectMultiplePhase) {
-                return many(raw, "Phase", id -> phaseRepository.findById(id)
-                        .map(p -> inProject(p.getActionUnit(), projectId, "Phase", id, p)), phaseMapper::convert);
-            }
-            if (f instanceof CustomFieldSelectMultipleContainer) {
-                return many(raw, "Contenant", id -> containerRepository.findById(id)
-                        .map(c -> inProject(c.getActionUnit(), projectId, "Contenant", id, c)), containerMapper::convert);
-            }
-            if (f instanceof CustomFieldSelectMultipleSpecimen) {
-                return new ArrayList<>(many(raw, "Mobilier", id -> specimenRepository.findById(id)
-                        .map(s -> inProject(s.getActionUnit(), projectId, "Mobilier", id, s)), specimenSummaryMapper::convert));
-            }
+            Object value = coerceScalar(f, raw);
+            if (value == UNHANDLED) value = coerceReference(f, raw, projectId);
+            if (value != UNHANDLED) return value;
         } catch (NumberFormatException | DateTimeParseException e) {
             // Only a value that does not parse; any other failure is a bug and must surface.
             throw new InvalidAnswerValueException("Valeur invalide pour le champ " + field.getId() + " : " + e.getMessage(), e);
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Ce type de champ n'est pas modifiable via l'API : " + f.getClass().getSimpleName());
+    }
+
+
+    private Object coerceScalar(Object f, Object raw) {
+        if (f instanceof CustomFieldText) return String.valueOf(raw);
+        if (f instanceof CustomFieldInteger) return raw instanceof Number n ? n.intValue() : Integer.parseInt(String.valueOf(raw).trim());
+        if (f instanceof CustomFieldDecimal) return toDouble(raw);
+        if (f instanceof CustomFieldDateTime) return toOffsetDateTime(raw);
+        if (f instanceof CustomFieldMeasurement measurement) return toMeasurement(raw, measurement);
+        return UNHANDLED;
+    }
+
+    private Object coerceReference(Object f, Object raw, Long projectId) {
+        if (f instanceof CustomFieldSelectOneFromFieldCode || f instanceof CustomFieldSelectOne) {
+            return one(raw, "Concept", conceptRepository::findById, conceptMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleFromFieldCode || f instanceof CustomFieldSelectMultiple) {
+            return new ArrayList<>(many(raw, "Concept", conceptRepository::findById, conceptMapper::convert));
+        }
+        if (f instanceof CustomFieldSelectOnePerson) return one(raw, "Personne", personRepository::findById, personMapper::convert);
+        if (f instanceof CustomFieldSelectMultiplePerson) {
+            return new ArrayList<>(many(raw, "Personne", personRepository::findById, personMapper::convert));
+        }
+        if (f instanceof CustomFieldSelectOneActionUnit) {
+            return one(raw, "Projet", actionUnitRepository::findById, actionUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectOneActionCode) return actionCode(raw);
+        if (f instanceof CustomFieldSelectOneSpatialUnit) {
+            return one(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleSpatialUnitTree) {
+            return many(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectOneRecordingUnit) {
+            return one(raw, RECORDING_UNIT_LABEL, id -> recordingUnitRepository.findById(id)
+                    .map(ru -> inProject(ru.getActionUnit(), projectId, RECORDING_UNIT_LABEL, id, ru)), recordingUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleRecordingUnit) {
+            return many(raw, RECORDING_UNIT_LABEL, id -> recordingUnitRepository.findById(id)
+                    .map(ru -> inProject(ru.getActionUnit(), projectId, RECORDING_UNIT_LABEL, id, ru)), recordingUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultiplePhase) {
+            return many(raw, "Phase", id -> phaseRepository.findById(id)
+                    .map(p -> inProject(p.getActionUnit(), projectId, "Phase", id, p)), phaseMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleContainer) {
+            return many(raw, "Contenant", id -> containerRepository.findById(id)
+                    .map(c -> inProject(c.getActionUnit(), projectId, "Contenant", id, c)), containerMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleSpecimen) {
+            return new ArrayList<>(many(raw, "Mobilier", id -> specimenRepository.findById(id)
+                    .map(s -> inProject(s.getActionUnit(), projectId, "Mobilier", id, s)), specimenSummaryMapper::convert));
+        }
+        return UNHANDLED;
     }
 
     private static <E> E inProject(ActionUnit actionUnit, Long projectId, String label, long id, E entity) {
@@ -530,20 +553,21 @@ public class FieldAnswerPatchService {
         MeasurementAnswerDTO dto = new MeasurementAnswerDTO();
         if (raw instanceof Map<?, ?> map) {
             Object numeric = map.get("numericValue");
-            if (numeric != null && !String.valueOf(numeric).isBlank()) dto.setNumericValue(toDouble(numeric));
+            if (hasText(numeric)) dto.setNumericValue(toDouble(numeric));
             Object comment = map.get("comment");
-            if (comment != null && !String.valueOf(comment).isBlank()) dto.setComment(String.valueOf(comment).trim());
+            if (hasText(comment)) dto.setComment(String.valueOf(comment).trim());
         } else {
             dto.setNumericValue(toDouble(raw));
         }
         // The unit is the field's own (zInf, zSup, …), never the client's.
         if (field.getUnit() != null) {
             dto.setUnit(unitDefinitionMapper.convert(field.getUnit()));
-        } else {
-            UnitDefinitionDTO unit = dto.getUnit();
-            if (unit != null && (unit.getId() == null || unit.getId() <= 0)) unit.setId(null);
         }
         return dto;
+    }
+
+    private static boolean hasText(Object value) {
+        return value != null && !String.valueOf(value).isBlank();
     }
 
     private static long requireLongId(Object raw, String label) {

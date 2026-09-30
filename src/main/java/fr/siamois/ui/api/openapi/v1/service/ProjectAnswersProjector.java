@@ -171,17 +171,21 @@ public class ProjectAnswersProjector {
         for (ActionUnitDTO row : rows) {
             if (row == null) continue;
             for (CustomField field : fields) {
-                Object raw = readBinding(row, field);
-                if (raw instanceof ConceptDTO c) {
-                    concepts.add(c);
-                } else if (raw instanceof Collection<?> items) {
-                    for (Object item : items) {
-                        if (item instanceof ConceptDTO c) concepts.add(c);
-                    }
-                }
+                addConcepts(readBinding(row, field), concepts);
             }
         }
         return concepts;
+    }
+
+    /** The concept a binding holds, or those of the collection it holds. */
+    private static void addConcepts(Object raw, List<ConceptDTO> concepts) {
+        if (raw instanceof ConceptDTO c) {
+            concepts.add(c);
+        } else if (raw instanceof Collection<?> items) {
+            for (Object item : items) {
+                if (item instanceof ConceptDTO c) concepts.add(c);
+            }
+        }
     }
 
     /**
@@ -225,6 +229,10 @@ public class ProjectAnswersProjector {
         if (field instanceof CustomFieldDateTime) {
             return raw;
         }
+        return referenceWireValue(field, raw, labels);
+    }
+
+    private static Object referenceWireValue(CustomField field, Object raw, Map<Long, String> labels) {
         if (field instanceof CustomFieldSelectOneFromFieldCode) {
             return raw instanceof ConceptDTO c ? conceptRef(c, labels) : null;
         }

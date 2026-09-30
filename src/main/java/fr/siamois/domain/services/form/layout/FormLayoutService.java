@@ -78,8 +78,7 @@ public class FormLayoutService {
         Map<Long, List<FormLayout.Item>> itemsByGroup = new LinkedHashMap<>();
         groups.forEach(g -> itemsByGroup.put(g.getId(), new ArrayList<>()));
         for (FieldFormConfig ffc : fieldFormConfigRepository.findAllByFormConfigId(formConfig.getId())) {
-            if (ffc.getGroup() == null) continue;
-            List<FormLayout.Item> items = itemsByGroup.get(ffc.getGroup().getId());
+            List<FormLayout.Item> items = ffc.getGroup() == null ? null : itemsByGroup.get(ffc.getGroup().getId());
             if (items == null) continue;
             items.add(new FormLayout.Item(
                     (CustomField) Hibernate.unproxy(ffc.getField()),
@@ -246,15 +245,27 @@ public class FormLayoutService {
             group = groupRepository.save(group);
             kept.add(group.getId());
             last = group;
-            int position = 0;
-            for (String name : spec.fieldNames()) {
-                FieldFormConfig row = byName.get(name);
-                if (row == null || !placed.add(name)) continue;
+            placeFields(spec, group, byName, placed);
+        }
+        giveOrphansTo(last, rows, kept, placed);
+        stored.values().stream().filter(g -> !kept.contains(g.getId())).forEach(groupRepository::delete);
+    }
+
+    /** The fields a group spec names, in order, each placed once in the whole arrangement. */
+    private void placeFields(GroupSpec spec, FormConfigGroup group, Map<String, FieldFormConfig> byName, Set<String> placed) {
+        int position = 0;
+        for (String name : spec.fieldNames()) {
+            FieldFormConfig row = byName.get(name);
+            if (row != null && placed.add(name)) {
                 row.setGroup(group);
                 row.setPosition(++position);
                 fieldFormConfigRepository.save(row);
             }
         }
+    }
+
+    /** A field left in a dropped group, and missing from the arrangement, goes to the last group. */
+    private void giveOrphansTo(FormConfigGroup last, List<FieldFormConfig> rows, Set<Long> kept, Set<String> placed) {
         final Long lastId = last.getId();
         int position = (int) rows.stream().filter(r -> r.getGroup() != null && lastId.equals(r.getGroup().getId())).count();
         for (FieldFormConfig row : rows) {
@@ -265,7 +276,6 @@ public class FormLayoutService {
                 fieldFormConfigRepository.save(row);
             }
         }
-        stored.values().stream().filter(g -> !kept.contains(g.getId())).forEach(groupRepository::delete);
     }
 
     @Transactional

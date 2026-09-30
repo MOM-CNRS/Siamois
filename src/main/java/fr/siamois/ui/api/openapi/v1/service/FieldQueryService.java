@@ -437,7 +437,8 @@ public class FieldQueryService {
 
     // ========== Filter ==========
 
-    private <E> Specification<E> filter(Target target, long fieldId, FieldListQuery.Criterion criterion) {
+    /** A text filter is a value, a number or date one a range, a reference one ids of a filterable target. */
+    private static void requireFilterShape(Target target, long fieldId, FieldListQuery.Criterion criterion) {
         switch (target.kind) {
             case TEXT -> {
                 if (criterion.isRange()) throw badRequest("Filtre en plage impossible sur un champ texte : f." + fieldId);
@@ -450,6 +451,10 @@ public class FieldQueryService {
                 if (!target.idFilterable) throw badRequest("Le champ " + fieldId + " ne se filtre pas");
             }
         }
+    }
+
+    private <E> Specification<E> filter(Target target, long fieldId, FieldListQuery.Criterion criterion) {
+        requireFilterShape(target, fieldId, criterion);
         // Parsed up front, so a bad value is a 400 before any query runs.
         List<Long> ids = target.kind == Kind.REFERENCE || target.kind == Kind.REFERENCES ? parseIds(fieldId, criterion.values()) : List.of();
         Object from = bound(target, fieldId, criterion.from(), true);
@@ -646,38 +651,43 @@ public class FieldQueryService {
     private static Object bound(Target target, long fieldId, @Nullable String raw, boolean lower) {
         if (raw == null) return null;
         Class<?> type = boxed(target.valueType);
-        if (target.kind == Kind.NUMBER) {
-            double d;
-            try {
-                d = Double.parseDouble(raw.replace(',', '.'));
-            } catch (NumberFormatException e) {
-                throw badRequest("Nombre invalide pour f." + fieldId + " : " + raw);
-            }
-            if (Integer.class.equals(type)) return (int) (lower ? Math.ceil(d) : Math.floor(d));
-            if (Long.class.equals(type)) return (long) (lower ? Math.ceil(d) : Math.floor(d));
-            if (Short.class.equals(type)) return (short) (lower ? Math.ceil(d) : Math.floor(d));
-            if (Float.class.equals(type)) return (float) d;
-            if (BigDecimal.class.equals(type)) return BigDecimal.valueOf(d);
-            return d;
-        }
-        if (target.kind == Kind.DATE) {
-            LocalDateTime utc;
-            try {
-                long extraDays = lower ? 0 : 1;
-                utc = raw.length() == 10
-                        ? LocalDate.parse(raw).plusDays(extraDays).atStartOfDay()
-                        : OffsetDateTime.parse(raw).withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
-            } catch (DateTimeParseException e) {
-                throw badRequest("Date invalide (ISO-8601 attendu) pour f." + fieldId + " : " + raw);
-            }
-            if (OffsetDateTime.class.equals(type)) return utc.atOffset(ZoneOffset.UTC);
-            if (LocalDate.class.equals(type)) return utc.toLocalDate();
-            if (Instant.class.equals(type)) return utc.toInstant(ZoneOffset.UTC);
-            if (ZonedDateTime.class.equals(type)) return utc.atZone(ZoneOffset.UTC);
-            if (Date.class.isAssignableFrom(type)) return Date.from(utc.toInstant(ZoneOffset.UTC));
-            return utc;
-        }
+        if (target.kind == Kind.NUMBER) return numberBound(type, fieldId, raw, lower);
+        if (target.kind == Kind.DATE) return dateBound(type, fieldId, raw, lower);
         throw badRequest("Filtre en plage impossible : f." + fieldId);
+    }
+
+    private static Object numberBound(Class<?> type, long fieldId, String raw, boolean lower) {
+        double d;
+        try {
+            d = Double.parseDouble(raw.replace(',', '.'));
+        } catch (NumberFormatException e) {
+            throw badRequest("Nombre invalide pour f." + fieldId + " : " + raw);
+        }
+        double rounded = lower ? Math.ceil(d) : Math.floor(d);
+        if (Integer.class.equals(type)) return (int) rounded;
+        if (Long.class.equals(type)) return (long) rounded;
+        if (Short.class.equals(type)) return (short) rounded;
+        if (Float.class.equals(type)) return (float) d;
+        if (BigDecimal.class.equals(type)) return BigDecimal.valueOf(d);
+        return d;
+    }
+
+    private static Object dateBound(Class<?> type, long fieldId, String raw, boolean lower) {
+        LocalDateTime utc;
+        try {
+            long extraDays = lower ? 0 : 1;
+            utc = raw.length() == 10
+                    ? LocalDate.parse(raw).plusDays(extraDays).atStartOfDay()
+                    : OffsetDateTime.parse(raw).withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        } catch (DateTimeParseException e) {
+            throw badRequest("Date invalide (ISO-8601 attendu) pour f." + fieldId + " : " + raw);
+        }
+        if (OffsetDateTime.class.equals(type)) return utc.atOffset(ZoneOffset.UTC);
+        if (LocalDate.class.equals(type)) return utc.toLocalDate();
+        if (Instant.class.equals(type)) return utc.toInstant(ZoneOffset.UTC);
+        if (ZonedDateTime.class.equals(type)) return utc.atZone(ZoneOffset.UTC);
+        if (Date.class.isAssignableFrom(type)) return Date.from(utc.toInstant(ZoneOffset.UTC));
+        return utc;
     }
 
     private static ResponseStatusException badRequest(String message) {

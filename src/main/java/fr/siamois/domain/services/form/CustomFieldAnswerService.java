@@ -283,23 +283,9 @@ public class CustomFieldAnswerService {
         if (former.isEmpty()) return;
 
         Set<CustomField> activeFields = activeFieldsOf(owner);
-        Map<CustomField, CustomFieldAnswer> carried = new LinkedHashMap<>();
-        for (FormConfigAnswer set : former) {
-            for (CustomFieldAnswer answer : answersOf(set)) {
-                CustomField field = answer.getCustomField();
-                if (activeFields.contains(field) && !carried.containsKey(field)) {
-                    carried.put(field, answer);
-                }
-            }
-        }
-
+        Map<CustomField, CustomFieldAnswer> carried = answersToCarry(former, activeFields);
         if (!carried.isEmpty()) {
-            Optional<FormConfig> target = current.isPresent() ? current
-                    : tableFieldConfigService.createOrGetFormConfig(owner.projectId(), owner.table(), owner.typeConceptId());
-            if (target.isPresent()) {
-                FormConfigAnswer currentSet = owner.createOrGet().apply(target.get());
-                carried.forEach((field, answer) -> carryOver(currentSet, field, answer));
-            }
+            carryToCurrentSet(owner, current, carried);
         }
 
         for (FormConfigAnswer set : former) {
@@ -308,6 +294,27 @@ public class CustomFieldAnswerService {
         }
         log.debug("{}: {} answer set(s) of a former type resolved, {} answer(s) carried over",
                 owner.description(), former.size(), carried.size());
+    }
+
+    /** The answers of the former sets to fields the current type has, the most recent set winning. */
+    private static Map<CustomField, CustomFieldAnswer> answersToCarry(List<FormConfigAnswer> former, Set<CustomField> activeFields) {
+        Map<CustomField, CustomFieldAnswer> carried = new LinkedHashMap<>();
+        for (FormConfigAnswer set : former) {
+            for (CustomFieldAnswer answer : answersOf(set)) {
+                CustomField field = answer.getCustomField();
+                if (activeFields.contains(field)) carried.putIfAbsent(field, answer);
+            }
+        }
+        return carried;
+    }
+
+    private void carryToCurrentSet(AnswerOwner owner, Optional<FormConfig> current, Map<CustomField, CustomFieldAnswer> carried) {
+        Optional<FormConfig> target = current.isPresent() ? current
+                : tableFieldConfigService.createOrGetFormConfig(owner.projectId(), owner.table(), owner.typeConceptId());
+        if (target.isPresent()) {
+            FormConfigAnswer currentSet = owner.createOrGet().apply(target.get());
+            carried.forEach((field, answer) -> carryOver(currentSet, field, answer));
+        }
     }
 
     private static Set<CustomFieldAnswer> answersOf(FormConfigAnswer set) {

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import java.util.function.LongFunction;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
@@ -42,7 +43,7 @@ public class RelationFieldService {
      */
     @Transactional(readOnly = true)
     public Map<Long, MultiValue> previews(RelationField relation, Collection<Long> ownerIds, int limit, String lang,
-                                          Function<Long, String> valuesHref) {
+                                          LongFunction<String> valuesHref) {
         Map<Long, RelationFieldRepository.Preview> previews = relationFieldRepository.previews(relation, ownerIds, limit);
         Map<Long, String> conceptLabels = conceptLabels(previews.values().stream()
                 .flatMap(p -> p.rows().stream()).toList(), lang);
