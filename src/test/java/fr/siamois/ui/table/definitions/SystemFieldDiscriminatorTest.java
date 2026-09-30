@@ -23,8 +23,8 @@ class SystemFieldDiscriminatorTest {
                 .map(FieldAnswerWireService::answerTypeOf)
                 .toList();
 
-        assertThat(answerTypes).isNotEmpty();
         assertThat(answerTypes)
+                .isNotEmpty()
                 .allSatisfy(answerType -> assertThat(answerType).hasSizeLessThanOrEqualTo(31));
     }
 }

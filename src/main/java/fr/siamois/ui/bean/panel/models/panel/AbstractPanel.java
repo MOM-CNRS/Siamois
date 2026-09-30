@@ -98,7 +98,7 @@ public abstract class AbstractPanel implements Serializable {
      * error, so none of the React panel's bridged actions (reactPanelActions.xhtml) ever existed.
      */
     public String getJsPanelIndex() {
-        return getPanelIndex().replaceAll("[^A-Za-z0-9_]", "_");
+        return getPanelIndex().replaceAll("\\W", "_");
     }
 
     /** React closed the overview: forget it, so a reload doesn't reopen it. */

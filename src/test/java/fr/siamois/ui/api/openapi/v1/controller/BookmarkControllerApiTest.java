@@ -41,6 +41,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Set;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -118,7 +119,7 @@ class BookmarkControllerApiTest {
                 phaseService,
                 containerService,
                 bookmarkService,
-                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         BookmarkControllerApi controller = new BookmarkControllerApi(projectApiService, bookmarkService);
 

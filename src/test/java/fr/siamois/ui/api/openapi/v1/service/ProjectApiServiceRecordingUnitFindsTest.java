@@ -38,6 +38,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -102,7 +103,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService, phaseService, containerService,
-                bookmarkService, historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                bookmarkService, historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
     }
 
     private ProjectApiCaller caller() {

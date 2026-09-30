@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Locale;
 
+import static org.mockito.Mockito.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -67,7 +68,7 @@ class OrganizationFieldCatalogServiceTest {
 
         service.build(7L, ConfigurableTable.PHASE, "fr");
 
-        org.mockito.Mockito.verify(fieldQueryService, org.mockito.Mockito.atLeastOnce())
+        verify(fieldQueryService, org.mockito.Mockito.atLeastOnce())
                 .withQuery(any(FieldResource.class), eq(Phase.class), any());
     }
 

@@ -9,7 +9,6 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;

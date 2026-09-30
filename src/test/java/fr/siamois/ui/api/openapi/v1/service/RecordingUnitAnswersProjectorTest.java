@@ -105,7 +105,7 @@ class RecordingUnitAnswersProjectorTest {
         Map<String, Object> answers = projector.project(
                 List.of(dto), Set.of(fieldId("type")), Map.of(7L, "Couche")).get(1L);
 
-        assertThat(answers.get(fieldId("type"))).isEqualTo(new ResourceRef("7", "concepts", "Couche"));
+        assertThat(answers).containsEntry(fieldId("type"), new ResourceRef("7", "concepts", "Couche"));
     }
 
     @Test
@@ -119,7 +119,7 @@ class RecordingUnitAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("author")), Map.of()).get(1L);
 
-        assertThat(answers.get(fieldId("author"))).isEqualTo(new ResourceRef("3", "persons", "Jeanne Dupont"));
+        assertThat(answers).containsEntry(fieldId("author"), new ResourceRef("3", "persons", "Jeanne Dupont"));
     }
 
     @Test
@@ -133,7 +133,7 @@ class RecordingUnitAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("contributors")), Map.of()).get(1L);
 
-        assertThat(answers.get(fieldId("contributors"))).isEqualTo(List.of(new ResourceRef("4", "persons", "A B")));
+        assertThat(answers).containsEntry(fieldId("contributors"), List.of(new ResourceRef("4", "persons", "A B")));
     }
 
     @Test
@@ -146,7 +146,7 @@ class RecordingUnitAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("actionUnit")), Map.of()).get(1L);
 
-        assertThat(answers.get(fieldId("actionUnit"))).isEqualTo(new ResourceRef("9", "action-units", "INST-PROJ"));
+        assertThat(answers).containsEntry(fieldId("actionUnit"), new ResourceRef("9", "action-units", "INST-PROJ"));
     }
 
     @Test
@@ -159,7 +159,7 @@ class RecordingUnitAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("spatialUnit")), Map.of()).get(1L);
 
-        assertThat(answers.get(fieldId("spatialUnit"))).isEqualTo(new ResourceRef("11", "spatial-units", "Zone A"));
+        assertThat(answers).containsEntry(fieldId("spatialUnit"), new ResourceRef("11", "spatial-units", "Zone A"));
     }
 
     @Test
@@ -172,7 +172,7 @@ class RecordingUnitAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("phases")), Map.of()).get(1L);
 
-        assertThat(answers.get(fieldId("phases"))).isEqualTo(List.of(new ResourceRef("21", "phases", "Phase 1")));
+        assertThat(answers).containsEntry(fieldId("phases"), List.of(new ResourceRef("21", "phases", "Phase 1")));
     }
 
     @Test
@@ -190,7 +190,7 @@ class RecordingUnitAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("zInf")), Map.of()).get(1L);
 
-        assertThat(answers.get(fieldId("zInf"))).isEqualTo(new MeasurementRef(3.5, "cm", 0.035, "mesuré au clou"));
+        assertThat(answers).containsEntry(fieldId("zInf"), new MeasurementRef(3.5, "cm", 0.035, "mesuré au clou"));
     }
 
     /**

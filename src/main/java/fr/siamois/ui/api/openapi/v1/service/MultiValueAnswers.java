@@ -12,7 +12,6 @@ import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer;
-import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;

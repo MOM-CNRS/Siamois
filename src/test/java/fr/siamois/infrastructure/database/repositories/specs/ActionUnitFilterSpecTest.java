@@ -56,7 +56,7 @@ class ActionUnitFilterSpecTest {
         Expression<String> lowered = mock(Expression.class);
         Predicate predicate = mock(Predicate.class);
         when(root.get("oaCode")).thenReturn(property);
-        when(cb.coalesce(eq(property), eq(""))).thenReturn(coalesced);
+        when(cb.coalesce(property, "")).thenReturn(coalesced);
         when(cb.lower(any())).thenReturn(lowered);
         when(cb.like(lowered, "%foss%")).thenReturn(predicate);
 
@@ -116,7 +116,7 @@ class ActionUnitFilterSpecTest {
         Path<Double> property = mock(Path.class);
         Predicate predicate = mock(Predicate.class);
         when(root.<Double>get("openingRate")).thenReturn(property);
-        when(cb.between(eq(property), eq(10.0), eq(40.0))).thenReturn(predicate);
+        when(cb.between(property, 10.0, 40.0)).thenReturn(predicate);
 
         Specification<ActionUnit> spec = ActionUnitFilterSpec.numericRange(
                 "openingRate", new ProjectListFilter.NumericRange(10.0, 40.0));
@@ -131,7 +131,7 @@ class ActionUnitFilterSpecTest {
         Path<Double> property = mock(Path.class);
         Predicate predicate = mock(Predicate.class);
         when(root.<Double>get("openingRate")).thenReturn(property);
-        when(cb.ge(eq(property), eq(10.0))).thenReturn(predicate);
+        when(cb.ge(property, 10.0)).thenReturn(predicate);
 
         Specification<ActionUnit> spec = ActionUnitFilterSpec.numericRange(
                 "openingRate", new ProjectListFilter.NumericRange(10.0, null));
@@ -146,7 +146,7 @@ class ActionUnitFilterSpecTest {
         Path<Double> property = mock(Path.class);
         Predicate predicate = mock(Predicate.class);
         when(root.<Double>get("openingRate")).thenReturn(property);
-        when(cb.le(eq(property), eq(40.0))).thenReturn(predicate);
+        when(cb.le(property, 40.0)).thenReturn(predicate);
 
         Specification<ActionUnit> spec = ActionUnitFilterSpec.numericRange(
                 "openingRate", new ProjectListFilter.NumericRange(null, 40.0));
@@ -236,7 +236,7 @@ class ActionUnitFilterSpecTest {
         Expression<String> lowered = mock(Expression.class);
         Predicate predicate = mock(Predicate.class);
         when(root.get("name")).thenReturn(property);
-        when(cb.coalesce(eq(property), eq(""))).thenReturn(coalesced);
+        when(cb.coalesce(property, "")).thenReturn(coalesced);
         when(cb.lower(any())).thenReturn(lowered);
         when(cb.like(lowered, "%foss%")).thenReturn(predicate);
 
@@ -312,7 +312,7 @@ class ActionUnitFilterSpecTest {
         Path<Double> property = mock(Path.class);
         Predicate predicate = mock(Predicate.class);
         when(root.<Double>get("openingRate")).thenReturn(property);
-        when(cb.ge(eq(property), eq(10.0))).thenReturn(predicate);
+        when(cb.ge(property, 10.0)).thenReturn(predicate);
 
         ProjectListFilter filter = new ProjectListFilter(
                 java.util.Map.of(), java.util.Map.of(), java.util.Map.of(), java.util.Map.of(),

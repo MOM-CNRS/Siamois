@@ -13,7 +13,6 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -21,10 +20,8 @@ import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
-import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ContainerOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.container.ContainerCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.container.ContainerPatchRequest;
@@ -87,7 +84,7 @@ class ContainerOpenApiServiceTest {
     void setUp() {
         service = new ContainerOpenApiService(containerService, actionUnitService, conceptService, conceptMapper,
                 profilePermissionService, containerOpenApiMapper,
-                containerListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
+                containerListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
 
         lenient().when(fieldAnswerWireService.additionalAnswers(any(), any())).thenReturn(Map.of());

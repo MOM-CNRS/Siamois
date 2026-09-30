@@ -1,5 +1,6 @@
 package fr.siamois.ui.table.definitions;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +27,7 @@ class RecordingUnitTableColumnDefaultsTest {
         assertThat(columnIds).doesNotHaveDuplicates().doesNotContainAnyElementsOf(STRUCTURAL_COLUMN_IDS);
         assertThat(RecordingUnitTableColumnDefaults.columns())
                 .allSatisfy(column -> assertThat(SystemFieldCatalog.fieldsOf(ConfigurableTable.UE))
-                        .extracting(field -> field.getId())
+                        .extracting(CustomField::getId)
                         .contains(column.field().getId()));
     }
 

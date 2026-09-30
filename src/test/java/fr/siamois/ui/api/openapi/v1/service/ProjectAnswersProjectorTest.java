@@ -104,12 +104,9 @@ class ProjectAnswersProjectorTest {
                         fieldId(ActionUnitForm.MAIN_LOCATION_FIELD)),
                 Map.of(7L, "En cours", 8L, "Néolithique")).get(1L);
 
-        assertThat(answers.get(fieldId(ActionUnitForm.STATUS_FIELD)))
-                .isEqualTo(new ResourceRef("7", "concepts", "En cours"));
-        assertThat(answers.get(fieldId(ActionUnitForm.PERIODS_FIELD)))
-                .isEqualTo(List.of(new ResourceRef("8", "concepts", "Néolithique")));
-        assertThat(answers.get(fieldId(ActionUnitForm.MAIN_LOCATION_FIELD)))
-                .isEqualTo(new ResourceRef("9", "spatial-units", "Lyon"));
+        assertThat(answers).containsEntry(fieldId(ActionUnitForm.STATUS_FIELD), new ResourceRef("7", "concepts", "En cours"));
+        assertThat(answers).containsEntry(fieldId(ActionUnitForm.PERIODS_FIELD), List.of(new ResourceRef("8", "concepts", "Néolithique")));
+        assertThat(answers).containsEntry(fieldId(ActionUnitForm.MAIN_LOCATION_FIELD), new ResourceRef("9", "spatial-units", "Lyon"));
     }
 
     /**
@@ -123,8 +120,7 @@ class ProjectAnswersProjectorTest {
         Map<String, Object> answers = projector.project(
                 List.of(dto), Set.of(fieldId(ActionUnitForm.STATUS_FIELD)), Map.of()).get(1L);
 
-        assertThat(answers.get(fieldId(ActionUnitForm.STATUS_FIELD)))
-                .isEqualTo(new ResourceRef("7", "concepts", "[1234]"));
+        assertThat(answers).containsEntry(fieldId(ActionUnitForm.STATUS_FIELD), new ResourceRef("7", "concepts", "[1234]"));
     }
 
     @Test

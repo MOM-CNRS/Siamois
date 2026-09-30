@@ -15,23 +15,17 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationProjectsControllerApi;
-import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.OrganizationOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
-import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.VocabularyOpenApiService;
@@ -41,9 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -53,11 +44,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -130,7 +121,7 @@ class OrganizationControllerApiTest {
                 conceptMapper,
                 recordingUnitOpenApiService, phaseService, containerService,
                 bookmarkService,
-                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         OrganizationControllerApi controller = new OrganizationControllerApi(
                 recordingUnitService,

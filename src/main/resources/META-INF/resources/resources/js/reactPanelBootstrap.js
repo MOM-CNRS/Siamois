@@ -21,9 +21,9 @@
 
     // data-mounted is what makes a JSF re-render of the flow (the write-mode switch replaces the
     // mount div) a fresh mount rather than a duplicate one on the same div.
-    var containers = document.querySelectorAll(".react-main-panel-mount:not([data-mounted='true'])");
-    for (var i = 0; i < containers.length; i++) {
-        containers[i].dataset.mounted = "true";
-        window.SiamoisMainPanel.mountFromDataset(containers[i]);
+    const containers = document.querySelectorAll(".react-main-panel-mount:not([data-mounted='true'])");
+    for (const container of containers) {
+        container.dataset.mounted = "true";
+        window.SiamoisMainPanel.mountFromDataset(container);
     }
 })();

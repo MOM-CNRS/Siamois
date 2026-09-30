@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.form.rules;
 
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class RepositoryConceptIdLookup implements ConceptIdLookup {
             return Optional.of(cached);
         }
         Optional<Long> id = conceptRepository.findConceptByExternalIdIgnoreCase(vocabularyExtId, conceptExtId)
-                .map(c -> c.getId());
+                .map(Concept::getId);
         id.ifPresent(v -> cache.put(key, v));
         return id;
     }

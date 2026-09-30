@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -71,7 +73,7 @@ class ProjectTableFieldSettingsBeanTest {
 
         bean.onLayoutReorder();
 
-        org.mockito.Mockito.verify(layout).saveArrangement(42L, ConfigurableTable.UE, "Creusement", List.of(
+        verify(layout).saveArrangement(42L, ConfigurableTable.UE, "Creusement", List.of(
                 new FormLayoutService.GroupSpec(1L, "G1", List.of("a")),
                 new FormLayoutService.GroupSpec(null, "G2", List.of("b", "c"))));
     }
@@ -89,7 +91,7 @@ class ProjectTableFieldSettingsBeanTest {
             bean.onLayoutReorder();
         }
 
-        org.mockito.Mockito.verify(layout, org.mockito.Mockito.never())
+        verify(layout, never())
                 .saveArrangement(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                         org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
@@ -126,7 +128,7 @@ class ProjectTableFieldSettingsBeanTest {
 
         bean.moveGroup(g2, -1);
 
-        org.mockito.Mockito.verify(layout).saveArrangement(42L, ConfigurableTable.UE, "Creusement", List.of(
+        verify(layout).saveArrangement(42L, ConfigurableTable.UE, "Creusement", List.of(
                 new FormLayoutService.GroupSpec(2L, "G2", List.of("b")),
                 new FormLayoutService.GroupSpec(1L, "G1", List.of("a"))));
     }

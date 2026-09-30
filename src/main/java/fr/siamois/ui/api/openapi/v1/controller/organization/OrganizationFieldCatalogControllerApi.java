@@ -8,7 +8,6 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -39,11 +38,9 @@ public class OrganizationFieldCatalogControllerApi {
 
     @GetMapping("/recording-unit-types")
     @Operation(summary = "Catalogue de colonnes des unités d'enregistrement de l'organisation", description = DESCRIPTION)
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
     public ResponseEntity<OrganizationFieldCatalogResponse> recordingUnitTypes(
             @PathVariable("id") long id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -52,11 +49,9 @@ public class OrganizationFieldCatalogControllerApi {
 
     @GetMapping("/find-types")
     @Operation(summary = "Catalogue de colonnes des mobiliers de l'organisation", description = DESCRIPTION)
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
     public ResponseEntity<OrganizationFieldCatalogResponse> findTypes(
             @PathVariable("id") long id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -65,11 +60,9 @@ public class OrganizationFieldCatalogControllerApi {
 
     @GetMapping("/phase-types")
     @Operation(summary = "Catalogue de colonnes des phases de l'organisation", description = DESCRIPTION)
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
     public ResponseEntity<OrganizationFieldCatalogResponse> phaseTypes(
             @PathVariable("id") long id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -78,11 +71,9 @@ public class OrganizationFieldCatalogControllerApi {
 
     @GetMapping("/container-types")
     @Operation(summary = "Catalogue de colonnes des contenants de l'organisation", description = DESCRIPTION)
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
     public ResponseEntity<OrganizationFieldCatalogResponse> containerTypes(
             @PathVariable("id") long id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -93,11 +84,9 @@ public class OrganizationFieldCatalogControllerApi {
     @Operation(summary = "Catalogue de colonnes des lieux de l'organisation",
             description = "Champs du formulaire d'un lieu (nom, catégorie, code, numéro), avec ce que la liste accepte sur chacun "
                     + "(tri, filtre). Les lieux n'ont ni configuration par projet ni champ additionnel : même catalogue partout.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
     public ResponseEntity<OrganizationFieldCatalogResponse> placeTypes(
             @PathVariable("id") long id,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {

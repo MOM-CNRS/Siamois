@@ -554,7 +554,7 @@ public class FieldQueryService {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Expression<?> systemSortKey(Target target, Root<?> root, CriteriaQuery<?> query, CriteriaBuilder cb, String lang) {
         return switch (target.kind) {
-            case TEXT -> cb.lower((Expression<String>) (Expression) root.get(target.attribute));
+            case TEXT -> cb.lower(root.<String>get(target.attribute));
             case NUMBER, DATE -> systemValue(root, target);
             case REFERENCE -> target.concept
                     ? conceptLabel(query, cb, root.get(target.attribute), lang)

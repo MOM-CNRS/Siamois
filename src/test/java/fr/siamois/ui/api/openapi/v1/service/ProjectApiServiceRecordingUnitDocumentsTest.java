@@ -97,7 +97,7 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService, phaseService, containerService,
-                bookmarkService, historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                bookmarkService, historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
     }
 
     private ProjectApiCaller caller() {
@@ -112,7 +112,7 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
 
         Document docHighId = mock(Document.class);
         when(docHighId.getId()).thenReturn(30L);
-        Document docLowId = org.mockito.Mockito.mock(Document.class);
+        Document docLowId = mock(Document.class);
         when(docLowId.getId()).thenReturn(7L);
         when(documentService.findForRecordingUnit(same(ru))).thenReturn(List.of(docHighId, docLowId));
 

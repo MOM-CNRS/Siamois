@@ -9,8 +9,6 @@ import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer;
-import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
-import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
@@ -62,7 +60,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -4,7 +4,6 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import jakarta.persistence.*;
 import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.hibernate.envers.RelationTargetAuditMode;
 import lombok.AllArgsConstructor;
 import lombok.Data;

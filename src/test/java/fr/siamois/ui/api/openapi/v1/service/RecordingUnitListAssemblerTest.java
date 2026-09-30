@@ -77,7 +77,7 @@ class RecordingUnitListAssemblerTest {
         assertThat(resource.getPermissions().canEdit()).isTrue();
         assertThat(resource.getAnswers()).containsEntry("8", "x");
         assertThat(response.getMeta().total()).isEqualTo(11L);
-        verify(resourceBookmarkService).markBookmarked(eq(caller.person()), eq(institution), eq(List.of(resource)), eq("fr"));
+        verify(resourceBookmarkService).markBookmarked(caller.person(), institution, List.of(resource), "fr");
     }
 
     @Test

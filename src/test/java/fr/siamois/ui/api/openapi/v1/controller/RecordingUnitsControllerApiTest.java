@@ -144,7 +144,7 @@ class RecordingUnitsControllerApiTest {
                 phaseService,
                 containerService,
                 bookmarkService,
-                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,
@@ -154,8 +154,8 @@ class RecordingUnitsControllerApiTest {
                 recordingUnitOpenApiService,
                 recordingUnitListAssembler, ListQueryStubs.none());
         RecordingUnitFindsControllerApi findsController = new RecordingUnitFindsControllerApi(
-                projectApiService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService.class), ListQueryStubs.none(),
-                org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class));
+                projectApiService, mock(fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService.class), ListQueryStubs.none(),
+                mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class));
         RecordingUnitDocumentsControllerApi documentsController = new RecordingUnitDocumentsControllerApi(
                 projectApiService, documentWriteOpenApiService);
         RecordingUnitParentsControllerApi parentsController = new RecordingUnitParentsControllerApi(

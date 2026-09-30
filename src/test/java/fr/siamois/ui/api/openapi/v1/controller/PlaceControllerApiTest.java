@@ -210,7 +210,7 @@ class PlaceControllerApiTest {
 
     @Test
     void getChildren_delegatesToTheService() throws Exception {
-        org.mockito.Mockito.when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr"), any(), any()))
+        when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr"), any(), any()))
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse(
                         List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
 
@@ -227,13 +227,13 @@ class PlaceControllerApiTest {
         fr.siamois.dto.entity.InstitutionDTO institution = new fr.siamois.dto.entity.InstitutionDTO();
         institution.setId(10L);
         place.setCreatedByInstitution(institution);
-        org.mockito.Mockito.when(placeOpenApiService.requireAccessible(any(), eq(5L))).thenReturn(place);
+        when(placeOpenApiService.requireAccessible(any(), eq(5L))).thenReturn(place);
         org.springframework.data.domain.Page<fr.siamois.dto.api.AccessibleProjectForApi> rows = org.springframework.data.domain.Page.empty();
-        org.mockito.Mockito.when(projectApiService.pageAccessibleProjects(any(), eq(10L), isNull(), eq(0), eq(20), eq("name:asc"),
+        when(projectApiService.pageAccessibleProjects(any(), eq(10L), isNull(), eq(0), eq(20), eq("name:asc"),
                 org.mockito.ArgumentMatchers.argThat(filter ->
                         List.of(5L).equals(filter.conceptManyInFilters().get("spatialContext"))), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(rows);
-        org.mockito.Mockito.when(projectListAssembler.assemble(any(), eq(rows), isNull(), eq("fr"), eq(20), eq(0)))
+        when(projectListAssembler.assemble(any(), eq(rows), isNull(), eq("fr"), eq(20), eq(0)))
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse(
                         List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 20, 0L)));
 

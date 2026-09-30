@@ -43,7 +43,6 @@ import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -97,13 +96,11 @@ public class OrganizationListsControllerApi {
             description = "Tri : fullIdentifier, creationTime, … (400 sur propriété inconnue). Recherche : fullIdentifier. "
                     + "Filtres par colonne f.<clé>, comme GET /api/v1/projects/{id}/recording-units. "
                     + "Un membre sans accès à toute l'organisation ne voit que ses projets.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
-            @ApiResponse(responseCode = "404", description = "Organisation introuvable")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    @ApiResponse(responseCode = "404", description = "Organisation introuvable")
     public ResponseEntity<RecordingUnitListResponse> listRecordingUnits(
             @Parameter(description = ORG_PARAM_DOC) @RequestParam(required = false) Long organizationId,
             @RequestParam(defaultValue = "0") int offset,
@@ -147,13 +144,11 @@ public class OrganizationListsControllerApi {
     @Operation(summary = "Mobiliers d'une organisation",
             description = "Tri : fullIdentifier, collectionDate, id (400 sur propriété inconnue). Recherche : fullIdentifier. "
                     + "Un membre sans accès à toute l'organisation ne voit que ses projets.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
-            @ApiResponse(responseCode = "404", description = "Organisation introuvable")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    @ApiResponse(responseCode = "404", description = "Organisation introuvable")
     public ResponseEntity<FindListResponse> listFinds(
             @Parameter(description = ORG_PARAM_DOC) @RequestParam(required = false) Long organizationId,
             @RequestParam(defaultValue = "0") int offset,
@@ -197,13 +192,11 @@ public class OrganizationListsControllerApi {
     @Operation(summary = "Phases d'une organisation",
             description = "Tri : identifier, orderNumber, title, id (400 sur propriété inconnue). Recherche : identifier. "
                     + "Un membre sans accès à toute l'organisation ne voit que ses projets.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
-            @ApiResponse(responseCode = "404", description = "Organisation introuvable")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    @ApiResponse(responseCode = "404", description = "Organisation introuvable")
     public ResponseEntity<PhaseListResponse> listPhases(
             @Parameter(description = ORG_PARAM_DOC) @RequestParam(required = false) Long organizationId,
             @RequestParam(defaultValue = "0") int offset,
@@ -244,13 +237,11 @@ public class OrganizationListsControllerApi {
     @Operation(summary = "Contenants d'une organisation",
             description = "Tri : identifier, id (400 sur propriété inconnue). Recherche : identifier. "
                     + "Un membre sans accès à toute l'organisation ne voit que ses projets.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
-            @ApiResponse(responseCode = "404", description = "Organisation introuvable")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    @ApiResponse(responseCode = "404", description = "Organisation introuvable")
     public ResponseEntity<ContainerListResponse> listContainers(
             @Parameter(description = ORG_PARAM_DOC) @RequestParam(required = false) Long organizationId,
             @RequestParam(defaultValue = "0") int offset,
@@ -291,13 +282,11 @@ public class OrganizationListsControllerApi {
     @Operation(summary = "Lieux d'une organisation",
             description = "Tri : name, id, code, creationTime ou l'identifiant d'un champ (sort=<fieldId>:asc) ; direction asc ou desc. "
                     + "Recherche : name. Filtres par champ : f.<fieldId>. Projection des champs : fields.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ok"),
-            @ApiResponse(responseCode = "400", description = "organizationId absent ou pagination invalide"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
-            @ApiResponse(responseCode = "404", description = "Organisation introuvable")
-    })
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "400", description = "organizationId absent ou pagination invalide")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    @ApiResponse(responseCode = "404", description = "Organisation introuvable")
     public ResponseEntity<PlaceListResponse> listPlaces(
             @Parameter(description = ORG_PARAM_DOC) @RequestParam(required = false) Long organizationId,
             @RequestParam(defaultValue = "0") int offset,

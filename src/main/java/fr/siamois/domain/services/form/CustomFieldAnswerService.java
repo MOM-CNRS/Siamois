@@ -688,27 +688,6 @@ public class CustomFieldAnswerService {
     }
 
     /**
-     * Persists the concept(s) picked on an additional vocabulary field. The view model holds
-     * {@link ConceptAutocompleteDTO}s (what the autocomplete produces) while the answer entity links
-     * {@link Concept} rows, so the picked concepts are re-read from the database by id — they always
-     * exist there already, the autocomplete only ever suggests locally stored concepts.
-     * <p>
-     * An answer never stored and left empty is not created, mirroring the measurement path: an
-     * untouched field shouldn't materialize a row.
-     */
-    private void createOrUpdateConceptAnswer(CustomFieldAnswerSelectConcept answer,
-                                             CustomFieldAnswerViewModel viewModel,
-                                             boolean alreadyStored) {
-        List<Concept> concepts = pickedConcepts(viewModel);
-        if (!alreadyStored && concepts.isEmpty()) {
-            return;
-        }
-
-        answer.setValue(new ArrayList<>(concepts));
-        customFieldAnswerRepository.save(answer);
-    }
-
-    /**
      * The concepts a vocabulary answer view model currently holds, as {@link Concept} entities.
      * <p>
      * The concept components hand the view model detached {@link ConceptAutocompleteDTO}s, so those

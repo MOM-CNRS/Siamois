@@ -38,7 +38,6 @@ import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
@@ -155,7 +154,7 @@ class ProjectControllerApiTest {
                 phaseService,
                 containerService,
                 bookmarkService,
-                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
                 projectResponseMapper,

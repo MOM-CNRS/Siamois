@@ -38,11 +38,9 @@ import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRep
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

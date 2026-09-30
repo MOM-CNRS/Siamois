@@ -42,7 +42,6 @@ import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;

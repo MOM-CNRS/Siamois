@@ -4,7 +4,6 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitHierarchyLinkRequest;
-import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -27,7 +26,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/recording-units")

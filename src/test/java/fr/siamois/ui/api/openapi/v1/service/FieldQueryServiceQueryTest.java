@@ -115,7 +115,10 @@ class FieldQueryServiceQueryTest {
 
     private EntityType<?> entityWith(Class<?> javaType, String... attributes) {
         EntityType<?> type = mock(EntityType.class);
-        for (String name : attributes) when(type.getAttribute(name)).thenReturn(mock(Attribute.class));
+        for (String name : attributes) {
+            Attribute attribute = mock(Attribute.class);
+            when(type.getAttribute(name)).thenReturn(attribute);
+        }
         when(type.getAttribute(org.mockito.ArgumentMatchers.argThat(n -> !List.of(attributes).contains(n))))
                 .thenThrow(new IllegalArgumentException("unmapped"));
         when(type.hasSingleIdAttribute()).thenReturn(true);
@@ -249,13 +252,13 @@ class FieldQueryServiceQueryTest {
 
         run(build(RecordingUnit.class, filter(range("2024-05-01", "2024-05-02"))));
         verify(cb).greaterThanOrEqualTo(any(jakarta.persistence.criteria.Expression.class),
-                org.mockito.ArgumentMatchers.eq(LocalDateTime.of(2024, 5, 1, 0, 0)));
+                org.mockito.ArgumentMatchers.eq(LocalDateTime.of(2024, java.time.Month.MAY, 1, 0, 0)));
         verify(cb).lessThan(any(jakarta.persistence.criteria.Expression.class),
-                org.mockito.ArgumentMatchers.eq(LocalDateTime.of(2024, 5, 3, 0, 0)));
+                org.mockito.ArgumentMatchers.eq(LocalDateTime.of(2024, java.time.Month.MAY, 3, 0, 0)));
 
         run(build(RecordingUnit.class, filter(range("2024-05-01T10:00:00+02:00", null))));
         verify(cb).greaterThanOrEqualTo(any(jakarta.persistence.criteria.Expression.class),
-                org.mockito.ArgumentMatchers.eq(LocalDateTime.of(2024, 5, 1, 8, 0)));
+                org.mockito.ArgumentMatchers.eq(LocalDateTime.of(2024, java.time.Month.MAY, 1, 8, 0)));
 
         assertThat(badRequest(RecordingUnit.class, filter(range("not-a-date", null))).getReason()).contains("Date invalide");
     }
@@ -269,7 +272,7 @@ class FieldQueryServiceQueryTest {
             FieldQuery fieldQuery = build(RecordingUnit.class, filter(range("2024-05-01", null)));
             run(fieldQuery);
             verify(cb, atLeastOnce()).greaterThanOrEqualTo(any(jakarta.persistence.criteria.Expression.class),
-                    org.mockito.ArgumentMatchers.<Comparable>argThat(bound -> type.isInstance(bound)));
+                    org.mockito.ArgumentMatchers.<Comparable>argThat(type::isInstance));
         }
     }
 
@@ -302,6 +305,7 @@ class FieldQueryServiceQueryTest {
 
         run(build(RecordingUnit.class, filter(values("1"))));
         run(build(RecordingUnit.class, sort(true)));
+        assertThat(build(RecordingUnit.class, sort(true)).ordered()).isTrue();
     }
 
     @Test
@@ -336,6 +340,7 @@ class FieldQueryServiceQueryTest {
 
         run(build(RecordingUnit.class, filter(range("1", "2"))));
         run(build(RecordingUnit.class, sort(true)));
+        assertThat(build(RecordingUnit.class, sort(true)).ordered()).isTrue();
     }
 
     @Test
@@ -411,6 +416,7 @@ class FieldQueryServiceQueryTest {
 
         run(build(RecordingUnit.class, filter(values("1"))));
         run(build(RecordingUnit.class, sort(true)));
+        assertThat(build(RecordingUnit.class, sort(true)).ordered()).isTrue();
     }
 
     @Test

@@ -89,21 +89,20 @@ class RecordingUnitListFilterTest {
     void parse_dateRange_bothBoundsAndEachBoundAlone() {
         RecordingUnitListFilter both = RecordingUnitListFilter.parse(
                 params("f.openingDate.from", "2024-01-01T00:00:00Z", "f.openingDate.to", "2024-12-31T00:00:00Z"));
-        assertThat(both.dateRangeFilters().get("openingDate")).isEqualTo(new RecordingUnitListFilter.DateRange(
+        assertThat(both.dateRangeFilters()).containsEntry("openingDate", new RecordingUnitListFilter.DateRange(
                 OffsetDateTime.parse("2024-01-01T00:00:00Z"), OffsetDateTime.parse("2024-12-31T00:00:00Z")));
 
         RecordingUnitListFilter fromOnly = RecordingUnitListFilter.parse(params("f.closingDate.from", "2024-01-01T00:00:00Z"));
-        assertThat(fromOnly.dateRangeFilters().get("closingDate"))
-                .isEqualTo(new RecordingUnitListFilter.DateRange(OffsetDateTime.parse("2024-01-01T00:00:00Z"), null));
+        assertThat(fromOnly.dateRangeFilters()).containsEntry("closingDate", new RecordingUnitListFilter.DateRange(OffsetDateTime.parse("2024-01-01T00:00:00Z"), null));
     }
 
     @Test
     void parse_intRange_bothBoundsAndEachBoundAlone() {
         RecordingUnitListFilter both = RecordingUnitListFilter.parse(params("f.tpq.from", "-500", "f.tpq.to", "100"));
-        assertThat(both.intRangeFilters().get("tpq")).isEqualTo(new RecordingUnitListFilter.IntRange(-500, 100));
+        assertThat(both.intRangeFilters()).containsEntry("tpq", new RecordingUnitListFilter.IntRange(-500, 100));
 
         RecordingUnitListFilter toOnly = RecordingUnitListFilter.parse(params("f.taq.to", "1200"));
-        assertThat(toOnly.intRangeFilters().get("taq")).isEqualTo(new RecordingUnitListFilter.IntRange(null, 1200));
+        assertThat(toOnly.intRangeFilters()).containsEntry("taq", new RecordingUnitListFilter.IntRange(null, 1200));
     }
 
     @Test

@@ -783,8 +783,8 @@ public class ProjectApiService {
         if (raw instanceof OffsetDateTime odt) return odt;
         String value = String.valueOf(raw).trim();
         try {
-            // Un champ de date envoie souvent juste "AAAA-MM-JJ" (fields/renderers.tsx's DateRenderer) ;
-            // OffsetDateTime.parse seul rejetterait ça, faute d'offset.
+            // Un champ de date envoie souvent juste le jour, sans heure ni offset (DateRenderer côté React) :
+            // OffsetDateTime.parse seul le rejetterait.
             if (value.length() <= 10) {
                 return LocalDate.parse(value).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             }

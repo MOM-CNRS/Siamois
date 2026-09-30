@@ -67,9 +67,9 @@ class PhaseAnswersProjectorTest {
                 Map.of(10L, "Type X", 20L, "Bronze"));
 
         Map<String, Object> answers = out.get(1L);
-        assertThat(answers.get(idOf("title"))).isEqualTo("Phase A");
-        assertThat(answers.get(idOf("orderNumber"))).isEqualTo(3);
-        assertThat(answers.get(idOf("type"))).isEqualTo(new ResourceRef("10", "concepts", "Type X"));
+        assertThat(answers).containsEntry(idOf("title"), "Phase A");
+        assertThat(answers).containsEntry(idOf("orderNumber"), 3);
+        assertThat(answers).containsEntry(idOf("type"), new ResourceRef("10", "concepts", "Type X"));
         assertThat((List<Object>) answers.get(idOf("periods"))).containsExactly(new ResourceRef("20", "concepts", "Bronze"));
     }
 
@@ -80,7 +80,7 @@ class PhaseAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(idOf("type"), idOf("title")), null).get(2L);
 
-        assertThat(answers.get(idOf("type"))).isEqualTo(new ResourceRef("11", "concepts", "[ext11]"));
+        assertThat(answers).containsEntry(idOf("type"), new ResourceRef("11", "concepts", "[ext11]"));
         assertThat(answers.get(idOf("title"))).isNull();
     }
 

@@ -57,6 +57,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -149,7 +150,7 @@ class ProjectSiblingsControllerApiTest {
                 phaseService,
                 containerService,
                 bookmarkService,
-                historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
         ProjectControllerApi controller = new ProjectControllerApi(
                 projectApiService,
                 projectResponseMapper,
@@ -160,7 +161,7 @@ class ProjectSiblingsControllerApiTest {
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
                 recordingUnitResourceMapper,
-                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers(), ListQueryStubs.noAdditionalAnswers()), org.mockito.Mockito.mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers(), ListQueryStubs.noAdditionalAnswers()), mock(ResourceBookmarkService.class), ListQueryStubs.none());
 
         ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
                 projectApiService,

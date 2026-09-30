@@ -22,14 +22,10 @@ import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePers
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -133,7 +129,7 @@ class FindOpenApiServiceTest {
                 conceptMapper,
                 profilePermissionService,
                 findOpenApiMapper, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class),
-                org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
+                mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
                 fieldAnswerPatchService, effectiveFormResolver);
 
         personDto = new PersonDTO();

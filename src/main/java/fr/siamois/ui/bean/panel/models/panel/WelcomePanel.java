@@ -21,9 +21,8 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
 
     @EventListener(LangageChangeEvent.class)
     public void refreshName() {
-        this.titleCodeOrTitle = String.format("%s - %s",
-                langBean.msg("common.location.home"),
-                sessionSettingsBean.getSelectedInstitution().getName());
+        this.titleCodeOrTitle = langBean.msg("common.location.home") + " - "
+                + sessionSettingsBean.getSelectedInstitution().getName();
     }
 
     @Override

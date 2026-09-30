@@ -52,6 +52,6 @@ class FieldAnswerMapsTest {
                 Map.of("1", delta, "2", new AnswerInput("titre", null)), null);
 
         assertThat(merged.get("1")).isSameAs(delta);
-        assertThat(merged.get("2")).isEqualTo("titre");
+        assertThat(merged).containsEntry("2", "titre");
     }
 }

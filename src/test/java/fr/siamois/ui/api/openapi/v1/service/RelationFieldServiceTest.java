@@ -34,7 +34,7 @@ class RelationFieldServiceTest {
         assertThat(previews.get(1L).values()).containsExactly(new ResourceRef("10", "recording-units", "US 10"));
         assertThat(previews.get(1L).total()).isEqualTo(4);
         assertThat(previews.get(1L).links().values()).isEqualTo("/values/1");
-        assertThat(previews.get(2L)).isEqualTo(MultiValue.complete(List.of()));
+        assertThat(previews).containsEntry(2L, MultiValue.complete(List.of()));
     }
 
     @Test

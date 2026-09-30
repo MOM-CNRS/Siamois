@@ -1,11 +1,7 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.phase.Phase;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.specimen.Specimen;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;

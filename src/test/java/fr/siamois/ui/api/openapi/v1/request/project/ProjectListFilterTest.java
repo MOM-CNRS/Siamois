@@ -70,16 +70,13 @@ class ProjectListFilterTest {
     @Test
     void parse_numericRange_bothBoundsAndEachBoundAlone() {
         ProjectListFilter both = ProjectListFilter.parse(params("f.openingRate.from", "10", "f.openingRate.to", "40"));
-        assertThat(both.numericRangeFilters().get("openingRate"))
-                .isEqualTo(new ProjectListFilter.NumericRange(10.0, 40.0));
+        assertThat(both.numericRangeFilters()).containsEntry("openingRate", new ProjectListFilter.NumericRange(10.0, 40.0));
 
         ProjectListFilter fromOnly = ProjectListFilter.parse(params("f.openingRate.from", "10"));
-        assertThat(fromOnly.numericRangeFilters().get("openingRate"))
-                .isEqualTo(new ProjectListFilter.NumericRange(10.0, null));
+        assertThat(fromOnly.numericRangeFilters()).containsEntry("openingRate", new ProjectListFilter.NumericRange(10.0, null));
 
         ProjectListFilter toOnly = ProjectListFilter.parse(params("f.openingRate.to", "40"));
-        assertThat(toOnly.numericRangeFilters().get("openingRate"))
-                .isEqualTo(new ProjectListFilter.NumericRange(null, 40.0));
+        assertThat(toOnly.numericRangeFilters()).containsEntry("openingRate", new ProjectListFilter.NumericRange(null, 40.0));
     }
 
     @Test

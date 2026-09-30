@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -85,7 +86,7 @@ class OrganizationListsControllerApiTest {
                 projectApiService, organizationListService, placeOpenApiService,
                 recordingUnitResponseMapper, recordingUnitListProjectionService, findOpenApiMapper,
                 phaseOpenApiMapper, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
-                org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), org.mockito.Mockito.mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper().registerModule(new JavaTimeModule())))

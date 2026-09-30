@@ -1091,8 +1091,8 @@ class CustomFieldAnswerServiceTest {
         FormConfigAnswer formerSet = new FormConfigAnswer();
         formerSet.setId(1L);
         formerSet.setFormConfig(formerConfig);
-        CustomFieldAnswerText commonAnswer = storedText(common, formerSet, "454");
-        CustomFieldAnswerText formerOnlyAnswer = storedText(formerOnly, formerSet, "perdu");
+        CustomFieldAnswerText commonAnswer = textAnswer(common, formerSet, "454");
+        CustomFieldAnswerText formerOnlyAnswer = textAnswer(formerOnly, formerSet, "perdu");
         formerSet.setAnswers(new HashSet<>(Set.of(commonAnswer, formerOnlyAnswer)));
 
         FormConfigAnswer currentSet = new FormConfigAnswer();
@@ -1130,14 +1130,6 @@ class CustomFieldAnswerServiceTest {
 
         verify(formConfigAnswerService, never()).delete(any());
         verify(customFieldAnswerRepository, never()).deleteAll(any());
-    }
-
-    private static CustomFieldAnswerText storedText(CustomField field, FormConfigAnswer set, String value) {
-        CustomFieldAnswerText answer = new CustomFieldAnswerText();
-        answer.setCustomField(field);
-        answer.setFormConfigAnswer(set);
-        answer.setValue(value);
-        return answer;
     }
 
     // ========== Helpers ==========

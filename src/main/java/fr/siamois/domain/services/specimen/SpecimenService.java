@@ -4,7 +4,6 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;

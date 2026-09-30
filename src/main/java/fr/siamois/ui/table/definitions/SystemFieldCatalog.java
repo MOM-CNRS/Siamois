@@ -1,6 +1,5 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.container.form.ContainerForm;
 import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.phase.form.PhaseForm;
@@ -8,12 +7,8 @@ import fr.siamois.domain.models.recordingunit.form.RecordingUnitForm;
 import fr.siamois.domain.models.specimen.form.SpecimenForm;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
-import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
